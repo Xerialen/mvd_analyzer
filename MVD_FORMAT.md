@@ -1602,66 +1602,73 @@ func parsePlayerInfoMVD(r *BufferReader, floatCoords bool) *PlayerState {
 
 ## Source Code References
 
-### Online Source Repositories
+### Repositories
 
-- **KTX**: https://github.com/QW-Group/ktx
-- **ezQuake**: https://github.com/QW-Group/ezquake-source
-- **mvdparser**: https://github.com/QW-Group/mvdparser
-
-### ezQuake Source Files
-
-For client/demo playback implementation details:
-
-| File | Lines | Description |
-|------|-------|-------------|
-| `src/sv_demo.c` | - | Server-side MVD recording |
-| `src/sv_demo_misc.c` | 851-873 | Demoinfo block numbering (block 0 = last) |
-| `src/cl_demo.c` | - | Client-side demo playback |
-| `src/cl_ents.c` | - | Entity and player parsing |
-| `src/cl_parse.c` | - | Network message parsing |
-| `src/qwprot/src/protocol.h` | - | Protocol definitions |
-| `src/server.h` | - | Server data structures |
-| `src/client.h` | - | Client data structures |
-| `src/fragstats.c` | - | Frag detection patterns |
+| Project | Description | GitHub |
+|---------|-------------|--------|
+| **KTX** | Server-side mod (stats, hidden messages) | [QW-Group/ktx](https://github.com/QW-Group/ktx) |
+| **ezQuake** | Client with MVD recording/playback | [QW-Group/ezquake-source](https://github.com/QW-Group/ezquake-source) |
+| **mvdparser** | Reference MVD parsing library | [QW-Group/mvdparser](https://github.com/QW-Group/mvdparser) |
 
 ### KTX Source Files
 
-For server-side implementation and stats tracking:
+Server-side implementation, stats tracking, hidden message generation:
 
-| File | Lines | Description |
-|------|-------|-------------|
-| `include/g_consts.h` | 323-332 | Hidden message type IDs (mvdhidden_*) |
-| `include/deathtype.h` | 1-29 | Death type constants (DT_*) |
-| `src/combat.c` | 786-834 | Damage tracking, MVD dmgdone writing |
-| `src/client.c` | - | Obituary patterns, player stats |
-| `src/world.c` | - | Damage application logic |
-| `src/weapons.c` | - | Weapon damage values and mechanics |
+| File | Description |
+|------|-------------|
+| [include/g_consts.h#L323-L332](https://github.com/QW-Group/ktx/blob/master/include/g_consts.h#L323-L332) | Hidden message type IDs (`mvdhidden_*`) |
+| [include/deathtype.h#L1-L29](https://github.com/QW-Group/ktx/blob/master/include/deathtype.h#L1-L29) | Death type constants (`DT_*`) |
+| [src/combat.c#L786-L834](https://github.com/QW-Group/ktx/blob/master/src/combat.c#L786-L834) | Damage tracking, dmgdone hidden message |
+| [src/client.c](https://github.com/QW-Group/ktx/blob/master/src/client.c) | `ClientObituary()` - obituary patterns |
+| [src/weapons.c](https://github.com/QW-Group/ktx/blob/master/src/weapons.c) | Weapon damage values and mechanics |
+| [src/race.c#L158-L166](https://github.com/QW-Group/ktx/blob/master/src/race.c#L158-L166) | `sv_usercmdtrace` usage for usercmd recording |
+
+### ezQuake Source Files
+
+Client/server MVD recording and playback:
+
+| File | Description |
+|------|-------------|
+| [src/sv_demo.c](https://github.com/QW-Group/ezquake-source/blob/master/src/sv_demo.c) | Server-side MVD recording |
+| [src/sv_demo.c#L1867-L1877](https://github.com/QW-Group/ezquake-source/blob/master/src/sv_demo.c#L1867-L1877) | `SV_UserCmdTrace_f` - usercmd trace command |
+| [src/sv_demo_misc.c#L851-L873](https://github.com/QW-Group/ezquake-source/blob/master/src/sv_demo_misc.c#L851-L873) | Demoinfo block numbering (block 0 = last) |
+| [src/cl_demo.c](https://github.com/QW-Group/ezquake-source/blob/master/src/cl_demo.c) | Client-side demo playback |
+| [src/cl_parse.c](https://github.com/QW-Group/ezquake-source/blob/master/src/cl_parse.c) | Network message parsing (`svc_*`) |
+| [src/cl_ents.c](https://github.com/QW-Group/ezquake-source/blob/master/src/cl_ents.c) | Entity and player state parsing |
+| [src/qwprot/src/protocol.h](https://github.com/QW-Group/ezquake-source/blob/master/src/qwprot/src/protocol.h) | Protocol definitions, `svc_*` constants |
 
 ### mvdparser Source Files
 
-Reference implementation for MVD parsing:
+Reference C implementation for MVD parsing:
 
-| File | Lines | Description |
-|------|-------|-------------|
-| `src/netmsg_parser.c` | 255-311 | `Stat_CalculateShotsFired()` - shot tracking via ammo |
-| `src/qw_protocol.h` | 404 | `weapon_shots` array definition |
-| `src/stats.h` | 12-16 | STAT_* constants |
+| File | Description |
+|------|-------------|
+| [src/netmsg_parser.c#L255-L311](https://github.com/QW-Group/mvdparser/blob/master/src/netmsg_parser.c#L255-L311) | `Stat_CalculateShotsFired()` - ammo-based shot tracking |
+| [src/netmsg_parser.c#L1131-L1134](https://github.com/QW-Group/mvdparser/blob/master/src/netmsg_parser.c#L1131-L1134) | `svc_muzzleflash` parsing |
+| [src/qw_protocol.h](https://github.com/QW-Group/mvdparser/blob/master/src/qw_protocol.h) | Protocol constants, `svc_*` definitions |
+| [src/qw_protocol.h#L404](https://github.com/QW-Group/mvdparser/blob/master/src/qw_protocol.h#L404) | `weapon_shots` array definition |
 
-**Note**: mvdparser uses ammo-based shot tracking but has no respawn filtering, which causes ~2x overcounting for weapons using shells/nails/rockets/cells.
+**Note**: mvdparser's shot tracking has no respawn filtering, causing ~2x overcounting.
 
-### Key KTX Code Locations
+### Key Implementation Details
 
-**Damage tracking** (`combat.c:786-834`):
-- Line 786: `unbound_dmg_dealt = dmg_dealt;` - raw damage calculation
-- Line 804: `dmg_dealt += bound(0, virtual_take, targ->s.v.health);` - effective (health-capped)
-- Lines 830-834: Writing dmgdone hidden message to MVD
+**Damage tracking** ([combat.c#L786-L834](https://github.com/QW-Group/ktx/blob/master/src/combat.c#L786-L834)):
+```c
+// Line 786: Raw damage before health capping
+unbound_dmg_dealt = dmg_dealt;
 
-**Obituary generation** (`client.c`):
-- Function: `ClientObituary()` - generates death messages
-- Pattern matching reveals all obituary text strings
+// Line 804: Effective damage capped at victim's health
+dmg_dealt += bound(0, virtual_take, targ->s.v.health);
 
-**Hidden message types** (`g_consts.h:323-332`):
-- Defines all `mvdhidden_*` type IDs (0x0000-0x0008, 0xFFFF)
+// Lines 830-834: Write to MVD hidden message
+WriteShort(MSG_MULTICAST, mvdhidden_dmgdone);
+```
+
+**Usercmd recording** ([sv_demo.c#L1867](https://github.com/QW-Group/ezquake-source/blob/master/src/sv_demo.c#L1867)):
+```
+sv_usercmdtrace <userid> on|off
+```
+Enables `mvdhidden_usercmd` (0x0001) recording per player. Used primarily for race mode.
 
 ---
 
