@@ -44,19 +44,28 @@ func (a *FragAnalyzer) OnEvent(event parser.Event) error {
 	// Try to parse as a frag
 	frag := a.parseObituary(printEvent.Message, printEvent.Time)
 	if frag != nil {
-		a.frags = append(a.frags, *frag)
+		// Skip generic killers/victims that can't be resolved
+		killerIsGeneric := isGenericPlayer(frag.Killer)
+		victimIsGeneric := isGenericPlayer(frag.Victim)
+
+		// Only add to frags list if both parties are identifiable
+		if !killerIsGeneric && !victimIsGeneric {
+			a.frags = append(a.frags, *frag)
+		}
 		a.byWeapon[frag.Weapon]++
 
 		// Update killer stats
-		if !frag.IsSuicide {
+		if !frag.IsSuicide && !killerIsGeneric {
 			killer := a.getOrCreatePlayer(frag.Killer)
 			killer.Kills++
 			killer.ByWeapon[frag.Weapon]++
 		}
 
 		// Update victim stats
-		victim := a.getOrCreatePlayer(frag.Victim)
-		victim.Deaths++
+		if !victimIsGeneric {
+			victim := a.getOrCreatePlayer(frag.Victim)
+			victim.Deaths++
+		}
 	}
 
 	return nil
@@ -72,12 +81,28 @@ func (a *FragAnalyzer) Finalize() (interface{}, error) {
 }
 
 func (a *FragAnalyzer) getOrCreatePlayer(name string) *PlayerFrags {
+	// Skip generic teammate references - these are unresolvable
+	if isGenericPlayer(name) {
+		return &PlayerFrags{ByWeapon: make(map[string]int)} // Return a throw-away entry
+	}
+
 	if p, ok := a.byPlayer[name]; ok {
 		return p
 	}
 	p := &PlayerFrags{ByWeapon: make(map[string]int)}
 	a.byPlayer[name] = p
 	return p
+}
+
+// isGenericPlayer returns true for placeholder names that shouldn't be tracked
+func isGenericPlayer(name string) bool {
+	nameLower := strings.ToLower(name)
+	return nameLower == "teammate" ||
+		nameLower == "his teammate" ||
+		nameLower == "her teammate" ||
+		strings.HasSuffix(nameLower, "'s quad") ||
+		strings.Contains(nameLower, "'s quad rocket") ||
+		strings.Contains(nameLower, "'s quad shaft")
 }
 
 // parseObituary attempts to parse a print message as a frag
@@ -172,14 +197,19 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		{" almost dodged ", "rl"},
 		{" was brutalized by ", "rl"},
 		{" was smeared by ", "rl"},
+		{" eats ", "rl"},          // "eats X's rocket"
+		{" chews on ", "rl"},      // "chews on X's rocket"
+		{" was fried by ", "rl"},  // "was fried by X"
 
 		// Grenade Launcher
 		{" didn't see ", "gl"},
+		{" was blown away by ", "gl"},
 
 		// Super Nailgun
 		{" was body pierced by ", "sng"},
 		{" was nailed by ", "sng"},
 		{" was straw-cuttered by ", "sng"},
+		{" was ripped by ", "sng"},
 		{" was perforated by ", "ng"},
 		{" was punctured by ", "ng"},
 		{" was ventilated by ", "ng"},
@@ -187,6 +217,7 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		// Super Shotgun
 		{" was lead poisoned by ", "ssg"},
 		{" was gunned by ", "ssg"},
+		{" chewed on ", "ssg"}, // "chewed on X's boomstick"
 
 		// Shotgun
 		{" was shot by ", "sg"},
@@ -194,10 +225,12 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		// Axe
 		{" was ax-murdered by ", "axe"},
 		{" was axed by ", "axe"},
+		{" was chopped up by ", "axe"},
 
 		// Generic patterns
 		{" was killed by ", "unknown"},
 		{" was fragged by ", "unknown"},
+		{" becomes ", "unknown"}, // "becomes X's bitch"
 	}
 
 	for _, p := range killPatterns {
@@ -279,10 +312,11 @@ func (a *FragAnalyzer) checkAtePattern(msg string, time float64) *FragEntry {
 				}
 			}
 		}
-		if strings.Contains(rest, "'s rocket") {
+		if strings.Contains(rest, "'s rocket") || strings.Contains(rest, " rockets from ") {
 			loadsIdx := strings.Index(rest, " rockets from ")
 			if loadsIdx >= 0 {
 				killer := strings.TrimSpace(rest[loadsIdx+14:])
+				killer = stripQuadSuffix(killer)
 				return &FragEntry{
 					Time:       time,
 					Killer:     killer,
@@ -298,8 +332,17 @@ func (a *FragAnalyzer) checkAtePattern(msg string, time float64) *FragEntry {
 
 // extractKillerName extracts killer name from the rest of the message
 func extractKillerName(rest string) string {
-	// Common suffixes to remove
+	// Common suffixes to remove (check quad variants first, then normal)
 	suffixes := []string{
+		// Quad damage variants (must be before regular variants)
+		"'s quad shaft",
+		"'s quad lightning",
+		"'s quad rocket",
+		"'s quad pineapple",
+		"'s quad boomstick",
+		"'s quad grenade",
+		"'s quad axe",
+		// Regular variants
 		"'s shaft",
 		"'s lightning",
 		"'s rocket",
@@ -317,16 +360,36 @@ func extractKillerName(rest string) string {
 
 	// Check for " rockets from " pattern
 	if idx := strings.Index(rest, " rockets from "); idx >= 0 {
-		return strings.TrimSpace(rest[idx+len(" rockets from "):])
+		killer := strings.TrimSpace(rest[idx+len(" rockets from "):])
+		// Strip "'s quad rocket" suffix if present
+		killer = stripQuadSuffix(killer)
+		return killer
 	}
 
 	// Check for trailing newline or period
 	rest = strings.TrimSuffix(rest, "\n")
 	rest = strings.TrimSuffix(rest, ".")
-	rest = strings.TrimSuffix(rest, "'s pineapple")
-	rest = strings.TrimSuffix(rest, "'s rocket")
+	rest = stripQuadSuffix(rest)
 
 	return strings.TrimSpace(rest)
+}
+
+// stripQuadSuffix removes quad-related suffixes from killer names
+func stripQuadSuffix(name string) string {
+	quadSuffixes := []string{
+		"'s quad rocket",
+		"'s quad shaft",
+		"'s quad lightning",
+		"'s quad pineapple",
+		"'s quad boomstick",
+		"'s quad grenade",
+		"'s quad axe",
+		"'s quad",
+	}
+	for _, suffix := range quadSuffixes {
+		name = strings.TrimSuffix(name, suffix)
+	}
+	return strings.TrimSpace(name)
 }
 
 // isTeamKill checks if killer and victim are on the same team

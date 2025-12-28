@@ -39,11 +39,13 @@ type Result struct {
 
 // MatchResult contains match summary information
 type MatchResult struct {
-	Map      string       `json:"map"`
-	GameDir  string       `json:"gameDir"`
-	Duration float64      `json:"duration"`
-	Players  []PlayerStat `json:"players"`
-	Teams    []TeamStat   `json:"teams,omitempty"`
+	Map       string       `json:"map"`
+	GameDir   string       `json:"gameDir"`
+	Duration  float64      `json:"duration"`
+	StartTime float64      `json:"startTime,omitempty"`
+	EndTime   float64      `json:"endTime,omitempty"`
+	Players   []PlayerStat `json:"players"`
+	Teams     []TeamStat   `json:"teams,omitempty"`
 }
 
 // PlayerStat represents a player's final statistics

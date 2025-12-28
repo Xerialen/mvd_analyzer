@@ -87,6 +87,10 @@ func (r *Registry) Analyze(filePath string) (*Result, error) {
 		case "match":
 			if m, ok := output.(*MatchResult); ok {
 				result.Match = m
+				// Use match duration if detected (more accurate than file duration)
+				if m.Duration > 0 && m.StartTime > 0 {
+					result.Duration = m.Duration
+				}
 			}
 		case "frag":
 			if f, ok := output.(*FragResult); ok {
