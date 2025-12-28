@@ -695,6 +695,8 @@ If `type_id == 0xFFFF`, read another short for extended type range.
 
 ### Hidden Message Types
 
+*Source: KTX `include/g_consts.h:323-332`*
+
 | Type ID | Name | Description |
 |---------|------|-------------|
 | 0x0000 | `mvdhidden_antilag_position` | Antilag position data |
@@ -757,6 +759,10 @@ Offset  Size  Field
 2       N     json_content (UTF-8 text)
 ```
 
+**Block numbering**: JSON may be split across multiple blocks. Blocks are numbered 1, 2, 3, ..., 0 where **block 0 is the LAST block**. Concatenate blocks in order: 1, 2, ..., n, then 0.
+
+*Source: ezQuake `sv_demo_misc.c:851-873`*
+
 ### mvdhidden_dmgdone (0x0007)
 
 Tracks damage dealt between players. **Critical for weapon statistics**.
@@ -803,7 +809,9 @@ victimPlayer := int(victimEnt) - 1
 
 ## Death Types
 
-The `deathtype` field in damage events and obituaries identifies the weapon or cause of death. These values come from KTX mod's `deathtype.h`.
+The `deathtype` field in damage events and obituaries identifies the weapon or cause of death.
+
+*Source: KTX `include/deathtype.h:1-29`*
 
 ### Death Type Constants
 
@@ -944,11 +952,20 @@ MVD files contain **raw/unbound damage** values, which includes overkill damage.
 | **Effective Damage** (KTX) | Damage capped at victim's current health | Victim has 50 HP → 50 counted |
 | **Overkill** | Difference: raw - effective | 120 - 50 = 70 overkill |
 
-**KTX Source Reference** (`client.c`):
+**KTX Source Reference** (`combat.c:786-834`):
 ```c
-// KTX tracks both but reports only effective damage in stats
-cl->ps.dmg_dealt += iDamage;           // Capped at victim health
-cl->ps.unbound_dmg_dealt += iDamage;   // Raw damage (written to MVD)
+// Line 786: Raw damage before health capping
+unbound_dmg_dealt = dmg_dealt;
+
+// Line 804: Effective damage capped at victim's health
+dmg_dealt += bound(0, virtual_take, targ->s.v.health);
+
+// Lines 830-834: Write unbound damage to MVD hidden message
+WriteShort(MSG_MULTICAST, mvdhidden_dmgdone);
+WriteShort(MSG_MULTICAST, damage_flags | targ->deathtype);
+WriteShort(MSG_MULTICAST, NUM_FOR_EDICT(attacker));
+WriteShort(MSG_MULTICAST, NUM_FOR_EDICT(targ));
+WriteShort(MSG_MULTICAST, (short)unbound_dmg_dealt);
 ```
 
 ### Damage Capping Algorithm
@@ -1051,6 +1068,13 @@ Shots are detected by monitoring ammo decreases via `svc_updatestat`:
 | Grenade Launcher | `STAT_ROCKETS` | 1 | |
 | Rocket Launcher | `STAT_ROCKETS` | 1 | |
 | Lightning Gun | `STAT_CELLS` | 1 | Per tick (~10 ticks/sec) |
+
+**Reference implementation**: See mvdparser `netmsg_parser.c:255-311` for the `Stat_CalculateShotsFired()` function. This tracks ammo decreases per weapon type using `STAT_ACTIVEWEAPON` to determine which weapon fired.
+
+**Caveat**: Ammo-based shot tracking has inherent limitations:
+- Respawn resets ammo to spawn defaults (25 shells, 0 others), causing false "shots"
+- Without respawn filtering, shot counts can be ~2x overcounted
+- Ammo pickups reset the baseline, hiding some shots if picked up mid-decrease
 
 ### Active Weapon Tracking
 
@@ -1525,45 +1549,66 @@ func parsePlayerInfoMVD(r *BufferReader, floatCoords bool) *PlayerState {
 
 ## Source Code References
 
+### Online Source Repositories
+
+- **KTX**: https://github.com/QW-Group/ktx
+- **ezQuake**: https://github.com/QW-Group/ezquake-source
+- **mvdparser**: https://github.com/QW-Group/mvdparser
+
 ### ezQuake Source Files
 
 For client/demo playback implementation details:
 
-| File | Description |
-|------|-------------|
-| `src/sv_demo.c` | Server-side MVD recording |
-| `src/cl_demo.c` | Client-side demo playback |
-| `src/cl_ents.c` | Entity and player parsing |
-| `src/cl_parse.c` | Network message parsing |
-| `src/qwprot/src/protocol.h` | Protocol definitions |
-| `src/server.h` | Server data structures |
-| `src/client.h` | Client data structures |
-| `src/fragstats.c` | Frag detection patterns |
+| File | Lines | Description |
+|------|-------|-------------|
+| `src/sv_demo.c` | - | Server-side MVD recording |
+| `src/sv_demo_misc.c` | 851-873 | Demoinfo block numbering (block 0 = last) |
+| `src/cl_demo.c` | - | Client-side demo playback |
+| `src/cl_ents.c` | - | Entity and player parsing |
+| `src/cl_parse.c` | - | Network message parsing |
+| `src/qwprot/src/protocol.h` | - | Protocol definitions |
+| `src/server.h` | - | Server data structures |
+| `src/client.h` | - | Client data structures |
+| `src/fragstats.c` | - | Frag detection patterns |
 
 ### KTX Source Files
 
 For server-side implementation and stats tracking:
 
-| File | Description |
-|------|-------------|
-| `src/client.c` | Obituary patterns, damage tracking, player stats |
-| `src/deathtype.h` | Death type constants (DT_*) |
-| `src/world.c` | Damage application logic |
-| `src/weapons.c` | Weapon damage values and mechanics |
-| `src/bot/bot_misc.c` | Additional weapon definitions |
+| File | Lines | Description |
+|------|-------|-------------|
+| `include/g_consts.h` | 323-332 | Hidden message type IDs (mvdhidden_*) |
+| `include/deathtype.h` | 1-29 | Death type constants (DT_*) |
+| `src/combat.c` | 786-834 | Damage tracking, MVD dmgdone writing |
+| `src/client.c` | - | Obituary patterns, player stats |
+| `src/world.c` | - | Damage application logic |
+| `src/weapons.c` | - | Weapon damage values and mechanics |
+
+### mvdparser Source Files
+
+Reference implementation for MVD parsing:
+
+| File | Lines | Description |
+|------|-------|-------------|
+| `src/netmsg_parser.c` | 255-311 | `Stat_CalculateShotsFired()` - shot tracking via ammo |
+| `src/qw_protocol.h` | 404 | `weapon_shots` array definition |
+| `src/stats.h` | 12-16 | STAT_* constants |
+
+**Note**: mvdparser uses ammo-based shot tracking but has no respawn filtering, which causes ~2x overcounting for weapons using shells/nails/rockets/cells.
 
 ### Key KTX Code Locations
+
+**Damage tracking** (`combat.c:786-834`):
+- Line 786: `unbound_dmg_dealt = dmg_dealt;` - raw damage calculation
+- Line 804: `dmg_dealt += bound(0, virtual_take, targ->s.v.health);` - effective (health-capped)
+- Lines 830-834: Writing dmgdone hidden message to MVD
 
 **Obituary generation** (`client.c`):
 - Function: `ClientObituary()` - generates death messages
 - Pattern matching reveals all obituary text strings
 
-**Damage tracking** (`client.c`):
-- Variable: `cl->ps.dmg_dealt` - effective damage (health-capped)
-- Variable: `cl->ps.unbound_dmg_dealt` - raw damage (written to MVD)
-
-**Hidden message writing** (`client.c`):
-- Function: `MVD_Write_Dmgdone()` - writes dmgdone blocks to MVD
+**Hidden message types** (`g_consts.h:323-332`):
+- Defines all `mvdhidden_*` type IDs (0x0000-0x0008, 0xFFFF)
 
 ---
 
