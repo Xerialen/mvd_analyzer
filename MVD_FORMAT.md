@@ -697,20 +697,42 @@ If `type_id == 0xFFFF`, read another short for extended type range.
 
 *Source: KTX `include/g_consts.h:323-332`*
 
-| Type ID | Name | Description |
-|---------|------|-------------|
-| 0x0000 | `mvdhidden_antilag_position` | Antilag position data |
-| 0x0001 | `mvdhidden_usercmd` | User command data |
-| 0x0002 | `mvdhidden_usercmd_weapons` | Weapon selection data |
-| 0x0003 | `mvdhidden_demoinfo` | Embedded demo info (JSON) |
-| 0x0004 | `mvdhidden_commentary_track` | Commentary track info |
-| 0x0005 | `mvdhidden_commentary_data` | Commentary audio data |
-| 0x0006 | `mvdhidden_commentary_text_segment` | Commentary text |
-| 0x0007 | `mvdhidden_dmgdone` | Damage dealt info |
-| 0x0008 | `mvdhidden_usercmd_weapons_ss` | Server-side weapon data |
-| 0x0009 | `mvdhidden_usercmd_weapon_instruction` | Weapon instruction |
-| 0x000A | `mvdhidden_paused_duration` | Paused time (QTV only) |
-| 0xFFFF | `mvdhidden_extended` | Extended type (read next short) |
+| Type ID | Name | Description | Availability |
+|---------|------|-------------|--------------|
+| 0x0000 | `mvdhidden_antilag_position` | Antilag position data | Rare |
+| 0x0001 | `mvdhidden_usercmd` | User command data (buttons, impulse) | **Requires server flag** |
+| 0x0002 | `mvdhidden_usercmd_weapons` | Weapon selection data | **Requires server flag** |
+| 0x0003 | `mvdhidden_demoinfo` | Embedded demo info (JSON) | **Common** |
+| 0x0004 | `mvdhidden_commentary_track` | Commentary track info | Rare |
+| 0x0005 | `mvdhidden_commentary_data` | Commentary audio data | Rare |
+| 0x0006 | `mvdhidden_commentary_text_segment` | Commentary text | Rare |
+| 0x0007 | `mvdhidden_dmgdone` | Damage dealt info | **Common** |
+| 0x0008 | `mvdhidden_usercmd_weapons_ss` | Server-side weapon data | **Requires server flag** |
+| 0x0009 | `mvdhidden_usercmd_weapon_instruction` | Weapon instruction | **Requires server flag** |
+| 0x000A | `mvdhidden_paused_duration` | Paused time (QTV only) | QTV only |
+| 0xFFFF | `mvdhidden_extended` | Extended type (read next short) | - |
+
+### Hidden Message Availability
+
+**Common in standard competitive demos:**
+- `0x0003` (demoinfo) - JSON metadata with match info and KTX-tracked stats
+- `0x0007` (dmgdone) - Damage events, essential for weapon damage tracking
+
+**Requires server-side configuration:**
+The usercmd-related hidden messages (0x0001, 0x0002, 0x0008, 0x0009) require the server operator to enable per-player tracking:
+
+```
+sv_usercmdtrace <userid> on|off
+```
+
+*Source: MVDSV `sv_demo.c:1867-1877`, KTX `race.c:158-166`*
+
+This command is primarily used for race mode demos. Standard 4on4/duel demos do NOT include usercmd data.
+
+**Impact on shot tracking:**
+- Without usercmd data, shot detection relies on ammo decrease tracking
+- Ammo-based shot tracking cannot reliably distinguish RL vs GL (both use rockets)
+- See [Shot Tracking Limitations](#shot-tracking-limitations) for details
 
 ### mvdhidden_antilag_position (0x0000)
 
@@ -1115,6 +1137,37 @@ func handleAmmoChange(player *PlayerStats, statIndex, newValue int) {
     player.ammo[statIndex] = newValue
 }
 ```
+
+### Shot Tracking Limitations
+
+**Problem: Weapon switching scripts**
+
+QuakeWorld players use weapon switching scripts that rapidly change weapons:
+```
+// Typical script flow:
+1. Player holds SG as "resting" weapon (to avoid dropping valuable packs on death)
+2. Script: switch to RL → fire → switch back to SG
+3. All happens within a few milliseconds
+```
+
+The MVD stat updates cannot keep pace with these scripts, causing `STAT_ACTIVEWEAPON` to show SG when rockets are actually being fired by RL.
+
+**Weapon accuracy by tracking reliability:**
+
+| Weapon | Ammo Type | Tracking Reliability | Notes |
+|--------|-----------|---------------------|-------|
+| SG | Shells (1/shot) | **Excellent (~100%)** | Usually the "resting" weapon, active when shells decrease |
+| LG | Cells (1/tick) | **Excellent (~100%)** | Only weapon using cells |
+| SSG | Shells (2/shot) | Good (~85%) | 2-shell decrease distinguishes from SG |
+| NG | Nails (1/shot) | Good (~85%) | |
+| SNG | Nails (2/shot) | Good (~85%) | 2-nail decrease distinguishes from NG |
+| RL | Rockets (1/shot) | **Poor (~30-50%)** | Often shows SG active due to scripts |
+| GL | Rockets (1/shot) | **Poor (~30-50%)** | Same issue as RL |
+
+**Recommended approach:**
+1. For SG/LG: MVD-based tracking is reliable for time-windowed analysis
+2. For RL/GL: Use embedded demoinfo JSON for authoritative stats, or report combined "rocket shots"
+3. For damage: Use dmgdone hidden messages (death type identifies weapon accurately)
 
 ### Hit Detection
 
