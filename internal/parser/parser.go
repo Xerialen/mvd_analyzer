@@ -24,6 +24,7 @@ const (
 	EventFragUpdate
 	EventPlayerInfo
 	EventDamage
+	EventDemoInfo
 )
 
 // Handler is called for each parsed event
@@ -209,6 +210,11 @@ func (p *Parser) parseHiddenMessage(msg *mvd.DemoMessage) error {
 			if err := p.parseHiddenDamage(r, time, dataLen); err != nil {
 				return nil // Stop on error
 			}
+		case mvd.MVDHiddenDemoInfo:
+			// Parse embedded JSON demoinfo
+			if err := p.parseHiddenDemoInfo(r, time, dataLen); err != nil {
+				return nil
+			}
 		default:
 			// Skip unknown hidden message types
 			if dataLen > 0 {
@@ -284,6 +290,42 @@ func (p *Parser) parseHiddenDamage(r *mvd.BufferReader, time float64, dataLen in
 	}
 
 	return nil
+}
+
+// parseHiddenDemoInfo parses mvdhidden_demoinfo (0x0003)
+// Format: <short: block_number> <bytes: json_content>
+// JSON may be split across multiple blocks
+func (p *Parser) parseHiddenDemoInfo(r *mvd.BufferReader, time float64, dataLen int) error {
+	if dataLen < 2 {
+		return r.Skip(dataLen)
+	}
+
+	// Read block number
+	blockNum, err := r.ReadUint16()
+	if err != nil {
+		return err
+	}
+
+	// Read JSON content (remaining bytes)
+	contentLen := dataLen - 2
+	if contentLen <= 0 {
+		return nil
+	}
+
+	content := make([]byte, contentLen)
+	for i := 0; i < contentLen; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			return err
+		}
+		content[i] = b
+	}
+
+	return p.emit(&DemoInfoEvent{
+		BlockNum: int(blockNum),
+		Content:  content,
+		Time:     time,
+	})
 }
 
 // skipCommand attempts to skip an unknown command

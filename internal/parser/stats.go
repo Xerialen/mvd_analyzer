@@ -38,6 +38,16 @@ type DamageEvent struct {
 func (e *DamageEvent) EventType() EventType { return EventDamage }
 func (e *DamageEvent) EventTime() float64   { return e.Time }
 
+// DemoInfoEvent is emitted when embedded JSON stats are found
+type DemoInfoEvent struct {
+	BlockNum int    // Block number for multi-block JSON
+	Content  []byte // JSON content (may be partial)
+	Time     float64
+}
+
+func (e *DemoInfoEvent) EventType() EventType { return EventDemoInfo }
+func (e *DemoInfoEvent) EventTime() float64   { return e.Time }
+
 // parseUpdateStat parses svc_updatestat message (byte value)
 func (p *Parser) parseUpdateStat(r *mvd.BufferReader, time float64, playerNum int) error {
 	statIndex, err := r.ReadByte()

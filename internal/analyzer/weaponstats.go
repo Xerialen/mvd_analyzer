@@ -23,6 +23,7 @@ type playerWeaponStats struct {
 	health       int     // Current health for damage capping
 	armor        int     // Current armor value
 	armorType    float64 // Armor absorption rate (0.3=green, 0.6=yellow, 0.8=red)
+	lastRespawn  float64 // Time of last respawn (for filtering false shots)
 
 	// Accumulated stats per weapon
 	weapons map[string]*weaponData
@@ -74,6 +75,11 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 
 	switch e.StatIndex {
 	case mvd.StatHealth:
+		// Detect respawn: health jumps from <= 0 to >= 100
+		// Or health suddenly becomes exactly 100 (common respawn value)
+		if stats.health <= 0 && e.Value >= 100 {
+			stats.lastRespawn = e.Time
+		}
 		stats.health = e.Value
 
 	case mvd.StatArmor:
@@ -100,8 +106,15 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 	case mvd.StatShells:
 		if stats.shells > 0 && e.Value < stats.shells && e.Value >= 0 {
 			decrease := stats.shells - e.Value
-			// Only count as shots if active weapon uses shells
-			if a.isShellWeapon(stats.activeWeapon) {
+			// Skip if within respawn grace period (0.5 seconds)
+			isRespawnWindow := e.Time-stats.lastRespawn < 0.5
+			// Skip respawn resets: decrease to spawn default (25) with large decrease
+			isRespawnReset := e.Value == 25 && decrease > 10
+
+			if isRespawnWindow || isRespawnReset {
+				// Skip - this is a respawn reset, not actual shooting
+			} else if a.isShellWeapon(stats.activeWeapon) {
+				// Only count as shots if active weapon uses shells
 				weapon := a.getShellWeapon(stats.activeWeapon)
 				ammoPerShot := 1
 				if stats.activeWeapon == mvd.ITSuperShotgun {
@@ -118,8 +131,15 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 	case mvd.StatNails:
 		if stats.nails > 0 && e.Value < stats.nails && e.Value >= 0 {
 			decrease := stats.nails - e.Value
-			// Only count as shots if active weapon uses nails
-			if a.isNailWeapon(stats.activeWeapon) {
+			// Skip if within respawn grace period (0.5 seconds)
+			isRespawnWindow := e.Time-stats.lastRespawn < 0.5
+			// Skip respawn resets: decrease to spawn default (0) with large decrease
+			isRespawnReset := e.Value == 0 && decrease > 10
+
+			if isRespawnWindow || isRespawnReset {
+				// Skip - this is a respawn reset, not actual shooting
+			} else if a.isNailWeapon(stats.activeWeapon) {
+				// Only count as shots if active weapon uses nails
 				weapon := a.getNailWeapon(stats.activeWeapon)
 				ammoPerShot := 1
 				if stats.activeWeapon == mvd.ITSuperNailgun {
@@ -136,8 +156,15 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 	case mvd.StatRockets:
 		if stats.rockets > 0 && e.Value < stats.rockets && e.Value >= 0 {
 			decrease := stats.rockets - e.Value
-			// Only count as shots if active weapon uses rockets
-			if a.isRocketWeapon(stats.activeWeapon) {
+			// Skip if within respawn grace period (0.5 seconds)
+			isRespawnWindow := e.Time-stats.lastRespawn < 0.5
+			// Skip respawn resets: decrease to spawn default (0) with large decrease
+			isRespawnReset := e.Value == 0 && decrease > 5
+
+			if isRespawnWindow || isRespawnReset {
+				// Skip - this is a respawn reset, not actual shooting
+			} else if a.isRocketWeapon(stats.activeWeapon) {
+				// Only count as shots if active weapon uses rockets
 				weapon := a.getRocketWeapon(stats.activeWeapon)
 				a.recordShot(stats, weapon, decrease) // 1 rocket per shot for both GL and RL
 			}
@@ -147,8 +174,15 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 	case mvd.StatCells:
 		if stats.cells > 0 && e.Value < stats.cells && e.Value >= 0 {
 			decrease := stats.cells - e.Value
-			// Only count if active weapon is LG
-			if a.isLGWeapon(stats.activeWeapon) {
+			// Skip if within respawn grace period (0.5 seconds)
+			isRespawnWindow := e.Time-stats.lastRespawn < 0.5
+			// Skip respawn resets: decrease to spawn default (0) with large decrease
+			isRespawnReset := e.Value == 0 && decrease > 5
+
+			if isRespawnWindow || isRespawnReset {
+				// Skip - this is a respawn reset, not actual shooting
+			} else if a.isLGWeapon(stats.activeWeapon) {
+				// Only count if active weapon is LG
 				a.recordShot(stats, "lg", decrease) // 1 cell per LG "tick"
 			}
 		}
