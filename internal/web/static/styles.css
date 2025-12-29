@@ -361,7 +361,7 @@ table tbody tr:hover {
     right: 10px;
     height: 80px;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 1px;
 }
 
@@ -450,28 +450,58 @@ table tbody tr:hover {
     border-radius: 2px;
 }
 
-.legend-color.team-a-weapons { background: rgba(255, 107, 107, 0.8); }
-.legend-color.team-b-weapons { background: rgba(78, 205, 196, 0.8); }
-.legend-color.team-a-powerup { background: rgba(255, 193, 7, 0.9); }
-.legend-color.team-b-powerup { background: rgba(156, 39, 176, 0.9); }
+.legend-color.weapons { background: rgba(0, 217, 255, 0.9); }
+.legend-color.powerups { background: rgba(255, 193, 7, 0.9); }
 
-/* Stacked bar segments */
-.stacked-bar {
+/* Diverging bar chart - Team A up, Team B down */
+.diverging-bar {
     flex: 1;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     height: 100%;
     min-width: 2px;
+    position: relative;
+}
+
+.diverging-bar-top {
+    position: absolute;
+    bottom: 50%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+}
+
+.diverging-bar-bottom {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 .bar-segment {
     transition: height 0.1s;
+    width: 100%;
 }
 
-.bar-segment.team-a-weapons { background: rgba(255, 107, 107, 0.8); }
-.bar-segment.team-b-weapons { background: rgba(78, 205, 196, 0.8); }
-.bar-segment.team-a-powerup { background: rgba(255, 193, 7, 0.9); }
-.bar-segment.team-b-powerup { background: rgba(156, 39, 176, 0.9); }
+.bar-segment.weapons { background: rgba(0, 217, 255, 0.9); }
+.bar-segment.powerups { background: rgba(255, 193, 7, 0.9); }
+
+/* Center axis line for diverging chart */
+.timeline-overview-graph::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+}
 
 /* Detail Row Layout */
 .timeline-detail-row {
@@ -536,8 +566,20 @@ table tbody tr:hover {
     border-radius: 4px;
     padding: 10px;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 1px;
+    position: relative;
+}
+
+.detail-graph-container::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    pointer-events: none;
 }
 
 /* Health/Armor Graphs */

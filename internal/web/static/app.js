@@ -592,10 +592,8 @@ function displayTimelineAnalysis(result) {
 
     // Update legend team names
     if (teams.length >= 2) {
-        document.getElementById('legend-team-a').textContent = teams[0];
-        document.getElementById('legend-team-a2').textContent = teams[0];
-        document.getElementById('legend-team-b').textContent = teams[1];
-        document.getElementById('legend-team-b2').textContent = teams[1];
+        document.getElementById('legend-team-a').textContent = teams[0] + ' ↑';
+        document.getElementById('legend-team-b').textContent = teams[1] + ' ↓';
         document.getElementById('team-a-health-title').textContent = `${teams[0]} Health/Armor`;
         document.getElementById('team-b-health-title').textContent = `${teams[1]} Health/Armor`;
     }
@@ -615,43 +613,63 @@ function renderOverviewGraph() {
 
     if (!buckets || buckets.length === 0 || teams.length < 2) return;
 
-    // Find max value for scaling
-    let maxValue = 1;
+    // Find max value for scaling (max per team, not total)
+    let maxTeamValue = 1;
     for (const bucket of buckets) {
         const td = bucket.teamData || {};
         const teamA = td[teams[0]] || {};
         const teamB = td[teams[1]] || {};
-        const total = (teamA.playersWithWeapons || 0) + (teamB.playersWithWeapons || 0) +
-                      (teamA.playersWithPowerups || 0) + (teamB.playersWithPowerups || 0);
-        if (total > maxValue) maxValue = total;
+        const teamATotal = (teamA.playersWithWeapons || 0) + (teamA.playersWithPowerups || 0);
+        const teamBTotal = (teamB.playersWithWeapons || 0) + (teamB.playersWithPowerups || 0);
+        maxTeamValue = Math.max(maxTeamValue, teamATotal, teamBTotal);
     }
 
-    // Create bars
+    // Create diverging bars (Team A up, Team B down)
     for (const bucket of buckets) {
         const bar = document.createElement('div');
-        bar.className = 'stacked-bar';
+        bar.className = 'diverging-bar';
 
         const td = bucket.teamData || {};
         const teamA = td[teams[0]] || {};
         const teamB = td[teams[1]] || {};
 
-        // Stack order (bottom to top): Team A weapons, Team B weapons, Team A powerups, Team B powerups
-        const layers = [
-            { value: teamA.playersWithWeapons || 0, className: 'team-a-weapons' },
-            { value: teamB.playersWithWeapons || 0, className: 'team-b-weapons' },
-            { value: teamA.playersWithPowerups || 0, className: 'team-a-powerup' },
-            { value: teamB.playersWithPowerups || 0, className: 'team-b-powerup' }
-        ];
+        // Team A goes up (above center axis)
+        const topContainer = document.createElement('div');
+        topContainer.className = 'diverging-bar-top';
 
-        for (const layer of layers) {
-            if (layer.value > 0) {
-                const segment = document.createElement('div');
-                segment.className = `bar-segment ${layer.className}`;
-                segment.style.height = `${(layer.value / maxValue) * 100}%`;
-                bar.appendChild(segment);
-            }
+        // Weapons first (closer to axis), powerups on top
+        if ((teamA.playersWithWeapons || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment weapons';
+            seg.style.height = `${(teamA.playersWithWeapons / maxTeamValue) * 40}px`;
+            topContainer.appendChild(seg);
+        }
+        if ((teamA.playersWithPowerups || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment powerups';
+            seg.style.height = `${(teamA.playersWithPowerups / maxTeamValue) * 40}px`;
+            topContainer.appendChild(seg);
         }
 
+        // Team B goes down (below center axis)
+        const bottomContainer = document.createElement('div');
+        bottomContainer.className = 'diverging-bar-bottom';
+
+        if ((teamB.playersWithWeapons || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment weapons';
+            seg.style.height = `${(teamB.playersWithWeapons / maxTeamValue) * 40}px`;
+            bottomContainer.appendChild(seg);
+        }
+        if ((teamB.playersWithPowerups || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment powerups';
+            seg.style.height = `${(teamB.playersWithPowerups / maxTeamValue) * 40}px`;
+            bottomContainer.appendChild(seg);
+        }
+
+        bar.appendChild(topContainer);
+        bar.appendChild(bottomContainer);
         container.appendChild(bar);
     }
 }
@@ -859,42 +877,62 @@ function updateDetailGraph(startTime, endTime) {
 
     if (filteredBuckets.length === 0) return;
 
-    // Find max value for scaling
-    let maxValue = 1;
+    // Find max value for scaling (max per team)
+    let maxTeamValue = 1;
     for (const bucket of filteredBuckets) {
         const td = bucket.teamData || {};
         const teamA = td[teams[0]] || {};
         const teamB = td[teams[1]] || {};
-        const total = (teamA.playersWithWeapons || 0) + (teamB.playersWithWeapons || 0) +
-                      (teamA.playersWithPowerups || 0) + (teamB.playersWithPowerups || 0);
-        if (total > maxValue) maxValue = total;
+        const teamATotal = (teamA.playersWithWeapons || 0) + (teamA.playersWithPowerups || 0);
+        const teamBTotal = (teamB.playersWithWeapons || 0) + (teamB.playersWithPowerups || 0);
+        maxTeamValue = Math.max(maxTeamValue, teamATotal, teamBTotal);
     }
 
-    // Create bars
+    // Create diverging bars (Team A up, Team B down)
     for (const bucket of filteredBuckets) {
         const bar = document.createElement('div');
-        bar.className = 'stacked-bar';
+        bar.className = 'diverging-bar';
 
         const td = bucket.teamData || {};
         const teamA = td[teams[0]] || {};
         const teamB = td[teams[1]] || {};
 
-        const layers = [
-            { value: teamA.playersWithWeapons || 0, className: 'team-a-weapons' },
-            { value: teamB.playersWithWeapons || 0, className: 'team-b-weapons' },
-            { value: teamA.playersWithPowerups || 0, className: 'team-a-powerup' },
-            { value: teamB.playersWithPowerups || 0, className: 'team-b-powerup' }
-        ];
+        // Team A goes up (above center axis)
+        const topContainer = document.createElement('div');
+        topContainer.className = 'diverging-bar-top';
 
-        for (const layer of layers) {
-            if (layer.value > 0) {
-                const segment = document.createElement('div');
-                segment.className = `bar-segment ${layer.className}`;
-                segment.style.height = `${(layer.value / maxValue) * 100}%`;
-                bar.appendChild(segment);
-            }
+        if ((teamA.playersWithWeapons || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment weapons';
+            seg.style.height = `${(teamA.playersWithWeapons / maxTeamValue) * 90}px`;
+            topContainer.appendChild(seg);
+        }
+        if ((teamA.playersWithPowerups || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment powerups';
+            seg.style.height = `${(teamA.playersWithPowerups / maxTeamValue) * 90}px`;
+            topContainer.appendChild(seg);
         }
 
+        // Team B goes down (below center axis)
+        const bottomContainer = document.createElement('div');
+        bottomContainer.className = 'diverging-bar-bottom';
+
+        if ((teamB.playersWithWeapons || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment weapons';
+            seg.style.height = `${(teamB.playersWithWeapons / maxTeamValue) * 90}px`;
+            bottomContainer.appendChild(seg);
+        }
+        if ((teamB.playersWithPowerups || 0) > 0) {
+            const seg = document.createElement('div');
+            seg.className = 'bar-segment powerups';
+            seg.style.height = `${(teamB.playersWithPowerups / maxTeamValue) * 90}px`;
+            bottomContainer.appendChild(seg);
+        }
+
+        bar.appendChild(topContainer);
+        bar.appendChild(bottomContainer);
         container.appendChild(bar);
     }
 }
