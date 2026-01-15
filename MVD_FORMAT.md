@@ -550,6 +550,17 @@ Offset  Size  Field
 
 **Note**: Frags can be negative (from suicides or team kills).
 
+### Usage Note: Frag Detection Methods
+
+There are two approaches to detect frags in MVD files:
+
+| Method | Source | Use Case |
+|--------|--------|----------|
+| `svc_updatefrags` | Native message | **Recommended for counting frags** - reliable, per-player frag count updates |
+| Obituary parsing | `svc_print` messages | **For frag details** - weapon type, killer/victim names |
+
+**Recommendation**: Use `svc_updatefrags` for timeline/score tracking since it provides authoritative frag counts directly from the server. Use obituary parsing only when you need additional details like weapon type.
+
 ---
 
 ## svc_updateuserinfo (40)
