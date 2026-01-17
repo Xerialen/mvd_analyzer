@@ -745,6 +745,78 @@ Offset  Size  Field
 | 2 | `PRINT_HIGH` | High priority | Match events, server messages |
 | 3 | `PRINT_CHAT` | Chat message | Player chat |
 
+### Match Timing Detection
+
+KTX servers send `PRINT_HIGH` messages to indicate match state transitions. These are critical for determining when actual gameplay begins and ends.
+
+#### Warmup/Countdown Phase
+
+Before a match starts, players are in **warmup mode** where:
+- All players have all weapons and infinite ammo
+- Health regenerates or is set high
+- Frags don't count
+- Player state data is **meaningless for analysis**
+
+The countdown sequence typically looks like:
+```
+"The match begins in 10 seconds"
+"The match begins in 5"
+"The match begins in 4"
+"The match begins in 3"
+"The match begins in 2"
+"The match begins in 1"
+"Fight!"
+```
+
+#### Match Start Detection
+
+The match officially starts when one of these messages appears:
+
+| Pattern | Server Type | Notes |
+|---------|-------------|-------|
+| `"The match has begun!"` | KTX | Most common |
+| `"match has begun"` | KTX variants | Substring match recommended |
+| `"Fight!"` | KTX/MVDSV | End of countdown |
+| `"Go!"` | Some servers | Alternative to "Fight!" |
+
+**Implementation note**: Use substring matching (e.g., `contains(msg, "match has begun")`) rather than exact matching to handle variations.
+
+**Critical**: All player state (items, health, armor, ammo) before match start should be **discarded**. Players spawn fresh with:
+- 100 health
+- 0 armor
+- Axe + Shotgun (25 shells)
+- No powerups
+
+#### Match End Detection
+
+The match ends when one of these messages appears:
+
+| Pattern | Cause |
+|---------|-------|
+| `"The match is over"` | Normal end |
+| `"match ended"` | Various |
+| `"Game over"` | Generic end |
+| `"Match complete"` | Some servers |
+| `"Timelimit hit"` | Time ran out |
+| `"Fraglimit hit"` | Frag limit reached |
+
+#### Example Timeline
+
+```
+[0.0s]   Demo recording starts
+[0.5s]   Players connecting, warmup begins
+[5.2s]   "The match begins in 10 seconds"
+[10.2s]  "The match begins in 5"
+...
+[14.2s]  "The match begins in 1"
+[15.2s]  "Fight!"              <- matchStartTime
+[15.3s]  First valid player state updates
+...
+[1215.2s] "The match is over"  <- matchEndTime (20 min match)
+```
+
+**Match duration** = `matchEndTime - matchStartTime` (not demo duration)
+
 ### Obituary Messages (Frag Detection)
 
 Kill messages appear at `PRINT_MEDIUM` (level 1). Common patterns:
