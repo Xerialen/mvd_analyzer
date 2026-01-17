@@ -175,9 +175,6 @@ function displayResults(result) {
     // Accuracy tab
     if (result.weaponStats) {
         displayAccuracyTable(result.weaponStats.playerStats, result.match ? result.match.players : [], demoInfo);
-        if (result.weaponStats.timelineStats) {
-            displayAccuracyGraphs(result.weaponStats.timelineStats);
-        }
     }
 }
 
@@ -524,52 +521,6 @@ function getAccuracyClass(acc) {
     if (acc >= 40) return 'accuracy-high';
     if (acc >= 25) return 'accuracy-medium';
     return 'accuracy-low';
-}
-
-function displayAccuracyGraphs(timelineStats) {
-    const container = document.getElementById('sg-graphs');
-    container.innerHTML = '';
-
-    for (const [playerName, stats] of Object.entries(timelineStats)) {
-        if (!stats.windows || stats.windows.length === 0) continue;
-
-        const hasSgData = stats.windows.some(w => w.sg && w.sg.shots > 0);
-        if (!hasSgData) continue;
-
-        const playerDiv = document.createElement('div');
-        playerDiv.className = 'player-graph';
-
-        const graphBars = document.createElement('div');
-        graphBars.className = 'graph-bars';
-
-        const maxAcc = Math.max(...stats.windows.filter(w => w.sg).map(w => w.sg.accuracy || 0), 100);
-
-        stats.windows.forEach(window => {
-            if (!window.sg || window.sg.shots === 0) return;
-
-            const bar = document.createElement('div');
-            bar.className = 'graph-bar';
-            const height = (window.sg.accuracy / maxAcc) * 100;
-            bar.style.height = `${height}%`;
-            bar.dataset.tooltip = `${formatTime(window.startTime)}: ${window.sg.accuracy.toFixed(1)}% (${window.sg.hits}/${window.sg.shots})`;
-            graphBars.appendChild(bar);
-        });
-
-        const firstWindow = stats.windows[0];
-        const lastWindow = stats.windows[stats.windows.length - 1];
-
-        playerDiv.innerHTML = `
-            <h4>${escapeHtml(playerName)}</h4>
-            <div class="graph-container"></div>
-            <div class="graph-labels">
-                <span>${formatTime(firstWindow.startTime)}</span>
-                <span>${formatTime(lastWindow.startTime + 60)}</span>
-            </div>
-        `;
-
-        playerDiv.querySelector('.graph-container').appendChild(graphBars);
-        container.appendChild(playerDiv);
-    }
 }
 
 function formatDuration(seconds) {

@@ -28,10 +28,6 @@ type playerWeaponStats struct {
 	// Accumulated stats per weapon
 	weapons map[string]*weaponData
 
-	// Time-windowed accuracy tracking (for graphs)
-	sgWindows map[int]*windowData // Key is minute number
-	lgWindows map[int]*windowData
-
 	// Environmental damage received
 	lavaDamage    int
 	slimeDamage   int
@@ -39,11 +35,6 @@ type playerWeaponStats struct {
 	fallDamage    int
 	squishDamage  int // World-attributed squish only
 	triggerDamage int
-}
-
-type windowData struct {
-	shots int
-	hits  int
 }
 
 type weaponData struct {
@@ -138,14 +129,6 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 				shots := decrease / ammoPerShot
 				if shots > 0 {
 					a.recordShot(stats, weapon, shots)
-					// Track SG shots in time windows (only regular SG)
-					if weapon == "sg" {
-						minute := int(e.Time / 60)
-						if _, ok := stats.sgWindows[minute]; !ok {
-							stats.sgWindows[minute] = &windowData{}
-						}
-						stats.sgWindows[minute].shots += shots
-					}
 				}
 			}
 		}
@@ -219,12 +202,6 @@ func (a *WeaponStatsAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error 
 			} else if a.isLGWeapon(stats.activeWeapon) {
 				// Only count if active weapon is LG
 				a.recordShot(stats, "lg", decrease) // 1 cell per LG "tick"
-				// Track LG shots in time windows
-				minute := int(e.Time / 60)
-				if _, ok := stats.lgWindows[minute]; !ok {
-					stats.lgWindows[minute] = &windowData{}
-				}
-				stats.lgWindows[minute].shots += decrease
 			}
 		}
 		stats.cells = e.Value
@@ -301,19 +278,6 @@ func (a *WeaponStatsAnalyzer) handleDamage(e *parser.DamageEvent) error {
 				// Count hits from direct damage (not splash) to enemies only
 				if !e.IsSplash {
 					wd.Hits++
-					// Track hits in time windows for SG and LG
-					minute := int(e.Time / 60)
-					if weapon == "sg" {
-						if _, ok := attacker.sgWindows[minute]; !ok {
-							attacker.sgWindows[minute] = &windowData{}
-						}
-						attacker.sgWindows[minute].hits++
-					} else if weapon == "lg" {
-						if _, ok := attacker.lgWindows[minute]; !ok {
-							attacker.lgWindows[minute] = &windowData{}
-						}
-						attacker.lgWindows[minute].hits++
-					}
 				}
 			}
 
@@ -483,8 +447,7 @@ func (a *WeaponStatsAnalyzer) Finalize() (interface{}, error) {
 	demoInfoByFrags := a.buildDemoInfoLookup()
 
 	result := &WeaponStatsResult{
-		PlayerStats:   make(map[string]*PlayerWeaponStatsEntry),
-		TimelineStats: make(map[string]*TimelineStatsEntry),
+		PlayerStats: make(map[string]*PlayerWeaponStatsEntry),
 	}
 
 	for playerNum, stats := range a.playerStats {
@@ -523,59 +486,6 @@ func (a *WeaponStatsAnalyzer) Finalize() (interface{}, error) {
 			}
 
 			result.PlayerStats[name] = entry
-
-			// Build timeline stats for this player
-			if len(stats.sgWindows) > 0 || len(stats.lgWindows) > 0 {
-				timeline := &TimelineStatsEntry{
-					Windows: make([]AccuracyWindow, 0),
-				}
-
-				// Find all minute numbers
-				minutes := make(map[int]bool)
-				for m := range stats.sgWindows {
-					minutes[m] = true
-				}
-				for m := range stats.lgWindows {
-					minutes[m] = true
-				}
-
-				// Sort minutes and build windows
-				sortedMinutes := make([]int, 0, len(minutes))
-				for m := range minutes {
-					sortedMinutes = append(sortedMinutes, m)
-				}
-				// Simple sort
-				for i := 0; i < len(sortedMinutes)-1; i++ {
-					for j := i + 1; j < len(sortedMinutes); j++ {
-						if sortedMinutes[i] > sortedMinutes[j] {
-							sortedMinutes[i], sortedMinutes[j] = sortedMinutes[j], sortedMinutes[i]
-						}
-					}
-				}
-
-				for _, m := range sortedMinutes {
-					window := AccuracyWindow{
-						StartTime: float64(m * 60),
-					}
-					if sg, ok := stats.sgWindows[m]; ok && sg.shots > 0 {
-						window.SG = &WindowAccuracy{
-							Shots:    sg.shots,
-							Hits:     sg.hits,
-							Accuracy: calculateAccuracy(sg.shots, sg.hits),
-						}
-					}
-					if lg, ok := stats.lgWindows[m]; ok && lg.shots > 0 {
-						window.LG = &WindowAccuracy{
-							Shots:    lg.shots,
-							Hits:     lg.hits,
-							Accuracy: calculateAccuracy(lg.shots, lg.hits),
-						}
-					}
-					timeline.Windows = append(timeline.Windows, window)
-				}
-
-				result.TimelineStats[name] = timeline
-			}
 		}
 	}
 
@@ -645,9 +555,7 @@ func (a *WeaponStatsAnalyzer) getOrCreate(playerNum int) *playerWeaponStats {
 		return s
 	}
 	s := &playerWeaponStats{
-		weapons:   make(map[string]*weaponData),
-		sgWindows: make(map[int]*windowData),
-		lgWindows: make(map[int]*windowData),
+		weapons: make(map[string]*weaponData),
 	}
 	a.playerStats[playerNum] = s
 	return s

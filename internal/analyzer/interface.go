@@ -123,8 +123,7 @@ type PlayerStatsEntry struct {
 
 // WeaponStatsResult contains weapon usage statistics
 type WeaponStatsResult struct {
-	PlayerStats     map[string]*PlayerWeaponStatsEntry `json:"playerStats"`
-	TimelineStats   map[string]*TimelineStatsEntry     `json:"timelineStats,omitempty"` // Per-player accuracy over time
+	PlayerStats map[string]*PlayerWeaponStatsEntry `json:"playerStats"`
 }
 
 // PlayerWeaponStatsEntry holds weapon stats for a player
@@ -152,25 +151,6 @@ type WeaponStatEntry struct {
 	TeamDamage int     `json:"teamDamage,omitempty"`
 	SelfDamage int     `json:"selfDamage,omitempty"`
 	Accuracy   float64 `json:"accuracy"`
-}
-
-// TimelineStatsEntry holds time-windowed accuracy stats for a player
-type TimelineStatsEntry struct {
-	Windows []AccuracyWindow `json:"windows"`
-}
-
-// AccuracyWindow represents accuracy stats for a 1-minute window
-type AccuracyWindow struct {
-	StartTime float64 `json:"startTime"` // Window start in seconds
-	SG        *WindowAccuracy `json:"sg,omitempty"`
-	LG        *WindowAccuracy `json:"lg,omitempty"`
-}
-
-// WindowAccuracy represents accuracy within a time window
-type WindowAccuracy struct {
-	Shots    int     `json:"shots"`
-	Hits     int     `json:"hits"`
-	Accuracy float64 `json:"accuracy"`
 }
 
 // DemoInfoResult contains parsed KTX embedded JSON stats (authoritative)

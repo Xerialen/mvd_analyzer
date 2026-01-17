@@ -24,7 +24,6 @@ type fragEventRaw struct {
 	PlayerNum int
 }
 
-
 // timelinePlayerState tracks current state for a single player
 type timelinePlayerState struct {
 	items   int // Current items (weapons, powerups, armor type)
@@ -150,6 +149,7 @@ func (a *TimelineAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error {
 	case mvd.StatHealth:
 		state.health = e.Value
 	case mvd.StatArmor:
+
 		state.armor = e.Value
 	case mvd.StatItems:
 		state.items = e.Value
@@ -271,8 +271,8 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	// Use both exact name and normalized name for matching
 	nameToTeam := make(map[string]string)
 	normNameToTeam := make(map[string]string) // Normalized names (lowercase, alphanumeric only)
-	fragsToTeam := make(map[int]string)        // Frag count -> team (for slot matching)
-	fragsToPlayer := make(map[int]string)      // Frag count -> player name (for slot matching)
+	fragsToTeam := make(map[int]string)       // Frag count -> team (for slot matching)
+	fragsToPlayer := make(map[int]string)     // Frag count -> player name (for slot matching)
 	if a.ctx.DemoInfo != nil {
 		for _, p := range a.ctx.DemoInfo.Players {
 			if p.Name != "" && p.Team != "" {
