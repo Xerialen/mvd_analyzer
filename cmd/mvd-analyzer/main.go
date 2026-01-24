@@ -45,7 +45,7 @@ func printUsage() {
 	fmt.Println("  mvd-analyzer help                          Show this help")
 	fmt.Println()
 	fmt.Println("Analyze Options:")
-	fmt.Println("  -o, --output <format>   Output format: text, json (default: text)")
+	fmt.Println("  -o, --output <format>   Output format: text, json, tracks (default: text)")
 	fmt.Println()
 	fmt.Println("Serve Options:")
 	fmt.Println("  -p, --port <port>       Port to listen on (default: 8080)")
@@ -56,7 +56,8 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  mvd-analyzer analyze demo.mvd")
-	fmt.Println("  mvd-analyzer analyze demo.mvd -o json")
+	fmt.Println("  mvd-analyzer analyze -o json demo.mvd")
+	fmt.Println("  mvd-analyzer analyze -o tracks demo.mvd    Export player movement tracks")
 	fmt.Println("  mvd-analyzer serve -p 3000")
 	fmt.Println("  mvd-analyzer hub 188692")
 	fmt.Println("  mvd-analyzer hub \"https://hub.quakeworld.nu/games/?gameId=188692\"")
@@ -64,8 +65,8 @@ func printUsage() {
 
 func analyzeCmd(args []string) {
 	fs := flag.NewFlagSet("analyze", flag.ExitOnError)
-	output := fs.String("o", "text", "Output format: text, json")
-	fs.StringVar(output, "output", "text", "Output format: text, json")
+	output := fs.String("o", "text", "Output format: text, json, tracks")
+	fs.StringVar(output, "output", "text", "Output format: text, json, tracks")
 
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -93,6 +94,8 @@ func analyzeCmd(args []string) {
 	switch *output {
 	case "json":
 		outputJSON(result)
+	case "tracks":
+		outputTracks(result)
 	default:
 		outputText(result)
 	}
@@ -102,6 +105,17 @@ func outputJSON(result *analyzer.Result) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	enc.Encode(result)
+}
+
+func outputTracks(result *analyzer.Result) {
+	tracks := analyzer.ExtractTracks(result)
+	if tracks == nil {
+		fmt.Fprintln(os.Stderr, "Error: no timeline data available for track extraction")
+		os.Exit(1)
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(tracks)
 }
 
 func outputText(result *analyzer.Result) {
