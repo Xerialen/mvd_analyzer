@@ -82,3 +82,26 @@ func (f *File) Name() string {
 func (f *File) IsCompressed() bool {
 	return f.gzipReader != nil
 }
+
+// NewReader wraps an io.Reader with automatic gzip detection.
+// If the stream starts with gzip magic bytes (0x1f 0x8b), it returns a gzip reader.
+// Otherwise, it returns the original stream. The caller must close the returned ReadCloser.
+func NewReader(r io.Reader) (io.ReadCloser, error) {
+	bufReader := bufio.NewReader(r)
+
+	magic, err := bufReader.Peek(2)
+	if err != nil {
+		// Stream too short to detect, treat as raw
+		return io.NopCloser(bufReader), nil
+	}
+
+	if magic[0] == 0x1f && magic[1] == 0x8b {
+		gzReader, err := gzip.NewReader(bufReader)
+		if err != nil {
+			return nil, err
+		}
+		return gzReader, nil
+	}
+
+	return io.NopCloser(bufReader), nil
+}

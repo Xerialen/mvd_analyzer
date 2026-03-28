@@ -1,6 +1,8 @@
 package analyzer
 
 import (
+	"io"
+
 	"github.com/mvd-analyzer/internal/mvd"
 	"github.com/mvd-analyzer/internal/parser"
 	"github.com/mvd-analyzer/pkg/mvdfile"
@@ -23,45 +25,40 @@ func (r *Registry) Register(a Analyzer) {
 
 // Analyze runs all registered analyzers on an MVD file
 func (r *Registry) Analyze(filePath string) (*Result, error) {
-	// Open the file
 	f, err := mvdfile.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
+	return r.AnalyzeReader(f, filePath)
+}
 
-	// Create decoder and parser
-	decoder := mvd.NewDecoder(f)
+// AnalyzeReader runs all registered analyzers on an MVD data stream
+func (r *Registry) AnalyzeReader(reader io.Reader, filename string) (*Result, error) {
+	decoder := mvd.NewDecoder(reader)
 	p := parser.NewParser(decoder)
 
-	// Create context
 	ctx := &Context{
 		FragsBySlot: make(map[int]int),
 	}
 
-	// Initialize all analyzers
 	for _, a := range r.analyzers {
 		if err := a.Init(ctx); err != nil {
 			return nil, err
 		}
 	}
 
-	// Set up event handler to dispatch to all analyzers
 	p.OnEvent(func(event parser.Event) error {
-		// Update context on server data
 		if e, ok := event.(*parser.ServerDataEvent); ok {
 			ctx.ServerData = e.Data
 		}
-		// Update context on user info
 		if e, ok := event.(*parser.UserInfoEvent); ok {
 			ctx.Players[e.Player.Slot] = e.Player
 		}
-		// Track frags by slot for player name resolution
 		if e, ok := event.(*parser.FragUpdateEvent); ok {
 			ctx.FragsBySlot[e.PlayerNum] = e.Frags
 		}
 
-		// Dispatch to all analyzers
 		for _, a := range r.analyzers {
 			if err := a.OnEvent(event); err != nil {
 				return err
@@ -70,18 +67,15 @@ func (r *Registry) Analyze(filePath string) (*Result, error) {
 		return nil
 	})
 
-	// Parse the demo
 	if err := p.Parse(); err != nil && err != mvd.ErrEndOfDemo {
 		// Log error but continue to get partial results
 	}
 
-	// Build result
 	result := &Result{
-		FilePath: filePath,
+		FilePath: filename,
 		Duration: decoder.CurrentTime(),
 	}
 
-	// Finalize all analyzers
 	for _, a := range r.analyzers {
 		output, err := a.Finalize()
 		if err != nil {
@@ -93,7 +87,6 @@ func (r *Registry) Analyze(filePath string) (*Result, error) {
 		case "match":
 			if m, ok := output.(*MatchResult); ok {
 				result.Match = m
-				// Use match duration if detected (more accurate than file duration)
 				if m.Duration > 0 && m.StartTime > 0 {
 					result.Duration = m.Duration
 				}

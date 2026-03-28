@@ -1,6 +1,107 @@
-// MVD Analyzer Dashboard
+// MVD Analyzer Dashboard — Pure client-side via WASM
 
 let currentResult = null;
+
+// ─── WASM Worker ────────────────────────────────────────────────────────────
+
+const worker = new Worker('worker.js');
+let wasmReady = false;
+let analyzeResolve = null;
+let analyzeReject = null;
+
+worker.onmessage = (e) => {
+    if (e.data.type === 'ready') {
+        wasmReady = true;
+        const overlay = document.getElementById('wasm-loading');
+        if (overlay) overlay.style.display = 'none';
+    } else if (e.data.type === 'result') {
+        if (analyzeResolve) {
+            analyzeResolve(e.data.json);
+            analyzeResolve = null;
+            analyzeReject = null;
+        }
+    } else if (e.data.type === 'error') {
+        if (analyzeReject) {
+            analyzeReject(new Error(e.data.message));
+            analyzeResolve = null;
+            analyzeReject = null;
+        }
+    }
+};
+
+function analyzeInWorker(bytes, filename) {
+    return new Promise((resolve, reject) => {
+        analyzeResolve = resolve;
+        analyzeReject = reject;
+        // Transfer the ArrayBuffer (zero-copy)
+        worker.postMessage(
+            { type: 'analyze', bytes: bytes.buffer, filename },
+            [bytes.buffer]
+        );
+    });
+}
+
+// ─── QuakeWorld Hub Client (JS) ─────────────────────────────────────────────
+
+const SUPABASE_URL = 'https://ncsphkjfominimxztjip.supabase.co/rest/v1/v1_games';
+const SUPABASE_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jc3Boa2pmb21pbmlteHp0amlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY5Mzg1NjMsImV4cCI6MjAxMjUxNDU2M30.NN6hjlEW-qB4Og9hWAVlgvUdwrbBO13s8OkAJuBGVbo';
+
+function parseGameId(input) {
+    input = input.trim();
+    const asNum = parseInt(input, 10);
+    if (!isNaN(asNum) && String(asNum) === input) return asNum;
+    try {
+        const url = new URL(input);
+        const gid = url.searchParams.get('gameId');
+        if (gid) return parseInt(gid, 10);
+    } catch {}
+    const match = input.match(/gameId=(\d+)/);
+    if (match) return parseInt(match[1], 10);
+    throw new Error('Could not parse game ID from: ' + input);
+}
+
+async function fetchGameFromHub(gameId) {
+    const resp = await fetch(`${SUPABASE_URL}?select=*&id=eq.${gameId}`, {
+        headers: {
+            'apikey': SUPABASE_API_KEY,
+            'Authorization': `Bearer ${SUPABASE_API_KEY}`,
+            'accept-profile': 'public'
+        }
+    });
+    if (!resp.ok) throw new Error(`Hub API error: ${resp.status}`);
+    const games = await resp.json();
+    if (games.length === 0) throw new Error(`Game ID ${gameId} not found`);
+    return games[0];
+}
+
+async function downloadDemoFromHub(game) {
+    const sha = game.demo_sha256;
+    // Try CDN first
+    if (sha && sha.length >= 3) {
+        const cdnUrl = `https://d.quake.world/${sha.slice(0,3)}/${sha}.mvd.gz`;
+        try {
+            const resp = await fetch(cdnUrl);
+            if (resp.ok) return new Uint8Array(await resp.arrayBuffer());
+        } catch {}
+    }
+    // Fallback to direct server URL
+    if (game.demo_source_url) {
+        const resp = await fetch(game.demo_source_url);
+        if (resp.ok) return new Uint8Array(await resp.arrayBuffer());
+        throw new Error('Failed to download demo from server');
+    }
+    throw new Error('No download URL available for this game');
+}
+
+function generateDemoFilename(game) {
+    const teams = (game.teams || []).map(t => (t.name || '').replace(/[^a-zA-Z0-9_-]/g, '_'));
+    const teamsStr = teams.join('_vs_') || 'unknown';
+    const mapName = (game.map || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const ts = new Date(game.timestamp).toISOString().replace(/[-:T]/g, '').slice(0, 13);
+    return `${game.mode || 'unknown'}_${teamsStr}[${mapName}]${ts}.mvd.gz`;
+}
+
+// ─── Setup ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
     setupFileUpload();
@@ -48,7 +149,34 @@ function setupTabs() {
     });
 }
 
-// Load demo from QuakeWorld Hub by game ID or URL
+// ─── File Upload (via WASM Worker) ──────────────────────────────────────────
+
+async function uploadFile(file) {
+    const status = document.getElementById('upload-status');
+    status.textContent = 'Analyzing...';
+    status.className = 'status loading';
+
+    try {
+        if (!wasmReady) throw new Error('Analyzer is still loading, please wait...');
+
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const jsonStr = await analyzeInWorker(bytes, file.name);
+        const result = JSON.parse(jsonStr);
+        if (result.error) throw new Error(result.error);
+
+        status.textContent = 'Analysis complete!';
+        status.className = 'status success';
+        currentResult = result;
+        displayResults(result);
+    } catch (error) {
+        status.textContent = 'Error: ' + error.message;
+        status.className = 'status error';
+    }
+}
+
+// ─── Hub Loading (JS fetch + WASM Worker) ───────────────────────────────────
+
 async function loadFromHub() {
     const input = document.getElementById('hub-input').value.trim();
     if (!input) {
@@ -58,71 +186,44 @@ async function loadFromHub() {
 
     const status = document.getElementById('upload-status');
     const btn = document.getElementById('hub-load-btn');
-
     status.textContent = 'Fetching from QuakeWorld Hub...';
     status.className = 'status loading';
     btn.disabled = true;
 
     try {
-        const response = await fetch('/api/hub/load', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ input })
-        });
+        if (!wasmReady) throw new Error('Analyzer is still loading, please wait...');
 
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
+        const gameId = parseGameId(input);
 
-        const data = await response.json();
+        status.textContent = 'Fetching game info...';
+        const game = await fetchGameFromHub(gameId);
+
+        status.textContent = 'Downloading demo...';
+        const demoBytes = await downloadDemoFromHub(game);
+
+        status.textContent = 'Analyzing...';
+        const filename = generateDemoFilename(game);
+        const jsonStr = await analyzeInWorker(demoBytes, filename);
+        const result = JSON.parse(jsonStr);
+        if (result.error) throw new Error(result.error);
+
         status.textContent = 'Analysis complete!';
         status.className = 'status success';
+        currentResult = result;
 
-        currentResult = data.result;
+        // Attach hub info for viewer links
+        currentResult.hubInfo = {
+            gameId: gameId,
+            viewerUrl: `https://hub.quakeworld.nu/games/?gameId=${gameId}`,
+            players: game.players
+        };
 
-        // Store hub info for viewer links (before displayResults so Key Moments can use it)
-        if (data.hub) {
-            currentResult.hubInfo = data.hub;
-        }
-
-        displayResults(data.result);
+        displayResults(result);
     } catch (error) {
         status.textContent = 'Error: ' + error.message;
         status.className = 'status error';
     } finally {
         btn.disabled = false;
-    }
-}
-
-async function uploadFile(file) {
-    const status = document.getElementById('upload-status');
-    status.textContent = 'Analyzing...';
-    status.className = 'status loading';
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-
-        const data = await response.json();
-        status.textContent = 'Analysis complete!';
-        status.className = 'status success';
-
-        currentResult = data.result;
-        displayResults(data.result);
-    } catch (error) {
-        status.textContent = 'Error: ' + error.message;
-        status.className = 'status error';
     }
 }
 
