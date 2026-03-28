@@ -1,0 +1,14 @@
+[build]
+  command = "make build"
+  publish = "dist"
+
+# Ensure correct MIME type for WASM and enable compression
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
