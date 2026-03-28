@@ -170,37 +170,18 @@
 
             <!-- Timeline Tab -->
             <div id="tab-timeline" class="tab-content">
-                <!-- Overview Panel with Time Selector -->
-                <div class="panel timeline-overview-panel">
-                    <h3>Match Overview</h3>
-                    <div class="timeline-overview-wrapper">
-                        <div class="timeline-y-axis" id="overview-y-axis">
-                            <span class="y-label y-top">4</span>
-                            <span class="y-label y-mid">0</span>
-                            <span class="y-label y-bottom">4</span>
-                        </div>
-                        <div class="timeline-overview-container" id="timeline-overview-container">
-                            <div class="timeline-overview-graph" id="overview-graph"></div>
+                <!-- Time Navigation Bar -->
+                <div class="panel timeline-nav-panel">
+                    <div class="timeline-nav-row">
+                        <span id="timeline-current-time" class="timeline-nav-time">0:00</span>
+                        <div class="timeline-nav-bar" id="timeline-nav-bar">
+                            <div class="timeline-nav-track" id="timeline-nav-track"></div>
                             <div class="timeline-selection-overlay" id="timeline-selection-overlay"></div>
-                            <div class="current-time-indicator" id="overview-time-indicator"></div>
-                            <div class="timeline-axis" id="overview-axis"></div>
+                            <div class="timeline-nav-cursor" id="timeline-nav-cursor"></div>
                         </div>
-                        <div class="timeline-time-controls">
-                            <span id="timeline-current-time" class="map-time-display">0:00</span>
-                            <input type="range" id="timeline-slider" min="0" max="100" value="0">
-                            <span id="timeline-segment-label" class="timeline-segment-label"></span>
-                        </div>
+                        <span id="timeline-segment-label" class="timeline-nav-segment"></span>
                     </div>
-                    <div class="timeline-legend">
-                        <span class="legend-item"><span id="legend-team-a">Team A ↑</span></span>
-                        <span class="legend-item"><span id="legend-team-b">Team B ↓</span></span>
-                        <span class="legend-item"><span class="legend-color rl"></span> RL</span>
-                        <span class="legend-item"><span class="legend-color lg"></span> LG</span>
-                        <span class="legend-item"><span class="legend-color rllg"></span> RL+LG</span>
-                        <span class="legend-item"><span class="legend-color quad"></span> Quad</span>
-                        <span class="legend-item"><span class="legend-color pent"></span> Pent</span>
-                        <span class="legend-item"><span class="legend-color ring"></span> Ring</span>
-                    </div>
+                    <div class="timeline-nav-axis" id="timeline-nav-axis"></div>
                 </div>
 
                 <!-- Weapons & Powerups (full width) -->

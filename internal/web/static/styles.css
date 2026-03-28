@@ -515,84 +515,84 @@ table tbody tr:hover {
 }
 
 /* Timeline Analysis Tab */
-.timeline-overview-panel {
-    margin-bottom: 20px;
+.timeline-nav-panel {
+    margin-bottom: 12px;
+    padding: 10px 15px 4px 15px;
 }
 
-.timeline-overview-container {
-    position: relative;
-    height: 120px;
-    background: #16213e;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
-
-.timeline-overview-graph {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    height: 80px;
+.timeline-nav-row {
     display: flex;
     align-items: center;
-    gap: 1px;
+    gap: 10px;
 }
 
-.timeline-time-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 10px;
-}
-
-#timeline-slider {
-    flex: 1;
-    height: 6px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: #333;
-    border-radius: 3px;
-    outline: none;
-    margin: 0 4px;
-}
-
-#timeline-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #00d9ff;
-    cursor: pointer;
-}
-
-#timeline-slider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #00d9ff;
-    cursor: pointer;
-    border: none;
-}
-
-.timeline-segment-label {
+.timeline-nav-time {
     font-family: monospace;
-    font-size: 0.8rem;
-    color: #888;
-    white-space: nowrap;
+    font-size: 1.1rem;
+    color: #00d9ff;
+    min-width: 50px;
+    text-align: center;
+}
+
+.timeline-nav-bar {
+    flex: 1;
+    position: relative;
+    height: 24px;
+    background: #1a2744;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.timeline-nav-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 4px;
 }
 
 .timeline-selection-overlay {
     position: absolute;
-    top: 10px;
-    height: 80px;
-    background: rgba(0, 217, 255, 0.12);
-    border-left: 1px solid rgba(0, 217, 255, 0.5);
-    border-right: 1px solid rgba(0, 217, 255, 0.5);
+    top: 0;
+    bottom: 0;
+    background: rgba(0, 217, 255, 0.15);
+    border-left: 2px solid rgba(0, 217, 255, 0.6);
+    border-right: 2px solid rgba(0, 217, 255, 0.6);
     pointer-events: none;
     z-index: 3;
     display: none;
+    border-radius: 2px;
+}
+
+.timeline-nav-cursor {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 3px;
+    background: #00d9ff;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 0 6px rgba(0, 217, 255, 0.5);
+}
+
+.timeline-nav-segment {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #888;
+    white-space: nowrap;
+    min-width: 90px;
+}
+
+.timeline-nav-axis {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 60px 0 60px;
+    font-size: 0.7rem;
+    color: #666;
+    font-family: monospace;
 }
 
 .current-time-indicator {
@@ -604,25 +604,6 @@ table tbody tr:hover {
     pointer-events: none;
     z-index: 5;
     opacity: 0.8;
-}
-
-#overview-time-indicator {
-    top: 10px;
-    bottom: 30px;
-}
-
-.timeline-axis {
-    position: absolute;
-    bottom: 0;
-    left: 10px;
-    right: 10px;
-    height: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #888;
-    font-size: 0.75rem;
-    font-family: monospace;
 }
 
 .timeline-legend {
@@ -662,7 +643,6 @@ table tbody tr:hover {
 .legend-color.ga { background: rgba(0, 180, 0, 0.9); }
 
 /* Y-Axis styling */
-.timeline-overview-wrapper,
 .detail-graph-wrapper,
 .health-graph-wrapper {
     display: flex;
@@ -683,10 +663,6 @@ table tbody tr:hover {
 
 .y-label {
     line-height: 1;
-}
-
-.timeline-overview-container {
-    flex: 1;
 }
 
 /* Full-width panels */
@@ -785,7 +761,6 @@ table tbody tr:hover {
 .bar-segment.frags { background: rgba(255, 100, 100, 0.9); }
 
 /* Gridlines for diverging charts */
-.timeline-overview-graph::before,
 .detail-graph-container::before,
 .health-armor-graph-diverging::before,
 .score-timeline-graph::before {
@@ -799,23 +774,6 @@ table tbody tr:hover {
     pointer-events: none;
     box-shadow: 0 0 0 0 transparent,
                 0 calc(50% - 25%) 0 0 rgba(255, 255, 255, 0.04);
-}
-
-.timeline-overview-graph::before {
-    left: 0;
-    right: 0;
-}
-
-/* Center axis line for diverging chart */
-.timeline-overview-graph::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 2px;
-    background: rgba(0, 0, 0, 0.8);
-    pointer-events: none;
 }
 
 /* Detail Row Layout */

@@ -168,8 +168,7 @@ function setupTabs() {
                     mapTimeDisplay.textContent = formatTime(Math.max(0, mapState.currentTime - matchStart));
                 }
             } else if (tabName === 'timeline') {
-                const tlSlider = document.getElementById('timeline-slider');
-                if (tlSlider) tlSlider.value = mapState.currentTime;
+                updateTimelineCursor();
                 updateTimelineTimeDisplay();
                 updateTimeIndicators();
                 snapMessagesToCurrentTime();
@@ -826,7 +825,7 @@ function resetTimelineState() {
 
     // Clear all timeline graph containers
     const containers = [
-        'overview-graph', 'overview-axis', 'detail-graph', 'detail-axis',
+        'timeline-nav-axis', 'detail-graph', 'detail-axis',
         'powerup-lines-top', 'powerup-lines-bottom',
         'health-armor-graph', 'health-axis', 'frags-graph', 'frags-axis',
         'score-graph', 'score-axis', 'kill-messages', 'team-a-messages', 'team-b-messages'
@@ -863,72 +862,19 @@ function displayTimelineAnalysis(result) {
 
     // Update legend team names
     if (teams.length >= 2) {
-        document.getElementById('legend-team-a').textContent = teams[0] + ' ↑';
-        document.getElementById('legend-team-b').textContent = teams[1] + ' ↓';
-        document.getElementById('team-a-chat-title').textContent = `${teams[0]} Chat`;
-        document.getElementById('team-b-chat-title').textContent = `${teams[1]} Chat`;
-        document.getElementById('legend-health-team-a').textContent = teams[0] + ' ↑';
-        document.getElementById('legend-health-team-b').textContent = teams[1] + ' ↓';
+        const setTextIfExists = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        setTextIfExists('legend-team-a', teams[0] + ' ↑');
+        setTextIfExists('legend-team-b', teams[1] + ' ↓');
+        setTextIfExists('team-a-chat-title', `${teams[0]} Chat`);
+        setTextIfExists('team-b-chat-title', `${teams[1]} Chat`);
+        setTextIfExists('legend-health-team-a', teams[0] + ' ↑');
+        setTextIfExists('legend-health-team-b', teams[1] + ' ↓');
     }
 
-    renderOverviewGraph();
-    renderOverviewAxis();
     setupTimelineControls();
+    updateTimelineCursor();
     updateDetailView();
     updateTimeIndicators();
-}
-
-function renderOverviewGraph() {
-    const container = document.getElementById('overview-graph');
-    container.innerHTML = '';
-
-    const buckets = timelineState.buckets;
-    const teams = timelineState.teams;
-    const matchStart = timelineState.matchStartTime;
-
-    if (!buckets || buckets.length === 0 || teams.length < 2) return;
-
-    // Filter to match time only (after warmup)
-    const matchBuckets = buckets.filter(b => b.startTime >= matchStart);
-
-    // Aggregate to 5-second buckets for overview
-    const aggregated = aggregateBuckets(matchBuckets, timelineState.overviewBucketSize, teams);
-
-    // Find max value for scaling (use 4 as typical max for 4v4)
-    let maxTeamValue = 4;
-    for (const bucket of aggregated) {
-        const teamATotal = bucket.teamA.rl + bucket.teamA.lg + bucket.teamA.rllg +
-                          bucket.teamA.quad + bucket.teamA.pent + bucket.teamA.ring;
-        const teamBTotal = bucket.teamB.rl + bucket.teamB.lg + bucket.teamB.rllg +
-                          bucket.teamB.quad + bucket.teamB.pent + bucket.teamB.ring;
-        maxTeamValue = Math.max(maxTeamValue, teamATotal, teamBTotal);
-    }
-
-    // Update Y-axis labels
-    document.querySelector('#overview-y-axis .y-top').textContent = maxTeamValue;
-    document.querySelector('#overview-y-axis .y-bottom').textContent = maxTeamValue;
-
-    const barHeight = 40; // pixels for max value
-
-    // Create diverging bars (Team A up, Team B down)
-    for (const bucket of aggregated) {
-        const bar = document.createElement('div');
-        bar.className = 'diverging-bar';
-
-        // Team A goes up (above center axis) - weapons closer to axis
-        const topContainer = document.createElement('div');
-        topContainer.className = 'diverging-bar-top';
-        addGranularSegments(topContainer, bucket.teamA, maxTeamValue, barHeight);
-
-        // Team B goes down (below center axis)
-        const bottomContainer = document.createElement('div');
-        bottomContainer.className = 'diverging-bar-bottom';
-        addGranularSegments(bottomContainer, bucket.teamB, maxTeamValue, barHeight);
-
-        bar.appendChild(topContainer);
-        bar.appendChild(bottomContainer);
-        container.appendChild(bar);
-    }
 }
 
 // Calculate optimal bin size based on selection duration
@@ -995,143 +941,40 @@ function aggregateDetailBuckets(buckets, binSize, teams) {
     return result;
 }
 
-// Aggregate 1-second buckets into larger time windows (for overview)
-function aggregateBuckets(buckets, windowSize, teams) {
-    if (buckets.length === 0) return [];
-
-    const result = [];
-    let currentWindow = null;
-    let windowStart = buckets[0].startTime;
-
-    for (const bucket of buckets) {
-        // Start new window if needed
-        if (!currentWindow || bucket.startTime >= windowStart + windowSize) {
-            if (currentWindow) result.push(currentWindow);
-            windowStart = Math.floor(bucket.startTime / windowSize) * windowSize;
-            currentWindow = {
-                startTime: windowStart,
-                endTime: windowStart + windowSize,
-                teamA: { rl: 0, lg: 0, rllg: 0, quad: 0, pent: 0, ring: 0, health: 0, armor: 0, count: 0 },
-                teamB: { rl: 0, lg: 0, rllg: 0, quad: 0, pent: 0, ring: 0, health: 0, armor: 0, count: 0 }
-            };
-        }
-
-        // Aggregate data
-        const td = bucket.teamData || {};
-        const teamAData = td[teams[0]] || {};
-        const teamBData = td[teams[1]] || {};
-
-        // Use max within window (not sum) for player counts
-        currentWindow.teamA.rl = Math.max(currentWindow.teamA.rl, teamAData.playersWithRL || 0);
-        currentWindow.teamA.lg = Math.max(currentWindow.teamA.lg, teamAData.playersWithLG || 0);
-        currentWindow.teamA.rllg = Math.max(currentWindow.teamA.rllg, teamAData.playersWithRLLG || 0);
-        currentWindow.teamA.quad = Math.max(currentWindow.teamA.quad, teamAData.playersWithQuad || 0);
-        currentWindow.teamA.pent = Math.max(currentWindow.teamA.pent, teamAData.playersWithPent || 0);
-        currentWindow.teamA.ring = Math.max(currentWindow.teamA.ring, teamAData.playersWithRing || 0);
-        currentWindow.teamA.health += teamAData.totalHealth || 0;
-        currentWindow.teamA.armor += teamAData.totalArmor || 0;
-        currentWindow.teamA.count++;
-
-        currentWindow.teamB.rl = Math.max(currentWindow.teamB.rl, teamBData.playersWithRL || 0);
-        currentWindow.teamB.lg = Math.max(currentWindow.teamB.lg, teamBData.playersWithLG || 0);
-        currentWindow.teamB.rllg = Math.max(currentWindow.teamB.rllg, teamBData.playersWithRLLG || 0);
-        currentWindow.teamB.quad = Math.max(currentWindow.teamB.quad, teamBData.playersWithQuad || 0);
-        currentWindow.teamB.pent = Math.max(currentWindow.teamB.pent, teamBData.playersWithPent || 0);
-        currentWindow.teamB.ring = Math.max(currentWindow.teamB.ring, teamBData.playersWithRing || 0);
-        currentWindow.teamB.health += teamBData.totalHealth || 0;
-        currentWindow.teamB.armor += teamBData.totalArmor || 0;
-        currentWindow.teamB.count++;
-    }
-
-    if (currentWindow) result.push(currentWindow);
-    return result;
-}
-
-// Add granular weapon/powerup segments to a container
-function addGranularSegments(container, data, maxValue, maxHeight) {
-    // Order: weapons (RL, LG, RL+LG) closest to axis, then powerups (Quad, Pent, Ring)
-    const segments = [
-        { value: data.rl, className: 'rl' },
-        { value: data.lg, className: 'lg' },
-        { value: data.rllg, className: 'rllg' },
-        { value: data.quad, className: 'quad' },
-        { value: data.pent, className: 'pent' },
-        { value: data.ring, className: 'ring' }
-    ];
-
-    for (const seg of segments) {
-        if (seg.value > 0) {
-            const el = document.createElement('div');
-            el.className = `bar-segment ${seg.className}`;
-            el.style.height = `${(seg.value / maxValue) * maxHeight}px`;
-            container.appendChild(el);
-        }
-    }
-}
-
-function renderOverviewAxis() {
-    const container = document.getElementById('overview-axis');
-    container.innerHTML = '';
-
-    const matchStart = timelineState.matchStartTime;
-    const duration = timelineState.duration - matchStart;
-    const tickCount = 5;
-
-    for (let i = 0; i <= tickCount; i++) {
-        const time = (duration / tickCount) * i;
-        const span = document.createElement('span');
-        span.textContent = formatTime(time);
-        container.appendChild(span);
-    }
-}
-
 function setupTimelineControls() {
     if (timelineState.controlsInitialized) {
-        updateTimelineSliderRange();
+        updateTimelineCursor();
+        updateTimelineTimeDisplay();
+        renderTimelineNavAxis();
         return;
     }
 
-    const slider = document.getElementById('timeline-slider');
-    const container = document.getElementById('timeline-overview-container');
+    const bar = document.getElementById('timeline-nav-bar');
 
-    updateTimelineSliderRange();
+    renderTimelineNavAxis();
 
-    // Slider controls current time
-    slider.addEventListener('input', () => {
-        mapState.currentTime = parseFloat(slider.value);
-        updateTimelineTimeDisplay();
-        updateTimeIndicators();
-        snapMessagesToCurrentTime();
-        // Sync map slider
-        const mapSlider = document.getElementById('map-timeline-slider');
-        if (mapSlider) mapSlider.value = mapState.currentTime;
-    });
-
-    // Click on overview graph to set current time
-    // Drag on overview graph to select a time segment
-    container.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.current-time-indicator')) return;
-        const time = overviewClickToTime(e, container);
+    // Click on bar to set current time; drag to select segment
+    bar.addEventListener('mousedown', (e) => {
+        const time = navBarClickToTime(e);
         if (time === null) return;
 
         timelineState.dragging = true;
         timelineState.dragStartTime = time;
-        // Clear existing segment on new drag
         timelineState.segment = null;
         updateSelectionOverlay();
+        updateSegmentLabel();
 
         e.preventDefault();
     });
 
     document.addEventListener('mousemove', (e) => {
         if (!timelineState.dragging) return;
-        const time = overviewClickToTime(e, container);
+        const time = navBarClickToTime(e);
         if (time === null) return;
 
         const start = Math.min(timelineState.dragStartTime, time);
         const end = Math.max(timelineState.dragStartTime, time);
 
-        // Only create segment if dragged more than 2 seconds
         if (end - start > 2) {
             timelineState.segment = { start, end };
             updateSelectionOverlay();
@@ -1143,17 +986,17 @@ function setupTimelineControls() {
         if (!timelineState.dragging) return;
         timelineState.dragging = false;
 
-        const time = overviewClickToTime(e, container);
+        const time = navBarClickToTime(e);
         if (time === null) return;
 
         const start = Math.min(timelineState.dragStartTime, time);
         const end = Math.max(timelineState.dragStartTime, time);
 
         if (end - start <= 2) {
-            // Click (not drag) — set current time, clear segment
+            // Click — set current time, clear segment
             mapState.currentTime = Math.max(timelineState.matchStartTime, Math.min(time, timelineState.duration));
             timelineState.segment = null;
-            slider.value = mapState.currentTime;
+            updateTimelineCursor();
             updateTimelineTimeDisplay();
             updateTimeIndicators();
             updateSelectionOverlay();
@@ -1163,7 +1006,7 @@ function setupTimelineControls() {
             const mapSlider = document.getElementById('map-timeline-slider');
             if (mapSlider) mapSlider.value = mapState.currentTime;
         } else {
-            // Drag complete — update detail views for segment
+            // Drag complete — apply segment to detail views
             timelineState.segment = { start, end };
             updateSelectionOverlay();
             updateSegmentLabel();
@@ -1171,8 +1014,8 @@ function setupTimelineControls() {
         }
     });
 
-    // Double-click to clear segment selection
-    container.addEventListener('dblclick', () => {
+    // Double-click to clear segment
+    bar.addEventListener('dblclick', () => {
         timelineState.segment = null;
         updateSelectionOverlay();
         updateSegmentLabel();
@@ -1182,10 +1025,12 @@ function setupTimelineControls() {
     timelineState.controlsInitialized = true;
 }
 
-function overviewClickToTime(e, container) {
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left - 10; // 10px padding
-    const width = rect.width - 20;
+function navBarClickToTime(e) {
+    const bar = document.getElementById('timeline-nav-bar');
+    if (!bar) return null;
+    const rect = bar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
     if (width <= 0) return null;
     const frac = Math.max(0, Math.min(1, x / width));
     return timelineState.matchStartTime + frac * (timelineState.duration - timelineState.matchStartTime);
@@ -1208,10 +1053,9 @@ function updateSelectionOverlay() {
     const startPct = ((timelineState.segment.start - matchStart) / range) * 100;
     const endPct = ((timelineState.segment.end - matchStart) / range) * 100;
 
-    // Account for 10px padding on each side of the container
     overlay.style.display = 'block';
-    overlay.style.left = `calc(10px + (100% - 20px) * ${startPct / 100})`;
-    overlay.style.width = `calc((100% - 20px) * ${(endPct - startPct) / 100})`;
+    overlay.style.left = `${startPct}%`;
+    overlay.style.width = `${endPct - startPct}%`;
 }
 
 function updateSegmentLabel() {
@@ -1226,21 +1070,20 @@ function updateSegmentLabel() {
     const matchStart = timelineState.matchStartTime;
     const relStart = timelineState.segment.start - matchStart;
     const relEnd = timelineState.segment.end - matchStart;
-    label.textContent = `${formatTime(Math.max(0, relStart))} - ${formatTime(Math.max(0, relEnd))}`;
+    label.textContent = `${formatTime(Math.max(0, relStart))} – ${formatTime(Math.max(0, relEnd))}`;
 }
 
-function updateTimelineSliderRange() {
-    const slider = document.getElementById('timeline-slider');
-    if (!slider) return;
+function updateTimelineCursor() {
+    const cursor = document.getElementById('timeline-nav-cursor');
+    if (!cursor) return;
 
     const matchStart = timelineState.matchStartTime;
     const duration = timelineState.duration;
+    const range = duration - matchStart;
+    if (range <= 0) return;
 
-    slider.min = matchStart;
-    slider.max = duration;
-    slider.step = 0.1;
-    slider.value = mapState.currentTime;
-    updateTimelineTimeDisplay();
+    const pct = ((mapState.currentTime - matchStart) / range) * 100;
+    cursor.style.left = `${Math.max(0, Math.min(100, pct))}%`;
 }
 
 function updateTimelineTimeDisplay() {
@@ -1251,6 +1094,25 @@ function updateTimelineTimeDisplay() {
     display.textContent = formatTime(Math.max(0, relTime));
 }
 
+function renderTimelineNavAxis() {
+    const container = document.getElementById('timeline-nav-axis');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const matchStart = timelineState.matchStartTime;
+    const duration = timelineState.duration;
+    const matchDuration = duration - matchStart;
+    if (matchDuration <= 0) return;
+
+    const tickCount = Math.min(10, Math.max(4, Math.floor(matchDuration / 60)));
+    for (let i = 0; i <= tickCount; i++) {
+        const time = (matchDuration / tickCount) * i;
+        const span = document.createElement('span');
+        span.textContent = formatTime(time);
+        container.appendChild(span);
+    }
+}
+
 function updateTimeIndicators() {
     const matchStart = timelineState.matchStartTime;
     const duration = timelineState.duration;
@@ -1259,13 +1121,10 @@ function updateTimeIndicators() {
     const pct = ((mapState.currentTime - matchStart) / (duration - matchStart)) * 100;
     const clampedPct = Math.max(0, Math.min(100, pct));
 
-    // Overview indicator needs to account for container padding (10px each side)
-    const overviewEl = document.getElementById('overview-time-indicator');
-    if (overviewEl) {
-        overviewEl.style.left = `calc(10px + (100% - 20px) * ${clampedPct / 100})`;
-    }
+    // Update nav bar cursor
+    updateTimelineCursor();
 
-    // Detail graph indicators also need padding offset (graphs have 10px padding)
+    // Detail graph indicators need padding offset (graphs have 10px padding)
     const detailIndicators = [
         'detail-time-indicator',
         'health-time-indicator',
@@ -2574,9 +2433,9 @@ function setupMapTimeControls(result) {
         slider.addEventListener('input', (e) => {
             mapState.currentTime = parseFloat(e.target.value);
             renderMap(mapState.currentTime);
-            // Sync timeline slider
-            const tlSlider = document.getElementById('timeline-slider');
-            if (tlSlider) tlSlider.value = mapState.currentTime;
+            // Sync timeline cursor
+            updateTimelineCursor();
+            updateTimelineTimeDisplay();
         });
     }
 
@@ -2669,9 +2528,8 @@ function animateMapPlayback() {
 
     renderMap(mapState.currentTime);
 
-    // Sync timeline slider
-    const tlSlider = document.getElementById('timeline-slider');
-    if (tlSlider) tlSlider.value = mapState.currentTime;
+    // Sync timeline cursor
+    updateTimelineCursor();
     updateTimelineTimeDisplay();
     updateTimeIndicators();
 
@@ -2689,9 +2547,9 @@ function jumpMapTime(delta) {
     slider.value = mapState.currentTime;
     renderMap(mapState.currentTime);
 
-    // Sync timeline slider
-    const tlSlider = document.getElementById('timeline-slider');
-    if (tlSlider) tlSlider.value = mapState.currentTime;
+    // Sync timeline cursor
+    updateTimelineCursor();
+    updateTimelineTimeDisplay();
 }
 
 function buildMapPowerupList(result) {
