@@ -1142,17 +1142,15 @@ function renderTimelineNavAxis() {
 }
 
 function updateTimeIndicators() {
-    const matchStart = timelineState.matchStartTime;
-    const duration = timelineState.duration;
-    if (duration <= matchStart) return;
-
-    const pct = ((mapState.currentTime - matchStart) / (duration - matchStart)) * 100;
-    const clampedPct = Math.max(0, Math.min(100, pct));
-
-    // Update nav bar cursor
+    // Update nav bar cursor (always relative to full match)
     updateTimelineCursor();
 
-    // Detail graph indicators need padding offset (graphs have 10px padding)
+    // Detail graphs show either the segment or the full match
+    const seg = timelineState.segment;
+    const rangeStart = seg ? seg.start : timelineState.matchStartTime;
+    const rangeEnd = seg ? seg.end : timelineState.duration;
+    const range = rangeEnd - rangeStart;
+
     const detailIndicators = [
         'detail-time-indicator',
         'health-time-indicator',
@@ -1160,10 +1158,14 @@ function updateTimeIndicators() {
         'score-time-indicator'
     ];
 
+    if (range <= 0) return;
+
+    const pct = Math.max(0, Math.min(100, ((mapState.currentTime - rangeStart) / range) * 100));
+
     for (const id of detailIndicators) {
         const el = document.getElementById(id);
         if (el) {
-            el.style.left = `calc(10px + (100% - 20px) * ${clampedPct / 100})`;
+            el.style.left = `calc(10px + (100% - 20px) * ${pct / 100})`;
         }
     }
 }
