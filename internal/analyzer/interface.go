@@ -315,6 +315,7 @@ type TimelineFragEvent struct {
 	Time   float64 `json:"time"`
 	Player string  `json:"player"` // Player name who got the frag
 	Team   string  `json:"team"`
+	Delta  int     `json:"delta"` // Frag count change (+1 for kill, -1 for suicide/teamkill)
 }
 
 // PowerupEvent represents a powerup pickup event for Key Moments

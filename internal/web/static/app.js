@@ -1808,11 +1808,12 @@ function updateFragsGraph(startTime, endTime) {
 
     for (const frag of filteredFrags) {
         const bucketIdx = Math.floor(frag.time / bucketDuration) - startBucket;
+        const delta = frag.delta || 1;
         if (bucketIdx >= 0 && bucketIdx < numBuckets) {
             if (frag.team === teams[0]) {
-                teamAFrags[bucketIdx]++;
+                teamAFrags[bucketIdx] += delta;
             } else if (frag.team === teams[1]) {
-                teamBFrags[bucketIdx]++;
+                teamBFrags[bucketIdx] += delta;
             }
         }
     }
@@ -1901,10 +1902,11 @@ function updateScoreTimeline(startTime, endTime) {
     let scoreAtStart = 0;
     for (const frag of fragEvents) {
         if (frag.time >= startTime) break;
+        const delta = frag.delta || 1;
         if (frag.team === teams[0]) {
-            scoreAtStart++;
+            scoreAtStart += delta;
         } else if (frag.team === teams[1]) {
-            scoreAtStart--;
+            scoreAtStart -= delta;
         }
     }
 
@@ -1919,10 +1921,11 @@ function updateScoreTimeline(startTime, endTime) {
     for (const frag of fragEvents) {
         if (frag.time < startTime) continue;
         if (frag.time > endTime) break;
+        const delta = frag.delta || 1;
         if (frag.team === teams[0]) {
-            scoreDiff++;
+            scoreDiff += delta;
         } else if (frag.team === teams[1]) {
-            scoreDiff--;
+            scoreDiff -= delta;
         }
         scorePoints.push({ time: frag.time, diff: scoreDiff });
     }
@@ -2114,7 +2117,7 @@ function precomputeFragCounts() {
     const running = {}; // player -> cumulative frags
 
     for (const fe of sorted) {
-        running[fe.player] = (running[fe.player] || 0) + 1;
+        running[fe.player] = (running[fe.player] || 0) + (fe.delta || 1);
         precomputedFrags.push({ time: fe.time, cumulative: { ...running } });
     }
 }

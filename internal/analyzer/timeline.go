@@ -34,6 +34,7 @@ type TimelineAnalyzer struct {
 type fragEventRaw struct {
 	Time      float64
 	PlayerNum int
+	Delta     int // +N for kills, -N for suicides/teamkills
 }
 
 // timelinePlayerState tracks current state for a single player
@@ -173,12 +174,14 @@ func contains(s, substr string) bool {
 func (a *TimelineAnalyzer) handleFragUpdate(e *parser.FragUpdateEvent) {
 	state := a.getOrCreatePlayerState(e.PlayerNum)
 
-	// Only track if match has started and frag count increased
-	if a.matchStarted && e.Frags > state.frags {
-		// Store raw event - team will be assigned in Finalize
+	// Track frag changes (both increases and decreases)
+	// Frags increase on kills, decrease on suicides/teamkills
+	if a.matchStarted && e.Frags != state.frags {
+		delta := e.Frags - state.frags
 		a.fragEventsRaw = append(a.fragEventsRaw, fragEventRaw{
 			Time:      e.Time,
 			PlayerNum: e.PlayerNum,
+			Delta:     delta,
 		})
 	}
 	state.frags = e.Frags
@@ -416,6 +419,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 				Time:   raw.Time,
 				Player: playerName,
 				Team:   team,
+				Delta:  raw.Delta,
 			})
 		}
 	}
