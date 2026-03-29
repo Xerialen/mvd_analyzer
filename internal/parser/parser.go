@@ -39,6 +39,7 @@ type Parser struct {
 	playerPositions [mvd.MaxClients][3]float32 // Last known position per player (for delta updates)
 	handlers        []Handler
 	floatCoords     bool
+	fteExtensions   uint32 // FTE protocol extension flags
 }
 
 // NewParser creates a new parser
@@ -179,7 +180,7 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 
 		default:
 			// Skip unknown commands - if we can't determine size, skip rest of payload
-			if err := skipCommand(r, cmd, p.floatCoords); err != nil {
+			if err := skipCommand(r, cmd, p.floatCoords, p.fteExtensions); err != nil {
 				// Can't skip this command - bail on this payload, but continue parsing
 				return nil
 			}
@@ -341,7 +342,7 @@ func (p *Parser) parseHiddenDemoInfo(r *mvd.BufferReader, time float64, dataLen 
 
 // skipCommand attempts to skip an unknown command
 // Returns error if we can't determine the size
-func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool) error {
+func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32) error {
 	switch cmd {
 	case mvd.SvcNop:
 		return nil
@@ -371,9 +372,9 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool) error {
 		_, err := r.ReadString()
 		return err
 	case mvd.SvcSpawnBaseline:
-		return skipSpawnBaseline(r)
+		return skipSpawnBaseline(r, floatCoords)
 	case mvd.SvcSpawnStatic:
-		return skipSpawnStatic(r)
+		return skipSpawnStatic(r, floatCoords)
 	case mvd.SvcTempEntity:
 		return skipTempEntity(r, floatCoords)
 	case mvd.SvcKilledMonster:
@@ -406,9 +407,9 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool) error {
 	case mvd.SvcSoundList:
 		return skipSoundList(r)
 	case mvd.SvcPacketEntities:
-		return skipPacketEntities(r, floatCoords)
+		return skipPacketEntities(r, floatCoords, fteExt)
 	case mvd.SvcDeltaPacketEntities:
-		return skipDeltaPacketEntities(r, floatCoords)
+		return skipDeltaPacketEntities(r, floatCoords, fteExt)
 	case mvd.SvcMaxSpeed:
 		return r.Skip(4) // float
 	case mvd.SvcEntGravity:
@@ -438,6 +439,22 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool) error {
 			return r.Skip(17) // 3 floats + byte + byte + byte
 		}
 		return r.Skip(11) // 3 shorts + byte + byte + byte
+	case mvd.SvcFTESpawnBaseline2:
+		// Extended baseline: 2-byte flag word + entity delta
+		w, err := r.ReadUint16()
+		if err != nil {
+			return err
+		}
+		return skipEntityDelta(r, w, floatCoords, fteExt)
+	case mvd.SvcFTESpawnStatic2:
+		// Extended static: 2-byte flag word + entity delta
+		w, err := r.ReadUint16()
+		if err != nil {
+			return err
+		}
+		return skipEntityDelta(r, w, floatCoords, fteExt)
+	case mvd.SvcFTEModelListShort:
+		return skipModelList(r) // same format as regular model list
 	default:
 		// Unknown command - can't determine size
 		return io.EOF
@@ -463,12 +480,22 @@ func skipSound(r *mvd.BufferReader, floatCoords bool) error {
 	return r.Skip(6) // 3 shorts
 }
 
-func skipSpawnBaseline(r *mvd.BufferReader) error {
-	return r.Skip(10) // Simplified - actual size varies
+func skipSpawnBaseline(r *mvd.BufferReader, floatCoords bool) error {
+	// model(1) + frame(1) + colormap(1) + skin(1) + 3*(coord + angle)
+	r.Skip(4) // model, frame, colormap, skin
+	for i := 0; i < 3; i++ {
+		if floatCoords {
+			r.Skip(4) // float coord
+		} else {
+			r.Skip(2) // short coord
+		}
+		r.Skip(1) // angle byte
+	}
+	return nil
 }
 
-func skipSpawnStatic(r *mvd.BufferReader) error {
-	return r.Skip(13) // Simplified
+func skipSpawnStatic(r *mvd.BufferReader, floatCoords bool) error {
+	return skipSpawnBaseline(r, floatCoords)
 }
 
 func skipTempEntity(r *mvd.BufferReader, floatCoords bool) error {
@@ -587,23 +614,145 @@ func skipSoundList(r *mvd.BufferReader) error {
 	return r.Skip(1) // next index
 }
 
-func skipPacketEntities(r *mvd.BufferReader, floatCoords bool) error {
-	// This is complex - simplified version that may not work for all demos
+func skipPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint32) error {
 	for {
 		word, err := r.ReadUint16()
 		if err != nil {
 			return err
 		}
 		if word == 0 {
-			break
+			break // end marker
 		}
-		// Skip entity data based on flags
-		r.Skip(1) // Simplified - actual size varies with flags
+		if err := skipEntityDelta(r, word, floatCoords, fteExt); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func skipDeltaPacketEntities(r *mvd.BufferReader, floatCoords bool) error {
-	r.Skip(1) // from frame
-	return skipPacketEntities(r, floatCoords)
+func skipDeltaPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint32) error {
+	r.Skip(1) // from sequence number
+	return skipPacketEntities(r, floatCoords, fteExt)
+}
+
+// Entity update flag bits (from protocol.h)
+const (
+	uOrigin1     = 1 << 9
+	uOrigin2     = 1 << 10
+	uOrigin3     = 1 << 11
+	uAngle2      = 1 << 12
+	uFrame       = 1 << 13
+	uMoreBits    = 1 << 15
+	// Low byte flags (read if uMoreBits set)
+	uAngle1      = 1 << 0
+	uAngle3      = 1 << 1
+	uModel       = 1 << 2
+	uColormap    = 1 << 3
+	uSkin        = 1 << 4
+	uEffects     = 1 << 5
+	uFTEEvenMore = 1 << 7
+	// FTE morebits flags
+	uFTETrans    = 1 << 1
+	uFTEModelDbl = 1 << 3
+	uFTEYetMore  = 1 << 7
+	uFTEColourMod = 1 << 10 // bit 2 of second byte (after shift by 8)
+)
+
+// skipEntityDelta skips variable-length entity delta data for a given flag word.
+// Mirrors CL_ParseDelta from ezquake cl_ents.c.
+func skipEntityDelta(r *mvd.BufferReader, word uint16, floatCoords bool, fteExt uint32) error {
+	bits := int(word)
+	bits &= ^511 // clear entity number bits 0-8
+
+	// Step 1: If U_MOREBITS, read low-order flag byte
+	var lowFlags int
+	if bits&uMoreBits != 0 {
+		b, err := r.ReadByte()
+		if err != nil {
+			return err
+		}
+		lowFlags = int(b)
+		bits |= lowFlags
+	}
+
+	// Step 2: FTE extensions
+	var morebits int
+	if lowFlags&uFTEEvenMore != 0 && fteExt != 0 {
+		b, err := r.ReadByte()
+		if err != nil {
+			return err
+		}
+		morebits = int(b)
+		if morebits&uFTEYetMore != 0 {
+			b2, err := r.ReadByte()
+			if err != nil {
+				return err
+			}
+			morebits |= int(b2) << 8
+		}
+	}
+
+	// Step 3: Read fields in CL_ParseDelta order
+	if bits&uModel != 0 {
+		if morebits&uFTEModelDbl != 0 {
+			// U_MODEL set + U_FTE_MODELDBL: modelindex = byte + 256 (just 1 byte)
+			r.Skip(1)
+		} else {
+			r.Skip(1) // modelindex byte
+		}
+	} else if morebits&uFTEModelDbl != 0 {
+		// !U_MODEL + U_FTE_MODELDBL: modelindex = short (2 bytes)
+		r.Skip(2)
+	}
+
+	if bits&uFrame != 0 {
+		r.Skip(1) // frame byte
+	}
+	if bits&uColormap != 0 {
+		r.Skip(1) // colormap byte
+	}
+	if bits&uSkin != 0 {
+		r.Skip(1) // skin byte
+	}
+	if bits&uEffects != 0 {
+		r.Skip(1) // effects byte
+	}
+
+	// Origins: 2 bytes (short coord) or 4 bytes (float coord)
+	coordSize := 2
+	if floatCoords {
+		coordSize = 4
+	}
+	if bits&uOrigin1 != 0 {
+		r.Skip(coordSize)
+	}
+	if lowFlags&uAngle1 != 0 {
+		r.Skip(1) // angle byte
+	}
+	if bits&uOrigin2 != 0 {
+		r.Skip(coordSize)
+	}
+	if bits&uAngle2 != 0 {
+		r.Skip(1) // angle byte
+	}
+	if bits&uOrigin3 != 0 {
+		r.Skip(coordSize)
+	}
+	if lowFlags&uAngle3 != 0 {
+		r.Skip(1) // angle byte
+	}
+
+	// U_SOLID: no data
+
+	// FTE transparency
+	if morebits&uFTETrans != 0 && fteExt&mvd.FTEPextTrans != 0 {
+		r.Skip(1)
+	}
+
+	// FTE colour mod (3 bytes RGB)
+	if morebits&int(uFTEColourMod) != 0 && fteExt&mvd.FTEPextColourMod != 0 {
+		r.Skip(3)
+	}
+
+	return nil
 }

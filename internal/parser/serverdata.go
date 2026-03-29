@@ -53,6 +53,7 @@ func (p *Parser) parseServerData(r *mvd.BufferReader, time float64) error {
 	// Update decoder with extensions
 	p.decoder.SetExtensions(ext)
 	p.floatCoords = p.decoder.FloatCoords()
+	p.fteExtensions = ext.FTE
 
 	// Read server count
 	count, err := r.ReadUint32()
