@@ -2144,28 +2144,28 @@ function normalizeLocationName(name) {
 function getLocationColor(name) {
     const nameLower = name.toLowerCase();
 
-    // Powerups - bright colors
-    if (nameLower.includes('quad'))  return { fill: 'rgba(80, 120, 255, 0.15)', stroke: '#5078ff', text: '#7090ff' };
-    if (nameLower.includes('pent'))  return { fill: 'rgba(255, 0, 255, 0.15)', stroke: '#ff00ff', text: '#ff66ff' };
-    if (nameLower.includes('ring'))  return { fill: 'rgba(255, 255, 0, 0.15)', stroke: '#ffff00', text: '#ffff66' };
+    // Powerups - bright colors (dimmed 50%)
+    if (nameLower.includes('quad'))  return { fill: 'rgba(80, 120, 255, 0.075)', stroke: 'rgba(80, 120, 255, 0.5)', text: 'rgba(112, 144, 255, 0.5)' };
+    if (nameLower.includes('pent'))  return { fill: 'rgba(255, 0, 255, 0.075)', stroke: 'rgba(255, 0, 255, 0.5)', text: 'rgba(255, 102, 255, 0.5)' };
+    if (nameLower.includes('ring'))  return { fill: 'rgba(255, 255, 0, 0.075)', stroke: 'rgba(255, 255, 0, 0.5)', text: 'rgba(255, 255, 102, 0.5)' };
 
     // Armors
-    if (nameLower.includes('ra'))    return { fill: 'rgba(255, 80, 80, 0.15)', stroke: '#ff5050', text: '#ff8080' };
-    if (nameLower.includes('ya'))    return { fill: 'rgba(255, 200, 50, 0.15)', stroke: '#ffc832', text: '#ffd866' };
-    if (nameLower.includes('ga'))    return { fill: 'rgba(80, 200, 80, 0.15)', stroke: '#50c850', text: '#80d880' };
+    if (nameLower.includes('ra'))    return { fill: 'rgba(255, 80, 80, 0.075)', stroke: 'rgba(255, 80, 80, 0.5)', text: 'rgba(255, 128, 128, 0.5)' };
+    if (nameLower.includes('ya'))    return { fill: 'rgba(255, 200, 50, 0.075)', stroke: 'rgba(255, 200, 50, 0.5)', text: 'rgba(255, 216, 102, 0.5)' };
+    if (nameLower.includes('ga'))    return { fill: 'rgba(80, 200, 80, 0.075)', stroke: 'rgba(80, 200, 80, 0.5)', text: 'rgba(128, 216, 128, 0.5)' };
 
     // Health
-    if (nameLower.includes('mh'))    return { fill: 'rgba(80, 200, 255, 0.15)', stroke: '#50c8ff', text: '#80d8ff' };
+    if (nameLower.includes('mh'))    return { fill: 'rgba(80, 200, 255, 0.075)', stroke: 'rgba(80, 200, 255, 0.5)', text: 'rgba(128, 216, 255, 0.5)' };
 
     // Weapons
-    if (nameLower.includes('rl'))    return { fill: 'rgba(200, 100, 50, 0.12)', stroke: '#c86432', text: '#d88050' };
-    if (nameLower.includes('lg'))    return { fill: 'rgba(150, 150, 255, 0.12)', stroke: '#9696ff', text: '#b0b0ff' };
-    if (nameLower.includes('gl'))    return { fill: 'rgba(100, 180, 100, 0.12)', stroke: '#64b464', text: '#80c880' };
+    if (nameLower.includes('rl'))    return { fill: 'rgba(200, 100, 50, 0.06)', stroke: 'rgba(200, 100, 50, 0.5)', text: 'rgba(216, 128, 80, 0.5)' };
+    if (nameLower.includes('lg'))    return { fill: 'rgba(150, 150, 255, 0.06)', stroke: 'rgba(150, 150, 255, 0.5)', text: 'rgba(176, 176, 255, 0.5)' };
+    if (nameLower.includes('gl'))    return { fill: 'rgba(100, 180, 100, 0.06)', stroke: 'rgba(100, 180, 100, 0.5)', text: 'rgba(128, 200, 128, 0.5)' };
     if (nameLower.includes('sng') || nameLower.includes('ng'))
-                                     return { fill: 'rgba(180, 140, 80, 0.12)', stroke: '#b48c50', text: '#c8a060' };
+                                     return { fill: 'rgba(180, 140, 80, 0.06)', stroke: 'rgba(180, 140, 80, 0.5)', text: 'rgba(200, 160, 96, 0.5)' };
 
     // Default - subtle gray
-    return { fill: 'rgba(100, 100, 120, 0.08)', stroke: '#444', text: '#666' };
+    return { fill: 'rgba(100, 100, 120, 0.04)', stroke: 'rgba(68, 68, 68, 0.5)', text: 'rgba(102, 102, 102, 0.5)' };
 }
 
 // Group locations by normalized name and calculate centroid
@@ -2502,34 +2502,60 @@ function assignPlayerSymbols(result) {
         }
     }
 
-    // Assign symbols and pre-render to offscreen canvases
+    // Assign unique first-letter symbols and pre-render to offscreen canvases
+    const usedLetters = new Set();
+    const allPlayers = [];
     for (let teamIdx = 0; teamIdx < mapState.teams.length; teamIdx++) {
         const team = mapState.teams[teamIdx];
-        const playerList = teamPlayers[team] || [];
-        const teamColor = teamIdx === 0 ? '#ff5050' : '#50a0ff';
-        playerList.forEach((name, i) => {
-            const symbol = PLAYER_SYMBOLS[i % PLAYER_SYMBOLS.length];
-            // Pre-render symbol with glow to offscreen canvas
-            const size = 32;
-            const offscreen = document.createElement('canvas');
-            offscreen.width = size;
-            offscreen.height = size;
-            const octx = offscreen.getContext('2d');
-            octx.font = 'bold 18px monospace';
-            octx.textAlign = 'center';
-            octx.textBaseline = 'middle';
-            octx.shadowColor = teamColor;
-            octx.shadowBlur = 12;
-            octx.fillStyle = teamColor;
-            octx.fillText(symbol, size / 2, size / 2);
+        for (const name of (teamPlayers[team] || [])) {
+            allPlayers.push({ name, team, teamIdx });
+        }
+    }
 
-            mapState.playerSymbols[name] = {
-                symbol: symbol,
-                team: team,
-                teamIdx: teamIdx,
-                symbolCanvas: offscreen
-            };
-        });
+    // Assign unique letter per player: first unused letter from their name
+    for (const player of allPlayers) {
+        let letter = '?';
+        for (const ch of player.name) {
+            const upper = ch.toUpperCase();
+            if (upper >= 'A' && upper <= 'Z' && !usedLetters.has(upper)) {
+                letter = upper;
+                usedLetters.add(upper);
+                break;
+            }
+        }
+        if (letter === '?') letter = player.name[0]?.toUpperCase() || '?';
+
+        const teamColor = player.teamIdx === 0 ? '#ff5050' : '#50a0ff';
+        // Pre-render letter with circle to offscreen canvas
+        const size = 32;
+        const offscreen = document.createElement('canvas');
+        offscreen.width = size;
+        offscreen.height = size;
+        const octx = offscreen.getContext('2d');
+        const cx = size / 2, cy = size / 2, r = 13;
+
+        // Circle background
+        octx.beginPath();
+        octx.arc(cx, cy, r, 0, Math.PI * 2);
+        octx.fillStyle = player.teamIdx === 0 ? 'rgba(255, 80, 80, 0.25)' : 'rgba(80, 160, 255, 0.25)';
+        octx.fill();
+        octx.strokeStyle = teamColor;
+        octx.lineWidth = 2;
+        octx.stroke();
+
+        // Letter
+        octx.font = 'bold 16px monospace';
+        octx.textAlign = 'center';
+        octx.textBaseline = 'middle';
+        octx.fillStyle = teamColor;
+        octx.fillText(letter, cx, cy);
+
+        mapState.playerSymbols[player.name] = {
+            symbol: letter,
+            team: player.team,
+            teamIdx: player.teamIdx,
+            symbolCanvas: offscreen
+        };
     }
 
     // Build legend
@@ -2645,12 +2671,17 @@ function renderMap(time) {
                 // Add to track if showing tracks
                 if (mapState.showTracks) {
                     if (!mapState.tracks[name]) mapState.tracks[name] = [];
-                    const lastPos = mapState.tracks[name][mapState.tracks[name].length - 1];
+                    const track = mapState.tracks[name];
+                    const lastPos = track[track.length - 1];
                     if (!lastPos || Math.abs(lastPos.x - pos.x) > 2 || Math.abs(lastPos.y - pos.y) > 2) {
-                        mapState.tracks[name].push({
+                        // Detect teleport: large jump in one frame (>150 canvas pixels)
+                        const isTeleport = lastPos && (Math.abs(lastPos.x - pos.x) > 150 || Math.abs(lastPos.y - pos.y) > 150);
+                        track.push({
                             x: pos.x,
                             y: pos.y,
-                            teamIdx: symbolInfo.teamIdx
+                            t: time,
+                            teamIdx: symbolInfo.teamIdx,
+                            tp: isTeleport
                         });
                     }
                 }
@@ -2661,21 +2692,50 @@ function renderMap(time) {
 }
 
 function drawTracks(ctx) {
-    for (const [name, points] of Object.entries(mapState.tracks)) {
+    const now = mapState.currentTime;
+    const trailDuration = 10; // seconds
+
+    for (const [, points] of Object.entries(mapState.tracks)) {
         if (points.length < 2) continue;
 
-        const isRed = points[0].teamIdx === 0;
-        const total = points.length;
+        // Find start index for 10s window
+        let start = points.length - 1;
+        while (start > 0 && now - points[start].t < trailDuration) start--;
 
-        // Draw all segments as single path with uniform style (much faster)
-        ctx.beginPath();
-        ctx.strokeStyle = isRed ? 'rgba(255, 80, 80, 0.4)' : 'rgba(80, 160, 255, 0.4)';
+        if (points.length - start < 2) continue;
+
+        const isRed = points[0].teamIdx === 0;
+        const solidColor = isRed ? 'rgba(255, 80, 80, 0.4)' : 'rgba(80, 160, 255, 0.4)';
+        const dashColor = isRed ? 'rgba(255, 80, 80, 0.2)' : 'rgba(80, 160, 255, 0.2)';
+
+        // Draw segments, switching style for teleport segments
+        let inDash = false;
         ctx.lineWidth = 1.5;
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < total; i++) {
+        ctx.strokeStyle = solidColor;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(points[start].x, points[start].y);
+
+        for (let i = start + 1; i < points.length; i++) {
+            const needDash = !!points[i].tp;
+            if (needDash !== inDash) {
+                // Flush current path
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(points[i - 1].x, points[i - 1].y);
+                if (needDash) {
+                    ctx.setLineDash([4, 6]);
+                    ctx.strokeStyle = dashColor;
+                } else {
+                    ctx.setLineDash([]);
+                    ctx.strokeStyle = solidColor;
+                }
+                inDash = needDash;
+            }
             ctx.lineTo(points[i].x, points[i].y);
         }
         ctx.stroke();
+        ctx.setLineDash([]);
     }
 }
 
