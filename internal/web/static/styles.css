@@ -239,6 +239,16 @@ header p {
     letter-spacing: 0.02em;
 }
 
+.panel h4 {
+    font-family: 'Rajdhani', sans-serif;
+    color: #a0c4d8;
+    margin: 12px 0 6px 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

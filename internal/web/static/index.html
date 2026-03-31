@@ -82,13 +82,35 @@
                 </div>
 
                 <div id="players-panel" class="panel">
-                    <h3>Player Stats</h3>
+                    <h3>Basic Stats</h3>
+                    <h4>Per Team</h4>
+                    <table id="player-stats-team-table" class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>Frags</th>
+                                <th>Efficiency</th>
+                                <th>Kills</th>
+                                <th>Deaths</th>
+                                <th>TK</th>
+                                <th>Bores</th>
+                                <th>Dmg Given</th>
+                                <th>Dmg Taken</th>
+                                <th>Ewep</th>
+                                <th>ToDie</th>
+                                <th>Ping</th>
+                            </tr>
+                        </thead>
+                        <tbody id="player-stats-team-body"></tbody>
+                    </table>
+                    <h4>Per Player</h4>
                     <table id="scoreboard" class="stats-table">
                         <thead>
                             <tr>
                                 <th>Player</th>
                                 <th>Team</th>
                                 <th>Frags</th>
+                                <th>Efficiency</th>
                                 <th>Kills</th>
                                 <th>Deaths</th>
                                 <th>TK</th>
@@ -106,6 +128,23 @@
 
                 <div id="weapons-summary-panel" class="panel">
                     <h3>Weapon Stats</h3>
+                    <h4>Per Team</h4>
+                    <table id="weapon-stats-team-table" class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>SG</th>
+                                <th>SSG</th>
+                                <th>NG</th>
+                                <th>SNG</th>
+                                <th>GL</th>
+                                <th>RL</th>
+                                <th>LG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weapon-stats-team-body"></tbody>
+                    </table>
+                    <h4>Per Player</h4>
                     <table id="weapon-stats-table" class="stats-table">
                         <thead>
                             <tr>
@@ -125,6 +164,23 @@
 
                 <div id="items-panel" class="panel">
                     <h3>Item Pickups</h3>
+                    <h4>Per Team</h4>
+                    <table id="items-team-table" class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>RA</th>
+                                <th>YA</th>
+                                <th>GA</th>
+                                <th>MH</th>
+                                <th>Quad</th>
+                                <th>Pent</th>
+                                <th>Ring</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-team-body"></tbody>
+                    </table>
+                    <h4>Per Player</h4>
                     <table id="items-table" class="stats-table">
                         <thead>
                             <tr>
@@ -144,6 +200,21 @@
 
                 <div id="performance-panel" class="panel">
                     <h3>Performance</h3>
+                    <h4>Per Team</h4>
+                    <table id="performance-team-table" class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>Max Spree</th>
+                                <th>Quad Kills</th>
+                                <th>Speed Avg</th>
+                                <th>Speed Max</th>
+                                <th>Spawn Frags</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performance-team-body"></tbody>
+                    </table>
+                    <h4>Per Player</h4>
                     <table id="performance-table" class="stats-table">
                         <thead>
                             <tr>
