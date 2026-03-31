@@ -1427,11 +1427,11 @@ function setupTimelineControls() {
     }
     const tlJumpBack = document.getElementById('timeline-jump-back');
     if (tlJumpBack) {
-        tlJumpBack.addEventListener('click', () => { setCurrentTime(mapState.currentTime - 10); renderMap(mapState.currentTime); });
+        tlJumpBack.addEventListener('click', () => { setCurrentTime(mapState.currentTime - 10); resetTrails(); renderMap(mapState.currentTime); });
     }
     const tlJumpFwd = document.getElementById('timeline-jump-forward');
     if (tlJumpFwd) {
-        tlJumpFwd.addEventListener('click', () => { setCurrentTime(mapState.currentTime + 10); renderMap(mapState.currentTime); });
+        tlJumpFwd.addEventListener('click', () => { setCurrentTime(mapState.currentTime + 10); resetTrails(); renderMap(mapState.currentTime); });
     }
 
     timelineState.controlsInitialized = true;
@@ -2631,6 +2631,9 @@ function drawLocationRegion(ctx, group, worldToCanvasFunc) {
     }
 }
 
+// Trail duration constant (seconds) — used for display window and data purging
+const TRAIL_DURATION = 10;
+
 // Map View State
 let mapState = {
     canvas: null,
@@ -2655,6 +2658,12 @@ let mapState = {
 };
 
 const PLAYER_SYMBOLS = ['*', 'x', '+', 'o', '◆', '▲', '●', '■'];
+
+// Clear all trail data and force a redraw — call this whenever the user jumps to a new time
+function resetTrails() {
+    mapState.tracks = {};
+    mapState.renderDirty = true;
+}
 
 function initMapView(result) {
     if (!result.timelineAnalysis) return;
@@ -3051,6 +3060,12 @@ function renderMap(time) {
                             teamIdx: symbolInfo.teamIdx,
                             tp: isTeleport
                         });
+                        // Purge data older than the trail window to avoid memory bloat.
+                        // Keep one anchor point outside the window so the trail has a clean start.
+                        const cutoff = time - TRAIL_DURATION;
+                        while (track.length > 1 && track[0].t < cutoff && track[1].t < cutoff) {
+                            track.shift();
+                        }
                     }
                 }
             }
@@ -3061,7 +3076,7 @@ function renderMap(time) {
 
 function drawTracks(ctx) {
     const now = mapState.currentTime;
-    const trailDuration = 10; // seconds
+    const trailDuration = TRAIL_DURATION;
 
     for (const [, points] of Object.entries(mapState.tracks)) {
         if (points.length < 2) continue;
@@ -3186,6 +3201,7 @@ function setupMapTimeControls(result) {
     if (slider) {
         slider.addEventListener('input', (e) => {
             setCurrentTime(parseFloat(e.target.value));
+            resetTrails();
             renderMap(mapState.currentTime);
         });
     }
@@ -3314,6 +3330,7 @@ function animatePlayback() {
 
 function jumpMapTime(delta) {
     setCurrentTime(mapState.currentTime + delta);
+    resetTrails();
     renderMap(mapState.currentTime);
 }
 
@@ -3339,6 +3356,7 @@ function buildMapPowerupList(result) {
         `;
         li.addEventListener('click', () => {
             setCurrentTime(event.time);
+            resetTrails();
             renderMap(mapState.currentTime);
         });
         list.appendChild(li);
