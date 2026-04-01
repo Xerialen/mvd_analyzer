@@ -145,6 +145,22 @@ func (a *TimelineAnalyzer) handlePositionUpdate(e *parser.PlayerPositionEvent) {
 	state.x = e.Origin[0]
 	state.y = e.Origin[1]
 	state.z = e.Origin[2]
+
+	// Sample at bucket boundaries — position updates arrive at ~73 Hz,
+	// much more frequently than stat updates (~3 Hz). Without this,
+	// ~93% of 50ms buckets would miss position data entirely.
+	if a.matchStarted {
+		currentBucket := int(e.Time / a.bucketDuration)
+		lastBucket := int(a.lastSampleTime / a.bucketDuration)
+
+		if currentBucket > lastBucket {
+			for b := lastBucket + 1; b <= currentBucket; b++ {
+				bucketTime := float64(b) * a.bucketDuration
+				a.sampleCurrentState(bucketTime)
+			}
+			a.lastSampleTime = e.Time
+		}
+	}
 }
 
 func (a *TimelineAnalyzer) detectMatchStart(e *parser.PrintEvent) {

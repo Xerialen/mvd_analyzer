@@ -11,6 +11,7 @@ MVD (Multi-View Demo) is a demo recording format for QuakeWorld that captures th
 - **Delta compression**: Only changed values are transmitted
 - **Streaming support**: Can be streamed via QTV (QuakeTV) protocol
 - **Time representation**: Millisecond deltas (not absolute time like QWD)
+- **Server frame rate**: Typically ~77 Hz (MVDSV default `sys_maxfps`). Position updates (`svc_playerinfo`) are emitted every server frame for all players (~73 Hz observed), while stat updates (`svc_updatestat`) are event-driven and arrive at ~3 Hz per player
 
 ### File Extensions
 
@@ -562,6 +563,8 @@ func parseModelList(r *BufferReader) string {
 
 This is the core message type for player positions in MVD. The format differs between MVD and standard QWD.
 
+**Update frequency**: Emitted every server frame (~77 Hz) for all players simultaneously. In a typical 4on4 match with 8 players, each `dem_all` message contains 8 `svc_playerinfo` commands — one per player. The median inter-update gap is ~13ms with virtually all gaps under 25ms. Uses delta compression, so only changed coordinates are transmitted per update.
+
 ### MVD Format
 
 ```
@@ -623,7 +626,9 @@ if ((flags & DF_MODEL) && (flags & DF_SKINNUM)) {
 
 ## svc_updatestat (3) / svc_updatestatlong (38)
 
-Player statistics update.
+Player statistics update. Sent via `dem_stats` messages directed at specific players.
+
+**Update frequency**: Event-driven, not periodic. Only emitted when a stat value actually changes (e.g., health changes on damage/pickup, ammo changes on fire/pickup). Observed rate is ~3 Hz per player on average, but highly variable — bursts during combat, quiet when idle.
 
 ### svc_updatestat (byte value)
 ```
