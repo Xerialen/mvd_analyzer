@@ -2304,25 +2304,41 @@ function updateTeamStatus() {
         const team = teams[ti];
         const container = ti === 0 ? containerA : containerB;
 
-        // Collect players for this team (handle both high-res short and graph long property names)
-        // High-res buckets don't have team info, so look it up from playerSymbols or demoInfo
+        // Collect ALL players for this team — show dead/respawning players with '-' stats
+        // (matching the map legend behavior)
         const players = [];
+        const allPlayerNames = new Set();
+
+        // Get all known players for this team from demoInfo/playerSymbols
+        const demoPlayers = currentResult?.demoInfo?.players || [];
+        for (const dp of demoPlayers) {
+            if (dp.team === team) allPlayerNames.add(dp.name);
+        }
+        for (const [name, info] of Object.entries(mapState.playerSymbols || {})) {
+            if (info.team === team) allPlayerNames.add(name);
+        }
+        // Also include any players present in bucket data for this team
         for (const [name, data] of Object.entries(pd)) {
             const t = data.team || mapState.playerSymbols?.[name]?.team;
-            if (t === team) {
-                players.push({
-                    name,
-                    health: data.h ?? data.health ?? 0,
-                    armor: data.a ?? data.armor ?? 0,
-                    armorType: data.at ?? data.armorType ?? '',
-                    hasRL: data.rl ?? data.hasRL ?? false,
-                    hasLG: data.lg ?? data.hasLG ?? false,
-                    hasQuad: data.q ?? data.hasQuad ?? false,
-                    hasPent: data.pent ?? data.hasPent ?? false,
-                    hasRing: data.r ?? data.hasRing ?? false,
-                    frags: fragCounts[name] || 0,
-                });
-            }
+            if (t === team) allPlayerNames.add(name);
+        }
+
+        for (const name of allPlayerNames) {
+            const data = pd[name];
+            const isDead = !data || (data.d ?? data.dead) || (data.h ?? data.health ?? 0) <= 0;
+            players.push({
+                name,
+                dead: isDead,
+                health: isDead ? 0 : (data.h ?? data.health ?? 0),
+                armor: isDead ? 0 : (data.a ?? data.armor ?? 0),
+                armorType: isDead ? '' : (data.at ?? data.armorType ?? ''),
+                hasRL: isDead ? false : (data.rl ?? data.hasRL ?? false),
+                hasLG: isDead ? false : (data.lg ?? data.hasLG ?? false),
+                hasQuad: isDead ? false : (data.q ?? data.hasQuad ?? false),
+                hasPent: isDead ? false : (data.pent ?? data.hasPent ?? false),
+                hasRing: isDead ? false : (data.r ?? data.hasRing ?? false),
+                frags: fragCounts[name] || 0,
+            });
         }
 
         // Sort by frags desc
@@ -2340,30 +2356,41 @@ function updateTeamStatus() {
         html += `<tr><th>Player</th><th>Frags</th><th>Health</th><th>Armor</th><th>Weapons</th><th>View</th></tr>`;
 
         for (const p of players) {
-            const hp = p.health || 0;
-            const arm = p.armor || 0;
-            const at = p.armorType || '';
-            const armorClass = at ? `armor-${at}` : '';
-            const armorStr = arm > 0 ? `<span class="${armorClass}">${arm} ${at.toUpperCase()}</span>` : '0';
-
-            const weps = [];
-            if (p.hasRL && p.hasLG) weps.push('RL+LG');
-            else if (p.hasRL) weps.push('RL');
-            else if (p.hasLG) weps.push('LG');
-            if (p.hasQuad) weps.push('Quad');
-            if (p.hasPent) weps.push('Pent');
-            if (p.hasRing) weps.push('Ring');
-
             const hubLink = buildHubWatchLink(p.name, time, hubInfo, playerUserIDs);
 
-            html += `<tr>`;
-            html += `<td>${escapeHtml(p.name)}</td>`;
-            html += `<td>${p.frags}</td>`;
-            html += `<td>${hp}</td>`;
-            html += `<td>${armorStr}</td>`;
-            html += `<td>${weps.join(', ') || '-'}</td>`;
-            html += `<td>${hubLink}</td>`;
-            html += `</tr>`;
+            if (p.dead) {
+                html += `<tr>`;
+                html += `<td>${escapeHtml(p.name)}</td>`;
+                html += `<td>${p.frags}</td>`;
+                html += `<td>-</td>`;
+                html += `<td>-</td>`;
+                html += `<td>-</td>`;
+                html += `<td>${hubLink}</td>`;
+                html += `</tr>`;
+            } else {
+                const hp = p.health || 0;
+                const arm = p.armor || 0;
+                const at = p.armorType || '';
+                const armorClass = at ? `armor-${at}` : '';
+                const armorStr = arm > 0 ? `<span class="${armorClass}">${arm} ${at.toUpperCase()}</span>` : '0';
+
+                const weps = [];
+                if (p.hasRL && p.hasLG) weps.push('RL+LG');
+                else if (p.hasRL) weps.push('RL');
+                else if (p.hasLG) weps.push('LG');
+                if (p.hasQuad) weps.push('Quad');
+                if (p.hasPent) weps.push('Pent');
+                if (p.hasRing) weps.push('Ring');
+
+                html += `<tr>`;
+                html += `<td>${escapeHtml(p.name)}</td>`;
+                html += `<td>${p.frags}</td>`;
+                html += `<td>${hp}</td>`;
+                html += `<td>${armorStr}</td>`;
+                html += `<td>${weps.join(', ') || '-'}</td>`;
+                html += `<td>${hubLink}</td>`;
+                html += `</tr>`;
+            }
         }
 
         // Totals row
