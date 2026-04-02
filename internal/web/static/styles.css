@@ -752,29 +752,46 @@ table tbody tr:hover {
     margin-bottom: 20px;
 }
 
-.chat-content-row {
+.chat-header-row {
     display: flex;
-    align-items: flex-start;
     gap: 0;
+    margin-bottom: 4px;
+}
+
+.chat-header-row .chat-time-axis-col {
+    width: 54px;
+    flex-shrink: 0;
+}
+
+.chat-header-row .chat-time-axis-col h3 {
+    visibility: hidden;
+}
+
+.chat-column-header {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-scroll-viewport {
+    position: relative;
+    height: 700px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.chat-scroll-inner {
+    display: flex;
+    gap: 0;
+    position: relative;
 }
 
 .chat-time-axis-col {
     width: 54px;
     flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat-axis-header {
-    /* same margin-bottom as .chat-column h3 to align with column scroll areas */
-    margin-bottom: 4px !important;
-    visibility: hidden;
 }
 
 .chat-time-axis {
     position: relative;
-    height: 700px;
-    flex-shrink: 0;
 }
 
 .chat-tick {
@@ -816,30 +833,10 @@ table tbody tr:hover {
     gap: 4px;
 }
 
-.chat-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.chat-column h3 {
-    margin-bottom: 4px;
-}
-
-@media (max-width: 1000px) {
-    .chat-columns-wrapper {
-        flex-direction: column;
-    }
-    .chat-time-axis-col {
-        display: none;
-    }
-}
-
 .chat-timeline-scroll {
     position: relative;
-    height: 700px;
-    overflow: hidden;
+    flex: 1;
+    min-width: 0;
     background: #0d1929;
     border-radius: 4px;
 }
@@ -883,9 +880,10 @@ table tbody tr:hover {
     right: 0;
     height: 2px;
     background: #00d9ff;
-    z-index: 5;
+    z-index: 10;
     pointer-events: none;
     opacity: 0.6;
+    top: 0;
 }
 
 /* Diverging bar chart - Team A up, Team B down */
