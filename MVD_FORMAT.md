@@ -65,12 +65,14 @@ With `FTE_PEXT_FLOATCOORDS` or `MVD_PEXT1_FLOATCOORDS`, coordinates are 32-bit f
 
 ### Character Encoding
 
-QuakeWorld uses a custom character encoding:
-- Characters 0-127: Standard ASCII
-- Characters 128-255: "Gold" (alternate color) versions of 0-127
-- To convert gold text: `char = char - 128` if `char >= 128`
+QuakeWorld uses a custom 8-bit character encoding inherited from id Software's Quake font:
 
-Player names and messages may contain these high-bit characters for colored text.
+- **0x00–0x1F**: Special font glyphs — bracket-digits (`[0]…[9]`), brackets, dots, arrows. **Not generic control characters.** They render as visible icons in the Quake font.
+- **0x20–0x7E**: Standard printable ASCII (white text).
+- **0x7F**: DEL — renders as `>` in the Quake font.
+- **0x80–0xFF**: "Gold" (alternate color) glyphs. Each byte `b` in this range renders identically to byte `b - 0x80`, just in gold/brown instead of white.
+
+Player names, chat messages, and obituary text may use any of these. **Naively stripping all bytes `< 0x20` is wrong** — it loses legitimate name characters. The canonical normalization is the ezquake/mvdsv `Q_normalizetext` table; see [Player Name Normalization](#player-name-normalization) below.
 
 ### Text Rendering and Color Codes
 
@@ -90,7 +92,7 @@ Characters with values 128-255 are rendered using the same glyphs as characters 
 | Alternate (gold/brown) | rgb(175, 120, 52) | rgb(75, 52, 22) |
 | Numbers | rgb(255, 255, 150) | rgb(218, 132, 7) |
 
-**Conversion**:
+**Conversion** (for *display* — i.e. picking which glyph and which color to render):
 ```go
 func convertQuakeChar(c byte) (displayChar byte, isGold bool) {
     if c >= 128 {
@@ -99,6 +101,8 @@ func convertQuakeChar(c byte) (displayChar byte, isGold bool) {
     return c, false  // Normal white character
 }
 ```
+
+> ⚠️ This conversion is for **rendering** only. It does not produce a string suitable for cross-source joins or for use as a map key, because it leaves bytes `0x00–0x1F` unchanged (so a name like `[bbb]` stays as `\x10 bbb \x11` and won't match a JSON-decoded `[bbb]`). For string-comparison purposes use [`Q_normalizetext`](#player-name-normalization) instead.
 
 #### Inline Color Codes
 
@@ -804,6 +808,50 @@ func parseUserinfo(s string) map[string]string {
     return result
 }
 ```
+
+### The userinfo `name` is not always the displayed netname
+
+On most demos `userinfo["name"]` and `ent->s.v.netname` (the string the server prints in chat lines and obituaries) are equal. **They are not required to be.** KTX with authentication enabled keeps the auth/login name in `userinfo["name"]` (often plus a `*auth\<login>` field) while the player's *displayed* netname can be a completely different string — typically the colored/decorated name they chose client-side.
+
+Example from a real demo (`broken.mvd.gz`, slot 2):
+
+| Source | Bytes | After Q_normalizetext |
+|---|---|---|
+| `svc_updateuserinfo` `\name\` value | `4e 65 6f 70 68 79 74 65` | `Neophyte` (auth name) |
+| Server-emitted chat line `"X: hi"` | `2e ce 15 6f f0 68 f9 74 15 ae` | `.N3ophyt3.` (display netname) |
+| KTX demoinfo JSON `players[i].name` | same bytes as the chat line | `.N3ophyt3.` |
+
+Both strings refer to the same human. **No `svc_setinfo` and no second `svc_updateuserinfo` is sent** to bridge them — the demo simply contains the auth name in userinfo and the display name in every print/obituary that reaches the parser. A consumer that builds its `slot → display name` map purely from `svc_updateuserinfo` will be wrong about that player for the entire demo.
+
+#### Where the displayed name actually comes from
+
+The displayed name is `ent->s.v.netname` on the server side. From the demo's perspective you can recover it from any of:
+
+1. **`svc_print` chat lines** (`"name: text"` for public say, `"(name): text"` for `say_team`).
+2. **`svc_print` obituaries** (`"X was rocketed by Y"`, etc.).
+3. **The KTX `mvdhidden_demoinfo` JSON** at end of demo, in `players[i].name`. This is the most authoritative source because KTX writes it directly from `ent->s.v.netname` without any cleanup, encoded into JSON via `\u00XX` escapes (see the `Q_normalizetext` note above about decoding those back through the same table).
+
+#### Slot ↔ DemoInfo bridging
+
+Because the displayed name in the demoinfo JSON does not carry a `slot` field, and the userinfo string for that slot may carry a different `name`, you cannot join "this slot's live state" to "this player's KTX scoreboard entry" by name. You have to bridge them with secondary signals.
+
+The recommended approach is **`(team, frags)` matching with strict uniqueness**:
+
+1. Build a `(team, frags) → demoInfoPlayer` map from `demoInfo.players[i]`, dropping any tuple that resolves to more than one demoinfo entry.
+2. For each slot whose live `Frags` count and userinfo `Team` you trust, look up the `(team, frags)` tuple.
+3. **Only commit the slot→demoinfo mapping if all three hold:**
+   - the slot's userinfo `team` equals the demoinfo player's `team`,
+   - the slot's last-seen frag count (from `svc_updatefrags`) equals the demoinfo player's `Stats.Frags`,
+   - the `(team, frags)` tuple resolved to exactly one demoinfo player (no duplicate).
+4. On any failure, fall back to the userinfo name. Do **not** guess.
+
+The userinfo `team` field is reliable in the auth-override case — it's only the *display name* that diverges, not team affiliation. That makes `team` a strong tie-breaker against frag-count collisions.
+
+**Failure mode if you skip the strict-match check:** stats from slot X get attributed to slot Y when two players happen to finish on the same frag total. The "fall back to userinfo name" failure mode is much milder: one slot's row in the frontend renders under the auth name instead of the display name.
+
+**Why not just use frag count alone?** Because frag-count ties happen, especially in tight matches or 2v2s, and the failure mode is silent mis-attribution rather than a missing row.
+
+**Why not match on chat-extracted display names?** Because chat is generated by the server with the netname embedded inline, but the message itself does not carry a slot number. You'd have to bridge slot↔chat-name through some other signal anyway, which gets you back to `(team, frags)` or worse.
 
 ---
 
@@ -1932,9 +1980,12 @@ Fields are read in this exact order when their flag is set:
 **Critical**: Entity updates are variable-length. If you skip the wrong number of bytes for even one entity, all subsequent commands in the same payload will be misaligned. This causes:
 - Garbage reads of `svc_updatefrags` (bogus frag counts)
 - Lost `svc_print` messages (missing kill attributions)
+- Phantom `svc_updatestat[long]` reads with 32-bit garbage values that look like real stats — see the [`svc_temp_entity`](#svc_temp_entity-23) note for a worked example
 - Potential parser crashes
 
-Each payload has its own independent byte buffer, so misalignment does not propagate across demo messages.
+The same warning applies verbatim to [`svc_temp_entity`](#svc_temp_entity-23) (TE_GUNSHOT and TE_BLOOD carry an extra `byte count` field), [`svc_sound`](#svc_sound-6) (channel high bits gate optional volume/attenuation bytes), and [`svc_playerinfo`](#svc_playerinfo-42---player-state-update) (DF_* flags gate every coord/angle field). All four are variable-length, all four are silent on misalignment.
+
+Each payload has its own independent byte buffer, so misalignment does not propagate across demo messages — that's why "bail on unknown" is the only safe recovery strategy.
 
 ---
 
@@ -1954,6 +2005,76 @@ if (channel & 0x4000):
           1     sound_num
           6/12  origin (3 coords, size depends on FLOATCOORDS)
 ```
+
+### svc_temp_entity (23)
+
+Spawns a transient visual effect (gunshot puff, blood, lightning beam, lava splash, teleport sparkles, etc.). The wire format is **type-dependent** — the size of the payload after the type byte varies per `TE_*` constant. **This is the single most error-prone command in the protocol** because the parser can't fall back to a generic length: skipping the wrong number of bytes for one TE entry will silently misalign every command after it in the same payload.
+
+```
+Offset  Size   Field
+------  ----   -----
+0       1      svc_temp_entity (23)
+1       1      te_type (TE_* constant)
+2+      var    type-specific payload
+```
+
+#### TE Type Sizes
+
+*Source: ezQuake `cl_tent.c::CL_ParseTEnt`, mvdsv `cl_parse.c`. The QW protocol uses short coords (2 bytes each) by default; with `FTE_PEXT_FLOATCOORDS` negotiated, every coord becomes a 4-byte IEEE float.*
+
+| ID | Name | Wire format | Size (short coords) | Size (float coords) |
+|----|------|-------------|---------------------|---------------------|
+| 0 | `TE_SPIKE` | 3 coords | 6 | 12 |
+| 1 | `TE_SUPERSPIKE` | 3 coords | 6 | 12 |
+| **2** | **`TE_GUNSHOT`** | **byte count + 3 coords** | **7** | **13** |
+| 3 | `TE_EXPLOSION` | 3 coords | 6 | 12 |
+| 4 | `TE_TAREXPLOSION` | 3 coords | 6 | 12 |
+| 5 | `TE_LIGHTNING1` | beam: short entity + 3 coords (start) + 3 coords (end) | 14 | 26 |
+| 6 | `TE_LIGHTNING2` | beam | 14 | 26 |
+| 7 | `TE_WIZSPIKE` | 3 coords | 6 | 12 |
+| 8 | `TE_KNIGHTSPIKE` | 3 coords | 6 | 12 |
+| 9 | `TE_LIGHTNING3` | beam | 14 | 26 |
+| 10 | `TE_LAVASPLASH` | 3 coords | 6 | 12 |
+| 11 | `TE_TELEPORT` | 3 coords | 6 | 12 |
+| **12** | **`TE_BLOOD`** | **byte count + 3 coords** | **7** | **13** |
+| 13 | `TE_LIGHTNINGBLOOD` | 3 coords (NOT a beam, despite the name) | 6 | 12 |
+
+**Easy to get wrong:**
+
+1. **`TE_GUNSHOT` (2) and `TE_BLOOD` (12) carry an extra `byte count` field** before the 3 coords. They are the only two QW TE types that do this. Treating them as plain "3 coord" entries causes a 1-byte under-skip per occurrence — and a frame with several rocket impacts contains a *run* of TE_BLOOD entries, so the drift compounds quickly.
+2. **Beams are 14 bytes (short coords), not 16.** The wire format is `short entity + 3 short coords (start) + 3 short coords (end)` = 2 + 6 + 6 = 14 bytes. With float coords it's 2 + 12 + 12 = 26.
+3. **`TE_LIGHTNINGBLOOD` (13) is NOT a beam.** Despite the "lightning" prefix it has the same 3-coord format as a regular blood splat — there is no entity number, no start/end pair.
+4. **Unknown TE types must abort the message, not guess.** If you ever encounter a TE type you don't recognise (an FTE/QuakeForge extension you haven't implemented), the only safe action is to bail out of the current payload — do **not** assume "probably 3 coords" because a single byte of drift here will produce a phantom `svc_updatestatlong` later in the same payload, with a believable stat index and a 32-bit garbage value that will blow up any downstream graph autoscale.
+
+#### Reference implementation
+
+```go
+func skipTempEntity(r *BufferReader, floatCoords bool) error {
+    teType, err := r.ReadByte()
+    if err != nil { return err }
+
+    coordSize := 2
+    if floatCoords {
+        coordSize = 4
+    }
+    switch teType {
+    case 0, 1, 3, 4, 7, 8, 10, 11, 13: // 3 coords
+        return r.Skip(3 * coordSize)
+    case 2, 12: // byte count + 3 coords
+        return r.Skip(1 + 3*coordSize)
+    case 5, 6, 9: // beam: short entity + 3 coords + 3 coords
+        return r.Skip(2 + 6*coordSize)
+    default:
+        return io.EOF // bail rather than guess
+    }
+}
+```
+
+#### Symptom of getting this wrong
+
+In `broken.mvd.gz` (a real demo we hit during development) a run of six `TE_BLOOD` events at the same instant — a normal multi-rocket impact frame — caused a parser that treated TE_BLOOD as 6 bytes to drift through several mis-skipped records, eventually misreading byte `0x26` as `svc_updatestatlong` and consuming the next 5 bytes (`04 e4 f8 49 0a`) as `stat=4 (armor) value=172620004`. Downstream the timeline analyzer dutifully recorded an armor of 172 million for one player; the team `avgArmor` graph autoscaled and looked empty for the entire match. The bytes were never an updatestatlong — they were the type+count+coord-Y of a perfectly legal TE_BLOOD record. The lesson: a single missed byte in `skipTempEntity` will not announce itself as a parse error, it will hand back plausible-looking corrupt data many bytes later.
+
+---
 
 ### svc_stufftext (9)
 
@@ -2015,6 +2136,10 @@ Offset  Size  Field
 2       var   key (null-terminated string)
 ?       var   value (null-terminated string)
 ```
+
+**This is a single-key update**, sent any time *one* userinfo key changes mid-game (`name`, `team`, `topcolor`, `bottomcolor`, `*spectator`, etc.). It's the lightweight counterpart to `svc_updateuserinfo`, which sends the entire userinfo string. A parser that only handles `svc_updateuserinfo` will miss every mid-game name/team change and end up with a stale `Players[slot]` record.
+
+Treat `svc_setinfo` as authoritative for the listed key only — do not clear other fields. In practice you'll see `chat=1` / `chat=` toggles (typing indicator) most often, but `name`, `team`, and skin updates also flow through this command.
 
 ### svc_serverinfo (52)
 
@@ -2124,9 +2249,23 @@ def parse_network_message(data):
             if level == PRINT_MEDIUM:
                 detect_frag(message)
 
+        elif cmd == SVC_TEMP_ENTITY:
+            # Type-dependent skip — see svc_temp_entity section above.
+            # Bail on unknown TE types; do NOT guess a length.
+            skip_temp_entity(data, float_coords)
+
+        elif cmd == SVC_SETINFO:
+            # Single-key userinfo update; updates one field in players[slot].
+            slot = read_byte(data)
+            key = read_string(data)
+            value = read_string(data)
+            apply_setinfo(slot, key, value)
+
         # ... handle other svc_* commands
         else:
-            # Unknown command - skip rest of this payload
+            # Unknown command - bail out of this payload entirely.
+            # Each dem_* message has its own buffer, so the next message
+            # starts fresh. Never try to "skip a guessed number of bytes".
             break
 ```
 
@@ -2138,50 +2277,104 @@ def parse_network_message(data):
 
 1. **Validate player numbers**: Always check `player_num < MAX_CLIENTS (32)` before array access.
 
-2. **Handle unknown commands gracefully**: When encountering an unknown svc_* command, skip the rest of the current payload rather than aborting.
+2. **Bail, don't guess, on unknown commands**: When `skipCommand` cannot determine the size of a command (unknown opcode, unknown TE type, unknown FTE extension), the only safe action is to abandon the rest of the current payload and continue with the next demo message. **Never** "skip a guessed number of bytes" — drift inside a payload silently produces plausible-looking corrupt data many bytes later (see the [`svc_temp_entity` example](#svc_temp_entity-23): one missed byte in `skipTempEntity` resurfaces as a phantom `svc_updatestatlong` with a 32-bit garbage armor value).
 
-3. **Time tracking**: Accumulate time_delta values to track demo time. A typical 20-minute demo will have cumulative time around 1200 seconds.
+3. **Each payload is its own buffer**: Misalignment within one `dem_*` message does not propagate to the next. This is what makes "bail on unknown" safe — you lose at most the rest of one ~600-byte payload, not the whole demo.
 
-4. **Character encoding**: Player names may contain high-bit characters (128-255) for gold/colored text. Subtract 128 to get ASCII equivalent.
+4. **Time tracking**: Accumulate time_delta values to track demo time. A typical 20-minute demo will have cumulative time around 1200 seconds.
 
-5. **Protocol extensions**: Always check for extensions before parsing fields that may have different sizes (e.g., coordinates may be 16-bit or 32-bit float).
+5. **Character encoding**: Player names may contain high-bit characters (`0x80–0xFF`, gold) **and** low-byte glyphs (`0x00–0x1F`, font icons including bracket-digits and dots). Subtract 128 only handles the gold half — see [Player Name Normalization](#player-name-normalization) for the full table.
+
+6. **Protocol extensions**: Always check for extensions before parsing fields that may have different sizes. The two flags that matter for length calculations are:
+   - `FTE_PEXT_FLOATCOORDS` / `MVD_PEXT1_FLOATCOORDS` — coords switch from 2-byte shorts to 4-byte IEEE floats. Affects `svc_sound`, `svc_temp_entity`, `svc_spawnbaseline`, `svc_spawnstatic`, `svc_playerinfo`, `svc_packetentities`, `svc_deltapacketentities`. Read this once from `svc_serverdata` and cache it.
+   - `FTE_PEXT_ENTITYDBL`/`ENTITYDBL2`/`MODELDBL`/`COLOURMOD`/`TRANS` — these add conditional bytes to `svc_packetentities` entity deltas. Skipping them wrong corrupts every command after the entity packet in the same payload.
+
+7. **`svc_serverdata` may not be the very first command**: cache the FTE flags in your parser the moment you see it, but be aware that the demo's first network message *usually* but not always begins with `svc_serverdata`. If you skip a command before `svc_serverdata` arrives, you may be skipping with `floatCoords=false` even though the demo turns out to use float coords.
+
+8. **`svc_setinfo` is a real command you must handle**: don't fall back to the generic skipper. See the [`svc_setinfo`](#svc_setinfo-51) section. Mid-game name/team/skin changes flow through here, not through `svc_updateuserinfo`.
 
 ### Common Parsing Issues
 
 | Issue | Solution |
 |-------|----------|
-| Demo stops parsing early | Check for unknown svc_* commands causing early exit |
+| Demo stops parsing early | An unknown `svc_*` command (often an unknown TE type or FTE entity flag) hit `default → io.EOF`. Acceptable; the next payload starts fresh. Investigate which command if it happens early and often. |
 | Invalid player numbers (>31) | Skip messages with out-of-range player numbers |
-| Garbled player names | Handle high-bit character encoding |
+| Garbled player names / mismatched display names | Apply `Q_normalizetext` consistently. If userinfo `name` differs from chat/obituary names, see [The userinfo `name` is not always the displayed netname](#the-userinfo-name-is-not-always-the-displayed-netname). |
 | Missing frags | Check PRINT_MEDIUM (level 1) for obituaries, not PRINT_HIGH |
+| One player's per-player health/armor stack is empty in the timeline view | Slot↔demoinfo bridge failed — usually the userinfo `name` differs from the demoinfo display name and your join is by string equality. Use `(team, frags)` matching, fall back to userinfo name on failure. |
+| One player's frag deltas attributed to another player | Naïve `frags → demoInfoPlayer` mapping collided on a tied frag count. Key by `(team, frags)` and require strict uniqueness; do not commit ambiguous mappings. |
+| Sudden 9-digit health/armor reading on one player for several seconds | Parser drifted inside a `svc_temp_entity` run (almost always TE_BLOOD or TE_GUNSHOT — both carry an extra `byte count`) and misread later bytes as `svc_updatestatlong`. Fix `skipTempEntity`, do **not** clamp the value — clamping just hides the upstream drift. |
 | Zero duration | Ensure time_delta accumulation is correct (milliseconds) |
-| Player name mismatches | Normalize spaces and color codes (see below) |
 | Damage values too high | Cap damage at victim's health (MVD has unbound damage) |
 
 ### Player Name Normalization
 
-Player names in MVD demos may require normalization:
+*Source: ezquake `common.c::Q_normalizetext` (256-byte lookup table), mvdsv ships an identical copy. Both are file-scope and used on console text, log lines, and any path that needs a "plain ASCII" rendition of a Quake-encoded string.*
 
-1. **Color codes**: Characters 128-255 are "gold" versions. Strip high bit: `char & 0x7F`
-2. **Multiple spaces**: Some names contain multiple consecutive spaces (e.g., `"rusti  FU"`). Normalize to single space if comparing names across sources.
-3. **Trailing/leading spaces**: Trim whitespace when comparing.
-4. **Case sensitivity**: QuakeWorld names are case-sensitive.
+**Do not** normalize names by simply doing `c & 0x7f` and dropping anything below `0x20`. That throws away `[`, `]`, dots, and bracket-digits that are legitimately part of Quake names, and produces the wrong string in two ways:
+
+1. It collapses distinct names that differ only in low-byte glyphs. E.g. `[bbb]` (encoded as `10 62 62 62 11`) becomes `bbb` instead of `[bbb]`.
+2. It silently shortens names so that downstream joins (slot↔demoinfo, frag-event attribution, frontend per-player rows) miss matches that would have worked.
+
+Instead, run every player-facing string (userinfo `name`, userinfo `team`, `svc_print` payload, KTX demoinfo JSON `name` field) through the canonical 256-entry table:
+
+| Byte (and its `b+0x80` "gold" twin) | Mapped to |
+|-------------------------------------|-----------|
+| `0x00` | `'#'` (we treat NUL as a non-printable; some implementations drop it) |
+| `0x05`, `0x0E`, `0x0F`, `0x1C`, `0x2E` | `'.'` |
+| `0x0A` | `'\n'` (kept) |
+| `0x0D` | `'\r'` (kept) |
+| `0x10` | `'['` |
+| `0x11` | `']'` |
+| `0x12`–`0x1B` | `'0'`–`'9'` (`'0' + (b - 0x12)`) |
+| `0x1D` | `'<'` |
+| `0x1E` | `'='` |
+| `0x1F` | `'>'` |
+| `0x20`–`0x7E` | identity (printable ASCII) |
+| `0x7F` | `'>'` |
+| any other `b < 0x20` | `'#'` |
+| `0x80`–`0xFF` | same mapping as `b - 0x80` (high bit = gold color, irrelevant for the plain string) |
+| `0x80` (override) | `'('` |
+| `0x82` (override) | `')'` |
+| `0x8D` (override) | `'<'` |
+
+**Reference implementation** (matches ezquake/mvdsv byte-for-byte):
 
 ```go
-func normalizeName(name string) string {
-    // Strip color codes (high-bit characters)
-    var result strings.Builder
-    for _, c := range name {
-        if c >= 128 {
-            result.WriteRune(c - 128)
-        } else {
-            result.WriteRune(c)
-        }
+var qNormalizeTable = func() [256]byte {
+    var t [256]byte
+    for i := 0; i < 256; i++ { t[i] = '#' }
+    for i := 32; i < 127; i++ { t[i] = byte(i) }
+    t[5], t[14], t[15], t[28], t[46] = '.', '.', '.', '.', '.'
+    t[10], t[13] = '\n', '\r'
+    t[16], t[17] = '[', ']'
+    for i := 18; i <= 27; i++ { t[i] = byte('0' + (i - 18)) }
+    t[29], t[30], t[31] = '(', '=', ')'
+    t[127] = '>'
+    for i := 0; i < 128; i++ { t[i+128] = t[i] } // gold = white
+    t[128], t[129], t[130], t[141] = '(', '=', ')', '<'
+    return t
+}()
+
+func NormalizeQuakeText(b []byte) string {
+    out := make([]byte, 0, len(b))
+    for _, c := range b {
+        if c == 0 { continue }
+        out = append(out, qNormalizeTable[c])
     }
-    // Collapse multiple spaces
-    return strings.Join(strings.Fields(result.String()), " ")
+    return string(out)
 }
 ```
+
+**Important — apply this consistently in every place a name surfaces.** A subtle gotcha: KTX writes the demoinfo JSON by escaping non-ASCII bytes as `\u00XX`, so when you decode that JSON in another language each escape comes back as a Unicode codepoint in the range U+0000–U+00FF. Run those codepoints through the *same* table (after asserting they fit in a byte) — otherwise the analyzer will hold one normalized form for chat-side names and a different normalized form for demoinfo-side names of the same player, and any join between them silently drops the player.
+
+**Do not "tidy" trailing punctuation.** Quake names can legitimately end in `.` (e.g. `.N3ophyt3.` after Q_normalizetext folding of `2e ce 15 6f f0 68 f9 74 15 ae`). Trimming a trailing `.` from obituary parser output to "clean up punctuation" splits that player's frags off into a phantom name. Pattern-match weapon suffixes explicitly instead.
+
+**Other things still worth doing after the table pass:**
+
+- **Multiple spaces**: Some names contain runs of consecutive spaces (e.g. `"Hto   (FU)"`). Preserve them when displaying — the player chose them — but be aware downstream HTML rendering may collapse them.
+- **Leading/trailing spaces**: Trim only if comparing names across sources where one source already trims.
+- **Case sensitivity**: QuakeWorld names are case-sensitive; do not lowercase before comparing.
 
 ### Performance Considerations
 
@@ -2346,6 +2539,12 @@ sv_usercmdtrace <userid> on|off
 ```
 Enables `mvdhidden_usercmd` (0x0001) recording per player. Used primarily for race mode.
 
+**Q_normalizetext** ([common.c#L1695-L1754](https://github.com/QW-Group/ezquake-source/blob/master/src/common.c)): the canonical 256-byte mapping table used by ezquake and mvdsv to fold any Quake-encoded string into plain ASCII. Used for log lines, console text, and SV_Logfile paths. mvdsv ships an identical copy in its own `common.c`. Note that KTX itself does **not** call `Q_normalizetext` on the player `netname` it writes into the demoinfo JSON — it just JSON-escapes the raw bytes via `\u00XX`, so the consumer is responsible for decoding the escapes back to bytes and running them through the same table.
+
+**KTX `getname()`** ([g_utils.c#L1207-L1234](https://github.com/QW-Group/ktx/blob/master/src/g_utils.c#L1207-L1234)): copies `ent->s.v.netname` verbatim — no mapping, no stripping. This is the function whose output ends up in the demoinfo `players[i].name` JSON field, which is why that field can differ from `userinfo["name"]` when KTX's auth system has overridden the userinfo name.
+
+**TE_BLOOD / TE_GUNSHOT count byte** (ezquake [`cl_tent.c::CL_ParseTEnt`](https://github.com/QW-Group/ezquake-source/blob/master/src/cl_tent.c)): these two TE types (and only these two in stock QW) carry a `byte count` field before their 3 coords. Worth verifying against the reference implementation if you ever extend `skipTempEntity` to handle a new TE type from an FTE/QuakeForge extension.
+
 ---
 
 ## Version History
@@ -2355,6 +2554,14 @@ Enables `mvdhidden_usercmd` (0x0001) recording per player. Used primarily for ra
 | Original (MVDSV) | Basic MVD format - dem_* message types, svc_* commands |
 | FTE Extensions | Model index > 255, entity count > 512, float coordinates |
 | MVD_PEXT1 (KTX) | Hidden messages (damage tracking, antilag, demoinfo, commentary) |
+
+### Document Revisions
+
+- Added [`svc_temp_entity`](#svc_temp_entity-23) section with the full per-type size table after a real-world demo (`broken.mvd.gz`) revealed that omitting the `byte count` for `TE_BLOOD` (12) and `TE_GUNSHOT` (2), and over-sizing beam types as 16 bytes, both cause silent parser drift that surfaces as plausible-looking corrupt stats.
+- Replaced the simplistic "char & 0x7f" name normalization advice with the canonical [`Q_normalizetext`](#player-name-normalization) table from ezquake/mvdsv `common.c`. The old advice silently dropped legitimate name characters (`[`, `]`, dots, bracket-digits) and produced different normalized strings on different sides of cross-source joins.
+- Added [The userinfo `name` is not always the displayed netname](#the-userinfo-name-is-not-always-the-displayed-netname) covering the KTX auth-override case and the recommended `(team, frags)` slot↔demoinfo bridging strategy with strict-uniqueness check.
+- Documented [`svc_setinfo`](#svc_setinfo-51) as a real command consumers must handle (single-key userinfo updates flow through here, not `svc_updateuserinfo`).
+- Strengthened the parsing-pitfalls and robustness tips with a "bail, don't guess" rule for unknown commands and TE types, and a cross-reference between the four variable-length offenders (`svc_temp_entity`, `svc_sound`, `svc_playerinfo`, `svc_packetentities`).
 
 ### MVD_PEXT1 Hidden Message History
 
