@@ -981,6 +981,47 @@ function displayKeyMoments(result) {
 
         tbody.appendChild(tr);
     });
+
+    // Display frag streaks
+    const streakBody = document.getElementById('fragstreaks-body');
+    const streakEmpty = document.getElementById('fragstreaks-empty');
+    streakBody.innerHTML = '';
+
+    const fragStreaks = result.timelineAnalysis?.fragStreaks || [];
+
+    if (fragStreaks.length === 0) {
+        streakEmpty.style.display = 'block';
+    } else {
+        streakEmpty.style.display = 'none';
+
+        fragStreaks.forEach(streak => {
+            const tr = document.createElement('tr');
+
+            let watchCell = '-';
+            if (hubInfo && hubInfo.gameId) {
+                const demoOff = timelineState.demoOffset || 0;
+                const fromTime = Math.max(0, Math.floor(streak.time + demoOff) - 5);
+                const toTime = Math.floor(streak.endTime + demoOff) + 5;
+                const trackId = streak.playerUserID || 0;
+                const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+                watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
+            }
+
+            tr.innerHTML = `
+                <td class="time-cell time-link">${formatDuration(streak.time)}</td>
+                <td>${escapeHtml(streak.playerName || 'Unknown')}</td>
+                <td>${escapeHtml(streak.team || '-')}</td>
+                <td>${streak.frags}</td>
+                <td>${watchCell}</td>
+            `;
+
+            tr.querySelector('.time-link').addEventListener('click', () => {
+                setCurrentTime(streak.time);
+            });
+
+            streakBody.appendChild(tr);
+        });
+    }
 }
 
 function getPowerupDisplay(type) {

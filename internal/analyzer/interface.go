@@ -286,6 +286,7 @@ type TimelineAnalysisResult struct {
 	HighResBuckets  []HighResBucket     `json:"highResBuckets,omitempty"`  // High-res buckets for map visualization
 	FragEvents      []TimelineFragEvent `json:"fragEvents,omitempty"`      // Frag events for score timeline
 	PowerupEvents   []PowerupEvent      `json:"powerupEvents,omitempty"`   // Powerup pickups for Key Moments
+	FragStreaks      []FragStreakEvent    `json:"fragStreaks,omitempty"`      // Top longest frag streaks for Key Moments
 	LocationData    []MapLocation       `json:"locationData,omitempty"`    // Location points from .loc file for map view
 	PlayerUserIDs   map[string]int      `json:"playerUserIDs,omitempty"`   // Player name -> UserID for Hub viewer links
 }
@@ -341,6 +342,16 @@ type PowerupEvent struct {
 	Team         string  `json:"team"`         // Player's team
 	PowerupType  string  `json:"powerupType"`  // "quad", "pent", or "ring"
 	Duration     float64 `json:"duration"`     // Seconds held
+}
+
+// FragStreakEvent represents a frag streak (consecutive kills without dying) for Key Moments
+type FragStreakEvent struct {
+	Time         float64 `json:"time"`         // Demo time when streak started
+	EndTime      float64 `json:"endTime"`      // Demo time when streak ended (death or end of match)
+	PlayerName   string  `json:"playerName"`   // Player name
+	PlayerUserID int     `json:"playerUserID"` // Player UserID for Hub viewer track param
+	Team         string  `json:"team"`         // Player's team
+	Frags        int     `json:"frags"`        // Number of consecutive kills
 }
 
 // TimelineBucket represents aggregated data for a time slice

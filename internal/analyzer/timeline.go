@@ -24,7 +24,8 @@ type TimelineAnalyzer struct {
 	playerNames         map[int]string // Slot -> player name (from UserInfoEvent)
 	playerUserIDs       map[int]int    // Slot -> UserID (for Hub viewer track param)
 	buckets             []*timelineBucketData
-	fragEventsRaw       []fragEventRaw // Raw frag events (player num, time)
+	fragEventsRaw       []fragEventRaw  // Raw frag events (player num, time)
+	deathEventsRaw      []deathEventRaw // Raw death events (player num, time)
 	lastSampleTime      float64
 	matchStartTime      float64
 	matchStarted        bool
@@ -36,6 +37,12 @@ type fragEventRaw struct {
 	Time      float64
 	PlayerNum int
 	Delta     int // +N for kills, -N for suicides/teamkills
+}
+
+// deathEventRaw tracks a player death (detected via health transition)
+type deathEventRaw struct {
+	Time      float64
+	PlayerNum int
 }
 
 // timelinePlayerState tracks current state for a single player
@@ -273,6 +280,14 @@ func (a *TimelineAnalyzer) sampleCurrentState(time float64) {
 
 		state.prevHealth = state.health
 
+		// Record death events for frag streak calculation
+		if isDeathFrame {
+			a.deathEventsRaw = append(a.deathEventsRaw, deathEventRaw{
+				Time:      time,
+				PlayerNum: slot,
+			})
+		}
+
 		// Skip players who are dead (unless this is the death frame)
 		if isDead && !isDeathFrame {
 			continue
@@ -495,6 +510,9 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		}
 	}
 
+	// Detect top 5 longest frag streaks for Key Moments
+	fragStreaks := a.detectFragStreaks(5, fragEvents, nameToTeam, playerUserIDsByName)
+
 	result := &TimelineAnalysisResult{
 		BucketDuration:  a.graphBucketDuration, // 1.0 for graphs
 		HighResDuration: a.bucketDuration,      // 0.05 for map
@@ -503,6 +521,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		HighResBuckets:  highResBuckets,  // 50ms for map visualization
 		FragEvents:      fragEvents,
 		PowerupEvents:   powerupEvents,
+		FragStreaks:      fragStreaks,
 		LocationData:    locationData,
 		PlayerUserIDs:   playerUserIDsByName,
 	}
@@ -951,4 +970,143 @@ func (a *TimelineAnalyzer) createPowerupEvent(slot int, powerupType string, star
 	}
 
 	return event
+}
+
+// detectFragStreaks computes the top N longest frag streaks (consecutive kills without dying)
+func (a *TimelineAnalyzer) detectFragStreaks(topN int, fragEvents []TimelineFragEvent, nameToTeam map[string]string, playerUserIDsByName map[string]int) []FragStreakEvent {
+	// Build a per-player timeline of kills and deaths
+	// First, build a per-player-slot death time list
+	deathsBySlot := make(map[int][]float64)
+	for _, d := range a.deathEventsRaw {
+		deathsBySlot[d.PlayerNum] = append(deathsBySlot[d.PlayerNum], d.Time)
+	}
+
+	// Convert slot-based deaths to name-based using same resolution as fragEvents
+	resolved := a.ctx.ResolveSlotDemoInfo()
+	deathsByName := make(map[string][]float64)
+	for slot, times := range deathsBySlot {
+		name := ""
+		if di, ok := resolved[slot]; ok && di.Name != "" {
+			name = di.Name
+		} else if player := a.ctx.Players[slot]; player != nil {
+			name = player.Name
+		} else if n, ok := a.playerNames[slot]; ok {
+			name = n
+		}
+		if name != "" {
+			deathsByName[name] = append(deathsByName[name], times...)
+		}
+	}
+
+	// Sort death times per player
+	for name := range deathsByName {
+		sort.Float64s(deathsByName[name])
+	}
+
+	// Track streaks per player: walk through frag events in order
+	type activeStreak struct {
+		startTime float64
+		frags     int
+	}
+	currentStreak := make(map[string]*activeStreak)
+
+	var allStreaks []FragStreakEvent
+
+	for _, fe := range fragEvents {
+		if fe.Delta <= 0 {
+			// Suicide/teamkill ends the streak
+			if s := currentStreak[fe.Player]; s != nil && s.frags > 0 {
+				allStreaks = append(allStreaks, FragStreakEvent{
+					Time:       s.startTime,
+					EndTime:    fe.Time,
+					PlayerName: fe.Player,
+					Team:       fe.Team,
+					Frags:      s.frags,
+				})
+			}
+			delete(currentStreak, fe.Player)
+			continue
+		}
+
+		// Check if the player died between the last frag event and this one
+		s := currentStreak[fe.Player]
+		if s != nil {
+			// Check for deaths between the last event and now
+			deaths := deathsByName[fe.Player]
+			died := false
+			for len(deaths) > 0 && deaths[0] <= fe.Time {
+				if s.startTime > 0 && deaths[0] > s.startTime {
+					died = true
+				}
+				deaths = deaths[1:]
+			}
+			deathsByName[fe.Player] = deaths
+			if died {
+				// End the streak
+				allStreaks = append(allStreaks, FragStreakEvent{
+					Time:       s.startTime,
+					EndTime:    fe.Time,
+					PlayerName: fe.Player,
+					Team:       fe.Team,
+					Frags:      s.frags,
+				})
+				s = nil
+				delete(currentStreak, fe.Player)
+			}
+		}
+
+		// Start or extend streak
+		if s == nil {
+			currentStreak[fe.Player] = &activeStreak{
+				startTime: fe.Time,
+				frags:     fe.Delta,
+			}
+		} else {
+			s.frags += fe.Delta
+		}
+	}
+
+	// Flush remaining active streaks (check if they died after their last frag)
+	for name, s := range currentStreak {
+		if s.frags > 0 {
+			team := nameToTeam[name]
+			endTime := 0.0
+			if len(a.buckets) > 0 {
+				endTime = a.buckets[len(a.buckets)-1].endTime
+			}
+			// Check for any remaining deaths after the streak started
+			for _, dt := range deathsByName[name] {
+				if dt > s.startTime {
+					endTime = dt
+					break
+				}
+			}
+			allStreaks = append(allStreaks, FragStreakEvent{
+				Time:       s.startTime,
+				EndTime:    endTime,
+				PlayerName: name,
+				Team:       team,
+				Frags:      s.frags,
+			})
+		}
+	}
+
+	// Sort by frags descending
+	sort.Slice(allStreaks, func(i, j int) bool {
+		return allStreaks[i].Frags > allStreaks[j].Frags
+	})
+
+	// Set UserIDs
+	for i := range allStreaks {
+		if uid, ok := playerUserIDsByName[allStreaks[i].PlayerName]; ok {
+			allStreaks[i].PlayerUserID = uid
+		}
+	}
+
+	// Return top N
+	if len(allStreaks) > topN {
+		allStreaks = allStreaks[:topN]
+	}
+
+	return allStreaks
 }
