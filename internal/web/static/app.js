@@ -390,8 +390,6 @@ function displayResults(result) {
         displayWeaponStatsTable(demoInfo.players);
         displayItemsTeamsTable(demoInfo.players);
         displayItemsTable(demoInfo.players);
-        displayPerformanceTeamsTable(demoInfo.players);
-        displayPerformanceTable(demoInfo.players);
     } else if (result.frags && result.frags.byPlayer) {
         displayScoreboardFallback(result.frags.byPlayer, result.match ? result.match.players : []);
     }
@@ -652,33 +650,6 @@ function formatPowerup(item) {
     return `${item.took}`;
 }
 
-function displayPerformanceTable(players) {
-    const tbody = document.getElementById('performance-body');
-    tbody.innerHTML = '';
-
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
-
-    const teamOrder = getTeamOrder(sorted);
-    const teamColors = TEAM_COLORS;
-
-    sorted.forEach(player => {
-        const tr = document.createElement('tr');
-        const teamIdx = teamOrder.indexOf(player.team || '');
-        if (teamIdx >= 0 && teamIdx < teamColors.length) {
-            tr.style.borderLeft = `3px solid ${teamColors[teamIdx]}`;
-        }
-        tr.innerHTML = `
-            <td>${escapeHtml(player.name)}</td>
-            <td>${player.spree?.max || 0}</td>
-            <td>${player.spree?.quad || 0}</td>
-            <td>${player.speed?.avg ? player.speed.avg.toFixed(0) : '-'}</td>
-            <td>${player.speed?.max ? player.speed.max.toFixed(0) : '-'}</td>
-            <td>${player.stats?.['spawn-frags'] || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
 function displayScoreboardFallback(byPlayer, players) {
     const tbody = document.getElementById('scoreboard-body');
     tbody.innerHTML = '';
@@ -891,42 +862,6 @@ function displayItemsTeamsTable(players) {
             <td>${lgPickup}</td>
             <td>${lgDrop}</td>
             <td>${lgXfer}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function displayPerformanceTeamsTable(players) {
-    const tbody = document.getElementById('performance-team-body');
-    tbody.innerHTML = '';
-
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
-    const teamOrder = getTeamOrder(sorted);
-    const teamColors = TEAM_COLORS;
-    const groups = groupByTeam(sorted);
-
-    teamOrder.forEach((team, idx) => {
-        const members = groups[team] || [];
-        const maxSpree = members.reduce((m, p) => Math.max(m, p.spree?.max || 0), 0);
-        const quadKills = members.reduce((s, p) => s + (p.spree?.quad || 0), 0);
-        const speedAvgs = members.map(p => p.speed?.avg || 0).filter(v => v > 0);
-        const speedAvg = speedAvgs.length > 0
-            ? (speedAvgs.reduce((s, v) => s + v, 0) / speedAvgs.length).toFixed(0)
-            : '-';
-        const speedMax = members.reduce((m, p) => Math.max(m, p.speed?.max || 0), 0) || '-';
-        const spawnFrags = members.reduce((s, p) => s + (p.stats?.['spawn-frags'] || 0), 0);
-
-        const tr = document.createElement('tr');
-        if (idx < teamColors.length) {
-            tr.style.borderLeft = `3px solid ${teamColors[idx]}`;
-        }
-        tr.innerHTML = `
-            <td>${escapeHtml(team)}</td>
-            <td>${maxSpree}</td>
-            <td>${quadKills}</td>
-            <td>${speedAvg}</td>
-            <td>${speedMax}</td>
-            <td>${spawnFrags}</td>
         `;
         tbody.appendChild(tr);
     });
