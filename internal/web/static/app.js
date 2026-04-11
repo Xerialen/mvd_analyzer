@@ -1947,13 +1947,11 @@ function updateRegionControlTimeline(startTime, endTime) {
     if (teamBLabel) teamBLabel.textContent = teamB;
 
     // Update legend color swatches to match strip colors exactly
-    const legendColors = document.querySelectorAll('#region-control-timeline-panel .legend-color');
-    if (legendColors.length >= 4) {
-        legendColors[0].style.background = teamStrongColor(TEAM_COLORS[0]);
-        legendColors[1].style.background = teamWeakColor(TEAM_COLORS[0]);
-        legendColors[2].style.background = teamWeakColor(TEAM_COLORS[1]);
-        legendColors[3].style.background = teamStrongColor(TEAM_COLORS[1]);
-    }
+    const setLegend = (id, color) => { const el = document.getElementById(id); if (el) el.style.background = color; };
+    setLegend('rc-legend-a-ctrl', teamStrongColor(TEAM_COLORS[0]));
+    setLegend('rc-legend-a-weak', teamWeakColor(TEAM_COLORS[0]));
+    setLegend('rc-legend-b-weak', teamWeakColor(TEAM_COLORS[1]));
+    setLegend('rc-legend-b-ctrl', teamStrongColor(TEAM_COLORS[1]));
 
     labelsContainer.innerHTML = '';
     stripsContainer.innerHTML = '';
