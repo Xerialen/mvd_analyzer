@@ -398,15 +398,24 @@ function displayResults(result) {
         displayTeams(result.match.teams);
     }
 
-    // Set team order early so summary tables use consistent colors with map/timeline
-    if (demoInfo?.teams) {
-        timelineState.teams = demoInfo.teams;
-    } else if (result.match?.teams) {
-        timelineState.teams = result.match.teams.map(t => t.name);
+    // Set team order early (sorted by total frags, highest first) for consistent colors everywhere
+    {
+        let teams = [];
+        if (demoInfo?.teams) {
+            teams = [...demoInfo.teams];
+        } else if (result.match?.teams) {
+            teams = result.match.teams.map(t => t.name);
+        }
+        if (teams.length >= 2 && demoInfo?.players) {
+            const teamFrags = {};
+            for (const p of demoInfo.players) {
+                const t = p.team || '';
+                teamFrags[t] = (teamFrags[t] || 0) + (p.stats?.frags || 0);
+            }
+            teams.sort((a, b) => (teamFrags[b] || 0) - (teamFrags[a] || 0));
+        }
+        timelineState.teams = teams;
     }
-    console.log('[DEBUG] demoInfo.teams:', demoInfo?.teams);
-    console.log('[DEBUG] timelineState.teams after early set:', JSON.stringify(timelineState.teams));
-
     // Player stats from demoInfo
     if (demoInfo && demoInfo.players) {
         displayPlayerStatsTeams(demoInfo.players);
@@ -532,11 +541,19 @@ function displayTeamsFromDemoInfo(demoInfo) {
         teamScores[team] += player.stats?.frags || 0;
     }
 
-    // Sort by score
-    const sorted = Object.entries(teamScores).sort((a, b) => b[1] - a[1]);
-    console.log('[DEBUG] displayTeamsFromDemoInfo: sorted order:', JSON.stringify(sorted.map(s => s[0])));
+    // Use timelineState.teams order for consistent colors, fall back to score sort
+    let ordered;
+    if (timelineState.teams && timelineState.teams.length >= 2) {
+        ordered = timelineState.teams.map(t => [t, teamScores[t] || 0]);
+        // Add any teams not in timelineState.teams
+        for (const [t, s] of Object.entries(teamScores)) {
+            if (!timelineState.teams.includes(t)) ordered.push([t, s]);
+        }
+    } else {
+        ordered = Object.entries(teamScores).sort((a, b) => b[1] - a[1]);
+    }
 
-    sorted.forEach(([name, frags]) => {
+    ordered.forEach(([name, frags]) => {
         const div = document.createElement('div');
         div.className = 'team-item';
         div.innerHTML = `
@@ -551,7 +568,15 @@ function displayTeams(teams) {
     const container = document.getElementById('teams-list');
     container.innerHTML = '';
 
-    const sorted = [...teams].sort((a, b) => b.frags - a.frags);
+    // Use timelineState.teams order for consistent colors, fall back to score sort
+    let sorted;
+    if (timelineState.teams && timelineState.teams.length >= 2) {
+        const orderMap = {};
+        timelineState.teams.forEach((t, i) => { orderMap[t] = i; });
+        sorted = [...teams].sort((a, b) => (orderMap[a.name] ?? 999) - (orderMap[b.name] ?? 999));
+    } else {
+        sorted = [...teams].sort((a, b) => b.frags - a.frags);
+    }
 
     sorted.forEach(team => {
         const div = document.createElement('div');
@@ -743,7 +768,6 @@ function displayScoreboardFallback(byPlayer, players) {
 function getTeamOrder(sortedPlayers) {
     // Use the same team order as timeline/map for consistent colors
     if (timelineState.teams && timelineState.teams.length >= 2) {
-        console.log('[DEBUG] getTeamOrder: using timelineState.teams:', JSON.stringify(timelineState.teams));
         return [...timelineState.teams];
     }
     // Fallback: order by first appearance in frag-sorted list
@@ -752,7 +776,6 @@ function getTeamOrder(sortedPlayers) {
         const t = p.team || '';
         if (t && !order.includes(t)) order.push(t);
     });
-    console.log('[DEBUG] getTeamOrder: FALLBACK order:', JSON.stringify(order));
     return order;
 }
 
@@ -1225,12 +1248,13 @@ function displayTimelineAnalysis(result) {
     const timeline = result.timelineAnalysis;
     const demoInfo = result.demoInfo;
 
-    // Get teams
-    let teams = [];
-    if (demoInfo?.teams) {
-        teams = demoInfo.teams;
-    } else if (result.match?.teams) {
-        teams = result.match.teams.map(t => t.name);
+    // Teams already set (frag-sorted) in displayResults; only set if missing
+    if (!timelineState.teams || timelineState.teams.length === 0) {
+        if (demoInfo?.teams) {
+            timelineState.teams = demoInfo.teams;
+        } else if (result.match?.teams) {
+            timelineState.teams = result.match.teams.map(t => t.name);
+        }
     }
 
     timelineState.buckets = timeline?.buckets || [];
@@ -1239,7 +1263,6 @@ function displayTimelineAnalysis(result) {
     timelineState.matchStartTime = timeline?.matchStartTime || 0;
     timelineState.demoOffset = timeline?.demoOffset || 0;
     timelineState.duration = result.duration || 600;
-    timelineState.teams = teams;
     timelineState.events = result.messages?.events || [];
     timelineState.fragEvents = timeline?.fragEvents || []; // Frag events from stat tracking
 
@@ -3012,8 +3035,10 @@ function initMapView(result) {
     mapState.canvas.height = canvasH;
     updateWorldToCanvasTransform();
 
-    // Get teams from demoInfo or match
-    if (result.demoInfo?.teams) {
+    // Use the canonical frag-sorted team order set in displayResults
+    if (timelineState.teams && timelineState.teams.length >= 2) {
+        mapState.teams = [...timelineState.teams];
+    } else if (result.demoInfo?.teams) {
         mapState.teams = result.demoInfo.teams;
     } else if (result.match?.teams) {
         mapState.teams = result.match.teams.map(t => t.name);
@@ -3518,8 +3543,6 @@ function assignPlayerSymbols(result) {
             allPlayers.push({ name, team, teamIdx });
         }
     }
-    console.log('[DEBUG] assignPlayerSymbols: mapState.teams:', JSON.stringify(mapState.teams));
-    console.log('[DEBUG] assignPlayerSymbols: allPlayers:', JSON.stringify(allPlayers.map(p => ({name: p.name, team: p.team, teamIdx: p.teamIdx}))));
 
     // Assign unique letter per player: first unused letter from their name
     for (const player of allPlayers) {
