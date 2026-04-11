@@ -404,6 +404,8 @@ function displayResults(result) {
     } else if (result.match?.teams) {
         timelineState.teams = result.match.teams.map(t => t.name);
     }
+    console.log('[DEBUG] demoInfo.teams:', demoInfo?.teams);
+    console.log('[DEBUG] timelineState.teams after early set:', JSON.stringify(timelineState.teams));
 
     // Player stats from demoInfo
     if (demoInfo && demoInfo.players) {
@@ -532,6 +534,7 @@ function displayTeamsFromDemoInfo(demoInfo) {
 
     // Sort by score
     const sorted = Object.entries(teamScores).sort((a, b) => b[1] - a[1]);
+    console.log('[DEBUG] displayTeamsFromDemoInfo: sorted order:', JSON.stringify(sorted.map(s => s[0])));
 
     sorted.forEach(([name, frags]) => {
         const div = document.createElement('div');
@@ -740,6 +743,7 @@ function displayScoreboardFallback(byPlayer, players) {
 function getTeamOrder(sortedPlayers) {
     // Use the same team order as timeline/map for consistent colors
     if (timelineState.teams && timelineState.teams.length >= 2) {
+        console.log('[DEBUG] getTeamOrder: using timelineState.teams:', JSON.stringify(timelineState.teams));
         return [...timelineState.teams];
     }
     // Fallback: order by first appearance in frag-sorted list
@@ -748,6 +752,7 @@ function getTeamOrder(sortedPlayers) {
         const t = p.team || '';
         if (t && !order.includes(t)) order.push(t);
     });
+    console.log('[DEBUG] getTeamOrder: FALLBACK order:', JSON.stringify(order));
     return order;
 }
 
@@ -3513,6 +3518,8 @@ function assignPlayerSymbols(result) {
             allPlayers.push({ name, team, teamIdx });
         }
     }
+    console.log('[DEBUG] assignPlayerSymbols: mapState.teams:', JSON.stringify(mapState.teams));
+    console.log('[DEBUG] assignPlayerSymbols: allPlayers:', JSON.stringify(allPlayers.map(p => ({name: p.name, team: p.team, teamIdx: p.teamIdx}))));
 
     // Assign unique letter per player: first unused letter from their name
     for (const player of allPlayers) {
