@@ -2729,20 +2729,66 @@ let mapState = {
 
 const PLAYER_SYMBOLS = ['*', 'x', '+', 'o', '◆', '▲', '●', '■'];
 
-// Weapon badge colors (matching timeline legend)
-const WPN_RL_COLOR = 'rgb(255, 107, 107)';
-const WPN_LG_COLOR = 'rgb(0, 217, 255)';
-// Draw a small filled circle with a letter for weapon indicator
-function drawWeaponBadge(ctx, letter, color, x, y, radius) {
+// Badge definitions: angle (0=up, clockwise), letter, color (from timeline legend)
+const BADGE_DEFS = [
+    { angle:   0, key: 'q',   letter: 'Q', color: 'rgb(0, 150, 255)' },
+    { angle:  45, key: 'rl',  letter: 'R', color: 'rgb(255, 107, 107)' },
+    { angle:  90, key: 'lg',  letter: 'L', color: 'rgb(0, 217, 255)' },
+    { angle: 135, key: 'sng', letter: 'N', color: 'rgb(180, 140, 100)' },
+    { angle: 180, key: 'mh',  letter: 'M', color: 'rgb(0, 200, 83)' },
+    { angle: 225, key: 'arm', letter: 'A', color: null },
+    { angle: 270, key: 'pe',  letter: 'P', color: 'rgb(255, 0, 0)' },
+    { angle: 315, key: 'r',   letter: 'I', color: 'rgb(255, 235, 59)' },
+];
+const ARMOR_COLORS = { ra: 'rgb(255, 50, 50)', ya: 'rgb(255, 200, 0)', ga: 'rgb(0, 180, 0)' };
+
+function getActiveBadges(data) {
+    const badges = [];
+    for (const def of BADGE_DEFS) {
+        let active = false, color = def.color, letter = def.letter;
+        switch (def.key) {
+            case 'q':   active = !!data.q; break;
+            case 'rl':  active = !!data.rl; break;
+            case 'lg':  active = !!data.lg; break;
+            case 'sng':
+                if (data.sng) { active = true; letter = 'N'; }
+                else if (data.ssg) { active = true; letter = 'S'; }
+                break;
+            case 'mh':  active = data.h > 100; break;
+            case 'arm':
+                if (data.at) {
+                    active = true;
+                    color = ARMOR_COLORS[data.at] || 'rgb(180, 180, 180)';
+                    letter = data.at.toUpperCase();
+                }
+                break;
+            case 'pe':  active = !!data.pe; break;
+            case 'r':   active = !!data.r; break;
+        }
+        if (active) badges.push({ angle: def.angle, letter, color });
+    }
+    return badges;
+}
+
+function drawBadge(ctx, letter, color, x, y, radius) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.font = `bold ${Math.round(radius * 1.3)}px monospace`;
+    ctx.font = `bold ${Math.round(radius * 1.2)}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#000';
     ctx.fillText(letter, x, y);
+}
+
+function drawBadgesAroundCenter(ctx, badges, cx, cy, orbitRadius, badgeRadius) {
+    for (const b of badges) {
+        const rad = (b.angle - 90) * Math.PI / 180;
+        const bx = cx + orbitRadius * Math.cos(rad);
+        const by = cy + orbitRadius * Math.sin(rad);
+        drawBadge(ctx, b.letter, b.color, bx, by, badgeRadius);
+    }
 }
 
 function markMapDirty() {
@@ -3556,7 +3602,7 @@ function buildPlayerRegionIcon(player) {
     const sym = player.sym;
     const symCanvas = sym ? sym.symbolCanvas : null;
 
-    const size = 36;
+    const size = 40;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -3578,13 +3624,10 @@ function buildPlayerRegionIcon(player) {
         ctx.fillText(player.name.charAt(0).toUpperCase(), size / 2, size / 2);
     }
 
-    // Draw weapon badges
-    const badgeR = 5;
-    if (player.hasRL) {
-        drawWeaponBadge(ctx, 'R', WPN_RL_COLOR, size - badgeR - 1, badgeR + 1, badgeR);
-    }
-    if (player.hasLG) {
-        drawWeaponBadge(ctx, 'L', WPN_LG_COLOR, size - badgeR - 1, size - badgeR - 1, badgeR);
+    // Draw status badges around player symbol
+    const badges = getActiveBadges(player.data);
+    if (badges.length > 0) {
+        drawBadgesAroundCenter(ctx, badges, size / 2, size / 2, 14, 5);
     }
 
     return canvas;
@@ -3728,12 +3771,10 @@ function renderMap(time) {
             if (symbolInfo && symbolInfo.symbolCanvas) {
                 ctx.drawImage(symbolInfo.symbolCanvas, pos.x - halfSymbol, pos.y - halfSymbol);
 
-                // Draw weapon badges next to player symbol
-                if (data.rl ?? data.hasRL) {
-                    drawWeaponBadge(ctx, 'R', WPN_RL_COLOR, pos.x + halfSymbol - 2, pos.y - halfSymbol + 2, 5);
-                }
-                if (data.lg ?? data.hasLG) {
-                    drawWeaponBadge(ctx, 'L', WPN_LG_COLOR, pos.x + halfSymbol - 2, pos.y + halfSymbol - 2, 5);
+                // Draw status badges around player symbol
+                const badges = getActiveBadges(data);
+                if (badges.length > 0) {
+                    drawBadgesAroundCenter(ctx, badges, pos.x, pos.y, 14, 5);
                 }
             }
         }

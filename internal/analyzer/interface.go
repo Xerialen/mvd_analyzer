@@ -324,6 +324,8 @@ type HighResPlayerData struct {
 	AT      string  `json:"at,omitempty"`  // Armor type: "ga"/"ya"/"ra"
 	RL      bool    `json:"rl,omitempty"`  // Has rocket launcher
 	LG      bool    `json:"lg,omitempty"`  // Has lightning gun
+	SSG     bool    `json:"ssg,omitempty"` // Has super shotgun
+	SNG     bool    `json:"sng,omitempty"` // Has super nailgun
 	Q       bool    `json:"q,omitempty"`   // Has quad
 	Pent    bool    `json:"pe,omitempty"`  // Has pent
 	R       bool    `json:"r,omitempty"`   // Has ring

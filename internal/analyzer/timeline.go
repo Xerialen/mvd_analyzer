@@ -73,6 +73,8 @@ type playerBucketRawData struct {
 	team      string
 	hasRL     bool
 	hasLG     bool
+	hasSSG    bool
+	hasSNG    bool
 	hasQuad   bool
 	hasPent   bool
 	hasRing   bool
@@ -317,6 +319,8 @@ func (a *TimelineAnalyzer) sampleCurrentState(time float64) {
 		// Track weapons
 		pData.hasRL = (state.items & mvd.ITRocketLauncher) != 0
 		pData.hasLG = (state.items & mvd.ITLightning) != 0
+		pData.hasSSG = (state.items & mvd.ITSuperShotgun) != 0
+		pData.hasSNG = (state.items & mvd.ITSuperNailgun) != 0
 
 		// Track powerups
 		pData.hasQuad = (state.items & mvd.ITQuad) != 0
@@ -590,6 +594,8 @@ func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string) []Hig
 				AT:      pd.armorType,
 				RL:      pd.hasRL,
 				LG:      pd.hasLG,
+				SSG:     pd.hasSSG,
+				SNG:     pd.hasSNG,
 				Q:       pd.hasQuad,
 				Pent:    pd.hasPent,
 				R:       pd.hasRing,
