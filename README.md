@@ -89,6 +89,49 @@ Configured for Netlify via `netlify.toml`. Every push runs `make build` and publ
 | `internal/web/static/` | Frontend (HTML, CSS, JS) |
 | `pkg/mvdfile/` | MVD/gzip file reader |
 
+## Region Control Customization
+
+The Map tab tracks which team controls key areas (RA, RL, LG, QUAD). Regions are auto-detected from `.loc` files, but can be customized in two ways:
+
+### In the browser
+
+Each region shows an editable text field with comma-separated loc names. Add or remove names and press Enter/Tab to recompute stats instantly. No rebuild needed.
+
+### In the code (map-specific defaults)
+
+Edit `internal/analyzer/timeline.go` to add map-specific regions. Two things to configure:
+
+**1. Auto-detected keywords** — the `controlKeywords` map (line ~1200):
+
+```go
+var controlKeywords = map[string]bool{
+    "RA": true, "RL": true, "LG": true, "QUAD": true,
+}
+```
+
+Any loc name containing one of these as a token (e.g., "high.RL", "cellar.RL") becomes a tracked region. Multiple locations with the same keyword that are far apart (>800 world units) are automatically split into separate regions.
+
+**2. Custom named regions** — the `mapCustomRegions` map (line ~1230):
+
+```go
+var mapCustomRegions = map[string][]customRegion{
+    "dm2": {
+        {name: "Secret",   locNames: []string{"secret"}},
+        {name: "Backroom", locNames: []string{"RA.MH", "RA.MH/rox"}},
+        {name: "Tele",     locNames: []string{"tele", "tele.entry", "tele.YA", "tele.high"}},
+    },
+}
+```
+
+Custom region locs are excluded from auto-detection. To add a new map, add a key with the lowercase map name.
+
+### Finding loc names
+
+To see what loc names are available for a map:
+
+1. **In the browser**: load a demo and check the Region Control panel — the text fields show all loc names
+2. **In the source**: check `internal/loc/locs/<map>.loc` — raw names use variables (`$loc_name_ra` → `RA`, `$.` → `.`) so `high$loc_name_separatorrl` becomes `high.RL`
+
 ## Testing
 
 ```bash
