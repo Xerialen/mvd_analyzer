@@ -1945,7 +1945,7 @@ function updateRegionControlTimeline(startTime, endTime) {
     if (teamALabel) teamALabel.textContent = teamA;
     if (teamBLabel) teamBLabel.textContent = teamB;
 
-    // Update legend color swatches to match TEAM_COLORS
+    // Update legend color swatches to match strip colors exactly (no opacity)
     const legendColors = document.querySelectorAll('#region-control-timeline .legend-color');
     if (legendColors.length >= 4) {
         legendColors[0].style.background = teamStrongColor(TEAM_COLORS[0]);
