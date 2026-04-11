@@ -1044,6 +1044,7 @@ table tbody tr:hover {
     flex-direction: column;
     min-width: 80px;
     gap: 2px;
+    padding-top: 4px;
 }
 
 .region-timeline-label {
@@ -1069,6 +1070,7 @@ table tbody tr:hover {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    padding-top: 4px;
 }
 
 .region-strip {

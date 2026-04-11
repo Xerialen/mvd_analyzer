@@ -546,12 +546,7 @@ function displayPlayerStats(players) {
     // Sort by frags
     const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
 
-    // Determine team ordering for color assignment
-    const teamOrder = [];
-    sorted.forEach(p => {
-        const t = p.team || '';
-        if (t && !teamOrder.includes(t)) teamOrder.push(t);
-    });
+    const teamOrder = getTeamOrder(sorted);
 
     sorted.forEach(player => {
         const tr = document.createElement('tr');
@@ -721,6 +716,11 @@ function displayScoreboardFallback(byPlayer, players) {
 // ─── Team helpers ──────────────────────────────────────────────────────────
 
 function getTeamOrder(sortedPlayers) {
+    // Use the same team order as timeline/map for consistent colors
+    if (timelineState.teams && timelineState.teams.length >= 2) {
+        return [...timelineState.teams];
+    }
+    // Fallback: order by first appearance in frag-sorted list
     const order = [];
     sortedPlayers.forEach(p => {
         const t = p.team || '';
