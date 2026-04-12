@@ -4209,6 +4209,9 @@ function prerenderLocationBackground() {
 // Stores canvas-coordinate points with timestamps and teleport flags.
 function precomputeFullTrails() {
     mapState.fullTrails = {};
+    // Sorted-by-time list of death frames in canvas space, used by renderMap
+    // to draw a fading red "X" at the death location for a couple of seconds.
+    mapState.deathEvents = [];
     const buckets = timelineState.highResBuckets;
     if (!buckets || buckets.length === 0) return;
 
@@ -4233,6 +4236,14 @@ function precomputeFullTrails() {
 
             const isDeath = !!data.d;
             const isSpawn = !!data.sp;
+
+            // Death frames also get added to the standalone deathEvents list
+            // so renderMap can find them without scanning every player trail.
+            // teamIdx is captured so the X is painted in the dead player's
+            // own team color rather than a generic red.
+            if (isDeath) {
+                mapState.deathEvents.push({ t, x: pos.x, y: pos.y, teamIdx: symbolInfo.teamIdx });
+            }
 
             // Always include death/spawn markers regardless of pixel distance
             if (!isDeath && !isSpawn) {
@@ -4259,6 +4270,27 @@ function precomputeFullTrails() {
         mapState.enabledPlayers[name] = false;
         mapState.trailStartTimes[name] = 0;
     }
+}
+
+// Stroke a fading "X" at a death location, sized to match the player circle.
+// Color is the dead player's team color so kills are immediately attributable
+// without needing to also draw a label.
+const DEATH_X_DURATION = 2.0;
+function drawDeathX(ctx, x, y, teamIdx, alpha) {
+    const r = 13; // matches the player symbol circle radius (assignPlayerSymbols)
+    const hex = TEAM_COLORS[teamIdx] || '#ff5050';
+    const [rr, gg, bb] = hexToRgb(hex);
+    ctx.save();
+    ctx.strokeStyle = `rgba(${rr}, ${gg}, ${bb}, ${alpha.toFixed(2)})`;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - r, y - r);
+    ctx.lineTo(x + r, y + r);
+    ctx.moveTo(x + r, y - r);
+    ctx.lineTo(x - r, y + r);
+    ctx.stroke();
+    ctx.restore();
 }
 
 function renderMap(time) {
@@ -4330,6 +4362,20 @@ function renderMap(time) {
                     drawBadgesAroundCenter(ctx, badges, pos.x, pos.y, 14, 5);
                 }
             }
+        }
+    }
+
+    // Recent-death markers — drawn last so the X sits on top of everything
+    // else and stays visible for DEATH_X_DURATION seconds, fading linearly.
+    // Linear scan is fine: a long match has on the order of 100-200 deaths
+    // and this loop runs at most once per bucket tick.
+    const deaths = mapState.deathEvents;
+    if (deaths && deaths.length > 0) {
+        for (const e of deaths) {
+            const dt = time - e.t;
+            if (dt < 0 || dt > DEATH_X_DURATION) continue;
+            const alpha = 1 - dt / DEATH_X_DURATION;
+            drawDeathX(ctx, e.x, e.y, e.teamIdx, alpha);
         }
     }
 }
