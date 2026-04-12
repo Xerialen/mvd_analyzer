@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/mvd-analyzer/internal/parser"
@@ -143,14 +144,20 @@ func (a *MatchAnalyzer) Finalize() (interface{}, error) {
 		}
 	}
 
-	// Build team stats - only include valid team names
-	for team, frags := range teamFrags {
+	// Build team stats - only include valid team names. Sort by name so the
+	// output is byte-stable across runs (Go map iteration is randomized).
+	teamNames := make([]string, 0, len(teamFrags))
+	for team := range teamFrags {
 		if !isSpectatorTeam(team) {
-			result.Teams = append(result.Teams, TeamStat{
-				Name:  team,
-				Frags: frags,
-			})
+			teamNames = append(teamNames, team)
 		}
+	}
+	sort.Strings(teamNames)
+	for _, team := range teamNames {
+		result.Teams = append(result.Teams, TeamStat{
+			Name:  team,
+			Frags: teamFrags[team],
+		})
 	}
 
 	return result, nil

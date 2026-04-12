@@ -1153,12 +1153,20 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, nameToTeam map[string]str
 			continue
 		}
 
-		// Determine effective weapon (most kills)
+		// Determine effective weapon (most kills). Iterate weapon names in
+		// sorted order so ties resolve deterministically (Go map iteration
+		// is randomized and would otherwise pick a different tied weapon
+		// each run).
+		weps := make([]string, 0, len(weaponCounts))
+		for wep := range weaponCounts {
+			weps = append(weps, wep)
+		}
+		sort.Strings(weps)
 		ewep := ""
 		maxWepKills := 0
-		for wep, count := range weaponCounts {
-			if count > maxWepKills {
-				maxWepKills = count
+		for _, wep := range weps {
+			if weaponCounts[wep] > maxWepKills {
+				maxWepKills = weaponCounts[wep]
 				ewep = wep
 			}
 		}
