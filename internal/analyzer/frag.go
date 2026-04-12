@@ -522,68 +522,6 @@ func (a *FragAnalyzer) checkAtePattern(msg string, time float64) *FragEntry {
 	return nil
 }
 
-// extractKillerName extracts killer name from the rest of the message
-func extractKillerName(rest string) string {
-	// Common suffixes to remove (check quad variants first, then normal)
-	suffixes := []string{
-		// Quad damage variants (must be before regular variants)
-		"'s quad shaft",
-		"'s quad lightning",
-		"'s quad rocket",
-		"'s quad pineapple",
-		"'s quad boomstick",
-		"'s quad grenade",
-		"'s quad axe",
-		// Regular variants
-		"'s shaft",
-		"'s lightning",
-		"'s rocket",
-		"'s pineapple",
-		"'s boomstick",
-		"'s grenade",
-		"'s axe",
-	}
-
-	for _, suffix := range suffixes {
-		if idx := strings.Index(rest, suffix); idx > 0 {
-			return strings.TrimSpace(rest[:idx])
-		}
-	}
-
-	// Check for " rockets from " pattern
-	if idx := strings.Index(rest, " rockets from "); idx >= 0 {
-		killer := strings.TrimSpace(rest[idx+len(" rockets from "):])
-		// Strip "'s quad rocket" suffix if present
-		killer = stripQuadSuffix(killer)
-		return killer
-	}
-
-	// Check for trailing newline or period
-	rest = strings.TrimSuffix(rest, "\n")
-	rest = strings.TrimSuffix(rest, ".")
-	rest = stripQuadSuffix(rest)
-
-	return strings.TrimSpace(rest)
-}
-
-// stripQuadSuffix removes quad-related suffixes from killer names
-func stripQuadSuffix(name string) string {
-	quadSuffixes := []string{
-		"'s quad rocket",
-		"'s quad shaft",
-		"'s quad lightning",
-		"'s quad pineapple",
-		"'s quad boomstick",
-		"'s quad grenade",
-		"'s quad axe",
-		"'s quad",
-	}
-	for _, suffix := range quadSuffixes {
-		name = strings.TrimSuffix(name, suffix)
-	}
-	return strings.TrimSpace(name)
-}
-
 // isTeamKill checks if killer and victim are on the same team
 func (a *FragAnalyzer) isTeamKill(victim, killer string) bool {
 	var victimTeam, killerTeam string

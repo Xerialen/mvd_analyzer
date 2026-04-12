@@ -285,7 +285,7 @@ func (a *MessagesAnalyzer) parseObituarySimple(msg string, time float64) *MatchE
 		if idx := strings.Index(msg, p.pattern); idx > 0 {
 			victim := strings.TrimSpace(msg[:idx])
 			rest := msg[idx+len(p.pattern):]
-			killer := a.extractKillerName(rest)
+			killer := extractKillerName(rest)
 
 			if victim != "" && killer != "" && !isGenericPlayer(victim) && !isGenericPlayer(killer) {
 				return &MatchEvent{
@@ -309,7 +309,7 @@ func (a *MessagesAnalyzer) parseObituarySimple(msg string, time float64) *MatchE
 		if strings.Contains(rest, "'s grenade") || strings.Contains(rest, "' grenade") {
 			weapon = "gl"
 		}
-		killer := a.extractKillerName(rest)
+		killer := extractKillerName(rest)
 		if victim != "" && killer != "" && !isGenericPlayer(victim) && !isGenericPlayer(killer) {
 			return &MatchEvent{
 				Time: time, Type: "frag", Player: killer, Team: a.getPlayerTeam(killer),
@@ -371,76 +371,12 @@ func (a *MessagesAnalyzer) parseObituarySimple(msg string, time float64) *MatchE
 	return nil
 }
 
-// extractKillerName extracts killer name, removing weapon suffixes
-func (a *MessagesAnalyzer) extractKillerName(rest string) string {
-	// Quad variants must come before regular variants
-	suffixes := []string{
-		"'s quad shaft", "'s quad lightning", "'s quad rocket",
-		"'s quad pineapple", "'s quad boomstick", "'s quad grenade", "'s quad axe",
-		"'s shaft", "'s lightning", "'s rocket", "'s pineapple",
-		"'s boomstick", "'s grenade", "'s axe",
-		"'s buckshot", "'s discharge", "'s batteries",
-		"'s fall", "' fall",
-		"' buckshot", "' rocket", "' grenade", "' discharge",
-	}
-
-	for _, suffix := range suffixes {
-		if idx := strings.Index(rest, suffix); idx > 0 {
-			return strings.TrimSpace(rest[:idx])
-		}
-	}
-
-	// Clean up. Trim trailing newline only — we used to also strip a
-	// trailing '.' as punctuation, but Quake names can legitimately end
-	// in '.' (the demo `broken.mvd.gz` has a player named `.N3ophyt3.`
-	// after Q_normalizetext folding) and chopping it splits that player's
-	// frags off into a phantom name that the frontend can't join.
-	rest = strings.TrimSuffix(rest, "\n")
-	return strings.TrimSpace(rest)
-}
-
-// getPlayerTeam returns the team name for a player
+// getPlayerTeam returns the team name for a player using fuzzy lookup.
 func (a *MessagesAnalyzer) getPlayerTeam(name string) string {
-	// First try exact match
-	for i := 0; i < len(a.ctx.Players); i++ {
-		p := a.ctx.Players[i]
-		if p != nil && p.Name == name {
-			return p.Team
-		}
+	if p := findPlayerByName(a.ctx.Players, name); p != nil {
+		return p.Team
 	}
-
-	// Try normalized match (remove dots, special chars, lowercase)
-	normalizedName := normalizeName(name)
-	for i := 0; i < len(a.ctx.Players); i++ {
-		p := a.ctx.Players[i]
-		if p != nil && normalizeName(p.Name) == normalizedName {
-			return p.Team
-		}
-	}
-
-	// Try substring match (player name contains the lookup name or vice versa)
-	for i := 0; i < len(a.ctx.Players); i++ {
-		p := a.ctx.Players[i]
-		if p != nil {
-			pNorm := normalizeName(p.Name)
-			if strings.Contains(pNorm, normalizedName) || strings.Contains(normalizedName, pNorm) {
-				return p.Team
-			}
-		}
-	}
-
 	return ""
-}
-
-// normalizeName removes dots, special chars and lowercases for matching
-func normalizeName(name string) string {
-	var result strings.Builder
-	for _, r := range strings.ToLower(name) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			result.WriteRune(r)
-		}
-	}
-	return result.String()
 }
 
 func (a *MessagesAnalyzer) Finalize() (interface{}, error) {
@@ -459,7 +395,7 @@ func (a *MessagesAnalyzer) Finalize() (interface{}, error) {
 				continue
 			}
 			nameToTeam[p.Name] = p.Team
-			normToTeam[normalizeName(p.Name)] = p.Team
+			normToTeam[normalizePlayerName(p.Name)] = p.Team
 		}
 		for i := range a.events {
 			ev := &a.events[i]
@@ -470,7 +406,7 @@ func (a *MessagesAnalyzer) Finalize() (interface{}, error) {
 				ev.Team = t
 				continue
 			}
-			if t := normToTeam[normalizeName(ev.Player)]; t != "" {
+			if t := normToTeam[normalizePlayerName(ev.Player)]; t != "" {
 				ev.Team = t
 			}
 		}

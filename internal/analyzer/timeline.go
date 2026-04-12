@@ -913,24 +913,6 @@ func sum(values []int) int {
 	return s
 }
 
-// normalizePlayerName removes non-alphanumeric chars and lowercases for fuzzy matching
-// "bad.rotker" and "badrotker" will both become "badrotker"
-func normalizePlayerName(name string) string {
-	var result []byte
-	for i := 0; i < len(name); i++ {
-		c := name[i]
-		// Convert uppercase to lowercase
-		if c >= 'A' && c <= 'Z' {
-			c += 32
-		}
-		// Keep only alphanumeric
-		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') {
-			result = append(result, c)
-		}
-	}
-	return string(result)
-}
-
 // detectPowerupEvents scans buckets for powerup pickup/loss transitions
 func (a *TimelineAnalyzer) detectPowerupEvents(nameToTeam map[string]string, slotToTeam map[int]string, slotToPlayer map[int]string) []PowerupEvent {
 	if len(a.buckets) == 0 {
