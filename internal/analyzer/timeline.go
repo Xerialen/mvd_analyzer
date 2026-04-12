@@ -517,8 +517,36 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		}
 	}
 
+	// Build the interned loc-name table once. Index 0 is reserved for the
+	// empty/no-loc case so HighResPlayerData.Li can lean on json:omitempty.
+	// pData.location was already populated server-side in the loop above
+	// using loc.FindNearest (3D Euclidean, equivalent to ezQuake's
+	// TP_LocationName). Stamping an integer index into each high-res record
+	// is what plumbs that authoritative result through to the JS frontend.
+	locTable := []string{""}
+	locIndex := map[string]int{"": 0}
+	if a.locFinder != nil {
+		for _, bucket := range a.buckets {
+			for _, pData := range bucket.playerData {
+				name := pData.location
+				if name == "" {
+					continue
+				}
+				if _, ok := locIndex[name]; !ok {
+					locIndex[name] = len(locTable)
+					locTable = append(locTable, name)
+				}
+			}
+		}
+	}
+	// Drop the table entirely if only the sentinel slot exists — JSON
+	// omitempty will then skip the field on the wire.
+	if len(locTable) <= 1 {
+		locTable = nil
+	}
+
 	// Export high-res buckets (50ms) for map visualization
-	highResBuckets := a.exportHighResBuckets(slotToName)
+	highResBuckets := a.exportHighResBuckets(slotToName, locIndex)
 
 	// Aggregate to 1s buckets for graphs
 	graphBuckets := a.aggregateToGraphBuckets(slotToName, slotToTeam)
@@ -556,6 +584,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		PowerupEvents:   powerupEvents,
 		FragStreaks:      fragStreaks,
 		LocationData:    locationData,
+		LocTable:        locTable,
 		PlayerUserIDs:   playerUserIDsByName,
 		RegionControl:   regionControl,
 	}
@@ -563,8 +592,11 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	return result, nil
 }
 
-// exportHighResBuckets converts internal buckets to compact export format for map
-func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string) []HighResBucket {
+// exportHighResBuckets converts internal buckets to compact export format for map.
+// locIndex maps the already-resolved loc name (set in Finalize) to an integer
+// index into TimelineAnalysisResult.LocTable. Records with no loc get Li = 0,
+// which json:omitempty drops on the wire.
+func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string, locIndex map[string]int) []HighResBucket {
 	result := make([]HighResBucket, 0, len(a.buckets))
 
 	for _, b := range a.buckets {
@@ -603,6 +635,7 @@ func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string) []Hig
 				Cells:   pd.cells,
 				D:       pd.dead,
 				Sp:      pd.spawn,
+				Li:      locIndex[pd.location], // 0 (omitted) when no loc
 			}
 		}
 

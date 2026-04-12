@@ -291,6 +291,7 @@ type TimelineAnalysisResult struct {
 	PowerupEvents   []PowerupEvent      `json:"powerupEvents,omitempty"`   // Powerup pickups for Key Moments
 	FragStreaks      []FragStreakEvent    `json:"fragStreaks,omitempty"`      // Top longest frag streaks for Key Moments
 	LocationData    []MapLocation       `json:"locationData,omitempty"`    // Location points from .loc file for map view
+	LocTable        []string            `json:"locTable,omitempty"`        // Interned loc names; index 0 is "" sentinel. HighResPlayerData.Li indexes into this.
 	PlayerUserIDs   map[string]int      `json:"playerUserIDs,omitempty"`   // Player name -> UserID for Hub viewer links
 	RegionControl   *RegionControlResult `json:"regionControl,omitempty"`  // Region control stats
 }
@@ -333,6 +334,7 @@ type HighResPlayerData struct {
 	Cells   int     `json:"cl,omitempty"`  // Cell ammo
 	D       bool    `json:"d,omitempty"`   // Death frame marker
 	Sp      bool    `json:"sp,omitempty"`  // Spawn frame marker
+	Li      int     `json:"li,omitempty"`  // Loc-name index into TimelineAnalysisResult.LocTable (0 = no loc)
 }
 
 // MapLocation represents a named point in a map for visualization
