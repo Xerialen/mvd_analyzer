@@ -523,20 +523,31 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	// using loc.FindNearest (3D Euclidean, equivalent to ezQuake's
 	// TP_LocationName). Stamping an integer index into each high-res record
 	// is what plumbs that authoritative result through to the JS frontend.
+	//
+	// Names are sorted before indexing so the resulting table is
+	// deterministic across runs (bucket.playerData is a Go map and would
+	// otherwise be visited in random order, shuffling the indices on every
+	// invocation and breaking byte-for-byte regression diffs).
 	locTable := []string{""}
 	locIndex := map[string]int{"": 0}
 	if a.locFinder != nil {
+		seen := make(map[string]struct{})
 		for _, bucket := range a.buckets {
 			for _, pData := range bucket.playerData {
-				name := pData.location
-				if name == "" {
+				if pData.location == "" {
 					continue
 				}
-				if _, ok := locIndex[name]; !ok {
-					locIndex[name] = len(locTable)
-					locTable = append(locTable, name)
-				}
+				seen[pData.location] = struct{}{}
 			}
+		}
+		names := make([]string, 0, len(seen))
+		for name := range seen {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			locIndex[name] = len(locTable)
+			locTable = append(locTable, name)
 		}
 	}
 	// Drop the table entirely if only the sentinel slot exists — JSON
