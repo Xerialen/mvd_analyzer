@@ -2865,62 +2865,11 @@ function processLocationGroups(locations) {
     return Object.values(groups);
 }
 
-// Compute convex hull using Graham scan algorithm
-function computeConvexHull(points) {
-    if (points.length < 3) return points;
-
-    // Find lowest point (highest Y in canvas coords)
-    let start = 0;
-    for (let i = 1; i < points.length; i++) {
-        if (points[i].y > points[start].y ||
-            (points[i].y === points[start].y && points[i].x < points[start].x)) {
-            start = i;
-        }
-    }
-
-    // Sort by polar angle from start point
-    const startPoint = points[start];
-    const sorted = points.slice().sort((a, b) => {
-        const angleA = Math.atan2(a.y - startPoint.y, a.x - startPoint.x);
-        const angleB = Math.atan2(b.y - startPoint.y, b.x - startPoint.x);
-        return angleA - angleB;
-    });
-
-    // Build hull with cross-product check
-    const hull = [];
-    for (const p of sorted) {
-        while (hull.length >= 2 && crossProduct(hull[hull.length-2], hull[hull.length-1], p) <= 0) {
-            hull.pop();
-        }
-        hull.push(p);
-    }
-    return hull;
-}
-
-function crossProduct(o, a, b) {
-    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-}
-
-function expandPolygon(points, distance) {
-    if (points.length === 0) return points;
-
-    let cx = 0, cy = 0;
-    for (const p of points) { cx += p.x; cy += p.y; }
-    cx /= points.length;
-    cy /= points.length;
-
-    return points.map(p => {
-        const dx = p.x - cx;
-        const dy = p.y - cy;
-        const len = Math.sqrt(dx*dx + dy*dy) || 1;
-        return { x: p.x + (dx / len) * distance, y: p.y + (dy / len) * distance };
-    });
-}
-
 // Draw a location region from a pre-generated BSP-derived triangle list.
 // tris is a flat Float array: 6 numbers per triangle (x1,y1,x2,y2,x3,y3).
-// Used when mapState.mapGeometry is loaded; otherwise drawLocationRegion
-// below handles the convex-hull fallback.
+// Groups with no tris (map JSON absent or loc unmatched) simply don't
+// render — the legacy convex-hull fallback was removed now that mapgen
+// output is the only source of region shapes.
 function drawLocationRegionFromGeometry(ctx, group, worldToCanvasFunc) {
     drawTriangleListFill(ctx, group.tris, group.color.fill, worldToCanvasFunc);
 }
@@ -3001,68 +2950,11 @@ function drawLocationRegionOutline(ctx, group, worldToCanvasFunc, strokeStyle, l
     ctx.stroke();
 }
 
-// Fill a location region with an arbitrary color. Prefers the BSP-derived
-// triangle list if the group carries one; falls back to the legacy convex
-// hull path otherwise. Used by the region-control overlay.
+// Fill a location region using its BSP-derived triangle list. Groups
+// with no tris (map JSON absent, or a loc that didn't match any face)
+// silently no-op. Used by the region-control overlay.
 function fillLocationRegion(ctx, group, fillColor, worldToCanvasFunc) {
-    const tris = group.tris;
-    if (tris && tris.length >= 6) {
-        ctx.fillStyle = fillColor;
-        for (let i = 0; i + 5 < tris.length; i += 6) {
-            const a = worldToCanvasFunc(tris[i],     tris[i + 1]);
-            const b = worldToCanvasFunc(tris[i + 2], tris[i + 3]);
-            const c = worldToCanvasFunc(tris[i + 4], tris[i + 5]);
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.lineTo(c.x, c.y);
-            ctx.closePath();
-            ctx.fill();
-        }
-        return;
-    }
-    // When traced map geometry is loaded but this group has no tris, skip it
-    // rather than falling back to a hull blob that would visibly clash with
-    // the real polygons already drawn for neighboring locs.
-    if (mapState.mapGeometry) return;
-    drawLocationRegionFill(ctx, group, fillColor);
-}
-
-// Draw a location region (convex hull or circle for single point)
-function drawLocationRegion(ctx, group, worldToCanvasFunc) {
-    if (group.points.length === 1) {
-        const pos = worldToCanvasFunc(group.points[0].x, group.points[0].y);
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
-        ctx.fillStyle = group.color.fill;
-        ctx.fill();
-    } else {
-        const canvasPoints = group.points.map(p => worldToCanvasFunc(p.x, p.y));
-        const hull = computeConvexHull(canvasPoints);
-
-        if (hull.length < 3) {
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            for (const p of canvasPoints) {
-                minX = Math.min(minX, p.x);
-                maxX = Math.max(maxX, p.x);
-                minY = Math.min(minY, p.y);
-                maxY = Math.max(maxY, p.y);
-            }
-            const pad = 15;
-            ctx.fillStyle = group.color.fill;
-            ctx.fillRect(minX - pad, minY - pad, maxX - minX + pad*2, maxY - minY + pad*2);
-        } else {
-            const expanded = expandPolygon(hull, 15);
-            ctx.beginPath();
-            ctx.moveTo(expanded[0].x, expanded[0].y);
-            for (let i = 1; i < expanded.length; i++) {
-                ctx.lineTo(expanded[i].x, expanded[i].y);
-            }
-            ctx.closePath();
-            ctx.fillStyle = group.color.fill;
-            ctx.fill();
-        }
-    }
+    drawTriangleListFill(ctx, group.tris, fillColor, worldToCanvasFunc);
 }
 
 // Compute the set of loc-group names currently occupied by at least one
@@ -3152,37 +3044,6 @@ function drawRegionControlOverlay(ctx, controlStates) {
 
         for (const group of groups) {
             fillLocationRegion(ctx, group, color, worldToCanvasNew);
-        }
-    }
-}
-
-function drawLocationRegionFill(ctx, group, fillColor) {
-    if (group.points.length === 1) {
-        const pos = worldToCanvasNew(group.points[0].x, group.points[0].y);
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-    } else {
-        const canvasPoints = group.points.map(p => worldToCanvasNew(p.x, p.y));
-        const hull = computeConvexHull(canvasPoints);
-        if (hull.length < 3) {
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            for (const p of canvasPoints) {
-                minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
-                minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
-            }
-            const pad = 17;
-            ctx.fillStyle = fillColor;
-            ctx.fillRect(minX - pad, minY - pad, maxX - minX + pad*2, maxY - minY + pad*2);
-        } else {
-            const expanded = expandPolygon(hull, 17);
-            ctx.beginPath();
-            ctx.moveTo(expanded[0].x, expanded[0].y);
-            for (let i = 1; i < expanded.length; i++) ctx.lineTo(expanded[i].x, expanded[i].y);
-            ctx.closePath();
-            ctx.fillStyle = fillColor;
-            ctx.fill();
         }
     }
 }
@@ -4180,8 +4041,6 @@ function prerenderLocationBackground() {
     offscreen.height = h;
     const octx = offscreen.getContext('2d');
 
-    const hasGeom = !!mapState.mapGeometry;
-
     // Draw the unnamed backdrop first (if present) so named loc regions
     // paint on top. Kept dim and neutral so real region tinting remains
     // readable when both are present.
@@ -4192,19 +4051,14 @@ function prerenderLocationBackground() {
     for (const group of groups) {
         if (group.tris && group.tris.length >= 6) {
             drawLocationRegionFromGeometry(octx, group, worldToCanvasNew);
-        } else if (!hasGeom) {
-            // Only fall back to loc-hull blobs when we have no traced map data.
-            drawLocationRegion(octx, group, worldToCanvasNew);
         }
     }
 
     // Thin grey outlines around each traced region — drawn after all fills so
     // they sit on top and stay visible regardless of adjacent region tinting.
-    if (hasGeom) {
-        for (const group of groups) {
-            if (group.tris && group.tris.length >= 6) {
-                drawLocationRegionOutline(octx, group, worldToCanvasNew, 'rgba(180, 180, 180, 0.5)', 1);
-            }
+    for (const group of groups) {
+        if (group.tris && group.tris.length >= 6) {
+            drawLocationRegionOutline(octx, group, worldToCanvasNew, 'rgba(180, 180, 180, 0.5)', 1);
         }
     }
 

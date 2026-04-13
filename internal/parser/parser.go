@@ -267,6 +267,16 @@ func (p *Parser) parseHiddenMessage(msg *mvd.DemoMessage) error {
 				p.warn(time, "parse_error", "hidden demoinfo: %v", err)
 				return nil
 			}
+		case mvd.MVDHiddenDemoStartTimestampMs:
+			// uint64 unix timestamp ms at demo start. Not currently consumed
+			// by any analyzer — skip the payload so we don't emit an
+			// unknown_hidden warning. Ref: qwprot protocol.h, commit 500bd4b.
+			if dataLen > 0 {
+				if err := r.Skip(dataLen); err != nil {
+					p.warn(time, "parse_error", "hidden demo_start_timestamp_ms: %v", err)
+					return nil
+				}
+			}
 		default:
 			p.warn(time, "unknown_hidden", "unknown hidden message type 0x%04x, %d bytes skipped", typeID, dataLen)
 			if dataLen > 0 {
@@ -404,7 +414,9 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		_, err = r.ReadString()
 		return err
 	case mvd.SvcUpdatePing:
-		return r.Skip(2) // player + ping byte
+		// [byte] player + [short] ping = 3 bytes.
+		// Ref: ezquake cl_parse.c case svc_updateping.
+		return r.Skip(3)
 	case mvd.SvcUpdateEnterTime:
 		return r.Skip(5) // player + float
 	case mvd.SvcSetPause:
@@ -413,8 +425,14 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		_, err := r.ReadString()
 		return err
 	case mvd.SvcSpawnBaseline:
+		// svc_spawnbaseline has a 2-byte entity number prefix before the baseline body.
+		// Ref: ezquake cl_parse.c case svc_spawnbaseline — MSG_ReadShort() + CL_ParseBaseline().
+		if err := r.Skip(2); err != nil {
+			return err
+		}
 		return skipSpawnBaseline(r, floatCoords)
 	case mvd.SvcSpawnStatic:
+		// svc_spawnstatic has no prefix — CL_ParseStatic calls CL_ParseBaseline directly.
 		return skipSpawnStatic(r, floatCoords)
 	case mvd.SvcTempEntity:
 		return skipTempEntity(r, floatCoords)
@@ -422,8 +440,18 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		return nil
 	case mvd.SvcFoundSecret:
 		return nil
+	case mvd.SvcDamage:
+		// [byte] armor [byte] blood [vec3] from — coords are short in QW
+		// standard protocol, float if FTE_PEXT_FLOATCOORDS was negotiated.
+		// Ref: qwprot protocol.h (svc_damage = 19), ezquake cl_view.c V_ParseDamage.
+		if floatCoords {
+			return r.Skip(14) // 1 + 1 + 3*4
+		}
+		return r.Skip(8) // 1 + 1 + 3*2
 	case mvd.SvcIntermission:
-		return r.Skip(12) // 3 coords + 3 angles
+		// 3 short coords (6 bytes) + 3 byte angles (3 bytes) = 9 bytes.
+		// Was previously 12 which overran on end-of-demo payloads.
+		return r.Skip(9)
 	case mvd.SvcFinale:
 		_, err := r.ReadString()
 		return err
@@ -477,10 +505,12 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 	case mvd.SvcUpdatePL:
 		return r.Skip(2) // player + pl byte
 	case mvd.SvcSpawnStaticSound:
+		// 3 coords + sound_num(1) + vol(1) + atten(1).
+		// Ref: ezquake cl_parse.c CL_ParseStaticSound.
 		if floatCoords {
-			return r.Skip(17) // 3 floats + byte + byte + byte
+			return r.Skip(15) // 3*4 + 3
 		}
-		return r.Skip(11) // 3 shorts + byte + byte + byte
+		return r.Skip(9) // 3*2 + 3
 	case mvd.SvcFTESpawnBaseline2:
 		// Extended baseline: 2-byte flag word + entity delta
 		w, err := r.ReadUint16()

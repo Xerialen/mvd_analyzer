@@ -3,16 +3,17 @@
 //
 // The extractor only keeps faces whose plane normal points "up enough"
 // to be treated as a floor (Z >= floorNormalZ). Each floor face is then
-// assigned to the nearest loc by a Z-weighted nearest-point test and
-// grouped by the normalized loc name. Faces are fan-triangulated and
-// emitted as flat float32 triangle lists that the frontend can render
-// with a trivial ctx.beginPath/moveTo/lineTo/fill loop.
+// assigned to the nearest loc by plain 3D Euclidean distance, matching
+// ezQuake's TP_LocationName exactly (see
+// ezquake-source/src/teamplay_locfiles.c). Faces are fan-triangulated
+// and emitted as flat float32 triangle lists that the frontend can
+// render with a trivial ctx.beginPath/moveTo/lineTo/fill loop.
 //
 // Faces that cannot be matched to a named loc (because no loc file is
-// loaded, no loc is reachable, the nearest loc is too far in Z, or the
-// normalized name is empty) are routed into a reserved "unnamed" bucket
-// with key UnnamedRegionKey. The unnamed bucket is always emitted last
-// in result.Locs so the frontend can draw it as a neutral backdrop
+// loaded, the loc list is empty, or the nearest loc's normalized name
+// is empty) are routed into a reserved "unnamed" bucket with key
+// UnnamedRegionKey. The unnamed bucket is always emitted last in
+// result.Locs so the frontend can draw it as a neutral backdrop
 // beneath the named loc regions.
 package mapgeom
 
@@ -28,16 +29,6 @@ const (
 	// walkable floor (~45° from horizontal — matches Q1's floor
 	// heuristic closely enough for visualization).
 	floorNormalZ = 0.7
-
-	// locZWeight penalizes vertical distance when matching faces to
-	// locs: a loc 128u above is effectively 256u away horizontally.
-	// This handles stacked rooms (dm4 RA above water, dm6 bridge).
-	locZWeight = 4.0
-
-	// locZReject discards a face entirely when its nearest loc is
-	// further than this in Z, preventing one floor from claiming the
-	// one directly above/below.
-	locZReject = 96.0
 )
 
 // UnnamedRegionKey is the reserved bucket name for floor faces that
@@ -158,27 +149,27 @@ func Build(mapName string, b *bsp.BSP, finder *loc.Finder) (*MapRegions, Stats) 
 		cy *= inv
 		cz *= inv
 
-		// Find nearest loc with Z weighting. Faces with no reachable
-		// loc (no finder loaded, empty loc list, Z-rejected, or empty
-		// name) fall through into the unnamed backdrop bucket.
+		// Find nearest loc by plain 3D Euclidean squared distance,
+		// matching ezQuake's TP_LocationName (teamplay_locfiles.c).
+		// Faces with no reachable loc (no finder loaded, empty loc
+		// list, or empty normalized name) fall through into the
+		// unnamed backdrop bucket.
 		key := UnnamedRegionKey
 		if len(locPoints) > 0 {
-			bestIdx := -1
+			bestIdx := 0
 			bestScore := float32(1e30)
 			for i, lp := range locPoints {
 				dx := cx - lp.X
 				dy := cy - lp.Y
 				dz := cz - lp.Z
-				score := dx*dx + dy*dy + locZWeight*dz*dz
-				if score < bestScore {
+				score := dx*dx + dy*dy + dz*dz
+				if i == 0 || score < bestScore {
 					bestScore = score
 					bestIdx = i
 				}
 			}
-			if bestIdx >= 0 && absf(cz-locPoints[bestIdx].Z) <= locZReject {
-				if k := NormalizeLocationName(locPoints[bestIdx].Name); k != "" {
-					key = k
-				}
+			if k := NormalizeLocationName(locPoints[bestIdx].Name); k != "" {
+				key = k
 			}
 		}
 
@@ -294,7 +285,7 @@ func assembleRing(b *bsp.BSP, face bsp.Face) ([]bsp.Vec3, bool) {
 	ring := make([]bsp.Vec3, 0, n)
 	for i := 0; i < n; i++ {
 		se := b.Surfedges[first+i]
-		var vi uint16
+		var vi uint32
 		switch {
 		case se > 0:
 			if int(se) >= len(b.Edges) {
@@ -323,9 +314,3 @@ func negate(v bsp.Vec3) bsp.Vec3 {
 	return bsp.Vec3{X: -v.X, Y: -v.Y, Z: -v.Z}
 }
 
-func absf(x float32) float32 {
-	if x < 0 {
-		return -x
-	}
-	return x
-}

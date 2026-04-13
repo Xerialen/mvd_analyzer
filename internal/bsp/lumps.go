@@ -25,8 +25,10 @@ const (
 const (
 	planeSize    = 20 // normal(12) + dist(4) + type(4)
 	vertexSize   = 12 // 3 * float32
-	faceSize     = 20 // planeId(2) + side(2) + firstEdge(4) + numEdges(2) + texinfoId(2) + styles(4) + lightofs(4)
-	edgeSize     = 4  // 2 * uint16
+	faceSize     = 20 // v29 dface_t: planeId(2)+side(2)+firstEdge(4)+numEdges(2)+texinfoId(2)+styles(4)+lightofs(4)
+	faceSize29a  = 28 // BSP2/29a dface29a_t: 5×int32 + styles(4) + lightofs(4)
+	edgeSize     = 4  // v29: 2 * uint16
+	edgeSize29a  = 8  // BSP2/29a: 2 * uint32
 	surfedgeSize = 4  // int32
 	modelSize    = 64 // mins(12) + maxs(12) + origin(12) + headnodes(16) + visleafs(4) + firstFace(4) + numFaces(4)
 )

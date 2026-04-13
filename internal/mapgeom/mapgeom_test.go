@@ -33,15 +33,15 @@ func buildTwoFloorBSP() *bsp.BSP {
 			{X: 0, Y: 64, Z: 128},
 		},
 		Edges: []bsp.Edge{
-			{V: [2]uint16{0, 0}}, // sentinel
-			{V: [2]uint16{0, 1}},
-			{V: [2]uint16{1, 2}},
-			{V: [2]uint16{2, 3}},
-			{V: [2]uint16{3, 0}},
-			{V: [2]uint16{4, 5}},
-			{V: [2]uint16{5, 6}},
-			{V: [2]uint16{6, 7}},
-			{V: [2]uint16{7, 4}},
+			{V: [2]uint32{0, 0}}, // sentinel
+			{V: [2]uint32{0, 1}},
+			{V: [2]uint32{1, 2}},
+			{V: [2]uint32{2, 3}},
+			{V: [2]uint32{3, 0}},
+			{V: [2]uint32{4, 5}},
+			{V: [2]uint32{5, 6}},
+			{V: [2]uint32{6, 7}},
+			{V: [2]uint32{7, 4}},
 		},
 		Surfedges: []int32{
 			1, 2, 3, 4, // low face
@@ -117,13 +117,12 @@ func TestBuild_AssignsFacesToCorrectLoc(t *testing.T) {
 	}
 }
 
-func TestBuild_ZRejectRoutesHighFloorToUnnamedBucket(t *testing.T) {
+func TestBuild_SingleLocClaimsAllFloors(t *testing.T) {
 	b := buildTwoFloorBSP()
 
-	// Only one loc, placed on the low floor. Without the Z-reject
-	// threshold the high quad would be assigned to it (nothing else
-	// to choose from). With the threshold the high face falls through
-	// into the unnamed backdrop bucket instead of leaking into "start".
+	// Only one loc, placed on the low floor. Matching ezQuake's
+	// TP_LocationName, every face picks its nearest loc with no
+	// rejection threshold — so the high floor also maps to "start".
 	finder := loc.NewFinder("test", []loc.Location{
 		{X: 32, Y: 32, Z: 0, Name: "start"},
 	})
@@ -131,24 +130,16 @@ func TestBuild_ZRejectRoutesHighFloorToUnnamedBucket(t *testing.T) {
 	regions, stats := Build("test", b, finder)
 
 	if stats.FacesKept != 2 {
-		t.Errorf("FacesKept = %d, want 2 (both kept, high routed to unnamed)", stats.FacesKept)
+		t.Errorf("FacesKept = %d, want 2", stats.FacesKept)
 	}
-	if stats.FacesUnnamed != 1 {
-		t.Errorf("FacesUnnamed = %d, want 1 (high quad)", stats.FacesUnnamed)
+	if stats.FacesUnnamed != 0 {
+		t.Errorf("FacesUnnamed = %d, want 0", stats.FacesUnnamed)
 	}
-	if len(regions.Locs) != 2 {
-		t.Fatalf("regions.Locs len = %d, want 2 (start + unnamed)", len(regions.Locs))
+	if len(regions.Locs) != 1 {
+		t.Fatalf("regions.Locs len = %d, want 1 (start only)", len(regions.Locs))
 	}
 	if regions.Locs[0].Name != "start" {
 		t.Errorf("regions.Locs[0].Name = %q, want \"start\"", regions.Locs[0].Name)
-	}
-	// Unnamed backdrop is always appended last.
-	last := regions.Locs[len(regions.Locs)-1]
-	if last.Name != UnnamedRegionKey {
-		t.Errorf("last region name = %q, want UnnamedRegionKey (%q)", last.Name, UnnamedRegionKey)
-	}
-	if last.Z != 128 {
-		t.Errorf("unnamed.Z = %v, want 128", last.Z)
 	}
 }
 
@@ -192,11 +183,11 @@ func TestBuild_RejectsNonFloorFaces(t *testing.T) {
 			{X: 0, Y: 0, Z: 64},
 		},
 		Edges: []bsp.Edge{
-			{V: [2]uint16{0, 0}},
-			{V: [2]uint16{0, 1}},
-			{V: [2]uint16{1, 2}},
-			{V: [2]uint16{2, 3}},
-			{V: [2]uint16{3, 0}},
+			{V: [2]uint32{0, 0}},
+			{V: [2]uint32{0, 1}},
+			{V: [2]uint32{1, 2}},
+			{V: [2]uint32{2, 3}},
+			{V: [2]uint32{3, 0}},
 		},
 		Surfedges: []int32{1, 2, 3, 4},
 		Faces:     []bsp.Face{{PlaneID: 0, FirstEdge: 0, NumEdges: 4}},
