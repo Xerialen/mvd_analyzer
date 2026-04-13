@@ -1,7 +1,12 @@
 package bsp
 
-// Q1 BSP v29 structures. Only the lumps required for floor-geometry
-// extraction are modeled; the rest are skipped intentionally.
+// Q1 BSP structures for v29, "BSP2" and "2PSB" (29a). Only the lumps
+// required for floor-geometry extraction are modeled; the rest are
+// skipped intentionally.
+//
+// Widths match the widest variant (BSP2/29a). v29 values are zero-
+// extended into the same fields at parse time so downstream code can
+// ignore the distinction.
 
 // Vec3 is a 3D vector in world units (matches BSP/.loc/player scale).
 type Vec3 struct {
@@ -15,29 +20,20 @@ type Plane struct {
 	Type   int32
 }
 
-// Edge is the BSP edge lump record (4 bytes on disk): two uint16 vertex
-// indices into the vertex lump.
+// Edge is the BSP edge lump record. Two vertex indices into the vertex
+// lump — 16 bits on v29, 32 bits on BSP2/29a.
 type Edge struct {
-	V [2]uint16
+	V [2]uint32
 }
 
-// Face is the BSP face lump record (20 bytes on disk).
-//
-// Field layout on disk (Q1 v29):
-//
-//	planeId    uint16
-//	side       uint16
-//	firstEdge  int32   // offset into SURFEDGES
-//	numEdges   uint16
-//	texinfoId  uint16
-//	styles     [4]byte
-//	lightofs   int32
+// Face is the BSP face lump record. Widths match the BSP2/29a layout
+// (dface29a_t); v29 values are zero-extended into the same fields.
 type Face struct {
-	PlaneID   uint16
-	Side      uint16
+	PlaneID   uint32
+	Side      uint32
 	FirstEdge int32
-	NumEdges  uint16
-	TexinfoID uint16
+	NumEdges  uint32
+	TexinfoID uint32
 	Styles    [4]byte
 	LightOfs  int32
 }

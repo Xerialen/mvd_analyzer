@@ -285,7 +285,7 @@ func assembleRing(b *bsp.BSP, face bsp.Face) ([]bsp.Vec3, bool) {
 	ring := make([]bsp.Vec3, 0, n)
 	for i := 0; i < n; i++ {
 		se := b.Surfedges[first+i]
-		var vi uint16
+		var vi uint32
 		switch {
 		case se > 0:
 			if int(se) >= len(b.Edges) {

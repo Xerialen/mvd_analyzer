@@ -1,12 +1,16 @@
-// Package bsp implements a minimal parser for Quake 1 BSP v29 files.
+// Package bsp implements a minimal parser for Quake 1 BSP files.
 //
 // Only the lumps required for floor-geometry extraction by the sibling
 // mapgeom package are decoded: vertices, edges, surfedges, faces, planes,
 // and models. Anything else is skipped.
 //
-// Non-Q1 formats are rejected explicitly:
+// Three flavors are accepted:
+//   - Q1 v29 (the original Quake format, little-endian int32 version 29)
+//   - "BSP2" magic (extended BSP2 — widened edges/faces/nodes/leafs)
+//   - "2PSB" magic (BSP2 29a — intermediate widened variant)
+//
+// Non-Q1 formats are rejected:
 //   - version 30 (Half-Life) → error
-//   - "BSP2" magic (extended BSP2) → error
 //   - "IBSP" magic (Quake 2+) → error
 package bsp
 
@@ -18,7 +22,7 @@ import (
 	"os"
 )
 
-// Q1BSPVersion is the only supported BSP file version.
+// Q1BSPVersion is the classic Quake 1 BSP file version.
 const Q1BSPVersion = 29
 
 // Parse reads a Quake 1 BSP v29 file from the given path and returns the
@@ -39,19 +43,19 @@ func ParseBytes(data []byte) (*BSP, error) {
 	}
 
 	// Magic / version sniffing. Q1 v29 starts with the little-endian
-	// int32 29. Reject everything else with a specific error so bad
-	// files never silently produce empty output.
+	// int32 29. BSP2 and 2PSB use ASCII magics in the same field.
+	// Anything else is rejected with a specific error so bad files
+	// never silently produce empty output.
 	magic := string(data[:4])
-	if magic == "BSP2" {
-		return nil, fmt.Errorf("bsp: BSP2 format not supported (Q1 v29 only)")
-	}
-	if magic == "IBSP" {
-		return nil, fmt.Errorf("bsp: IBSP format not supported (Q1 v29 only)")
-	}
-
+	wideEdges := false // BSP2/29a widen edges and faces to 32-bit.
 	version := int32(binary.LittleEndian.Uint32(data[0:4]))
-	if version != Q1BSPVersion {
-		return nil, fmt.Errorf("bsp: unsupported version %d (expected %d)", version, Q1BSPVersion)
+	switch {
+	case magic == "BSP2" || magic == "2PSB":
+		wideEdges = true
+	case magic == "IBSP":
+		return nil, fmt.Errorf("bsp: IBSP format not supported")
+	case version != Q1BSPVersion:
+		return nil, fmt.Errorf("bsp: unsupported version %d (expected %d, \"BSP2\", or \"2PSB\")", version, Q1BSPVersion)
 	}
 
 	// Read lump directory: 15 entries of (offset, length) int32.
@@ -120,44 +124,75 @@ func ParseBytes(data []byte) (*BSP, error) {
 		}
 	}
 
-	// FACES
+	// FACES — layout depends on BSP flavor. v29 dface_t is 20 bytes
+	// with 16-bit indices; BSP2/29a dface29a_t is 28 bytes with all
+	// indices widened to 32 bits. Styles and lightofs stay the same.
 	faceBytes, err := lumpBytes(lumpFaces)
 	if err != nil {
 		return nil, err
 	}
-	if len(faceBytes)%faceSize != 0 {
-		return nil, fmt.Errorf("bsp: faces lump size %d not a multiple of %d", len(faceBytes), faceSize)
+	faceStride := faceSize
+	if wideEdges {
+		faceStride = faceSize29a
 	}
-	bsp.Faces = make([]Face, len(faceBytes)/faceSize)
+	if len(faceBytes)%faceStride != 0 {
+		return nil, fmt.Errorf("bsp: faces lump size %d not a multiple of %d", len(faceBytes), faceStride)
+	}
+	bsp.Faces = make([]Face, len(faceBytes)/faceStride)
 	for i := range bsp.Faces {
-		b := faceBytes[i*faceSize:]
-		f := Face{
-			PlaneID:   binary.LittleEndian.Uint16(b[0:2]),
-			Side:      binary.LittleEndian.Uint16(b[2:4]),
-			FirstEdge: int32(binary.LittleEndian.Uint32(b[4:8])),
-			NumEdges:  binary.LittleEndian.Uint16(b[8:10]),
-			TexinfoID: binary.LittleEndian.Uint16(b[10:12]),
-			LightOfs:  int32(binary.LittleEndian.Uint32(b[16:20])),
+		b := faceBytes[i*faceStride:]
+		var f Face
+		if wideEdges {
+			f = Face{
+				PlaneID:   binary.LittleEndian.Uint32(b[0:4]),
+				Side:      binary.LittleEndian.Uint32(b[4:8]),
+				FirstEdge: int32(binary.LittleEndian.Uint32(b[8:12])),
+				NumEdges:  binary.LittleEndian.Uint32(b[12:16]),
+				TexinfoID: binary.LittleEndian.Uint32(b[16:20]),
+				LightOfs:  int32(binary.LittleEndian.Uint32(b[24:28])),
+			}
+			copy(f.Styles[:], b[20:24])
+		} else {
+			f = Face{
+				PlaneID:   uint32(binary.LittleEndian.Uint16(b[0:2])),
+				Side:      uint32(binary.LittleEndian.Uint16(b[2:4])),
+				FirstEdge: int32(binary.LittleEndian.Uint32(b[4:8])),
+				NumEdges:  uint32(binary.LittleEndian.Uint16(b[8:10])),
+				TexinfoID: uint32(binary.LittleEndian.Uint16(b[10:12])),
+				LightOfs:  int32(binary.LittleEndian.Uint32(b[16:20])),
+			}
+			copy(f.Styles[:], b[12:16])
 		}
-		copy(f.Styles[:], b[12:16])
 		bsp.Faces[i] = f
 	}
 
-	// EDGES
+	// EDGES — v29 uses 2×uint16 (4 bytes); BSP2/29a uses 2×uint32
+	// (8 bytes).
 	edgeBytes, err := lumpBytes(lumpEdges)
 	if err != nil {
 		return nil, err
 	}
-	if len(edgeBytes)%edgeSize != 0 {
-		return nil, fmt.Errorf("bsp: edges lump size %d not a multiple of %d", len(edgeBytes), edgeSize)
+	edgeStride := edgeSize
+	if wideEdges {
+		edgeStride = edgeSize29a
 	}
-	bsp.Edges = make([]Edge, len(edgeBytes)/edgeSize)
+	if len(edgeBytes)%edgeStride != 0 {
+		return nil, fmt.Errorf("bsp: edges lump size %d not a multiple of %d", len(edgeBytes), edgeStride)
+	}
+	bsp.Edges = make([]Edge, len(edgeBytes)/edgeStride)
 	for i := range bsp.Edges {
-		b := edgeBytes[i*edgeSize:]
-		bsp.Edges[i] = Edge{V: [2]uint16{
-			binary.LittleEndian.Uint16(b[0:2]),
-			binary.LittleEndian.Uint16(b[2:4]),
-		}}
+		b := edgeBytes[i*edgeStride:]
+		if wideEdges {
+			bsp.Edges[i] = Edge{V: [2]uint32{
+				binary.LittleEndian.Uint32(b[0:4]),
+				binary.LittleEndian.Uint32(b[4:8]),
+			}}
+		} else {
+			bsp.Edges[i] = Edge{V: [2]uint32{
+				uint32(binary.LittleEndian.Uint16(b[0:2])),
+				uint32(binary.LittleEndian.Uint16(b[2:4])),
+			}}
+		}
 	}
 
 	// SURFEDGES

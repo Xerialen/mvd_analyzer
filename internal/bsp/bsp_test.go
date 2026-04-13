@@ -160,27 +160,14 @@ func TestParseBytes_Fixture(t *testing.T) {
 }
 
 func TestParseBytes_RejectsNonQ1(t *testing.T) {
-	cases := []struct {
-		name    string
-		magic   []byte
-		wantSub string
-	}{
-		{"BSP2", []byte("BSP2"), "BSP2"},
-		{"IBSP", []byte("IBSP"), "IBSP"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			data := make([]byte, 4+numLumps*8)
-			copy(data[:4], tc.magic)
-			_, err := ParseBytes(data)
-			if err == nil {
-				t.Fatalf("expected error for %s magic", tc.name)
-			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Errorf("error = %v, want substring %q", err, tc.wantSub)
-			}
-		})
-	}
+	t.Run("IBSP", func(t *testing.T) {
+		data := make([]byte, 4+numLumps*8)
+		copy(data[:4], []byte("IBSP"))
+		_, err := ParseBytes(data)
+		if err == nil || !strings.Contains(err.Error(), "IBSP") {
+			t.Fatalf("expected IBSP error, got %v", err)
+		}
+	})
 
 	t.Run("v30", func(t *testing.T) {
 		data := make([]byte, 4+numLumps*8)

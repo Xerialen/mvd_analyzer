@@ -33,15 +33,15 @@ func buildTwoFloorBSP() *bsp.BSP {
 			{X: 0, Y: 64, Z: 128},
 		},
 		Edges: []bsp.Edge{
-			{V: [2]uint16{0, 0}}, // sentinel
-			{V: [2]uint16{0, 1}},
-			{V: [2]uint16{1, 2}},
-			{V: [2]uint16{2, 3}},
-			{V: [2]uint16{3, 0}},
-			{V: [2]uint16{4, 5}},
-			{V: [2]uint16{5, 6}},
-			{V: [2]uint16{6, 7}},
-			{V: [2]uint16{7, 4}},
+			{V: [2]uint32{0, 0}}, // sentinel
+			{V: [2]uint32{0, 1}},
+			{V: [2]uint32{1, 2}},
+			{V: [2]uint32{2, 3}},
+			{V: [2]uint32{3, 0}},
+			{V: [2]uint32{4, 5}},
+			{V: [2]uint32{5, 6}},
+			{V: [2]uint32{6, 7}},
+			{V: [2]uint32{7, 4}},
 		},
 		Surfedges: []int32{
 			1, 2, 3, 4, // low face
@@ -183,11 +183,11 @@ func TestBuild_RejectsNonFloorFaces(t *testing.T) {
 			{X: 0, Y: 0, Z: 64},
 		},
 		Edges: []bsp.Edge{
-			{V: [2]uint16{0, 0}},
-			{V: [2]uint16{0, 1}},
-			{V: [2]uint16{1, 2}},
-			{V: [2]uint16{2, 3}},
-			{V: [2]uint16{3, 0}},
+			{V: [2]uint32{0, 0}},
+			{V: [2]uint32{0, 1}},
+			{V: [2]uint32{1, 2}},
+			{V: [2]uint32{2, 3}},
+			{V: [2]uint32{3, 0}},
 		},
 		Surfedges: []int32{1, 2, 3, 4},
 		Faces:     []bsp.Face{{PlaneID: 0, FirstEdge: 0, NumEdges: 4}},
