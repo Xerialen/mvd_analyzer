@@ -7,6 +7,13 @@
 // grouped by the normalized loc name. Faces are fan-triangulated and
 // emitted as flat float32 triangle lists that the frontend can render
 // with a trivial ctx.beginPath/moveTo/lineTo/fill loop.
+//
+// Faces that cannot be matched to a named loc (because no loc file is
+// loaded, no loc is reachable, the nearest loc is too far in Z, or the
+// normalized name is empty) are routed into a reserved "unnamed" bucket
+// with key UnnamedRegionKey. The unnamed bucket is always emitted last
+// in result.Locs so the frontend can draw it as a neutral backdrop
+// beneath the named loc regions.
 package mapgeom
 
 import (
@@ -32,6 +39,14 @@ const (
 	// one directly above/below.
 	locZReject = 96.0
 )
+
+// UnnamedRegionKey is the reserved bucket name for floor faces that
+// could not be assigned to a named loc. It is the empty string so it
+// cannot collide with any NormalizeLocationName output (which returns
+// "" only for empty input, and real loc entries are always non-empty).
+// The frontend detects this entry by name === "" and draws it as a
+// neutral backdrop beneath the named loc regions.
+const UnnamedRegionKey = ""
 
 // Bounds is the axis-aligned XY rectangle covering all emitted triangle
 // vertices for a map.
@@ -63,7 +78,8 @@ type MapRegions struct {
 type Stats struct {
 	FacesTotal   int
 	FacesKept    int
-	FacesDropped int // kept by normal test but rejected by Z threshold
+	FacesDropped int // ring assembly or geometry drops (not Z-reject)
+	FacesUnnamed int // kept but routed into the unnamed backdrop bucket
 	Locs         int
 	Triangles    int
 }
@@ -78,11 +94,14 @@ func Build(mapName string, b *bsp.BSP, finder *loc.Finder) (*MapRegions, Stats) 
 		Version: 1,
 	}
 
-	if b == nil || finder == nil || len(b.Models) == 0 || finder.LocationCount() == 0 {
+	if b == nil || len(b.Models) == 0 {
 		return result, stats
 	}
 
-	locPoints := finder.Locations()
+	var locPoints []loc.Location
+	if finder != nil {
+		locPoints = finder.Locations()
+	}
 
 	// Only iterate worldspawn faces (model 0). Skipping other models
 	// avoids claiming door/platform brush faces which move at runtime.
@@ -139,33 +158,34 @@ func Build(mapName string, b *bsp.BSP, finder *loc.Finder) (*MapRegions, Stats) 
 		cy *= inv
 		cz *= inv
 
-		// Find nearest loc with Z weighting.
-		bestIdx := -1
-		bestScore := float32(1e30)
-		for i, lp := range locPoints {
-			dx := cx - lp.X
-			dy := cy - lp.Y
-			dz := cz - lp.Z
-			score := dx*dx + dy*dy + locZWeight*dz*dz
-			if score < bestScore {
-				bestScore = score
-				bestIdx = i
+		// Find nearest loc with Z weighting. Faces with no reachable
+		// loc (no finder loaded, empty loc list, Z-rejected, or empty
+		// name) fall through into the unnamed backdrop bucket.
+		key := UnnamedRegionKey
+		if len(locPoints) > 0 {
+			bestIdx := -1
+			bestScore := float32(1e30)
+			for i, lp := range locPoints {
+				dx := cx - lp.X
+				dy := cy - lp.Y
+				dz := cz - lp.Z
+				score := dx*dx + dy*dy + locZWeight*dz*dz
+				if score < bestScore {
+					bestScore = score
+					bestIdx = i
+				}
+			}
+			if bestIdx >= 0 && absf(cz-locPoints[bestIdx].Z) <= locZReject {
+				if k := NormalizeLocationName(locPoints[bestIdx].Name); k != "" {
+					key = k
+				}
 			}
 		}
-		if bestIdx < 0 {
-			continue
-		}
-		best := locPoints[bestIdx]
-		if absf(cz-best.Z) > locZReject {
-			stats.FacesDropped++
-			continue
+
+		if key == UnnamedRegionKey {
+			stats.FacesUnnamed++
 		}
 		stats.FacesKept++
-
-		key := NormalizeLocationName(best.Name)
-		if key == "" {
-			continue
-		}
 
 		ring2D := make([][2]float32, len(ring3D))
 		for i, p := range ring3D {
@@ -174,12 +194,22 @@ func Build(mapName string, b *bsp.BSP, finder *loc.Finder) (*MapRegions, Stats) 
 		groups[key] = append(groups[key], keptFace{ring: ring2D, z: cz})
 	}
 
-	// Produce stable output: sort loc names alphabetically.
+	// Produce stable output: sort named loc keys alphabetically, then
+	// append the unnamed backdrop bucket last so the frontend can draw
+	// it underneath the named regions.
 	keys := make([]string, 0, len(groups))
+	hasUnnamed := false
 	for k := range groups {
+		if k == UnnamedRegionKey {
+			hasUnnamed = true
+			continue
+		}
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+	if hasUnnamed {
+		keys = append(keys, UnnamedRegionKey)
+	}
 
 	bounds := Bounds{MinX: 1e30, MaxX: -1e30, MinY: 1e30, MaxY: -1e30}
 	hasBounds := false

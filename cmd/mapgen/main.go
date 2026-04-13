@@ -17,7 +17,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -73,7 +72,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "mapgen: found %d BSP files under %s\n", len(bspPaths), *bspDir)
 	}
 
-	var processed, skipped, failed int
+	var processed, failed int
 	for _, path := range bspPaths {
 		name := strings.ToLower(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
 		if *mapFilter != "" && name != strings.ToLower(*mapFilter) {
@@ -81,13 +80,6 @@ func main() {
 		}
 
 		if err := processOne(path, name, *outDir, *verbose); err != nil {
-			if errors.Is(err, errNoLocs) {
-				if *verbose {
-					fmt.Fprintf(os.Stderr, "  skip %s: no loc file\n", name)
-				}
-				skipped++
-				continue
-			}
 			fmt.Fprintf(os.Stderr, "  fail %s: %v\n", name, err)
 			failed++
 			continue
@@ -95,13 +87,11 @@ func main() {
 		processed++
 	}
 
-	fmt.Fprintf(os.Stderr, "mapgen: processed=%d skipped=%d failed=%d\n", processed, skipped, failed)
+	fmt.Fprintf(os.Stderr, "mapgen: processed=%d failed=%d\n", processed, failed)
 	if failed > 0 {
 		os.Exit(1)
 	}
 }
-
-var errNoLocs = errors.New("no loc file for map")
 
 func findBSPs(root string) ([]string, error) {
 	var out []string
@@ -121,9 +111,15 @@ func findBSPs(root string) ([]string, error) {
 }
 
 func processOne(path, name, outDir string, verbose bool) error {
-	finder, err := loc.LoadForMap(name)
-	if err != nil {
-		return errNoLocs
+	// Loc file is optional: without it, Build() routes every floor
+	// face into the unnamed backdrop bucket and the viewer renders it
+	// as a neutral underlay beneath any loc-based region highlighting.
+	finder, locErr := loc.LoadForMap(name)
+	if locErr != nil {
+		finder = nil
+		if verbose {
+			fmt.Fprintf(os.Stderr, "  note %s: no loc file, emitting unnamed geometry only\n", name)
+		}
 	}
 
 	parsed, err := bsp.Parse(path)
@@ -133,7 +129,7 @@ func processOne(path, name, outDir string, verbose bool) error {
 
 	regions, stats := mapgeom.Build(name, parsed, finder)
 	if len(regions.Locs) == 0 {
-		return fmt.Errorf("no loc regions extracted (faces total=%d kept=%d dropped=%d)",
+		return fmt.Errorf("no floor geometry extracted (faces total=%d kept=%d dropped=%d)",
 			stats.FacesTotal, stats.FacesKept, stats.FacesDropped)
 	}
 
@@ -147,8 +143,9 @@ func processOne(path, name, outDir string, verbose bool) error {
 	}
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "  ok   %s: locs=%d tris=%d faces=%d/%d dropped=%d bytes=%d\n",
-			name, stats.Locs, stats.Triangles, stats.FacesKept, stats.FacesTotal, stats.FacesDropped, len(data))
+		fmt.Fprintf(os.Stderr, "  ok   %s: locs=%d tris=%d faces=%d/%d unnamed=%d dropped=%d bytes=%d\n",
+			name, stats.Locs, stats.Triangles, stats.FacesKept, stats.FacesTotal,
+			stats.FacesUnnamed, stats.FacesDropped, len(data))
 	}
 	return nil
 }

@@ -117,26 +117,64 @@ func TestBuild_AssignsFacesToCorrectLoc(t *testing.T) {
 	}
 }
 
-func TestBuild_ZRejectPreventsCrossFloorLeak(t *testing.T) {
+func TestBuild_ZRejectRoutesHighFloorToUnnamedBucket(t *testing.T) {
 	b := buildTwoFloorBSP()
 
 	// Only one loc, placed on the low floor. Without the Z-reject
 	// threshold the high quad would be assigned to it (nothing else
-	// to choose from). With the threshold the high face is dropped.
+	// to choose from). With the threshold the high face falls through
+	// into the unnamed backdrop bucket instead of leaking into "start".
 	finder := loc.NewFinder("test", []loc.Location{
 		{X: 32, Y: 32, Z: 0, Name: "start"},
 	})
 
 	regions, stats := Build("test", b, finder)
 
-	if stats.FacesKept != 1 {
-		t.Errorf("FacesKept = %d, want 1 (high quad should be Z-rejected)", stats.FacesKept)
+	if stats.FacesKept != 2 {
+		t.Errorf("FacesKept = %d, want 2 (both kept, high routed to unnamed)", stats.FacesKept)
 	}
-	if stats.FacesDropped != 1 {
-		t.Errorf("FacesDropped = %d, want 1", stats.FacesDropped)
+	if stats.FacesUnnamed != 1 {
+		t.Errorf("FacesUnnamed = %d, want 1 (high quad)", stats.FacesUnnamed)
 	}
-	if len(regions.Locs) != 1 || regions.Locs[0].Name != "start" {
-		t.Errorf("regions.Locs = %+v, want one entry named 'start'", regions.Locs)
+	if len(regions.Locs) != 2 {
+		t.Fatalf("regions.Locs len = %d, want 2 (start + unnamed)", len(regions.Locs))
+	}
+	if regions.Locs[0].Name != "start" {
+		t.Errorf("regions.Locs[0].Name = %q, want \"start\"", regions.Locs[0].Name)
+	}
+	// Unnamed backdrop is always appended last.
+	last := regions.Locs[len(regions.Locs)-1]
+	if last.Name != UnnamedRegionKey {
+		t.Errorf("last region name = %q, want UnnamedRegionKey (%q)", last.Name, UnnamedRegionKey)
+	}
+	if last.Z != 128 {
+		t.Errorf("unnamed.Z = %v, want 128", last.Z)
+	}
+}
+
+func TestBuild_NoFinderEmitsUnnamedBackdrop(t *testing.T) {
+	b := buildTwoFloorBSP()
+
+	regions, stats := Build("test", b, nil)
+
+	if stats.FacesKept != 2 {
+		t.Errorf("FacesKept = %d, want 2", stats.FacesKept)
+	}
+	if stats.FacesUnnamed != 2 {
+		t.Errorf("FacesUnnamed = %d, want 2", stats.FacesUnnamed)
+	}
+	if len(regions.Locs) != 1 {
+		t.Fatalf("regions.Locs len = %d, want 1 (unnamed only)", len(regions.Locs))
+	}
+	if regions.Locs[0].Name != UnnamedRegionKey {
+		t.Errorf("region name = %q, want UnnamedRegionKey", regions.Locs[0].Name)
+	}
+	// Both quads → 2 faces × 2 triangles × 6 floats = 24 floats.
+	if len(regions.Locs[0].Tris) != 24 {
+		t.Errorf("unnamed.Tris len = %d, want 24", len(regions.Locs[0].Tris))
+	}
+	if regions.Bounds.MinX != 0 || regions.Bounds.MaxX != 64 {
+		t.Errorf("bounds X = (%v,%v), want (0,64)", regions.Bounds.MinX, regions.Bounds.MaxX)
 	}
 }
 

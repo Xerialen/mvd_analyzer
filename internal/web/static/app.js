@@ -2844,9 +2844,13 @@ function processLocationGroups(locations) {
     // If BSP-derived geometry is loaded, attach per-loc triangle lists so
     // the renderer can draw real floor shapes instead of convex-hull blobs.
     // Keys must match NormalizeLocationName (Go) <-> normalizeLocationName (JS).
+    // Entries with an empty name are the unnamed backdrop bucket (faces
+    // that couldn't be matched to a loc); they're handled separately by
+    // prerenderLocationBackground as a neutral underlay.
     if (mapState.mapGeometry && Array.isArray(mapState.mapGeometry.locs)) {
         const geomByName = {};
         for (const l of mapState.mapGeometry.locs) {
+            if (l.name === '') continue;
             geomByName[l.name] = l;
         }
         for (const group of Object.values(groups)) {
@@ -2918,9 +2922,14 @@ function expandPolygon(points, distance) {
 // Used when mapState.mapGeometry is loaded; otherwise drawLocationRegion
 // below handles the convex-hull fallback.
 function drawLocationRegionFromGeometry(ctx, group, worldToCanvasFunc) {
-    const tris = group.tris;
+    drawTriangleListFill(ctx, group.tris, group.color.fill, worldToCanvasFunc);
+}
+
+// Fill a flat triangle list (6 numbers per triangle) with the given style.
+// Shared by loc-group fills and the unnamed backdrop underlay.
+function drawTriangleListFill(ctx, tris, fillStyle, worldToCanvasFunc) {
     if (!tris || tris.length < 6) return;
-    ctx.fillStyle = group.color.fill;
+    ctx.fillStyle = fillStyle;
     for (let i = 0; i + 5 < tris.length; i += 6) {
         const a = worldToCanvasFunc(tris[i],     tris[i + 1]);
         const b = worldToCanvasFunc(tris[i + 2], tris[i + 3]);
@@ -3291,7 +3300,13 @@ function initMapView(result) {
         fetch(`maps/${mapBasename}.json`)
             .then(r => r.ok ? r.json() : null)
             .then(geom => {
-                if (!geom || !geom.locs || geom.locs.length === 0) return;
+                if (!geom || !Array.isArray(geom.locs) || geom.locs.length === 0) return;
+                // The unnamed backdrop bucket (name === "") is drawn as a
+                // neutral underlay by prerenderLocationBackground; cache its
+                // triangle list separately so it isn't confused with loc
+                // groups keyed by name.
+                const backdrop = geom.locs.find(l => l && l.name === '');
+                geom.backdropTris = backdrop && Array.isArray(backdrop.tris) ? backdrop.tris : null;
                 mapState.mapGeometry = geom;
                 // Rebuild groups with tris attached, then refresh region->group
                 // references so the control overlay doesn't keep pointing at
@@ -4153,7 +4168,10 @@ function buildPlayerRegionIcon(player) {
 }
 
 function prerenderLocationBackground() {
-    if (!mapState.locationGroups || !mapState.canvas) return;
+    if (!mapState.canvas) return;
+    const groups = mapState.locationGroups || [];
+    const backdropTris = mapState.mapGeometry && mapState.mapGeometry.backdropTris;
+    if (groups.length === 0 && (!backdropTris || backdropTris.length < 6)) return;
 
     const w = mapState.canvas.width;
     const h = mapState.canvas.height;
@@ -4163,7 +4181,15 @@ function prerenderLocationBackground() {
     const octx = offscreen.getContext('2d');
 
     const hasGeom = !!mapState.mapGeometry;
-    for (const group of mapState.locationGroups) {
+
+    // Draw the unnamed backdrop first (if present) so named loc regions
+    // paint on top. Kept dim and neutral so real region tinting remains
+    // readable when both are present.
+    if (backdropTris && backdropTris.length >= 6) {
+        drawTriangleListFill(octx, backdropTris, 'rgba(70, 80, 110, 0.35)', worldToCanvasNew);
+    }
+
+    for (const group of groups) {
         if (group.tris && group.tris.length >= 6) {
             drawLocationRegionFromGeometry(octx, group, worldToCanvasNew);
         } else if (!hasGeom) {
@@ -4175,7 +4201,7 @@ function prerenderLocationBackground() {
     // Thin grey outlines around each traced region — drawn after all fills so
     // they sit on top and stay visible regardless of adjacent region tinting.
     if (hasGeom) {
-        for (const group of mapState.locationGroups) {
+        for (const group of groups) {
             if (group.tris && group.tris.length >= 6) {
                 drawLocationRegionOutline(octx, group, worldToCanvasNew, 'rgba(180, 180, 180, 0.5)', 1);
             }
@@ -4185,7 +4211,7 @@ function prerenderLocationBackground() {
     octx.font = '12px monospace';
     octx.textAlign = 'center';
     octx.textBaseline = 'middle';
-    for (const group of mapState.locationGroups) {
+    for (const group of groups) {
         const pos = worldToCanvasNew(group.centroid.x, group.centroid.y);
         octx.fillStyle = group.color.text;
         octx.fillText(group.name, pos.x, pos.y);
@@ -4303,8 +4329,11 @@ function renderMap(time) {
         mapState.locationGroups = processLocationGroups(mapState.locations);
     }
 
-    // Draw pre-rendered location background (or render it first time)
-    if (mapState.locationGroups) {
+    // Draw pre-rendered location background (or render it first time).
+    // Also runs when we have only the unnamed backdrop from mapGeometry
+    // (loc-less maps), so the floor plan still shows as a neutral underlay.
+    const hasBackdrop = !!(mapState.mapGeometry && mapState.mapGeometry.backdropTris);
+    if (mapState.locationGroups || hasBackdrop) {
         if (!mapState.locationCanvas) {
             prerenderLocationBackground();
         }
