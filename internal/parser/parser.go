@@ -25,7 +25,19 @@ const (
 	EventPlayerInfo
 	EventDamage
 	EventDemoInfo
+	EventIntermission
 )
+
+// IntermissionEvent is emitted when the server enters intermission
+// (svc_intermission, cmd 30). KTX-style demos send this when the timelimit
+// or fraglimit is hit and the scoreboard camera takes over; downstream
+// analyzers use it to stop sampling player state.
+type IntermissionEvent struct {
+	Time float64
+}
+
+func (e *IntermissionEvent) EventType() EventType { return EventIntermission }
+func (e *IntermissionEvent) EventTime() float64   { return e.Time }
 
 // maxHiddenBlockSize caps the length of a single hidden-message block
 // (dem_multiple with player_mask=0). The largest legitimate block in the
@@ -196,6 +208,18 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 			message, _ := r.ReadString()
 			if message == "EndOfDemo" {
 				return mvd.ErrEndOfDemo
+			}
+
+		case mvd.SvcIntermission:
+			// 3 short coords (6) + 3 byte angles (3) = 9 bytes camera pose.
+			// We don't need the pose but we do need to signal intermission to
+			// downstream analyzers so they can stop sampling player state.
+			if err := r.Skip(9); err != nil {
+				p.warn(msg.Time, "parse_error", "svc_intermission: %v", err)
+				return nil
+			}
+			if err := p.emit(&IntermissionEvent{Time: msg.Time}); err != nil {
+				return err
 			}
 
 		default:
@@ -448,10 +472,6 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 			return r.Skip(14) // 1 + 1 + 3*4
 		}
 		return r.Skip(8) // 1 + 1 + 3*2
-	case mvd.SvcIntermission:
-		// 3 short coords (6 bytes) + 3 byte angles (3 bytes) = 9 bytes.
-		// Was previously 12 which overran on end-of-demo payloads.
-		return r.Skip(9)
 	case mvd.SvcFinale:
 		_, err := r.ReadString()
 		return err

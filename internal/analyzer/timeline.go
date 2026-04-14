@@ -32,6 +32,8 @@ type TimelineAnalyzer struct {
 	lastSampleTime      float64
 	matchStartTime      float64
 	matchStarted        bool
+	matchEndTime        float64
+	matchEnded          bool
 	locFinder           *loc.Finder // Location finder for map (nil if no .loc file)
 }
 
@@ -119,8 +121,18 @@ func (a *TimelineAnalyzer) OnEvent(event parser.Event) error {
 	case *parser.StatUpdateEvent:
 		return a.handleStatUpdate(e)
 	case *parser.PrintEvent:
-		// Detect match start from countdown message
+		// Detect match start/end from print messages
 		a.detectMatchStart(e)
+		a.detectMatchEnd(e)
+	case *parser.IntermissionEvent:
+		// svc_intermission is the most reliable end-of-match signal: KTX
+		// fires it on timelimit/fraglimit hit even when there's no matching
+		// bprint string. Mark the match as ended so further stat/position
+		// updates stop being sampled.
+		if a.matchStarted && !a.matchEnded {
+			a.matchEndTime = e.Time
+			a.matchEnded = true
+		}
 	case *parser.FragUpdateEvent:
 		// Track frag events from frag updates (more reliable than stat updates)
 		a.handleFragUpdate(e)
@@ -154,7 +166,7 @@ func (a *TimelineAnalyzer) handlePositionUpdate(e *parser.PlayerPositionEvent) {
 	// Sample at bucket boundaries — position updates arrive at ~73 Hz,
 	// much more frequently than stat updates (~3 Hz). Without this,
 	// ~93% of 50ms buckets would miss position data entirely.
-	if a.matchStarted {
+	if a.matchStarted && !a.matchEnded {
 		currentBucket := int(e.Time / a.bucketDuration)
 		lastBucket := int(a.lastSampleTime / a.bucketDuration)
 
@@ -180,6 +192,28 @@ func (a *TimelineAnalyzer) detectMatchStart(e *parser.PrintEvent) {
 		strings.Contains(msg, "begins in 1") || strings.Contains(msg, "Go!") {
 		a.matchStartTime = e.Time
 		a.matchStarted = true
+	}
+}
+
+// detectMatchEnd watches for the KTX print messages that signal the match has
+// ended (timelimit/fraglimit, or explicit "the match is over"). Once flagged,
+// further stat and position updates are ignored so the post-match intermission
+// camera doesn't keep producing buckets — and so KTX's `health = 1000 + dmg`
+// damage-indicator sentinels (combat.c:1001) don't get frozen into them.
+// Patterns mirror MatchAnalyzer (analyzer/match.go) for consistency.
+func (a *TimelineAnalyzer) detectMatchEnd(e *parser.PrintEvent) {
+	if a.matchEnded || !a.matchStarted {
+		return
+	}
+	msg := e.Message
+	if strings.Contains(msg, "the match is over") ||
+		strings.Contains(msg, "match ended") ||
+		strings.Contains(msg, "game over") ||
+		strings.Contains(msg, "match complete") ||
+		strings.Contains(msg, "timelimit hit") ||
+		strings.Contains(msg, "fraglimit hit") {
+		a.matchEndTime = e.Time
+		a.matchEnded = true
 	}
 }
 
@@ -212,8 +246,10 @@ func (a *TimelineAnalyzer) handleFragUpdate(e *parser.FragUpdateEvent) {
 func (a *TimelineAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error {
 	// Ignore all state during countdown/warmup - players have all weapons,
 	// infinite ammo, etc. which is meaningless. Match starts fresh with
-	// 100 health and base shotgun.
-	if !a.matchStarted {
+	// 100 health and base shotgun. After match end, ignore stat updates too:
+	// the intermission camera otherwise freezes the last seen value (often a
+	// KTX damage-indicator sentinel like health=1000+dmg) into every bucket.
+	if !a.matchStarted || a.matchEnded {
 		return nil
 	}
 
@@ -221,9 +257,19 @@ func (a *TimelineAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error {
 
 	switch e.StatIndex {
 	case mvd.StatHealth:
-		state.vitals.health = e.Value
+		// KTX uses health = 1000 + damage as a damage-indicator sentinel
+		// (ktx/src/combat.c:1001). Real player health is capped at 250.
+		// Drop sentinel values so they don't get sampled into buckets.
+		if e.Value <= 250 {
+			state.vitals.health = e.Value
+		}
 	case mvd.StatArmor:
-		state.vitals.armor = e.Value
+		// Same shape: KTX overwrites armorvalue in pre-match speed-meter
+		// and in damage feedback paths with values > 200. Real armor caps
+		// at 200 (RA). Reject anything larger.
+		if e.Value <= 200 {
+			state.vitals.armor = e.Value
+		}
 	case mvd.StatItems:
 		state.items = e.Value
 	case mvd.StatShells:
