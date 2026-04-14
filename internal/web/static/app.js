@@ -677,9 +677,17 @@ function displayPlayerStats(players) {
         const rlKills = player.weapons?.rl?.kills?.enemy || 0;
         const lgKills = player.weapons?.lg?.kills?.enemy || 0;
         const efficiency = (kills + deaths) > 0 ? ((kills / (kills + deaths)) * 100).toFixed(1) : '0.0';
-        const botBadge = player.bot
-            ? ` <span class="bot-badge" title="Frogbot${player.bot.skill !== undefined ? ', skill ' + player.bot.skill : ''}${player.bot.customised ? ' (customised)' : ''}">BOT</span>`
-            : '';
+        // Bot badge: render the skill level inline when present, since bots
+        // in a match are rare enough that seeing "BOT 10" at a glance is
+        // more useful than hiding it behind a hover. Fall back to a plain
+        // "BOT" when the demoinfo JSON didn't include a skill value.
+        let botBadge = '';
+        if (player.bot) {
+            const skill = player.bot.skill;
+            const label = skill !== undefined && skill !== null ? `BOT ${skill}` : 'BOT';
+            const tooltip = `Frogbot${skill !== undefined ? ', skill ' + skill : ''}${player.bot.customised ? ' (customised)' : ''}`;
+            botBadge = ` <span class="bot-badge" title="${tooltip}">${label}</span>`;
+        }
         const handicapCell = `<td class="handicap-col"${showHandicap ? '' : ' style="display: none;"'}>${player.handicap || '-'}</td>`;
         return `
             <td>${escapeHtml(player.name)}${botBadge}</td>
