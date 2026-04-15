@@ -143,9 +143,9 @@ func processOne(path, name, outDir string, verbose bool) error {
 	}
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "  ok   %s: locs=%d tris=%d faces=%d/%d unnamed=%d dropped=%d bytes=%d\n",
+		fmt.Fprintf(os.Stderr, "  ok   %s: locs=%d tris=%d faces=%d/%d unnamed=%d ceiling=%d dropped=%d bytes=%d\n",
 			name, stats.Locs, stats.Triangles, stats.FacesKept, stats.FacesTotal,
-			stats.FacesUnnamed, stats.FacesDropped, len(data))
+			stats.FacesUnnamed, stats.FacesCeiling, stats.FacesDropped, len(data))
 	}
 	return nil
 }

@@ -29,6 +29,15 @@ const (
 	// walkable floor (~45° from horizontal — matches Q1's floor
 	// heuristic closely enough for visualization).
 	floorNormalZ = 0.7
+
+	// ceilingMaxAboveLoc drops a face whose centroid is more than this
+	// far above its nearest loc point. Loc points sit at player-eye
+	// positions the mapper cared about, so a face significantly above
+	// the closest one is almost always unreachable roof/ceiling
+	// detail. Since a region is anchored by many loc points (one per
+	// playable sub-area), stairs and lifts connecting levels stay
+	// covered as long as each level has its own loc point.
+	ceilingMaxAboveLoc float32 = 128.0
 )
 
 // UnnamedRegionKey is the reserved bucket name for floor faces that
@@ -71,6 +80,7 @@ type Stats struct {
 	FacesKept    int
 	FacesDropped int // ring assembly or geometry drops (not Z-reject)
 	FacesUnnamed int // kept but routed into the unnamed backdrop bucket
+	FacesCeiling int // kept-but-filtered-as-ceiling-detail
 	Locs         int
 	Triangles    int
 }
@@ -167,6 +177,16 @@ func Build(mapName string, b *bsp.BSP, finder *loc.Finder) (*MapRegions, Stats) 
 					bestScore = score
 					bestIdx = i
 				}
+			}
+			// Drop faces sitting well above the nearest loc point —
+			// they're almost certainly unreachable roof/ceiling
+			// detail. Regions with real vertical range (stairs,
+			// lifts) stay covered because each level gets its own
+			// loc point, and the nearest loc of a face on that level
+			// sits close to it in Z.
+			if cz-locPoints[bestIdx].Z > ceilingMaxAboveLoc {
+				stats.FacesCeiling++
+				continue
 			}
 			if k := NormalizeLocationName(locPoints[bestIdx].Name); k != "" {
 				key = k
