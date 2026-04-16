@@ -1872,6 +1872,114 @@ function prepScoreData(startTime, endTime, teams) {
     return { points, max: maxVal };
 }
 
+// ─── Graph pan/zoom (shared view range) ─────────────────────────────────────
+//
+// All four diverging graphs and the region-control timeline share
+// timelineState.segment as their view range. Ctrl+wheel zooms around the
+// cursor; left-click drag pans horizontally. The unified timeline bar's
+// range-select still feeds the same state, so both entry points stay in sync.
+
+const MIN_VIEW_SPAN = 2; // seconds — don't zoom past this
+
+function currentViewRange() {
+    const duration = timelineState.duration || 0;
+    const seg = timelineState.segment;
+    return seg ? [seg.start, seg.end] : [0, duration];
+}
+
+function setViewRange(start, end) {
+    const duration = timelineState.duration || 0;
+    if (duration <= 0) return;
+    if (end - start < MIN_VIEW_SPAN) {
+        const mid = (start + end) / 2;
+        start = mid - MIN_VIEW_SPAN / 2;
+        end = mid + MIN_VIEW_SPAN / 2;
+    }
+    // Slide the window back inside [0, duration] without shrinking it.
+    if (start < 0) { end -= start; start = 0; }
+    if (end > duration) { start -= (end - duration); end = duration; }
+    start = Math.max(0, start);
+    end = Math.min(duration, end);
+    if (start <= 0 && end >= duration) {
+        timelineState.segment = null;
+    } else {
+        timelineState.segment = { start, end };
+    }
+    updateSelectionOverlay();
+    updateSegmentLabel();
+    updateDetailView();
+    updateUrlState();
+}
+
+function graphMouseToTime(canvas, clientX) {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0) return null;
+    const [start, end] = currentViewRange();
+    return start + ((clientX - rect.left) / rect.width) * (end - start);
+}
+
+// One global drag tracker shared by all installed canvases — avoids attaching
+// a mousemove listener per canvas.
+const graphPanState = { canvas: null, lastX: 0 };
+let graphPanGlobalsInstalled = false;
+
+function ensureGraphPanGlobals() {
+    if (graphPanGlobalsInstalled) return;
+    graphPanGlobalsInstalled = true;
+    document.addEventListener('mousemove', (e) => {
+        const c = graphPanState.canvas;
+        if (!c) return;
+        const rect = c.getBoundingClientRect();
+        if (rect.width <= 0) return;
+        const [start, end] = currentViewRange();
+        const secPerPx = (end - start) / rect.width;
+        const dx = e.clientX - graphPanState.lastX;
+        graphPanState.lastX = e.clientX;
+        setViewRange(start - dx * secPerPx, end - dx * secPerPx);
+    });
+    document.addEventListener('mouseup', () => {
+        if (!graphPanState.canvas) return;
+        graphPanState.canvas.style.cursor = 'grab';
+        graphPanState.canvas = null;
+    });
+}
+
+function installGraphPanZoom(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || canvas._panZoomInstalled) return;
+    canvas._panZoomInstalled = true;
+    ensureGraphPanGlobals();
+
+    canvas.addEventListener('wheel', (e) => {
+        if (!e.ctrlKey && !e.metaKey) return;  // plain wheel = page scroll
+        e.preventDefault();                    // stop browser pinch-zoom
+        const centerT = graphMouseToTime(canvas, e.clientX);
+        if (centerT === null) return;
+        // Exponential factor — deltaY > 0 scrolls toward the user → zoom out.
+        const factor = Math.exp(e.deltaY * 0.0015);
+        const [start, end] = currentViewRange();
+        setViewRange(
+            centerT - (centerT - start) * factor,
+            centerT + (end - centerT) * factor,
+        );
+    }, { passive: false });
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        graphPanState.canvas = canvas;
+        graphPanState.lastX = e.clientX;
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('dblclick', () => {
+        // Quick reset to full match
+        setViewRange(0, timelineState.duration || 0);
+    });
+
+    canvas.style.cursor = 'grab';
+}
+
 // ─── Unified Timeline Widget ──────────────────────────────────────────────
 
 let unifiedTimelineInitialized = false;
@@ -1976,6 +2084,10 @@ function setupUnifiedTimeline() {
     document.getElementById('tl-play-pause').addEventListener('click', () => startPlaybackAtSpeed(1));
     document.getElementById('tl-5x').addEventListener('click', () => startPlaybackAtSpeed(5));
     document.getElementById('tl-20x').addEventListener('click', () => startPlaybackAtSpeed(20));
+
+    // --- Pan/zoom on every diverging graph + region-control timeline ---
+    ['detail-graph-canvas', 'region-control-canvas', 'health-armor-canvas',
+     'frags-canvas', 'score-canvas'].forEach(installGraphPanZoom);
 
     unifiedTimelineInitialized = true;
 }
