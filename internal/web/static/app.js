@@ -1571,18 +1571,12 @@ function renderDivergingGraph(canvasId, {
     ctx.fillStyle = '#16213e';
     ctx.fillRect(0, 0, W, graphH);
 
-    // Grid lines
+    // Grid lines at ±50% (drawn first so bars overlay them)
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, midY - barH * 0.5); ctx.lineTo(W, midY - barH * 0.5);
     ctx.moveTo(0, midY + barH * 0.5); ctx.lineTo(W, midY + barH * 0.5);
-    ctx.stroke();
-
-    // Center line
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.beginPath();
-    ctx.moveTo(0, midY); ctx.lineTo(W, midY);
     ctx.stroke();
 
     if (duration > 0 && dataPoints && dataPoints.length > 0) {
@@ -1644,6 +1638,11 @@ function renderDivergingGraph(canvasId, {
             }
         }
     }
+
+    // Zero-y divider — drawn on top of bars so the upper/lower split is
+    // always clearly visible. Integer-aligned to avoid anti-aliasing.
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillRect(0, Math.round(midY), W, 1);
 
     // X-axis ticks (adaptive)
     if (duration > 0) {
@@ -1782,17 +1781,22 @@ function buildHASegments(td) {
 
 // ─── Data preparation: Frags ────────────────────────────────────────────────
 
+const FRAG_BIN_SIZE = 10; // seconds; fixed so bars stay put when you zoom/pan
+
 function prepFragsData(startTime, endTime, teams) {
     const fragEvents = timelineState.fragEvents || [];
     if (teams.length < 2) return { points: [], max: 5 };
-    const duration = endTime - startTime;
-    const binSize = Math.max(1, duration / 200);
-    const numBins = Math.ceil(duration / binSize);
+    // Align bins to absolute multiples of FRAG_BIN_SIZE so a given frag
+    // always falls in the same bin regardless of the current view range.
+    const firstBin = Math.floor(startTime / FRAG_BIN_SIZE) * FRAG_BIN_SIZE;
+    const lastBin  = Math.ceil(endTime  / FRAG_BIN_SIZE) * FRAG_BIN_SIZE;
+    const numBins  = Math.max(0, Math.round((lastBin - firstBin) / FRAG_BIN_SIZE));
+    if (numBins === 0) return { points: [], max: 5 };
     const aFrags = new Float32Array(numBins);
     const bFrags = new Float32Array(numBins);
     for (const f of fragEvents) {
-        if (f.time < startTime || f.time > endTime) continue;
-        const bin = Math.min(Math.floor((f.time - startTime) / binSize), numBins - 1);
+        if (f.time < firstBin || f.time >= lastBin) continue;
+        const bin = Math.floor((f.time - firstBin) / FRAG_BIN_SIZE);
         if (f.team === teams[0]) aFrags[bin] += (f.delta || 1);
         else if (f.team === teams[1]) bFrags[bin] += (f.delta || 1);
     }
@@ -1805,7 +1809,7 @@ function prepFragsData(startTime, endTime, teams) {
     for (let i = 0; i < numBins; i++) {
         maxVal = Math.max(maxVal, aFrags[i], bFrags[i]);
         points.push({
-            t: startTime + i * binSize, dt: binSize,
+            t: firstBin + i * FRAG_BIN_SIZE, dt: FRAG_BIN_SIZE,
             up: [{ h: aFrags[i], color: cA }],
             down: [{ h: bFrags[i], color: cB }],
         });
