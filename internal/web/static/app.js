@@ -2309,6 +2309,172 @@ function updateScoreTimeline(startTime, endTime) {
     });
 }
 
+// ─── Region Control Timeline ────────────────────────────────────────────────
+//
+// One row per control region; each row colors contiguous spans according to
+// classifyRegionState (single source of truth, shared with the live map).
+// Only the "strong" states (solo armed control + armed-vs-armed contested)
+// paint pixels — weak states render as gaps to keep the color story readable.
+
+const RC_ROW_H = 16;
+const RC_AXIS_H = 20;
+
+function prepRegionControlData(startTime, endTime, teams) {
+    const regions = mapState.controlRegions;
+    if (!regions || regions.length === 0 || !mapState.locToRegion) return null;
+    const hrBuckets = timelineState.highResBuckets;
+    if (!hrBuckets || !hrBuckets.length) return null;
+
+    const teamA = teams[0], teamB = teams[1];
+    const locations = mapState.locations;
+    const symbols = mapState.playerSymbols || {};
+    const idx0 = binarySearchBucketStart(hrBuckets, startTime);
+
+    const rows = regions.map(r => ({ name: r.name, spans: [], _cur: null, _start: startTime }));
+    const rowByName = new Map(rows.map(r => [r.name, r]));
+
+    for (let i = idx0; i < hrBuckets.length; i++) {
+        const b = hrBuckets[i];
+        if (b.t > endTime) break;
+
+        // Accumulate per-region armed/unarmed counts for this bucket.
+        const perRegion = new Map();
+        const pd = b.p;
+        if (pd) {
+            for (const name in pd) {
+                const data = pd[name];
+                if (!data || data.d) continue;
+                if (data.h !== undefined && data.h <= 0) continue;
+                const locName = resolvePlayerLoc(data, locations);
+                if (!locName) continue;
+                const rName = mapState.locToRegion[locName];
+                if (!rName || !rowByName.has(rName)) continue;
+                const sym = symbols[name];
+                const pTeam = sym ? (teams[sym.teamIdx] || '') : '';
+                const hasWpn = data.rl || data.lg;
+                let agg = perRegion.get(rName);
+                if (!agg) { agg = { aWpn: 0, aNo: 0, bWpn: 0, bNo: 0 }; perRegion.set(rName, agg); }
+                if (pTeam === teamA)      { if (hasWpn) agg.aWpn++; else agg.aNo++; }
+                else if (pTeam === teamB) { if (hasWpn) agg.bWpn++; else agg.bNo++; }
+            }
+        }
+
+        for (const row of rows) {
+            const agg = perRegion.get(row.name);
+            const state = agg
+                ? classifyRegionState(agg.aWpn, agg.aNo, agg.bWpn, agg.bNo)
+                : 'empty';
+            if (state !== row._cur) {
+                if (row._cur) row.spans.push({ start: row._start, end: b.t, state: row._cur });
+                row._cur = state;
+                row._start = b.t;
+            }
+        }
+    }
+    for (const row of rows) {
+        if (row._cur) row.spans.push({ start: row._start, end: endTime, state: row._cur });
+        delete row._cur; delete row._start;
+    }
+    return { rows, teamA, teamB };
+}
+
+function renderRegionControlTimeline(canvasId, labelsId, { startTime, endTime, rows }) {
+    const canvas = document.getElementById(canvasId);
+    const labelsEl = document.getElementById(labelsId);
+    if (!canvas || !canvas.getContext || !labelsEl) return;
+
+    const container = canvas.parentElement;
+    const W = container.clientWidth;
+    const H = rows.length * RC_ROW_H + RC_AXIS_H;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // Label column, one DOM element per row, sized to match the canvas row.
+    labelsEl.innerHTML = '';
+    for (const r of rows) {
+        const lab = document.createElement('div');
+        lab.className = 'region-timeline-label';
+        lab.style.height = RC_ROW_H + 'px';
+        lab.style.lineHeight = RC_ROW_H + 'px';
+        lab.textContent = r.name;
+        lab.title = r.name;
+        labelsEl.appendChild(lab);
+    }
+
+    const graphH = rows.length * RC_ROW_H;
+    ctx.fillStyle = '#16213e';
+    ctx.fillRect(0, 0, W, graphH);
+
+    const duration = endTime - startTime;
+    if (duration <= 0) return;
+
+    const stateColors = {
+        teamAControl: teamStrongColor(TEAM_COLORS[0]),
+        contested:    'rgb(255, 255, 255)',
+        teamBControl: teamStrongColor(TEAM_COLORS[1]),
+    };
+
+    rows.forEach((row, idx) => {
+        const y = idx * RC_ROW_H;
+        for (const span of row.spans) {
+            const color = stateColors[span.state];
+            if (!color) continue;
+            const x1 = ((span.start - startTime) / duration) * W;
+            const x2 = ((span.end - startTime) / duration) * W;
+            const w = x2 - x1;
+            if (w <= 0) continue;
+            ctx.fillStyle = color;
+            ctx.fillRect(x1, y + 1, w, RC_ROW_H - 2);
+        }
+    });
+
+    // X-axis ticks (adaptive, same helper as renderDivergingGraph)
+    const targetTicks = Math.max(4, Math.min(12, Math.floor(W / 100)));
+    const interval = pickTickInterval(duration, targetTicks);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    const firstTick = Math.ceil(startTime / interval) * interval;
+    for (let t = firstTick; t <= endTime; t += interval) {
+        const x = ((t - startTime) / duration) * W;
+        ctx.beginPath(); ctx.moveTo(x, graphH); ctx.lineTo(x, graphH + 4); ctx.stroke();
+        ctx.fillText(formatDuration(t), x, graphH + 5);
+    }
+}
+
+function updateRegionControlTimeline(startTime, endTime) {
+    const panel = document.getElementById('region-control-timeline-panel');
+    if (!panel) return;
+    const teams = timelineState.teams;
+    if (teams.length < 2) { panel.style.display = 'none'; return; }
+
+    const data = prepRegionControlData(startTime, endTime, teams);
+    if (!data) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const teamAEl = document.getElementById('rc-tl-teamA');
+    const teamBEl = document.getElementById('rc-tl-teamB');
+    if (teamAEl) teamAEl.textContent = data.teamA;
+    if (teamBEl) teamBEl.textContent = data.teamB;
+    const setLegend = (id, color) => {
+        const el = document.getElementById(id);
+        if (el) el.style.background = color;
+    };
+    setLegend('rc-legend-a-ctrl', teamStrongColor(TEAM_COLORS[0]));
+    setLegend('rc-legend-b-ctrl', teamStrongColor(TEAM_COLORS[1]));
+
+    renderRegionControlTimeline('region-control-canvas', 'region-timeline-labels', {
+        startTime, endTime, rows: data.rows,
+    });
+}
+
 // ─── Team Status Panel ──────────────────────────────────────────────────────
 
 function updateTeamStatus() {
