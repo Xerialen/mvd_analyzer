@@ -1563,8 +1563,18 @@ function renderDivergingGraph(canvasId, {
     const AXIS_H = 20;
     const PAD = 4;
     const graphH = H - AXIS_H;
+    // Powerup strips live in a reserved zone at the top and bottom of the
+    // plot area so weapon bars can never grow into them — the weapons bar
+    // height scales with max players-per-team, so without this reservation
+    // a high-rollout 5v5 snapshot could paint bars straight through the
+    // strips.
+    const STRIP_H = 6;           // thicker than before (was 3) for readability
+    const STRIP_GAP = 1;
+    const STRIP_LANES = 3;       // quad / pent / ring
+    const hasPowerups = !!(powerupSpans && powerupSpans.length);
+    const stripZone = hasPowerups ? STRIP_LANES * (STRIP_H + STRIP_GAP) + 2 : 0;
     const midY = PAD + (graphH - PAD) / 2;
-    const barH = midY - PAD;
+    const barH = midY - PAD - stripZone;
     const duration = endTime - startTime;
 
     // Background
@@ -1623,18 +1633,18 @@ function renderDivergingGraph(canvasId, {
             }
         }
 
-        // Powerup overlay spans (thin colored strips at top/bottom of bar area)
-        if (powerupSpans) {
+        // Powerup overlay spans — sit inside the reserved stripZone so they
+        // never overlap weapon bars.
+        if (hasPowerups) {
             for (const sp of powerupSpans) {
-                const x1 = Math.max(0, ((sp.start - startTime) / duration) * W);
-                const x2 = Math.min(W, ((sp.end - startTime) / duration) * W);
+                const x1 = Math.max(0, Math.round(((sp.start - startTime) / duration) * W));
+                const x2 = Math.min(W, Math.round(((sp.end - startTime) / duration) * W));
                 if (x2 <= x1) continue;
-                const stripH = 3;
                 const stripY = sp.isTop
-                    ? PAD + sp.lane * (stripH + 1)
-                    : graphH - PAD - (sp.lane + 1) * (stripH + 1);
+                    ? PAD + sp.lane * (STRIP_H + STRIP_GAP)
+                    : graphH - PAD - (sp.lane + 1) * (STRIP_H + STRIP_GAP);
                 ctx.fillStyle = sp.color;
-                ctx.fillRect(x1, stripY, x2 - x1, stripH);
+                ctx.fillRect(x1, stripY, x2 - x1, STRIP_H);
             }
         }
     }
@@ -2331,7 +2341,7 @@ function updateScoreTimeline(startTime, endTime) {
 // Only the "strong" states (solo armed control + armed-vs-armed contested)
 // paint pixels — weak states render as gaps to keep the color story readable.
 
-const RC_ROW_H = 16;
+const RC_ROW_H = 20;
 const RC_AXIS_H = 20;
 
 function prepRegionControlData(startTime, endTime, teams) {
