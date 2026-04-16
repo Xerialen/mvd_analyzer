@@ -115,22 +115,63 @@ func normalizeDuelTeams(result *Result) {
 		result.Match.Teams = teams
 	}
 
-	// Rebuild timeline bucket teamData. For each bucket, walk playerData
-	// and construct a single-player TeamBucketData per player keyed by
-	// the player's name. The aggregation is a straight copy because each
-	// synthetic team has exactly one member.
+	// Rebuild high-res bucket team data (TD) for duel mode. The original
+	// TD was built during Finalize with the pre-normalization team names,
+	// and players with team="" (e.g., bots) were skipped entirely. Rebuild
+	// from the per-player data (P) using the synthetic name→name teams.
 	if result.TimelineAnalysis != nil {
-		for i := range result.TimelineAnalysis.Buckets {
-			b := &result.TimelineAnalysis.Buckets[i]
-			newTeamData := make(map[string]*TeamBucketData, len(b.PlayerData))
-			for name, pd := range b.PlayerData {
-				// Also update the team field in PlayerBucketData so
-				// frontends that read bucket.playerData[name].team see
-				// the synthetic team.
-				pd.Team = name
-				newTeamData[name] = teamBucketFromPlayer(pd)
+		for i := range result.TimelineAnalysis.HighResBuckets {
+			hb := &result.TimelineAnalysis.HighResBuckets[i]
+			if len(hb.P) == 0 {
+				continue
 			}
-			b.TeamData = newTeamData
+			newTD := make(map[string]*HighResTeamData, 2)
+			for name, pd := range hb.P {
+				team, ok := nameToTeam[name]
+				if !ok {
+					continue
+				}
+				td := newTD[team]
+				if td == nil {
+					td = &HighResTeamData{}
+					newTD[team] = td
+				}
+				// Weapon categories (mutually exclusive)
+				switch {
+				case pd.RL && pd.LG:
+					td.RLLG++
+					td.W++
+				case pd.RL:
+					td.RL++
+					td.W++
+				case pd.LG:
+					td.LG++
+					td.W++
+				}
+				// Powerups
+				if pd.Q {
+					td.Q++
+					td.Pw++
+				}
+				if pd.Pent {
+					td.Pe++
+					td.Pw++
+				}
+				if pd.R {
+					td.R++
+					td.Pw++
+				}
+				// Vitals
+				td.TH += pd.H
+				td.TA += pd.A
+				if pd.AT != "" {
+					if td.ABT == nil {
+						td.ABT = make(map[string]int)
+					}
+					td.ABT[pd.AT]++
+				}
+			}
+			hb.TD = newTD
 		}
 	}
 
@@ -260,59 +301,3 @@ func mergeFragEventsByTime(a, b []TimelineFragEvent) []TimelineFragEvent {
 	return out
 }
 
-// teamBucketFromPlayer builds a TeamBucketData containing exactly one
-// player's stats. Used by the duel-mode rewrite to produce a team view
-// that's a straight copy of the per-player view.
-//
-// For bool weapon/powerup flags, `1` means "player has it", `0` means
-// "doesn't". For avg fields, the average of a single sample is that
-// sample. For totals, the total of a single sample is that sample.
-func teamBucketFromPlayer(pd *PlayerBucketData) *TeamBucketData {
-	td := &TeamBucketData{
-		AvgHealth:    float64(pd.Health),
-		AvgArmor:     float64(pd.Armor),
-		TotalHealth:  pd.Health,
-		TotalArmor:   pd.Armor,
-		TotalShells:  pd.Shells,
-		TotalNails:   pd.Nails,
-		TotalRockets: pd.Rockets,
-		TotalCells:   pd.Cells,
-	}
-
-	// Weapon control flags: granular RL / LG / RLLG split, matching
-	// the aggregator in timeline_buckets.go.
-	switch {
-	case pd.HasRL && pd.HasLG:
-		td.PlayersWithRLLG = 1
-		td.PlayersWithWeapons = 1
-	case pd.HasRL:
-		td.PlayersWithRL = 1
-		td.PlayersWithWeapons = 1
-	case pd.HasLG:
-		td.PlayersWithLG = 1
-		td.PlayersWithWeapons = 1
-	}
-
-	// Powerups: individual and total.
-	if pd.HasQuad {
-		td.PlayersWithQuad = 1
-	}
-	if pd.HasPent {
-		td.PlayersWithPent = 1
-	}
-	if pd.HasRing {
-		td.PlayersWithRing = 1
-	}
-	if pd.HasQuad || pd.HasPent || pd.HasRing {
-		td.PlayersWithPowerups = 1
-	}
-
-	// Armor-by-type distribution: the single player contributes 1 unit
-	// of their armor type. The pre-normalization aggregator stored a
-	// `map[armorType]playerCount`, so we mirror that here.
-	if pd.ArmorType != "" && pd.Armor > 0 {
-		td.ArmorByType = map[string]int{pd.ArmorType: 1}
-	}
-
-	return td
-}

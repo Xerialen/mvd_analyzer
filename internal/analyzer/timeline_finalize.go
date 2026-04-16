@@ -197,11 +197,8 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		locTable = nil
 	}
 
-	// Export high-res buckets (50ms) for map visualization
-	highResBuckets := a.exportHighResBuckets(slotToName, locIndex)
-
-	// Aggregate to 1s buckets for graphs
-	graphBuckets := a.aggregateToGraphBuckets(slotToName, slotToTeam)
+	// Export high-res buckets with per-player data and pre-computed team aggregations
+	highResBuckets := a.exportHighResBuckets(slotToName, slotToTeam, locIndex)
 
 	// Build name -> UserID mapping for Hub viewer links
 	playerUserIDsByName := make(map[string]int)
@@ -227,14 +224,12 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	}
 
 	result := &TimelineAnalysisResult{
-		BucketDuration:  a.graphBucketDuration, // 1.0 for graphs
-		HighResDuration: a.bucketDuration,      // 0.05 for map
+		HighResDuration: a.bucketDuration,
 		MatchStartTime:  a.matchStartTime,
-		Buckets:         graphBuckets,   // 1s aggregated for graphs
-		HighResBuckets:  highResBuckets, // 50ms for map visualization
+		HighResBuckets:  highResBuckets,
 		FragEvents:      fragEvents,
 		PowerupEvents:   powerupEvents,
-		FragStreaks:     fragStreaks,
+		FragStreaks:      fragStreaks,
 		LocationData:    locationData,
 		LocTable:        locTable,
 		PlayerUserIDs:   playerUserIDsByName,

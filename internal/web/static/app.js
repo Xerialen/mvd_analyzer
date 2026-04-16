@@ -1409,7 +1409,6 @@ let timelineState = {
 // Reset all timeline state for loading a new demo
 function resetTimelineState() {
     if (mapState.isPlaying) stopPlayback();
-    timelineState.buckets = [];
     timelineState.highResBuckets = [];
     timelineState.highResDuration = 0.05;
     timelineState.events = [];
@@ -1451,7 +1450,6 @@ function displayTimelineAnalysis(result) {
     }
     const teams = timelineState.teams;
 
-    timelineState.buckets = timeline?.buckets || [];
     timelineState.highResBuckets = timeline?.highResBuckets || [];
     timelineState.highResDuration = timeline?.highResDuration || 0.05;
     timelineState.matchStartTime = timeline?.matchStartTime || 0;
@@ -1500,56 +1498,82 @@ function getOptimalBinSize(selectionDuration) {
     return 5;                                  // >20min: 5s bins
 }
 
-// Aggregate 1-second detail buckets into larger bins for graphs
-function aggregateDetailBuckets(buckets, binSize, teams) {
-    if (buckets.length === 0 || binSize <= 1) return buckets;
+// Binary search for first high-res bucket with t >= targetTime
+function binarySearchBucketStart(buckets, targetTime) {
+    let lo = 0, hi = buckets.length;
+    while (lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if (buckets[mid].t < targetTime) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;
+}
+
+// Aggregate high-res buckets into display bins for graphs.
+// Reads pre-computed team data (td) from each bucket — single linear pass.
+function aggregateHighResBuckets(startTime, endTime, binSize, teams) {
+    const hrBuckets = timelineState.highResBuckets;
+    if (!hrBuckets || hrBuckets.length === 0) return [];
 
     const result = [];
-    const startTime = buckets[0].startTime;
-    const endTime = buckets[buckets.length - 1].endTime;
+    let idx = binarySearchBucketStart(hrBuckets, startTime);
 
-    for (let t = startTime; t < endTime; t += binSize) {
-        const binBuckets = buckets.filter(b => b.startTime >= t && b.startTime < t + binSize);
-        if (binBuckets.length === 0) continue;
-
-        // Aggregate team data using max for player counts, average for health/armor
-        const aggregated = {
-            startTime: t,
-            endTime: t + binSize,
-            teamData: {}
-        };
-
+    for (let binStart = startTime; binStart < endTime; binStart += binSize) {
+        const binEnd = binStart + binSize;
+        const acc = {};
         for (const team of teams) {
-            const teamBuckets = binBuckets.map(b => (b.teamData || {})[team] || {});
+            acc[team] = { rl: 0, lg: 0, rllg: 0, w: 0, q: 0, pe: 0, r: 0, pw: 0,
+                          thSum: 0, taSum: 0, abt: {}, count: 0 };
+        }
 
-            // Aggregate armorByType - use max for each armor type count
-            const armorByType = {};
-            for (const tb of teamBuckets) {
-                const abt = tb.armorByType || {};
-                for (const armorType of ['ra', 'ya', 'ga']) {
-                    if (abt[armorType]) {
-                        armorByType[armorType] = Math.max(armorByType[armorType] || 0, abt[armorType]);
+        while (idx < hrBuckets.length && hrBuckets[idx].t < binEnd) {
+            const b = hrBuckets[idx];
+            if (b.t >= binStart && b.td) {
+                for (const team of teams) {
+                    const src = b.td[team];
+                    if (!src) continue;
+                    const dst = acc[team];
+                    // Max for player counts (peak control in bin)
+                    dst.rl = Math.max(dst.rl, src.rl || 0);
+                    dst.lg = Math.max(dst.lg, src.lg || 0);
+                    dst.rllg = Math.max(dst.rllg, src.rllg || 0);
+                    dst.w = Math.max(dst.w, src.w || 0);
+                    dst.q = Math.max(dst.q, src.q || 0);
+                    dst.pe = Math.max(dst.pe, src.pe || 0);
+                    dst.r = Math.max(dst.r, src.r || 0);
+                    dst.pw = Math.max(dst.pw, src.pw || 0);
+                    // Accumulate for average health/armor
+                    dst.thSum += (src.th || 0);
+                    dst.taSum += (src.ta || 0);
+                    dst.count++;
+                    // Armor-by-type: take max per type
+                    for (const [at, c] of Object.entries(src.abt || {})) {
+                        dst.abt[at] = Math.max(dst.abt[at] || 0, c);
                     }
                 }
             }
-
-            aggregated.teamData[team] = {
-                // Use max within bin for player counts (shows peak control)
-                playersWithRL: Math.max(...teamBuckets.map(tb => tb.playersWithRL || 0)),
-                playersWithLG: Math.max(...teamBuckets.map(tb => tb.playersWithLG || 0)),
-                playersWithRLLG: Math.max(...teamBuckets.map(tb => tb.playersWithRLLG || 0)),
-                playersWithQuad: Math.max(...teamBuckets.map(tb => tb.playersWithQuad || 0)),
-                playersWithPent: Math.max(...teamBuckets.map(tb => tb.playersWithPent || 0)),
-                playersWithRing: Math.max(...teamBuckets.map(tb => tb.playersWithRing || 0)),
-                // Use average for health/armor totals
-                totalHealth: Math.round(teamBuckets.reduce((sum, tb) => sum + (tb.totalHealth || 0), 0) / teamBuckets.length),
-                totalArmor: Math.round(teamBuckets.reduce((sum, tb) => sum + (tb.totalArmor || 0), 0) / teamBuckets.length),
-                // Preserve armor type breakdown
-                armorByType: armorByType
-            };
+            idx++;
         }
 
-        result.push(aggregated);
+        // Build output bin with field names the graph functions expect
+        const teamData = {};
+        for (const team of teams) {
+            const m = acc[team];
+            teamData[team] = {
+                playersWithRL: m.rl,
+                playersWithLG: m.lg,
+                playersWithRLLG: m.rllg,
+                playersWithWeapons: m.w,
+                playersWithQuad: m.q,
+                playersWithPent: m.pe,
+                playersWithRing: m.r,
+                playersWithPowerups: m.pw,
+                totalHealth: m.count > 0 ? Math.round(m.thSum / m.count) : 0,
+                totalArmor: m.count > 0 ? Math.round(m.taSum / m.count) : 0,
+                armorByType: m.abt
+            };
+        }
+        result.push({ startTime: binStart, endTime: binEnd, teamData });
     }
 
     return result;
@@ -1966,22 +1990,17 @@ function updateDetailGraph(startTime, endTime) {
     const container = document.getElementById('detail-graph');
     container.innerHTML = '';
 
-    const buckets = timelineState.buckets;
+    const hrBuckets = timelineState.highResBuckets;
     const teams = timelineState.teams;
 
-    if (!buckets || buckets.length === 0 || teams.length < 2) return;
+    if (!hrBuckets || hrBuckets.length === 0 || teams.length < 2) return;
 
-    // Filter buckets within range (1-second resolution)
-    const filteredBuckets = buckets.filter(b =>
-        b.startTime >= startTime && b.endTime <= endTime
-    );
-
-    if (filteredBuckets.length === 0) return;
-
-    // Apply dynamic binning based on selection duration
+    // Aggregate high-res buckets into display bins
     const selectionDuration = endTime - startTime;
     const binSize = getOptimalBinSize(selectionDuration);
-    const displayBuckets = aggregateDetailBuckets(filteredBuckets, binSize, teams);
+    const displayBuckets = aggregateHighResBuckets(startTime, endTime, binSize, teams);
+
+    if (displayBuckets.length === 0) return;
 
     // Find max value for scaling (weapons only, use 4 as typical max for 4v4)
     let maxTeamValue = 4;
@@ -2037,8 +2056,8 @@ function updateDetailGraph(startTime, endTime) {
         container.appendChild(bar);
     }
 
-    // Render powerup lines separately
-    updatePowerupLines(filteredBuckets, startTime, endTime, teams);
+    // Render powerup lines separately — pass display bins (which have pre-computed team data)
+    updatePowerupLines(displayBuckets, startTime, endTime, teams);
 }
 
 // Add weapon segments only (no powerups)
@@ -2149,13 +2168,7 @@ function updateRegionControlTimeline(startTime, endTime) {
     stripsContainer.innerHTML = '';
 
     const regions = mapState.controlRegions;
-    // Drive the strip from the same high-res buckets the map view uses, so
-    // the strip flips at the same 50ms boundaries as the colored map overlay
-    // and shares a single loc-resolution path (resolvePlayerLoc → 3D nearest).
-    // Fall back to the 1s aggregates only if no high-res data is present.
-    const hrBuckets = timelineState.highResBuckets;
-    const useHighRes = hrBuckets && hrBuckets.length > 0;
-    const buckets = useHighRes ? hrBuckets : timelineState.buckets;
+    const buckets = timelineState.highResBuckets;
     if (!buckets || buckets.length === 0) return;
     const hrDuration = timelineState.highResDuration || 0.05;
 
@@ -2196,42 +2209,31 @@ function updateRegionControlTimeline(startTime, endTime) {
         for (let i = 0; i < buckets.length; i++) {
             const bucket = buckets[i];
 
-            // Normalize bucket time bounds: high-res buckets carry only `t`,
-            // 1s buckets carry startTime/endTime explicitly.
-            const bStart = useHighRes ? bucket.t : bucket.startTime;
-            const bEnd   = useHighRes ? bucket.t + hrDuration : bucket.endTime;
+            const bStart = bucket.t;
+            const bEnd   = bucket.t + hrDuration;
             if (bEnd <= startTime || bStart >= endTime) continue;
 
             // Determine control state for this region at this bucket
-            const playerData = useHighRes ? bucket.p : bucket.playerData;
+            const playerData = bucket.p;
             let aWpn = 0, aNo = 0, bWpn = 0, bNo = 0;
 
             if (playerData) {
                 for (const [name, data] of Object.entries(playerData)) {
                     if (!data) continue;
-                    // Dead/respawning filter — supports both compact (d/h) and
-                    // verbose (dead/health) field names so the 1s fallback path
-                    // still works.
-                    if (data.d || data.dead) continue;
-                    const hp = data.h !== undefined ? data.h : data.health;
-                    if (hp !== undefined && hp <= 0) continue;
+                    if (data.d) continue;
+                    if (data.h !== undefined && data.h <= 0) continue;
 
                     const locName = resolvePlayerLoc(data, locations);
                     if (!locName) continue;
                     const rName = mapState.locToRegion[locName];
                     if (rName !== region.name) continue;
 
-                    // Team: high-res records have no `team` field — derive from
-                    // playerSymbols the same way every other high-res call site
-                    // does. Falls back to `data.team` for the 1s aggregated path.
-                    let playerTeam = data.team || '';
-                    if (!playerTeam) {
-                        const sym = symbols[name];
-                        if (sym) playerTeam = timelineState.teams[sym.teamIdx] || '';
-                    }
+                    // Resolve team from playerSymbols
+                    let playerTeam = '';
+                    const sym = symbols[name];
+                    if (sym) playerTeam = timelineState.teams[sym.teamIdx] || '';
 
-                    // Weapons: high-res uses rl/lg, 1s aggregate uses hasRL/hasLG.
-                    const hasWpn = (data.rl ?? data.hasRL) || (data.lg ?? data.hasLG);
+                    const hasWpn = data.rl || data.lg;
 
                     if (playerTeam === teamA) { if (hasWpn) aWpn++; else aNo++; }
                     else if (playerTeam === teamB) { if (hasWpn) bWpn++; else bNo++; }
@@ -2307,22 +2309,17 @@ function updateHealthArmorGraph(startTime, endTime) {
     const container = document.getElementById('health-armor-graph');
     container.innerHTML = '';
 
-    const buckets = timelineState.buckets;
+    const hrBuckets = timelineState.highResBuckets;
     const teams = timelineState.teams;
 
-    if (!buckets || buckets.length === 0 || teams.length < 2) return;
+    if (!hrBuckets || hrBuckets.length === 0 || teams.length < 2) return;
 
-    // Filter buckets within range
-    const filteredBuckets = buckets.filter(b =>
-        b.startTime >= startTime && b.endTime <= endTime
-    );
-
-    if (filteredBuckets.length === 0) return;
-
-    // Apply dynamic binning based on selection duration
+    // Aggregate high-res buckets into display bins
     const selectionDuration = endTime - startTime;
     const binSize = getOptimalBinSize(selectionDuration);
-    const displayBuckets = aggregateDetailBuckets(filteredBuckets, binSize, teams);
+    const displayBuckets = aggregateHighResBuckets(startTime, endTime, binSize, teams);
+
+    if (displayBuckets.length === 0) return;
 
     // Find max value for scaling (team total health + armor)
     // For 4 players: max health ~400 (4*100), max armor ~800 (4*200)
@@ -2711,28 +2708,17 @@ function updateTeamStatus() {
     if (!containerA || !containerB) return;
 
     const teams = timelineState.teams;
-    const buckets = timelineState.buckets;
-    if (!buckets || buckets.length === 0 || teams.length < 2) {
+    const hrBuckets = timelineState.highResBuckets;
+    if (!hrBuckets || hrBuckets.length === 0 || teams.length < 2) {
         containerA.innerHTML = '';
         containerB.innerHTML = '';
         return;
     }
 
-    // Find bucket at current time — prefer high-res (50ms) buckets when available
-    // so stats match the map view exactly
+    // Find high-res bucket at current time
     const time = mapState.currentTime;
     const hrBucket = findBucketAtTime(time);
-    let pd;
-    if (hrBucket) {
-        pd = hrBucket.p || hrBucket.playerData || {};
-    } else {
-        let bucket = null;
-        for (const b of buckets) {
-            if (time >= b.startTime && time < b.endTime) { bucket = b; break; }
-        }
-        if (!bucket) bucket = buckets[buckets.length - 1];
-        pd = bucket.playerData || {};
-    }
+    const pd = hrBucket ? (hrBucket.p || {}) : {};
     const fragCounts = getFragsAtTime(time);
 
     for (let ti = 0; ti < 2; ti++) {
@@ -3601,7 +3587,7 @@ function recomputeRegionStats(regions) {
     const locations = mapState.locations;
 
     for (const bucket of buckets) {
-        const playerData = bucket.p || bucket.playerData;
+        const playerData = bucket.p;
         if (!playerData) continue;
         total++;
 
@@ -3719,7 +3705,7 @@ function getRegionControlAtTime(time) {
     const bucket = findBucketAtTime(time);
     if (!bucket) return null;
 
-    const playerData = bucket.p || bucket.playerData;
+    const playerData = bucket.p;
     if (!playerData) return null;
 
     const teams = mapState.teams || [];
@@ -3780,30 +3766,15 @@ function calculateMapBounds(result) {
         maxY = Math.max(maxY, loc.y);
     }
 
-    // From high-res buckets (if available) - more accurate bounds
+    // From high-res buckets - position bounds
     const highResBuckets = result.timelineAnalysis?.highResBuckets || [];
-    if (highResBuckets.length > 0) {
-        for (const bucket of highResBuckets) {
-            for (const data of Object.values(bucket.p || {})) {
-                if (data.x !== 0 || data.y !== 0) {
-                    minX = Math.min(minX, data.x);
-                    maxX = Math.max(maxX, data.x);
-                    minY = Math.min(minY, data.y);
-                    maxY = Math.max(maxY, data.y);
-                }
-            }
-        }
-    } else {
-        // Fallback to 1s bucket data if no high-res data
-        const buckets = result.timelineAnalysis?.buckets || [];
-        for (const bucket of buckets) {
-            for (const [name, data] of Object.entries(bucket.playerData || {})) {
-                if (data.x !== 0 || data.y !== 0) {
-                    minX = Math.min(minX, data.x);
-                    maxX = Math.max(maxX, data.x);
-                    minY = Math.min(minY, data.y);
-                    maxY = Math.max(maxY, data.y);
-                }
+    for (const bucket of highResBuckets) {
+        for (const data of Object.values(bucket.p || {})) {
+            if (data.x !== 0 || data.y !== 0) {
+                minX = Math.min(minX, data.x);
+                maxX = Math.max(maxX, data.x);
+                minY = Math.min(minY, data.y);
+                maxY = Math.max(maxY, data.y);
             }
         }
     }
@@ -4008,7 +3979,7 @@ function updateMapLegend() {
 
     const time = mapState.currentTime;
     const bucket = findBucketAtTime(time);
-    const playerData = bucket ? (bucket.p || bucket.playerData) : null;
+    const playerData = bucket ? (bucket.p) : null;
     const hubInfo = currentResult?.hubInfo;
     const playerUserIDs = currentResult?.timelineAnalysis?.playerUserIDs || {};
     const fragCounts = typeof getFragsAtTime === 'function' ? getFragsAtTime(time) : {};
@@ -4079,7 +4050,7 @@ function updateRegionStatus() {
     if (!controlStates) return;
 
     const bucket = findBucketAtTime(time);
-    const playerData = bucket ? (bucket.p || bucket.playerData) : null;
+    const playerData = bucket ? (bucket.p) : null;
     const teams = mapState.teams || [];
 
     const locations = mapState.locations;
@@ -4279,7 +4250,7 @@ function precomputeFullTrails() {
     const lastWorldPos = {};
 
     for (const bucket of buckets) {
-        const playerData = bucket.p || bucket.playerData;
+        const playerData = bucket.p;
         if (!playerData) continue;
         const t = bucket.t;
 
@@ -4397,7 +4368,7 @@ function renderMap(time) {
 
     // Highlight regions that currently contain at least one player so the
     // viewer can tell which loc each symbol belongs to without squinting.
-    const occupancyData = bucket ? (bucket.p || bucket.playerData) : null;
+    const occupancyData = bucket ? (bucket.p) : null;
     if (occupancyData) {
         drawOccupiedRegionsOverlay(ctx, occupancyData);
     }
@@ -4405,8 +4376,7 @@ function renderMap(time) {
     // Draw tracks (per-player visibility controlled by enabledPlayers)
     drawTracks(ctx, time);
 
-    // Draw players (bucket.p = compact high-res format, bucket.playerData = 1s fallback)
-    const playerData = bucket ? (bucket.p || bucket.playerData) : null;
+    const playerData = bucket ? bucket.p : null;
     if (playerData) {
         const halfSymbol = 16;
 
@@ -4575,8 +4545,7 @@ function drawTracks(ctx, time) {
 function findHighResBucketAtTime(time) {
     const buckets = timelineState.highResBuckets;
     if (!buckets || buckets.length === 0) {
-        // Fallback to 1s bucket data
-        return findBucketAtTimeFallback(time);
+        return null;
     }
 
     let low = 0, high = buckets.length - 1;
@@ -4619,24 +4588,8 @@ function convertHighResPlayerData(p) {
     return result;
 }
 
-// Fallback to 1s bucket when no high-res data
-function findBucketAtTimeFallback(time) {
-    const buckets = currentResult?.timelineAnalysis?.buckets || [];
-    for (const bucket of buckets) {
-        if (time >= bucket.startTime && time < bucket.endTime) {
-            return bucket;
-        }
-    }
-    // Return last bucket if past end
-    return buckets.length > 0 ? buckets[buckets.length - 1] : null;
-}
-
 function findBucketAtTime(time) {
-    // Use high-res buckets if available (for map), otherwise fall back
-    if (timelineState.highResBuckets && timelineState.highResBuckets.length > 0) {
-        return findHighResBucketAtTime(time);
-    }
-    return findBucketAtTimeFallback(time);
+    return findHighResBucketAtTime(time);
 }
 
 function setupMapTrailControls() {

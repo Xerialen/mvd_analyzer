@@ -16,32 +16,13 @@ package analyzer
 //     field.
 
 // weaponLoadout records which weapons a player is carrying at a sample point.
-// SSG/SNG are tracked because the high-res map view exposes them; the
-// graph-bucket aggregator currently only cares about RL and LG.
 type weaponLoadout struct {
 	rl, lg, ssg, sng bool
-}
-
-// orInPlace folds another loadout into this one with logical-OR semantics.
-// Used by aggregateWindow to compute "did this player ever hold weapon X
-// during this graph-bucket window".
-func (w *weaponLoadout) orInPlace(other weaponLoadout) {
-	w.rl = w.rl || other.rl
-	w.lg = w.lg || other.lg
-	w.ssg = w.ssg || other.ssg
-	w.sng = w.sng || other.sng
 }
 
 // powerupLoadout records the three QuakeWorld powerups.
 type powerupLoadout struct {
 	quad, pent, ring bool
-}
-
-// orInPlace folds another powerup loadout into this one with OR semantics.
-func (p *powerupLoadout) orInPlace(other powerupLoadout) {
-	p.quad = p.quad || other.quad
-	p.pent = p.pent || other.pent
-	p.ring = p.ring || other.ring
 }
 
 // vitals holds the health/armor pair at a sample point. armorType is part

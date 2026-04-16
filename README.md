@@ -4,17 +4,22 @@ A browser-based analyzer for QuakeWorld MVD (Multi-View Demo) files. Built with 
 
 ## Features
 
-- Parse MVD and gzipped MVD files (`.mvd`, `.mvd.gz`)
+- Parse MVD and gzipped MVD files (`.mvd`, `.mvd.gz`) — auto-detects gzip from suffix or magic bytes
 - Match summary with per-player and per-team statistics
 - Weapon stats with accuracy, kills, deaths, damage breakdowns
 - Item pickup tracking (armor, health, powerups)
 - Timeline visualization with weapons, health/armor, frags, and score graphs
+- Frag streak detection and powerup run tracking
 - 2D map with real-time player positions and configurable trails
+- Region control tracking — which team holds key areas (RA, RL, LG, QUAD) over time
 - Kill feed and team chat synced to the timeline
-- Key moments view showing powerup runs
+- Key moments view showing powerup runs and frag streaks
 - Load demos directly from [QuakeWorld Hub](https://hub.quakeworld.nu) by game ID or URL
 - Shareable URLs with game ID, tab, and time position (`?hub=123&tab=timeline&t=45`)
 - Embedded KTX demoinfo JSON parsing for authoritative server-side stats
+- Server metadata extraction (hostname, gamedir, game mode)
+- 1v1 duel normalization — rewrites arbitrary team tags to player names for clean UI
+- Zero external Go dependencies — standard library only
 
 ## Quick Start
 
@@ -40,8 +45,12 @@ Opens on http://localhost:8080.
 make build    # Compile WASM + copy static files to dist/
 make serve    # Build and serve locally
 make test     # Run Go tests
+make fmt      # Format Go code
 make clean    # Remove dist/
+make help     # Show all targets
 ```
+
+Requires Go 1.21+.
 
 The build embeds the git hash, tag, and build date into the WASM binary, displayed in the page header.
 
@@ -52,47 +61,60 @@ Configured for Netlify via `netlify.toml`. Every push runs `make build` and publ
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────┐
-│              Browser (WASM Worker)                │
-│  cmd/wasm/main.go → analyzeMVD() JS function     │
-├──────────────────────────────────────────────────┤
-│                Analyzer Registry                  │
-│  ┌──────────┐ ┌──────┐ ┌──────────┐ ┌─────────┐ │
-│  │ DemoInfo │ │Match │ │   Frag   │ │Messages │ │
-│  │ Analyzer │ │ Ana. │ │ Analyzer │ │Analyzer │ │
-│  └──────────┘ └──────┘ └──────────┘ └─────────┘ │
-│  ┌──────────┐                                    │
-│  │Timeline  │                                    │
-│  │ Analyzer │                                    │
-│  └──────────┘                                    │
-├──────────────────────────────────────────────────┤
-│              Parser (Event Stream)                │
-│  UserInfo, Stats, Frags, Print, DemoInfo events  │
-├──────────────────────────────────────────────────┤
-│                 MVD Decoder                       │
-│  Message types, hidden messages, protocol        │
-├──────────────────────────────────────────────────┤
-│                 File Handler                      │
-│  .mvd and .mvd.gz support                        │
-└──────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                   Browser (WASM Worker)                        │
+│  cmd/wasm/main.go → analyzeMVD() JS function                  │
+├───────────────────────────────────────────────────────────────┤
+│                    Analyzer Registry                           │
+│  ┌──────────┐ ┌──────────┐ ┌──────┐ ┌──────┐ ┌────────────┐ │
+│  │ DemoInfo │ │ Metadata │ │Match │ │ Frag │ │  Messages  │ │
+│  │ Analyzer │ │ Analyzer │ │ Ana. │ │ Ana. │ │  Analyzer  │ │
+│  └──────────┘ └──────────┘ └──────┘ └──────┘ └────────────┘ │
+│  ┌──────────┐                                                 │
+│  │ Timeline │                                                 │
+│  │ Analyzer │                                                 │
+│  └──────────┘                                                 │
+├───────────────────────────────────────────────────────────────┤
+│                   Parser (Event Stream)                        │
+│  UserInfo, Stats, Frags, Print, PlayerInfo, DemoInfo events   │
+├───────────────────────────────────────────────────────────────┤
+│                    MVD Decoder                                 │
+│  Message types, hidden messages, protocol extensions          │
+├───────────────────────────────────────────────────────────────┤
+│                    File Handler                                │
+│  .mvd and .mvd.gz support (auto-detect gzip)                  │
+└───────────────────────────────────────────────────────────────┘
 ```
+
+The six analyzers run in registration order on every event emitted by the parser:
+
+| Analyzer | Purpose |
+|----------|---------|
+| **DemoInfo** | Parses KTX hidden-message JSON for authoritative server-side stats |
+| **Metadata** | Extracts server info, hostname, gamedir, game mode |
+| **Match** | Builds per-player and per-team summary statistics |
+| **Frag** | Detects kills/deaths from obituary messages and maps weapons |
+| **Messages** | Collects chat, obituary text, and system prints |
+| **Timeline** | Buckets player state per second, tracks region control, streaks, powerups |
 
 ### Key directories
 
 | Path | Description |
 |------|-------------|
-| `cmd/wasm/` | WASM entry point |
+| `cmd/wasm/` | WASM entry point — exports `analyzeMVD()` to JavaScript |
 | `cmd/mapgen/` | Developer tool: BSP → per-loc floor-polygon JSON for the mini-map |
-| `internal/analyzer/` | Analysis modules and shared types |
-| `internal/parser/` | MVD event stream parser |
-| `internal/mvd/` | Low-level MVD decoder and protocol types |
+| `cmd/golden/` | Developer tool: bulk-generate golden JSON outputs for regression testing |
+| `internal/analyzer/` | Analysis modules, registry, shared types, and result normalization |
+| `internal/parser/` | MVD event stream parser with diagnostic mode |
+| `internal/mvd/` | Low-level MVD decoder, protocol types, and extensions (FTE, MVD1) |
 | `internal/loc/` | Quake `.loc` file parser (data lives under `internal/web/static/locs/`) |
 | `internal/bsp/` | Quake 1 BSP reader used by `mapgen` |
 | `internal/mapgeom/` | Floor-face extraction + per-loc grouping for the mini-map |
+| `internal/diagnostic/` | Opt-in demo validation test harness (strict parse + data quality checks) |
 | `internal/web/static/` | Frontend (HTML, CSS, JS) |
 | `internal/web/static/locs/` | `.loc` files served to the WASM worker on demand |
 | `internal/web/static/maps/` | Pre-generated per-map floor geometry JSON (committed) |
-| `pkg/mvdfile/` | MVD/gzip file reader |
+| `pkg/mvdfile/` | MVD/gzip file reader with auto-detection |
 
 ## Region Control Customization
 
@@ -210,6 +232,18 @@ make test                  # Run all tests
 go test ./internal/parser/ # Unit tests (userinfo parsing)
 ```
 
+### Unit tests
+
+| File | Package | What it tests |
+|------|---------|---------------|
+| `internal/parser/userinfo_test.go` | parser | Quake character encoding → UTF-8 normalization |
+| `internal/analyzer/obituary_test.go` | analyzer | Obituary message → weapon mapping |
+| `internal/analyzer/metadata_test.go` | analyzer | Server info string parsing (hostname, gamedir, mode) |
+| `internal/analyzer/duel_normalize_test.go` | analyzer | 1v1 team rewriting logic |
+| `internal/bsp/bsp_test.go` | bsp | Quake 1 BSP lump parsing and geometry extraction |
+| `internal/mapgeom/mapgeom_test.go` | mapgeom | Floor-face extraction and loc assignment |
+| `internal/mapgeom/normalize_test.go` | mapgeom | Polygon winding/normalization |
+
 ### Validating the parser against real demos
 
 The production parser is intentionally permissive — it logs nothing and recovers from many classes of error so the viewer never crashes on a weird demo. That's the right behaviour for the live page, but it's the wrong behaviour when you want to know whether *every* packet, message, and stat in a demo was actually understood. The diagnostic test is the tool for that.
@@ -302,6 +336,42 @@ diff <(grep -E 'PARSE|QUALITY' before.log | sort -u) \
 ```
 
 Anything that *appears* in `after.log` but not `before.log` is a regression. Anything that *disappears* is a fix.
+
+### Golden output regression testing
+
+`cmd/golden` is a one-off tool that runs every demo through the full analysis pipeline and writes the JSON output to a directory. Use it to snapshot analysis results before a refactor, then diff after:
+
+```bash
+# Generate golden outputs
+go run ./cmd/golden ~/quake/demos/ /tmp/golden-before/
+
+# Make your changes, then re-run
+go run ./cmd/golden ~/quake/demos/ /tmp/golden-after/
+
+# Diff the results
+diff -r /tmp/golden-before/ /tmp/golden-after/
+```
+
+Each demo produces a `<filename>.json` file with the full `Result` struct. Structural diffs show exactly which fields changed and by how much.
+
+## Additional Tools
+
+### mapgen — Map Geometry Generator
+
+See [Map Geometry](#map-geometry) below for full details. Developer-only tool that converts Quake 1 BSP files into floor-polygon JSON for the 2D map viewer.
+
+```bash
+go build ./cmd/mapgen
+./mapgen -bsp-dir maps -verbose
+```
+
+### golden — Golden Output Generator
+
+Bulk-generates analysis JSON for regression testing. See [Golden output regression testing](#golden-output-regression-testing) above.
+
+```bash
+go run ./cmd/golden <demos_dir> <out_dir>
+```
 
 ## Documentation
 

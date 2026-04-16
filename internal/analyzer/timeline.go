@@ -21,7 +21,6 @@ import (
 type TimelineAnalyzer struct {
 	ctx                 *Context
 	bucketDuration      float64 // High-res sampling interval (default 50ms)
-	graphBucketDuration float64 // Graph aggregation interval (always 1s)
 	playerState         map[int]*timelinePlayerState
 	playerNames         map[int]string // Slot -> player name (from UserInfoEvent)
 	playerUserIDs       map[int]int    // Slot -> UserID (for Hub viewer track param)
@@ -89,8 +88,7 @@ type playerBucketRawData struct {
 // NewTimelineAnalyzer creates a new timeline analyzer
 func NewTimelineAnalyzer() *TimelineAnalyzer {
 	return &TimelineAnalyzer{
-		bucketDuration:      DefaultHighResBucketDuration, // 50ms for high-res map data
-		graphBucketDuration: DefaultGraphBucketDuration,   // 1s for graphs
+		bucketDuration:      DefaultHighResBucketDuration, // 50ms for high-res data
 		playerState:         make(map[int]*timelinePlayerState),
 		playerNames:         make(map[int]string),
 		playerUserIDs:       make(map[int]int),

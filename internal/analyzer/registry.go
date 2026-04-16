@@ -133,10 +133,6 @@ func (r *Registry) AnalyzeReader(reader io.Reader, filename string) (*Result, er
 		result.Duration -= matchStart
 
 		if ta := result.TimelineAnalysis; ta != nil {
-			for i := range ta.Buckets {
-				ta.Buckets[i].StartTime -= matchStart
-				ta.Buckets[i].EndTime -= matchStart
-			}
 			for i := range ta.HighResBuckets {
 				ta.HighResBuckets[i].T -= matchStart
 			}
@@ -155,14 +151,6 @@ func (r *Registry) AnalyzeReader(reader io.Reader, filename string) (*Result, er
 			ta.MatchStartTime = 0
 
 			// Filter out warmup buckets (negative times after normalization)
-			filtered := ta.Buckets[:0]
-			for _, b := range ta.Buckets {
-				if b.EndTime > 0 {
-					filtered = append(filtered, b)
-				}
-			}
-			ta.Buckets = filtered
-
 			filteredHR := ta.HighResBuckets[:0]
 			for _, b := range ta.HighResBuckets {
 				if b.T >= 0 {

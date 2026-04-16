@@ -351,12 +351,10 @@ type DemoInfoItem struct {
 
 // TimelineAnalysisResult contains time-bucketed data for timeline visualization
 type TimelineAnalysisResult struct {
-	BucketDuration  float64             `json:"bucketDuration"`            // Seconds per graph bucket (1.0s)
 	HighResDuration float64             `json:"highResDuration,omitempty"` // Seconds per high-res bucket (0.05s)
 	MatchStartTime  float64             `json:"matchStartTime"`            // When match actually started (after warmup)
 	DemoOffset      float64             `json:"demoOffset,omitempty"`      // Seconds from demo start to match start (for Hub viewer links)
-	Buckets         []TimelineBucket    `json:"buckets"`                   // 1s aggregated buckets for graphs
-	HighResBuckets  []HighResBucket     `json:"highResBuckets,omitempty"`  // High-res buckets for map visualization
+	HighResBuckets  []HighResBucket     `json:"highResBuckets,omitempty"`  // High-res buckets with per-player and per-team data
 	FragEvents      []TimelineFragEvent `json:"fragEvents,omitempty"`      // Frag events for score timeline
 	PowerupEvents   []PowerupEvent      `json:"powerupEvents,omitempty"`   // Powerup pickups for Key Moments
 	FragStreaks      []FragStreakEvent    `json:"fragStreaks,omitempty"`      // Top longest frag streaks for Key Moments
@@ -379,11 +377,29 @@ type RegionControlResult struct {
 	Regions []ControlRegion `json:"regions"`
 }
 
-// HighResBucket - compact bucket for high-resolution map data
-// Uses short JSON keys to reduce payload size
+// HighResBucket - compact bucket for high-resolution timeline data.
+// Uses short JSON keys to reduce payload size. Each bucket contains
+// per-player state snapshots and pre-computed team aggregations.
 type HighResBucket struct {
-	T float64                       `json:"t"`           // Start time
-	P map[string]*HighResPlayerData `json:"p,omitempty"` // Player data by name
+	T  float64                       `json:"t"`            // Start time
+	P  map[string]*HighResPlayerData `json:"p,omitempty"`  // Player data by name
+	TD map[string]*HighResTeamData   `json:"td,omitempty"` // Pre-computed team aggregations by team name
+}
+
+// HighResTeamData holds pre-computed team-level aggregations for a single
+// high-res bucket. Compact JSON keys match the player data convention.
+type HighResTeamData struct {
+	RL   int            `json:"rl,omitempty"`   // Players with RL only (no LG)
+	LG   int            `json:"lg,omitempty"`   // Players with LG only (no RL)
+	RLLG int            `json:"rllg,omitempty"` // Players with both RL and LG
+	W    int            `json:"w,omitempty"`    // Total players with RL or LG
+	Q    int            `json:"q,omitempty"`    // Players with quad
+	Pe   int            `json:"pe,omitempty"`   // Players with pent
+	R    int            `json:"r,omitempty"`    // Players with ring
+	Pw   int            `json:"pw,omitempty"`   // Total with any powerup
+	TH   int            `json:"th,omitempty"`   // Total health (sum across team)
+	TA   int            `json:"ta,omitempty"`   // Total armor (sum across team)
+	ABT  map[string]int `json:"abt,omitempty"`  // Armor by type: "ra"/"ya"/"ga" -> player count
 }
 
 // HighResPlayerData - full player state snapshot (compact keys)
@@ -448,69 +464,3 @@ type FragStreakEvent struct {
 	Ewep         string  `json:"ewep"`         // Effective weapon (most kills with)
 }
 
-// TimelineBucket represents aggregated data for a time slice
-type TimelineBucket struct {
-	StartTime  float64                      `json:"startTime"`
-	EndTime    float64                      `json:"endTime"`
-	PlayerData map[string]*PlayerBucketData `json:"playerData"` // Keyed by player name (primary)
-	TeamData   map[string]*TeamBucketData   `json:"teamData"`   // Keyed by team name (aggregated from players)
-}
-
-// PlayerBucketData holds per-player stats for a time bucket
-type PlayerBucketData struct {
-	Team string `json:"team"`
-
-	// Weapons (boolean flags in source, but stored as count for consistency)
-	HasRL bool `json:"hasRL,omitempty"`
-	HasLG bool `json:"hasLG,omitempty"`
-
-	// Powerups
-	HasQuad bool `json:"hasQuad,omitempty"`
-	HasPent bool `json:"hasPent,omitempty"`
-	HasRing bool `json:"hasRing,omitempty"`
-
-	// Health/Armor
-	Health    int    `json:"health"`
-	Armor     int    `json:"armor"`
-	ArmorType string `json:"armorType,omitempty"` // "ga"/"ya"/"ra"
-
-	// Ammo
-	Shells  int `json:"shells,omitempty"`
-	Nails   int `json:"nails,omitempty"`
-	Rockets int `json:"rockets,omitempty"`
-	Cells   int `json:"cells,omitempty"`
-
-	// Position (from svc_playerinfo)
-	X        float32 `json:"x,omitempty"`        // World X coordinate
-	Y        float32 `json:"y,omitempty"`        // World Y coordinate
-	Z        float32 `json:"z,omitempty"`        // World Z coordinate
-	Location string  `json:"location,omitempty"` // Named location from .loc file
-}
-
-// TeamBucketData holds per-team aggregated stats for a time bucket
-type TeamBucketData struct {
-	// Weapon control (granular)
-	PlayersWithRL      int `json:"playersWithRL"`      // RL only (no LG)
-	PlayersWithLG      int `json:"playersWithLG"`      // LG only (no RL)
-	PlayersWithRLLG    int `json:"playersWithRLLG"`    // Both RL and LG
-	PlayersWithWeapons int `json:"playersWithWeapons"` // Total with RL or LG
-
-	// Powerups (granular)
-	PlayersWithQuad    int `json:"playersWithQuad"`
-	PlayersWithPent    int `json:"playersWithPent"`
-	PlayersWithRing    int `json:"playersWithRing"`
-	PlayersWithPowerups int `json:"playersWithPowerups"` // Total with any powerup
-
-	// Health/Armor
-	AvgHealth   float64 `json:"avgHealth"`
-	AvgArmor    float64 `json:"avgArmor"`
-	TotalHealth int     `json:"totalHealth,omitempty"` // Sum of all players' health
-	TotalArmor  int     `json:"totalArmor,omitempty"`  // Sum of all players' armor
-
-	// Detailed tracking
-	ArmorByType  map[string]int `json:"armorByType,omitempty"` // "ga"/"ya"/"ra" -> count
-	TotalShells  int            `json:"totalShells,omitempty"`
-	TotalNails   int            `json:"totalNails,omitempty"`
-	TotalRockets int            `json:"totalRockets,omitempty"`
-	TotalCells   int            `json:"totalCells,omitempty"`
-}

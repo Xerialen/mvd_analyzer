@@ -44,6 +44,16 @@ func ExtractTracks(result *Result) *TracksResult {
 		Players: make(map[string]*PlayerTrack),
 	}
 
+	// Build team lookup from demoInfo
+	teamByName := make(map[string]string)
+	if result.DemoInfo != nil {
+		for _, p := range result.DemoInfo.Players {
+			if p.Name != "" && p.Team != "" {
+				teamByName[p.Name] = p.Team
+			}
+		}
+	}
+
 	// Track state for each player: whether they're alive and current life
 	type playerState struct {
 		alive       bool
@@ -52,24 +62,33 @@ func ExtractTracks(result *Result) *TracksResult {
 	}
 	states := make(map[string]*playerState)
 
-	// Process buckets chronologically
-	for _, bucket := range timeline.Buckets {
-		bucketTime := bucket.StartTime
+	// Resolve loc name from index
+	resolveLoc := func(li int) string {
+		if li > 0 && li < len(timeline.LocTable) {
+			return timeline.LocTable[li]
+		}
+		return ""
+	}
+
+	// Process high-res buckets chronologically
+	for _, bucket := range timeline.HighResBuckets {
+		bucketTime := bucket.T
 
 		// Track which players we see in this bucket
 		seenPlayers := make(map[string]bool)
 
-		for playerName, pData := range bucket.PlayerData {
+		for playerName, pData := range bucket.P {
 			seenPlayers[playerName] = true
 
 			state, exists := states[playerName]
 			if !exists {
-				state = &playerState{alive: false, team: pData.Team}
+				team := teamByName[playerName]
+				state = &playerState{alive: false, team: team}
 				states[playerName] = state
 			}
 
 			// Player is alive if they have health > 0
-			isAlive := pData.Health > 0
+			isAlive := pData.H > 0
 
 			if isAlive && !state.alive {
 				// Player just spawned - start a new life
@@ -82,13 +101,14 @@ func ExtractTracks(result *Result) *TracksResult {
 
 			if isAlive && state.currentLife != nil {
 				// Record position only when location changes
-				if pData.Location != "" {
+				locName := resolveLoc(pData.Li)
+				if locName != "" {
 					positions := state.currentLife.Positions
 					// Only add if location is different from the last recorded position
-					if len(positions) == 0 || positions[len(positions)-1].Location != pData.Location {
+					if len(positions) == 0 || positions[len(positions)-1].Location != locName {
 						state.currentLife.Positions = append(state.currentLife.Positions, TrackPosition{
 							Time:     bucketTime,
-							Location: pData.Location,
+							Location: locName,
 						})
 					}
 				}

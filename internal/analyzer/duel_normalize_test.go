@@ -134,56 +134,6 @@ func TestNormalizeDuelTeams_MatchRebuildFromDemoInfo(t *testing.T) {
 	}
 }
 
-func TestNormalizeDuelTeams_TimelineBucketRewrite(t *testing.T) {
-	r := &Result{
-		DemoInfo: &DemoInfoResult{
-			Players: []DemoInfoPlayer{
-				{Name: "a", Team: "green"},
-				{Name: "b", Team: ""},
-			},
-		},
-		TimelineAnalysis: &TimelineAnalysisResult{
-			Buckets: []TimelineBucket{
-				{
-					StartTime: 0, EndTime: 1,
-					PlayerData: map[string]*PlayerBucketData{
-						"a": {Team: "green", HasRL: true, HasLG: true, Health: 100, Armor: 200, ArmorType: "ra"},
-						"b": {Team: "", HasLG: true, Health: 50, Armor: 0, HasQuad: true},
-					},
-					// Original teamData: only "green" present (bot with team="" dropped).
-					TeamData: map[string]*TeamBucketData{
-						"green": {PlayersWithRLLG: 1, PlayersWithWeapons: 1, AvgHealth: 100, AvgArmor: 200, TotalHealth: 100, TotalArmor: 200},
-					},
-				},
-			},
-		},
-	}
-	normalizeDuelTeams(r)
-
-	b := &r.TimelineAnalysis.Buckets[0]
-	if len(b.TeamData) != 2 {
-		t.Fatalf("teamData has %d entries, want 2", len(b.TeamData))
-	}
-	at, ok := b.TeamData["a"]
-	if !ok {
-		t.Fatalf("teamData missing 'a'")
-	}
-	if at.PlayersWithRLLG != 1 || at.AvgHealth != 100 || at.AvgArmor != 200 || at.TotalHealth != 100 {
-		t.Errorf("team a: %+v — expected RLLG=1 hp=200 armor=200 totalH=100", at)
-	}
-	bt, ok := b.TeamData["b"]
-	if !ok {
-		t.Fatalf("teamData missing 'b' — duel normalizer failed to restore the team=\"\" player")
-	}
-	if bt.PlayersWithLG != 1 || bt.PlayersWithQuad != 1 || bt.AvgHealth != 50 {
-		t.Errorf("team b: %+v — expected LG=1 quad=1 hp=50", bt)
-	}
-	// Player bucket data should have its team rewritten too.
-	if b.PlayerData["a"].Team != "a" || b.PlayerData["b"].Team != "b" {
-		t.Errorf("playerData teams not rewritten: a=%q b=%q", b.PlayerData["a"].Team, b.PlayerData["b"].Team)
-	}
-}
-
 func TestNormalizeDuelTeams_NoOpForTeamMatches(t *testing.T) {
 	// 4 players → not a duel → normalizer should leave everything alone.
 	r := &Result{
@@ -205,31 +155,6 @@ func TestNormalizeDuelTeams_NoOpForTeamMatches(t *testing.T) {
 		if p.Team == p.Name {
 			t.Errorf("player %q team rewritten to name in non-duel match", p.Name)
 		}
-	}
-}
-
-func TestTeamBucketFromPlayer(t *testing.T) {
-	pd := &PlayerBucketData{
-		Team: "ignored", HasRL: true, HasLG: true,
-		HasQuad: true,
-		Health:  150, Armor: 100, ArmorType: "ya",
-		Shells: 50, Nails: 100, Rockets: 10, Cells: 80,
-	}
-	td := teamBucketFromPlayer(pd)
-	if td.PlayersWithRLLG != 1 {
-		t.Errorf("PlayersWithRLLG = %d, want 1", td.PlayersWithRLLG)
-	}
-	if td.PlayersWithQuad != 1 || td.PlayersWithPowerups != 1 {
-		t.Errorf("quad = %d powerups = %d, want 1/1", td.PlayersWithQuad, td.PlayersWithPowerups)
-	}
-	if td.AvgHealth != 150 || td.AvgArmor != 100 || td.TotalHealth != 150 {
-		t.Errorf("vitals wrong: %+v", td)
-	}
-	if td.ArmorByType["ya"] != 1 {
-		t.Errorf("armorByType = %v, want ya:1", td.ArmorByType)
-	}
-	if td.TotalShells != 50 || td.TotalCells != 80 {
-		t.Errorf("ammo wrong: %+v", td)
 	}
 }
 

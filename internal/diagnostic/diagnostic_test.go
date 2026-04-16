@@ -180,15 +180,15 @@ func checkDataQuality(r *analyzer.Result) []string {
 		}
 	}
 
-	// Impossible stat values in timeline buckets
+	// Impossible stat values in high-res timeline buckets
 	if r.TimelineAnalysis != nil {
-		for _, b := range r.TimelineAnalysis.Buckets {
-			for name, pd := range b.PlayerData {
-				if pd.Health > 250 {
-					warn("player %q has health=%d at t=%.0f (max 250)", name, pd.Health, b.StartTime)
+		for _, b := range r.TimelineAnalysis.HighResBuckets {
+			for name, pd := range b.P {
+				if pd.H > 250 {
+					warn("player %q has health=%d at t=%.1f (max 250)", name, pd.H, b.T)
 				}
-				if pd.Armor > 200 {
-					warn("player %q has armor=%d at t=%.0f (max 200)", name, pd.Armor, b.StartTime)
+				if pd.A > 200 {
+					warn("player %q has armor=%d at t=%.1f (max 200)", name, pd.A, b.T)
 				}
 			}
 		}
