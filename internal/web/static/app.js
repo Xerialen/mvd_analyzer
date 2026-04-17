@@ -4656,6 +4656,7 @@ function setupLocGraphControls() {
     on('locgraph-edge-mode', 'change', buildOrRefreshCytoscape);
     on('locgraph-layout', 'change', buildOrRefreshCytoscape);
     on('locgraph-show-labels', 'change', applyLocGraphStyle);
+    on('locgraph-label-size', 'change', applyLocGraphStyle);
     on('locgraph-relayout', 'click', () => runLocGraphLayout(true));
     on('locgraph-fit', 'click', () => { if (locGraphState.cy) locGraphState.cy.fit(undefined, 30); });
 }
@@ -4756,6 +4757,8 @@ function buildCytoscapeElements() {
 
 function buildLocGraphStyle() {
     const showLabels = document.getElementById('locgraph-show-labels')?.checked ?? true;
+    const labelSizeSel = document.getElementById('locgraph-label-size');
+    const labelSize = labelSizeSel ? parseInt(labelSizeSel.value, 10) || 14 : 14;
     const filter = getLocGraphFilter();
 
     // Pick a node fill based on the filter so "Team: red" nodes are tinted
@@ -4781,12 +4784,13 @@ function buildLocGraphStyle() {
                 'height': 'mapData(weightNorm, 0, 1, 16, 60)',
                 'label': showLabels ? 'data(name)' : '',
                 'color': '#dfe6f5',
-                'font-size': 11,
+                'font-size': labelSize,
                 'font-family': 'Inter, sans-serif',
+                'font-weight': 500,
                 'text-valign': 'bottom',
-                'text-margin-y': 4,
+                'text-margin-y': Math.max(4, labelSize * 0.3),
                 'text-outline-color': '#0a0a15',
-                'text-outline-width': 2
+                'text-outline-width': Math.max(2, labelSize * 0.18)
             }
         },
         {
@@ -4866,6 +4870,7 @@ function buildOrRefreshCytoscape() {
             maxZoom: 4
         });
         attachLocGraphInteractions(locGraphState.cy);
+        locGraphState.cy.on('zoom', scheduleLabelSizeUpdate);
     } else {
         locGraphState.cy.batch(() => {
             locGraphState.cy.elements().remove();
@@ -4923,12 +4928,45 @@ function runLocGraphLayout(animate) {
     }
 
     const layout = cy.layout(opts);
+    layout.one('layoutstop', updateDynamicLabelSize);
     layout.run();
+    // Non-animated layouts don't always emit layoutstop synchronously;
+    // run once now so the first paint already has correct sizing.
+    updateDynamicLabelSize();
 }
 
 function applyLocGraphStyle() {
     if (!locGraphState.cy) return;
     locGraphState.cy.style(buildLocGraphStyle());
+    updateDynamicLabelSize();
+}
+
+// Cytoscape font-size scales with zoom, so on wide maps (geographic
+// preset) the fit-to-viewport zoom drops the effective pixel size below
+// readability. Counter-act by recomputing font-size inversely proportional
+// to the current zoom, clamped to a sensible range.
+let _labelSizeRaf = 0;
+function scheduleLabelSizeUpdate() {
+    if (_labelSizeRaf) return;
+    _labelSizeRaf = requestAnimationFrame(() => {
+        _labelSizeRaf = 0;
+        updateDynamicLabelSize();
+    });
+}
+function updateDynamicLabelSize() {
+    const cy = locGraphState.cy;
+    if (!cy) return;
+    const sel = document.getElementById('locgraph-label-size');
+    const userSize = sel ? (parseInt(sel.value, 10) || 14) : 14;
+    const zoom = cy.zoom() || 1;
+    const target = Math.max(10, Math.min(48, userSize / zoom));
+    cy.batch(() => {
+        cy.nodes().style({
+            'font-size': target,
+            'text-margin-y': Math.max(4, target * 0.3),
+            'text-outline-width': Math.max(2, target * 0.18)
+        });
+    });
 }
 
 // Click: show a tooltip with top-5 connections. Hover: fade the rest of the
