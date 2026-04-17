@@ -1611,6 +1611,56 @@ th.sortable.sort-desc::after {
     gap: 15px;
 }
 
+.locgraph-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.locgraph-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.locgraph-controls label {
+    color: #888;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.locgraph-controls select {
+    background: var(--bg-deep);
+    border: 1px solid #666;
+    color: #ccc;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.locgraph-controls select:hover,
+.locgraph-controls select:focus {
+    border-color: var(--accent-cyan);
+    outline: none;
+}
+
+.locgraph-canvas-container {
+    position: relative;
+    align-self: flex-start;
+}
+
+#locgraph-canvas {
+    background: #0a0a15;
+    border: 1px solid rgba(0, 217, 255, 0.15);
+    border-radius: 6px;
+    display: block;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
 .map-track-controls {
     display: flex;
     align-items: center;

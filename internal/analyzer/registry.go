@@ -186,6 +186,11 @@ func (r *Registry) AnalyzeReader(reader io.Reader, filename string) (*Result, er
 	// suppress the now-redundant "Per Team" panels.
 	normalizeDuelTeams(result)
 
+	// Aggregate loc-to-loc movement into a graph (runs after time
+	// normalization and duel team rewrite so nodes/edges use the same
+	// time base and team labels as the rest of the result).
+	result.LocGraph = BuildLocGraph(result)
+
 	return result, nil
 }
 

@@ -94,6 +94,7 @@ type Result struct {
 	DemoInfo         *DemoInfoResult          `json:"demoInfo,omitempty"`
 	TimelineAnalysis *TimelineAnalysisResult  `json:"timelineAnalysis,omitempty"`
 	Metadata         *MetadataResult          `json:"metadata,omitempty"`
+	LocGraph         *LocGraphResult          `json:"locGraph,omitempty"`
 	Errors           []string                 `json:"errors,omitempty"`
 }
 

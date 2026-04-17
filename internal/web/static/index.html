@@ -46,6 +46,7 @@
                 <button class="tab-btn" data-tab="timeline">Timeline</button>
                 <button class="tab-btn" data-tab="chat">Chat</button>
                 <button class="tab-btn" data-tab="map">Map</button>
+                <button class="tab-btn" data-tab="loc-graph">Loc Graph</button>
                 <button class="tab-btn" data-tab="keymoments">Key Moments</button>
             </div>
 
@@ -481,6 +482,38 @@
                             </thead>
                             <tbody id="region-control-body"></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loc Graph Tab -->
+            <div id="tab-loc-graph" class="tab-content">
+                <div class="panel locgraph-panel">
+                    <div class="locgraph-controls">
+                        <label>Filter:
+                            <select id="locgraph-filter">
+                                <option value="all" selected>All</option>
+                            </select>
+                        </label>
+                        <label>Edges:
+                            <select id="locgraph-edge-mode">
+                                <option value="all" selected>All</option>
+                                <option value="normal">Normal only</option>
+                                <option value="teleport">Teleports only</option>
+                            </select>
+                        </label>
+                        <label><input type="checkbox" id="locgraph-show-labels" checked> Labels</label>
+                    </div>
+                    <div class="locgraph-canvas-container">
+                        <canvas id="locgraph-canvas" width="850" height="700"></canvas>
+                        <div id="locgraph-no-data" class="map-no-data" style="display:none">
+                            <p>No loc graph available for this demo.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-legend">
+                        <span class="legend-item"><span class="legend-color" style="background:#8fb3ff;"></span> Normal edge</span>
+                        <span class="legend-item"><span class="legend-color" style="background:#00d9ff;"></span> Teleport edge</span>
+                        <span class="legend-item">Node size = time spent · Edge width = transition count</span>
                     </div>
                 </div>
             </div>
