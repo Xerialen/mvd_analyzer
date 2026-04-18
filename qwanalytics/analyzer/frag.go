@@ -3,7 +3,7 @@ package analyzer
 import (
 	"strings"
 
-	"github.com/mvd-analyzer/qwdemo/parser"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // FragAnalyzer detects frags from print messages
@@ -29,8 +29,8 @@ func (a *FragAnalyzer) Init(ctx *Context) error {
 	return nil
 }
 
-func (a *FragAnalyzer) OnEvent(event parser.Event) error {
-	printEvent, ok := event.(*parser.PrintEvent)
+func (a *FragAnalyzer) OnEvent(event events.Event) error {
+	printEvent, ok := event.(*events.PrintEvent)
 	if !ok {
 		return nil
 	}

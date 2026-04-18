@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mvd-analyzer/qwdemo/parser"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // MatchAnalyzer extracts match summary information
@@ -29,10 +29,10 @@ func (a *MatchAnalyzer) Init(ctx *Context) error {
 	return nil
 }
 
-func (a *MatchAnalyzer) OnEvent(event parser.Event) error {
+func (a *MatchAnalyzer) OnEvent(event events.Event) error {
 	a.duration = event.EventTime()
 
-	if printEvent, ok := event.(*parser.PrintEvent); ok {
+	if printEvent, ok := event.(*events.PrintEvent); ok {
 		a.checkMatchTiming(printEvent)
 	}
 
@@ -40,7 +40,7 @@ func (a *MatchAnalyzer) OnEvent(event parser.Event) error {
 }
 
 // checkMatchTiming detects match start/end from print messages
-func (a *MatchAnalyzer) checkMatchTiming(event *parser.PrintEvent) {
+func (a *MatchAnalyzer) checkMatchTiming(event *events.PrintEvent) {
 	msg := strings.ToLower(event.Message)
 
 	// Match start patterns

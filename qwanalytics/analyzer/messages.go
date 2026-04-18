@@ -3,8 +3,7 @@ package analyzer
 import (
 	"strings"
 
-	"github.com/mvd-analyzer/qwdemo/mvd"
-	"github.com/mvd-analyzer/qwdemo/parser"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // MessagesAnalyzer captures frags and chat messages for timeline display
@@ -27,22 +26,22 @@ func (a *MessagesAnalyzer) Init(ctx *Context) error {
 	return nil
 }
 
-func (a *MessagesAnalyzer) OnEvent(event parser.Event) error {
+func (a *MessagesAnalyzer) OnEvent(event events.Event) error {
 	switch e := event.(type) {
-	case *parser.PrintEvent:
+	case *events.PrintEvent:
 		return a.handlePrint(e)
 	}
 	return nil
 }
 
-func (a *MessagesAnalyzer) handlePrint(e *parser.PrintEvent) error {
+func (a *MessagesAnalyzer) handlePrint(e *events.PrintEvent) error {
 	msg := strings.TrimSpace(e.Message)
 	if msg == "" {
 		return nil
 	}
 
 	// Level 3 is PRINT_CHAT (mm1/mm2 messages)
-	if e.Level == mvd.PrintChat {
+	if e.Level == events.PrintChat {
 		// Parse chat message format: "name: message" or "(team) name: message"
 		event := a.parseChatMessage(msg, e.Time)
 		if event != nil {

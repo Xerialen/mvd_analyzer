@@ -4,8 +4,7 @@ import (
 	"strings"
 
 	"github.com/mvd-analyzer/qwanalytics/loc"
-	"github.com/mvd-analyzer/qwdemo/mvd"
-	"github.com/mvd-analyzer/qwdemo/parser"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // TimelineAnalyzer tracks time-bucketed player state for the timeline view.
@@ -114,15 +113,15 @@ func (a *TimelineAnalyzer) SetLocFinder(finder *loc.Finder) {
 	a.locFinder = finder
 }
 
-func (a *TimelineAnalyzer) OnEvent(event parser.Event) error {
+func (a *TimelineAnalyzer) OnEvent(event events.Event) error {
 	switch e := event.(type) {
-	case *parser.StatUpdateEvent:
+	case *events.StatUpdateEvent:
 		return a.handleStatUpdate(e)
-	case *parser.PrintEvent:
+	case *events.PrintEvent:
 		// Detect match start/end from print messages
 		a.detectMatchStart(e)
 		a.detectMatchEnd(e)
-	case *parser.IntermissionEvent:
+	case *events.IntermissionEvent:
 		// svc_intermission is the most reliable end-of-match signal: KTX
 		// fires it on timelimit/fraglimit hit even when there's no matching
 		// bprint string. Mark the match as ended so further stat/position
@@ -131,10 +130,10 @@ func (a *TimelineAnalyzer) OnEvent(event parser.Event) error {
 			a.matchEndTime = e.Time
 			a.matchEnded = true
 		}
-	case *parser.FragUpdateEvent:
+	case *events.FragUpdateEvent:
 		// Track frag events from frag updates (more reliable than stat updates)
 		a.handleFragUpdate(e)
-	case *parser.UserInfoEvent:
+	case *events.UserInfoEvent:
 		// Track player names and UserIDs for team resolution and Hub viewer links
 		if e.Player != nil && e.Player.Name != "" {
 			a.playerNames[e.Player.Slot] = e.Player.Name
@@ -149,14 +148,14 @@ func (a *TimelineAnalyzer) OnEvent(event parser.Event) error {
 			}
 			// Otherwise keep existing UserID - first valid value wins
 		}
-	case *parser.PlayerPositionEvent:
+	case *events.PlayerPositionEvent:
 		// Track player positions
 		a.handlePositionUpdate(e)
 	}
 	return nil
 }
 
-func (a *TimelineAnalyzer) handlePositionUpdate(e *parser.PlayerPositionEvent) {
+func (a *TimelineAnalyzer) handlePositionUpdate(e *events.PlayerPositionEvent) {
 	// Always track position, even during warmup (for continuity)
 	state := a.getOrCreatePlayerState(e.PlayerNum)
 	state.pos = playerPosition{x: e.Origin[0], y: e.Origin[1], z: e.Origin[2]}
@@ -178,7 +177,7 @@ func (a *TimelineAnalyzer) handlePositionUpdate(e *parser.PlayerPositionEvent) {
 	}
 }
 
-func (a *TimelineAnalyzer) detectMatchStart(e *parser.PrintEvent) {
+func (a *TimelineAnalyzer) detectMatchStart(e *events.PrintEvent) {
 	if a.matchStarted {
 		return
 	}
@@ -199,7 +198,7 @@ func (a *TimelineAnalyzer) detectMatchStart(e *parser.PrintEvent) {
 // camera doesn't keep producing buckets — and so KTX's `health = 1000 + dmg`
 // damage-indicator sentinels (combat.c:1001) don't get frozen into them.
 // Patterns mirror MatchAnalyzer (analyzer/match.go) for consistency.
-func (a *TimelineAnalyzer) detectMatchEnd(e *parser.PrintEvent) {
+func (a *TimelineAnalyzer) detectMatchEnd(e *events.PrintEvent) {
 	if a.matchEnded || !a.matchStarted {
 		return
 	}
@@ -215,7 +214,7 @@ func (a *TimelineAnalyzer) detectMatchEnd(e *parser.PrintEvent) {
 	}
 }
 
-func (a *TimelineAnalyzer) handleFragUpdate(e *parser.FragUpdateEvent) {
+func (a *TimelineAnalyzer) handleFragUpdate(e *events.FragUpdateEvent) {
 	state := a.getOrCreatePlayerState(e.PlayerNum)
 
 	// Track frag changes (both increases and decreases)
@@ -241,7 +240,7 @@ func (a *TimelineAnalyzer) handleFragUpdate(e *parser.FragUpdateEvent) {
 	}
 }
 
-func (a *TimelineAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error {
+func (a *TimelineAnalyzer) handleStatUpdate(e *events.StatUpdateEvent) error {
 	// Ignore all state during countdown/warmup - players have all weapons,
 	// infinite ammo, etc. which is meaningless. Match starts fresh with
 	// 100 health and base shotgun. After match end, ignore stat updates too:
@@ -254,29 +253,29 @@ func (a *TimelineAnalyzer) handleStatUpdate(e *parser.StatUpdateEvent) error {
 	state := a.getOrCreatePlayerState(e.PlayerNum)
 
 	switch e.StatIndex {
-	case mvd.StatHealth:
+	case events.StatHealth:
 		// KTX uses health = 1000 + damage as a damage-indicator sentinel
 		// (ktx/src/combat.c:1001). Real player health is capped at 250.
 		// Drop sentinel values so they don't get sampled into buckets.
 		if e.Value <= 250 {
 			state.vitals.health = e.Value
 		}
-	case mvd.StatArmor:
+	case events.StatArmor:
 		// Same shape: KTX overwrites armorvalue in pre-match speed-meter
 		// and in damage feedback paths with values > 200. Real armor caps
 		// at 200 (RA). Reject anything larger.
 		if e.Value <= 200 {
 			state.vitals.armor = e.Value
 		}
-	case mvd.StatItems:
+	case events.StatItems:
 		state.items = e.Value
-	case mvd.StatShells:
+	case events.StatShells:
 		state.ammo.shells = e.Value
-	case mvd.StatNails:
+	case events.StatNails:
 		state.ammo.nails = e.Value
-	case mvd.StatRockets:
+	case events.StatRockets:
 		state.ammo.rockets = e.Value
-	case mvd.StatCells:
+	case events.StatCells:
 		state.ammo.cells = e.Value
 	}
 
@@ -300,7 +299,7 @@ func (a *TimelineAnalyzer) sampleCurrentState(time float64) {
 	bucket := a.getOrCreateBucket(time)
 
 	// Sample stats per player
-	for slot := 0; slot < mvd.MaxClients; slot++ {
+	for slot := 0; slot < events.MaxClients; slot++ {
 		player := a.ctx.Players[slot]
 		if player == nil || player.Spectator {
 			continue
@@ -349,24 +348,24 @@ func (a *TimelineAnalyzer) sampleCurrentState(time float64) {
 		}
 
 		pData.weapons = weaponLoadout{
-			rl:  state.items&mvd.ITRocketLauncher != 0,
-			lg:  state.items&mvd.ITLightning != 0,
-			ssg: state.items&mvd.ITSuperShotgun != 0,
-			sng: state.items&mvd.ITSuperNailgun != 0,
+			rl:  state.items&events.ITRocketLauncher != 0,
+			lg:  state.items&events.ITLightning != 0,
+			ssg: state.items&events.ITSuperShotgun != 0,
+			sng: state.items&events.ITSuperNailgun != 0,
 		}
 		pData.powerups = powerupLoadout{
-			quad: state.items&mvd.ITQuad != 0,
-			pent: state.items&mvd.ITInvulnerability != 0,
-			ring: state.items&mvd.ITInvisibility != 0,
+			quad: state.items&events.ITQuad != 0,
+			pent: state.items&events.ITInvulnerability != 0,
+			ring: state.items&events.ITInvisibility != 0,
 		}
 
 		// Decode armor type from the item bitfield (RA > YA > GA).
 		switch {
-		case state.items&mvd.ITArmor3 != 0:
+		case state.items&events.ITArmor3 != 0:
 			pData.vitals.armorType = "ra"
-		case state.items&mvd.ITArmor2 != 0:
+		case state.items&events.ITArmor2 != 0:
 			pData.vitals.armorType = "ya"
-		case state.items&mvd.ITArmor1 != 0:
+		case state.items&events.ITArmor1 != 0:
 			pData.vitals.armorType = "ga"
 		}
 

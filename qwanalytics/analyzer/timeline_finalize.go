@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/mvd-analyzer/qwanalytics/loc"
-	"github.com/mvd-analyzer/qwdemo/mvd"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // Finalize converts the raw per-bucket player state collected during parsing
@@ -148,7 +148,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	// we must export the same name DemoInfo did or the per-player health/
 	// armor stack disappears for that player.
 	slotToName := make(map[int]string)
-	for slot := 0; slot < mvd.MaxClients; slot++ {
+	for slot := 0; slot < events.MaxClients; slot++ {
 		if name := slotToPlayer[slot]; name != "" {
 			slotToName[slot] = name
 		} else if player := a.ctx.Players[slot]; player != nil && player.Name != "" {

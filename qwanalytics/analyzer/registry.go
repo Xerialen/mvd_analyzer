@@ -3,6 +3,7 @@ package analyzer
 import (
 	"io"
 
+	resultpkg "github.com/mvd-analyzer/qwanalytics/result"
 	"github.com/mvd-analyzer/qwdemo/events"
 	mvdsource "github.com/mvd-analyzer/qwdemo/source/mvd"
 )
@@ -102,8 +103,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 	}
 
 	result := &Result{
-		FilePath: filename,
-		Duration: duration,
+		SchemaVersion: resultpkg.CurrentSchemaVersion,
+		FilePath:      filename,
+		Duration:      duration,
 	}
 
 	for _, a := range r.analyzers {

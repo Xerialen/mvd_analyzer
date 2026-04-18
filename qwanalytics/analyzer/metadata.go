@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mvd-analyzer/qwdemo/parser"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // MetadataAnalyzer collects server-level and match-level metadata that
@@ -53,19 +53,19 @@ func (a *MetadataAnalyzer) Name() string { return "metadata" }
 
 func (a *MetadataAnalyzer) Init(ctx *Context) error { return nil }
 
-func (a *MetadataAnalyzer) OnEvent(event parser.Event) error {
+func (a *MetadataAnalyzer) OnEvent(event events.Event) error {
 	switch e := event.(type) {
-	case *parser.StuffTextEvent:
+	case *events.StuffTextEvent:
 		// The bulk cvar dump is the very first stufftext: `fullserverinfo "..."`.
 		if cmd := e.Command; strings.HasPrefix(cmd, "fullserverinfo ") {
 			a.parseFullserverinfo(cmd)
 		}
-	case *parser.ServerInfoEvent:
+	case *events.ServerInfoEvent:
 		// Mid-game key/value updates — last write wins.
 		if e.Key != "" {
 			a.serverInfo[e.Key] = e.Value
 		}
-	case *parser.CenterPrintEvent:
+	case *events.CenterPrintEvent:
 		// The KTX countdown centerprint is the only multi-line centerprint
 		// during the pre-match window that contains "Countdown:". We only
 		// want the last one we saw before the match started, because the
@@ -74,11 +74,11 @@ func (a *MetadataAnalyzer) OnEvent(event parser.Event) error {
 		if a.matchStarted {
 			return nil
 		}
-		text := parser.NormalizeQuakeText([]byte(e.Message))
+		text := events.NormalizeQuakeText([]byte(e.Message))
 		if strings.Contains(text, "Countdown:") {
 			a.countdownRaw = text
 		}
-	case *parser.PrintEvent:
+	case *events.PrintEvent:
 		// Latch the match start so we stop overwriting countdownRaw with
 		// any post-match centerprint that happens to mention "Countdown".
 		if !a.matchStarted && strings.Contains(e.Message, "match has begun") {

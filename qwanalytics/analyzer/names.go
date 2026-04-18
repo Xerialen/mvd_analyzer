@@ -3,7 +3,7 @@ package analyzer
 import (
 	"strings"
 
-	"github.com/mvd-analyzer/qwdemo/mvd"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // normalizePlayerName lowercases and strips non-alphanumeric characters from a
@@ -35,7 +35,7 @@ func normalizePlayerName(name string) string {
 // Substring matching exists because some servers fold or rename players in
 // ways that drop characters from the displayed name relative to the userinfo
 // name; the substring pass is the last-resort fuzzy fallback.
-func findPlayerByName(players [mvd.MaxClients]*mvd.PlayerInfo, name string) *mvd.PlayerInfo {
+func findPlayerByName(players [events.MaxClients]*events.PlayerInfo, name string) *events.PlayerInfo {
 	for i := 0; i < len(players); i++ {
 		p := players[i]
 		if p != nil && p.Name == name {

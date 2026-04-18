@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/mvd-analyzer/qwdemo/parser"
+	"github.com/mvd-analyzer/qwdemo/events"
 )
 
 // cleanQuakeName normalizes a Quake-encoded name from KTX's demoinfo JSON.
@@ -26,7 +26,7 @@ func cleanQuakeName(s string) string {
 		}
 		buf = append(buf, byte(r))
 	}
-	return parser.NormalizeQuakeText(buf)
+	return events.NormalizeQuakeText(buf)
 }
 
 // DemoInfoAnalyzer collects and parses embedded demoinfo JSON from hidden messages
@@ -49,8 +49,8 @@ func (a *DemoInfoAnalyzer) Init(ctx *Context) error {
 	return nil
 }
 
-func (a *DemoInfoAnalyzer) OnEvent(event parser.Event) error {
-	if e, ok := event.(*parser.DemoInfoEvent); ok {
+func (a *DemoInfoAnalyzer) OnEvent(event events.Event) error {
+	if e, ok := event.(*events.DemoInfoEvent); ok {
 		a.blocks[e.BlockNum] = e.Content
 	}
 	return nil

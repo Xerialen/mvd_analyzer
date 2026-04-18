@@ -88,3 +88,58 @@ const (
 	PrintHigh   = mvd.PrintHigh
 	PrintChat   = mvd.PrintChat
 )
+
+// Stat indices for StatUpdateEvent.StatIndex — KTX/QW stat slot IDs.
+const (
+	StatHealth       = mvd.StatHealth
+	StatFrags        = mvd.StatFrags
+	StatWeapon       = mvd.StatWeapon
+	StatAmmo         = mvd.StatAmmo
+	StatArmor        = mvd.StatArmor
+	StatWeaponFrame  = mvd.StatWeaponFrame
+	StatShells       = mvd.StatShells
+	StatNails        = mvd.StatNails
+	StatRockets      = mvd.StatRockets
+	StatCells        = mvd.StatCells
+	StatActiveWeapon = mvd.StatActiveWeapon
+	StatTotalSecrets = mvd.StatTotalSecrets
+	StatSecrets      = mvd.StatSecrets
+	StatMonsters     = mvd.StatMonsters
+	StatItems        = mvd.StatItems
+	StatViewHeight   = mvd.StatViewHeight
+	StatTime         = mvd.StatTime
+)
+
+// Item flags decoded from the StatItems stat; used to detect weapons,
+// ammo stocks, armor, keys, and powerups.
+const (
+	ITShotgun         = mvd.ITShotgun
+	ITSuperShotgun    = mvd.ITSuperShotgun
+	ITNailgun         = mvd.ITNailgun
+	ITSuperNailgun    = mvd.ITSuperNailgun
+	ITGrenadeLauncher = mvd.ITGrenadeLauncher
+	ITRocketLauncher  = mvd.ITRocketLauncher
+	ITLightning       = mvd.ITLightning
+	ITSuperLightning  = mvd.ITSuperLightning
+	ITShells          = mvd.ITShells
+	ITNails           = mvd.ITNails
+	ITRockets         = mvd.ITRockets
+	ITCells           = mvd.ITCells
+	ITAxe             = mvd.ITAxe
+	ITArmor1          = mvd.ITArmor1 // Green armor
+	ITArmor2          = mvd.ITArmor2 // Yellow armor
+	ITArmor3          = mvd.ITArmor3 // Red armor
+	ITSuperHealth     = mvd.ITSuperHealth
+	ITInvisibility    = mvd.ITInvisibility // Ring of shadows
+	ITInvulnerability = mvd.ITInvulnerability // Pentagram
+	ITSuit            = mvd.ITSuit
+	ITQuad            = mvd.ITQuad
+)
+
+// NormalizeQuakeText folds the Quake extended-ASCII character set into
+// plain UTF-8. Players' names and chat come off the wire in the Quake
+// encoding; analytics code normalises via this helper before comparing
+// names or surfacing chat to consumers.
+func NormalizeQuakeText(b []byte) string {
+	return parser.NormalizeQuakeText(b)
+}
