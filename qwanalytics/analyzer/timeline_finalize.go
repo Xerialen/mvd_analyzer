@@ -36,6 +36,11 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 				}
 			}
 		}
+		// Smooth nearest-loc flicker and wall-bleed by relabeling
+		// short-lived residences onto their neighbors. Runs before
+		// anything that reads pData.location so loc graph, region
+		// control, and map labels all see the same smoothed track.
+		a.applyBlipFilter(a.blipThresholdMs)
 	}
 
 	// Build a name->team lookup from DemoInfo (authoritative source)

@@ -33,6 +33,16 @@ type TimelineAnalyzer struct {
 	matchEndTime        float64
 	matchEnded          bool
 	locFinder           *loc.Finder // Location finder for map (nil if no .loc file)
+	blipThresholdMs     int         // Per-player loc smoothing threshold, 0 disables
+}
+
+// SetBlipThresholdMs configures the minimum residence a player must log
+// in a loc for it to count as stable. Any shorter residence (wall bleed,
+// nearest-point flicker at boundaries) is reassigned to an adjacent
+// stable loc during finalization before downstream consumers read Li.
+// Must be called before Init(). Zero disables the filter.
+func (a *TimelineAnalyzer) SetBlipThresholdMs(ms int) {
+	a.blipThresholdMs = ms
 }
 
 // fragEvent tracks a frag before team assignment

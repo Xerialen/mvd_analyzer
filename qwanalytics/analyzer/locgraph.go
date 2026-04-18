@@ -3,24 +3,24 @@ package analyzer
 // LocGraphResult / LocNode / LocEdge now live in qwanalytics/result and
 // are re-exported via type aliases in interface.go. BuildLocGraph below
 // constructs and returns them; nothing else in this file declares them.
+//
+// Per-bucket loc smoothing happens upstream in TimelineAnalyzer.
+// applyBlipFilter — by the time we see a bucket's Li, any short-lived
+// wall-bleed has already been reassigned to an adjacent stable loc. So
+// the graph just emits an edge whenever a player's filtered loc
+// changes between consecutive buckets, with node time accumulated at
+// the raw per-bucket level.
 
-// teleportBaseThreshold mirrors the frontend constant at app.js:4160: the
-// per-axis "max plausible movement per second" limit. Any per-axis
-// displacement exceeding bucketDuration * teleportBaseThreshold between
-// consecutive buckets is classified as a teleport. Frontend uses
-// MAX_MOVE_PER_BUCKET = 2500 * bucketDuration, so the per-second base is 2500.
+// teleportBaseThreshold is the per-axis "max plausible movement per
+// second" limit. A transition whose per-axis displacement exceeds
+// bucketDuration * teleportBaseThreshold in the single bucket where
+// the loc changed is classified as a teleport. Mirrors the frontend
+// constant at app.js (MAX_MOVE_PER_BUCKET = 2500 * bucketDuration).
 const teleportBaseThreshold = 2500.0
 
-// locGraphHysteresisBuckets is the number of consecutive buckets the player
-// must be seen in a new loc before we commit the transition and emit an
-// edge. With the default 0.05s bucket and value 2, a player has to spend at
-// least 100ms in the new loc before it counts — enough to suppress the
-// nearest-loc jitter that happens right at loc boundaries.
-const locGraphHysteresisBuckets = 2
-
-// BuildLocGraph aggregates HighResBuckets into a loc-to-loc movement graph.
-// Runs after time normalization / warmup filtering so it sees only match-time
-// buckets. Returns nil if there is no timeline data.
+// BuildLocGraph aggregates HighResBuckets into a loc-to-loc movement
+// graph. Runs after time normalization / warmup filtering so it sees
+// only match-time buckets. Returns nil if there is no timeline data.
 func BuildLocGraph(result *Result) *LocGraphResult {
 	if result == nil || result.TimelineAnalysis == nil {
 		return nil
@@ -52,13 +52,13 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 	}
 	teleportThreshold := float32(bucketDuration * teleportBaseThreshold)
 
-	// Belt-and-suspenders death reset: the in-bucket p.D / p.Sp markers
-	// already cover standard deaths, but in standard QW a player gibbed
-	// deeply negative can respawn effectively instantly — possibly in the
-	// same 50ms bucket as the death — which makes both markers false and
-	// would otherwise bridge the death with a spurious edge. The
-	// authoritative frag list records every death, so we use it as a second
-	// independent signal to reset the cursor across any death time.
+	// Belt-and-suspenders death reset: the in-bucket p.D / p.Sp
+	// markers already cover standard deaths, but a player gibbed
+	// deeply negative can respawn effectively instantly — possibly in
+	// the same 50ms bucket as the death — which makes both markers
+	// false and would otherwise bridge the death with a spurious
+	// edge. The authoritative frag list records every death, so we
+	// use it as a second independent signal to reset the cursor.
 	deathsByPlayer := map[string][]float64{}
 	if result.Frags != nil {
 		for _, f := range result.Frags.Frags {
@@ -68,26 +68,22 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 		}
 	}
 
-	// playerCursor tracks hysteresis state: the last committed loc plus any
-	// candidate loc we've seen but haven't committed yet (requires
-	// locGraphHysteresisBuckets consecutive confirmations to suppress
-	// nearest-loc jitter at loc boundaries).
+	// Per-player cursor: just the last loc and the position at the
+	// start of that residence, used for teleport classification on
+	// the next change.
 	type playerCursor struct {
-		loc           string  // last committed loc
-		lastX, lastY  float32 // position at last commit (for teleport classification)
-		pendingLoc    string  // candidate new loc
-		pendingCount  int     // consecutive buckets we've seen pendingLoc
-		pendingStartX float32 // position when pendingLoc first appeared
-		pendingStartY float32
-		deathIdx      int  // next unprocessed entry in deathsByPlayer[name]
-		seen          bool // player was present in a bucket we processed
+		loc          string
+		lastX, lastY float32
+		deathIdx     int
+		seen         bool
 	}
 	cursors := make(map[string]*playerCursor)
 
 	nodes := make(map[string]*LocNode)
 	// FIXME: edges are keyed only by (from, to); if both a "normal" and a
-	// "teleport" transition occur between the same pair of locs they collapse
-	// into whichever type was seen first. Future: key edges by (from,to,kind).
+	// "teleport" transition occur between the same pair of locs they
+	// collapse into whichever kind was seen first. Future: key edges by
+	// (from, to, kind).
 	edgeKey := func(from, to string) string { return from + "\x00" + to }
 	edges := make(map[string]*LocEdge)
 
@@ -111,8 +107,6 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 
 	resetCursor := func(cur *playerCursor) {
 		cur.loc = ""
-		cur.pendingLoc = ""
-		cur.pendingCount = 0
 	}
 
 	for _, bucket := range ta.HighResBuckets {
@@ -129,9 +123,10 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 				cursors[name] = cur
 			}
 
-			// Advance the per-player death pointer past any deaths that
-			// occurred at or before this bucket's time; each crossed death
-			// resets the cursor so no edge can bridge it.
+			// Advance the per-player death pointer past any deaths
+			// that occurred at or before this bucket's time; each
+			// crossed death resets the cursor so no edge can bridge
+			// it.
 			deaths := deathsByPlayer[name]
 			for cur.deathIdx < len(deaths) && deaths[cur.deathIdx] <= bucket.T {
 				resetCursor(cur)
@@ -139,9 +134,7 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 			}
 
 			invalidPos := p.X == 0 && p.Y == 0
-			skip := invalidPos || p.Sp || p.D
-
-			if skip {
+			if invalidPos || p.Sp || p.D {
 				resetCursor(cur)
 				cur.seen = true
 				continue
@@ -150,8 +143,10 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 			locName := resolveLoc(p.Li)
 			team := teamByName[name]
 
-			// Node time accumulation uses the raw per-bucket loc — jitter
-			// still reflects as time spent, which is fine.
+			// Node time: every bucket counts toward its (filtered)
+			// loc. The blip filter already redistributed bleed time
+			// to the correct neighbor, so a naive per-bucket
+			// accumulation here is the right accounting.
 			if locName != "" {
 				node := ensureNode(locName)
 				node.Total += bucketDuration
@@ -164,86 +159,60 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 				}
 			}
 
-			// Hysteresis for edge emission. Three cases when locName differs
-			// from cur.loc:
-			//   (a) first loc we've seen since a reset: seed cur.loc silently.
-			//   (b) matches the pending candidate: bump the count and
-			//       commit + emit the edge once the confirmation threshold
-			//       is reached.
-			//   (c) a different candidate: restart the pending window.
-			//
-			// Teleport classification measures displacement across the single
-			// bucket when the player first left the committed loc — i.e.
-			// cur.lastX (refreshed every bucket while still in cur.loc) to
-			// cur.pendingStartX (first bucket in the new loc). Using the
-			// commit-to-commit distance would mis-classify every long
-			// traversal as a teleport.
-			if locName != "" && locName != cur.loc {
-				if cur.loc == "" {
-					// No committed loc yet (first-ever sample or post-reset)
-					// — just seed. No edge, no pending state needed.
-					cur.loc = locName
-					cur.lastX = p.X
-					cur.lastY = p.Y
-					cur.pendingLoc = ""
-					cur.pendingCount = 0
-				} else if locName == cur.pendingLoc {
-					cur.pendingCount++
-					if cur.pendingCount >= locGraphHysteresisBuckets {
-						dx := cur.pendingStartX - cur.lastX
-						if dx < 0 {
-							dx = -dx
-						}
-						dy := cur.pendingStartY - cur.lastY
-						if dy < 0 {
-							dy = -dy
-						}
-						displacement := dx
-						if dy > displacement {
-							displacement = dy
-						}
-						kind := "normal"
-						if displacement > teleportThreshold {
-							kind = "teleport"
-						}
-						edge := ensureEdge(cur.loc, locName, kind)
-						edge.Total++
-						edge.ByPlayer[name]++
-						if team != "" {
-							if edge.ByTeam == nil {
-								edge.ByTeam = make(map[string]int)
-							}
-							edge.ByTeam[team]++
-						}
-						cur.loc = locName
-						cur.lastX = p.X
-						cur.lastY = p.Y
-						cur.pendingLoc = ""
-						cur.pendingCount = 0
-					}
-				} else {
-					cur.pendingLoc = locName
-					cur.pendingCount = 1
-					cur.pendingStartX = p.X
-					cur.pendingStartY = p.Y
-				}
-			} else if locName == cur.loc {
-				// We're in the committed loc; refresh the "last position
-				// inside cur.loc" so teleport classification at the next
-				// transition uses the actual pre-jump position, not the
-				// one from when we first entered cur.loc. Also drop any
-				// pending candidate — it was a short detour.
+			if locName == "" {
+				cur.seen = true
+				continue
+			}
+
+			if cur.loc == "" {
+				// First sample after a reset — seed without emitting.
+				cur.loc = locName
 				cur.lastX = p.X
 				cur.lastY = p.Y
-				cur.pendingLoc = ""
-				cur.pendingCount = 0
+			} else if locName != cur.loc {
+				// Filtered loc just changed — emit one edge.
+				dx := p.X - cur.lastX
+				if dx < 0 {
+					dx = -dx
+				}
+				dy := p.Y - cur.lastY
+				if dy < 0 {
+					dy = -dy
+				}
+				disp := dx
+				if dy > disp {
+					disp = dy
+				}
+				kind := "normal"
+				if disp > teleportThreshold {
+					kind = "teleport"
+				}
+				edge := ensureEdge(cur.loc, locName, kind)
+				edge.Total++
+				edge.ByPlayer[name]++
+				if team != "" {
+					if edge.ByTeam == nil {
+						edge.ByTeam = make(map[string]int)
+					}
+					edge.ByTeam[team]++
+				}
+				cur.loc = locName
+				cur.lastX = p.X
+				cur.lastY = p.Y
+			} else {
+				// Same loc — refresh position so teleport
+				// classification on the next transition uses the
+				// latest in-loc sample, not the entry point.
+				cur.lastX = p.X
+				cur.lastY = p.Y
 			}
 
 			cur.seen = true
 		}
 
-		// Reset cursor for players who were previously seen but are absent
-		// from this bucket — matches the dropout handling in tracks.go:136-152.
+		// Reset cursor for players who were previously seen but are
+		// absent from this bucket — matches tracks.go dropout
+		// handling.
 		for name, cur := range cursors {
 			if cur.seen && !seenThisBucket[name] {
 				resetCursor(cur)

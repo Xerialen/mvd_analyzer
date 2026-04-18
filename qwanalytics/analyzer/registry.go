@@ -3,19 +3,24 @@ package analyzer
 import (
 	"io"
 
+	"github.com/mvd-analyzer/qwanalytics/config"
 	resultpkg "github.com/mvd-analyzer/qwanalytics/result"
 	"github.com/mvd-analyzer/qwdemo/events"
 	mvdsource "github.com/mvd-analyzer/qwdemo/source/mvd"
 )
 
-// Registry manages registered analyzers
+// Registry manages registered analyzers. Config carries the tunable
+// parameters individual analyzers read; callers may mutate it before
+// analyzing to override defaults for a single run.
 type Registry struct {
 	analyzers []Analyzer
+	Config    *config.Config
 }
 
-// NewRegistry creates a new analyzer registry
+// NewRegistry creates an empty analyzer registry seeded with the
+// embedded default config.
 func NewRegistry() *Registry {
-	return &Registry{}
+	return &Registry{Config: config.Default()}
 }
 
 // Register adds an analyzer to the registry
@@ -226,15 +231,22 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 	return result, nil
 }
 
-// NewDefaultRegistry creates a registry with all default analyzers
+// NewDefaultRegistry creates a registry with all default analyzers,
+// configured from the embedded defaults in qwanalytics/config. Callers
+// that want to override config values should construct this registry
+// and mutate r.Config fields before calling Analyze — analyzers pick
+// up their configured values from the registry at construction time,
+// so further mutations are applied here via targeted setters.
 func NewDefaultRegistry() *Registry {
 	r := NewRegistry()
-	// DemoInfo first so it's available in Context for other analyzers
+	// DemoInfo first so it's available in Context for other analyzers.
 	r.Register(NewDemoInfoAnalyzer())
 	r.Register(NewMetadataAnalyzer())
 	r.Register(NewMatchAnalyzer())
 	r.Register(NewFragAnalyzer())
 	r.Register(NewMessagesAnalyzer())
-	r.Register(NewTimelineAnalyzer())
+	ta := NewTimelineAnalyzer()
+	ta.SetBlipThresholdMs(r.Config.LocGraph.BlipThresholdMs)
+	r.Register(ta)
 	return r
 }

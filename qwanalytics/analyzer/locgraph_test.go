@@ -9,11 +9,10 @@ func pd(x, y float32, li int, d, sp bool) *HighResPlayerData {
 	return &HighResPlayerData{X: x, Y: y, H: 100, Li: li, D: d, Sp: sp}
 }
 
-// Build a synthetic Result with a known bucket timeline and verify
-// BuildLocGraph produces the expected nodes and edges, including
-// teleport classification. Each transition is held for at least
-// locGraphHysteresisBuckets (=2) consecutive buckets so the transitions
-// actually commit.
+// Build a synthetic Result with a pre-filtered bucket timeline and
+// verify BuildLocGraph produces the expected nodes and edges,
+// including teleport classification. The input here is what
+// applyBlipFilter would hand us: one edge per filtered-loc change.
 func TestBuildLocGraph_BasicTransitionsAndTeleport(t *testing.T) {
 	const D = 0.05
 
@@ -176,25 +175,23 @@ func TestBuildLocGraph_FragEventResetsCursor(t *testing.T) {
 	}
 }
 
-// Verify hysteresis suppresses A↔B boundary jitter — rapid single-bucket
-// flips shouldn't produce edges, but a sustained move to a new loc does.
-func TestBuildLocGraph_HysteresisSuppressesJitter(t *testing.T) {
+// Without a blip filter upstream, BuildLocGraph emits an edge on every
+// filtered-loc change — that's exactly its job. Smoothing is a separate
+// concern tested in timeline_blipfilter_test.go. This test pins the
+// pass-through behavior: if the buckets already have sustained locs, a
+// single A→C edge is emitted and no A↔B jitter sneaks in.
+func TestBuildLocGraph_EmitsOnFilteredChange(t *testing.T) {
 	const D = 0.05
-	locTable := []string{"", "A", "B", "C"}
+	locTable := []string{"", "A", "C"}
 
-	// p1 sits near the A/B boundary and jitters A,B,A,B,A for 5 buckets,
-	// then commits to C for 3 buckets. The jitter has no 2-consecutive
-	// repeats; no A→B or B→A edge should appear. The final C stay is long
-	// enough that A→C should commit.
+	// Pre-filtered buckets: 3 in A, 3 in C. One A→C edge expected.
 	buckets := []HighResBucket{
 		{T: 0.00, P: map[string]*HighResPlayerData{"p1": pd(50, 0, 1, false, false)}},
-		{T: 0.05, P: map[string]*HighResPlayerData{"p1": pd(52, 0, 2, false, false)}},
-		{T: 0.10, P: map[string]*HighResPlayerData{"p1": pd(49, 0, 1, false, false)}},
-		{T: 0.15, P: map[string]*HighResPlayerData{"p1": pd(51, 0, 2, false, false)}},
-		{T: 0.20, P: map[string]*HighResPlayerData{"p1": pd(50, 0, 1, false, false)}},
-		{T: 0.25, P: map[string]*HighResPlayerData{"p1": pd(200, 0, 3, false, false)}},
-		{T: 0.30, P: map[string]*HighResPlayerData{"p1": pd(202, 0, 3, false, false)}},
-		{T: 0.35, P: map[string]*HighResPlayerData{"p1": pd(204, 0, 3, false, false)}},
+		{T: 0.05, P: map[string]*HighResPlayerData{"p1": pd(49, 0, 1, false, false)}},
+		{T: 0.10, P: map[string]*HighResPlayerData{"p1": pd(51, 0, 1, false, false)}},
+		{T: 0.15, P: map[string]*HighResPlayerData{"p1": pd(200, 0, 2, false, false)}},
+		{T: 0.20, P: map[string]*HighResPlayerData{"p1": pd(202, 0, 2, false, false)}},
+		{T: 0.25, P: map[string]*HighResPlayerData{"p1": pd(204, 0, 2, false, false)}},
 	}
 
 	result := &Result{TimelineAnalysis: &TimelineAnalysisResult{
@@ -209,17 +206,11 @@ func TestBuildLocGraph_HysteresisSuppressesJitter(t *testing.T) {
 	for _, e := range graph.Edges {
 		seen[e.From+"→"+e.To] = e
 	}
-	if _, ok := seen["A→B"]; ok {
-		t.Errorf("hysteresis should suppress A→B jitter, got edge %+v", seen["A→B"])
-	}
-	if _, ok := seen["B→A"]; ok {
-		t.Errorf("hysteresis should suppress B→A jitter, got edge %+v", seen["B→A"])
-	}
-	// The sustained move to C should commit — from either A or B,
-	// whichever was last committed when C appeared (the commit point at
-	// bucket 0.0 was A, then jitter never committed, so A→C is expected).
 	if e, ok := seen["A→C"]; !ok || e.Total != 1 {
 		t.Errorf("expected A→C=1, got %+v (all edges: %+v)", e, graph.Edges)
+	}
+	if len(graph.Edges) != 1 {
+		t.Errorf("expected exactly 1 edge, got %d: %+v", len(graph.Edges), graph.Edges)
 	}
 }
 
