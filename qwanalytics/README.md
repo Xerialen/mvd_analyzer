@@ -16,14 +16,22 @@ that downstream consumers render, summarise, or feed to an agent.
   via `//go:embed data/*.loc` (466 maps today); for WASM builds the host
   provides `fetchLocSync` so only the loc for the current demo is
   downloaded.
-- `mapgen/` — the Quake 1 BSP reader (`bsp/`) and floor-face extractor
-  (`mapgeom/`) used by the mapgen developer tool. Not part of the runtime
-  pipeline — it generates static per-map JSON ahead of time.
+- `items/` — per-map pickup-item corpus (armor / weapon / MH / powerup
+  positions and kinds, generated from BSP entities). Same two-path
+  dispatch as `loc/`: `//go:embed data/*.json` for native, host-provided
+  `fetchItemsSync` for WASM. Consumed by `ItemAnalyzer` to bind KTX
+  `//ktx took` entity numbers to concrete map items.
+- `mapgen/` — the Quake 1 BSP reader (`bsp/`, including the new
+  `entities.go` decoder for the entities lump) and floor-face extractor
+  (`mapgeom/`) used by the mapgen developer tool. Not part of the
+  runtime pipeline — it generates static per-map JSON ahead of time.
 - `diagnostic/` — opt-in integration harness that runs a demo corpus
   through the parser in warning-collection mode and runs data-quality
   checks on the analysis result.
-- `cmd/mapgen/` — developer tool: reads BSP + loc files, writes per-loc
-  floor-polygon JSON for the web viewer.
+- `cmd/mapgen/` — developer tool: reads BSP + loc files, writes two
+  outputs per map — the per-loc floor-polygon JSON for the web viewer
+  (`qw-web/static/maps/<name>.json`) and a slim pickup-items JSON
+  (`qwanalytics/items/data/<name>.json`) consumed by `ItemAnalyzer`.
 - `cmd/qw-analyze/` — CLI consumer. `qw-analyze demo.mvd` produces Result
   JSON; `-format md` produces a human summary; `-format events` dumps the
   raw event stream; `-bulk -out-dir dir/` processes a directory.
@@ -86,13 +94,40 @@ type Result struct {
     TimelineAnalysis *TimelineAnalysisResult  // bucketed player state
     Metadata         *MetadataResult          // serverinfo + match settings
     LocGraph         *LocGraphResult          // loc-to-loc movement graph
+    Items            *ItemsResult             // per-item pickup / respawn timeline (KTX demos)
     Errors           []string
 }
 ```
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion`.
+`CurrentSchemaVersion` (currently `2`).
+
+### Items result
+
+`result.Items` carries one `ItemTimeline` per bound map item (armors,
+weapons, megahealth, powerups). Each timeline has deterministic name
+(`ra`, `mh_1`/`mh_2`, `rl_1`/`rl_2`, `quad`, …), world position,
+nearest loc name, and an ordered `Phases` list:
+
+```go
+type ItemPhase struct {
+    AvailableFrom float64 // item became available at this time
+    TakenAt       float64 // someone picked it up
+    TakenBy       string
+    Team          string
+    RespawnAt     float64 // when it comes back up (0 = MH pending rot)
+}
+```
+
+Sources: the `ItemAnalyzer` parses KTX's demo-only stuffcmds
+(`//ktx took | timer | drop` from `ktx/src/items.c`) and binds each
+server-side edict number to a concrete `MapItem` on first pickup via
+position snapping against the BSP-derived corpus in `items/`. MH gets
+special handling — `took` opens a phase with `RespawnAt=0` (pending
+rot), and the matching `timer` event later fills in the 20 s timer
+when the carrier's health drops back to ≤100. Non-KTX sources
+produce no item data; the field is omitted.
 
 ## Writing a new analyzer
 

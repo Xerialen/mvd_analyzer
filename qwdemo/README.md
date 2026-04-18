@@ -66,6 +66,18 @@ The concrete event list, in stable order:
 | `KindStuffText` | `StuffTextEvent` | Server-pushed console command |
 | `KindCenterPrint` | `CenterPrintEvent` | HUD center text (match settings countdown) |
 | `KindServerInfo` | `ServerInfoEvent` | Mid-game serverinfo key/value update |
+| `KindDeath` | `DeathEvent` | Player died — `StatHealth` crossed from >0 to ≤0 |
+| `KindSpawn` | `SpawnEvent` | Player spawned — `StatHealth` crossed from ≤0 to >0 |
+
+`DeathEvent` and `SpawnEvent` are derived events synthesised by the
+parser from protocol-level `StatHealth` transitions. They fire at the
+exact event time, so analytics don't have to reconstruct death/spawn
+by comparing health samples across the sampling boundary (including
+the instant-respawn case where a gib and respawn land in the same
+50 ms window). See `parser/stats.go` for the emission logic;
+consumers that want killer / weapon attribution still go to the
+analyzer-layer obituary parser (that's KTX-mod-specific text, not a
+protocol signal).
 
 ## Writing a new Source
 

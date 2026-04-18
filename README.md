@@ -92,8 +92,12 @@ type Source interface {
 Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `PrintEvent`, `StatUpdateEvent`, `FragUpdateEvent`, `PlayerPositionEvent`,
 `DamageEvent`, `DemoInfoEvent`, `IntermissionEvent`, `StuffTextEvent`,
-`CenterPrintEvent`, `ServerInfoEvent`. Domain types carried by events —
-`ServerData`, `PlayerInfo`, `PlayerState`, `Stats` — are source-agnostic.
+`CenterPrintEvent`, `ServerInfoEvent`, `DeathEvent`, `SpawnEvent`. Domain
+types carried by events — `ServerData`, `PlayerInfo`, `PlayerState`,
+`Stats` — are source-agnostic. `DeathEvent` / `SpawnEvent` are derived
+events the parser synthesises from `StatHealth` edges so analytics never
+has to reconstruct death/spawn by comparing samples across the sampling
+boundary.
 
 To write a new source: implement `events.Source`, emit the concrete event
 types as you decode your wire format. That's it. See
@@ -104,10 +108,11 @@ implementation backed by MVD files.
 
 Defined in [`qwanalytics/result`](qwanalytics/result/result.go). `Result` is
 a JSON-serializable struct with sub-results from every analyzer that ran:
-match, frags, messages, demoinfo, timeline analysis, metadata, locgraph.
+match, frags, messages, demoinfo, timeline analysis, metadata, locgraph,
+items (per-item pickup / respawn timeline for KTX demos).
 
-Every breaking change bumps `CurrentSchemaVersion`. Consumers can pin or
-feature-detect by reading `result.schemaVersion`.
+Every breaking change bumps `CurrentSchemaVersion` (currently `2`).
+Consumers can pin or feature-detect by reading `result.schemaVersion`.
 
 ### Running the pipeline
 
@@ -153,11 +158,12 @@ mvd-analyzer/
     analyzer/               Analyzer interface + Context + Registry
     result/                 JSON result schema (stable contract)
     loc/                    .loc parser + embedded corpus (466 maps)
+    items/                  Per-map item corpus (positions + kinds) + loader
     mapgen/
-      bsp/                  Quake 1 BSP reader
+      bsp/                  Quake 1 BSP reader (including entities lump)
       mapgeom/              Floor-face extraction
     diagnostic/             Opt-in bulk validation harness
-    cmd/mapgen/             Developer tool: BSP -> per-loc JSON
+    cmd/mapgen/             Developer tool: BSP -> per-loc JSON + per-map items JSON
     cmd/qw-analyze/         CLI: demo -> json|md|events
 
   qw-web/                   Module: browser UX + WASM glue

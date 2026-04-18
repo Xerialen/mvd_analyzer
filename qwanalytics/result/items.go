@@ -18,6 +18,7 @@ type ItemTimeline struct {
 	X      float32     `json:"x"`
 	Y      float32     `json:"y"`
 	Z      float32     `json:"z"`
+	Loc    string      `json:"loc,omitempty"` // nearest named location from the map's .loc file
 	Phases []ItemPhase `json:"phases"`
 }
 

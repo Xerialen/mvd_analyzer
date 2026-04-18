@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mvd-analyzer/qwanalytics/items"
+	"github.com/mvd-analyzer/qwanalytics/loc"
 	"github.com/mvd-analyzer/qwdemo/events"
 )
 
@@ -29,6 +30,7 @@ type ItemAnalyzer struct {
 	mapItems         []items.MapItem
 	corpusLoaded     bool
 	mapName          string              // map short name ("rocka"), resolved from fullserverinfo
+	locFinder        *loc.Finder         // map loc-name lookup, resolved lazily (same source as TimelineAnalyzer)
 	entBinding       map[int]*itemEntity // ent-num -> bound item state
 	boundMapItemsIdx map[int]bool        // index into mapItems, prevents double-binding
 	playerPos        map[int][3]float32  // slot -> last known origin
@@ -371,6 +373,15 @@ func (a *ItemAnalyzer) Finalize() (interface{}, error) {
 		byKind[mi.Kind] = append(byKind[mi.Kind], entry{state: st, mi: mi})
 	}
 
+	// Loc lookup uses the same .loc corpus TimelineAnalyzer consumes.
+	// Resolve lazily here so ItemAnalyzer isn't ordering-dependent on
+	// DemoInfo.Finalize.
+	if a.locFinder == nil && a.mapName != "" {
+		if f, err := loc.LoadForMap(a.mapName); err == nil {
+			a.locFinder = f
+		}
+	}
+
 	out := make([]ItemTimeline, 0, len(a.entBinding))
 	for kind, list := range byKind {
 		// Sort within kind by (x, y, z) for stable numbering.
@@ -389,12 +400,17 @@ func (a *ItemAnalyzer) Finalize() (interface{}, error) {
 			if len(list) > 1 {
 				name = fmt.Sprintf("%s_%d", kind, i+1)
 			}
+			locName := ""
+			if a.locFinder != nil {
+				locName = a.locFinder.FindNearest(e.mi.X, e.mi.Y, e.mi.Z)
+			}
 			out = append(out, ItemTimeline{
 				Name:   name,
 				Kind:   kind,
 				X:      e.mi.X,
 				Y:      e.mi.Y,
 				Z:      e.mi.Z,
+				Loc:    locName,
 				Phases: e.state.phases,
 			})
 		}

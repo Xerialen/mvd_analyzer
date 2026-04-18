@@ -225,6 +225,7 @@ function setCurrentTime(time) {
     updateTeamStatus();
     updateMapLegend();
     updateRegionStatus();
+    updateItemsPanelStatus(mapState.currentTime);
     renderChatMessages();
     renderMap(mapState.currentTime);
     updateUrlState();
@@ -3333,6 +3334,10 @@ function initMapView(result) {
     // Build powerup event list
     buildMapPowerupList(result);
 
+    // Build item list panel (armors, weapons, MH, powerups with live
+    // up/down status — present for KTX demos, auto-hidden otherwise).
+    renderItemsPanel();
+
     // Reset trail checkboxes
     document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = false; });
 
@@ -4326,6 +4331,11 @@ function renderMap(time) {
         }
     }
 
+    // Item pickups — fixed map markers for every known item (RA/YA/GA
+    // armors, weapons, MH, powerups). Drawn before death-X so the X
+    // still floats on top when the two coincide.
+    drawMapItems(ctx, time);
+
     // Recent-death markers — drawn last so the X sits on top of everything
     // else and stays visible for DEATH_X_DURATION seconds, fading linearly.
     // Linear scan is fine: a long match has on the order of 100-200 deaths
@@ -4337,6 +4347,233 @@ function renderMap(time) {
             if (dt < 0 || dt > DEATH_X_DURATION) continue;
             const alpha = 1 - dt / DEATH_X_DURATION;
             drawDeathX(ctx, e.x, e.y, e.teamIdx, alpha);
+        }
+    }
+}
+
+// ─── Map Items (armor / weapon / MH / powerup overlays) ────────────────────
+//
+// Draws a small square per tracked item on the map. Armors render as
+// solid-filled coloured squares (RA red, YA yellow, GA green). Weapons,
+// MH, and powerups render as black squares with a coloured outline +
+// short text label that reuses the timeline colour palette so users
+// pattern-match weapons across views. Items currently taken are dimmed.
+
+// Display metadata per item kind. Width/height in pixels; kinds not
+// listed are skipped (e.g. ammo boxes, small health packs — KTX
+// doesn't emit //ktx took for those so they're not in the data).
+const ITEM_MARKER_STYLES = {
+    ra:   { fill: 'rgb(255, 50, 50)',   outline: null,                   label: null },
+    ya:   { fill: 'rgb(255, 200, 0)',   outline: null,                   label: null },
+    ga:   { fill: 'rgb(0, 180, 0)',     outline: null,                   label: null },
+    mh:   { fill: '#000',               outline: 'rgb(0, 200, 83)',      label: 'MH' },
+    rl:   { fill: '#000',               outline: 'rgb(255, 107, 107)',   label: 'RL' },
+    lg:   { fill: '#000',               outline: 'rgb(0, 217, 255)',     label: 'LG' },
+    ssg:  { fill: '#000',               outline: '#aaaaaa',              label: 'SS' },
+    gl:   { fill: '#000',               outline: '#c78a3a',              label: 'GL' },
+    ng:   { fill: '#000',               outline: '#8090a0',              label: 'NG' },
+    sng:  { fill: '#000',               outline: 'rgb(180, 140, 100)',   label: 'SN' },
+    quad: { fill: '#000',               outline: 'rgb(0, 150, 255)',     label: 'Q'  },
+    pent: { fill: '#000',               outline: 'rgb(255, 0, 0)',       label: 'P'  },
+    ring: { fill: '#000',               outline: 'rgb(255, 235, 59)',    label: 'I'  },
+};
+
+const ITEM_MARKER_SIZE = 16;  // half of the 32px player symbol
+const ITEM_DIM_ALPHA = 0.35;  // alpha multiplier when item is taken
+
+// isItemUp returns true if the item is available to be picked up at the
+// given time — i.e., we're inside an "available" phase. Handles the MH
+// pending-respawn case (phase with TakenAt set but RespawnAt==0 is
+// still held).
+function isItemUp(item, time) {
+    const phases = item.phases;
+    if (!phases || phases.length === 0) return true;
+    for (let i = 0; i < phases.length; i++) {
+        const p = phases[i];
+        if (p.availableFrom > time) break;
+        const takenAt = p.takenAt || 0;
+        if (takenAt === 0) return true; // phase open, not yet taken (this phase is current → up)
+        if (time < takenAt) return true; // available window
+        // taken at takenAt; respawnAt may be 0 (MH pending) or a future/past value
+        const respawnAt = p.respawnAt || 0;
+        if (respawnAt > 0 && time >= respawnAt) {
+            // Respawned; if this is the last phase or the next phase
+            // opens at respawnAt, let the loop continue.
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
+// itemStatus returns a small object describing status at the given time:
+//   { up: bool, secsToRespawn: number|null, pending: bool }
+// secsToRespawn is the wait time in seconds (null when up).
+// pending is true for MH in its rot window (TakenAt set, RespawnAt==0).
+function itemStatus(item, time) {
+    const phases = item.phases;
+    if (!phases || phases.length === 0) {
+        return { up: true, secsToRespawn: null, pending: false };
+    }
+    // Find the phase whose window contains `time` (availableFrom <= time < nextAvailableFrom).
+    let activePhase = null;
+    for (let i = 0; i < phases.length; i++) {
+        const p = phases[i];
+        const next = phases[i + 1];
+        if (p.availableFrom <= time && (!next || next.availableFrom > time)) {
+            activePhase = p;
+            break;
+        }
+    }
+    if (!activePhase) {
+        // Before the first phase opens — treat as up.
+        return { up: true, secsToRespawn: null, pending: false };
+    }
+    const takenAt = activePhase.takenAt || 0;
+    if (takenAt === 0 || time < takenAt) {
+        return { up: true, secsToRespawn: null, pending: false };
+    }
+    const respawnAt = activePhase.respawnAt || 0;
+    if (respawnAt === 0) {
+        // Held with pending respawn (MH during rot).
+        return { up: false, secsToRespawn: null, pending: true };
+    }
+    if (time >= respawnAt) {
+        return { up: true, secsToRespawn: null, pending: false };
+    }
+    return { up: false, secsToRespawn: respawnAt - time, pending: false };
+}
+
+function drawMapItems(ctx, time) {
+    const items = currentResult?.items?.items;
+    if (!items || items.length === 0) return;
+
+    const size = ITEM_MARKER_SIZE;
+    const half = size / 2;
+
+    ctx.save();
+    ctx.font = 'bold 8px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const item of items) {
+        const style = ITEM_MARKER_STYLES[item.kind];
+        if (!style) continue;
+
+        const pos = worldToCanvas(item.x, item.y);
+        const up = isItemUp(item, time);
+        ctx.globalAlpha = up ? 1.0 : ITEM_DIM_ALPHA;
+
+        const x = Math.round(pos.x - half);
+        const y = Math.round(pos.y - half);
+
+        ctx.fillStyle = style.fill;
+        ctx.fillRect(x, y, size, size);
+
+        if (style.outline) {
+            ctx.strokeStyle = style.outline;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+        }
+
+        if (style.label) {
+            ctx.fillStyle = style.outline || '#fff';
+            ctx.fillText(style.label, pos.x, pos.y + 1);
+        }
+    }
+
+    ctx.globalAlpha = 1.0;
+    ctx.restore();
+}
+
+// ─── Map Items Panel (sidebar list) ────────────────────────────────────────
+//
+// Live-updating table of every tracked item with status ("up" / "X.Xs" /
+// "held") and region. Shown only when result.items is populated (KTX
+// demos); hidden for non-KTX sources that produce no item events.
+
+// Cache the sorted-by-name item list and the <tr>/<td> refs so each
+// setCurrentTime tick only updates text, not layout.
+const _itemsPanelState = {
+    lastResult: null,
+    rows: [],       // [{ item, tr, statusTd }]
+};
+
+function renderItemsPanel() {
+    const panel = document.getElementById('map-items-panel');
+    const body = document.getElementById('map-items-body');
+    if (!panel || !body) return;
+
+    const items = currentResult?.items?.items;
+    if (!items || items.length === 0) {
+        panel.style.display = 'none';
+        _itemsPanelState.lastResult = null;
+        _itemsPanelState.rows = [];
+        return;
+    }
+
+    // Rebuild rows when the underlying result changes.
+    if (_itemsPanelState.lastResult !== currentResult) {
+        body.innerHTML = '';
+        _itemsPanelState.rows = [];
+        // Sort items by a useful display order: armors first, then MH,
+        // then weapons, then powerups.
+        const KIND_ORDER = { ra: 0, ya: 1, ga: 2, mh: 3, rl: 4, lg: 5, ssg: 6, sng: 7, ng: 8, gl: 9, quad: 10, pent: 11, ring: 12 };
+        const sorted = items.slice().sort((a, b) => {
+            const ka = KIND_ORDER[a.kind] ?? 99;
+            const kb = KIND_ORDER[b.kind] ?? 99;
+            if (ka !== kb) return ka - kb;
+            return a.name.localeCompare(b.name);
+        });
+        for (const item of sorted) {
+            const style = ITEM_MARKER_STYLES[item.kind];
+            if (!style) continue;
+            const tr = document.createElement('tr');
+            const swatch = document.createElement('td');
+            const sq = document.createElement('span');
+            sq.className = 'item-swatch';
+            sq.style.background = style.fill === '#000' ? style.outline : style.fill;
+            if (style.fill === '#000') {
+                sq.style.background = style.fill;
+                sq.style.border = `2px solid ${style.outline}`;
+                sq.style.boxSizing = 'border-box';
+            }
+            swatch.appendChild(sq);
+            const name = document.createElement('td');
+            name.className = 'item-name';
+            name.textContent = item.name.toUpperCase().replace(/_/g, ' ');
+            const loc = document.createElement('td');
+            loc.className = 'item-loc';
+            loc.textContent = item.loc || '';
+            const status = document.createElement('td');
+            status.className = 'item-status';
+            tr.appendChild(swatch);
+            tr.appendChild(name);
+            tr.appendChild(loc);
+            tr.appendChild(status);
+            body.appendChild(tr);
+            _itemsPanelState.rows.push({ item, tr, statusTd: status });
+        }
+        _itemsPanelState.lastResult = currentResult;
+    }
+
+    panel.style.display = '';
+    updateItemsPanelStatus(mapState.currentTime);
+}
+
+function updateItemsPanelStatus(time) {
+    for (const row of _itemsPanelState.rows) {
+        const s = itemStatus(row.item, time);
+        row.tr.classList.toggle('taken', !s.up);
+        if (s.up) {
+            row.statusTd.textContent = 'up';
+            row.statusTd.className = 'item-status up';
+        } else if (s.pending) {
+            row.statusTd.textContent = 'held';
+            row.statusTd.className = 'item-status pending';
+        } else {
+            row.statusTd.textContent = s.secsToRespawn.toFixed(1) + 's';
+            row.statusTd.className = 'item-status respawn';
         }
     }
 }
