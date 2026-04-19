@@ -4359,13 +4359,15 @@ function renderMap(time) {
 // short text label that reuses the timeline colour palette so users
 // pattern-match weapons across views. Items currently taken are dimmed.
 
-// Display metadata per item kind. Width/height in pixels; kinds not
-// listed are skipped (e.g. ammo boxes, small health packs — KTX
-// doesn't emit //ktx took for those so they're not in the data).
+// Display metadata per item kind. Armors render as a solid-coloured
+// square with black text; weapons / MH / powerups as a black square
+// with a coloured outline and text in the outline colour. Kinds not
+// listed here (ammo, small health) are skipped on the map and in the
+// sidebar.
 const ITEM_MARKER_STYLES = {
-    ra:   { fill: 'rgb(255, 50, 50)',   outline: null,                   label: null },
-    ya:   { fill: 'rgb(255, 200, 0)',   outline: null,                   label: null },
-    ga:   { fill: 'rgb(0, 180, 0)',     outline: null,                   label: null },
+    ra:   { fill: 'rgb(255, 50, 50)',   outline: null,                   label: 'RA', textColor: '#000' },
+    ya:   { fill: 'rgb(255, 200, 0)',   outline: null,                   label: 'YA', textColor: '#000' },
+    ga:   { fill: 'rgb(0, 180, 0)',     outline: null,                   label: 'GA', textColor: '#000' },
     mh:   { fill: '#000',               outline: 'rgb(0, 200, 83)',      label: 'MH' },
     rl:   { fill: '#000',               outline: 'rgb(255, 107, 107)',   label: 'RL' },
     lg:   { fill: '#000',               outline: 'rgb(0, 217, 255)',     label: 'LG' },
@@ -4377,6 +4379,12 @@ const ITEM_MARKER_STYLES = {
     pent: { fill: '#000',               outline: 'rgb(255, 0, 0)',       label: 'P'  },
     ring: { fill: '#000',               outline: 'rgb(255, 235, 59)',    label: 'I'  },
 };
+
+// Kinds surfaced in the sidebar Items panel. Armors, MH, the two
+// "fight-over" weapons (RL, LG), and powerups — the core resources
+// players actively contest. Other weapons / ammo / small health are
+// still rendered on the map but omitted from the scrolling list.
+const PANEL_ITEM_KINDS = new Set(['ra', 'ya', 'ga', 'mh', 'rl', 'lg', 'quad', 'pent', 'ring']);
 
 const ITEM_MARKER_SIZE = 16;  // half of the 32px player symbol
 const ITEM_DIM_ALPHA = 0.35;  // alpha multiplier when item is taken
@@ -4477,7 +4485,7 @@ function drawMapItems(ctx, time) {
         }
 
         if (style.label) {
-            ctx.fillStyle = style.outline || '#fff';
+            ctx.fillStyle = style.textColor || style.outline || '#fff';
             ctx.fillText(style.label, pos.x, pos.y + 1);
         }
     }
@@ -4499,6 +4507,25 @@ const _itemsPanelState = {
     rows: [],       // [{ item, tr, statusTd }]
 };
 
+// buildItemSwatch returns a <span> that visually mirrors the on-map
+// marker for a given item kind: solid-colour armor squares with a
+// black label, or black squares with a coloured outline + matching
+// label for weapons / MH / powerups.
+function buildItemSwatch(style) {
+    const sq = document.createElement('span');
+    sq.className = 'item-swatch';
+    sq.style.background = style.fill;
+    if (style.outline) {
+        sq.style.border = `1.5px solid ${style.outline}`;
+        sq.style.boxSizing = 'border-box';
+    }
+    if (style.label) {
+        sq.textContent = style.label;
+        sq.style.color = style.textColor || style.outline || '#fff';
+    }
+    return sq;
+}
+
 function renderItemsPanel() {
     const panel = document.getElementById('map-items-panel');
     const body = document.getElementById('map-items-body');
@@ -4516,29 +4543,23 @@ function renderItemsPanel() {
     if (_itemsPanelState.lastResult !== currentResult) {
         body.innerHTML = '';
         _itemsPanelState.rows = [];
-        // Sort items by a useful display order: armors first, then MH,
-        // then weapons, then powerups.
-        const KIND_ORDER = { ra: 0, ya: 1, ga: 2, mh: 3, rl: 4, lg: 5, ssg: 6, sng: 7, ng: 8, gl: 9, quad: 10, pent: 11, ring: 12 };
-        const sorted = items.slice().sort((a, b) => {
-            const ka = KIND_ORDER[a.kind] ?? 99;
-            const kb = KIND_ORDER[b.kind] ?? 99;
-            if (ka !== kb) return ka - kb;
-            return a.name.localeCompare(b.name);
-        });
+        // Display order: armors first, then MH, then RL/LG, then
+        // powerups. Kinds outside PANEL_ITEM_KINDS are filtered out so
+        // the sidebar stays focused on the items players contest.
+        const KIND_ORDER = { ra: 0, ya: 1, ga: 2, mh: 3, rl: 4, lg: 5, quad: 6, pent: 7, ring: 8 };
+        const sorted = items
+            .filter(it => PANEL_ITEM_KINDS.has(it.kind) && ITEM_MARKER_STYLES[it.kind])
+            .sort((a, b) => {
+                const ka = KIND_ORDER[a.kind] ?? 99;
+                const kb = KIND_ORDER[b.kind] ?? 99;
+                if (ka !== kb) return ka - kb;
+                return a.name.localeCompare(b.name);
+            });
         for (const item of sorted) {
             const style = ITEM_MARKER_STYLES[item.kind];
-            if (!style) continue;
             const tr = document.createElement('tr');
             const swatch = document.createElement('td');
-            const sq = document.createElement('span');
-            sq.className = 'item-swatch';
-            sq.style.background = style.fill === '#000' ? style.outline : style.fill;
-            if (style.fill === '#000') {
-                sq.style.background = style.fill;
-                sq.style.border = `2px solid ${style.outline}`;
-                sq.style.boxSizing = 'border-box';
-            }
-            swatch.appendChild(sq);
+            swatch.appendChild(buildItemSwatch(style));
             const name = document.createElement('td');
             name.className = 'item-name';
             name.textContent = item.name.toUpperCase().replace(/_/g, ' ');

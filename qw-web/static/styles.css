@@ -1835,11 +1835,18 @@ th.sortable.sort-desc::after {
 }
 
 .map-items-table .item-swatch {
-    width: 14px;
-    height: 14px;
-    display: inline-block;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 2px;
     vertical-align: middle;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.5px;
+    line-height: 1;
 }
 
 .map-items-table .item-name {
