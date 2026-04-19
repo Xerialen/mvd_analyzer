@@ -1342,12 +1342,14 @@ table tbody tr:hover {
     white-space: nowrap;
 }
 
-/* Sortable table headers */
+/* Sortable table headers. The sort indicator is rendered as inline text
+   rather than an absolutely-positioned pseudo-element so it contributes
+   to the header's natural width. Without the asymmetric padding trick the
+   previous version used, header and body cells share the same padding and
+   their columns stay aligned in auto-layout tables. */
 th.sortable {
     cursor: pointer;
     user-select: none;
-    position: relative;
-    padding-right: 16px !important;
 }
 
 th.sortable:hover {
@@ -1355,21 +1357,20 @@ th.sortable:hover {
 }
 
 th.sortable::after {
-    content: '⇅';
-    position: absolute;
-    right: 2px;
+    content: ' ⇅';
     opacity: 0.3;
     font-size: 0.7em;
+    margin-left: 2px;
 }
 
 th.sortable.sort-asc::after {
-    content: '▲';
+    content: ' ▲';
     opacity: 0.8;
     color: var(--accent-cyan);
 }
 
 th.sortable.sort-desc::after {
-    content: '▼';
+    content: ' ▼';
     opacity: 0.8;
     color: var(--accent-cyan);
 }

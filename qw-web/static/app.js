@@ -3806,19 +3806,29 @@ function resizeMapCanvas() {
     const fs = !!(document.fullscreenElement &&
                   document.fullscreenElement.classList &&
                   document.fullscreenElement.classList.contains('map-panel'));
-    let cw, ch;
+    let cssW, cssH;
     if (fs && canvas.parentElement) {
         const rect = canvas.parentElement.getBoundingClientRect();
-        cw = Math.max(300, Math.floor(rect.width));
-        ch = Math.max(200, Math.floor(rect.height));
+        cssW = Math.max(300, Math.floor(rect.width));
+        cssH = Math.max(200, Math.floor(rect.height));
     } else {
-        cw = MAP_CANVAS_BASE_WIDTH;
-        ch = worldW > 0
-            ? Math.round(Math.max(400, Math.min(850, cw * (worldH / worldW))))
+        cssW = MAP_CANVAS_BASE_WIDTH;
+        cssH = worldW > 0
+            ? Math.round(Math.max(400, Math.min(850, cssW * (worldH / worldW))))
             : 700;
     }
-    canvas.width = cw;
-    canvas.height = ch;
+    // Back the canvas with a physical-pixel bitmap sized for the display DPR
+    // so lines and text render at device resolution. All draw code works in
+    // CSS pixels; renderMap applies setTransform(dpr, 0, 0, dpr, 0, 0) before
+    // each render so ctx operations map from CSS → physical automatically.
+    const dpr = window.devicePixelRatio || 1;
+    mapState.dpr = dpr;
+    mapState.canvasCssW = cssW;
+    mapState.canvasCssH = cssH;
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
     updateWorldToCanvasTransform();
 }
 
@@ -3826,15 +3836,17 @@ function updateWorldToCanvasTransform() {
     const { minX, maxX, minY, maxY } = mapState.bounds;
     const canvas = mapState.canvas;
     if (!canvas) return;
+    const cssW = mapState.canvasCssW || canvas.width;
+    const cssH = mapState.canvasCssH || canvas.height;
     const worldWidth = maxX - minX;
     const worldHeight = maxY - minY;
-    const scale = Math.min(canvas.width / worldWidth, canvas.height / worldHeight);
+    const scale = Math.min(cssW / worldWidth, cssH / worldHeight);
     _wtc.scale = scale;
-    _wtc.offsetX = (canvas.width - worldWidth * scale) / 2;
-    _wtc.offsetY = (canvas.height - worldHeight * scale) / 2;
+    _wtc.offsetX = (cssW - worldWidth * scale) / 2;
+    _wtc.offsetY = (cssH - worldHeight * scale) / 2;
     _wtc.minX = minX;
     _wtc.minY = minY;
-    _wtc.canvasH = canvas.height;
+    _wtc.canvasH = cssH;
     // panX, panY, zoomK intentionally preserved across recomputes.
 }
 
@@ -3919,19 +3931,12 @@ function assignPlayerSymbols(result) {
         }
         if (letter === '?') letter = player.name[0]?.toUpperCase() || '?';
 
-        const teamColor = TEAM_COLORS[player.teamIdx] || TEAM_COLORS[0];
-        const offscreen = renderPlayerSymbolCanvas(letter, teamColor, PLAYER_SYMBOL_BASE_SIZE);
-
         mapState.playerSymbols[player.name] = {
             symbol: letter,
             team: player.team,
             teamIdx: player.teamIdx,
-            symbolCanvas: offscreen
         };
     }
-    // Player symbols above are baked at 1.0 iconScale; renderMap will
-    // re-rasterize them on demand when the zoom-driven iconScale changes.
-    mapState.symbolCanvasScale = 1;
 
     // Build legend and refresh the trail-players dropdown now that the
     // player roster is known for this demo.
@@ -3941,47 +3946,30 @@ function assignPlayerSymbols(result) {
 
 // Base size (px) of a player symbol at iconScale=1. The letter circle
 // radius / outline width / letter font size all scale proportionally from
-// this when we re-rasterize for a different iconScale.
+// this when we draw for a different iconScale.
 const PLAYER_SYMBOL_BASE_SIZE = 32;
 
-// Paint a single player-symbol offscreen canvas at the requested pixel size.
-// Same geometry as the original 32 px baseline (circle radius 13, outline
-// width 2, 16 px bold monospace letter), scaled linearly to pixelSize.
-function renderPlayerSymbolCanvas(letter, teamColor, pixelSize) {
-    const size = Math.max(16, Math.round(pixelSize));
+// Draw a player symbol (team-colour-bordered circle + letter) directly onto
+// the supplied ctx, centered at (cx, cy) in CSS pixels. Fresh-drawn every
+// frame so it's always pixel-native at the current zoom and display DPR —
+// no bitmap cache, no upscale blur.
+function drawPlayerSymbolAt(ctx, letter, teamColor, cx, cy, size) {
     const k = size / PLAYER_SYMBOL_BASE_SIZE;
-    const offscreen = document.createElement('canvas');
-    offscreen.width = size;
-    offscreen.height = size;
-    const octx = offscreen.getContext('2d');
-    const cx = size / 2, cy = size / 2, r = 13 * k;
+    const r = 13 * k;
 
-    octx.beginPath();
-    octx.arc(cx, cy, r, 0, Math.PI * 2);
-    octx.fillStyle = '#0a0a15';
-    octx.fill();
-    octx.strokeStyle = teamColor;
-    octx.lineWidth = 2 * k;
-    octx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#0a0a15';
+    ctx.fill();
+    ctx.strokeStyle = teamColor;
+    ctx.lineWidth = 2 * k;
+    ctx.stroke();
 
-    octx.font = `bold ${Math.round(16 * k)}px monospace`;
-    octx.textAlign = 'center';
-    octx.textBaseline = 'middle';
-    octx.fillStyle = teamColor;
-    octx.fillText(letter, cx, cy);
-    return offscreen;
-}
-
-// Re-rasterize every player's symbol canvas at the given iconScale so the
-// letter, circle outline and fill stay crisp at any zoom. Called lazily by
-// renderMap when the current iconScale differs from what we last baked.
-function rebuildPlayerSymbolsForScale(iconScale) {
-    const targetPx = PLAYER_SYMBOL_BASE_SIZE * iconScale;
-    for (const info of Object.values(mapState.playerSymbols)) {
-        const teamColor = TEAM_COLORS[info.teamIdx] || TEAM_COLORS[0];
-        info.symbolCanvas = renderPlayerSymbolCanvas(info.symbol, teamColor, targetPx);
-    }
-    mapState.symbolCanvasScale = iconScale;
+    ctx.font = `bold ${Math.round(16 * k)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = teamColor;
+    ctx.fillText(letter, cx, cy);
 }
 
 function buildMapLegend() {
@@ -4028,11 +4016,10 @@ function buildMapLegend() {
         legend.appendChild(table);
     }
 
-    // Map-legend is a live status table (refreshed every 200 ms); sorting
-    // doesn't help here and the `padding-right: 16px !important` the
-    // sortable helper adds to headers misaligns them with the body cells.
-    // Leave this table unsortable — the same .team-status-table class is
-    // shared with other views but applied here without the sortable hook.
+    // Make tables sortable. The sort indicator is now inline text (see
+    // th.sortable in styles.css), so enabling sort here no longer shifts
+    // the column headers out of alignment with the body cells.
+    legend.querySelectorAll('.team-status-table').forEach(makeSortable);
 }
 
 // Build / refresh the Trails → Players dropdown in the top bar. One checkbox
@@ -4267,29 +4254,21 @@ function updateRegionStatus() {
 // Build a composited canvas icon: player circle+letter with RL/LG weapon icons in corners
 function buildPlayerRegionIcon(player) {
     const sym = player.sym;
-    const symCanvas = sym ? sym.symbolCanvas : null;
-
+    const dpr = window.devicePixelRatio || 1;
     const size = 40;
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
     canvas.className = 'region-player-icon';
     const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Draw player symbol centered
-    if (symCanvas) {
-        const ox = (size - symCanvas.width) / 2;
-        const oy = (size - symCanvas.height) / 2;
-        ctx.drawImage(symCanvas, ox, oy);
-    } else {
-        // Fallback: draw letter
-        const color = TEAM_COLORS[player.teamIdx] || TEAM_COLORS[0];
-        ctx.font = 'bold 16px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = color;
-        ctx.fillText(player.name.charAt(0).toUpperCase(), size / 2, size / 2);
-    }
+    // Draw player symbol centered — fresh-drawn so it's crisp at DPR.
+    const letter = sym?.symbol || player.name.charAt(0).toUpperCase();
+    const teamColor = TEAM_COLORS[sym?.teamIdx ?? player.teamIdx] || TEAM_COLORS[0];
+    drawPlayerSymbolAt(ctx, letter, teamColor, size / 2, size / 2, PLAYER_SYMBOL_BASE_SIZE);
 
     // Draw status badges around player symbol
     const badges = getActiveBadges(player.data);
@@ -4454,6 +4433,15 @@ function renderMap(time) {
     mapState.lastRenderedBucket = bucket;
     mapState.renderDirty = false;
 
+    // Normalize to CSS pixel coordinates. The canvas backing store is sized
+    // to cssDims * devicePixelRatio for sharp rendering on HiDPI displays;
+    // setTransform(dpr,...) makes every subsequent draw interpret its
+    // coordinates in CSS px while rasterising at physical resolution.
+    const dpr = mapState.dpr || 1;
+    const cssW = mapState.canvasCssW || canvas.width;
+    const cssH = mapState.canvasCssH || canvas.height;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     // Follow-player: pin the camera on the tracked player this frame by
     // adjusting panX/panY so their symbol lands at canvas center.
     if (mapState.followPlayer && bucket && bucket.p) {
@@ -4462,14 +4450,14 @@ function renderMap(time) {
             _wtc.panX = 0;
             _wtc.panY = 0;
             const pos = worldToCanvas(fp.x, fp.y);
-            _wtc.panX = canvas.width / 2 - pos.x;
-            _wtc.panY = canvas.height / 2 - pos.y;
+            _wtc.panX = cssW / 2 - pos.x;
+            _wtc.panY = cssH / 2 - pos.y;
         }
     }
 
     // Clear
     ctx.fillStyle = '#0a0a15';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, cssW, cssH);
 
     // Process location groups once (cache in mapState)
     if (!mapState.locationGroups && mapState.locations.length > 0) {
@@ -4499,15 +4487,17 @@ function renderMap(time) {
     // Draw tracks (per-player visibility controlled by enabledPlayers)
     drawTracks(ctx, time);
 
+    // Item pickups — drawn BEFORE player symbols so the players always sit
+    // on top of any item markers they're standing on.
+    drawMapItems(ctx, time);
+
     const playerData = bucket ? bucket.p : null;
     if (playerData) {
-        // Re-rasterize player symbols on zoom change so the circle outline
-        // and letter stay crisp at any scale. iconScale ramps up to 1.5x at
-        // high zoom — see mapIconScale.
+        // iconScale ramps up to 1.5x at high zoom (see mapIconScale). Symbol
+        // geometry is drawn fresh each frame so it's always pixel-native at
+        // the current zoom and display DPR — no bitmap cache, no upscale blur.
         const iconScale = mapIconScale();
-        if (mapState.symbolCanvasScale !== iconScale) {
-            rebuildPlayerSymbolsForScale(iconScale);
-        }
+        const symSize = PLAYER_SYMBOL_BASE_SIZE * iconScale;
         const orbitRadius = 14 * iconScale;
         const badgeRadius = 5 * iconScale;
 
@@ -4516,24 +4506,18 @@ function renderMap(time) {
 
             const pos = worldToCanvas(data.x, data.y);
             const symbolInfo = mapState.playerSymbols[name];
+            if (!symbolInfo) continue;
 
-            if (symbolInfo && symbolInfo.symbolCanvas) {
-                const sc = symbolInfo.symbolCanvas;
-                ctx.drawImage(sc, pos.x - sc.width / 2, pos.y - sc.height / 2);
+            const teamHex = TEAM_COLORS[symbolInfo.teamIdx] || TEAM_COLORS[0];
+            drawPlayerSymbolAt(ctx, symbolInfo.symbol, teamHex, pos.x, pos.y, symSize);
 
-                // Draw status badges around player symbol
-                const badges = getActiveBadges(data);
-                if (badges.length > 0) {
-                    drawBadgesAroundCenter(ctx, badges, pos.x, pos.y, orbitRadius, badgeRadius);
-                }
+            // Draw status badges around player symbol
+            const badges = getActiveBadges(data);
+            if (badges.length > 0) {
+                drawBadgesAroundCenter(ctx, badges, pos.x, pos.y, orbitRadius, badgeRadius);
             }
         }
     }
-
-    // Item pickups — fixed map markers for every known item (RA/YA/GA
-    // armors, weapons, MH, powerups). Drawn before death-X so the X
-    // still floats on top when the two coincide.
-    drawMapItems(ctx, time);
 
     // Recent-death markers — drawn last so the X sits on top of everything
     // else and stays visible for DEATH_X_DURATION seconds, fading linearly.
@@ -5089,14 +5073,13 @@ function installMapInteraction(canvas) {
     };
 
     function canvasPointFromEvent(ev) {
+        // CSS pixel coords relative to the canvas origin — matches what
+        // renderMap / worldToCanvas use now that setTransform(dpr) handles
+        // the CSS → physical scaling for drawing.
         const rect = canvas.getBoundingClientRect();
-        // The canvas backing store may differ from the displayed CSS size
-        // (especially in fullscreen). Map client coords back to backing pixels.
-        const sx = canvas.width / rect.width;
-        const sy = canvas.height / rect.height;
         return {
-            x: (ev.clientX - rect.left) * sx,
-            y: (ev.clientY - rect.top) * sy,
+            x: ev.clientX - rect.left,
+            y: ev.clientY - rect.top,
         };
     }
 
