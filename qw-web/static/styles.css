@@ -48,7 +48,7 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1680px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -1911,12 +1911,13 @@ th.sortable.sort-desc::after {
 }
 
 .map-sidebar {
-    flex: 1;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    min-width: 320px;
-    max-width: 520px;
+    min-width: 400px;
+    max-width: 780px;
+    overflow-x: auto;
 }
 
 .map-legend {
