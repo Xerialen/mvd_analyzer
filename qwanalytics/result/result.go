@@ -12,7 +12,7 @@ package result
 // CurrentSchemaVersion identifies the JSON schema shape. Bump on any
 // breaking change to the Result structure or its sub-types. Consumers
 // can pin or switch on this value when reading a stored analysis.
-const CurrentSchemaVersion = 2
+const CurrentSchemaVersion = 3
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

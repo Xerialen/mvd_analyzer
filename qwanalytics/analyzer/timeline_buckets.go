@@ -42,6 +42,7 @@ func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string, slotT
 			hb.P[name] = &HighResPlayerData{
 				X:       pd.pos.x,
 				Y:       pd.pos.y,
+				Z:       pd.pos.z,
 				H:       pd.vitals.health,
 				A:       pd.vitals.armor,
 				AT:      pd.vitals.armorType,

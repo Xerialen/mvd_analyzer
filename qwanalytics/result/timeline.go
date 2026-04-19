@@ -57,6 +57,7 @@ type HighResTeamData struct {
 type HighResPlayerData struct {
 	X       float32 `json:"x"`
 	Y       float32 `json:"y"`
+	Z       float32 `json:"z"`             // World z from svc_playerinfo origin[2]
 	H       int     `json:"h"`             // Health
 	A       int     `json:"a"`             // Armor
 	AT      string  `json:"at,omitempty"`  // Armor type: "ga"/"ya"/"ra"

@@ -4572,11 +4572,14 @@ function renderMap(time) {
             // map (98th percentile) render 25% larger than those near the
             // bottom (2nd percentile), linearly interpolated. Helps separate
             // overlapping players on multi-deck maps (e.g. aerowalk bridges
-            // above the RA room). Player positions don't carry z on the
-            // wire yet, so we look up the z of the nearest loc as a proxy.
+            // above the RA room). Prefer the authoritative player z from
+            // the bucket (schema v3+); fall back to an IDW loc-z blend on
+            // older analyses that predate the z field.
             let zScale = 1;
             if (zSpan > 0) {
-                const pz = findNearestLocationZ(data.x, data.y, locations);
+                const pz = data.z !== undefined
+                    ? data.z
+                    : findNearestLocationZ(data.x, data.y, locations);
                 let t = (pz - zRange.lo) / zSpan;
                 if (t < 0) t = 0;
                 if (t > 1) t = 1;
