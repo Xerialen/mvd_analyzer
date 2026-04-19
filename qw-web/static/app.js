@@ -2953,7 +2953,7 @@ function processLocationGroups(locations) {
     // Keys must match NormalizeLocationName (Go) <-> normalizeLocationName (JS).
     // Entries with an empty name are the unnamed backdrop bucket (faces
     // that couldn't be matched to a loc); they're handled separately by
-    // prerenderLocationBackground as a neutral underlay.
+    // drawLocationLayer as a neutral underlay.
     if (mapState.mapGeometry && Array.isArray(mapState.mapGeometry.locs)) {
         const geomByName = {};
         for (const l of mapState.mapGeometry.locs) {
@@ -2982,21 +2982,25 @@ function drawLocationRegionFromGeometry(ctx, group, worldToCanvasFunc) {
 }
 
 // Fill a flat triangle list (6 numbers per triangle) with the given style.
-// Shared by loc-group fills and the unnamed backdrop underlay.
+// Shared by loc-group fills and the unnamed backdrop underlay. All triangles
+// are added to a single path and filled once so this stays fast when called
+// every frame with thousands of tris. Uses the non-allocating worldToCanvas
+// variant (shared _tmpPt) — safe because each point's x/y is consumed by
+// ctx.moveTo/lineTo before the next call overwrites the buffer.
 function drawTriangleListFill(ctx, tris, fillStyle, worldToCanvasFunc) {
     if (!tris || tris.length < 6) return;
     ctx.fillStyle = fillStyle;
+    ctx.beginPath();
     for (let i = 0; i + 5 < tris.length; i += 6) {
-        const a = worldToCanvasFunc(tris[i],     tris[i + 1]);
-        const b = worldToCanvasFunc(tris[i + 2], tris[i + 3]);
-        const c = worldToCanvasFunc(tris[i + 4], tris[i + 5]);
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.lineTo(c.x, c.y);
+        let p = worldToCanvasFunc(tris[i],     tris[i + 1]);
+        ctx.moveTo(p.x, p.y);
+        p = worldToCanvasFunc(tris[i + 2], tris[i + 3]);
+        ctx.lineTo(p.x, p.y);
+        p = worldToCanvasFunc(tris[i + 4], tris[i + 5]);
+        ctx.lineTo(p.x, p.y);
         ctx.closePath();
-        ctx.fill();
     }
+    ctx.fill();
 }
 
 // Compute boundary edges of a triangle soup: edges that belong to exactly one
@@ -3215,7 +3219,6 @@ let mapState = {
     ctx: null,
     locations: [],
     locationGroups: null, // Cached processed location groups
-    locationCanvas: null, // Pre-rendered location background layer
     mapGeometry: null,    // BSP-derived per-loc polygons (optional, loaded async)
     bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
     currentTime: 0,
@@ -3307,7 +3310,6 @@ function initMapView(result) {
     // resolvePlayerLoc helper hides the indirection from call sites.
     mapState.locTable = (timeline && timeline.locTable) ? timeline.locTable : [''];
     mapState.locationGroups = null; // Clear cached groups for new demo
-    mapState.locationCanvas = null;
     mapState.mapGeometry = null;    // Reset BSP-derived geometry for new demo
 
     // Fire-and-forget: try to load pre-generated BSP-derived map geometry.
@@ -3321,9 +3323,9 @@ function initMapView(result) {
             .then(geom => {
                 if (!geom || !Array.isArray(geom.locs) || geom.locs.length === 0) return;
                 // The unnamed backdrop bucket (name === "") is drawn as a
-                // neutral underlay by prerenderLocationBackground; cache its
-                // triangle list separately so it isn't confused with loc
-                // groups keyed by name.
+                // neutral underlay by drawLocationLayer; cache its triangle
+                // list separately so it isn't confused with loc groups keyed
+                // by name.
                 const backdrop = geom.locs.find(l => l && l.name === '');
                 geom.backdropTris = backdrop && Array.isArray(backdrop.tris) ? backdrop.tris : null;
                 mapState.mapGeometry = geom;
@@ -3331,7 +3333,6 @@ function initMapView(result) {
                 // references so the control overlay doesn't keep pointing at
                 // the pre-fetch (tris-less) group objects.
                 mapState.locationGroups = processLocationGroups(mapState.locations);
-                mapState.locationCanvas = null;
                 if (mapState.rcResult) {
                     applyRegionConfig(); // also calls renderMap
                 } else {
@@ -4270,84 +4271,43 @@ function buildPlayerRegionIcon(player) {
     return canvas;
 }
 
-function prerenderLocationBackground() {
-    if (!mapState.canvas) return;
+// drawLocationLayer: render the floor plan underlay (BSP backdrop triangles,
+// per-loc region fills, thin grey outlines, centroid labels) directly through
+// worldToCanvas so everything follows user pan / zoom and stays crisp. No
+// bitmap cache — at typical loc counts (~30 regions) this is a handful of
+// batched path fills / strokes per frame, trivially cheap.
+function drawLocationLayer(ctx) {
     const groups = mapState.locationGroups || [];
     const backdropTris = mapState.mapGeometry && mapState.mapGeometry.backdropTris;
     if (groups.length === 0 && (!backdropTris || backdropTris.length < 6)) return;
 
-    const w = mapState.canvas.width;
-    const h = mapState.canvas.height;
-    const offscreen = document.createElement('canvas');
-    offscreen.width = w;
-    offscreen.height = h;
-    const octx = offscreen.getContext('2d');
-
-    // Bake at the current zoom with pan temporarily zeroed so drawImage at
-    // draw time only needs to translate by the user's pan offset. The zoom
-    // level is baked into the cached bitmap, which keeps outlines and labels
-    // crisp at any zoom (we re-bake on zoom change — see drawLocationBackdrop).
-    const savedPanX = _wtc.panX, savedPanY = _wtc.panY;
-    _wtc.panX = 0; _wtc.panY = 0;
-    try {
-        // Draw the unnamed backdrop first (if present) so named loc regions
-        // paint on top. Kept dim and neutral so real region tinting remains
-        // readable when both are present.
-        if (backdropTris && backdropTris.length >= 6) {
-            drawTriangleListFill(octx, backdropTris, 'rgba(70, 80, 110, 0.35)', worldToCanvasNew);
-        }
-
-        for (const group of groups) {
-            if (group.tris && group.tris.length >= 6) {
-                drawLocationRegionFromGeometry(octx, group, worldToCanvasNew);
-            }
-        }
-
-        // Thin grey outlines around each traced region — drawn after all fills so
-        // they sit on top and stay visible regardless of adjacent region tinting.
-        for (const group of groups) {
-            if (group.tris && group.tris.length >= 6) {
-                drawLocationRegionOutline(octx, group, worldToCanvasNew, 'rgba(180, 180, 180, 0.5)', 1);
-            }
-        }
-
-        octx.font = '12px monospace';
-        octx.textAlign = 'center';
-        octx.textBaseline = 'middle';
-        for (const group of groups) {
-            const pos = worldToCanvasNew(group.centroid.x, group.centroid.y);
-            octx.fillStyle = group.color.text;
-            octx.fillText(group.name, pos.x, pos.y);
-        }
-    } finally {
-        _wtc.panX = savedPanX; _wtc.panY = savedPanY;
+    if (backdropTris && backdropTris.length >= 6) {
+        drawTriangleListFill(ctx, backdropTris, 'rgba(70, 80, 110, 0.35)', worldToCanvas);
     }
 
-    mapState.locationCanvas = offscreen;
-    mapState.locationCanvasZoomK = _wtc.zoomK;
-}
+    for (const group of groups) {
+        if (group.tris && group.tris.length >= 6) {
+            drawLocationRegionFromGeometry(ctx, group, worldToCanvas);
+        }
+    }
 
-// drawLocationBackdrop: drawImage the pre-baked backdrop. The bake is done
-// at the current zoom with pan=0, so we only translate by the user's pan
-// here — no scaling and no blur. Zoom changes trigger a re-bake below so
-// lines, outlines, and region labels stay crisp at any zoom level.
-function drawLocationBackdrop(ctx) {
-    if (mapState.locationCanvas && mapState.locationCanvasZoomK !== _wtc.zoomK) {
-        mapState.locationCanvas = null;
+    // Thin grey outlines around each traced region — drawn after all fills so
+    // they sit on top and stay visible regardless of adjacent region tinting.
+    // drawLocationRegionOutline needs the allocating worldToCanvasNew because
+    // it holds both endpoints of an edge simultaneously.
+    for (const group of groups) {
+        if (group.tris && group.tris.length >= 6) {
+            drawLocationRegionOutline(ctx, group, worldToCanvasNew, 'rgba(180, 180, 180, 0.5)', 1);
+        }
     }
-    if (!mapState.locationCanvas) {
-        prerenderLocationBackground();
-    }
-    const img = mapState.locationCanvas;
-    if (!img) return;
-    const panX = _wtc.panX, panY = _wtc.panY;
-    if (panX === 0 && panY === 0) {
-        ctx.drawImage(img, 0, 0);
-    } else {
-        ctx.save();
-        ctx.translate(panX, panY);
-        ctx.drawImage(img, 0, 0);
-        ctx.restore();
+
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const group of groups) {
+        const pos = worldToCanvasNew(group.centroid.x, group.centroid.y);
+        ctx.fillStyle = group.color.text;
+        ctx.fillText(group.name, pos.x, pos.y);
     }
 }
 
@@ -4485,14 +4445,10 @@ function renderMap(time) {
         mapState.locationGroups = processLocationGroups(mapState.locations);
     }
 
-    // Draw pre-rendered location background. drawLocationBackdrop handles
-    // lazy bake and zoom-change invalidation; works on loc-less maps too
-    // because prerenderLocationBackground paints the unnamed backdrop tri
-    // list when present.
-    const hasBackdrop = !!(mapState.mapGeometry && mapState.mapGeometry.backdropTris);
-    if (mapState.locationGroups || hasBackdrop) {
-        drawLocationBackdrop(ctx);
-    }
+    // Draw the location underlay (backdrop + per-loc regions + outlines +
+    // labels). Fresh each frame so it follows pan / zoom precisely and stays
+    // crisp at any zoom level.
+    drawLocationLayer(ctx);
 
     // Draw region control overlay (colored by controlling team)
     if (mapState.controlRegions && mapState.regionToGroups) {
@@ -5308,7 +5264,6 @@ function onMapFullscreenChange() {
 
     // Canvas backing store must match the new container size; re-render.
     resizeMapCanvas();
-    mapState.locationCanvas = null; // backdrop is sized to the canvas, rebuild
     mapState.renderDirty = true;
     renderMap(mapState.currentTime);
 }
@@ -5322,7 +5277,6 @@ function onMapWindowResize() {
     _mapResizeRafId = requestAnimationFrame(() => {
         _mapResizeRafId = null;
         resizeMapCanvas();
-        mapState.locationCanvas = null;
         mapState.renderDirty = true;
         renderMap(mapState.currentTime);
     });
