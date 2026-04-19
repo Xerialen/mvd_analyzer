@@ -4283,12 +4283,12 @@ function prerenderLocationBackground() {
     offscreen.height = h;
     const octx = offscreen.getContext('2d');
 
-    // Bake at the base transform (no user pan / zoom) so the cached image is
-    // authoritative; user pan / zoom is applied via a canvas transform at
-    // drawImage time in renderMap. Without this, zooming before the first
-    // bake would freeze the backdrop at the zoomed coords.
-    const savedPanX = _wtc.panX, savedPanY = _wtc.panY, savedZoomK = _wtc.zoomK;
-    _wtc.panX = 0; _wtc.panY = 0; _wtc.zoomK = 1;
+    // Bake at the current zoom with pan temporarily zeroed so drawImage at
+    // draw time only needs to translate by the user's pan offset. The zoom
+    // level is baked into the cached bitmap, which keeps outlines and labels
+    // crisp at any zoom (we re-bake on zoom change — see drawLocationBackdrop).
+    const savedPanX = _wtc.panX, savedPanY = _wtc.panY;
+    _wtc.panX = 0; _wtc.panY = 0;
     try {
         // Draw the unnamed backdrop first (if present) so named loc regions
         // paint on top. Kept dim and neutral so real region tinting remains
@@ -4320,33 +4320,45 @@ function prerenderLocationBackground() {
             octx.fillText(group.name, pos.x, pos.y);
         }
     } finally {
-        _wtc.panX = savedPanX; _wtc.panY = savedPanY; _wtc.zoomK = savedZoomK;
+        _wtc.panX = savedPanX; _wtc.panY = savedPanY;
     }
 
     mapState.locationCanvas = offscreen;
+    mapState.locationCanvasZoomK = _wtc.zoomK;
 }
 
-// drawLocationBackdrop: drawImage the pre-baked backdrop with user pan/zoom
-// applied. The bake is at the base transform, so we only need to shift and
-// scale the baked pixels to match the current user view.
+// drawLocationBackdrop: drawImage the pre-baked backdrop. The bake is done
+// at the current zoom with pan=0, so we only translate by the user's pan
+// here — no scaling and no blur. Zoom changes trigger a re-bake below so
+// lines, outlines, and region labels stay crisp at any zoom level.
 function drawLocationBackdrop(ctx) {
+    if (mapState.locationCanvas && mapState.locationCanvasZoomK !== _wtc.zoomK) {
+        mapState.locationCanvas = null;
+    }
+    if (!mapState.locationCanvas) {
+        prerenderLocationBackground();
+    }
     const img = mapState.locationCanvas;
     if (!img) return;
-    const panX = _wtc.panX, panY = _wtc.panY, zoomK = _wtc.zoomK;
-    if (panX === 0 && panY === 0 && zoomK === 1) {
+    const panX = _wtc.panX, panY = _wtc.panY;
+    if (panX === 0 && panY === 0) {
         ctx.drawImage(img, 0, 0);
-        return;
+    } else {
+        ctx.save();
+        ctx.translate(panX, panY);
+        ctx.drawImage(img, 0, 0);
+        ctx.restore();
     }
-    // Derived in-line: bakedX = offsetX + (x-minX)*scale; we want
-    //   finalX = offsetX + (x-minX)*scale*zoomK + panX
-    //          = zoomK*bakedX + [offsetX*(1-zoomK) + panX]
-    // Similar for Y: tY = (canvasH - offsetY)*(1 - zoomK) + panY.
-    ctx.save();
-    ctx.translate(_wtc.offsetX * (1 - zoomK) + panX,
-                  (_wtc.canvasH - _wtc.offsetY) * (1 - zoomK) + panY);
-    ctx.scale(zoomK, zoomK);
-    ctx.drawImage(img, 0, 0);
-    ctx.restore();
+}
+
+// mapIconScale: subtle, capped upscale applied to player symbols, item
+// markers, and their text labels when the user has zoomed in. Keeps icons
+// legible at high zoom without dominating the view. 1.0 at zoomK=1, linear
+// ramp, cap at 1.5 (user requested "never more than 50% bigger").
+function mapIconScale() {
+    const k = _wtc.zoomK || 1;
+    if (k <= 1) return 1;
+    return Math.min(1.5, 1 + (k - 1) * 0.1);
 }
 
 // Pre-compute full trails for all players from high-res bucket data.
@@ -4473,14 +4485,12 @@ function renderMap(time) {
         mapState.locationGroups = processLocationGroups(mapState.locations);
     }
 
-    // Draw pre-rendered location background (or render it first time).
-    // Also runs when we have only the unnamed backdrop from mapGeometry
-    // (loc-less maps), so the floor plan still shows as a neutral underlay.
+    // Draw pre-rendered location background. drawLocationBackdrop handles
+    // lazy bake and zoom-change invalidation; works on loc-less maps too
+    // because prerenderLocationBackground paints the unnamed backdrop tri
+    // list when present.
     const hasBackdrop = !!(mapState.mapGeometry && mapState.mapGeometry.backdropTris);
     if (mapState.locationGroups || hasBackdrop) {
-        if (!mapState.locationCanvas) {
-            prerenderLocationBackground();
-        }
         drawLocationBackdrop(ctx);
     }
 
@@ -4504,7 +4514,13 @@ function renderMap(time) {
 
     const playerData = bucket ? bucket.p : null;
     if (playerData) {
-        const halfSymbol = 16;
+        // Base symbol is a pre-rendered 32x32 canvas. At zoom > 1 the symbol
+        // and the badge orbit radius grow together, capped at 1.5x.
+        const iconScale = mapIconScale();
+        const symSize = 32 * iconScale;
+        const halfSymbol = symSize / 2;
+        const orbitRadius = 14 * iconScale;
+        const badgeRadius = 5 * iconScale;
 
         for (const [name, data] of Object.entries(playerData)) {
             if (data.x === 0 && data.y === 0) continue;
@@ -4513,12 +4529,14 @@ function renderMap(time) {
             const symbolInfo = mapState.playerSymbols[name];
 
             if (symbolInfo && symbolInfo.symbolCanvas) {
-                ctx.drawImage(symbolInfo.symbolCanvas, pos.x - halfSymbol, pos.y - halfSymbol);
+                ctx.drawImage(symbolInfo.symbolCanvas,
+                              pos.x - halfSymbol, pos.y - halfSymbol,
+                              symSize, symSize);
 
                 // Draw status badges around player symbol
                 const badges = getActiveBadges(data);
                 if (badges.length > 0) {
-                    drawBadgesAroundCenter(ctx, badges, pos.x, pos.y, 14, 5);
+                    drawBadgesAroundCenter(ctx, badges, pos.x, pos.y, orbitRadius, badgeRadius);
                 }
             }
         }
@@ -4650,11 +4668,13 @@ function drawMapItems(ctx, time) {
     const items = currentResult?.items?.items;
     if (!items || items.length === 0) return;
 
-    const size = ITEM_MARKER_SIZE;
+    const iconScale = mapIconScale();
+    const size = ITEM_MARKER_SIZE * iconScale;
     const half = size / 2;
+    const fontPx = Math.round(8 * iconScale);
 
     ctx.save();
-    ctx.font = 'bold 8px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.font = `bold ${fontPx}px -apple-system, BlinkMacSystemFont, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
