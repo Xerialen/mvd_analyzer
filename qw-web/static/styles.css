@@ -817,6 +817,15 @@ table tbody tr:hover {
     border-radius: 2px;
 }
 
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-dot.rl { background: rgba(255, 107, 107, 0.9); }
+.legend-dot.lg { background: rgba(0, 217, 255, 0.9); }
+
 /* Granular weapon/powerup colors */
 .legend-color.weapons { background: rgba(0, 217, 255, 0.9); }
 .legend-color.powerups { background: rgba(255, 193, 7, 0.9); }

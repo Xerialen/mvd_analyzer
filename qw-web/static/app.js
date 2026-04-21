@@ -1475,6 +1475,7 @@ function displayTimelineAnalysis(result) {
     timelineState.duration = result.duration || 600;
     timelineState.events = result.messages?.events || [];
     timelineState.fragEvents = timeline?.fragEvents || []; // Frag events from stat tracking
+    timelineState.backpacks = result.backpacks || [];      // RL/LG drops from KTX hint
 
     // Set shared current time to start (all times are now match-relative, starting at 0)
     mapState.currentTime = 0;
@@ -1550,14 +1551,16 @@ function pickTickInterval(duration, maxTicks) {
 
 // Render a diverging bar graph on a canvas.
 //   dataPoints: [{t, dt, up: [{h, color}], down: [{h, color}]}]
-//   powerupSpans: [{start, end, color, isTop, lane}] (optional, for weapons)
+//   dropMarks:  [{time, color, isTop}] (optional, e.g. RL/LG backpack drops
+//               on the weapon graph). Renders as small dots in a reserved
+//               strip zone so they never overlap the bars.
 function renderDivergingGraph(canvasId, {
     startTime, endTime,
     dataPoints,
     maxValue,
     yAxisId,
     yTopLabel, yBottomLabel,
-    powerupSpans,
+    dropMarks,
 }) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !canvas.getContext) return;
@@ -1576,16 +1579,14 @@ function renderDivergingGraph(canvasId, {
     const AXIS_H = 20;
     const PAD = 4;
     const graphH = H - AXIS_H;
-    // Powerup strips live in a reserved zone at the top and bottom of the
+    // Drop-mark strips live in a reserved zone at the top and bottom of the
     // plot area so weapon bars can never grow into them — the weapons bar
     // height scales with max players-per-team, so without this reservation
     // a high-rollout 5v5 snapshot could paint bars straight through the
-    // strips.
-    const STRIP_H = 6;           // thicker than before (was 3) for readability
-    const STRIP_GAP = 1;
-    const STRIP_LANES = 3;       // quad / pent / ring
-    const hasPowerups = !!(powerupSpans && powerupSpans.length);
-    const stripZone = hasPowerups ? STRIP_LANES * (STRIP_H + STRIP_GAP) + 2 : 0;
+    // dots. Sized for one row of ~6 px dots.
+    const DROP_STRIP_H = 8;
+    const hasDropMarks = !!(dropMarks && dropMarks.length);
+    const stripZone = hasDropMarks ? DROP_STRIP_H + 2 : 0;
     const midY = PAD + (graphH - PAD) / 2;
     const barH = midY - PAD - stripZone;
     const duration = endTime - startTime;
@@ -1646,19 +1647,23 @@ function renderDivergingGraph(canvasId, {
             }
         }
 
-        // Powerup overlay spans — sit inside the reserved stripZone so they
-        // never overlap weapon bars.
-        if (hasPowerups) {
-            for (const sp of powerupSpans) {
-                const x1 = Math.max(0, Math.round(((sp.start - startTime) / duration) * W));
-                const x2 = Math.min(W, Math.round(((sp.end - startTime) / duration) * W));
-                if (x2 <= x1) continue;
-                const stripY = sp.isTop
-                    ? PAD + sp.lane * (STRIP_H + STRIP_GAP)
-                    : graphH - PAD - (sp.lane + 1) * (STRIP_H + STRIP_GAP);
-                ctx.fillStyle = sp.color;
-                ctx.fillRect(x1, stripY, x2 - x1, STRIP_H);
-            }
+    }
+
+    // Drop-mark dots — small filled circles in the reserved strip zone.
+    // Top strip = team A drops, bottom strip = team B drops; color is
+    // weapon-coded by the caller (e.g. RL red, LG cyan).
+    if (hasDropMarks && duration > 0) {
+        const dotR = 3;
+        const topY    = PAD + DROP_STRIP_H / 2;
+        const bottomY = graphH - PAD - DROP_STRIP_H / 2;
+        for (const m of dropMarks) {
+            const x = ((m.time - startTime) / duration) * W;
+            if (x < -dotR || x > W + dotR) continue;
+            const y = m.isTop ? topY : bottomY;
+            ctx.fillStyle = m.color;
+            ctx.beginPath();
+            ctx.arc(x, y, dotR, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 
@@ -1700,7 +1705,7 @@ function renderDivergingGraph(canvasId, {
 
 function prepWeaponsData(startTime, endTime, teams) {
     const hrBuckets = timelineState.highResBuckets;
-    if (!hrBuckets || !hrBuckets.length) return { points: [], max: 4, powerups: [] };
+    if (!hrBuckets || !hrBuckets.length) return { points: [], max: 4 };
     const hrDur = timelineState.highResDuration || 0.05;
     const points = [];
     let maxVal = 4;
@@ -1727,38 +1732,32 @@ function prepWeaponsData(startTime, endTime, teams) {
             ],
         });
     }
-    return { points, max: maxVal, powerups: computePowerupSpans(startTime, endTime, teams) };
+    return { points, max: maxVal };
 }
 
-function computePowerupSpans(startTime, endTime, teams) {
-    const hrBuckets = timelineState.highResBuckets;
-    if (!hrBuckets || !hrBuckets.length) return [];
-    const spans = [];
-    const types = [
-        { key: 'q', color: GRAPH_COLORS.QUAD, lane: 0 },
-        { key: 'pe', color: GRAPH_COLORS.PENT, lane: 1 },
-        { key: 'r', color: GRAPH_COLORS.RING, lane: 2 },
-    ];
-    for (let ti = 0; ti < 2; ti++) {
-        const team = teams[ti];
-        const isTop = ti === 0;
-        for (const pu of types) {
-            let spanStart = null;
-            const idx0 = binarySearchBucketStart(hrBuckets, startTime);
-            for (let i = idx0; i < hrBuckets.length; i++) {
-                const b = hrBuckets[i];
-                if (b.t > endTime) { break; }
-                const has = ((b.td?.[team])?.[pu.key] || 0) > 0;
-                if (has && spanStart === null) spanStart = b.t;
-                else if (!has && spanStart !== null) {
-                    spans.push({ start: spanStart, end: b.t, color: pu.color, isTop, lane: pu.lane });
-                    spanStart = null;
-                }
-            }
-            if (spanStart !== null) spans.push({ start: spanStart, end: endTime, color: pu.color, isTop, lane: pu.lane });
-        }
+// computeBackpackDrops returns dot markers for the weapon timeline:
+// every RL or LG backpack dropped within the [startTime, endTime]
+// window, with isTop=true for team-A drops and false for team-B.
+// Reads from timelineState.backpacks (populated from result.backpacks
+// in displayTimelineAnalysis).
+function computeBackpackDrops(startTime, endTime, teams) {
+    const drops = timelineState.backpacks;
+    if (!drops || drops.length === 0) return [];
+    const teamA = teams[0], teamB = teams[1];
+    const out = [];
+    for (const d of drops) {
+        if (d.time < startTime || d.time > endTime) continue;
+        let isTop;
+        if (d.team === teamA)      isTop = true;
+        else if (d.team === teamB) isTop = false;
+        else continue; // unknown team (spectator drop, mid-substitution, etc.)
+        const color = d.weapon === 'rl' ? GRAPH_COLORS.RL
+                    : d.weapon === 'lg' ? GRAPH_COLORS.LG
+                    : null;
+        if (!color) continue;
+        out.push({ time: d.time, color, isTop });
     }
-    return spans;
+    return out;
 }
 
 // ─── Data preparation: Health/Armor ─────────────────────────────────────────
@@ -2098,9 +2097,9 @@ function setupUnifiedTimeline() {
     document.getElementById('tl-play-pause').addEventListener('click', () => startPlaybackAtSpeed(1));
     document.getElementById('tl-5x').addEventListener('click', () => startPlaybackAtSpeed(5));
 
-    // --- Pan/zoom on every diverging graph + region-control timeline ---
-    ['detail-graph-canvas', 'region-control-canvas', 'health-armor-canvas',
-     'frags-canvas', 'score-canvas'].forEach(installGraphPanZoom);
+    // --- Pan/zoom on every diverging graph + spans timelines ---
+    ['detail-graph-canvas', 'powerup-canvas', 'region-control-canvas',
+     'health-armor-canvas', 'frags-canvas', 'score-canvas'].forEach(installGraphPanZoom);
 
     unifiedTimelineInitialized = true;
 }
@@ -2196,6 +2195,7 @@ function updateTimeIndicators() {
 
     const detailIndicators = [
         'detail-time-indicator',
+        'powerup-time-indicator',
         'region-time-indicator',
         'health-time-indicator',
         'frags-time-indicator',
@@ -2239,6 +2239,7 @@ function updateDetailView() {
 
     // Update all detail panels (axes are drawn on canvas by the unified renderer)
     updateDetailGraph(start, end);
+    updatePowerupTimeline(start, end);
     updateRegionControlTimeline(start, end);
     updateHealthArmorGraph(start, end);
     updateFragsGraph(start, end);
@@ -2411,14 +2412,15 @@ function renderChatColumnFull(container, events) {
 function updateDetailGraph(startTime, endTime) {
     const teams = timelineState.teams;
     if (teams.length < 2) return;
-    const { points, max, powerups } = prepWeaponsData(startTime, endTime, teams);
+    const { points, max } = prepWeaponsData(startTime, endTime, teams);
+    const dropMarks = computeBackpackDrops(startTime, endTime, teams);
     const legendA = document.getElementById('legend-weapons-team-a');
     const legendB = document.getElementById('legend-weapons-team-b');
     if (legendA) legendA.textContent = `${teams[0]} ↑`;
     if (legendB) legendB.textContent = `${teams[1]} ↓`;
     renderDivergingGraph('detail-graph-canvas', {
         startTime, endTime, dataPoints: points, maxValue: max,
-        yAxisId: 'detail-y-axis', powerupSpans: powerups,
+        yAxisId: 'detail-y-axis', dropMarks,
     });
 }
 
@@ -2533,7 +2535,11 @@ function prepRegionControlData(startTime, endTime, teams) {
     return { rows, teamA, teamB };
 }
 
-function renderRegionControlTimeline(canvasId, labelsId, { startTime, endTime, rows }) {
+// Generic span-timeline renderer. Each row carries a list of
+// {start, end, state} spans; stateColors maps state strings to fill
+// colors. Used by both the region-control timeline and the powerup
+// timeline so they share one renderer instead of two near-copies.
+function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, stateColors }) {
     const canvas = document.getElementById(canvasId);
     const labelsEl = document.getElementById(labelsId);
     if (!canvas || !canvas.getContext || !labelsEl) return;
@@ -2568,12 +2574,6 @@ function renderRegionControlTimeline(canvasId, labelsId, { startTime, endTime, r
     const duration = endTime - startTime;
     if (duration <= 0) return;
 
-    const stateColors = {
-        teamAControl: teamStrongColor(TEAM_COLORS[0]),
-        contested:    'rgb(255, 255, 255)',
-        teamBControl: teamStrongColor(TEAM_COLORS[1]),
-    };
-
     rows.forEach((row, idx) => {
         const y = idx * RC_ROW_H;
         for (const span of row.spans) {
@@ -2604,6 +2604,102 @@ function renderRegionControlTimeline(canvasId, labelsId, { startTime, endTime, r
     }
 }
 
+// ─── Powerup Timeline ───────────────────────────────────────────────────────
+//
+// One row per powerup type (Quad / Pent / Ring); each row colors contiguous
+// spans by which team currently holds the powerup. Reuses renderSpansTimeline,
+// the same renderer the region-control timeline uses — only the input rows
+// and the state→color map differ.
+
+const POWERUP_TYPES = [
+    { key: 'q',  name: 'Quad' },
+    { key: 'pe', name: 'Pent' },
+    { key: 'r',  name: 'Ring' },
+];
+
+function prepPowerupRowsData(startTime, endTime, teams) {
+    const hrBuckets = timelineState.highResBuckets;
+    if (!hrBuckets || !hrBuckets.length) return null;
+    const teamA = teams[0], teamB = teams[1];
+    if (!teamA || !teamB) return null;
+
+    const idx0 = binarySearchBucketStart(hrBuckets, startTime);
+    const rows = POWERUP_TYPES.map(pu => ({
+        name: pu.name, spans: [], _cur: 'empty', _start: startTime,
+    }));
+
+    for (let i = idx0; i < hrBuckets.length; i++) {
+        const b = hrBuckets[i];
+        if (b.t > endTime) break;
+
+        for (let pi = 0; pi < POWERUP_TYPES.length; pi++) {
+            const key = POWERUP_TYPES[pi].key;
+            const aHas = ((b.td?.[teamA])?.[key] || 0) > 0;
+            const bHas = ((b.td?.[teamB])?.[key] || 0) > 0;
+            // Both teams holding the same powerup at once is impossible
+            // (only one Quad spawn at a time), but if it ever happens we
+            // bias to "contested" rather than picking one team.
+            let state;
+            if (aHas && bHas)      state = 'contested';
+            else if (aHas)         state = 'teamA';
+            else if (bHas)         state = 'teamB';
+            else                   state = 'empty';
+
+            const row = rows[pi];
+            if (state !== row._cur) {
+                if (row._cur && row._cur !== 'empty') {
+                    row.spans.push({ start: row._start, end: b.t, state: row._cur });
+                }
+                row._cur = state;
+                row._start = b.t;
+            }
+        }
+    }
+    for (const row of rows) {
+        if (row._cur && row._cur !== 'empty') {
+            row.spans.push({ start: row._start, end: endTime, state: row._cur });
+        }
+        delete row._cur; delete row._start;
+    }
+    return { rows, teamA, teamB };
+}
+
+function updatePowerupTimeline(startTime, endTime) {
+    const panel = document.getElementById('powerup-timeline-panel');
+    if (!panel) return;
+    const teams = timelineState.teams;
+    if (teams.length < 2) { panel.style.display = 'none'; return; }
+
+    const data = prepPowerupRowsData(startTime, endTime, teams);
+    if (!data) { panel.style.display = 'none'; return; }
+
+    // Hide if no powerup activity at all in this window — keeps the
+    // panel out of the way for maps without powerups.
+    const hasAny = data.rows.some(r => r.spans.length > 0);
+    if (!hasAny) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const teamAEl = document.getElementById('pu-tl-teamA');
+    const teamBEl = document.getElementById('pu-tl-teamB');
+    if (teamAEl) teamAEl.textContent = data.teamA;
+    if (teamBEl) teamBEl.textContent = data.teamB;
+    const setLegend = (id, color) => {
+        const el = document.getElementById(id);
+        if (el) el.style.background = color;
+    };
+    setLegend('pu-legend-a', teamStrongColor(TEAM_COLORS[0]));
+    setLegend('pu-legend-b', teamStrongColor(TEAM_COLORS[1]));
+
+    renderSpansTimeline('powerup-canvas', 'powerup-timeline-labels', {
+        startTime, endTime, rows: data.rows,
+        stateColors: {
+            teamA:     teamStrongColor(TEAM_COLORS[0]),
+            teamB:     teamStrongColor(TEAM_COLORS[1]),
+            contested: 'rgb(255, 255, 255)',
+        },
+    });
+}
+
 function updateRegionControlTimeline(startTime, endTime) {
     const panel = document.getElementById('region-control-timeline-panel');
     if (!panel) return;
@@ -2625,8 +2721,13 @@ function updateRegionControlTimeline(startTime, endTime) {
     setLegend('rc-legend-a-ctrl', teamStrongColor(TEAM_COLORS[0]));
     setLegend('rc-legend-b-ctrl', teamStrongColor(TEAM_COLORS[1]));
 
-    renderRegionControlTimeline('region-control-canvas', 'region-timeline-labels', {
+    renderSpansTimeline('region-control-canvas', 'region-timeline-labels', {
         startTime, endTime, rows: data.rows,
+        stateColors: {
+            teamAControl: teamStrongColor(TEAM_COLORS[0]),
+            contested:    'rgb(255, 255, 255)',
+            teamBControl: teamStrongColor(TEAM_COLORS[1]),
+        },
     });
 }
 
