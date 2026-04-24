@@ -147,6 +147,46 @@ func TestWeaponPickups_TeamkillsAndSuicidesExcluded(t *testing.T) {
 	}
 }
 
+// Two pickups of the same weapon in the same life must not
+// double-count kills. Each frag is attributed to the most recent
+// pickup of that weapon by the killer — not every pickup whose
+// window contains the frag. Previously both pickups got credit for
+// every intervening kill.
+func TestWeaponPickups_NoDoubleCountAcrossPickups(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &mvd.PlayerInfo{Slot: 0, Name: "p"}
+
+	// Pickup 1 at t=10, pickup 2 at t=20, death at t=30. Player
+	// already had RL when pickup 2 fires (hadBefore=true). Frags
+	// are at t=12, t=15, t=25, t=28 — all RL.
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 1, Kind: "rl", Time: 0})
+	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 1, PlayerEnt: 1, Time: 10})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: wpItRocketLauncher, Time: 11})
+	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 1, PlayerEnt: 1, Time: 20})
+	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 30})
+
+	ctx.FragEntries = []FragEntry{
+		{Time: 12, Killer: "p", Weapon: "rl"},
+		{Time: 15, Killer: "p", Weapon: "rl"},
+		{Time: 25, Killer: "p", Weapon: "rl"},
+		{Time: 28, Killer: "p", Weapon: "rl"},
+	}
+
+	out, _ := a.Finalize()
+	ps := out.([]WeaponPickup)
+	if len(ps) != 2 {
+		t.Fatalf("want 2 pickups, got %d", len(ps))
+	}
+	// Pickup 1 owns kills between (10, 20] — t=12 and t=15.
+	// Pickup 2 owns kills between (20, 30] — t=25 and t=28.
+	if ps[0].Kills != 2 {
+		t.Errorf("pickup[0].Kills = %d, want 2", ps[0].Kills)
+	}
+	if ps[1].Kills != 2 {
+		t.Errorf("pickup[1].Kills = %d, want 2 (not 4 — no double-count)", ps[1].Kills)
+	}
+}
+
 // No matching death before match end → NextDeathTime=0, and every
 // qualifying frag after the pickup counts (no upper bound).
 func TestWeaponPickups_NoNextDeathKillsUnbounded(t *testing.T) {

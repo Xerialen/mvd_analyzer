@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"math"
 	"sort"
 	"strings"
 
@@ -240,7 +241,12 @@ func (a *WeaponPickupsAnalyzer) detectMatchBoundary(e *events.PrintEvent) {
 }
 
 // Finalize pairs every recorded pickup with its picker's next death
-// and counts kills-with-weapon in that window from ctx.FragEntries.
+// and attributes kills from ctx.FragEntries. Each frag is credited to
+// at most one pickup — the most recent pickup of that weapon by the
+// killer whose window [pickupTime, nextDeath] still contains the frag.
+// Without this rule two pickups of the same weapon in the same life
+// would double-count every intervening kill.
+//
 // FragEntries are name-keyed, so we resolve the picker's display name
 // from ctx.Players[slot].Name (patched by the registry to the
 // DemoInfo name post-Finalize of DemoInfoAnalyzer).
@@ -249,45 +255,65 @@ func (a *WeaponPickupsAnalyzer) Finalize() (interface{}, error) {
 		return nil, nil
 	}
 
-	// Partition deaths by slot, time-ordered, for O(log n) next-death
-	// lookup. Deaths are recorded in arrival order which is already
-	// monotonic in time since OnEvent is serial.
+	// Partition deaths by slot, time-ordered, for next-death lookup.
+	// Deaths are recorded in arrival order which is already monotonic
+	// in time since OnEvent is serial.
 	deathsBySlot := make(map[int][]float64)
 	for _, d := range a.deaths {
 		deathsBySlot[d.slot] = append(deathsBySlot[d.slot], d.time)
 	}
 
-	// Partition FragEntries by killer name for quick filter. Entries
-	// are time-ordered globally; we keep the global order per killer.
-	fragsByKiller := make(map[string][]FragEntry)
+	// Build pickup windows keyed by (killerName, weapon). Each window
+	// is [pickup.time, nextDeath] (or +Inf if the player never dies
+	// again this match). Windows per key are already time-ordered
+	// because pickups were appended in event order.
+	type pwKey struct{ killer, weapon string }
+	type pickupWindow struct {
+		pickupIdx int
+		start     float64
+		end       float64
+	}
+	windowsByPW := make(map[pwKey][]pickupWindow)
+	for i, p := range a.pickups {
+		picker := a.ctx.Players[p.pickerSlot]
+		if picker == nil {
+			continue
+		}
+		end := findNextAfter(deathsBySlot[p.pickerSlot], p.time)
+		if end == 0 {
+			end = math.Inf(1)
+		}
+		k := pwKey{picker.Name, p.weapon}
+		windowsByPW[k] = append(windowsByPW[k], pickupWindow{i, p.time, end})
+	}
+
+	// Attribute each valid frag to the latest covering window.
+	kills := make([]int, len(a.pickups))
 	for _, f := range a.ctx.FragEntries {
 		if f.IsSuicide || f.IsTeamKill {
 			continue
 		}
-		fragsByKiller[f.Killer] = append(fragsByKiller[f.Killer], f)
+		windows := windowsByPW[pwKey{f.Killer, f.Weapon}]
+		best := -1
+		for _, w := range windows {
+			if w.start < f.Time && f.Time <= w.end {
+				best = w.pickupIdx
+			} else if w.start >= f.Time {
+				break // windows are time-ordered; further starts are all in the future
+			}
+		}
+		if best >= 0 {
+			kills[best]++
+		}
 	}
 
 	out := make([]WeaponPickup, 0, len(a.pickups))
-	for _, p := range a.pickups {
+	for i, p := range a.pickups {
 		picker := a.ctx.Players[p.pickerSlot]
 		if picker == nil {
 			continue
 		}
 		nextDeath := findNextAfter(deathsBySlot[p.pickerSlot], p.time)
-
-		kills := 0
-		for _, f := range fragsByKiller[picker.Name] {
-			if f.Weapon != p.weapon {
-				continue
-			}
-			if f.Time <= p.time {
-				continue
-			}
-			if nextDeath > 0 && f.Time > nextDeath {
-				break // entries are time-ordered; past nextDeath, done
-			}
-			kills++
-		}
 
 		entry := WeaponPickup{
 			Time:          p.time,
@@ -296,7 +322,7 @@ func (a *WeaponPickupsAnalyzer) Finalize() (interface{}, error) {
 			Weapon:        p.weapon,
 			Source:        p.source,
 			HadBefore:     p.hadBefore,
-			Kills:         kills,
+			Kills:         kills[i],
 			NextDeathTime: nextDeath,
 		}
 		if p.source == "backpack" {

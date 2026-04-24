@@ -1303,11 +1303,17 @@ function displayPackDrops(result) {
     const playerUserIDs = currentResult?.timelineAnalysis?.playerUserIDs || {};
     const demoOff = timelineState.demoOffset || 0;
 
-    // Build pickup lookup keyed by backpackEnt.
-    const pickupByEnt = {};
+    // Build pickup lookup keyed by (backpackEnt, dropTime). entNum
+    // alone is not unique — the server recycles backpack edict numbers
+    // across drops, so two drops of the same entNum at different times
+    // would collide on entNum alone and the frontend would attribute
+    // both rows to the same (later) pickup. The pickup record carries
+    // dropTime from the paired drop hint, so the compound key is
+    // uniquely one drop instance.
+    const pickupByKey = {};
     for (const p of (result.weaponPickups || [])) {
         if (p.source === 'backpack' && p.backpackEnt) {
-            pickupByEnt[p.backpackEnt] = p;
+            pickupByKey[`${p.backpackEnt}@${p.dropTime}`] = p;
         }
     }
 
@@ -1338,7 +1344,7 @@ function displayPackDrops(result) {
     };
 
     drops.forEach(drop => {
-        const pickup = pickupByEnt[drop.entNum];
+        const pickup = pickupByKey[`${drop.entNum}@${drop.time}`];
         const status = statusFor(drop, pickup);
 
         const tr = document.createElement('tr');
