@@ -1597,6 +1597,57 @@ th.sortable.sort-desc::after {
     gap: 15px;
 }
 
+.packdrops-filters {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+}
+.packdrops-filters label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.packdrops-filters select {
+    background: var(--bg-deep);
+    color: #ccc;
+    border: 1px solid #666;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+.packdrops-filters select option {
+    background: var(--bg-deep);
+    color: #ccc;
+}
+.packdrops-count {
+    margin-left: auto;
+    color: #888;
+    font-variant-numeric: tabular-nums;
+}
+
+.pack-status {
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.82rem;
+    margin-right: 4px;
+}
+.pack-status.status-xfer     { color: #7fff7f; background: rgba(0, 180, 0, 0.15); }
+.pack-status.status-xfer-had { color: #bfe5bf; background: rgba(0, 180, 0, 0.08); }
+.pack-status.status-enemy    { color: #ff8080; background: rgba(255, 50, 50, 0.15); }
+.pack-status.status-enemy-had { color: #e5bfbf; background: rgba(255, 50, 50, 0.08); }
+.pack-status.status-expired  { color: #888; background: rgba(128, 128, 128, 0.12); }
+
+.weapon-cell.weapon-rl { color: #ff7040; font-weight: bold; }
+.weapon-cell.weapon-lg { color: #70c0ff; font-weight: bold; }
+
+.kills-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.kills-redundant { color: #888; }
+
 @media (max-width: 1200px) {
     .keymoments-grid {
         grid-template-columns: 1fr;

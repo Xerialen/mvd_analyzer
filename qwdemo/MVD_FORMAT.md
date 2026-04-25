@@ -1012,6 +1012,31 @@ Kill messages appear at `PRINT_MEDIUM` (level 1). Common patterns:
 [195.6s] "paniagua mows down a teammate"
 ```
 
+### Per-client pickup prints — and the PRINT_LOW filter
+
+KTX's `G_sprint(other, PRINT_LOW, ...)` calls in `ktx/src/items.c` emit per-client text on every pickup: `"You got the Red Armor\n"` (armors / weapons / ammo boxes / powerups), `"You receive 25 health\n"` (health pickups including MH), and the `"You get "` opener line for backpacks (followed by per-piece continuation prints). In MVDs these land in `dem_single` with the picking player's slot in the header, giving authoritative pickup attribution — they would cover the categories `//ktx took` skips (ammo boxes and H15/H25 — `ammo_touch` at items.c:1171 has no stuffcmd, and only the megahealth branch of `health_touch` emits `//ktx took`).
+
+**The catch** — `SV_ClientPrintf` in `mvdsv/src/sv_send.c:225` applies a per-client filter *before* the MVD write:
+
+```c
+if (level < cl->messagelevel)
+    return;
+```
+
+`cl->messagelevel` tracks the `msg` cvar the client set in their config. Pickup prints are PRINT_LOW (0). Competitive QW players widely use `msg 2` to suppress pickup spam in their console, which **also strips the prints from the MVD entirely** — they never reach `MVDWrite_Begin (dem_single, ...)`. On a typical 4on4 / duel with everyone at `msg 2` you'll see **zero** PRINT_LOW events in the recording.
+
+**Coverage is therefore per-player and per-demo.** A duel where one player set `msg 0` and the other set `msg 2` gives you pickup prints for exactly one side. The `//ktx took` and `//ktx bp` directives bypass this filter (they're STUFFCMD_DEMOONLY, not prints) — they're the correct signal when coverage matters.
+
+To decide if print-based pickup attribution is viable on a given demo, count `PrintEvent.Level == 0` entries: zero means the filter stripped everything; a healthy count means at least some players had `msg 0` set.
+
+```
+SV_ClientPrintf (level=PRINT_LOW, target=cl)
+    │
+    ├── if level < cl->messagelevel: return  ← strips prints before MVD write
+    │
+    └── MVDWrite_Begin(dem_single, cl - svs.clients, ...) → svc_print header → message
+```
+
 ---
 
 ## Hidden Messages
@@ -2195,13 +2220,18 @@ The server is pushing a console command into the client. There are three classes
 
     | Directive | Source | Meaning |
     |---|---|---|
-    | `//ktx matchstart` | `ktx/src/match.c` | Fires once when warmup ends and the match begins |
-    | `//ktx took <ent> <respawn_sec> <player_ent>` | `ktx/src/items.c:355, 541, 1048, 2074, 2083` | Item picked up. `respawn_sec` is the nominal timer (0 for MH pending rot, 20 for armors, 30 for weapons, 60/180/240/300 for powerups depending on mode) |
+    | `//ktx matchstart` | `ktx/src/match.c:1249` | Fires once when warmup ends and the match begins |
+    | `//ktx took <ent> <respawn_sec> <player_ent>` | `ktx/src/items.c:355, 541, 1048, 2074, 2083` | Item picked up. `respawn_sec` is the nominal timer (0 for MH pending rot, 20 for armors, 30 for weapons, 60/180/240/300 for powerups depending on mode). Pinning the touch to `player_ent` makes this the **authoritative pickup-attribution signal** for every competitive item type (MH, GA/YA/RA, RL/LG/GL/SSG/SNG/NG, Quad/Pent/Ring). Does *not* fire for small healths (15/25) or in `deathmatch 2`. |
     | `//ktx timer <ent> <respawn_sec>` | `ktx/src/items.c:406` | MH rot finished — the delayed 20 s respawn timer is now armed |
-    | `//ktx drop <ent> <item_flags> <player_ent>` | `ktx/src/items.c:2740` | Player dropped a weapon (backpack spawned) |
+    | `//ktx drop <ent> <item_flags> <player_ent>` | `ktx/src/items.c:2740` | Player dropped a weapon (backpack spawned). `item_flags` is the QW items bitfield — `32 = IT_ROCKET_LAUNCHER`, `64 = IT_LIGHTNING`. Only fires for RL/LG packs. |
+    | `//ktx bp <backpack_ent> <player_ent>` | `ktx/src/items.c:2471` | Backpack picked up. Symmetric to `//ktx drop` — fires only when the pack contains RL or LG, so drop/pickup pairs share `backpack_ent`. This is the **only** reliable backpack-pickup attribution signal: the entity-state stream shows visibility flutter for backpack edicts that is indistinguishable from fast regrabs. |
+    | `//ktx expire <ent>` | `ktx/src/g_spawn.c:200` | Item entity is about to be removed (mode-specific despawn, e.g. powerup expires unattended) |
+    | `//ktx di <dmg> <armor> <take> <attacker> <victim> <weapon> <team>` | `ktx/src/combat.c:819` | Damage-info hint, targeted at the *attacker* (client-side HUD). Emitted with `STUFFCMD_IGNOREINDEMO`, so it's not in the recorded MVD — listed here for completeness. |
     | `//wps <slot> <weapon> <hits> <shots>` | `ktx/src/stats.c` | Per-player weapon-stats ticker for the spectator HUD |
 
-    These are *not* server config — they're per-event HUD hooks for clients that understand the KTX HUD protocol. They are also **KTX-specific**: ktpro, CustomTF, and other progs don't emit them. Analytics that want to work on any MVD should prefer the protocol-level [entity-state stream](#item-tracking-via-entity-state) for pickup detection and only use `//ktx took|timer` as a supplementary signal for per-touch counts (since the entity stream can't see same-tick insta-regrabs).
+    These are *not* server config — they're per-event HUD hooks for clients that understand the KTX HUD protocol. They are also **KTX-specific**: ktpro, CustomTF, and other progs don't emit them.
+
+    **Pickup attribution strategy** — the `//ktx took` + `//ktx bp` pair gives deterministic, same-tick pickup attribution without any heuristic. On KTX servers, analytics should prefer these over the [entity-state stream](#item-tracking-via-entity-state) for identifying *who took what*: the entity stream tells you *when* a pickup happened but not reliably by whom (nearest-player-origin is ambiguous in contests and unusable for backpack regrabs due to visibility flutter). For non-KTX servers (ktpro / CustomTF / vanilla), fall back to the entity-state stream or to per-player `svc_updatestat` deltas (STAT_ITEMS bitfield, STAT_HEALTH / STAT_ARMOR / STAT_* AMMO jumps — the MVD transports every player's stats, not just the POV's).
 
     The `<ent>` number is a stable server edict index for the match. `<player_ent>` is `slot + 1` (edict 0 is world, edicts 1..maxclients are the player slots).
 3. **`play sound/file.wav`** style commands — countdown beeps, intermission music. Safe to ignore.
@@ -2940,6 +2970,8 @@ Enables `mvdhidden_usercmd` (0x0001) recording per player. Used primarily for ra
 - Added [Demo Metadata Sources](#demo-metadata-sources) — a top-level reference for *all four* protocol-level metadata sources (`fullserverinfo` stufftext, `svc_serverinfo` updates, the countdown centerprint, and the `mvdhidden_demoinfo` JSON) with the complete set of standard mvdsv `CVAR_SERVERINFO` keys, KTX-added serverinfo keys, the spawn-algorithm short→long-name lookup table, and the merge-and-precedence rules a tournament viewer needs to combine them.
 - Added [Item tracking via entity state](#item-tracking-via-entity-state) — the protocol-level way to observe pickups and respawns by diffing `modelindex` transitions in `svc_packetentities` / `svc_deltapacketentities`. Replaces any reliance on KTX's `//ktx took` prints for item-up/down status. Includes the Quake 1 item model-path table used for entity classification, the MVD-ignores-PVS invariant that lets "entity absent from packet" mean "picked up," and the same-tick insta-regrab invisibility that KTX prints uniquely catch.
 - Expanded the [`//ktx` directives](#svc_stufftext-9) coverage to document `//ktx took`, `//ktx timer`, `//ktx drop`, and `//wps` with KTX source-code line references, and documented when the entity-state stream vs. KTX prints is the right signal to use.
+- Added `//ktx bp <backpack_ent> <player_ent>` (`ktx/src/items.c:2471`) to the [`//ktx` directives](#svc_stufftext-9) table — the symmetric pickup companion of `//ktx drop`, fires only for RL/LG packs. Rewrote the pickup-attribution guidance: on KTX servers `//ktx took` + `//ktx bp` are the authoritative pickup-attribution signals (each pair pins the touch to a concrete player edict), superseding the nearest-origin heuristic required by entity-state alone. Non-KTX servers fall back to entity-state or to per-player `svc_updatestat` deltas. Also added `//ktx expire` and documented the demo-ignored `//ktx di` damage-info hint for completeness.
+- Added [Per-client pickup prints — and the PRINT_LOW filter](#per-client-pickup-prints--and-the-print_low-filter) to the `svc_print` section. KTX's `G_sprint(PRINT_LOW)` pickup messages ("You got the Red Armor", "You receive 25 health", "You get " backpack opener) carry pickup-attribution via the `dem_single` target slot and would cover categories `//ktx took` skips (ammo boxes, H15/H25), **but** `SV_ClientPrintf` filters by the picking client's `messagelevel` cvar before the MVD write — competitive players widely set `msg 2`, which strips PRINT_LOW from the recording entirely. Coverage is per-player and per-demo; `//ktx took` / `//ktx bp` are the only signals that bypass the filter.
 - Added [Derived events — death and spawn](#derived-events--death-and-spawn) — why every `StatHealth` crossing of zero should be surfaced as its own event at the parser layer rather than inferred by per-sample comparison, and the instant-respawn case that motivates it.
 
 ### MVD_PEXT1 Hidden Message History

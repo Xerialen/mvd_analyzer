@@ -53,6 +53,7 @@
                 <button class="tab-btn" data-tab="map">Map</button>
                 <button class="tab-btn" data-tab="loc-graph">Loc Graph</button>
                 <button class="tab-btn" data-tab="keymoments">Key Moments</button>
+                <button class="tab-btn" data-tab="packdrops">Pack Drops</button>
             </div>
 
             <!-- Unified Timeline Widget (visible on Timeline/Chat/Map tabs) -->
@@ -622,6 +623,41 @@
                     </table>
                     <div id="fragstreaks-empty" class="empty-message" style="display: none;">
                         No frag streaks detected in this demo.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pack Drops Tab -->
+            <div id="tab-packdrops" class="tab-content">
+                <div class="panel">
+                    <h3>RL / LG Backpack Drops</h3>
+                    <div class="packdrops-filters">
+                        <label>Dropper: <select id="packdrops-filter-dropplayer"><option value="">All</option></select></label>
+                        <label>Drop team: <select id="packdrops-filter-dropteam"><option value="">All</option></select></label>
+                        <label>Picker: <select id="packdrops-filter-pickplayer"><option value="">All</option></select></label>
+                        <label>Pick team: <select id="packdrops-filter-pickteam"><option value="">All</option></select></label>
+                        <label>Status: <select id="packdrops-filter-status"><option value="">All</option></select></label>
+                        <span id="packdrops-count" class="packdrops-count"></span>
+                    </div>
+                    <table class="stats-table" id="packdrops-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Dropper</th>
+                                <th>Drop Team</th>
+                                <th>Weapon</th>
+                                <th title="Hub replay starting 10s before the drop">Drop</th>
+                                <th>Status</th>
+                                <th>Picker</th>
+                                <th>Pick Team</th>
+                                <th title="Frags the picker scored with the pack's weapon before their next death">Kills</th>
+                                <th title="Hub replay from 3s before pickup to picker's next death">Run</th>
+                            </tr>
+                        </thead>
+                        <tbody id="packdrops-body"></tbody>
+                    </table>
+                    <div id="packdrops-empty" class="empty-message" style="display: none;">
+                        No RL / LG backpack drops detected in this demo.
                     </div>
                 </div>
             </div>

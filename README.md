@@ -93,8 +93,10 @@ Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `PrintEvent`, `StatUpdateEvent`, `FragUpdateEvent`, `PlayerPositionEvent`,
 `DamageEvent`, `DemoInfoEvent`, `IntermissionEvent`, `StuffTextEvent`,
 `CenterPrintEvent`, `ServerInfoEvent`, `DeathEvent`, `SpawnEvent`,
-`ItemSpawnEvent`, `ItemStateEvent`, `BackpackDropHintEvent`. Domain
-types carried by events — `ServerData`, `PlayerInfo`, `PlayerState`,
+`ItemSpawnEvent`, `ItemStateEvent`, `BackpackDropHintEvent`,
+`ItemPickupHintEvent`, `BackpackPickupHintEvent`,
+`ItemPickupPrintEvent`, `BackpackPickupPrintEvent`. Domain types
+carried by events — `ServerData`, `PlayerInfo`, `PlayerState`,
 `Stats` — are source-agnostic.
 
 `DeathEvent` / `SpawnEvent` are derived events the parser synthesises
@@ -104,7 +106,19 @@ death/spawn by comparing samples across the sampling boundary.
 stream (`svc_spawnbaseline` + `svc_packetentities` /
 `svc_deltapacketentities`): every item's identity and
 pickup/respawn transitions come out of the wire directly — no KTX
-prints, no BSP preprocessing.
+prints, no BSP preprocessing. `ItemPickupHintEvent` /
+`BackpackPickupHintEvent` / `BackpackDropHintEvent` carry KTX's
+authoritative `//ktx took`, `//ktx bp`, `//ktx drop` directives — the
+touch-level pickup attribution that entity-state alone can only
+approximate. They only fire on KTX servers; non-KTX sources get
+entity-state and stats deltas. `ItemPickupPrintEvent` /
+`BackpackPickupPrintEvent` parse the per-client "You got the X"
+prints that target the picking player via `dem_single`; they fill
+the gap where `//ktx took` is silent (ammo boxes, H15/H25, non-RL/LG
+backpacks) but only survive to the MVD for players who set `msg 0`
+in their client config (see `qwdemo/MVD_FORMAT.md` for the
+server-side `messagelevel` filter that strips PRINT_LOW in most
+competitive demos).
 
 To write a new source: implement `events.Source`, emit the concrete event
 types as you decode your wire format. That's it. See
@@ -117,10 +131,13 @@ Defined in [`qwanalytics/result`](qwanalytics/result/result.go). `Result` is
 a JSON-serializable struct with sub-results from every analyzer that ran:
 match, frags, messages, demoinfo, timeline analysis, metadata, locgraph,
 items (per-item pickup / respawn timeline — works on any MVD source),
-and backpacks (RL/LG drops attributed to the dying player via KTX's
-`//ktx drop` hint).
+backpacks (RL/LG drops attributed to the dropping player via KTX's
+`//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
+world spawners and RL/LG backpacks — with a kills-before-next-death
+effectiveness metric; joins to backpacks via `backpackEnt` ==
+`backpacks[].entNum`).
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `4`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `5`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 
 ### Running the pipeline

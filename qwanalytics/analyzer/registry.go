@@ -165,6 +165,10 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 			if b, ok := output.([]BackpackDrop); ok {
 				result.Backpacks = b
 			}
+		case "weaponPickups":
+			if p, ok := output.([]WeaponPickup); ok {
+				result.WeaponPickups = p
+			}
 		}
 	}
 
@@ -245,6 +249,16 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 		for i := range result.Backpacks {
 			result.Backpacks[i].Time -= matchStart
 		}
+
+		for i := range result.WeaponPickups {
+			result.WeaponPickups[i].Time -= matchStart
+			if result.WeaponPickups[i].NextDeathTime > 0 {
+				result.WeaponPickups[i].NextDeathTime -= matchStart
+			}
+			if result.WeaponPickups[i].DropTime > 0 {
+				result.WeaponPickups[i].DropTime -= matchStart
+			}
+		}
 	}
 
 	// 1v1 normalization: for duel demos the "team" concept is either
@@ -282,5 +296,6 @@ func NewDefaultRegistry() *Registry {
 	r.Register(ta)
 	r.Register(NewItemAnalyzer())
 	r.Register(NewBackpackAnalyzer())
+	r.Register(NewWeaponPickupsAnalyzer())
 	return r
 }

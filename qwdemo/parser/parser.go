@@ -34,6 +34,10 @@ const (
 	EventItemSpawn
 	EventItemState
 	EventBackpackDropHint
+	EventItemPickupHint
+	EventBackpackPickupHint
+	EventItemPickupPrint
+	EventBackpackPickupPrint
 )
 
 // IntermissionEvent is emitted when the server enters intermission
@@ -238,7 +242,11 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 			}
 
 		case mvd.SvcPrint:
-			if err := p.parsePrint(r, msg.Time); err != nil {
+			target := -1
+			if msg.Header.MessageType == mvd.DemSingle {
+				target = msg.Header.PlayerNum
+			}
+			if err := p.parsePrint(r, msg.Time, target); err != nil {
 				p.warn(msg.Time, "parse_error", "svc_print: %v", err)
 				return nil
 			}
@@ -304,6 +312,12 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 				return err
 			}
 			if err := p.tryEmitBackpackDropHint(s, msg.Time); err != nil {
+				return err
+			}
+			if err := p.tryEmitItemPickupHint(s, msg.Time); err != nil {
+				return err
+			}
+			if err := p.tryEmitBackpackPickupHint(s, msg.Time); err != nil {
 				return err
 			}
 

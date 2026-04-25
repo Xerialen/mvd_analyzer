@@ -535,6 +535,9 @@ function displayResults(result) {
         displayKeyMoments(result);
     }
 
+    // Pack Drops — always call so stale rows are cleared between demos.
+    displayPackDrops(result);
+
     // Map View
     if (result.timelineAnalysis) {
         initMapView(result);
@@ -1275,6 +1278,194 @@ function getPowerupDisplay(type) {
         case 'pent': return 'Pent';
         case 'ring': return 'Ring';
         default: return type;
+    }
+}
+
+// Pack Drops table — joins result.backpacks (the drop side from
+// //ktx drop) with the backpack-sourced entries in result.weaponPickups
+// (the pickup side from //ktx bp) by (backpackEnt, dropTime). A drop
+// with no matching pickup is shown as "expired" — the pack despawned
+// or fell into a lava pit before anyone touched it. The filter row
+// above the table narrows rows by dropper team, picker team, or
+// status label; filter state lives in the select elements themselves
+// so switching tabs and coming back preserves the view.
+const packDropsState = { rows: [], hubInfo: null, playerUserIDs: null };
+
+function packDropStatusFor(drop, pickup) {
+    if (!pickup) return { label: 'expired', cls: 'status-expired' };
+    const sameTeam = pickup.team && drop.team && pickup.team === drop.team;
+    const weaponUpper = drop.weapon.toUpperCase();
+    if (sameTeam) {
+        if (pickup.hadBefore) return { label: `xfer ${weaponUpper}`, cls: 'status-xfer-had' };
+        return { label: 'xfer', cls: 'status-xfer' };
+    }
+    if (pickup.hadBefore) return { label: `enemy ${weaponUpper}`, cls: 'status-enemy-had' };
+    return { label: 'enemy', cls: 'status-enemy' };
+}
+
+function populateFilterSelect(selectId, values) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const prev = sel.value;
+    // Keep the "All" option; replace the rest.
+    while (sel.options.length > 1) sel.remove(1);
+    for (const v of values) {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+    }
+    // Preserve selection across demo reload when possible.
+    if (values.includes(prev)) sel.value = prev;
+    else sel.value = '';
+}
+
+function displayPackDrops(result) {
+    const tbody = document.getElementById('packdrops-body');
+    const emptyMsg = document.getElementById('packdrops-empty');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const drops = result.backpacks || [];
+    if (drops.length === 0) {
+        emptyMsg.style.display = 'block';
+        document.getElementById('packdrops-count').textContent = '';
+        return;
+    }
+    emptyMsg.style.display = 'none';
+
+    const pickupByKey = {};
+    for (const p of (result.weaponPickups || [])) {
+        if (p.source === 'backpack' && p.backpackEnt) {
+            pickupByKey[`${p.backpackEnt}@${p.dropTime}`] = p;
+        }
+    }
+
+    const rows = drops.map(drop => {
+        const pickup = pickupByKey[`${drop.entNum}@${drop.time}`] || null;
+        return { drop, pickup, status: packDropStatusFor(drop, pickup) };
+    });
+
+    packDropsState.rows = rows;
+    packDropsState.hubInfo = currentResult?.hubInfo || null;
+    packDropsState.playerUserIDs = currentResult?.timelineAnalysis?.playerUserIDs || {};
+
+    const dropPlayers = new Set();
+    const pickPlayers = new Set();
+    const dropTeams = new Set();
+    const pickTeams = new Set();
+    const statuses = new Set();
+    for (const r of rows) {
+        if (r.drop.player) dropPlayers.add(r.drop.player);
+        if (r.drop.team) dropTeams.add(r.drop.team);
+        if (r.pickup?.player) pickPlayers.add(r.pickup.player);
+        if (r.pickup?.team) pickTeams.add(r.pickup.team);
+        statuses.add(r.status.label);
+    }
+    const cmp = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+    populateFilterSelect('packdrops-filter-dropplayer', [...dropPlayers].sort(cmp));
+    populateFilterSelect('packdrops-filter-dropteam', [...dropTeams].sort(cmp));
+    populateFilterSelect('packdrops-filter-pickplayer', [...pickPlayers].sort(cmp));
+    populateFilterSelect('packdrops-filter-pickteam', [...pickTeams].sort(cmp));
+    populateFilterSelect('packdrops-filter-status', [...statuses].sort(cmp));
+
+    // Install filter-change handlers once. onchange is overwrite-safe
+    // — rebinding on each new demo replaces the previous closure rather
+    // than stacking listeners.
+    const filterIds = [
+        'packdrops-filter-dropplayer',
+        'packdrops-filter-dropteam',
+        'packdrops-filter-pickplayer',
+        'packdrops-filter-pickteam',
+        'packdrops-filter-status',
+    ];
+    for (const id of filterIds) {
+        const el = document.getElementById(id);
+        if (el) el.onchange = renderPackDropRows;
+    }
+
+    renderPackDropRows();
+}
+
+function renderPackDropRows() {
+    const tbody = document.getElementById('packdrops-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const dropPlayer = document.getElementById('packdrops-filter-dropplayer').value;
+    const dropTeam = document.getElementById('packdrops-filter-dropteam').value;
+    const pickPlayer = document.getElementById('packdrops-filter-pickplayer').value;
+    const pickTeam = document.getElementById('packdrops-filter-pickteam').value;
+    const status = document.getElementById('packdrops-filter-status').value;
+
+    const { rows, hubInfo, playerUserIDs } = packDropsState;
+    const demoOff = timelineState.demoOffset || 0;
+
+    const hubAnchor = (from, to, trackName) => {
+        if (!hubInfo || !hubInfo.gameId) return '-';
+        const trackId = playerUserIDs[trackName];
+        if (!trackId) return '-';
+        const f = Math.max(0, Math.floor(from + demoOff));
+        const t = Math.floor(to + demoOff);
+        const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${f}&to=${t}&track=${trackId}`;
+        return `<a href="${url}" target="_blank" class="viewer-link">Hub</a>`;
+    };
+
+    let shown = 0;
+    for (const r of rows) {
+        if (dropPlayer && r.drop.player !== dropPlayer) continue;
+        if (dropTeam && r.drop.team !== dropTeam) continue;
+        if (pickPlayer && (r.pickup?.player || '') !== pickPlayer) continue;
+        if (pickTeam && (r.pickup?.team || '') !== pickTeam) continue;
+        if (status && r.status.label !== status) continue;
+
+        const { drop, pickup } = r;
+        const tr = document.createElement('tr');
+
+        const dropHub = hubAnchor(drop.time - 10, drop.time + 2, drop.player);
+
+        let runHub = '-';
+        let pickerLabel = '-';
+        let pickTeamLabel = '-';
+        let killsCell = '-';
+        if (pickup) {
+            const endTime = pickup.nextDeathTime > 0 ? pickup.nextDeathTime : pickup.time + 15;
+            runHub = hubAnchor(pickup.time - 3, endTime, pickup.player);
+            pickerLabel = escapeHtml(pickup.player || '?');
+            pickTeamLabel = escapeHtml(pickup.team || '-');
+            killsCell = pickup.hadBefore
+                ? `<span class="kills-redundant">${pickup.kills}</span>`
+                : String(pickup.kills);
+        }
+
+        const statusCell = `<span class="pack-status ${r.status.cls}">${escapeHtml(r.status.label)}</span>`;
+
+        tr.innerHTML = `
+            <td class="time-cell time-link">${formatDuration(drop.time)}</td>
+            <td>${escapeHtml(drop.player || '?')}</td>
+            <td>${escapeHtml(drop.team || '-')}</td>
+            <td class="weapon-cell weapon-${drop.weapon}">${drop.weapon.toUpperCase()}</td>
+            <td>${dropHub}</td>
+            <td>${statusCell}</td>
+            <td>${pickerLabel}</td>
+            <td>${pickTeamLabel}</td>
+            <td class="kills-cell">${killsCell}</td>
+            <td>${runHub}</td>
+        `;
+
+        tr.querySelector('.time-link').addEventListener('click', () => {
+            setCurrentTime(drop.time);
+        });
+
+        tbody.appendChild(tr);
+        shown++;
+    }
+
+    const countEl = document.getElementById('packdrops-count');
+    if (countEl) {
+        countEl.textContent = shown === rows.length
+            ? `${rows.length} drops`
+            : `${shown} of ${rows.length} drops`;
     }
 }
 

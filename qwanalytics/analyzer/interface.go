@@ -146,4 +146,5 @@ type (
 	ItemTimeline           = result.ItemTimeline
 	ItemPhase              = result.ItemPhase
 	BackpackDrop           = result.BackpackDrop
+	WeaponPickup           = result.WeaponPickup
 )

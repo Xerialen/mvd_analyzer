@@ -69,6 +69,47 @@ bundle). Instead, when the analyzer needs a loc file, it calls
 XHR against `locs/<name>.loc`. `make build` copies the corpus from
 `qwanalytics/loc/data/` into `dist/locs/`.
 
+## Pack Drops tab
+
+The Pack Drops tab shows every RL / LG backpack drop as one row,
+joined with its pickup outcome. The drop side comes from
+`result.backpacks`; the pickup side from `result.weaponPickups` entries
+with `source == "backpack"`, joined on `(backpackEnt, dropTime)` —
+the compound key is needed because QW servers recycle backpack
+edict numbers across drops, so `entNum` alone would collide. A drop
+with no matching pickup is shown as `expired`.
+
+Columns: Time, Dropper, Drop Team, Weapon, Drop (hub link),
+Status, Picker, Pick Team, Kills, Run (hub link). Five filter
+dropdowns above the table narrow rows by Dropper, Drop Team,
+Picker, Pick Team, or Status label; each dropdown is populated
+from the distinct values present in the current demo, and
+selections persist across demo reloads when the same value is
+still available in the new data.
+
+Status column derivation:
+
+| condition                               | label        |
+|-----------------------------------------|--------------|
+| no matching pickup                      | `expired`    |
+| same team as dropper, picker !hadBefore | `xfer`       |
+| same team as dropper, picker hadBefore  | `xfer RL/LG` |
+| enemy team, picker !hadBefore           | `enemy`      |
+| enemy team, picker hadBefore            | `enemy RL/LG`|
+
+The `Kills` column is `weaponPickups[i].kills` — frags the picker
+scored with the pack's weapon before their next death. Only
+pickups that actually granted the weapon (the picker didn't have
+it yet) are eligible for kill credit; redundant grabs — where
+`hadBefore` is true and the pickup didn't give the picker anything
+new — always show 0 and are dimmed. The denial semantics still
+show through the status chip (`enemy RL`, `xfer RL`).
+
+The `Drop` and `Run` columns are hub.quakeworld.nu replay links.
+`Drop` spans 10 s leading into the drop, tracking the dropper;
+`Run` spans 3 s before pickup to the picker's next death (or +15 s
+if they survived to match end), tracking the picker.
+
 ## Map-tab item overlay
 
 When the result contains an `items` field (any MVD source — KTX,

@@ -18,7 +18,13 @@ package result
 // intentionally deferred until the wire-flutter reliability issue
 // is resolved — see qwanalytics/analyzer/backpacks.go for the full
 // reasoning.
-const CurrentSchemaVersion = 4
+//
+// v5 adds WeaponPickups: a list of slot-weapon acquisition events
+// (world spawners via //ktx took, RL/LG backpacks via //ktx bp)
+// with an effectiveness metric — kills with the weapon before the
+// picker's next death. Backpack pickups carry BackpackEnt which pairs
+// with Backpacks[i].EntNum so frontends can join drop ↔ pickup.
+const CurrentSchemaVersion = 5
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -37,5 +43,6 @@ type Result struct {
 	LocGraph         *LocGraphResult         `json:"locGraph,omitempty"`
 	Items            *ItemsResult            `json:"items,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
+	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }
