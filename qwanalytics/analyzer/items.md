@@ -103,6 +103,41 @@ disagreement.
    via `StatUpdateEvent` until the crossing, then stamps
    `RespawnAt = max(pickup+5, crossing) + 20`.
 
+## Insta-regrab synthesis
+
+When a player camps an item spawn, the engine can run "respawn → touch
+→ remove" in a single server frame, leaving the wire's end-of-frame
+delta showing no transition at all (see *insta-regrab invisibility* in
+[`qwdemo/MVD_FORMAT.md`](../../qwdemo/MVD_FORMAT.md)). The entity-state
+trigger never fires, so without recovery items.go would silently miss
+those pickups.
+
+The analyser closes that gap with a chain-forward synthesis pass:
+
+1. After every `Taken=true(ent, T)` (real or synthetic), schedule a
+   prediction at `T + respawnSec[kind]`.
+2. Once the predicted moment plus a 0.5 s settle window has passed,
+   look for a unique slot whose stat-delta evidence (a STAT_ARMOR
+   jump for armor, IT_QUAD bit transition for quad, ammo tick-up,
+   etc.) and position support a pickup at the predicted instant.
+3. If found, record a synthetic phase (`AvailableFrom=predicted,
+   TakenAt=predicted`) with the unique slot and `attributionSource =
+   "synthetic"`; schedule the next prediction.
+4. If the wire later shows `Taken=false` for the entity, cancel any
+   pending schedule — the entity genuinely respawned without being
+   re-grabbed.
+
+MH is excluded from synthesis because its predicted respawn depends on
+holder-rot timing, which is already handled by the rot tracker.
+
+The qwanalytics pickup-invariant test (`pickup_invariant_test.go`)
+compares per-player phase counts against KTX's authoritative
+`demoInfo.players[*].items[*].took` numbers — synthesis closes most
+of the under-count gap on the hub corpus (1on1 bravado now matches
+exactly; 4on4 obsidian's quad pickups went from 11 to 18 of 20).
+Synthesis can be disabled per analyser via `SetSyntheticPickups(false)`
+when wire-only behaviour is needed for comparison.
+
 ## Display name resolution
 
 Picker names are resolved during `Finalize` via `co.SlotName(slot)`

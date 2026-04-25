@@ -7131,10 +7131,24 @@
             "team": "wd"
           },
           {
+            "availableFrom": 369.04700000000435,
+            "respawnAt": 429.04700000000435,
+            "takenAt": 369.04700000000435,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
             "availableFrom": 429.050999999982,
             "respawnAt": 490.3749999999814,
             "takenAt": 430.3749999999814,
             "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 490.3749999999814,
+            "respawnAt": 550.3749999999815,
+            "takenAt": 490.3749999999814,
+            "takenBy": "wd.cao",
             "team": "wd"
           },
           {

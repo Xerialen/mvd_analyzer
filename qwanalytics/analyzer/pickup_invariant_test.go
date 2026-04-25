@@ -62,11 +62,16 @@ var ktxItemNameToKind = map[string]string{
 // the current observed worst-case so legitimate small drift doesn't
 // break the test, but regressions of 2× or more do. Update only with
 // an explanatory commit message.
+//
+// With synthesis enabled (the default since the synthetic-pickups
+// branch), the corpus baseline is: 1 over-cell per demo max, ≤2 per
+// cell; 3-4 under-cells per demo max, ≤2 per cell. Thresholds set
+// above that.
 const (
-	maxItemsOverPerCell  = 3  // phantom pickups attributed per (player, kind)
-	maxItemsOverPerDemo  = 10 // aggregate over-counts per demo
-	maxItemsUnderPerCell = 6  // missed pickups per (player, kind) — insta-regrabs
-	maxItemsUnderPerDemo = 30 // aggregate under-counts per demo
+	maxItemsOverPerCell  = 2  // phantom pickups attributed per (player, kind)
+	maxItemsOverPerDemo  = 5  // aggregate over-counts per demo
+	maxItemsUnderPerCell = 3  // missed pickups per (player, kind) — residual insta-regrabs
+	maxItemsUnderPerDemo = 10 // aggregate under-counts per demo
 )
 
 func TestItemPickupCountsMatchDemoInfo(t *testing.T) {

@@ -43,6 +43,7 @@ type ItemAnalyzer struct {
 	items     map[int]*itemEntity // entNum -> tracked item
 	playerPos map[int][3]float32  // slot -> last known origin
 	playerPosTime map[int]float64 // slot -> time of last position update
+	playerPosHist map[int][]posSample // slot -> recent position samples (for synthesis)
 	mapName   string
 	locFinder *loc.Finder
 	timing    MatchTimingDetector
@@ -71,8 +72,28 @@ type ItemAnalyzer struct {
 	// Per-source attribution counters surfaced by the diagnostic harness.
 	attrCounts map[string]int
 
-	// Snapshot of attributions taken at OnEvent time, indexed
-	// alongside an itemEntity's `phases` slice.
+	// Synthetic pickup chain — predicted next pickup per entity. Populated
+	// at every Taken=true (real or synthetic) and consumed when the
+	// predicted time has passed without a wire-level Taken=false. This
+	// closes the insta-regrab gap: when an item respawns and is touched
+	// again in the same server frame, the entity-state stream shows no
+	// transition, but the predicted time + a player at the spawn point
+	// + a matching stat delta is enough to infer the pickup.
+	syntheticEnabled bool
+	syntheticChain   map[int]*syntheticSchedule // entNum -> next predicted pickup
+}
+
+type syntheticSchedule struct {
+	predicted float64
+	chainLen  int
+}
+
+// posSample is one sample of a player's origin used by the synthesis
+// pass to ask "was this player at the item's spawn at time T", which
+// the latest-only `playerPos` map can't answer once T is in the past.
+type posSample struct {
+	origin [3]float32
+	time   float64
 }
 
 type itemEntity struct {
@@ -143,6 +164,17 @@ const (
 	// Anything older is pruned at attribution time so the buffers
 	// don't grow unbounded across a 30-minute match.
 	maxBufferAge = 1.0
+
+	// Synthesis settling window. Wait this long after the predicted
+	// respawn time before deciding to synthesize, so any stat update
+	// that lags the touch instant has a chance to land.
+	syntheticSettleWindow = 0.5
+
+	// Cap chain length per entity to defend against runaway prediction
+	// when wire-level termination signals are missing entirely.
+	// Long-running matches with constant timing on the same item rarely
+	// chain more than 30-40 in a row.
+	syntheticMaxChain = 60
 )
 
 // Standard Quake 1 / KTX / ktpro respawn times in seconds, keyed by the
@@ -177,6 +209,7 @@ func NewItemAnalyzer() *ItemAnalyzer {
 		items:               make(map[int]*itemEntity),
 		playerPos:           make(map[int][3]float32),
 		playerPosTime:       make(map[int]float64),
+		playerPosHist:       make(map[int][]posSample),
 		playerStats:         make(map[int]*playerStatSnapshot),
 		pendingStatEvidence: make(map[int][]statEvidence),
 		pendingPrints:       make(map[int][]pendingPrint),
@@ -185,8 +218,15 @@ func NewItemAnalyzer() *ItemAnalyzer {
 		heldMHs:             make(map[int][]int),
 		playerHealth:        make(map[int]int),
 		attrCounts:          make(map[string]int),
+		syntheticEnabled:    true,
+		syntheticChain:      make(map[int]*syntheticSchedule),
 	}
 }
+
+// SetSyntheticPickups toggles the insta-regrab synthesis pass. Default
+// is on; tests that want to compare against the wire-only baseline
+// (e.g. golden-corpus parity with the prior behaviour) can disable it.
+func (a *ItemAnalyzer) SetSyntheticPickups(enabled bool) { a.syntheticEnabled = enabled }
 
 func (a *ItemAnalyzer) Name() string { return "items" }
 
@@ -212,8 +252,10 @@ func (a *ItemAnalyzer) OnEvent(event events.Event) error {
 			a.extractMapName(e.Command)
 		}
 	case *events.PlayerPositionEvent:
-		a.playerPos[e.PlayerNum] = [3]float32{e.Origin[0], e.Origin[1], e.Origin[2]}
+		o := [3]float32{e.Origin[0], e.Origin[1], e.Origin[2]}
+		a.playerPos[e.PlayerNum] = o
 		a.playerPosTime[e.PlayerNum] = e.Time
+		a.recordPositionSample(e.PlayerNum, o, e.Time)
 	case *events.ItemSpawnEvent:
 		a.handleItemSpawn(e)
 	case *events.ItemStateEvent:
@@ -229,6 +271,7 @@ func (a *ItemAnalyzer) OnEvent(event events.Event) error {
 	case *events.ItemPickupPrintEvent:
 		a.handleItemPickupPrint(e)
 	}
+	a.processSyntheticRespawns(event.EventTime())
 	return nil
 }
 
@@ -330,13 +373,183 @@ func (a *ItemAnalyzer) handleItemState(e *events.ItemStateEvent) {
 		}
 		if sec, ok := kindRespawnSec[it.kind]; ok {
 			last.RespawnAt = e.Time + sec
+			a.scheduleSyntheticRespawn(e.EntNum, e.Time+sec, 0)
 		}
 		return
 	}
 
-	// Wire respawn: open the next available phase.
+	// Wire respawn: open the next available phase. Cancel any pending
+	// synthetic schedule for this entity — the wire just told us
+	// nobody picked it up at the predicted moment.
 	it.phases = append(it.phases, ItemPhase{AvailableFrom: e.Time})
 	it.pickups = append(it.pickups, phaseAttribution{slot: -1})
+	delete(a.syntheticChain, e.EntNum)
+}
+
+// recordPositionSample appends one positional sample for synthesis use
+// and prunes anything older than the synthesis window cap. Cheap; the
+// per-slot history rarely exceeds ~80 entries given the ~73 Hz sample
+// rate and a 1 s prune horizon.
+func (a *ItemAnalyzer) recordPositionSample(slot int, origin [3]float32, t float64) {
+	hist := a.playerPosHist[slot]
+	hist = append(hist, posSample{origin: origin, time: t})
+	cutoff := t - 1.0
+	keepFrom := 0
+	for keepFrom < len(hist) && hist[keepFrom].time < cutoff {
+		keepFrom++
+	}
+	if keepFrom > 0 {
+		hist = hist[keepFrom:]
+	}
+	a.playerPosHist[slot] = hist
+}
+
+// positionAt returns the slot's position closest to time t (preferring
+// the latest sample at or before t). Returns ok=false if no sample is
+// within statForwardWindow on either side of t — meaning we don't have
+// recent enough position data to assess proximity.
+func (a *ItemAnalyzer) positionAt(slot int, t float64) ([3]float32, bool) {
+	hist := a.playerPosHist[slot]
+	if len(hist) == 0 {
+		return [3]float32{}, false
+	}
+	bestIdx := -1
+	bestDelta := 1e18
+	for i := range hist {
+		dt := hist[i].time - t
+		if dt < 0 {
+			dt = -dt
+		}
+		if dt < bestDelta {
+			bestDelta = dt
+			bestIdx = i
+		}
+	}
+	if bestIdx < 0 || bestDelta > statForwardWindow {
+		return [3]float32{}, false
+	}
+	return hist[bestIdx].origin, true
+}
+
+// scheduleSyntheticRespawn registers an expectation that entity ent
+// will be picked up at time `predicted`. If the wire confirms a real
+// transition before then, the schedule is cleared in handleItemState.
+// Otherwise processSyntheticRespawns will try to synthesize a pickup
+// once the predicted moment plus settle window has passed.
+func (a *ItemAnalyzer) scheduleSyntheticRespawn(ent int, predicted float64, chainLen int) {
+	if !a.syntheticEnabled {
+		return
+	}
+	if chainLen >= syntheticMaxChain {
+		delete(a.syntheticChain, ent)
+		return
+	}
+	a.syntheticChain[ent] = &syntheticSchedule{predicted: predicted, chainLen: chainLen}
+}
+
+// processSyntheticRespawns walks the schedule and synthesizes a pickup
+// for any entity whose predicted respawn passed at least
+// syntheticSettleWindow ago. The settle window lets stat-update events
+// that lag the touch instant land before we make the call.
+func (a *ItemAnalyzer) processSyntheticRespawns(currentT float64) {
+	if !a.syntheticEnabled || !a.timing.Started || a.timing.Ended {
+		return
+	}
+	for _, ent := range sortedKeys(a.syntheticChain) {
+		sched := a.syntheticChain[ent]
+		if sched == nil {
+			continue
+		}
+		if currentT < sched.predicted+syntheticSettleWindow {
+			continue
+		}
+		it := a.items[ent]
+		if it == nil {
+			delete(a.syntheticChain, ent)
+			continue
+		}
+		// MH chain skipped for now — the rot logic makes the next
+		// predicted pickup time depend on holder health and is best
+		// handled inside the existing rot pass rather than synthesis.
+		if it.kind == "mh" {
+			delete(a.syntheticChain, ent)
+			continue
+		}
+		slot, ok := a.findSyntheticPicker(it.kind, it.origin, sched.predicted)
+		if !ok {
+			delete(a.syntheticChain, ent)
+			continue
+		}
+		a.recordSyntheticPickup(ent, sched.predicted, slot, sched.chainLen+1)
+	}
+}
+
+// findSyntheticPicker returns a unique slot whose stat evidence and
+// position support a pickup of the given kind at time predicted.
+// Stat-evidence match is required (the universal "the player's stats
+// ticked up consistent with this kind" signal); position is checked as
+// a sanity guard against false positives.
+func (a *ItemAnalyzer) findSyntheticPicker(kind string, origin [3]float32, predicted float64) (int, bool) {
+	type cand struct {
+		slot     int
+		evIdx    int
+	}
+	var candidates []cand
+	for _, slot := range sortedKeys(a.pendingStatEvidence) {
+		evs := a.pendingStatEvidence[slot]
+		for i := range evs {
+			if evs[i].consumed {
+				continue
+			}
+			if !containsKind(evs[i].kinds, kind) {
+				continue
+			}
+			if evs[i].time < predicted-statBackwardWindow || evs[i].time > predicted+statForwardWindow {
+				continue
+			}
+			pos, ok := a.positionAt(slot, predicted)
+			if !ok {
+				continue
+			}
+			dx := pos[0] - origin[0]
+			dy := pos[1] - origin[1]
+			dz := pos[2] - origin[2]
+			if dx*dx+dy*dy+dz*dz > maxDistanceSqAccept {
+				continue
+			}
+			candidates = append(candidates, cand{slot: slot, evIdx: i})
+			break
+		}
+	}
+	if len(candidates) != 1 {
+		return -1, false
+	}
+	c := candidates[0]
+	a.pendingStatEvidence[c.slot][c.evIdx].consumed = true
+	return c.slot, true
+}
+
+// recordSyntheticPickup mirrors what handleItemState does on a wire
+// Taken=true: closes the implicitly-just-respawned available phase
+// and stamps the next predicted respawn. The phase model still
+// alternates available -> taken; we append both transitions at the
+// same time (predicted), since the synthesis assumption is "respawn
+// and pickup happen in the same server tick".
+func (a *ItemAnalyzer) recordSyntheticPickup(ent int, t float64, slot int, chainLen int) {
+	it := a.items[ent]
+	if it == nil {
+		return
+	}
+	it.phases = append(it.phases, ItemPhase{AvailableFrom: t, TakenAt: t})
+	it.pickups = append(it.pickups, phaseAttribution{slot: slot, source: "synthetic"})
+	last := &it.phases[len(it.phases)-1]
+	if sec, ok := kindRespawnSec[it.kind]; ok {
+		last.RespawnAt = t + sec
+		a.scheduleSyntheticRespawn(ent, t+sec, chainLen)
+	} else {
+		delete(a.syntheticChain, ent)
+	}
+	a.attrCounts["synthetic"]++
 }
 
 // attributeWithLayeredSignals walks the four signal layers in priority

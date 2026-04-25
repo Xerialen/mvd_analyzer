@@ -5103,6 +5103,13 @@
             "team": "n n"
           },
           {
+            "availableFrom": 444.9639999999276,
+            "respawnAt": 464.9639999999276,
+            "takenAt": 444.9639999999276,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
             "availableFrom": 464.96099999990554,
             "respawnAt": 488.62399999990384,
             "takenAt": 468.62399999990384,
@@ -5136,6 +5143,13 @@
             "takenAt": 576.9939999999565,
             "takenBy": "stepcop",
             "team": "n n"
+          },
+          {
+            "availableFrom": 596.9939999999565,
+            "respawnAt": 616.9939999999565,
+            "takenAt": 596.9939999999565,
+            "takenBy": "squeeze",
+            "team": "1"
           }
         ],
         "x": 512,
@@ -6862,6 +6876,13 @@
             "availableFrom": 0,
             "respawnAt": 26.973999999999986,
             "takenAt": 6.9739999999999895,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 26.973999999999986,
+            "respawnAt": 46.97399999999999,
+            "takenAt": 26.973999999999986,
             "takenBy": "Milton",
             "team": "1"
           },

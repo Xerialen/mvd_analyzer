@@ -1861,6 +1861,13 @@
             "team": "'tro"
           },
           {
+            "availableFrom": 115.20900000000674,
+            "respawnAt": 135.20900000000674,
+            "takenAt": 115.20900000000674,
+            "takenBy": "AHemlocksLie",
+            "team": "'tro"
+          },
+          {
             "availableFrom": 135.20600000001028,
             "respawnAt": 161.49500000001032,
             "takenAt": 141.49500000001032,

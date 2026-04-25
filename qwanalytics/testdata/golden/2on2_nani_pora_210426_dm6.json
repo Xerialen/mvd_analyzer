@@ -4670,6 +4670,13 @@
             "team": "pora"
           },
           {
+            "availableFrom": 128.42100000000542,
+            "respawnAt": 148.42100000000542,
+            "takenAt": 128.42100000000542,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
             "availableFrom": 148.42900000000938,
             "respawnAt": 169.10900000000942,
             "takenAt": 149.10900000000942,
@@ -4754,6 +4761,13 @@
             "team": "nAnI"
           },
           {
+            "availableFrom": 431.06499999990825,
+            "respawnAt": 451.06499999990825,
+            "takenAt": 431.06499999990825,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
             "availableFrom": 451.0629999998799,
             "respawnAt": 472.04999999987916,
             "takenAt": 452.04999999987916,
@@ -4779,6 +4793,13 @@
             "respawnAt": 534.7989999998673,
             "takenAt": 514.7989999998673,
             "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 534.7989999998673,
+            "respawnAt": 554.7989999998673,
+            "takenAt": 534.7989999998673,
+            "takenBy": "rusti",
             "team": "pora"
           },
           {
@@ -4819,6 +4840,13 @@
             "takenAt": 9.96100000000017,
             "takenBy": "kippo",
             "team": "pora"
+          },
+          {
+            "availableFrom": 309.9610000000002,
+            "respawnAt": 609.9610000000001,
+            "takenAt": 309.9610000000002,
+            "takenBy": "gLAd",
+            "team": "nAnI"
           }
         ],
         "x": 512,
