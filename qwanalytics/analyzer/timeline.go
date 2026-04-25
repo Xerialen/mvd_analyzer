@@ -17,6 +17,7 @@ import (
 //   - timeline_regions.go    map region control auto-detection + custom defs
 type TimelineAnalyzer struct {
 	ctx                 *Context
+	core                *CoreOutputs
 	bucketDuration      float64 // High-res sampling interval (default 50ms)
 	playerState         map[int]*timelinePlayerState
 	playerNames         map[int]string // Slot -> player name (from UserInfoEvent)
@@ -29,6 +30,22 @@ type TimelineAnalyzer struct {
 	timing              MatchTimingDetector
 	locFinder           *loc.Finder // Location finder for map (nil if no .loc file)
 	blipThresholdMs     int         // Per-player loc smoothing threshold, 0 disables
+}
+
+// UseCoreOutputs is part of the CoreConsumer contract — Timeline
+// consumes co.DemoInfo (map name + player team table) and
+// co.FragEntries (for streak detection and powerup-frag counts) during
+// its Finalize.
+func (a *TimelineAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
+
+// coreFragEntries is a nil-safe accessor for co.FragEntries; returns
+// an empty slice when CoreOutputs hasn't been wired up (e.g. unit tests
+// that only exercise OnEvent without going through the registry).
+func (a *TimelineAnalyzer) coreFragEntries() []FragEntry {
+	if a.core == nil {
+		return nil
+	}
+	return a.core.FragEntries
 }
 
 // SetBlipThresholdMs configures the minimum residence a player must log

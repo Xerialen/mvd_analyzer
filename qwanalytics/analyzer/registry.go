@@ -113,7 +113,16 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 		Duration:      duration,
 	}
 
+	co := &CoreOutputs{}
+
 	for _, a := range r.analyzers {
+		// Hand the running CoreOutputs to any analyser that wants it
+		// before its Finalize runs. Analysers registered later in the
+		// slice see every field produced by analysers registered earlier.
+		if cc, ok := a.(CoreConsumer); ok {
+			cc.UseCoreOutputs(co)
+		}
+
 		output, err := a.Finalize()
 		if err != nil {
 			result.Errors = append(result.Errors, err.Error())
@@ -131,11 +140,13 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 		case "frag":
 			if f, ok := output.(*FragResult); ok {
 				result.Frags = f
-				ctx.FragEntries = f.Frags // Share with timeline analyzer
+				co.FragEntries = f.Frags
 			}
 		case "demoinfo":
 			if di, ok := output.(*DemoInfoResult); ok {
 				result.DemoInfo = di
+				co.DemoInfo = di
+				co.Names = NewNameTable(di)
 				// Patch player names to display names from DemoInfo.
 				// This fixes all downstream Finalize() reads so consumers
 				// see the in-game display name instead of the auth/login name.

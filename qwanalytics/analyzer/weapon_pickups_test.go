@@ -26,12 +26,12 @@ func TestWeaponPickups_WorldRLWithKills(t *testing.T) {
 	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 100, PlayerEnt: 5, Time: 10})
 	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 4, Time: 30})
 
-	ctx.FragEntries = []FragEntry{
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
 		{Time: 12, Killer: "ace", Victim: "x", Weapon: "rl"},
 		{Time: 15, Killer: "ace", Victim: "y", Weapon: "axe"}, // wrong weapon
 		{Time: 20, Killer: "ace", Victim: "z", Weapon: "rl"},
 		{Time: 40, Killer: "ace", Victim: "w", Weapon: "rl"}, // post-death
-	}
+	}}
 
 	out, _ := a.Finalize()
 	ps, ok := out.([]WeaponPickup)
@@ -64,9 +64,9 @@ func TestWeaponPickups_HadBeforeDoesNotClaimKills(t *testing.T) {
 	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 2, StatIndex: events.StatItems, Value: wpItRocketLauncher, Time: 4})
 	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 77, PlayerEnt: 3, Time: 5})
 
-	ctx.FragEntries = []FragEntry{
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
 		{Time: 6, Killer: "hoarder", Weapon: "rl"},
-	}
+	}}
 
 	out, _ := a.Finalize()
 	ps := out.([]WeaponPickup)
@@ -136,11 +136,11 @@ func TestWeaponPickups_TeamkillsAndSuicidesExcluded(t *testing.T) {
 	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 1, PlayerEnt: 1, Time: 5})
 	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 30})
 
-	ctx.FragEntries = []FragEntry{
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
 		{Time: 10, Killer: "p", Weapon: "rl", IsSuicide: true},
 		{Time: 15, Killer: "p", Weapon: "rl", IsTeamKill: true},
 		{Time: 20, Killer: "p", Weapon: "rl"}, // the only real frag
-	}
+	}}
 
 	out, _ := a.Finalize()
 	ps := out.([]WeaponPickup)
@@ -167,12 +167,12 @@ func TestWeaponPickups_RedundantSecondPickupGetsZero(t *testing.T) {
 	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 1, PlayerEnt: 1, Time: 20})
 	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 30})
 
-	ctx.FragEntries = []FragEntry{
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
 		{Time: 12, Killer: "p", Weapon: "rl"},
 		{Time: 15, Killer: "p", Weapon: "rl"},
 		{Time: 25, Killer: "p", Weapon: "rl"},
 		{Time: 28, Killer: "p", Weapon: "rl"},
-	}
+	}}
 
 	out, _ := a.Finalize()
 	ps := out.([]WeaponPickup)
@@ -207,11 +207,11 @@ func TestWeaponPickups_FreshPickupAfterDeathIsItsOwnGrant(t *testing.T) {
 	// Life 2: pickup at t=40 (fresh again), no further death.
 	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 1, PlayerEnt: 1, Time: 40})
 
-	ctx.FragEntries = []FragEntry{
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
 		{Time: 20, Killer: "p", Weapon: "rl"}, // life 1
 		{Time: 45, Killer: "p", Weapon: "rl"}, // life 2
 		{Time: 50, Killer: "p", Weapon: "rl"}, // life 2
-	}
+	}}
 
 	out, _ := a.Finalize()
 	ps := out.([]WeaponPickup)
@@ -232,11 +232,11 @@ func TestWeaponPickups_NoNextDeathKillsUnbounded(t *testing.T) {
 	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 1, Kind: "lg", Time: 0})
 	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 1, PlayerEnt: 1, Time: 5})
 
-	ctx.FragEntries = []FragEntry{
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
 		{Time: 10, Killer: "survivor", Weapon: "lg"},
 		{Time: 50, Killer: "survivor", Weapon: "lg"},
 		{Time: 99, Killer: "survivor", Weapon: "lg"},
-	}
+	}}
 
 	out, _ := a.Finalize()
 	ps := out.([]WeaponPickup)

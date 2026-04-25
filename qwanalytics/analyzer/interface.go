@@ -15,14 +15,18 @@ import (
 )
 
 // Context provides shared state for analyzers during a single analysis
-// run. Fields are populated by the registry as events stream through;
-// analyzers read fields they need and optionally populate others.
+// run. ServerData and Players are populated by the registry as events
+// stream through; FragsBySlot and DemoInfo are written during the
+// finalize loop.
+//
+// Fields that one analyser writes during Finalize and another reads
+// (frag entries, name tables, etc.) live on CoreOutputs in
+// core_outputs.go — see CoreConsumer.UseCoreOutputs.
 type Context struct {
 	ServerData  *events.ServerData
 	Players     [events.MaxClients]*events.PlayerInfo
 	FragsBySlot map[int]int         // Final frag count per slot
-	DemoInfo    *DemoInfoResult     // Parsed demoinfo (set during finalization)
-	FragEntries []FragEntry         // Frag entries from frag analyzer (set during finalization)
+	DemoInfo    *DemoInfoResult     // Parsed demoinfo (set during finalization, used by ResolveSlotDemoInfo)
 }
 
 // SlotDemoInfo holds the resolved demoinfo player for a slot.

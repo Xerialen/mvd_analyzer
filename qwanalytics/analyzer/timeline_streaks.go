@@ -93,7 +93,7 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerU
 	}
 
 	// For each run, count frags and determine effective weapon using FragEntries
-	fragEntries := a.ctx.FragEntries
+	fragEntries := a.coreFragEntries()
 	var allStreaks []FragStreakEvent
 
 	for _, r := range runs {

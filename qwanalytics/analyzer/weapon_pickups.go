@@ -34,7 +34,8 @@ import (
 // during Finalize), so this analyzer MUST be registered after
 // FragAnalyzer in the default registry.
 type WeaponPickupsAnalyzer struct {
-	ctx *Context
+	ctx  *Context
+	core *CoreOutputs
 
 	// Per-slot current STAT_ITEMS bitfield. Indexed by slot, not
 	// edict. Maintained in real time; a lookup at pickup-event time
@@ -55,6 +56,11 @@ type WeaponPickupsAnalyzer struct {
 
 	timing MatchTimingDetector
 }
+
+// UseCoreOutputs is part of the CoreConsumer contract — WeaponPickups
+// consumes co.FragEntries during its Finalize to attribute kills to
+// each weapon pickup window.
+func (a *WeaponPickupsAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
 type packDrop struct {
 	weapon      string // "rl" or "lg"
@@ -273,7 +279,11 @@ func (a *WeaponPickupsAnalyzer) Finalize() (interface{}, error) {
 
 	// Attribute each valid frag to the latest covering window.
 	kills := make([]int, len(a.pickups))
-	for _, f := range a.ctx.FragEntries {
+	var fragEntries []FragEntry
+	if a.core != nil {
+		fragEntries = a.core.FragEntries
+	}
+	for _, f := range fragEntries {
 		if f.IsSuicide || f.IsTeamKill {
 			continue
 		}

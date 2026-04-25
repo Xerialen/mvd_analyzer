@@ -9,8 +9,14 @@ import (
 // MessagesAnalyzer captures frags and chat messages for timeline display
 type MessagesAnalyzer struct {
 	ctx    *Context
+	core   *CoreOutputs
 	events []MatchEvent
 }
+
+// UseCoreOutputs is part of the CoreConsumer contract — Messages
+// consumes co.Names during its Finalize to backfill team attribution
+// on chat / obituary events whose live name lookup missed.
+func (a *MessagesAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
 // NewMessagesAnalyzer creates a new messages analyzer
 func NewMessagesAnalyzer() *MessagesAnalyzer {
@@ -386,8 +392,8 @@ func (a *MessagesAnalyzer) Finalize() (interface{}, error) {
 	// auth name, so the live lookup in handlePrint returns "". DemoInfo is
 	// finalized before this analyzer, so by now we have the canonical
 	// {displayed name -> team} mapping and can repair the gaps.
-	if a.ctx.DemoInfo != nil {
-		names := NewNameTable(a.ctx.DemoInfo)
+	if a.core != nil && a.core.DemoInfo != nil {
+		names := a.core.Names
 		for i := range a.events {
 			ev := &a.events[i]
 			if ev.Team != "" || ev.Player == "" {

@@ -9,10 +9,16 @@ import (
 // FragAnalyzer detects frags from print messages
 type FragAnalyzer struct {
 	ctx      *Context
+	core     *CoreOutputs
 	frags    []FragEntry
 	byWeapon map[string]int
 	byPlayer map[string]*PlayerFrags
 }
+
+// UseCoreOutputs is part of the CoreConsumer contract — Frag consumes
+// co.DemoInfo during its Finalize to re-evaluate teamkill status with
+// authoritative team membership.
+func (a *FragAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
 // NewFragAnalyzer creates a new frag analyzer
 func NewFragAnalyzer() *FragAnalyzer {
@@ -76,8 +82,8 @@ func (a *FragAnalyzer) Finalize() (interface{}, error) {
 	// Re-evaluate teamkill status using DemoInfo. During OnEvent,
 	// isTeamKill() compared obituary display names against ctx.Players
 	// which may have had auth names, causing misses.
-	if a.ctx.DemoInfo != nil {
-		names := NewNameTable(a.ctx.DemoInfo)
+	if a.core != nil && a.core.DemoInfo != nil {
+		names := a.core.Names
 		for i := range a.frags {
 			f := &a.frags[i]
 			if f.IsSuicide {

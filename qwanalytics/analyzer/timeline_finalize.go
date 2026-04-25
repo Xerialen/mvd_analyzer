@@ -21,8 +21,8 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	}
 
 	// Try to load loc file from DemoInfo.Map if not already loaded
-	if a.locFinder == nil && a.ctx.DemoInfo != nil && a.ctx.DemoInfo.Map != "" {
-		if finder, err := loc.LoadForMap(a.ctx.DemoInfo.Map); err == nil {
+	if a.locFinder == nil && a.core != nil && a.core.DemoInfo != nil && a.core.DemoInfo.Map != "" {
+		if finder, err := loc.LoadForMap(a.core.DemoInfo.Map); err == nil {
 			a.locFinder = finder
 		}
 	}
@@ -43,9 +43,12 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		a.applyBlipFilter(a.blipThresholdMs)
 	}
 
-	// Build a name->team lookup from DemoInfo. Both exact and normalized
-	// matches are tried inside NameTable so callers don't have to.
-	names := NewNameTable(a.ctx.DemoInfo)
+	// Use the shared name->team lookup from CoreOutputs (built once
+	// after the demoinfo analyser finalises).
+	var names *NameTable
+	if a.core != nil {
+		names = a.core.Names
+	}
 
 	// Bridge slot↔demoinfo via login join / name join.
 	resolved := a.ctx.ResolveSlotDemoInfo()
@@ -104,7 +107,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	// Count frags during each powerup run
 	for i := range powerupEvents {
 		pe := &powerupEvents[i]
-		for _, fe := range a.ctx.FragEntries {
+		for _, fe := range a.coreFragEntries() {
 			if fe.Killer != pe.PlayerName || fe.IsSuicide || fe.IsTeamKill {
 				continue
 			}

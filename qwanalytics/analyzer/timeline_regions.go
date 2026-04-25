@@ -97,8 +97,8 @@ func (a *TimelineAnalyzer) buildControlRegions() []ControlRegion {
 
 	// Get map name for map-specific customization
 	mapName := ""
-	if a.ctx.DemoInfo != nil && a.ctx.DemoInfo.Map != "" {
-		mapName = strings.ToLower(a.ctx.DemoInfo.Map)
+	if a.core != nil && a.core.DemoInfo != nil && a.core.DemoInfo.Map != "" {
+		mapName = strings.ToLower(a.core.DemoInfo.Map)
 		if idx := strings.LastIndex(mapName, "/"); idx >= 0 {
 			mapName = mapName[idx+1:]
 		}
