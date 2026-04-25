@@ -15,7 +15,7 @@ var powerupKinds = []struct {
 }
 
 // detectPowerupEvents scans buckets for powerup pickup/loss transitions
-func (a *TimelineAnalyzer) detectPowerupEvents(nameToTeam map[string]string, slotToTeam map[int]string, slotToPlayer map[int]string) []PowerupEvent {
+func (a *TimelineAnalyzer) detectPowerupEvents(names *NameTable, slotToTeam map[int]string, slotToPlayer map[int]string) []PowerupEvent {
 	if len(a.buckets) == 0 {
 		return nil
 	}
@@ -41,7 +41,7 @@ func (a *TimelineAnalyzer) detectPowerupEvents(nameToTeam map[string]string, slo
 					activeRuns[slot][pk.name] = bucket.startTime
 				} else if !hasIt && startTime > 0 {
 					// Powerup just lost
-					event := a.createPowerupEvent(slot, pk.name, startTime, bucket.startTime, nameToTeam, slotToTeam, slotToPlayer)
+					event := a.createPowerupEvent(slot, pk.name, startTime, bucket.startTime, names, slotToTeam, slotToPlayer)
 					events = append(events, event)
 					activeRuns[slot][pk.name] = 0
 				}
@@ -54,7 +54,7 @@ func (a *TimelineAnalyzer) detectPowerupEvents(nameToTeam map[string]string, slo
 	for slot, runs := range activeRuns {
 		for pType, startTime := range runs {
 			if startTime > 0 {
-				event := a.createPowerupEvent(slot, pType, startTime, lastBucket.endTime, nameToTeam, slotToTeam, slotToPlayer)
+				event := a.createPowerupEvent(slot, pType, startTime, lastBucket.endTime, names, slotToTeam, slotToPlayer)
 				events = append(events, event)
 			}
 		}
@@ -69,7 +69,7 @@ func (a *TimelineAnalyzer) detectPowerupEvents(nameToTeam map[string]string, slo
 }
 
 // createPowerupEvent creates a PowerupEvent with resolved player info
-func (a *TimelineAnalyzer) createPowerupEvent(slot int, powerupType string, startTime, endTime float64, nameToTeam map[string]string, slotToTeam map[int]string, slotToPlayer map[int]string) PowerupEvent {
+func (a *TimelineAnalyzer) createPowerupEvent(slot int, powerupType string, startTime, endTime float64, names *NameTable, slotToTeam map[int]string, slotToPlayer map[int]string) PowerupEvent {
 	event := PowerupEvent{
 		Time:        startTime,
 		EndTime:     endTime,
@@ -109,7 +109,7 @@ func (a *TimelineAnalyzer) createPowerupEvent(slot int, powerupType string, star
 		}
 	}
 	if event.Team == "" && event.PlayerName != "" {
-		event.Team = nameToTeam[event.PlayerName]
+		event.Team = names.TeamForName(event.PlayerName)
 	}
 
 	return event

@@ -5,7 +5,7 @@ import "sort"
 // detectFragStreaks computes the top N longest frag streaks (spawn-to-death runs)
 // ranked by number of frags. Each run starts at spawn and ends at death.
 // Effective weapon (ewep) is the weapon with the most kills during the run.
-func (a *TimelineAnalyzer) detectFragStreaks(topN int, nameToTeam map[string]string, playerUserIDsByName map[string]int) []FragStreakEvent {
+func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerUserIDsByName map[string]int) []FragStreakEvent {
 	resolved := a.ctx.ResolveSlotDemoInfo()
 
 	// Helper: resolve slot to player name
@@ -84,7 +84,7 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, nameToTeam map[string]str
 			if deathT > spawnT {
 				runs = append(runs, run{
 					playerName: name,
-					team:       nameToTeam[name],
+					team:       names.TeamForName(name),
 					spawnTime:  spawnT,
 					deathTime:  deathT,
 				})

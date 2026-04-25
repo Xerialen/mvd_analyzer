@@ -43,20 +43,9 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 		a.applyBlipFilter(a.blipThresholdMs)
 	}
 
-	// Build a name->team lookup from DemoInfo (authoritative source)
-	// Use both exact name and normalized name for matching
-	nameToTeam := make(map[string]string)
-	normNameToTeam := make(map[string]string) // Normalized names (lowercase, alphanumeric only)
-
-	if a.ctx.DemoInfo != nil {
-		for _, p := range a.ctx.DemoInfo.Players {
-			if p.Name == "" || p.Team == "" {
-				continue
-			}
-			nameToTeam[p.Name] = p.Team
-			normNameToTeam[normalizePlayerName(p.Name)] = p.Team
-		}
-	}
+	// Build a name->team lookup from DemoInfo. Both exact and normalized
+	// matches are tried inside NameTable so callers don't have to.
+	names := NewNameTable(a.ctx.DemoInfo)
 
 	// Bridge slot↔demoinfo via login join / name join.
 	resolved := a.ctx.ResolveSlotDemoInfo()
@@ -96,10 +85,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 
 		// If we still have a name but no team, look it up in DemoInfo by name.
 		if playerName != "" && team == "" {
-			team = nameToTeam[playerName]
-			if team == "" {
-				team = normNameToTeam[normalizePlayerName(playerName)]
-			}
+			team = names.TeamForName(playerName)
 		}
 
 		if team != "" {
@@ -113,7 +99,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	}
 
 	// Detect powerup pickup events for Key Moments
-	powerupEvents := a.detectPowerupEvents(nameToTeam, slotToTeam, slotToPlayer)
+	powerupEvents := a.detectPowerupEvents(names, slotToTeam, slotToPlayer)
 
 	// Count frags during each powerup run
 	for i := range powerupEvents {
@@ -217,7 +203,7 @@ func (a *TimelineAnalyzer) Finalize() (interface{}, error) {
 	}
 
 	// Detect top 5 longest frag streaks for Key Moments
-	fragStreaks := a.detectFragStreaks(10, nameToTeam, playerUserIDsByName)
+	fragStreaks := a.detectFragStreaks(10, names, playerUserIDsByName)
 
 	// Auto-detect control regions from loc data (stats computed client-side)
 	var regionControl *RegionControlResult

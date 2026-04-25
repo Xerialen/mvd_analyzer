@@ -28,6 +28,56 @@ func normalizePlayerName(name string) string {
 	return b.String()
 }
 
+// NameTable resolves a display-name string back to its demoinfo team.
+// Built once from DemoInfoResult and shared by every Finalize site that
+// previously rebuilt its own nameToTeam / normNameToTeam maps (frag,
+// timeline, messages). Lookup falls back from exact match to
+// normalized-form match to handle the cases where the live name has
+// been Q_normalizetext-folded but the demoinfo name still has its
+// original casing / punctuation.
+type NameTable struct {
+	exact      map[string]string
+	normalized map[string]string
+}
+
+// NewNameTable indexes a DemoInfoResult by display name → team. Empty
+// names and empty teams are skipped — the table is purely for the
+// "given a name string, what team does it belong to" question, so
+// entries with no usable answer aren't worth storing.
+func NewNameTable(di *DemoInfoResult) *NameTable {
+	t := &NameTable{
+		exact:      make(map[string]string),
+		normalized: make(map[string]string),
+	}
+	if di == nil {
+		return t
+	}
+	for _, p := range di.Players {
+		if p.Name == "" || p.Team == "" {
+			continue
+		}
+		t.exact[p.Name] = p.Team
+		t.normalized[normalizePlayerName(p.Name)] = p.Team
+	}
+	return t
+}
+
+// TeamForName returns the team for a display name, trying exact match
+// first and then a normalized fallback. Returns "" if the name is
+// unknown.
+func (t *NameTable) TeamForName(name string) string {
+	if t == nil {
+		return ""
+	}
+	if v, ok := t.exact[name]; ok {
+		return v
+	}
+	if v, ok := t.normalized[normalizePlayerName(name)]; ok {
+		return v
+	}
+	return ""
+}
+
 // findPlayerByName looks up a live player by display name using a 3-pass
 // match: exact, normalized, then substring (in either direction). Returns
 // nil if no candidate matches.

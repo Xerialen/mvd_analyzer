@@ -77,19 +77,14 @@ func (a *FragAnalyzer) Finalize() (interface{}, error) {
 	// isTeamKill() compared obituary display names against ctx.Players
 	// which may have had auth names, causing misses.
 	if a.ctx.DemoInfo != nil {
-		nameToTeam := make(map[string]string)
-		for _, p := range a.ctx.DemoInfo.Players {
-			if p.Name != "" && p.Team != "" {
-				nameToTeam[p.Name] = p.Team
-			}
-		}
+		names := NewNameTable(a.ctx.DemoInfo)
 		for i := range a.frags {
 			f := &a.frags[i]
 			if f.IsSuicide {
 				continue
 			}
-			killerTeam := nameToTeam[f.Killer]
-			victimTeam := nameToTeam[f.Victim]
+			killerTeam := names.TeamForName(f.Killer)
+			victimTeam := names.TeamForName(f.Victim)
 			wasTeamKill := f.IsTeamKill
 			f.IsTeamKill = killerTeam != "" && victimTeam != "" && killerTeam == victimTeam
 
