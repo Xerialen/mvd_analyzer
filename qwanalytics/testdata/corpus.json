@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "gameId": 212483,
+    "label": "4on4_ahoy_bhb_240426_obsidian",
+    "mode": "4on4"
+  },
+  {
+    "gameId": 211161,
+    "label": "4on4_fish_tbg_170426_schloss",
+    "mode": "4on4"
+  },
+  {
+    "gameId": 212260,
+    "label": "4on4_osams_ra_230426_dm3",
+    "mode": "4on4"
+  },
+  {
+    "gameId": 211805,
+    "label": "2on2_nani_pora_210426_dm6",
+    "mode": "2on2"
+  },
+  {
+    "gameId": 212545,
+    "label": "2on2_1_nn_250426_dm4",
+    "mode": "2on2"
+  },
+  {
+    "gameId": 212535,
+    "label": "2on2_pys_wd_250426_aerowalk",
+    "mode": "2on2"
+  },
+  {
+    "gameId": 212422,
+    "label": "1on1_42_ahemlockslie_240426_skull",
+    "mode": "1on1"
+  },
+  {
+    "gameId": 212498,
+    "label": "1on1_speedball_mj_240426_bravado",
+    "mode": "1on1"
+  },
+  {
+    "gameId": 212423,
+    "label": "1on1_bananfalco_betowen_240426_dm2",
+    "mode": "1on1"
+  }
+]

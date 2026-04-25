@@ -168,11 +168,20 @@ func networkAllowed() bool {
 }
 
 // canonicalJSON marshals Result to deterministic JSON for golden
-// comparison. Only filePath is stripped — it's the per-machine cache
-// path and would force a diff on every developer machine. Everything
-// else (locGraph, schemaVersion, durations) is intentionally pinned;
-// changes to those should be deliberate, and -update-golden makes the
-// intent explicit.
+// comparison. Two transforms are applied:
+//
+//  1. filePath is stripped — it's a per-machine cache path that would
+//     force a diff on every developer machine.
+//  2. timelineAnalysis.highResBuckets is sliced down to three 15 s
+//     windows (start, 1:00–1:15, end). The full 50 ms position track
+//     is ~20 MB per 4on4 demo and most of it is redundant for
+//     regression detection; the three windows are enough to catch
+//     bucketer / position-extractor drift while keeping committed
+//     goldens around 1 MB.
+//
+// Everything else (locGraph, schemaVersion, durations, weapon stats,
+// items, frags, …) is pinned in full; changes to those should be
+// deliberate, and -update-golden makes the intent explicit.
 func canonicalJSON(v interface{}) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
@@ -183,11 +192,48 @@ func canonicalJSON(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 	delete(m, "filePath")
+	sampleHighResBuckets(m)
 	out, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 	return append(out, '\n'), nil
+}
+
+// sampleHighResBuckets replaces timelineAnalysis.highResBuckets with a
+// concatenation of three 15 s windows: [0, 15], [60, 75], and the
+// trailing 15 s. Buckets are kept in order. Demos shorter than the
+// middle window simply contribute no middle samples — the slice is
+// taken with bounds checks only, no synthetic padding.
+func sampleHighResBuckets(m map[string]interface{}) {
+	ta, ok := m["timelineAnalysis"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	raw, ok := ta["highResBuckets"].([]interface{})
+	if !ok || len(raw) == 0 {
+		return
+	}
+	lastT := 0.0
+	if t, ok := raw[len(raw)-1].(map[string]interface{})["t"].(float64); ok {
+		lastT = t
+	}
+	endStart := lastT - 15
+	keep := raw[:0:0]
+	for _, b := range raw {
+		bm, ok := b.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		t, ok := bm["t"].(float64)
+		if !ok {
+			continue
+		}
+		if t <= 15 || (t >= 60 && t <= 75) || t >= endStart {
+			keep = append(keep, b)
+		}
+	}
+	ta["highResBuckets"] = keep
 }
 
 // firstDiffLine returns a short summary of where two byte slices first
