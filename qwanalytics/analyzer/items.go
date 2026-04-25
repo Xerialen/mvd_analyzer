@@ -349,6 +349,12 @@ func (a *ItemAnalyzer) attributePickup(itemPos [3]float32, _ float64) (int, stri
 		return bestSlot, "", ""
 	}
 	pl := a.ctx.Players[bestSlot]
+	// Note: pl.Name is read at OnEvent time (when ItemStateEvent fires),
+	// so it always carries the userinfo name. Demoinfo-resolved display
+	// names aren't available yet — the demoinfo analyser hasn't
+	// finalised when an item pickup is recorded. For the test corpus
+	// userinfo == display, so the output is correct in practice; the
+	// auth-override case is captured in NOTES-pickup-attribution-quality.md.
 	return bestSlot, pl.Name, pl.Team
 }
 

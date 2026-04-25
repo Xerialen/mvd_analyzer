@@ -11,9 +11,14 @@ import (
 // MatchAnalyzer extracts match summary information
 type MatchAnalyzer struct {
 	ctx      *Context
+	core     *CoreOutputs
 	duration float64
 	timing   MatchTimingDetector
 }
+
+// UseCoreOutputs lets Match read demoinfo-resolved display names from
+// co.Slots when building the player-stats table.
+func (a *MatchAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
 // NewMatchAnalyzer creates a new match analyzer
 func NewMatchAnalyzer() *MatchAnalyzer {
@@ -67,12 +72,20 @@ func (a *MatchAnalyzer) Finalize() (interface{}, error) {
 	// Collect team stats
 	teamFrags := make(map[string]int)
 
-	// Collect player stats.
-	// ctx.Players[slot].Name is already patched to the display name
-	// by registry.go after DemoInfo finalization.
+	// Collect player stats. Display names are taken from
+	// co.Slots[i].Name (demoinfo-resolved when matched, else userinfo)
+	// so this output keys against the same names as the rest of the
+	// pipeline.
 	for i := 0; i < len(a.ctx.Players); i++ {
 		p := a.ctx.Players[i]
-		if p == nil || p.Name == "" || p.Spectator {
+		if p == nil || p.Spectator {
+			continue
+		}
+		name := a.core.SlotName(i)
+		if name == "" {
+			name = p.Name
+		}
+		if name == "" {
 			continue
 		}
 
@@ -82,7 +95,7 @@ func (a *MatchAnalyzer) Finalize() (interface{}, error) {
 		}
 
 		stat := PlayerStat{
-			Name:  p.Name,
+			Name:  name,
 			Team:  p.Team,
 			Frags: p.Frags,
 		}

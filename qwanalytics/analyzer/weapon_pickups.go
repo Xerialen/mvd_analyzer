@@ -62,6 +62,22 @@ type WeaponPickupsAnalyzer struct {
 // each weapon pickup window.
 func (a *WeaponPickupsAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
+// playerName returns the best display name for a slot. Prefers the
+// CoreOutputs slot table when populated; falls back to the live
+// userinfo entry in ctx.Players. The fallback path keeps unit tests
+// that wire up only ctx.Players (without seeding co.Slots) working.
+func (a *WeaponPickupsAnalyzer) playerName(slot int) string {
+	if name := a.core.SlotName(slot); name != "" {
+		return name
+	}
+	if slot >= 0 && slot < len(a.ctx.Players) {
+		if p := a.ctx.Players[slot]; p != nil {
+			return p.Name
+		}
+	}
+	return ""
+}
+
 type packDrop struct {
 	weapon      string // "rl" or "lg"
 	dropperSlot int
@@ -265,15 +281,14 @@ func (a *WeaponPickupsAnalyzer) Finalize() (interface{}, error) {
 		if p.hadBefore {
 			continue // redundant grab — not eligible for kill credit (rule 1)
 		}
-		picker := a.ctx.Players[p.pickerSlot]
-		if picker == nil {
+		if a.ctx.Players[p.pickerSlot] == nil {
 			continue
 		}
 		end := findNextAfter(deathsBySlot[p.pickerSlot], p.time)
 		if end == 0 {
 			end = math.Inf(1)
 		}
-		k := pwKey{picker.Name, p.weapon}
+		k := pwKey{a.playerName(p.pickerSlot), p.weapon}
 		windowsByPW[k] = append(windowsByPW[k], pickupWindow{i, p.time, end})
 	}
 
@@ -311,7 +326,7 @@ func (a *WeaponPickupsAnalyzer) Finalize() (interface{}, error) {
 
 		entry := WeaponPickup{
 			Time:          p.time,
-			Player:        picker.Name,
+			Player:        a.playerName(p.pickerSlot),
 			Team:          picker.Team,
 			Weapon:        p.weapon,
 			Source:        p.source,
@@ -323,7 +338,7 @@ func (a *WeaponPickupsAnalyzer) Finalize() (interface{}, error) {
 			entry.BackpackEnt = p.backpackEnt
 			entry.DropTime = p.dropTime
 			if dropper := a.ctx.Players[p.dropperSlot]; dropper != nil {
-				entry.Dropper = dropper.Name
+				entry.Dropper = a.playerName(p.dropperSlot)
 				entry.DropperTeam = dropper.Team
 			}
 		}

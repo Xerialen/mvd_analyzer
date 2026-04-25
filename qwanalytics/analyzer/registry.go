@@ -147,14 +147,27 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 				result.DemoInfo = di
 				co.DemoInfo = di
 				co.Names = NewNameTable(di)
-				// Patch player names to display names from DemoInfo.
-				// This fixes all downstream Finalize() reads so consumers
-				// see the in-game display name instead of the auth/login name.
-				for slot, info := range ctx.ResolveSlotDemoInfo() {
-					if ctx.Players[slot] != nil {
-						ctx.Players[slot].Name = info.Name
+				// Build the canonical per-slot view consumers read in
+				// their Finalize. Names are demoinfo-resolved when the
+				// slot has a match (via login or name join); otherwise
+				// they fall back to the userinfo name from
+				// ctx.Players[slot]. ctx.Players itself is no longer
+				// mutated post-finalize — it always holds the on-the-
+				// wire userinfo values.
+				resolved := ctx.ResolveSlotDemoInfo()
+				slots := make(map[int]SlotInfo, len(ctx.Players))
+				for slot := 0; slot < len(ctx.Players); slot++ {
+					p := ctx.Players[slot]
+					if p == nil {
+						continue
 					}
+					si := SlotInfo{Name: p.Name, Team: p.Team}
+					if r, ok := resolved[slot]; ok && r.Name != "" {
+						si.Name = r.Name
+					}
+					slots[slot] = si
 				}
+				co.Slots = slots
 			}
 		case "messages":
 			if m, ok := output.(*MessagesResult); ok {

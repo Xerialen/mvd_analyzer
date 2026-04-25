@@ -34,6 +34,38 @@ type CoreOutputs struct {
 	// weapon_pickups (kill attribution). Nil when the demo had no
 	// obituaries or the frag analyser was not registered.
 	FragEntries []FragEntry
+
+	// Slots is the per-slot resolved player view: Name is the demoinfo
+	// display name when the slot matches a demoinfo entry (via login or
+	// name join), otherwise the userinfo name from ctx.Players[slot].
+	// Team is the userinfo team (the demoinfo team override only kicks
+	// in via NameTable lookups).
+	//
+	// Slots replaces the previous mid-Finalize patch in registry.go that
+	// rewrote ctx.Players[slot].Name in place — the patch was the worst
+	// instance of cross-analyser shared mutable state in the audit. Now
+	// every Finalize site that wants the display name reads
+	// co.Slots[slot].Name instead, and ctx.Players keeps its on-the-wire
+	// userinfo values untouched.
+	Slots map[int]SlotInfo
+}
+
+// SlotInfo holds the per-slot resolved player name and team that
+// downstream Finalize sites read. See CoreOutputs.Slots for the
+// resolution rules.
+type SlotInfo struct {
+	Name string
+	Team string
+}
+
+// SlotName returns the resolved display name for slot. Equivalent to
+// co.Slots[slot].Name with nil-safety on co; returns "" when the slot
+// has no recorded entry.
+func (co *CoreOutputs) SlotName(slot int) string {
+	if co == nil {
+		return ""
+	}
+	return co.Slots[slot].Name
 }
 
 // CoreConsumer is the optional interface for analysers that need
