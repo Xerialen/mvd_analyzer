@@ -324,19 +324,30 @@ Three layers exercise different things:
 2. **Golden corpus** (`analyzer/golden_test.go`) runs the full pipeline
    against a manifest of hub.quakeworld.nu game IDs in
    `testdata/corpus.json`. On first run it downloads each demo into
-   `testdata/cache/<gameId>.mvd.gz` (gitignored) and pins the full
+   `testdata/cache/<gameId>.mvd.gz` (gitignored) and pins the
    serialised `Result` against `testdata/golden/<label>.json`. The
-   manifest ships empty — `t.Skip` keeps `make test` green until
-   entries are added. Regenerate goldens after an intentional change:
+   manifest currently ships with nine demos (three each of 1on1, 2on2,
+   4on4); `t.Skip` keeps `make test` green if it is ever emptied.
+   Regenerate goldens after an intentional change:
 
    ```bash
-   go test ./qwanalytics/... -run TestGoldenCorpus -args -update-golden
+   go test ./qwanalytics/analyzer/... -run TestGoldenCorpus -args -update-golden
    ```
 
-   Only `filePath` is stripped from the comparison; everything else —
-   `locGraph`, `schemaVersion`, ammo counts, frag totals — is pinned,
-   so any unintended drift surfaces. (The `locGraph` slices are sorted
-   in `BuildLocGraph` for run-to-run determinism; map-keyed sub-objects
+   (Use `./qwanalytics/analyzer/...`, not the wider `./qwanalytics/...`
+   — `-update-golden` is registered only in this test package and
+   wider scopes fail in `mapgen` with "flag provided but not defined".)
+
+   Two transforms are applied before comparison: `filePath` is
+   stripped (per-machine cache path), and `timelineAnalysis.highResBuckets`
+   is sliced to three 15 s windows (`[0, 15]`, `[60, 75]`, last 15 s).
+   The high-res slice is necessary because the full 50 ms position
+   track is ~20 MB per 4on4 demo, and the three windows are enough
+   sampling to catch bucketer / position-extractor drift. Everything
+   else — `locGraph`, `schemaVersion`, ammo counts, frag totals,
+   weapon stats, items, powerup events — is pinned in full, so any
+   unintended drift surfaces. (The `locGraph` slices are sorted in
+   `BuildLocGraph` for run-to-run determinism; map-keyed sub-objects
    already serialise alphabetically.)
 
 3. **Diagnostic corpus** (`diagnostic/diagnostic_test.go`) is opt-in

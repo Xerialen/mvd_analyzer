@@ -221,18 +221,21 @@ against a manifest of hub.quakeworld.nu game IDs in
 [`qwanalytics/testdata/corpus.json`](qwanalytics/testdata/corpus.json).
 On first run it downloads each demo into
 `qwanalytics/testdata/cache/<gameId>.mvd.gz` (gitignored); subsequent runs
-hit the cache and stay offline. Each demo's full `Result` JSON is pinned
+hit the cache and stay offline. Each demo's `Result` JSON is pinned
 against `qwanalytics/testdata/golden/<label>.json`.
 
-The manifest ships empty — add entries to enable coverage:
+What is pinned: everything except `filePath` and a sliced
+`timelineAnalysis.highResBuckets`. The full 50 ms position track
+runs ~20 MB per 4on4 demo and most of it is redundant for regression
+detection, so `canonicalJSON` keeps three 15 s windows — `[0, 15]`,
+`[60, 75]`, and the trailing 15 s — enough sampling to catch
+bucketer / position-extractor drift while keeping the committed
+corpus around 18 MB total.
 
-```json
-[
-  {"gameId": 212111, "label": "duel_dm6_kreatlink", "mode": "1on1"},
-  {"gameId": 230002, "label": "2on2_aerowalk_xy",   "mode": "2on2"},
-  {"gameId": 215555, "label": "4on4_dm3_bhb_huey",  "mode": "4on4"}
-]
-```
+The manifest ships with nine demos (three each of 1on1, 2on2, 4on4).
+Add entries by appending to the JSON array; labels follow
+`mode_team1_team2_DDMMYY_map` (or player names for 1on1, where
+`team_names` is null on the hub).
 
 Workflow when an analyzer change shifts output:
 
@@ -240,10 +243,14 @@ Workflow when an analyzer change shifts output:
 make test
 # TestGoldenCorpus fails with first-diff-line per demo.
 # Inspect the change, then if it was intended:
-go test ./qwanalytics/... -run TestGoldenCorpus -args -update-golden
+go test ./qwanalytics/analyzer/... -run TestGoldenCorpus -args -update-golden
 git diff qwanalytics/testdata/golden/   # review
 git add qwanalytics/testdata/golden/    # commit alongside the analyzer change
 ```
+
+(The `-update-golden` flag is registered only in the analyzer test
+package; wider scopes like `./qwanalytics/...` fail in `mapgen` with
+"flag provided but not defined".)
 
 The pipeline also has a CLI for ad-hoc bulk diffs:
 

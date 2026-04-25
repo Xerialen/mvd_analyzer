@@ -78,7 +78,10 @@ belongs in the frontend.
   are present. Run `go test ./qwdemo/... ./qwanalytics/...` before
   committing non-trivial work. If the golden test fails on an
   intended change, regenerate with
-  `go test ./qwanalytics/... -run TestGoldenCorpus -args -update-golden`
+  `go test ./qwanalytics/analyzer/... -run TestGoldenCorpus -args -update-golden`
+  (the `-update-golden` flag is registered only in the analyzer package
+  — wider scopes like `./qwanalytics/...` fail in `mapgen` with
+  "flag provided but not defined")
   and commit the regenerated `testdata/golden/*.json` together with
   the code change.
 
