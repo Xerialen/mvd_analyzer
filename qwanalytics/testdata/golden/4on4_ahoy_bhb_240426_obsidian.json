@@ -1724,6 +1724,79 @@
     "timelimit": 20,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "ThundeR",
+        "playerUserID": 25,
+        "team": "BhB",
+        "time": 83.98100000000088
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "KreatoR",
+        "playerUserID": 26,
+        "team": "BhB",
+        "time": 582.4999999999623
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ring",
+        "loc": "Ring",
+        "player": "ocoini",
+        "playerUserID": 24,
+        "team": "ahoy",
+        "time": 626.7949999999424
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "Doomie",
+        "playerUserID": 32,
+        "team": "BhB",
+        "time": 999.2629999997912
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "rghst",
+        "playerUserID": 28,
+        "team": "BhB",
+        "time": 1064.9479999998916
+      }
+    ],
+    "hoovers": [
+      {
+        "item": "ya",
+        "loc": "YA",
+        "needyStat": "armor",
+        "needyTeammate": "Doomie",
+        "needyValue": 0,
+        "player": "rghst",
+        "playerUserID": 28,
+        "team": "BhB",
+        "time": 656.2589999999312
+      },
+      {
+        "item": "ya",
+        "loc": "YA",
+        "needyStat": "armor",
+        "needyTeammate": "nexus",
+        "needyValue": 45,
+        "player": "ocoini",
+        "playerUserID": 24,
+        "team": "ahoy",
+        "time": 1181.1770000001002
+      }
+    ]
+  },
   "duration": 1200.1280000001348,
   "frags": {
     "byPlayer": {
@@ -58285,7 +58358,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.452000000000005,
     "fragEvents": [

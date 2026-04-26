@@ -2801,6 +2801,38 @@
     "timelimit": 10,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "mh",
+        "loc": "MH",
+        "player": "squeeze",
+        "playerUserID": 14,
+        "team": "1",
+        "time": 86.45800000000492
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "stepcop",
+        "playerUserID": 9,
+        "team": "n n",
+        "time": 197.91100000001808
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "Milton",
+        "playerUserID": 11,
+        "team": "1",
+        "time": 460.4289999999076
+      }
+    ],
+    "hoovers": null
+  },
   "duration": 600.049999999973,
   "frags": {
     "byPlayer": {
@@ -18003,7 +18035,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.159999999999972,
     "fragEvents": [

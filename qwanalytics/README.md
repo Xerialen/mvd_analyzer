@@ -16,9 +16,10 @@ that downstream consumers render, summarise, or feed to an agent.
   into two phases: **core** (`demoinfo`, `frag` — the producers that
   fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
   `messages`, `timeline`, `items`, `backpacks`, `weapon_pickups`)
-  finalise after, with `CoreOutputs` already populated. Three default
+  finalise after, with `CoreOutputs` already populated. Four default
   result post-processors run last (time normalisation, duel team
-  rewrite, locgraph synthesis) — see `postprocess.go`.
+  rewrite, locgraph synthesis, denials/hoovers derivation) — see
+  `postprocess.go` and `denials.go`.
 - `loc/` — `.loc` file parser. For native builds the corpus is embedded
   via `//go:embed data/*.loc` (466 maps today); for WASM builds the host
   provides `fetchLocSync` so only the loc for the current demo is
@@ -79,6 +80,7 @@ event stream, then a post-pass on the assembled `Result`:
             │   normalizeMatchRelativeTimes(result)    │
             │   normalizeDuelTeams(result)             │
             │   buildLocGraphPost(result)              │
+            │   buildDenialsPost(result)               │
             └──────────────────────────────────────────┘
                     │
                     ▼
@@ -91,7 +93,7 @@ event stream, then a post-pass on the assembled `Result`:
 |---|---|---|
 | **Core** | [`demoinfo`](analyzer/demoinfo.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
 | **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. |
-| **Post-processors** | `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `locGraphPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (time normalisation must run before locgraph). |
+| **Post-processors** | `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `locGraphPost`, [`buildDenialsPost`](analyzer/denials.md) | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (time normalisation must run before locgraph; denials reads both Items and LocGraph so it runs last). |
 | **Shelved** | [`tracks`](analyzer/tracks.md) | Code present, not registered. Awaiting a qw-web consumer. |
 
 Each analyser has a one-page README in `analyzer/` covering what it
@@ -191,13 +193,14 @@ type Result struct {
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
     Backpacks        []BackpackDrop           // RL/LG backpack drops (from KTX //ktx drop hint)
     WeaponPickups    []WeaponPickup           // slot-weapon pickups + kills-before-next-death metric
+    Denials          *DenialsResult           // denied (from-enemy) + hoovered (from-team) pickups
     Errors           []string
 }
 ```
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `5`).
+`CurrentSchemaVersion` (currently `6`).
 
 ### Items result
 

@@ -2795,6 +2795,38 @@
     "timelimit": 10,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "mh",
+        "loc": "MH",
+        "player": "wd.dilbert",
+        "playerUserID": 35,
+        "team": "pys",
+        "time": 1.3649999999999842
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "wd.dilbert",
+        "playerUserID": 35,
+        "team": "pys",
+        "time": 2.1919999999999753
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "psy*overon",
+        "playerUserID": 36,
+        "team": "pys",
+        "time": 256.19400000002446
+      }
+    ],
+    "hoovers": null
+  },
   "duration": 600.0400000000287,
   "frags": {
     "byPlayer": {
@@ -11813,7 +11845,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.103999999999967,
     "fragEvents": [

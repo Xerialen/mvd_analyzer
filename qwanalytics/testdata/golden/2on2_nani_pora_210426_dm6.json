@@ -11170,7 +11170,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.089999999999991,
     "fragEvents": [

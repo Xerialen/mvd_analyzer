@@ -255,5 +255,6 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterPostProcessor(normalizeMatchRelativeTimes)
 	r.RegisterPostProcessor(duelTeamNormalize)
 	r.RegisterPostProcessor(locGraphPost)
+	r.RegisterPostProcessor(buildDenialsPost)
 	return r
 }

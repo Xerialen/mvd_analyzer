@@ -118,6 +118,31 @@ The `Drop` and `Run` columns are hub.quakeworld.nu replay links.
 `Run` spans 3 s before pickup to the picker's next death (or +15 s
 if they survived to match end), tracking the picker.
 
+## Denials tab
+
+The Denials tab surfaces two derived metrics from
+[`result.denials`](../qwanalytics/analyzer/denials.md):
+
+- **Denials** — per-team and per-player aggregate counts plus a
+  per-event sortable / filterable table showing every "stolen from
+  enemy" pickup: a player without RL/LG took an important item
+  (RA / YA / MH / RL / LG / Quad / Pent / Ring) while only the
+  opposing team had a weapon-or-Quad bearer in the spawn's region.
+  Columns: Time | Player | Team | Item | Loc | Enemy W. | Hub.
+- **Hoovers** — same shape, but for pickups that took value a
+  *teammate* needed: a player without RL/LG took an armor or MH
+  while a same-team weapon-or-Quad bearer in the region was below
+  the per-item threshold (RA: armor &lt; 75; YA: armor &lt; 50;
+  MH: health ≤ 50). Columns: Time | Player | Team | Item | Loc |
+  Needy Teammate | Need | Hub.
+
+Region for both metrics is the item's loc plus every loc connected by
+≥10 traversals in *both* directions (loc graph). Filters work like the
+Pack Drops tab — Player / Team / Item dropdowns auto-populated from
+the demo, persistent across reloads. Time cells seek the timeline
+scrubber; Hub cells link to `hub.quakeworld.nu` from `time − 5s` to
+`time + 3s` tracking the picker.
+
 ## Map-tab item overlay
 
 When the result contains an `items` field (any MVD source — KTX,

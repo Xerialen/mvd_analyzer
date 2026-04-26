@@ -2158,6 +2158,122 @@
     "timelimit": 20,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA.box",
+        "player": "lakso",
+        "playerUserID": 11,
+        "team": "oSaMs",
+        "time": 131.8420000000086
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "rl",
+        "loc": "RL",
+        "player": "lakso",
+        "playerUserID": 11,
+        "team": "oSaMs",
+        "time": 158.18300000001454
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "lakso",
+        "playerUserID": 11,
+        "team": "oSaMs",
+        "time": 384.53999999997444
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "marksuzu",
+        "playerUserID": 8,
+        "team": "oSaMs",
+        "time": 496.0779999999352
+      },
+      {
+        "enemyWeapons": 2,
+        "item": "pent",
+        "loc": "Pent",
+        "player": "lakso",
+        "playerUserID": 11,
+        "team": "oSaMs",
+        "time": 603.2340000000223
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA.box",
+        "player": "sCorp",
+        "playerUserID": 3,
+        "team": ".ra.",
+        "time": 658.9950000000866
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "apa",
+        "playerUserID": 7,
+        "team": "oSaMs",
+        "time": 787.0460000002093
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "mh",
+        "loc": "SNG.MH",
+        "player": "clox",
+        "playerUserID": 9,
+        "team": "oSaMs",
+        "time": 893.0710000003359
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ring",
+        "loc": "Ring",
+        "player": "lakso",
+        "playerUserID": 11,
+        "team": "oSaMs",
+        "time": 906.931000000353
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA.box",
+        "player": "apa",
+        "playerUserID": 7,
+        "team": "oSaMs",
+        "time": 918.5320000003674
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "rl",
+        "loc": "RL",
+        "player": "sCorp",
+        "playerUserID": 3,
+        "team": ".ra.",
+        "time": 1190.0749999999734
+      }
+    ],
+    "hoovers": [
+      {
+        "item": "mh",
+        "loc": "hill",
+        "needyStat": "health",
+        "needyTeammate": "clox",
+        "needyValue": 20,
+        "player": "apa",
+        "playerUserID": 7,
+        "team": "oSaMs",
+        "time": 85.43400000000368
+      }
+    ]
+  },
   "duration": 1200.058999999945,
   "frags": {
     "byPlayer": {
@@ -48415,7 +48531,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.32599999999996,
     "fragEvents": [

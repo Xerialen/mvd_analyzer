@@ -154,4 +154,7 @@ type (
 	ItemPhase              = result.ItemPhase
 	BackpackDrop           = result.BackpackDrop
 	WeaponPickup           = result.WeaponPickup
+	DenialsResult          = result.DenialsResult
+	DenialEvent            = result.DenialEvent
+	HooverEvent            = result.HooverEvent
 )

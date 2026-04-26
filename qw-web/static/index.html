@@ -54,6 +54,7 @@
                 <button class="tab-btn" data-tab="loc-graph">Loc Graph</button>
                 <button class="tab-btn" data-tab="keymoments">Key Moments</button>
                 <button class="tab-btn" data-tab="packdrops">Pack Drops</button>
+                <button class="tab-btn" data-tab="denials">Denials</button>
             </div>
 
             <!-- Unified Timeline Widget (visible on Timeline/Chat/Map tabs) -->
@@ -658,6 +659,148 @@
                     </table>
                     <div id="packdrops-empty" class="empty-message" style="display: none;">
                         No RL / LG backpack drops detected in this demo.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Denials Tab -->
+            <div id="tab-denials" class="tab-content">
+                <div class="panel">
+                    <h3>Denials</h3>
+                    <p class="tab-description">
+                        Items stolen from the enemy: a player without RL/LG took an important
+                        item while only the opposing team had a weapon (RL/LG) or Quad bearer
+                        in the region (the item's loc plus every loc connected by ≥10
+                        traversals in <em>both</em> directions).
+                    </p>
+
+                    <h4 class="team-aggregate-heading">Per Team</h4>
+                    <table class="stats-table team-aggregate-table" id="denials-team-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>RA</th>
+                                <th>YA</th>
+                                <th>MH</th>
+                                <th>RL</th>
+                                <th>LG</th>
+                                <th>Q</th>
+                                <th>Pe</th>
+                                <th>R</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="denials-team-body"></tbody>
+                    </table>
+
+                    <h4 class="per-player-heading">Per Player</h4>
+                    <table class="stats-table" id="denials-player-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Team</th>
+                                <th>RA</th>
+                                <th>YA</th>
+                                <th>MH</th>
+                                <th>RL</th>
+                                <th>LG</th>
+                                <th>Q</th>
+                                <th>Pe</th>
+                                <th>R</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="denials-player-body"></tbody>
+                    </table>
+
+                    <h4>Events</h4>
+                    <div class="packdrops-filters">
+                        <label>Player: <select id="denials-filter-player"><option value="">All</option></select></label>
+                        <label>Team: <select id="denials-filter-team"><option value="">All</option></select></label>
+                        <label>Item: <select id="denials-filter-item"><option value="">All</option></select></label>
+                        <span id="denials-count" class="packdrops-count"></span>
+                    </div>
+                    <table class="stats-table" id="denials-events-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Player</th>
+                                <th>Team</th>
+                                <th>Item</th>
+                                <th>Loc</th>
+                                <th title="Enemy weapon-bearers (RL/LG/Quad) in the region">Enemy W.</th>
+                                <th title="Hub replay starting 5s before pickup">Hub</th>
+                            </tr>
+                        </thead>
+                        <tbody id="denials-events-body"></tbody>
+                    </table>
+                    <div id="denials-events-empty" class="empty-message" style="display: none;">
+                        No denials detected in this demo.
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Hoovers</h3>
+                    <p class="tab-description">
+                        Items stolen from teammates: a player without RL/LG took an armor or
+                        MH that a same-team weapon (RL/LG) or Quad bearer in the region
+                        actually needed — RA when teammate armor &lt; 75, YA when armor &lt; 50,
+                        MH when teammate health ≤ 50.
+                    </p>
+
+                    <h4 class="team-aggregate-heading">Per Team</h4>
+                    <table class="stats-table team-aggregate-table" id="hoovers-team-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>RA</th>
+                                <th>YA</th>
+                                <th>MH</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hoovers-team-body"></tbody>
+                    </table>
+
+                    <h4 class="per-player-heading">Per Player</h4>
+                    <table class="stats-table" id="hoovers-player-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Team</th>
+                                <th>RA</th>
+                                <th>YA</th>
+                                <th>MH</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hoovers-player-body"></tbody>
+                    </table>
+
+                    <h4>Events</h4>
+                    <div class="packdrops-filters">
+                        <label>Player: <select id="hoovers-filter-player"><option value="">All</option></select></label>
+                        <label>Team: <select id="hoovers-filter-team"><option value="">All</option></select></label>
+                        <label>Item: <select id="hoovers-filter-item"><option value="">All</option></select></label>
+                        <span id="hoovers-count" class="packdrops-count"></span>
+                    </div>
+                    <table class="stats-table" id="hoovers-events-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Player</th>
+                                <th>Team</th>
+                                <th>Item</th>
+                                <th>Loc</th>
+                                <th>Needy Teammate</th>
+                                <th title="Teammate's armor or health at pickup">Need</th>
+                                <th title="Hub replay starting 5s before pickup">Hub</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hoovers-events-body"></tbody>
+                    </table>
+                    <div id="hoovers-events-empty" class="empty-message" style="display: none;">
+                        No hoovers detected in this demo.
                     </div>
                 </div>
             </div>

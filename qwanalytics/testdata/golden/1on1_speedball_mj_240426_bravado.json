@@ -941,6 +941,20 @@
     "timelimit": 10,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "mj",
+        "playerUserID": 70,
+        "team": "red",
+        "time": 568.0400000000138
+      }
+    ],
+    "hoovers": null
+  },
   "duration": 600.0010000000715,
   "frags": {
     "byPlayer": {
@@ -5314,7 +5328,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.091000000000001,
     "fragEvents": [

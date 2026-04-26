@@ -628,6 +628,29 @@
     "timelimit": 10,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "42",
+        "playerUserID": 21,
+        "team": "red",
+        "time": 83.74200000000468
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "YA",
+        "player": "AHemlocksLie",
+        "playerUserID": 20,
+        "team": "'tro",
+        "time": 251.88400000000675
+      }
+    ],
+    "hoovers": null
+  },
   "duration": 599.9930000000126,
   "frags": {
     "byPlayer": {
@@ -4553,7 +4576,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.103999999999962,
     "fragEvents": [

@@ -24,7 +24,11 @@ package result
 // with an effectiveness metric — kills with the weapon before the
 // picker's next death. Backpack pickups carry BackpackEnt which pairs
 // with Backpacks[i].EntNum so frontends can join drop ↔ pickup.
-const CurrentSchemaVersion = 5
+//
+// v6 adds Denials: per-match lists of "denied" (stolen from enemy)
+// and "hoovered" (stolen from teammate) item pickups, derived from
+// Items + LocGraph + the per-bucket player-state stream.
+const CurrentSchemaVersion = 6
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -44,5 +48,6 @@ type Result struct {
 	Items            *ItemsResult            `json:"items,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
+	Denials          *DenialsResult          `json:"denials,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }

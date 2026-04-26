@@ -1990,6 +1990,270 @@
     "timelimit": 20,
     "version": 3
   },
+  "denials": {
+    "denials": [
+      {
+        "enemyWeapons": 1,
+        "item": "ring",
+        "loc": "cemetary.Ring",
+        "player": "paniagua",
+        "playerUserID": 14,
+        "team": "'tbg",
+        "time": 11.596000000000137
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "rl",
+        "loc": "cathedral",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 31.86800000000067
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "quad",
+        "loc": "Quad",
+        "player": "DobeZz",
+        "playerUserID": 15,
+        "team": "'\u003e\u003c\u003e",
+        "time": 183.12500000002348
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "tower",
+        "player": "anni",
+        "playerUserID": 12,
+        "team": "'\u003e\u003c\u003e",
+        "time": 355.1649999999627
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "cathedral.YA",
+        "player": "nexus",
+        "playerUserID": 10,
+        "team": "'tbg",
+        "time": 399.93399999993767
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "DobeZz",
+        "playerUserID": 15,
+        "team": "'\u003e\u003c\u003e",
+        "time": 417.5119999999255
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "tower",
+        "player": "nexus",
+        "playerUserID": 10,
+        "team": "'tbg",
+        "time": 468.33699999988454
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "mh",
+        "loc": "yard",
+        "player": "biggz",
+        "playerUserID": 16,
+        "team": "'tbg",
+        "time": 482.05899999987497
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "tower",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 488.4479999998701
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "quad",
+        "loc": "Quad",
+        "player": "DobeZz",
+        "playerUserID": 15,
+        "team": "'\u003e\u003c\u003e",
+        "time": 608.5230000000134
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "tower",
+        "player": "anni",
+        "playerUserID": 12,
+        "team": "'\u003e\u003c\u003e",
+        "time": 618.6980000000285
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "rl",
+        "loc": "tower.RL",
+        "player": "gore",
+        "playerUserID": 5,
+        "team": "'\u003e\u003c\u003e",
+        "time": 621.4280000000325
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "rl",
+        "loc": "tower.RL",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 652.2320000000808
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "cathedral.YA",
+        "player": "gore",
+        "playerUserID": 5,
+        "team": "'\u003e\u003c\u003e",
+        "time": 658.9850000000918
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "mh",
+        "loc": "cemetary",
+        "player": "nexus",
+        "playerUserID": 10,
+        "team": "'tbg",
+        "time": 691.7120000001397
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "rl",
+        "loc": "tower.RL",
+        "player": "gore",
+        "playerUserID": 5,
+        "team": "'\u003e\u003c\u003e",
+        "time": 714.577000000173
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "tower",
+        "player": "gore",
+        "playerUserID": 5,
+        "team": "'\u003e\u003c\u003e",
+        "time": 730.9490000001987
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "quad",
+        "loc": "Quad",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 789.5320000002749
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ring",
+        "loc": "cemetary.Ring",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 918.6080000004247
+      },
+      {
+        "enemyWeapons": 2,
+        "item": "mh",
+        "loc": "yard",
+        "player": "anni",
+        "playerUserID": 12,
+        "team": "'\u003e\u003c\u003e",
+        "time": 991.072000000497
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ya",
+        "loc": "cathedral.YA",
+        "player": "anni",
+        "playerUserID": 12,
+        "team": "'\u003e\u003c\u003e",
+        "time": 1067.798000000342
+      },
+      {
+        "enemyWeapons": 2,
+        "item": "rl",
+        "loc": "cathedral",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 1085.9270000002796
+      },
+      {
+        "enemyWeapons": 3,
+        "item": "mh",
+        "loc": "cemetary",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 1133.9460000001357
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 1164.4770000000465
+      },
+      {
+        "enemyWeapons": 1,
+        "item": "ra",
+        "loc": "RA",
+        "player": "ocoini",
+        "playerUserID": 8,
+        "team": "'\u003e\u003c\u003e",
+        "time": 1184.8529999999953
+      }
+    ],
+    "hoovers": [
+      {
+        "item": "mh",
+        "loc": "cemetary",
+        "needyStat": "health",
+        "needyTeammate": ".N3ophyt3.",
+        "needyValue": 50,
+        "player": "biggz",
+        "playerUserID": 16,
+        "team": "'tbg",
+        "time": 310.95199999999306
+      },
+      {
+        "item": "ya",
+        "loc": "cathedral.YA",
+        "needyStat": "armor",
+        "needyTeammate": ".N3ophyt3.",
+        "needyValue": 48,
+        "player": "paniagua",
+        "playerUserID": 14,
+        "team": "'tbg",
+        "time": 465.478999999887
+      },
+      {
+        "item": "ya",
+        "loc": "cathedral.YA",
+        "needyStat": "armor",
+        "needyTeammate": ".N3ophyt3.",
+        "needyValue": 0,
+        "player": "nexus",
+        "playerUserID": 10,
+        "team": "'tbg",
+        "time": 597.3529999999944
+      }
+    ]
+  },
   "duration": 1200.0169999999619,
   "frags": {
     "byPlayer": {
@@ -58980,7 +59244,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "timelineAnalysis": {
     "demoOffset": 10.091999999999961,
     "fragEvents": [

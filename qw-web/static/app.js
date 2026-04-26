@@ -538,6 +538,10 @@ function displayResults(result) {
     // Pack Drops — always call so stale rows are cleared between demos.
     displayPackDrops(result);
 
+    // Denials & Hoovers — always call so stale rows / filters / aggregates
+    // are cleared between demos even when the new demo has no data.
+    displayDenials(result);
+
     // Map View
     if (result.timelineAnalysis) {
         initMapView(result);
@@ -1303,6 +1307,24 @@ function packDropStatusFor(drop, pickup) {
     return { label: 'enemy', cls: 'status-enemy' };
 }
 
+// buildHubAnchor renders an <a> linking to hub.quakeworld.nu with the
+// track param set to the named player's UserID. Times are demo-relative
+// (match-relative seconds); demoOffset is added so the resulting URL
+// uses absolute demo seconds the way the Hub viewer expects. Returns
+// '-' when any input is missing — callers render that placeholder
+// directly in the table cell.
+function buildHubAnchor(from, to, trackName, hubInfo, playerUserIDs) {
+    if (!hubInfo || !hubInfo.gameId) return '-';
+    if (!playerUserIDs) return '-';
+    const trackId = playerUserIDs[trackName];
+    if (!trackId) return '-';
+    const demoOff = timelineState.demoOffset || 0;
+    const f = Math.max(0, Math.floor(from + demoOff));
+    const t = Math.floor(to + demoOff);
+    const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${f}&to=${t}&track=${trackId}`;
+    return `<a href="${url}" target="_blank" class="viewer-link">Hub</a>`;
+}
+
 function populateFilterSelect(selectId, values) {
     const sel = document.getElementById(selectId);
     if (!sel) return;
@@ -1399,17 +1421,9 @@ function renderPackDropRows() {
     const status = document.getElementById('packdrops-filter-status').value;
 
     const { rows, hubInfo, playerUserIDs } = packDropsState;
-    const demoOff = timelineState.demoOffset || 0;
 
-    const hubAnchor = (from, to, trackName) => {
-        if (!hubInfo || !hubInfo.gameId) return '-';
-        const trackId = playerUserIDs[trackName];
-        if (!trackId) return '-';
-        const f = Math.max(0, Math.floor(from + demoOff));
-        const t = Math.floor(to + demoOff);
-        const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${f}&to=${t}&track=${trackId}`;
-        return `<a href="${url}" target="_blank" class="viewer-link">Hub</a>`;
-    };
+    const hubAnchor = (from, to, trackName) =>
+        buildHubAnchor(from, to, trackName, hubInfo, playerUserIDs);
 
     let shown = 0;
     for (const r of rows) {
@@ -1466,6 +1480,263 @@ function renderPackDropRows() {
         countEl.textContent = shown === rows.length
             ? `${rows.length} drops`
             : `${shown} of ${rows.length} drops`;
+    }
+}
+
+// ─── Denials & Hoovers tab ─────────────────────────────────────────────────
+//
+// Renders both per-team / per-player aggregate tables and the per-event
+// tables. Filters and Hub-anchor links mirror the Pack Drops tab.
+
+const DENIAL_ITEM_KINDS = ['ra', 'ya', 'mh', 'rl', 'lg', 'quad', 'pent', 'ring'];
+const HOOVER_ITEM_KINDS = ['ra', 'ya', 'mh'];
+
+const denialsState = {
+    denials: [],
+    hoovers: [],
+    hubInfo: null,
+    playerUserIDs: {},
+};
+
+function displayDenials(result) {
+    const tabRoot = document.getElementById('tab-denials');
+    if (!tabRoot) return;
+
+    const data = result.denials || { denials: [], hoovers: [] };
+    denialsState.denials = data.denials || [];
+    denialsState.hoovers = data.hoovers || [];
+    denialsState.hubInfo = currentResult?.hubInfo || null;
+    denialsState.playerUserIDs = currentResult?.timelineAnalysis?.playerUserIDs || {};
+
+    renderDenialAggregates();
+    renderHooverAggregates();
+
+    const playerCmp = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+
+    const denialPlayers = new Set(), denialTeams = new Set(), denialItems = new Set();
+    for (const e of denialsState.denials) {
+        if (e.player) denialPlayers.add(e.player);
+        if (e.team) denialTeams.add(e.team);
+        if (e.item) denialItems.add(e.item);
+    }
+    populateFilterSelect('denials-filter-player', [...denialPlayers].sort(playerCmp));
+    populateFilterSelect('denials-filter-team', [...denialTeams].sort(playerCmp));
+    populateFilterSelect('denials-filter-item', [...denialItems].sort(playerCmp));
+
+    const hooverPlayers = new Set(), hooverTeams = new Set(), hooverItems = new Set();
+    for (const e of denialsState.hoovers) {
+        if (e.player) hooverPlayers.add(e.player);
+        if (e.team) hooverTeams.add(e.team);
+        if (e.item) hooverItems.add(e.item);
+    }
+    populateFilterSelect('hoovers-filter-player', [...hooverPlayers].sort(playerCmp));
+    populateFilterSelect('hoovers-filter-team', [...hooverTeams].sort(playerCmp));
+    populateFilterSelect('hoovers-filter-item', [...hooverItems].sort(playerCmp));
+
+    for (const id of ['denials-filter-player', 'denials-filter-team', 'denials-filter-item']) {
+        const el = document.getElementById(id);
+        if (el) el.onchange = renderDenialEventRows;
+    }
+    for (const id of ['hoovers-filter-player', 'hoovers-filter-team', 'hoovers-filter-item']) {
+        const el = document.getElementById(id);
+        if (el) el.onchange = renderHooverEventRows;
+    }
+
+    renderDenialEventRows();
+    renderHooverEventRows();
+}
+
+// renderDenialAggregates fills the per-team and per-player aggregate
+// tables for stolen items. Counts are broken down by item kind.
+function renderDenialAggregates() {
+    const events = denialsState.denials;
+    const teams = getTeamOrder([]);
+    const teamCounts = {};
+    const playerCounts = {};
+    const playerTeam = {};
+    for (const t of teams) teamCounts[t] = newKindBucket(DENIAL_ITEM_KINDS);
+    for (const e of events) {
+        if (!teamCounts[e.team]) teamCounts[e.team] = newKindBucket(DENIAL_ITEM_KINDS);
+        teamCounts[e.team][e.item] = (teamCounts[e.team][e.item] || 0) + 1;
+        teamCounts[e.team]._total++;
+        if (!playerCounts[e.player]) {
+            playerCounts[e.player] = newKindBucket(DENIAL_ITEM_KINDS);
+            playerTeam[e.player] = e.team;
+        }
+        playerCounts[e.player][e.item] = (playerCounts[e.player][e.item] || 0) + 1;
+        playerCounts[e.player]._total++;
+    }
+
+    const teamRows = teams.length > 0
+        ? teams.filter(t => teamCounts[t])
+        : Object.keys(teamCounts).sort();
+    renderTableRows('denials-team-body', teamRows, (team) => {
+        const c = teamCounts[team] || newKindBucket(DENIAL_ITEM_KINDS);
+        return `
+            <td>${escapeHtml(team)}</td>
+            <td>${c.ra || 0}</td>
+            <td>${c.ya || 0}</td>
+            <td>${c.mh || 0}</td>
+            <td>${c.rl || 0}</td>
+            <td>${c.lg || 0}</td>
+            <td>${c.quad || 0}</td>
+            <td>${c.pent || 0}</td>
+            <td>${c.ring || 0}</td>
+            <td><strong>${c._total}</strong></td>
+        `;
+    }, (_, idx) => idx);
+
+    const players = Object.keys(playerCounts).sort((a, b) => playerCounts[b]._total - playerCounts[a]._total);
+    renderTableRows('denials-player-body', players, (player) => {
+        const c = playerCounts[player];
+        return `
+            <td>${escapeHtml(player)}</td>
+            <td>${escapeHtml(playerTeam[player] || '')}</td>
+            <td>${c.ra || 0}</td>
+            <td>${c.ya || 0}</td>
+            <td>${c.mh || 0}</td>
+            <td>${c.rl || 0}</td>
+            <td>${c.lg || 0}</td>
+            <td>${c.quad || 0}</td>
+            <td>${c.pent || 0}</td>
+            <td>${c.ring || 0}</td>
+            <td><strong>${c._total}</strong></td>
+        `;
+    }, (player) => teams.indexOf(playerTeam[player]));
+}
+
+function renderHooverAggregates() {
+    const events = denialsState.hoovers;
+    const teams = getTeamOrder([]);
+    const teamCounts = {};
+    const playerCounts = {};
+    const playerTeam = {};
+    for (const t of teams) teamCounts[t] = newKindBucket(HOOVER_ITEM_KINDS);
+    for (const e of events) {
+        if (!teamCounts[e.team]) teamCounts[e.team] = newKindBucket(HOOVER_ITEM_KINDS);
+        teamCounts[e.team][e.item] = (teamCounts[e.team][e.item] || 0) + 1;
+        teamCounts[e.team]._total++;
+        if (!playerCounts[e.player]) {
+            playerCounts[e.player] = newKindBucket(HOOVER_ITEM_KINDS);
+            playerTeam[e.player] = e.team;
+        }
+        playerCounts[e.player][e.item] = (playerCounts[e.player][e.item] || 0) + 1;
+        playerCounts[e.player]._total++;
+    }
+
+    const teamRows = teams.length > 0
+        ? teams.filter(t => teamCounts[t])
+        : Object.keys(teamCounts).sort();
+    renderTableRows('hoovers-team-body', teamRows, (team) => {
+        const c = teamCounts[team] || newKindBucket(HOOVER_ITEM_KINDS);
+        return `
+            <td>${escapeHtml(team)}</td>
+            <td>${c.ra || 0}</td>
+            <td>${c.ya || 0}</td>
+            <td>${c.mh || 0}</td>
+            <td><strong>${c._total}</strong></td>
+        `;
+    }, (_, idx) => idx);
+
+    const players = Object.keys(playerCounts).sort((a, b) => playerCounts[b]._total - playerCounts[a]._total);
+    renderTableRows('hoovers-player-body', players, (player) => {
+        const c = playerCounts[player];
+        return `
+            <td>${escapeHtml(player)}</td>
+            <td>${escapeHtml(playerTeam[player] || '')}</td>
+            <td>${c.ra || 0}</td>
+            <td>${c.ya || 0}</td>
+            <td>${c.mh || 0}</td>
+            <td><strong>${c._total}</strong></td>
+        `;
+    }, (player) => teams.indexOf(playerTeam[player]));
+}
+
+function newKindBucket(kinds) {
+    const b = { _total: 0 };
+    for (const k of kinds) b[k] = 0;
+    return b;
+}
+
+function renderDenialEventRows() {
+    const tbody = document.getElementById('denials-events-body');
+    const empty = document.getElementById('denials-events-empty');
+    const countEl = document.getElementById('denials-count');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const fp = document.getElementById('denials-filter-player').value;
+    const ft = document.getElementById('denials-filter-team').value;
+    const fi = document.getElementById('denials-filter-item').value;
+
+    const events = denialsState.denials;
+    const { hubInfo, playerUserIDs } = denialsState;
+    let shown = 0;
+    for (const e of events) {
+        if (fp && e.player !== fp) continue;
+        if (ft && e.team !== ft) continue;
+        if (fi && e.item !== fi) continue;
+        const tr = document.createElement('tr');
+        const hub = buildHubAnchor(e.time - 5, e.time + 3, e.player, hubInfo, playerUserIDs);
+        tr.innerHTML = `
+            <td class="time-cell time-link">${formatDuration(e.time)}</td>
+            <td>${escapeHtml(e.player || '?')}</td>
+            <td>${escapeHtml(e.team || '-')}</td>
+            <td class="weapon-cell weapon-${e.item}">${(e.item || '').toUpperCase()}</td>
+            <td>${escapeHtml(e.loc || '-')}</td>
+            <td>${e.enemyWeapons}</td>
+            <td>${hub}</td>
+        `;
+        tr.querySelector('.time-link').addEventListener('click', () => setCurrentTime(e.time));
+        tbody.appendChild(tr);
+        shown++;
+    }
+    if (empty) empty.style.display = (events.length === 0) ? 'block' : 'none';
+    if (countEl) {
+        countEl.textContent = events.length === 0 ? '' :
+            (shown === events.length ? `${events.length} denials` : `${shown} of ${events.length} denials`);
+    }
+}
+
+function renderHooverEventRows() {
+    const tbody = document.getElementById('hoovers-events-body');
+    const empty = document.getElementById('hoovers-events-empty');
+    const countEl = document.getElementById('hoovers-count');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const fp = document.getElementById('hoovers-filter-player').value;
+    const ft = document.getElementById('hoovers-filter-team').value;
+    const fi = document.getElementById('hoovers-filter-item').value;
+
+    const events = denialsState.hoovers;
+    const { hubInfo, playerUserIDs } = denialsState;
+    let shown = 0;
+    for (const e of events) {
+        if (fp && e.player !== fp) continue;
+        if (ft && e.team !== ft) continue;
+        if (fi && e.item !== fi) continue;
+        const tr = document.createElement('tr');
+        const hub = buildHubAnchor(e.time - 5, e.time + 3, e.player, hubInfo, playerUserIDs);
+        const needLabel = e.needyStat === 'health' ? `hp ${e.needyValue}` : `armor ${e.needyValue}`;
+        tr.innerHTML = `
+            <td class="time-cell time-link">${formatDuration(e.time)}</td>
+            <td>${escapeHtml(e.player || '?')}</td>
+            <td>${escapeHtml(e.team || '-')}</td>
+            <td class="weapon-cell weapon-${e.item}">${(e.item || '').toUpperCase()}</td>
+            <td>${escapeHtml(e.loc || '-')}</td>
+            <td>${escapeHtml(e.needyTeammate || '-')}</td>
+            <td>${needLabel}</td>
+            <td>${hub}</td>
+        `;
+        tr.querySelector('.time-link').addEventListener('click', () => setCurrentTime(e.time));
+        tbody.appendChild(tr);
+        shown++;
+    }
+    if (empty) empty.style.display = (events.length === 0) ? 'block' : 'none';
+    if (countEl) {
+        countEl.textContent = events.length === 0 ? '' :
+            (shown === events.length ? `${events.length} hoovers` : `${shown} of ${events.length} hoovers`);
     }
 }
 
