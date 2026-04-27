@@ -97,7 +97,14 @@ worker.onmessage = (e) => {
         const v = e.data.version;
         const tag = document.getElementById('version-tag');
         if (tag && v) {
-            tag.textContent = `${v.tag} (${v.hash}) — ${v.date}`;
+            tag.textContent = `${v.tag} (`;
+            const a = document.createElement('a');
+            a.href = `https://github.com/galfthan/mvd_analyzer/commit/${encodeURIComponent(v.hash)}`;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.textContent = v.hash;
+            tag.appendChild(a);
+            tag.appendChild(document.createTextNode(`) — ${v.date}`));
         }
     } else if (e.data.type === 'result') {
         if (analyzeResolve) {
