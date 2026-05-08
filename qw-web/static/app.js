@@ -2425,6 +2425,66 @@ function pickTickInterval(duration, maxTicks) {
     return NICE_TICK_INTERVALS[NICE_TICK_INTERVALS.length - 1];
 }
 
+// Plot background — slightly different shade than the panel so the
+// graph area is visually delineated. Same colour for every detail
+// graph so they read as a uniform set.
+const PLOT_BG_COLOR = '#16213e';
+
+// Size a canvas for device-pixel rendering and return the drawing
+// context plus the dimensions in both CSS and device pixels.
+//
+// We render directly in device pixels (no ctx.scale) so every fillRect
+// edge lands on an integer device pixel by construction. CSS-pixel
+// rendering with ctx.scale(dpr, dpr) is fine when dpr is an integer,
+// but at fractional dpr (Linux/KDE/GNOME fractional scaling, browser
+// zoom != 100 %, some Windows configs) every CSS-pixel fillRect edge
+// lands at a non-integer device-pixel offset; the rasteriser then
+// splits that edge across two device pixels at ~50 % coverage each,
+// producing visible darker boundary pixels (and at one fillRect per
+// CSS pixel a regular moiré stripe pattern).
+//
+// Returns null if the canvas element is missing.
+function setupGraphCanvas(canvasId, cssHeight) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !canvas.getContext) return null;
+    const container = canvas.parentElement;
+    const Wcss = container.clientWidth;
+    const Hcss = cssHeight;
+    const dpr = window.devicePixelRatio || 1;
+    const W = Math.round(Wcss * dpr);
+    const H = Math.round(Hcss * dpr);
+    canvas.width = W;
+    canvas.height = H;
+    canvas.style.width = Wcss + 'px';
+    canvas.style.height = Hcss + 'px';
+    const ctx = canvas.getContext('2d');
+    return { canvas, ctx, Wcss, Hcss, W, H, dpr };
+}
+
+// Draw the adaptive x-axis tick line and time labels at the bottom of
+// a graph. Tick density keys off Wcss so it doesn't change with dpr.
+// All coords are in device pixels (W, graphH, dpr).
+function drawXAxisTicks(ctx, { W, Wcss, dpr, graphH, startTime, endTime }) {
+    const duration = endTime - startTime;
+    if (duration <= 0) return;
+    const targetTicks = Math.max(4, Math.min(12, Math.floor(Wcss / 100)));
+    const interval = pickTickInterval(duration, targetTicks);
+    ctx.fillStyle = '#888';
+    ctx.font = `${Math.round(10 * dpr)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    const firstTick = Math.ceil(startTime / interval) * interval;
+    for (let t = firstTick; t <= endTime; t += interval) {
+        const x = ((t - startTime) / duration) * W;
+        ctx.beginPath();
+        ctx.moveTo(x, graphH);
+        ctx.lineTo(x, graphH + 4 * dpr);
+        ctx.stroke();
+        ctx.fillText(formatDuration(t), x, graphH + 5 * dpr);
+    }
+}
+
 // Render a diverging bar graph on a canvas.
 //   dataPoints: [{t, dt, up: [{h, color}], down: [{h, color}]}]
 //   dropMarks:  [{time, color, isTop}] (optional, e.g. RL/LG backpack drops
@@ -2438,37 +2498,34 @@ function renderDivergingGraph(canvasId, {
     yTopLabel, yBottomLabel,
     dropMarks,
 }) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas || !canvas.getContext) return;
+    const setup = setupGraphCanvas(canvasId, 200);
+    if (!setup) return;
+    const { ctx, Wcss, W, H, dpr } = setup;
 
-    const container = canvas.parentElement;
-    const W = container.clientWidth;
-    const H = 200;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-
-    const AXIS_H = 20;
-    const PAD = 4;
+    // Constants below are in device pixels — multiply by dpr so the
+    // displayed (CSS-px) size of axes / padding / dots / fonts matches
+    // what the previous CSS-px-coordinate version drew.
+    const AXIS_H = Math.round(20 * dpr);
+    const PAD = Math.round(4 * dpr);
     const graphH = H - AXIS_H;
-    // Drop-mark strips live in a reserved zone at the top and bottom of the
-    // plot area so weapon bars can never grow into them — the weapons bar
-    // height scales with max players-per-team, so without this reservation
-    // a high-rollout 5v5 snapshot could paint bars straight through the
-    // dots. Sized for one row of ~6 px dots.
-    const DROP_STRIP_H = 8;
+    // Drop-mark strips live in a reserved zone at the top and bottom of
+    // the plot area so weapon bars can never grow into them — the
+    // weapons bar height scales with max players-per-team, so without
+    // this reservation a high-rollout 5v5 snapshot could paint bars
+    // straight through the dots. Sized for one row of ~6 px dots.
+    const DROP_STRIP_H = Math.round(8 * dpr);
     const hasDropMarks = !!(dropMarks && dropMarks.length);
-    const stripZone = hasDropMarks ? DROP_STRIP_H + 2 : 0;
+    const stripZone = hasDropMarks ? DROP_STRIP_H + Math.round(2 * dpr) : 0;
     const midY = PAD + (graphH - PAD) / 2;
     const barH = midY - PAD - stripZone;
     const duration = endTime - startTime;
 
-    // Background
-    ctx.fillStyle = '#16213e';
+    // Plot background — safe again now that the scanline/hold-last
+    // renderer below paints every pixel column with the active data
+    // point: empty buckets no longer leave bg-coloured vertical stripes
+    // through the bars. The bg only shows above/below bars and in the
+    // axis strip.
+    ctx.fillStyle = PLOT_BG_COLOR;
     ctx.fillRect(0, 0, W, graphH);
 
     // Grid lines at ±50% (drawn first so bars overlay them)
@@ -2480,56 +2537,87 @@ function renderDivergingGraph(canvasId, {
     ctx.stroke();
 
     if (duration > 0 && dataPoints && dataPoints.length > 0) {
-        // Tile adjacent bars pixel-perfectly: compute each bar's right edge
-        // from the next bucket's start, and round both edges to integers.
-        // Fractional fillRect widths create anti-aliased edges that don't
-        // cancel between neighbours, so the dark background bleeds through
-        // as moiré banding when zoomed in. Integer-aligned tiling eliminates
-        // that with no gaps.
-        for (let i = 0; i < dataPoints.length; i++) {
-            const pt = dataPoints[i];
-            const xRaw = ((pt.t - startTime) / duration) * W;
-            const xNextRaw = (i + 1 < dataPoints.length)
-                ? ((dataPoints[i + 1].t - startTime) / duration) * W
-                : ((pt.t + (pt.dt || 0.05) - startTime) / duration) * W;
-            const x = Math.round(xRaw);
-            const bw = Math.max(1, Math.round(xNextRaw) - x);
-            if (x + bw < 0 || x > W) continue;
+        // Output-driven (scanline) rendering: for each pixel column,
+        // sample the data at that pixel's time via a monotonic cursor
+        // (step function / hold-last) and paint a 1-pixel-wide column.
+        // Replaces the older data-driven loop where we rasterised each
+        // bucket as a fillRect of bw px — that was correct when bw ≥ 1
+        // but skipped points whose `up` and `down` were both empty,
+        // leaving the canvas pixel column un-painted; gaps in the data
+        // surfaced as visible vertical stripes. Walking the *output*
+        // makes "every column is drawn" structural and gives a draw
+        // cost that scales with canvas width, not bucket count.
+        let cursor = -1;
+        const sampleAt = (tQuery) => {
+            while (cursor + 1 < dataPoints.length && dataPoints[cursor + 1].t <= tQuery) {
+                cursor++;
+            }
+            if (cursor < 0) return null;
+            const pt = dataPoints[cursor];
+            // Last point: cap at its declared dt so we don't paint past
+            // the end of the data when the view extends slightly beyond it.
+            if (cursor === dataPoints.length - 1) {
+                const endT = pt.t + (pt.dt || 0);
+                if (endT > 0 && tQuery > endT) return null;
+            }
+            return pt;
+        };
 
-            // Up segments (team A, above center)
-            let y = midY;
+        for (let px = 0; px < W; px++) {
+            const tPx = startTime + (px / W) * duration;
+            const pt = sampleAt(tPx);
+            if (pt == null) continue;
+
+            // Stack segments with integer-aligned y boundaries: track
+            // the boundary in floating point but snap each fillRect
+            // edge to a pixel row, using the previous segment's snapped
+            // edge as the next segment's start. Stacked segments then
+            // meet on exact pixel rows instead of anti-aliased
+            // fractional ones.
+
+            // Up segments (team A, above center).
+            let yAcc = midY;
+            let yPrev = Math.round(midY);
             if (pt.up) {
                 for (const seg of pt.up) {
                     if (seg.h > 0) {
-                        const h = (seg.h / maxValue) * barH;
-                        ctx.fillStyle = seg.color;
-                        ctx.fillRect(x, y - h, bw, h);
-                        y -= h;
+                        yAcc -= (seg.h / maxValue) * barH;
+                        const yCur = Math.round(yAcc);
+                        const segH = yPrev - yCur;
+                        if (segH > 0) {
+                            ctx.fillStyle = seg.color;
+                            ctx.fillRect(px, yCur, 1, segH);
+                        }
+                        yPrev = yCur;
                     }
                 }
             }
 
-            // Down segments (team B, below center)
-            y = midY;
+            // Down segments (team B, below center).
+            yAcc = midY;
+            yPrev = Math.round(midY);
             if (pt.down) {
                 for (const seg of pt.down) {
                     if (seg.h > 0) {
-                        const h = (seg.h / maxValue) * barH;
-                        ctx.fillStyle = seg.color;
-                        ctx.fillRect(x, y, bw, h);
-                        y += h;
+                        yAcc += (seg.h / maxValue) * barH;
+                        const yCur = Math.round(yAcc);
+                        const segH = yCur - yPrev;
+                        if (segH > 0) {
+                            ctx.fillStyle = seg.color;
+                            ctx.fillRect(px, yPrev, 1, segH);
+                        }
+                        yPrev = yCur;
                     }
                 }
             }
         }
-
     }
 
     // Drop-mark dots — small filled circles in the reserved strip zone.
     // Top strip = team A drops, bottom strip = team B drops; color is
     // weapon-coded by the caller (e.g. RL red, LG cyan).
     if (hasDropMarks && duration > 0) {
-        const dotR = 3;
+        const dotR = 3 * dpr;
         const topY    = PAD + DROP_STRIP_H / 2;
         const bottomY = graphH - PAD - DROP_STRIP_H / 2;
         for (const m of dropMarks) {
@@ -2546,24 +2634,9 @@ function renderDivergingGraph(canvasId, {
     // Zero-y divider — drawn on top of bars so the upper/lower split is
     // always clearly visible. Integer-aligned to avoid anti-aliasing.
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.fillRect(0, Math.round(midY), W, 1);
+    ctx.fillRect(0, Math.round(midY), W, Math.max(1, Math.round(dpr)));
 
-    // X-axis ticks (adaptive)
-    if (duration > 0) {
-        const targetTicks = Math.max(4, Math.min(12, Math.floor(W / 100)));
-        const interval = pickTickInterval(duration, targetTicks);
-        ctx.fillStyle = '#888';
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-        const firstTick = Math.ceil(startTime / interval) * interval;
-        for (let t = firstTick; t <= endTime; t += interval) {
-            const x = ((t - startTime) / duration) * W;
-            ctx.beginPath(); ctx.moveTo(x, graphH); ctx.lineTo(x, graphH + 4); ctx.stroke();
-            ctx.fillText(formatDuration(t), x, graphH + 5);
-        }
-    }
+    drawXAxisTicks(ctx, { W, Wcss, dpr, graphH, startTime, endTime });
 
     // Y-axis labels
     if (yAxisId) {
@@ -2994,7 +3067,42 @@ function setupUnifiedTimeline() {
     // --- Hover tooltip on powerup-timeline spans ---
     attachPowerupTimelineTooltip();
 
+    // --- Window resize: detail-panel canvases are sized in pixels from
+    // container.clientWidth, so they don't reflow with the viewport on
+    // their own — re-render them when the window resizes. Only the
+    // timeline tab has the detail panels; on other tabs the active-tab
+    // re-render path handles it on switch. Debounced to a single
+    // animation frame per resize burst.
+    window.addEventListener('resize', onTimelineWindowResize);
+
     unifiedTimelineInitialized = true;
+}
+
+const TIMELINE_CANVAS_IDS = [
+    'detail-graph-canvas', 'powerup-canvas', 'region-control-canvas',
+    'health-armor-canvas', 'frags-canvas', 'score-canvas',
+];
+
+let _timelineResizeRafId = null;
+function onTimelineWindowResize() {
+    if (!currentResult) return;
+    const activeTab = document.querySelector('.sidebar-btn.active')?.dataset.tab;
+    if (activeTab !== 'timeline') return;
+    if (_timelineResizeRafId !== null) return;
+    _timelineResizeRafId = requestAnimationFrame(() => {
+        _timelineResizeRafId = null;
+        // The renderers set canvas.style.width in pixels, which (combined
+        // with the default flex `min-width: auto`) wedges the parent open
+        // and prevents shrink-to-fit on window down-size. Clear the inline
+        // width before re-measuring so each container reports its true
+        // available width via clientWidth.
+        for (const id of TIMELINE_CANVAS_IDS) {
+            const c = document.getElementById(id);
+            if (c) c.style.width = '';
+        }
+        updateDetailView();
+        updateTimeIndicators();
+    });
 }
 
 function tlBarClickToTime(e) {
@@ -3506,22 +3614,17 @@ function prepRegionControlData(startTime, endTime, teams) {
 // colors. Used by both the region-control timeline and the powerup
 // timeline so they share one renderer instead of two near-copies.
 function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, stateColors }) {
-    const canvas = document.getElementById(canvasId);
     const labelsEl = document.getElementById(labelsId);
-    if (!canvas || !canvas.getContext || !labelsEl) return;
+    if (!labelsEl) return;
+    const setup = setupGraphCanvas(canvasId, rows.length * RC_ROW_H + RC_AXIS_H);
+    if (!setup) return;
+    const { ctx, Wcss, W, dpr } = setup;
 
-    const container = canvas.parentElement;
-    const W = container.clientWidth;
-    const H = rows.length * RC_ROW_H + RC_AXIS_H;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
+    const ROW_H = Math.round(RC_ROW_H * dpr);
+    const ROW_PAD = Math.max(1, Math.round(dpr));
 
-    // Label column, one DOM element per row, sized to match the canvas row.
+    // Label column, one DOM element per row, sized to match the canvas
+    // row in CSS pixels (the labels live outside the canvas).
     labelsEl.innerHTML = '';
     for (const r of rows) {
         const lab = document.createElement('div');
@@ -3533,15 +3636,15 @@ function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, sta
         labelsEl.appendChild(lab);
     }
 
-    const graphH = rows.length * RC_ROW_H;
-    ctx.fillStyle = '#16213e';
+    const graphH = rows.length * ROW_H;
+    ctx.fillStyle = PLOT_BG_COLOR;
     ctx.fillRect(0, 0, W, graphH);
 
     const duration = endTime - startTime;
     if (duration <= 0) return;
 
     rows.forEach((row, idx) => {
-        const y = idx * RC_ROW_H;
+        const y = idx * ROW_H;
         for (const span of row.spans) {
             const color = stateColors[span.state];
             if (!color) continue;
@@ -3550,24 +3653,11 @@ function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, sta
             const w = x2 - x1;
             if (w <= 0) continue;
             ctx.fillStyle = color;
-            ctx.fillRect(x1, y + 1, w, RC_ROW_H - 2);
+            ctx.fillRect(x1, y + ROW_PAD, w, ROW_H - 2 * ROW_PAD);
         }
     });
 
-    // X-axis ticks (adaptive, same helper as renderDivergingGraph)
-    const targetTicks = Math.max(4, Math.min(12, Math.floor(W / 100)));
-    const interval = pickTickInterval(duration, targetTicks);
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    const firstTick = Math.ceil(startTime / interval) * interval;
-    for (let t = firstTick; t <= endTime; t += interval) {
-        const x = ((t - startTime) / duration) * W;
-        ctx.beginPath(); ctx.moveTo(x, graphH); ctx.lineTo(x, graphH + 4); ctx.stroke();
-        ctx.fillText(formatDuration(t), x, graphH + 5);
-    }
+    drawXAxisTicks(ctx, { W, Wcss, dpr, graphH, startTime, endTime });
 }
 
 // ─── Powerup Timeline ───────────────────────────────────────────────────────
