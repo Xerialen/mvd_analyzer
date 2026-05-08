@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MVD Demo Analyzer</title>
+    <title>MVD Analyzer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 <body class="no-demo">
     <!-- WASM loading overlay -->
     <div id="wasm-loading" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;">
-        <div style="color:#00d9ff;font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;letter-spacing:0.04em;">MVD Demo Analyzer</div>
+        <div style="color:#00d9ff;font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;letter-spacing:0.04em;">MVD Analyzer</div>
         <div style="color:#7a8ba8;font-size:0.9rem;">Loading analyzer...</div>
         <div style="width:200px;height:3px;background:#2a3f5f;border-radius:2px;overflow:hidden;">
             <div style="width:100%;height:100%;background:#00d9ff;animation:shimmer 1.5s infinite;"></div>
@@ -25,7 +25,8 @@
     </div>
 
     <header class="topbar">
-        <a class="topbar-brand" href="./" title="Reset and reload">MVD Demo Analyzer</a>
+        <a class="topbar-brand" href="./" title="Reset and reload">MVD Analyzer</a>
+        <div class="topbar-demo-info" id="topbar-demo-info"></div>
         <div class="topbar-spacer"></div>
         <span class="topbar-version" id="version-tag" title="Build version"></span>
         <a class="topbar-github" href="https://github.com/galfthan/mvd_analyzer" target="_blank" rel="noopener" aria-label="View source on GitHub" title="View source on GitHub">

@@ -88,6 +88,36 @@ body {
 
 .topbar-spacer { flex: 1; }
 
+.topbar-demo-info {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-left: 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #c9d6e8;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+body.no-demo .topbar-demo-info { display: none; }
+
+.topbar-demo-info .topbar-team-a { color: #ff5050; }
+.topbar-demo-info .topbar-team-b { color: #50a0ff; }
+.topbar-demo-info .topbar-vs { color: #7a8ba8; font-weight: 500; }
+.topbar-demo-info .topbar-score { color: #e8eef7; font-variant-numeric: tabular-nums; }
+.topbar-demo-info .topbar-map { color: var(--accent-cyan-dim, #7ad7e8); }
+.topbar-demo-info .topbar-date { color: #7a8ba8; font-weight: 500; }
+.topbar-demo-info .topbar-sep {
+    color: #4a5a6e;
+    font-weight: 400;
+    margin: 0 2px;
+}
+
 .topbar-version {
     color: #4a5a6e;
     font-family: monospace;

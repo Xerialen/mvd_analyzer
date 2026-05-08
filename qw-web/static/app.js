@@ -671,6 +671,60 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function updateTopbarDemoInfo(result) {
+    const el = document.getElementById('topbar-demo-info');
+    if (!el) return;
+
+    const demoInfo = result?.demoInfo;
+    const map = demoInfo?.map || result?.match?.map || '';
+    const date = demoInfo?.date || '';
+
+    let teams = (timelineState.teams && timelineState.teams.length >= 2)
+        ? [...timelineState.teams]
+        : [];
+    if (teams.length < 2 && demoInfo?.teams) teams = [...demoInfo.teams];
+    if (teams.length < 2 && result?.match?.teams) teams = result.match.teams.map(t => t.name);
+
+    const teamScores = {};
+    if (demoInfo?.players) {
+        for (const p of demoInfo.players) {
+            const t = p.team || '';
+            teamScores[t] = (teamScores[t] || 0) + (p.stats?.frags || 0);
+        }
+    } else if (result?.match?.teams) {
+        for (const t of result.match.teams) teamScores[t.name] = t.frags || 0;
+    }
+
+    const parts = [];
+    if (teams.length >= 2) {
+        const a = teams[0];
+        const b = teams[1];
+        parts.push(
+            `<span class="topbar-team-a">${escapeHtml(a)}</span>` +
+            ` <span class="topbar-vs">vs</span> ` +
+            `<span class="topbar-team-b">${escapeHtml(b)}</span>`
+        );
+        if (a in teamScores || b in teamScores) {
+            parts.push(
+                `<span class="topbar-score">` +
+                `${teamScores[a] ?? 0} - ${teamScores[b] ?? 0}` +
+                `</span>`
+            );
+        }
+    }
+    if (map) parts.push(`<span class="topbar-map">${escapeHtml(map)}</span>`);
+    if (date) parts.push(`<span class="topbar-date">${escapeHtml(date)}</span>`);
+
+    el.innerHTML = parts.join('<span class="topbar-sep">·</span>');
+
+    const titleParts = [];
+    if (teams.length >= 2) titleParts.push(`${teams[0]} ${teams[1]}`);
+    if (map) titleParts.push(map);
+    document.title = titleParts.length
+        ? `MVD | ${titleParts.join(' ')}`
+        : 'MVD Analyzer';
+}
+
 function renderSearchResults(games) {
     const el = document.getElementById('search-results');
     el.innerHTML = '';
@@ -793,6 +847,9 @@ function displayResults(result) {
         }
         timelineState.teams = teams;
     }
+
+    updateTopbarDemoInfo(result);
+
     // Player stats from demoInfo
     if (demoInfo && demoInfo.players) {
         displayPlayerStatsTeams(demoInfo.players);
