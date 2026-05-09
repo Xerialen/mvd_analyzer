@@ -11,7 +11,16 @@ Captures chat messages and obituaries as a unified `[]MatchEvent`
 ordered timeline for the frontend's chat/kill panels. This is the
 human-readable transcript layer — it preserves the original print
 text in `MatchEvent.Message` so the UI can render the exact server
-output.
+output, and (since v6) ships a plain-text twin in `MatchEvent.MessageClean`
+for consumers that don't want to deal with ezQuake markup.
+
+`MessageClean` is filled via `events.StripChatMarkup` (defined in
+`qwdemo/parser/userinfo.go`), which strips `&cRGB` color codes,
+`&r` resets, `!K`/`!H`/`!G`/`!C` sound triggers, `{` `}` `[` `]`
+macro delimiters, and a leading `\r`. It is elided via `omitempty`
+when the cleaned text equals the raw `Message` (frag descriptions are
+already plain), so consumers should treat a missing `messageClean` as
+"use `message`".
 
 ## How it works
 

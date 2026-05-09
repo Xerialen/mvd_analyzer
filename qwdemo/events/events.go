@@ -162,3 +162,11 @@ const (
 func NormalizeQuakeText(b []byte) string {
 	return parser.NormalizeQuakeText(b)
 }
+
+// StripChatMarkup removes ezQuake chat markup (color codes, sound
+// triggers, macro delimiters, leading CR) from already Q-normalised
+// chat text, leaving plain readable ASCII. Idempotent. Used by
+// qwanalytics to populate MatchEvent.MessageClean.
+func StripChatMarkup(s string) string {
+	return parser.StripChatMarkup(s)
+}

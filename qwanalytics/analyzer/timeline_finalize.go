@@ -208,12 +208,85 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// Detect top 5 longest frag streaks for Key Moments
 	fragStreaks := a.detectFragStreaks(10, names, playerUserIDsByName)
 
-	// Auto-detect control regions from loc data (stats computed client-side)
+	// Build region definitions from loc data, then compute per-bucket
+	// control state and match-aggregate stats. The pure compute lives in
+	// region_control.go and is re-callable from WASM / future MCP.
 	var regionControl *RegionControlResult
 	if a.locFinder != nil {
 		regions := a.buildControlRegions()
+		// Fill the explicit Locs[] from the matched Points so the on-wire
+		// shape carries logical membership without consumers reverse-
+		// engineering it from points[].name.
+		for i := range regions {
+			seen := make(map[string]struct{}, len(regions[i].Points))
+			locs := make([]string, 0, len(regions[i].Points))
+			for _, p := range regions[i].Points {
+				if p.Name == "" {
+					continue
+				}
+				if _, ok := seen[p.Name]; ok {
+					continue
+				}
+				seen[p.Name] = struct{}{}
+				locs = append(locs, p.Name)
+			}
+			sort.Strings(locs)
+			regions[i].Locs = locs
+		}
 		if len(regions) > 0 {
 			regionControl = &RegionControlResult{Regions: regions}
+
+			// Pick teamA / teamB to match the demoinfo-supplied team
+			// order so the frontend's TEAM_COLORS[0]/[1] (bound to
+			// demoinfo.teams[0]/[1] across the rest of the UI) line up
+			// with the regions panel. Falls back to alphabetical when
+			// demoinfo isn't available or doesn't agree with the
+			// on-field set. Skip the control compute for non-binary
+			// team layouts (FFA, 3+ teams) — out of scope per the plan.
+			teamSet := make(map[string]struct{})
+			for _, t := range slotToTeam {
+				if t != "" {
+					teamSet[t] = struct{}{}
+				}
+			}
+			if len(teamSet) == 2 {
+				teamNames := make([]string, 0, 2)
+				if a.core != nil && a.core.DemoInfo != nil && len(a.core.DemoInfo.Teams) == 2 {
+					di := a.core.DemoInfo.Teams
+					if _, ok0 := teamSet[di[0]]; ok0 {
+						if _, ok1 := teamSet[di[1]]; ok1 {
+							teamNames = append(teamNames, di[0], di[1])
+						}
+					}
+				}
+				if len(teamNames) != 2 {
+					teamNames = teamNames[:0]
+					for t := range teamSet {
+						teamNames = append(teamNames, t)
+					}
+					sort.Strings(teamNames)
+				}
+				teamA, teamB := teamNames[0], teamNames[1]
+
+				// name -> team for ComputeRegionControl. Built from
+				// slotToName + slotToTeam, which already reflect the
+				// demoinfo-resolved names that the buckets export with.
+				nameToTeam := make(map[string]string, len(slotToName))
+				for slot, name := range slotToName {
+					if t, ok := slotToTeam[slot]; ok && name != "" {
+						nameToTeam[name] = t
+					}
+				}
+				teamOf := func(name string) string { return nameToTeam[name] }
+
+				bucketStates, stats := ComputeRegionControl(
+					highResBuckets, locTable, regions, teamA, teamB, teamOf,
+				)
+				regionControl.TeamA = teamA
+				regionControl.TeamB = teamB
+				regionControl.BucketStates = bucketStates
+				regionControl.Stats = stats
+			}
 		}
 	}
 

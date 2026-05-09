@@ -70,11 +70,19 @@ func (a *TimelineAnalyzer) buildControlRegions() []ControlRegion {
 
 	var regions []ControlRegion
 
+	// CLI / test override takes precedence over the embedded per-map
+	// JSON. Same shape (config.MapRegionOverride), so the membership-by-
+	// loc-name semantics are identical.
+	customDefs := a.regionsOverride
+	if customDefs == nil {
+		customDefs = config.RegionsForMap(mapName)
+	}
+
 	// If a regions/<map>.json exists for this map, it is the single source
 	// of truth: the curated list fully replaces auto-detection. Loc-name
 	// matching is case-insensitive so a hand-edited "ya" still claims the
 	// canonical "YA" loc.
-	if customDefs := config.RegionsForMap(mapName); len(customDefs) > 0 {
+	if len(customDefs) > 0 {
 		locByName := make(map[string][]loc.Location)
 		for _, l := range locs {
 			key := strings.ToLower(l.Name)

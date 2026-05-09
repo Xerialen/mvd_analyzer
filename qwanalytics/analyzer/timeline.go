@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"github.com/mvd-analyzer/qwanalytics/config"
 	"github.com/mvd-analyzer/qwanalytics/loc"
 	"github.com/mvd-analyzer/qwdemo/events"
 )
@@ -30,6 +31,7 @@ type TimelineAnalyzer struct {
 	timing              MatchTimingDetector
 	locFinder           *loc.Finder // Location finder for map (nil if no .loc file)
 	blipThresholdMs     int         // Per-player loc smoothing threshold, 0 disables
+	regionsOverride     []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
 }
 
 // UseCoreOutputs is part of the CoreConsumer contract — Timeline
@@ -55,6 +57,15 @@ func (a *TimelineAnalyzer) coreFragEntries() []FragEntry {
 // Must be called before Init(). Zero disables the filter.
 func (a *TimelineAnalyzer) SetBlipThresholdMs(ms int) {
 	a.blipThresholdMs = ms
+}
+
+// SetRegionsOverride supplies a caller-defined region list that
+// replaces the embedded per-map regions (config.RegionsForMap) for the
+// duration of this analyzer run. Used by the CLI -regions flag and by
+// tests that want to pin a specific region layout. Must be called
+// before Finalize(). Pass nil to clear and fall back to embedded.
+func (a *TimelineAnalyzer) SetRegionsOverride(regs []config.MapRegionOverride) {
+	a.regionsOverride = regs
 }
 
 // fragEvent tracks a frag before team assignment
@@ -368,6 +379,7 @@ func (a *TimelineAnalyzer) snapshotPlayerData(pData *playerBucketRawData, player
 		lg:  state.items&events.ITLightning != 0,
 		ssg: state.items&events.ITSuperShotgun != 0,
 		sng: state.items&events.ITSuperNailgun != 0,
+		gl:  state.items&events.ITGrenadeLauncher != 0,
 	}
 	pData.powerups = powerupLoadout{
 		quad: state.items&events.ITQuad != 0,

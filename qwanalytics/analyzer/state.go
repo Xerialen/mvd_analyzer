@@ -16,8 +16,9 @@ package analyzer
 //     field.
 
 // weaponLoadout records which weapons a player is carrying at a sample point.
+// SG (baseline) and NG are intentionally not tracked.
 type weaponLoadout struct {
-	rl, lg, ssg, sng bool
+	rl, lg, ssg, sng, gl bool
 }
 
 // powerupLoadout records the three QuakeWorld powerups.

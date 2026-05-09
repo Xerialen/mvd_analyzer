@@ -100,7 +100,7 @@ func TestNormalizeDuelTeams_MatchRebuildFromDemoInfo(t *testing.T) {
 		Match: &MatchResult{
 			// MatchAnalyzer only saw chr1s — bot was filtered out.
 			Players: []PlayerStat{
-				{Name: "chr1s", Team: "blue", Frags: 223, Kills: 150, Deaths: 15},
+				{Name: "chr1s", Team: "blue", Frags: 223},
 			},
 			Teams: []TeamStat{{Name: "blue", Frags: 223}},
 		},

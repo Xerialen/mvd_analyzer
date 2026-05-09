@@ -48,11 +48,14 @@ func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string, slotT
 				AT:      pd.vitals.armorType,
 				RL:      pd.weapons.rl,
 				LG:      pd.weapons.lg,
+				GL:      pd.weapons.gl,
 				SSG:     pd.weapons.ssg,
 				SNG:     pd.weapons.sng,
 				Q:       pd.powerups.quad,
 				Pent:    pd.powerups.pent,
 				R:       pd.powerups.ring,
+				Shells:  pd.ammo.shells,
+				Nails:   pd.ammo.nails,
 				Rockets: pd.ammo.rockets,
 				Cells:   pd.ammo.cells,
 				D:       pd.dead,
@@ -86,6 +89,11 @@ func (a *TimelineAnalyzer) exportHighResBuckets(slotToName map[int]string, slotT
 			case pd.weapons.lg:
 				td.LG++
 				td.W++
+			}
+
+			// GL is an independent axis from the RL/LG categorisation.
+			if pd.weapons.gl {
+				td.GL++
 			}
 
 			// Powerups

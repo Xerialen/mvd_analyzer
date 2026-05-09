@@ -174,18 +174,22 @@ res, err := reg.AnalyzeSource(src, "demo.mvd.gz")
 
 ## The Result schema
 
+For the full field-by-field reference, see
+[**RESULT_SCHEMA.md**](RESULT_SCHEMA.md). The sections below cover the
+high-level shape and the noteworthy design decisions; the reference
+doc is the source of truth for every JSON key and its intent.
+
 `result.Result` has one sub-result per analyzer:
 
 ```go
 type Result struct {
     SchemaVersion    int
     FilePath         string
-    Duration         float64
     Match            *MatchResult             // match summary
     Frags            *FragResult              // frag tally + individual entries
     Messages         *MessagesResult          // frag + chat stream for timeline
     DemoInfo         *DemoInfoResult          // KTX authoritative stats
-    TimelineAnalysis *TimelineAnalysisResult  // bucketed player state
+    TimelineAnalysis *TimelineAnalysisResult  // bucketed player state + region control
     Metadata         *MetadataResult          // serverinfo + match settings
     LocGraph         *LocGraphResult          // loc-to-loc movement graph
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
@@ -197,7 +201,10 @@ type Result struct {
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `5`).
+`CurrentSchemaVersion` (currently `6`). For "how long was the match"
+read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
+(integer, KTX-authoritative); the legacy top-level `duration` was
+removed in v6.
 
 ### Items result
 

@@ -73,6 +73,18 @@ func (r *Registry) RegisterDerived(a Analyzer) {
 
 // RegisterPostProcessor adds a Result post-processor. They run in
 // registration order after every analyser has finalised.
+// SetRegionsOverride threads a caller-supplied region definition list
+// down to whatever TimelineAnalyzer is registered. Used by the CLI's
+// -regions flag and by tests pinning specific region layouts. Pass nil
+// to clear. No-op when no TimelineAnalyzer is registered.
+func (r *Registry) SetRegionsOverride(regs []config.MapRegionOverride) {
+	for _, a := range r.derived {
+		if ta, ok := a.(*TimelineAnalyzer); ok {
+			ta.SetRegionsOverride(regs)
+		}
+	}
+}
+
 func (r *Registry) RegisterPostProcessor(p ResultPostProcessor) {
 	r.postProcessors = append(r.postProcessors, p)
 }
@@ -85,7 +97,7 @@ func (r *Registry) Analyze(filePath string) (*Result, error) {
 		return nil, err
 	}
 	defer src.Close()
-	return r.analyzeSource(src, filePath, src.CurrentTime)
+	return r.analyzeSource(src, filePath)
 }
 
 // AnalyzeReader runs all registered analyzers on an MVD byte stream.
@@ -97,7 +109,7 @@ func (r *Registry) AnalyzeReader(reader io.Reader, filename string) (*Result, er
 		return nil, err
 	}
 	defer src.Close()
-	return r.analyzeSource(src, filename, src.CurrentTime)
+	return r.analyzeSource(src, filename)
 }
 
 // AnalyzeSource runs all registered analyzers against an events.Source.
@@ -105,13 +117,10 @@ func (r *Registry) AnalyzeReader(reader io.Reader, filename string) (*Result, er
 // (MVD file, QTV live, JSON replay) satisfies the interface.
 // `filename` is a display label that flows into Result.FilePath.
 func (r *Registry) AnalyzeSource(source events.Source, filename string) (*Result, error) {
-	// currentTime is filled in by the MVD source wrapper; an abstract
-	// source may not expose a decoder clock, so default to the last
-	// event timestamp seen.
-	return r.analyzeSource(source, filename, nil)
+	return r.analyzeSource(source, filename)
 }
 
-func (r *Registry) analyzeSource(source events.Source, filename string, currentTime func() float64) (*Result, error) {
+func (r *Registry) analyzeSource(source events.Source, filename string) (*Result, error) {
 	ctx := &Context{
 		FragsBySlot: make(map[int]int),
 	}
@@ -127,7 +136,6 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 		}
 	}
 
-	var lastTime float64
 	for {
 		event, err := source.Next()
 		if err == io.EOF {
@@ -137,7 +145,6 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 			// Log and stop; partial results still usable downstream.
 			break
 		}
-		lastTime = event.EventTime()
 
 		if e, ok := event.(*events.ServerDataEvent); ok {
 			ctx.ServerData = e.Data
@@ -163,15 +170,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string, currentT
 		}
 	}
 
-	duration := lastTime
-	if currentTime != nil {
-		duration = currentTime()
-	}
-
 	result := &Result{
 		SchemaVersion: resultpkg.CurrentSchemaVersion,
 		FilePath:      filename,
-		Duration:      duration,
 	}
 
 	co := &CoreOutputs{}

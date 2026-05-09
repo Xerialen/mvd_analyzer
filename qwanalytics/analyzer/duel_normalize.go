@@ -83,8 +83,6 @@ func normalizeDuelTeams(result *Result) {
 				ps.Team = dp.Name
 				if dp.Stats != nil {
 					ps.Frags = dp.Stats.Frags
-					ps.Kills = dp.Stats.Kills
-					ps.Deaths = dp.Stats.Deaths
 				}
 				rebuilt = append(rebuilt, ps)
 				if _, ok := nameToTeam[dp.Name]; !ok {

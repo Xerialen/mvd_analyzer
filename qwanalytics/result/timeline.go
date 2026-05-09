@@ -16,16 +16,55 @@ type TimelineAnalysisResult struct {
 }
 
 // ControlRegion represents a named area on the map for control tracking.
+//
+// Regions are loc-name lists, not polygons: Locs is the authoritative
+// logical membership (a player is "in" the region iff their resolved
+// loc name is in this list). Points and Centroid are rendering anchors
+// derived from the matching MapLocation entries — useful for drawing
+// the region overlay on the map but not used by the control classifier.
 type ControlRegion struct {
 	Name      string        `json:"name"`
+	Locs      []string      `json:"locs"`
 	Points    []MapLocation `json:"points"`
 	CentroidX float32       `json:"centroidX"`
 	CentroidY float32       `json:"centroidY"`
 }
 
-// RegionControlResult contains auto-detected region definitions.
+// RegionControlResult contains region definitions plus per-bucket and
+// match-aggregate control state computed by analyzer.ComputeRegionControl.
+//
+// BucketStates is a compact representation: one ASCII char per
+// HighResBucket per region. Codes mirror classifyRegionState in
+// qw-web/static/app.js:
+//
+//	'_'  empty (no living players)
+//	'A'  teamAControl     (only A present armed; or both present, only A armed)
+//	'a'  teamAWeakControl (only A present, none armed)
+//	'C'  contested        (both present, both armed)
+//	'c'  weakContested    (both present, neither armed)
+//	'B'/'b' mirror of A/a
+//
+// "Armed" = carrying RL or LG. TeamA / TeamB name which match.teams[]
+// entry the encoding mapped to "A" and "B".
 type RegionControlResult struct {
-	Regions []ControlRegion `json:"regions"`
+	Regions      []ControlRegion        `json:"regions"`
+	TeamA        string                 `json:"teamA,omitempty"`
+	TeamB        string                 `json:"teamB,omitempty"`
+	BucketStates map[string]string      `json:"bucketStates,omitempty"`
+	Stats        map[string]RegionStats `json:"stats,omitempty"`
+}
+
+// RegionStats is the match-aggregate share of each control state for a
+// single region, expressed as a percentage (0..100, one decimal place).
+// The seven values sum to 100 within rounding.
+type RegionStats struct {
+	TeamAControl     float64 `json:"teamAControl"`
+	TeamAWeakControl float64 `json:"teamAWeakControl"`
+	Contested        float64 `json:"contested"`
+	WeakContested    float64 `json:"weakContested"`
+	Empty            float64 `json:"empty"`
+	TeamBWeakControl float64 `json:"teamBWeakControl"`
+	TeamBControl     float64 `json:"teamBControl"`
 }
 
 // HighResBucket is a compact bucket for high-resolution timeline data.
@@ -44,6 +83,7 @@ type HighResTeamData struct {
 	LG   int            `json:"lg,omitempty"`   // Players with LG only (no RL)
 	RLLG int            `json:"rllg,omitempty"` // Players with both RL and LG
 	W    int            `json:"w,omitempty"`    // Total players with RL or LG
+	GL   int            `json:"gl,omitempty"`   // Players carrying GL (independent of RL/LG)
 	Q    int            `json:"q,omitempty"`    // Players with quad
 	Pe   int            `json:"pe,omitempty"`   // Players with pent
 	R    int            `json:"r,omitempty"`    // Players with ring
@@ -63,11 +103,14 @@ type HighResPlayerData struct {
 	AT      string  `json:"at,omitempty"`  // Armor type: "ga"/"ya"/"ra"
 	RL      bool    `json:"rl,omitempty"`  // Has rocket launcher
 	LG      bool    `json:"lg,omitempty"`  // Has lightning gun
+	GL      bool    `json:"gl,omitempty"`  // Has grenade launcher
 	SSG     bool    `json:"ssg,omitempty"` // Has super shotgun
 	SNG     bool    `json:"sng,omitempty"` // Has super nailgun
 	Q       bool    `json:"q,omitempty"`   // Has quad
 	Pent    bool    `json:"pe,omitempty"`  // Has pent
 	R       bool    `json:"r,omitempty"`   // Has ring
+	Shells  int     `json:"sh,omitempty"`  // Shotgun shells
+	Nails   int     `json:"nl,omitempty"`  // Nailgun nails
 	Rockets int     `json:"rk,omitempty"`  // Rocket ammo
 	Cells   int     `json:"cl,omitempty"`  // Cell ammo
 	D       bool    `json:"d,omitempty"`   // Death frame marker

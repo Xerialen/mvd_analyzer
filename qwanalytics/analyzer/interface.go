@@ -137,6 +137,7 @@ type (
 	TimelineAnalysisResult = result.TimelineAnalysisResult
 	ControlRegion          = result.ControlRegion
 	RegionControlResult    = result.RegionControlResult
+	RegionStats            = result.RegionStats
 	HighResBucket          = result.HighResBucket
 	HighResTeamData        = result.HighResTeamData
 	HighResPlayerData      = result.HighResPlayerData

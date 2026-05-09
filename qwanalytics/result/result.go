@@ -24,16 +24,32 @@ package result
 // with an effectiveness metric — kills with the weapon before the
 // picker's next death. Backpack pickups carry BackpackEnt which pairs
 // with Backpacks[i].EntNum so frontends can join drop ↔ pickup.
-const CurrentSchemaVersion = 5
+//
+// v6:
+//   - HighResPlayerData adds GL, Shells, Nails (sh/nl/gl JSON keys);
+//     HighResTeamData adds GL.
+//   - MatchEvent adds MessageClean (markup-stripped chat text); raw
+//     Message preserved.
+//   - RegionControlResult adds explicit Locs[] on each region plus
+//     TeamA/TeamB labels, BucketStates (compact one-char-per-bucket)
+//     and Stats (match-aggregate percentages) — region control is now
+//     computed in Go and re-callable via WASM.
+//   - Top-level Result.Duration removed (use Match.Duration or
+//     DemoInfo.Duration).
+//   - MatchResult.PlayerStat drops dead Kills/Deaths fields (always
+//     0; consumers read FragResult.ByPlayer or DemoInfoResult).
+const CurrentSchemaVersion = 6
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
 // mean no analyzer contributed that section (for example, because the
 // source lacked the necessary events).
+//
+// Match length: read MatchResult.Duration (float seconds, parser-derived)
+// or DemoInfoResult.Duration (integer seconds, KTX-authoritative).
 type Result struct {
 	SchemaVersion    int                     `json:"schemaVersion"`
 	FilePath         string                  `json:"filePath"`
-	Duration         float64                 `json:"duration"`
 	Match            *MatchResult            `json:"match,omitempty"`
 	Frags            *FragResult             `json:"frags,omitempty"`
 	Messages         *MessagesResult         `json:"messages,omitempty"`

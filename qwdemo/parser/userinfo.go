@@ -219,3 +219,80 @@ func NormalizeQuakeText(b []byte) string {
 func cleanString(s string) string {
 	return NormalizeQuakeText([]byte(s))
 }
+
+// StripChatMarkup removes ezQuake chat markup that survives
+// Q-normalisation, leaving plain readable text. Mirrors qw-web's
+// formatQuakeMessage (in static/app.js) minus the HTML span generation.
+//
+// Removed in order:
+//
+//   - leading "\r" (mvdsv prepends this when broadcasting team chat),
+//   - "&cRGB" colour codes (3 hex digits) and "&r" reset,
+//   - trailing single-letter sound triggers ("!K"/"!H"/"!G"/"!C", etc.),
+//   - macro delimiters "{", "}", "[", "]" (ezQuake teamplay macros).
+//
+// Whitespace runs are then collapsed to a single space and the result
+// is trimmed. The transform is idempotent — re-running on already-clean
+// text is a no-op.
+func StripChatMarkup(s string) string {
+	if s == "" {
+		return s
+	}
+	// 1. Drop a leading "\r" if present.
+	if s[0] == '\r' {
+		s = s[1:]
+	}
+	// 2. Drop a trailing single-letter sound trigger like "!K" / "!H".
+	if n := len(s); n >= 2 && s[n-2] == '!' {
+		c := s[n-1]
+		if c >= 'A' && c <= 'Z' {
+			s = s[:n-2]
+		}
+	}
+	// 3. Walk the string, dropping &cRGB / &r and macro delimiters.
+	out := make([]byte, 0, len(s))
+	for i := 0; i < len(s); {
+		// "&cRGB" — three hex digits after &c.
+		if i+5 <= len(s) && s[i] == '&' && s[i+1] == 'c' &&
+			isHexDigit(s[i+2]) && isHexDigit(s[i+3]) && isHexDigit(s[i+4]) {
+			i += 5
+			continue
+		}
+		// "&r" — colour reset.
+		if i+2 <= len(s) && s[i] == '&' && s[i+1] == 'r' {
+			i += 2
+			continue
+		}
+		// Macro delimiters.
+		c := s[i]
+		if c == '{' || c == '}' || c == '[' || c == ']' {
+			i++
+			continue
+		}
+		out = append(out, c)
+		i++
+	}
+	// 4. Collapse whitespace runs and trim.
+	collapsed := make([]byte, 0, len(out))
+	prevSpace := true // leading-space trim
+	for _, c := range out {
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+			if !prevSpace {
+				collapsed = append(collapsed, ' ')
+				prevSpace = true
+			}
+			continue
+		}
+		collapsed = append(collapsed, c)
+		prevSpace = false
+	}
+	// trim trailing space
+	if len(collapsed) > 0 && collapsed[len(collapsed)-1] == ' ' {
+		collapsed = collapsed[:len(collapsed)-1]
+	}
+	return string(collapsed)
+}
+
+func isHexDigit(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}

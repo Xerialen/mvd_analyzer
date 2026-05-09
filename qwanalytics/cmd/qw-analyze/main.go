@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/mvd-analyzer/qwanalytics/analyzer"
+	"github.com/mvd-analyzer/qwanalytics/config"
 	mvdsource "github.com/mvd-analyzer/qwdemo/source/mvd"
 )
 
@@ -30,7 +31,8 @@ func main() {
 	format := flag.String("format", "json", "output format: json | md | events")
 	outDir := flag.String("out-dir", "", "bulk mode: write <demo>.<ext> into this directory")
 	bulk := flag.Bool("bulk", false, "treat the input path as a directory and analyze every demo in it")
-	indent := flag.Bool("pretty", true, "pretty-print JSON output (single-demo mode only)")
+	indent := flag.Bool("pretty", false, "pretty-print JSON output (single-demo mode only); pipe to `jq .` for human reading")
+	regionsPath := flag.String("regions", "", "path to a regions JSON ({\"regions\":[{\"name\":...,\"locs\":[...]}]}) to override the embedded per-map regions for the analyzed demo")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
 		flag.PrintDefaults()
@@ -43,38 +45,60 @@ func main() {
 	}
 	input := flag.Arg(0)
 
+	var regionsOverride []config.MapRegionOverride
+	if *regionsPath != "" {
+		loaded, err := loadRegionsOverride(*regionsPath)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "qw-analyze:", err)
+			os.Exit(1)
+		}
+		regionsOverride = loaded
+	}
+
 	if *bulk || *outDir != "" {
 		if *outDir == "" {
 			fmt.Fprintln(os.Stderr, "qw-analyze: -bulk requires -out-dir")
 			os.Exit(2)
 		}
-		if err := runBulk(input, *outDir, *format); err != nil {
+		if err := runBulk(input, *outDir, *format, regionsOverride); err != nil {
 			fmt.Fprintln(os.Stderr, "qw-analyze:", err)
 			os.Exit(1)
 		}
 		return
 	}
 
-	if err := runOne(input, os.Stdout, *format, *indent); err != nil {
+	if err := runOne(input, os.Stdout, *format, *indent, regionsOverride); err != nil {
 		fmt.Fprintln(os.Stderr, "qw-analyze:", err)
 		os.Exit(1)
 	}
 }
 
-func runOne(path string, w io.Writer, format string, pretty bool) error {
+func loadRegionsOverride(path string) ([]config.MapRegionOverride, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read regions %s: %w", path, err)
+	}
+	var ov config.MapRegionOverrides
+	if err := json.Unmarshal(data, &ov); err != nil {
+		return nil, fmt.Errorf("parse regions %s: %w", path, err)
+	}
+	return ov.Regions, nil
+}
+
+func runOne(path string, w io.Writer, format string, pretty bool, regionsOverride []config.MapRegionOverride) error {
 	switch format {
 	case "events":
 		return dumpEvents(path, w)
 	case "json":
-		return dumpJSON(path, w, pretty)
+		return dumpJSON(path, w, pretty, regionsOverride)
 	case "md":
-		return dumpMarkdown(path, w)
+		return dumpMarkdown(path, w, regionsOverride)
 	default:
 		return fmt.Errorf("unknown format %q (want json | md | events)", format)
 	}
 }
 
-func dumpJSON(path string, w io.Writer, pretty bool) error {
+func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.MapRegionOverride) error {
 	src, err := mvdsource.Open(path)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
@@ -82,6 +106,9 @@ func dumpJSON(path string, w io.Writer, pretty bool) error {
 	defer src.Close()
 
 	reg := analyzer.NewDefaultRegistry()
+	if regionsOverride != nil {
+		reg.SetRegionsOverride(regionsOverride)
+	}
 	res, err := reg.AnalyzeSource(src, filepath.Base(path))
 	if err != nil {
 		return err
@@ -123,7 +150,7 @@ func dumpEvents(path string, w io.Writer) error {
 	}
 }
 
-func dumpMarkdown(path string, w io.Writer) error {
+func dumpMarkdown(path string, w io.Writer, regionsOverride []config.MapRegionOverride) error {
 	src, err := mvdsource.Open(path)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
@@ -131,6 +158,9 @@ func dumpMarkdown(path string, w io.Writer) error {
 	defer src.Close()
 
 	reg := analyzer.NewDefaultRegistry()
+	if regionsOverride != nil {
+		reg.SetRegionsOverride(regionsOverride)
+	}
 	res, err := reg.AnalyzeSource(src, filepath.Base(path))
 	if err != nil {
 		return err
@@ -138,8 +168,8 @@ func dumpMarkdown(path string, w io.Writer) error {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n\n", filepath.Base(path))
-	fmt.Fprintf(&b, "- duration: %.1fs\n", res.Duration)
 	if res.Match != nil {
+		fmt.Fprintf(&b, "- duration: %.1fs\n", res.Match.Duration)
 		fmt.Fprintf(&b, "- map: %s\n", res.Match.Map)
 		fmt.Fprintf(&b, "- game dir: %s\n", res.Match.GameDir)
 	}
@@ -159,7 +189,14 @@ func dumpMarkdown(path string, w io.Writer) error {
 	if res.Match != nil && len(res.Match.Players) > 0 {
 		fmt.Fprintf(&b, "\n## Players\n\n| Name | Team | Frags | Kills | Deaths |\n|---|---|---:|---:|---:|\n")
 		for _, p := range res.Match.Players {
-			fmt.Fprintf(&b, "| %s | %s | %d | %d | %d |\n", p.Name, p.Team, p.Frags, p.Kills, p.Deaths)
+			var kills, deaths int
+			if res.Frags != nil {
+				if pf, ok := res.Frags.ByPlayer[p.Name]; ok {
+					kills = pf.Kills
+					deaths = pf.Deaths
+				}
+			}
+			fmt.Fprintf(&b, "| %s | %s | %d | %d | %d |\n", p.Name, p.Team, p.Frags, kills, deaths)
 		}
 	}
 
@@ -198,7 +235,7 @@ func dumpMarkdown(path string, w io.Writer) error {
 	return err
 }
 
-func runBulk(demosDir, outDir, format string) error {
+func runBulk(demosDir, outDir, format string, regionsOverride []config.MapRegionOverride) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return err
 	}
@@ -221,7 +258,7 @@ func runBulk(demosDir, outDir, format string) error {
 			failed++
 			continue
 		}
-		err = runOne(filepath.Join(demosDir, name), f, format, false)
+		err = runOne(filepath.Join(demosDir, name), f, format, false, regionsOverride)
 		f.Close()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, name+":", err)

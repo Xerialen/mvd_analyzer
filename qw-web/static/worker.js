@@ -62,5 +62,20 @@ onmessage = function(e) {
         } catch (err) {
             postMessage({ type: 'error', message: err.message || String(err) });
         }
+    } else if (e.data.type === 'recomputeRegions') {
+        // recomputeRegionControl is a Go export living on this worker's
+        // self (js.Global() resolves to the worker scope). Calling it
+        // from the main page would NameError — that's what the v6
+        // shipping bug was — so the round-trip goes through here.
+        if (!wasmReady) {
+            postMessage({ type: 'recompute_error', message: 'WASM not loaded yet' });
+            return;
+        }
+        try {
+            const jsonStr = recomputeRegionControl(e.data.overrideJSON);
+            postMessage({ type: 'recompute_result', json: jsonStr });
+        } catch (err) {
+            postMessage({ type: 'recompute_error', message: err.message || String(err) });
+        }
     }
 };

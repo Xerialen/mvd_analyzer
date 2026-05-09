@@ -88,6 +88,8 @@ const worker = new Worker('worker.js');
 let wasmReady = false;
 let analyzeResolve = null;
 let analyzeReject = null;
+let recomputeResolve = null;
+let recomputeReject = null;
 
 // Hide the wasm-loading overlay. When auto-loading a demo from a URL
 // (?gameId=...), keep it up through the demo download/analyse so the
@@ -143,6 +145,18 @@ worker.onmessage = (e) => {
             analyzeResolve = null;
             analyzeReject = null;
         }
+    } else if (e.data.type === 'recompute_result') {
+        if (recomputeResolve) {
+            recomputeResolve(e.data.json);
+            recomputeResolve = null;
+            recomputeReject = null;
+        }
+    } else if (e.data.type === 'recompute_error') {
+        if (recomputeReject) {
+            recomputeReject(new Error(e.data.message));
+            recomputeResolve = null;
+            recomputeReject = null;
+        }
     }
 };
 
@@ -155,6 +169,18 @@ function analyzeInWorker(bytes, filename) {
             { type: 'analyze', bytes: bytes.buffer, filename },
             [bytes.buffer]
         );
+    });
+}
+
+// recomputeInWorker round-trips an edited regions definition through
+// the WASM bridge living on the worker. The Go function is exported on
+// the worker's self (js.Global()), unreachable from the main page —
+// that's why edited region stats stayed stale before this lane existed.
+function recomputeInWorker(overrideJSON) {
+    return new Promise((resolve, reject) => {
+        recomputeResolve = resolve;
+        recomputeReject = reject;
+        worker.postMessage({ type: 'recomputeRegions', overrideJSON });
     });
 }
 
@@ -784,8 +810,11 @@ async function loadGameFromSearch(game) {
 }
 
 function displayResults(result) {
-    // Reset timeline state before loading new demo
-    resetTimelineState();
+    // Wipe every panel, table, canvas, and JS-side state object that
+    // could carry data from a previous demo. Critical when swapping
+    // between demos with different shapes (e.g. 4on4 → FFA where
+    // teams/regions/etc. are absent and would otherwise survive).
+    resetUIToCleanState();
 
     document.body.classList.remove('no-demo');
 
@@ -801,13 +830,13 @@ function displayResults(result) {
     // Match info from demoInfo
     if (demoInfo) {
         document.getElementById('map-name').textContent = demoInfo.map || result.match?.map || '-';
-        document.getElementById('duration').textContent = formatDuration(demoInfo.duration || result.duration);
+        document.getElementById('duration').textContent = formatDuration(demoInfo.duration || result.match?.duration);
         document.getElementById('mode').textContent = demoInfo.mode || '-';
         document.getElementById('hostname').textContent = demoInfo.hostname || '-';
         document.getElementById('match-date').textContent = demoInfo.date || '-';
     } else if (result.match) {
         document.getElementById('map-name').textContent = result.match.map || '-';
-        document.getElementById('duration').textContent = formatDuration(result.duration);
+        document.getElementById('duration').textContent = formatDuration(result.match.duration);
     }
 
     // Match settings + server info from the new metadata analyzer.
@@ -2352,6 +2381,176 @@ let timelineState = {
 };
 
 // Reset all timeline state for loading a new demo
+// resetUIToCleanState wipes every panel, table, canvas, and JS-side
+// state object that could carry data from a previous demo. Called at
+// the top of displayResults() so each load starts from a blank slate.
+// Without this, conditionally-populated panels (teams, scoreboards,
+// timeline graphs, map view, …) survive a swap from e.g. a 4on4 demo
+// to an FFA demo that simply lacks those fields.
+function resetUIToCleanState() {
+    resetTimelineState();
+
+    document.title = 'MVD Analyzer';
+
+    // Match info fields
+    const setText = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = v;
+    };
+    const setHTML = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = v;
+    };
+    const hide = id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    };
+
+    setText('map-name', '-');
+    setText('duration', '-');
+    setText('mode', '-');
+    setText('hostname', '-');
+    setText('match-date', '-');
+
+    // Topbar demo info
+    setHTML('topbar-demo-info', '');
+
+    // Match settings + server info panels
+    setHTML('match-settings-grid', '');
+    setHTML('match-modifiers', '');
+    hide('match-settings-panel');
+    hide('match-modifiers-row');
+    setHTML('server-info-body', '');
+    hide('server-info-panel');
+
+    // Teams
+    setHTML('teams-list', '');
+
+    // Player / weapon / item tables (per-team + per-player)
+    for (const id of [
+        'player-stats-team-body', 'scoreboard-body',
+        'weapon-stats-team-body', 'weapon-stats-body',
+        'items-team-body', 'items-body',
+    ]) setHTML(id, '');
+
+    // Weapons chart
+    setHTML('weapons-chart', '');
+
+    // Timeline canvases
+    for (const cid of [
+        'detail-graph-canvas', 'health-armor-canvas',
+        'frags-canvas', 'score-canvas',
+        'powerup-canvas', 'region-control-canvas',
+    ]) {
+        const c = document.getElementById(cid);
+        if (c && c.getContext) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+    }
+    hide('powerup-timeline-panel');
+    hide('region-control-timeline-panel');
+    hide('unified-timeline');
+    setText('time-range-label', '');
+
+    // Chat
+    for (const id of ['chat-time-axis', 'kill-messages', 'team-a-messages', 'team-b-messages']) {
+        setHTML(id, '');
+    }
+    setText('team-a-chat-title', 'Team A Chat');
+    setText('team-b-chat-title', 'Team B Chat');
+
+    // Map view
+    const mapCanvas = document.getElementById('map-canvas');
+    if (mapCanvas && mapCanvas.getContext) {
+        mapCanvas.getContext('2d').clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+    }
+    setHTML('map-legend', '');
+    setHTML('map-items-body', '');
+    hide('map-items-panel');
+    hide('map-no-data');
+    setHTML('region-control-body', '');
+    hide('region-control-panel');
+    setHTML('region-status-body', '');
+    hide('region-status-panel');
+    setHTML('region-config', '');
+
+    // Loc graph
+    if (locGraphState.cy) {
+        try { locGraphState.cy.destroy(); } catch (_) {}
+        locGraphState.cy = null;
+    }
+    locGraphState.graph = null;
+    locGraphState.result = null;
+    setHTML('locgraph-canvas', '');
+    hide('locgraph-no-data');
+
+    // Key moments
+    setHTML('keymoments-body', '');
+    hide('keymoments-empty');
+    setHTML('fragstreaks-body', '');
+    hide('fragstreaks-empty');
+
+    // Pack drops
+    setHTML('packdrops-body', '');
+    hide('packdrops-empty');
+    setText('packdrops-count', '');
+
+    // Pickups tables (thead + tbody both rebuilt from scratch each load)
+    for (const id of [
+        'pickups-weap-team-table', 'pickups-weap-player-table',
+        'pickups-item-team-table', 'pickups-item-player-table',
+    ]) {
+        const t = document.getElementById(id);
+        if (!t) continue;
+        const head = t.querySelector('thead');
+        const body = t.querySelector('tbody');
+        if (head) head.innerHTML = '';
+        if (body) body.innerHTML = '';
+    }
+    hide('pickups-empty');
+    // pickups-items-panel is shown by displayPickupsTab when item data exists
+
+    // Body class — duel-mode collapses some panels via CSS; clear it so
+    // a non-duel demo loaded after a duel doesn't inherit the layout.
+    document.body.classList.remove('duel-mode');
+
+    // JS-side state objects that hold per-demo data
+    mapState.locations = [];
+    mapState.locationGroups = null;
+    mapState.mapGeometry = null;
+    mapState.bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    mapState.currentTime = 0;
+    mapState.isPlaying = false;
+    mapState.playbackSpeed = 1;
+    mapState.animationFrameId = null;
+    mapState.lastRenderTime = 0;
+    mapState.fullTrails = {};
+    mapState.trailStartTimes = {};
+    mapState.enabledPlayers = {};
+    mapState.teams = [];
+    mapState.playerSymbols = {};
+    mapState.lastRenderedBucket = null;
+    mapState.renderDirty = false;
+    mapState.followPlayer = null;
+    if ('controlRegions' in mapState) mapState.controlRegions = null;
+    if ('rcResult' in mapState) mapState.rcResult = null;
+    if ('locToRegion' in mapState) mapState.locToRegion = {};
+    if ('dropEvents' in mapState) mapState.dropEvents = [];
+    if ('zRange' in mapState) mapState.zRange = null;
+    if ('locTable' in mapState) mapState.locTable = [''];
+
+    packDropsState.rows = [];
+    packDropsState.hubInfo = null;
+    packDropsState.playerUserIDs = null;
+
+    if (typeof weaponGraphHitState !== 'undefined') {
+        weaponGraphHitState.W = null;
+        weaponGraphHitState.dropMarks = [];
+    }
+    if (typeof powerupGraphHitState !== 'undefined') {
+        powerupGraphHitState.W = null;
+        powerupGraphHitState.rows = [];
+    }
+}
+
 function resetTimelineState() {
     if (mapState.isPlaying) stopPlayback();
     timelineState.highResBuckets = [];
@@ -2404,7 +2603,7 @@ function displayTimelineAnalysis(result) {
     timelineState.highResDuration = timeline?.highResDuration || 0.05;
     timelineState.matchStartTime = timeline?.matchStartTime || 0;
     timelineState.demoOffset = timeline?.demoOffset || 0;
-    timelineState.duration = result.duration || 600;
+    timelineState.duration = result.match?.duration || 600;
     timelineState.events = result.messages?.events || [];
     timelineState.fragEvents = timeline?.fragEvents || []; // Frag events from stat tracking
     timelineState.backpacks = result.backpacks || [];      // RL/LG drops from KTX hint
@@ -3599,69 +3798,49 @@ function updateScoreTimeline(startTime, endTime) {
 
 // ─── Region Control Timeline ────────────────────────────────────────────────
 //
-// One row per control region; each row colors contiguous spans according to
-// classifyRegionState (single source of truth, shared with the live map).
-// Only the "strong" states (solo armed control + armed-vs-armed contested)
-// paint pixels — weak states render as gaps to keep the color story readable.
+// One row per control region; each row colors contiguous spans by indexing
+// into mapState.bucketStates (the Go-supplied per-bucket state strings from
+// analyzer.ComputeRegionControl). Only the "strong" states (solo armed
+// control + armed-vs-armed contested) paint pixels — weak states render as
+// gaps to keep the color story readable.
 
 const RC_ROW_H = 20;
 const RC_AXIS_H = 20;
 
 function prepRegionControlData(startTime, endTime, teams) {
     const regions = mapState.controlRegions;
-    if (!regions || regions.length === 0 || !mapState.locToRegion) return null;
+    const bucketStates = mapState.bucketStates;
+    if (!regions || regions.length === 0 || !bucketStates) return null;
     const hrBuckets = timelineState.highResBuckets;
     if (!hrBuckets || !hrBuckets.length) return null;
 
-    const teamA = teams[0], teamB = teams[1];
-    const locations = mapState.locations;
-    const symbols = mapState.playerSymbols || {};
+    // Team labels come from the Go-supplied regionControl when present
+    // (matches the bucketStates A/B encoding); fall back to mapState.teams
+    // for the rendering layer that wants to show team names.
+    const teamA = mapState.teamA || teams[0];
+    const teamB = mapState.teamB || teams[1];
+
     const idx0 = binarySearchBucketStart(hrBuckets, startTime);
-
-    const rows = regions.map(r => ({ name: r.name, spans: [], _cur: null, _start: startTime }));
-    const rowByName = new Map(rows.map(r => [r.name, r]));
-
-    for (let i = idx0; i < hrBuckets.length; i++) {
-        const b = hrBuckets[i];
-        if (b.t > endTime) break;
-
-        // Accumulate per-region armed/unarmed counts for this bucket.
-        const perRegion = new Map();
-        const pd = b.p;
-        if (pd) {
-            for (const name in pd) {
-                const data = pd[name];
-                if (!data || data.d) continue;
-                if (data.h !== undefined && data.h <= 0) continue;
-                const locName = resolvePlayerLoc(data, locations);
-                if (!locName) continue;
-                const rName = mapState.locToRegion[locName];
-                if (!rName || !rowByName.has(rName)) continue;
-                const sym = symbols[name];
-                const pTeam = sym ? (teams[sym.teamIdx] || '') : '';
-                const hasWpn = data.rl || data.lg;
-                let agg = perRegion.get(rName);
-                if (!agg) { agg = { aWpn: 0, aNo: 0, bWpn: 0, bNo: 0 }; perRegion.set(rName, agg); }
-                if (pTeam === teamA)      { if (hasWpn) agg.aWpn++; else agg.aNo++; }
-                else if (pTeam === teamB) { if (hasWpn) agg.bWpn++; else agg.bNo++; }
+    const rows = [];
+    for (const r of regions) {
+        const s = bucketStates[r.name];
+        if (typeof s !== 'string') continue;
+        const spans = [];
+        let curState = null;
+        let curStart = startTime;
+        for (let i = idx0; i < hrBuckets.length; i++) {
+            const b = hrBuckets[i];
+            if (b.t > endTime) break;
+            const c = i < s.length ? s[i] : '_';
+            const state = decodeRegionStateChar(c);
+            if (state !== curState) {
+                if (curState) spans.push({ start: curStart, end: b.t, state: curState });
+                curState = state;
+                curStart = b.t;
             }
         }
-
-        for (const row of rows) {
-            const agg = perRegion.get(row.name);
-            const state = agg
-                ? classifyRegionState(agg.aWpn, agg.aNo, agg.bWpn, agg.bNo)
-                : 'empty';
-            if (state !== row._cur) {
-                if (row._cur) row.spans.push({ start: row._start, end: b.t, state: row._cur });
-                row._cur = state;
-                row._start = b.t;
-            }
-        }
-    }
-    for (const row of rows) {
-        if (row._cur) row.spans.push({ start: row._start, end: endTime, state: row._cur });
-        delete row._cur; delete row._start;
+        if (curState) spans.push({ start: curStart, end: endTime, state: curState });
+        rows.push({ name: r.name, spans });
     }
     return { rows, teamA, teamB };
 }
@@ -4084,31 +4263,33 @@ function computeMapZRange(locations) {
     return { lo, hi };
 }
 
-// Classify region control state from per-team head counts. Single source of
-// truth for everywhere on the page that derives a state from raw presence:
-// the strip, the per-frame map overlay, the stats table, and the status panel.
-//
-// States:
-//   empty            — no living players in the region
-//   teamAControl     — team A present and team A has at least one RL/LG, AND
-//                      team B has no RL/LG holders here (B may be absent or
-//                      present but unarmed; an unarmed B player is dominated)
-//   teamAWeakControl — team A present without RL/LG and team B fully absent
-//   teamBControl / teamBWeakControl — mirror of the above
-//   contested        — both teams present AND each team has at least one
-//                      RL/LG holder here (real fight)
-//   weakContested    — both teams present, neither team has any RL/LG
-//                      (skirmish without major weapons)
-function classifyRegionState(aWpn, aNo, bWpn, bNo) {
-    const aT = aWpn + aNo, bT = bWpn + bNo;
-    if (aT === 0 && bT === 0) return 'empty';
-    if (aT > 0 && bT === 0)   return aWpn > 0 ? 'teamAControl' : 'teamAWeakControl';
-    if (bT > 0 && aT === 0)   return bWpn > 0 ? 'teamBControl' : 'teamBWeakControl';
-    // Both teams present.
-    if (aWpn > 0 && bWpn === 0) return 'teamAControl';
-    if (bWpn > 0 && aWpn === 0) return 'teamBControl';
-    if (aWpn > 0 && bWpn > 0)   return 'contested';
-    return 'weakContested';
+// Map the compact one-char-per-bucket state codes emitted by the Go
+// analyzer (qwanalytics/analyzer/region_control.go) back to the JS
+// state names used by displayRegionControlTable / drawRegionControlOverlay.
+const REGION_STATE_BY_CHAR = {
+    '_': 'empty',
+    'A': 'teamAControl', 'a': 'teamAWeakControl',
+    'B': 'teamBControl', 'b': 'teamBWeakControl',
+    'C': 'contested',    'c': 'weakContested',
+};
+
+function decodeRegionStateChar(c) {
+    return REGION_STATE_BY_CHAR[c] || 'empty';
+}
+
+// findHighResBucketIndexAtTime returns the index into
+// timelineState.highResBuckets that findHighResBucketAtTime would land
+// on — used for cheap lookups into Go-supplied bucketStates strings.
+function findHighResBucketIndexAtTime(time) {
+    const buckets = timelineState.highResBuckets;
+    if (!buckets || buckets.length === 0) return -1;
+    let low = 0, high = buckets.length - 1;
+    while (low < high) {
+        const mid = Math.floor((low + high + 1) / 2);
+        if (buckets[mid].t <= time) low = mid;
+        else high = mid - 1;
+    }
+    return low;
 }
 
 // Prefer the server-resolved loc name (3D nearest, matches ezQuake exactly).
@@ -4734,6 +4915,15 @@ function initRegionControlData(result) {
         }
     }
     computeRegionStacking(mapState.controlRegions);
+
+    // Pick up the Go-precomputed control data when the result schema
+    // carries it (v6+). Used by getRegionControlAtTime for cheap
+    // lookups and by initRegionControl to skip the JS recompute on
+    // initial load.
+    mapState.bucketStates      = rc.bucketStates || null;
+    mapState.regionControlStats = rc.stats || null;
+    mapState.teamA              = rc.teamA || null;
+    mapState.teamB              = rc.teamB || null;
 }
 
 function initRegionControl(result) {
@@ -4758,8 +4948,11 @@ function initRegionControl(result) {
     // Build region config UI (editable text fields per region)
     buildRegionConfig(rc.regions);
 
-    // Apply regions (builds lookups, computes stats, renders table)
-    applyRegionConfig();
+    // Render the table from the Go-supplied bucketStates / stats that
+    // initRegionControlData stashed on mapState. User edits route through
+    // applyRegionConfig, which calls the WASM bridge to refresh both.
+    renderRegionControlTableFromGo(rc.regions, mapState.regionControlStats, mapState.teamA, mapState.teamB);
+    mapState.renderDirty = true;
 
     if (panel) panel.style.display = '';
     if (statusPanel) statusPanel.style.display = '';
@@ -4837,7 +5030,7 @@ function readRegionConfigFromUI() {
     return out;
 }
 
-function applyRegionConfig() {
+async function applyRegionConfig() {
     const rc = mapState.rcResult;
     if (!rc) return;
 
@@ -4911,8 +5104,32 @@ function applyRegionConfig() {
         }
     }
 
-    // Recompute stats from high-res buckets
-    recomputeRegionStats(regions);
+    // Recompute control stats via the WASM bridge
+    // (analyzer.ComputeRegionControl). Built and shipped together
+    // with this JS, so the export is always available.
+    const overrideJSON = JSON.stringify({
+        regions: regions.map(r => ({
+            name: r.name,
+            locs: r.points.map(p => p.name),
+        })),
+    });
+    let res;
+    try {
+        const jsonStr = await recomputeInWorker(overrideJSON);
+        res = JSON.parse(jsonStr);
+    } catch (err) {
+        console.warn('recomputeRegionControl:', err.message);
+        return;
+    }
+    if (res.error) {
+        console.warn('recomputeRegionControl:', res.error);
+        return;
+    }
+    mapState.bucketStates       = res.bucketStates || null;
+    mapState.regionControlStats = res.stats || null;
+    mapState.teamA              = res.teamA || mapState.teamA;
+    mapState.teamB              = res.teamB || mapState.teamB;
+    renderRegionControlTableFromGo(regions, res.stats, res.teamA, res.teamB);
 
     // Force map redraw
     mapState.renderDirty = true;
@@ -4922,88 +5139,20 @@ function applyRegionConfig() {
     updateDetailView();
 }
 
-function recomputeRegionStats(regions) {
-    const buckets = timelineState.highResBuckets;
-    if (!buckets || buckets.length === 0 || regions.length === 0) return;
-
-    const teams = mapState.teams || [];
-    if (teams.length < 2) return;
-    const teamA = teams[0], teamB = teams[1];
-
-    // Initialize counters
-    const counters = {};
+// renderRegionControlTableFromGo decorates Go-supplied per-region
+// stats with teamA/teamB strings (the Go shape carries those at the
+// parent level, not on each region) and forwards to the existing
+// displayRegionControlTable renderer.
+function renderRegionControlTableFromGo(regions, stats, teamA, teamB) {
+    if (!stats) return;
+    const decorated = {};
     for (const r of regions) {
-        counters[r.name] = { aC: 0, aW: 0, con: 0, wcon: 0, emp: 0, bW: 0, bC: 0 };
+        const s = stats[r.name];
+        if (!s) continue;
+        decorated[r.name] = Object.assign({}, s, { teamA, teamB });
     }
-
-    let total = 0;
-    const locations = mapState.locations;
-
-    for (const bucket of buckets) {
-        const playerData = bucket.p;
-        if (!playerData) continue;
-        total++;
-
-        // Per-region presence
-        const presence = {};
-        for (const r of regions) {
-            presence[r.name] = { aWpn: 0, aNo: 0, bWpn: 0, bNo: 0 };
-        }
-
-        for (const [name, data] of Object.entries(playerData)) {
-            if (data.d || (data.h !== undefined && data.h <= 0)) continue;
-            if (data.x === 0 && data.y === 0) continue;
-
-            const nearest = resolvePlayerLoc(data, locations);
-            if (!nearest) continue;
-            const regionName = mapState.locToRegion[nearest];
-            if (!regionName || !presence[regionName]) continue;
-
-            const sym = mapState.playerSymbols[name];
-            const playerTeam = sym ? teams[sym.teamIdx] : null;
-            const hasWeapon = data.rl || data.lg;
-            const p = presence[regionName];
-
-            if (playerTeam === teamA) {
-                if (hasWeapon) p.aWpn++; else p.aNo++;
-            } else if (playerTeam === teamB) {
-                if (hasWeapon) p.bWpn++; else p.bNo++;
-            }
-        }
-
-        for (const r of regions) {
-            const p = presence[r.name];
-            const c = counters[r.name];
-            switch (classifyRegionState(p.aWpn, p.aNo, p.bWpn, p.bNo)) {
-                case 'empty':            c.emp++;  break;
-                case 'teamAControl':     c.aC++;   break;
-                case 'teamAWeakControl': c.aW++;   break;
-                case 'teamBControl':     c.bC++;   break;
-                case 'teamBWeakControl': c.bW++;   break;
-                case 'contested':        c.con++;  break;
-                case 'weakContested':    c.wcon++; break;
-            }
-        }
-    }
-
-    if (total === 0) return;
-
-    // Build stats and display
-    const pct = (v) => Math.round(v / total * 1000) / 10;
-    const stats = {};
-    for (const r of regions) {
-        const c = counters[r.name];
-        stats[r.name] = {
-            teamAControl: pct(c.aC), teamAWeakControl: pct(c.aW),
-            contested: pct(c.con), weakContested: pct(c.wcon),
-            empty: pct(c.emp),
-            teamBWeakControl: pct(c.bW), teamBControl: pct(c.bC),
-            teamA, teamB,
-        };
-    }
-
-    mapState.controlStats = stats;
-    displayRegionControlTable(regions, stats);
+    mapState.controlStats = decorated;
+    displayRegionControlTable(regions, decorated);
 }
 
 function displayRegionControlTable(regions, stats) {
@@ -5111,58 +5260,17 @@ function cellBg(color, pct, intensityScale) {
     return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
 }
 
-// Compute real-time region control state at a given time
+// Look up region control state at a given time by indexing into the
+// Go-supplied bucketStates strings (analyzer.ComputeRegionControl).
 function getRegionControlAtTime(time) {
-    if (!mapState.controlRegions || !mapState.locToRegion) return null;
-
-    const bucket = findBucketAtTime(time);
-    if (!bucket) return null;
-
-    const playerData = bucket.p;
-    if (!playerData) return null;
-
-    const teams = mapState.teams || [];
-    if (teams.length < 2) return null;
-    const teamA = teams[0], teamB = teams[1];
-
-    // Per-region presence
-    const presence = {};
-    for (const region of mapState.controlRegions) {
-        presence[region.name] = { aWpn: 0, aNo: 0, bWpn: 0, bNo: 0 };
-    }
-
-    // Check each player
-    const locations = mapState.locations;
-    for (const [name, data] of Object.entries(playerData)) {
-        if (data.d || (data.h !== undefined && data.h <= 0)) continue; // dead
-        if (data.x === 0 && data.y === 0) continue;
-
-        // Find loc via authoritative server-resolved name when available
-        const nearest = resolvePlayerLoc(data, locations);
-        if (!nearest) continue;
-
-        const regionName = mapState.locToRegion[nearest];
-        if (!regionName) continue;
-
-        const p = presence[regionName];
-        if (!p) continue;
-
-        const hasWeapon = data.rl || data.lg;
-        const sym = mapState.playerSymbols[name];
-        const playerTeam = sym ? teams[sym.teamIdx] : null;
-
-        if (playerTeam === teamA) {
-            if (hasWeapon) p.aWpn++; else p.aNo++;
-        } else if (playerTeam === teamB) {
-            if (hasWeapon) p.bWpn++; else p.bNo++;
-        }
-    }
-
-    // Determine state per region (single source of truth in classifyRegionState).
+    if (!mapState.controlRegions || !mapState.bucketStates) return null;
+    const idx = findHighResBucketIndexAtTime(time);
+    if (idx < 0) return null;
     const states = {};
     for (const region of mapState.controlRegions) {
-        const p = presence[region.name];
-        states[region.name] = classifyRegionState(p.aWpn, p.aNo, p.bWpn, p.bNo);
+        const s = mapState.bucketStates[region.name];
+        if (typeof s !== 'string' || idx >= s.length) continue;
+        states[region.name] = decodeRegionStateChar(s[idx]);
     }
     return states;
 }

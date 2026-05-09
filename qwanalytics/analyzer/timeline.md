@@ -50,10 +50,37 @@ The analyser is split across several files:
 6. **Streaks**: spawn-to-death runs are paired up, each scored by
    frag count during the run. Top 10 by frag count are emitted as
    `FragStreakEvent`.
-7. **Regions**: per-loc dwell time and inter-loc transit counts are
-   aggregated. Region definitions come from per-map config.
-8. **Powerups**: per-slot quad/pent/ring presence transitions are
+7. **Regions**: region definitions come from per-map config
+   (`config/regions/<map>.json`); a CLI flag (`-regions <path>`) or a
+   programmatic setter (`Registry.SetRegionsOverride`) can replace
+   them. Each `ControlRegion` carries an explicit `locs` list that
+   names its membership.
+8. **Region control**: `ComputeRegionControl` (in
+   [`region_control.go`](region_control.go)) classifies each high-res
+   bucket into one of seven states — empty / teamA[Weak]Control /
+   teamB[Weak]Control / contested / weakContested — with "armed" =
+   carrying RL or LG. Output is per-region `bucketStates` (one ASCII
+   char per bucket) plus match-aggregate `stats`. The function is
+   pure and re-callable: WASM exposes `recomputeRegionControl` for
+   the web UI's region-edit flow, and a future MCP wrapper will use
+   the same entrypoint.
+9. **Powerups**: per-slot quad/pent/ring presence transitions are
    converted to `PowerupEvent` records with start/end times.
+
+### Per-bucket player state (compact JSON keys)
+
+Each `HighResPlayerData` snapshot ships:
+
+- position `x`/`y`/`z`, health `h`, armor `a`, armor type `at` (`ga`/`ya`/`ra`)
+- weapons: `rl`, `lg`, `gl` (added v6), `ssg`, `sng`. Shotgun (baseline)
+  and NG (functionally useless) are intentionally not tracked.
+- powerups: `q` (quad), `pe` (pent), `r` (ring)
+- ammo: `sh` shells (v6), `nl` nails (v6), `rk` rockets, `cl` cells
+- `d` death-frame marker, `sp` spawn-frame marker, `li` loc-table index
+
+Per-team aggregates (`HighResTeamData`) include the heavy-weapon
+RL/LG/RLLG/W counters plus an independent `gl` axis (v6),
+powerup-holder counts, total health/armor, and armor-by-type breakdown.
 
 ## Limitations / known issues
 

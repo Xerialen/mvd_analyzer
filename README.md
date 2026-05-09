@@ -137,8 +137,10 @@ world spawners and RL/LG backpacks — with a kills-before-next-death
 effectiveness metric; joins to backpacks via `backpackEnt` ==
 `backpacks[].entNum`).
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `5`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `6`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
+The full per-field reference lives in
+[qwanalytics/RESULT_SCHEMA.md](qwanalytics/RESULT_SCHEMA.md).
 
 ### Running the pipeline
 
@@ -202,6 +204,7 @@ mvd-analyzer/
 
 - [qwdemo/README.md](qwdemo/README.md) — ingestion layer, how to add a source
 - [qwanalytics/README.md](qwanalytics/README.md) — pipeline, how to add an analyzer, Result schema
+- [qwanalytics/RESULT_SCHEMA.md](qwanalytics/RESULT_SCHEMA.md) — Result JSON schema reference (every field, every section)
 - [qw-web/README.md](qw-web/README.md) — browser UI, build and deploy
 - [qwdemo/MVD_FORMAT.md](qwdemo/MVD_FORMAT.md) — MVD binary format spec with ezQuake references
 

@@ -135,9 +135,6 @@ func (a *MatchAnalyzer) Finalize(result *Result) error {
 	}
 
 	result.Match = mr
-	if mr.EndTime > 0 {
-		result.Duration = mr.EndTime
-	}
 	return nil
 }
 

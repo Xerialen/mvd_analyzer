@@ -11,13 +11,14 @@ type MatchResult struct {
 	Teams     []TeamStat   `json:"teams,omitempty"`
 }
 
-// PlayerStat represents a player's final statistics.
+// PlayerStat represents a player's final statistics. Per-player kill
+// and death counts live in FragResult.ByPlayer (and DemoInfoResult for
+// KTX demos); MatchResult is the lightweight non-KTX-fallback view and
+// only carries the canonical QW frag tally.
 type PlayerStat struct {
-	Name   string `json:"name"`
-	Team   string `json:"team"`
-	Kills  int    `json:"kills"`
-	Deaths int    `json:"deaths"`
-	Frags  int    `json:"frags"`
+	Name  string `json:"name"`
+	Team  string `json:"team"`
+	Frags int    `json:"frags"`
 }
 
 // TeamStat represents a team's statistics.

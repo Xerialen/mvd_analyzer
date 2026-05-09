@@ -51,7 +51,7 @@ func (a *MessagesAnalyzer) handlePrint(e *events.PrintEvent) error {
 		// Parse chat message format: "name: message" or "(team) name: message"
 		event := a.parseChatMessage(msg, e.Time)
 		if event != nil {
-			a.events = append(a.events, *event)
+			a.appendEvent(event)
 		}
 		return nil
 	}
@@ -60,11 +60,24 @@ func (a *MessagesAnalyzer) handlePrint(e *events.PrintEvent) error {
 	if e.Level <= 2 {
 		frag := a.parseObituarySimple(msg, e.Time)
 		if frag != nil {
-			a.events = append(a.events, *frag)
+			a.appendEvent(frag)
 		}
 	}
 
 	return nil
+}
+
+// appendEvent stores a MatchEvent and fills MessageClean when it would
+// differ from the raw Message. Frag obit descriptions are already
+// plain text, so Clean == Message and we leave Clean empty to let the
+// omitempty wire elision keep the payload small. Chat / teamsay text
+// often carries ezQuake markup (color codes, sound triggers, macro
+// delimiters) — there StripChatMarkup produces a plain-text twin.
+func (a *MessagesAnalyzer) appendEvent(ev *MatchEvent) {
+	if cleaned := events.StripChatMarkup(ev.Message); cleaned != ev.Message {
+		ev.MessageClean = cleaned
+	}
+	a.events = append(a.events, *ev)
 }
 
 // parseChatMessage parses a chat message and extracts player, team, and text

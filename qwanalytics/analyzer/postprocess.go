@@ -22,8 +22,6 @@ func normalizeMatchRelativeTimes(result *Result, _ *CoreOutputs) {
 		return
 	}
 
-	result.Duration -= matchStart
-
 	if ta := result.TimelineAnalysis; ta != nil {
 		for i := range ta.HighResBuckets {
 			ta.HighResBuckets[i].T -= matchStart
@@ -43,13 +41,33 @@ func normalizeMatchRelativeTimes(result *Result, _ *CoreOutputs) {
 		ta.MatchStartTime = 0
 
 		// Filter out warmup buckets (negative times after normalization).
+		dropped := 0
 		filteredHR := ta.HighResBuckets[:0]
 		for _, b := range ta.HighResBuckets {
 			if b.T >= 0 {
 				filteredHR = append(filteredHR, b)
+			} else {
+				dropped++
 			}
 		}
 		ta.HighResBuckets = filteredHR
+
+		// RegionControl.BucketStates was computed before this filter
+		// ran (in TimelineAnalyzer.Finalize), so the strings still
+		// include the dropped warmup samples. Slice off the same
+		// prefix to keep bucketStates[regionName][i] aligned with
+		// HighResBuckets[i], then recompute aggregate Stats from the
+		// truncated strings so percentages reflect match-only state.
+		if dropped > 0 && ta.RegionControl != nil && len(ta.RegionControl.BucketStates) > 0 {
+			for name, s := range ta.RegionControl.BucketStates {
+				if dropped < len(s) {
+					ta.RegionControl.BucketStates[name] = s[dropped:]
+				} else {
+					ta.RegionControl.BucketStates[name] = ""
+				}
+			}
+			ta.RegionControl.Stats = recomputeRegionStatsFromStrings(ta.RegionControl.BucketStates)
+		}
 	}
 
 	if result.Messages != nil {
