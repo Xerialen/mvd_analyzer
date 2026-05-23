@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"syscall/js"
+	"time"
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/config"
@@ -18,6 +19,11 @@ import (
 // recomputeRegionControl with edited regions and get fresh stats
 // without re-parsing the demo. Cleared/replaced by each analyze call.
 var lastResult *analyzer.Result
+
+// lastTimingsJSON holds the per-phase pipeline timings (plus the JSON
+// marshal cost) from the most recent analyze call, surfaced to the
+// browser console via getAnalysisTimings. Replaced by each analyze call.
+var lastTimingsJSON string
 
 func analyze(this js.Value, args []js.Value) interface{} {
 	if len(args) < 1 {
@@ -51,12 +57,49 @@ func analyze(this js.Value, args []js.Value) interface{} {
 
 	lastResult = res
 
+	marshalStart := time.Now()
 	jsonBytes, err := json.Marshal(res)
 	if err != nil {
 		return errorJSON(err.Error())
 	}
+	marshalMs := float64(time.Since(marshalStart).Microseconds()) / 1000
+
+	if tb, err := json.Marshal(map[string]interface{}{
+		"phases":    registry.PhaseTimings,
+		"marshalMs": marshalMs,
+	}); err == nil {
+		lastTimingsJSON = string(tb)
+	}
 
 	return string(jsonBytes)
+}
+
+// getAnalysisTimings returns the per-phase pipeline timings (init, event
+// pass, each analyzer Finalize, each post-processor) plus the JSON
+// marshal cost from the most recent analyzeMVD call, as a JSON string.
+// Kept separate from analyzeMVD's return value so the frontend's
+// Result-parsing path is unaffected.
+func getAnalysisTimings(this js.Value, args []js.Value) interface{} {
+	if lastTimingsJSON == "" {
+		return "{}"
+	}
+	return lastTimingsJSON
+}
+
+// getDemoInfo returns just the KTX demoinfo summary (result.DemoInfo —
+// map, players, teams, scores, date) from the most recent analyzeMVD call
+// as a JSON string, or "null" if unavailable. Zero extra cost: the data is
+// already computed and pinned in lastResult, so a consumer that only wants
+// the match summary can read it without re-marshalling the full Result.
+func getDemoInfo(this js.Value, args []js.Value) interface{} {
+	if lastResult == nil || lastResult.DemoInfo == nil {
+		return "null"
+	}
+	b, err := json.Marshal(lastResult.DemoInfo)
+	if err != nil {
+		return errorJSON(err.Error())
+	}
+	return string(b)
 }
 
 // getDefaultBuckets returns the v6-shape []HighResBucket array — what
@@ -282,6 +325,8 @@ func main() {
 	js.Global().Set("getStreamSlice", js.FuncOf(getStreamSlice))
 	js.Global().Set("getStateAt", js.FuncOf(getStateAt))
 	js.Global().Set("getLocTrails", js.FuncOf(getLocTrails))
+	js.Global().Set("getAnalysisTimings", js.FuncOf(getAnalysisTimings))
+	js.Global().Set("getDemoInfo", js.FuncOf(getDemoInfo))
 	js.Global().Set("wasmVersion", map[string]interface{}{
 		"hash": GitHash,
 		"tag":  GitTag,

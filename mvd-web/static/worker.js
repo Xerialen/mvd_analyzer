@@ -3,6 +3,12 @@
 
 importScripts('wasm_exec.js');
 
+// Per-analyze buffers recording the cost of the synchronous loc/bsp
+// fetches the WASM module pulls during analyzeMVD. Reset at the start of
+// each analyze so the reported numbers belong to the current demo only.
+let locFetches = [];
+let bspFetches = [];
+
 // Synchronous loc fetcher exposed to the WASM module. The Go side calls
 // this from internal/loc/loader_wasm.go during analysis to pull the
 // per-map .loc file on demand instead of bundling all locs into the
@@ -17,18 +23,22 @@ importScripts('wasm_exec.js');
 // names like "o?=o?=o?=.RL.low" instead of "SSG.RL.low".
 self.fetchLocSync = function(mapName) {
     if (!mapName) return null;
+    const t0 = performance.now();
     try {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', 'locs/' + mapName + '.loc', false); // false = synchronous
         xhr.responseType = 'arraybuffer';
         xhr.send(null);
         if (xhr.status === 200 && xhr.response) {
-            return new Uint8Array(xhr.response);
+            const bytes = new Uint8Array(xhr.response);
+            locFetches.push({ map: mapName, ms: performance.now() - t0, bytes: bytes.length });
+            return bytes;
         }
     } catch (e) {
         // Network errors / CORS / 404 — fall through to null so Go reports
         // "no loc file for map ...".
     }
+    locFetches.push({ map: mapName, ms: performance.now() - t0, bytes: 0 });
     return null;
 };
 
@@ -42,30 +52,60 @@ self.fetchLocSync = function(mapName) {
 // directory simply get V1 everywhere.
 self.fetchBspSync = function(mapName) {
     if (!mapName) return null;
+    const t0 = performance.now();
     try {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', 'bsps/' + mapName + '.bsp', false);
         xhr.responseType = 'arraybuffer';
         xhr.send(null);
         if (xhr.status === 200 && xhr.response) {
-            return new Uint8Array(xhr.response);
+            const bytes = new Uint8Array(xhr.response);
+            bspFetches.push({ map: mapName, ms: performance.now() - t0, bytes: bytes.length });
+            return bytes;
         }
     } catch (e) {
         // 404 / network / CORS — null falls back to V1 on the Go side.
     }
+    bspFetches.push({ map: mapName, ms: performance.now() - t0, bytes: 0 });
     return null;
 };
+
+// logWorkerTimings prints the worker-side breakdown: the total WASM
+// analyze wall time, the Go per-phase split, and the synchronous loc/bsp
+// fetches (which are included in the wall time). Subtract loc+bsp fetch
+// from the "finalize:timelineAnalysis" phase to get pure loc-resolution compute.
+function logWorkerTimings(t) {
+    try {
+        const locMs = t.locFetch.reduce((s, f) => s + f.ms, 0);
+        const bspMs = t.bspFetch.reduce((s, f) => s + f.ms, 0);
+        console.groupCollapsed(
+            `[mvd-timing] WASM analyze ${t.wasmAnalyzeMs.toFixed(1)} ms ` +
+            `(loc fetch ${locMs.toFixed(1)} ms, bsp fetch ${bspMs.toFixed(1)} ms)`
+        );
+        const rows = (t.goPhases || []).map(p => ({ phase: p.name, ms: +p.ms.toFixed(2) }));
+        rows.push({ phase: 'marshal', ms: +(t.marshalMs || 0).toFixed(2) });
+        console.table(rows);
+        if (t.locFetch.length) console.table(t.locFetch);
+        if (t.bspFetch.length) console.table(t.bspFetch);
+        console.groupEnd();
+    } catch (e) {
+        console.warn('[mvd-timing] worker log failed:', e);
+    }
+}
 
 let wasmReady = false;
 
 async function initWasm() {
+    const t0 = performance.now();
     const go = new Go();
     const result = await WebAssembly.instantiateStreaming(
         fetch('analyzer.wasm'), go.importObject
     );
     go.run(result.instance);
     wasmReady = true;
-    postMessage({ type: 'ready', version: self.wasmVersion || null });
+    const wasmLoadMs = performance.now() - t0;
+    console.log(`[mvd-timing] wasm load+instantiate: ${wasmLoadMs.toFixed(1)} ms`);
+    postMessage({ type: 'ready', version: self.wasmVersion || null, wasmLoadMs });
 }
 
 initWasm().catch(err => {
@@ -81,20 +121,57 @@ onmessage = function(e) {
         try {
             const bytes = new Uint8Array(e.data.bytes);
             const filename = e.data.filename || 'demo.mvd';
+
+            // Reset fetch buffers; the upcoming analyzeMVD pulls loc/bsp
+            // files synchronously and these record their cost.
+            locFetches = [];
+            bspFetches = [];
+
+            const tAnalyze = performance.now();
             const jsonStr = analyzeMVD(bytes, filename);
-            // Schema v7: highResBuckets and regionControl.bucketStates
-            // are no longer on the parse-time result. Build them via
-            // the bridge (lives on the worker's global where the WASM
-            // exports do) and pass back so the main thread can stash
-            // both onto the parsed result — keeping every existing
-            // panel's read pattern working unchanged.
+            const wasmAnalyzeMs = performance.now() - tAnalyze;
+
+            // Per-phase pipeline timings from the Go side (init, event
+            // pass, each analyzer Finalize, each post-processor + marshal).
+            let goTimings = {};
+            try {
+                goTimings = JSON.parse(getAnalysisTimings());
+            } catch (err) {
+                goTimings = {};
+            }
+
+            const timings = {
+                wasmAnalyzeMs,
+                goPhases: goTimings.phases || [],
+                marshalMs: goTimings.marshalMs || 0,
+                locFetch: locFetches,
+                bspFetch: bspFetches,
+            };
+            logWorkerTimings(timings);
+
+            // Deliver the analysed result immediately so the main thread can
+            // render the summary now. The expensive 50ms bucket / region
+            // views below are only needed by the Timeline/Map tabs, so they
+            // are built *after* the result is sent. The worker being busy
+            // here does not block the main thread — the result message is
+            // already queued for it and renders while we compute.
+            postMessage({ type: 'result', json: jsonStr, timings });
+
+            // ---- Deferred: legacy 50ms buckets + region-control states ----
+            // Schema v7: highResBuckets and regionControl.bucketStates are
+            // not parse-time fields; the existing panels still read them, so
+            // build via the bridge and ship a second 'buckets' message.
             let bucketsJSON = '';
+            const tBuckets = performance.now();
             try {
                 bucketsJSON = getDefaultBuckets();
             } catch (err) {
                 bucketsJSON = '';
             }
+            const bucketsMs = performance.now() - tBuckets;
+
             let regionStatesJSON = '';
+            const tRegion = performance.now();
             try {
                 const parsed = JSON.parse(jsonStr);
                 const rc = parsed.timelineAnalysis && parsed.timelineAnalysis.regionControl;
@@ -110,7 +187,15 @@ onmessage = function(e) {
             } catch (err) {
                 regionStatesJSON = '';
             }
-            postMessage({ type: 'result', json: jsonStr, bucketsJSON, regionStatesJSON });
+            const regionMs = performance.now() - tRegion;
+
+            console.log(
+                `[mvd-timing] deferred bucket build (off critical path): ` +
+                `getDefaultBuckets ${bucketsMs.toFixed(1)} ms, ` +
+                `recomputeRegionControl ${regionMs.toFixed(1)} ms`
+            );
+
+            postMessage({ type: 'buckets', bucketsJSON, regionStatesJSON, bucketsMs, regionMs });
         } catch (err) {
             postMessage({ type: 'error', message: err.message || String(err) });
         }

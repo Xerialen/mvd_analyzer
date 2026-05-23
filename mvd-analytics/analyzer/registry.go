@@ -2,12 +2,25 @@ package analyzer
 
 import (
 	"io"
+	"reflect"
+	"runtime"
+	"strings"
+	"time"
 
 	"github.com/mvd-analyzer/mvd-analytics/config"
 	resultpkg "github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-reader/events"
 	mvdsource "github.com/mvd-analyzer/mvd-reader/source/mvd"
 )
+
+// PhaseTiming records the wall-clock cost of one pipeline phase. It is
+// collected on every run into Registry.PhaseTimings for instrumentation
+// (the WASM build surfaces it to the browser console). It is deliberately
+// kept off the Result so it never enters the JSON schema.
+type PhaseTiming struct {
+	Name string  `json:"name"`
+	Ms   float64 `json:"ms"`
+}
 
 // Registry manages registered analyzers. Config carries the tunable
 // parameters individual analyzers read; callers may mutate it before
@@ -29,6 +42,13 @@ type Registry struct {
 
 	postProcessors []ResultPostProcessor
 	Config         *config.Config
+
+	// PhaseTimings holds per-phase wall-clock durations from the most
+	// recent analyzeSource run (init, event pass, each analyzer's
+	// Finalize, each post-processor). Repopulated every run; read by the
+	// WASM entry for the browser-console timing breakdown. Not part of
+	// the Result schema.
+	PhaseTimings []PhaseTiming
 }
 
 // ResultPostProcessor mutates the assembled Result after every
@@ -37,6 +57,20 @@ type Registry struct {
 // timeline buckets. The function receives CoreOutputs so it can read
 // demoinfo / name tables / frag log without re-deriving them.
 type ResultPostProcessor func(result *Result, co *CoreOutputs)
+
+// postProcName resolves a post-processor's function name for timing
+// labels (e.g. "locGraphPost"), trimming the package path. Used only by
+// the instrumentation in analyzeSource.
+func postProcName(p ResultPostProcessor) string {
+	name := runtime.FuncForPC(reflect.ValueOf(p).Pointer()).Name()
+	if i := strings.LastIndex(name, "."); i >= 0 {
+		name = name[i+1:]
+	}
+	if name == "" {
+		return "anon"
+	}
+	return name
+}
 
 // NewRegistry creates an empty analyzer registry seeded with the
 // embedded default config. No analysers or post-processors are
@@ -121,10 +155,19 @@ func (r *Registry) AnalyzeSource(source events.Source, filename string) (*Result
 }
 
 func (r *Registry) analyzeSource(source events.Source, filename string) (*Result, error) {
+	r.PhaseTimings = r.PhaseTimings[:0]
+	record := func(name string, start time.Time) {
+		r.PhaseTimings = append(r.PhaseTimings, PhaseTiming{
+			Name: name,
+			Ms:   float64(time.Since(start).Microseconds()) / 1000,
+		})
+	}
+
 	ctx := &Context{
 		FragsBySlot: make(map[int]int),
 	}
 
+	initStart := time.Now()
 	for _, a := range r.core {
 		if err := a.Init(ctx); err != nil {
 			return nil, err
@@ -135,7 +178,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 			return nil, err
 		}
 	}
+	record("init", initStart)
 
+	eventStart := time.Now()
 	for {
 		event, err := source.Next()
 		if err == io.EOF {
@@ -169,6 +214,7 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 			}
 		}
 	}
+	record("eventPass", eventStart)
 
 	result := &Result{
 		SchemaVersion: resultpkg.CurrentSchemaVersion,
@@ -183,6 +229,8 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// core entry's fields (e.g. Frag reads co.Names produced by
 	// DemoInfo).
 	finalizeOne := func(a Analyzer) {
+		start := time.Now()
+		defer func() { record("finalize:"+a.Name(), start) }()
 		if cc, ok := a.(CoreConsumer); ok {
 			cc.UseCoreOutputs(co)
 		}
@@ -213,7 +261,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// — but the slice is otherwise unconstrained. Add a step by
 	// calling r.RegisterPostProcessor(...) before Analyze.
 	for _, p := range r.postProcessors {
+		start := time.Now()
 		p(result, co)
+		record("post:"+postProcName(p), start)
 	}
 
 	return result, nil

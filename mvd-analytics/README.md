@@ -113,6 +113,13 @@ event stream, then a post-pass on the assembled `Result`:
                  *Result
 ```
 
+Each run records per-phase wall-clock durations (init, event pass, every
+analyzer's `Finalize`, every post-processor) into `Registry.PhaseTimings`
+for instrumentation. It is repopulated on each `Analyze*` call and is
+**not** part of the `Result` JSON schema; the WASM build surfaces it to
+the browser console (see `mvd-web/README.md`). CLI/API callers can ignore
+it.
+
 ### What goes where
 
 | Slice | Default analysers | Why |

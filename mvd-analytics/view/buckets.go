@@ -91,6 +91,16 @@ func Buckets(r *result.Result, opts BucketsOptions) (*BucketsView, error) {
 		}
 		reducers[f] = red
 	}
+	// Hoist the per-field reducer and its name out of the bucket loop:
+	// indexing these parallel slices by field position on the hot path
+	// avoids one map lookup per field × player × bucket (millions on a
+	// 50ms full-field run).
+	fieldReds := make([]Reducer, len(fields))
+	fieldRedNames := make([]string, len(fields))
+	for i, f := range fields {
+		fieldReds[i] = reducers[f]
+		fieldRedNames[i] = fieldReds[i].Name()
+	}
 
 	// Public API uses float64 seconds; the schema stores Global.Match*
 	// as int32 ms (schema v8) — convert once at the entry.
@@ -136,11 +146,12 @@ func Buckets(r *result.Result, opts BucketsOptions) (*BucketsView, error) {
 			bucket.Partial = true
 		}
 
-		for _, p := range playerStreams {
+		for pi := range playerStreams {
+			p := &playerStreams[pi]
 			if !playerActiveInWindow(p, bStart, bEnd) {
 				continue
 			}
-			pdata := reducePlayer(p, fields, reducers, bStart, bEnd)
+			pdata := reducePlayer(p, fields, fieldReds, fieldRedNames, bStart, bEnd)
 			if pdata != nil {
 				bucket.Players[p.Name] = pdata
 			}
@@ -197,7 +208,7 @@ func resolveBucketLocNames(buckets []ViewBucket, locTable []string) {
 //   - If the player has positions but no spawn/death streams (e.g.,
 //     already alive at match start in a demo where parser never
 //     emitted a synthetic SpawnEvent), fall back to position presence.
-func playerActiveInWindow(p result.PlayerStream, bStart, bEnd float64) bool {
+func playerActiveInWindow(p *result.PlayerStream, bStart, bEnd float64) bool {
 	hasSpawnDeath := len(p.Spawns) > 0 || len(p.Deaths) > 0
 	hasPositions := p.Position != nil && len(p.Position.T) > 0
 
@@ -320,31 +331,148 @@ func selectPlayers(all []result.PlayerStream, pf *playerFilter) []result.PlayerS
 // bEnd) and runs the reducer. Returns nil when no field produced a
 // non-nil value (i.e. player wasn't active in this window).
 func reducePlayer(
-	p result.PlayerStream,
+	p *result.PlayerStream,
 	fields []string,
-	reducers map[string]Reducer,
+	reds []Reducer,
+	redNames []string,
 	bStart, bEnd float64,
 ) map[string]any {
-	out := make(map[string]any, len(fields))
-	for _, f := range fields {
-		samples := collectSamples(p, f, bStart, bEnd)
-		val := reducers[f].Apply(samples)
+	// out is allocated lazily on the first non-nil field so that inactive
+	// players (no field produced a value) cost no map allocation — the
+	// common case for the thousands of 50ms buckets where a given player
+	// has no samples.
+	var out map[string]any
+	for i, f := range fields {
+		var val any
+		if v, ok := fastReduce(p, f, redNames[i], bStart, bEnd); ok {
+			val = v
+		} else {
+			// General path: materialise the in-window samples and run the
+			// reducer. Used for any reducer the fast path does not
+			// specialise (mean/min/max/last/dominant/held-any/majority).
+			val = reds[i].Apply(collectSamples(p, f, bStart, bEnd))
+		}
 		if val == nil {
 			continue
 		}
+		if out == nil {
+			out = make(map[string]any, len(fields))
+		}
 		out[f] = val
 	}
-	if len(out) == 0 {
+	return out
+}
+
+// fastReduce computes the reduced value for the two reducers the default
+// bucketing uses — "first" and "any" — directly from the stream, without
+// allocating the intermediate []Sample that collectSamples would. This is
+// the hot path: a 50ms full-field bucketing of a 20-minute 4on4 otherwise
+// allocates ~4M tiny slices (one per field × player × bucket) and the
+// resulting GC churn dominates the run.
+//
+// It returns ok=false for any (reducer, field-kind) pair it does not
+// specialise, so the caller falls back to collectSamples + Reducer.Apply
+// and exact semantics are preserved for custom reducers. The values
+// returned here are byte-identical to the slice path — same boxed types,
+// same carry-forward rules — locked by TestFastReduceParity.
+func fastReduce(p *result.PlayerStream, field, reducer string, bStart, bEnd float64) (any, bool) {
+	kind, ok := FieldKindFor(field)
+	if !ok {
+		return nil, false
+	}
+	switch reducer {
+	case "first":
+		switch kind {
+		case KindChangeI16:
+			return firstChangeI16(streamI16(p, field), bStart, bEnd), true
+		case KindChangeStr:
+			return firstChangeStr(streamStr(p, field), bStart, bEnd), true
+		case KindInterval:
+			s := streamInterval(p, field)
+			if s == nil {
+				return nil, true
+			}
+			// Matches intervalSamples[0]: held at exactly bStart.
+			return intervalContains(s, int32(bStart*1000)), true
+		case KindPosition:
+			return firstPosition(p.Position, bStart, bEnd), true
+		}
+	case "any":
+		if kind == KindEventList {
+			// Matches AnyReducer over eventListSamples: a bool (never nil).
+			return anyEventInWindow(streamEventList(p, field), bStart, bEnd), true
+		}
+	}
+	return nil, false
+}
+
+// firstChangeI16 returns changeSamplesI16(stream, bStart, bEnd)[0].V
+// without building the slice: the carry value (last change at/before
+// bStart) if any, else the first in-window change, else nil.
+func firstChangeI16(stream []result.ChangeI16, bStart, bEnd float64) any {
+	if stream == nil {
 		return nil
 	}
-	return out
+	if carry := indexI16AtOrBefore(stream, int32(bStart*1000)); carry >= 0 {
+		return stream[carry].V
+	}
+	// carry < 0 ⇒ stream[0].T > bStartMs; it's the first in-window sample
+	// when it also lands before bEnd.
+	if stream[0].T < int32(bEnd*1000) {
+		return stream[0].V
+	}
+	return nil
+}
+
+// firstChangeStr is firstChangeI16 for string change streams.
+func firstChangeStr(stream []result.ChangeStr, bStart, bEnd float64) any {
+	if stream == nil {
+		return nil
+	}
+	if carry := indexStrAtOrBefore(stream, int32(bStart*1000)); carry >= 0 {
+		return stream[carry].V
+	}
+	if stream[0].T < int32(bEnd*1000) {
+		return stream[0].V
+	}
+	return nil
+}
+
+// firstPosition returns positionSamples(p, bStart, bEnd)[0].V without the
+// slice: the first in-window sample, else the carry-forward sample, else nil.
+func firstPosition(pt *result.PositionTrack, bStart, bEnd float64) any {
+	if pt == nil {
+		return nil
+	}
+	n := len(pt.T)
+	if n == 0 {
+		return nil
+	}
+	bStartMs := int32(bStart * 1000)
+	firstIn := sort.Search(n, func(i int) bool { return pt.T[i] >= bStartMs })
+	if firstIn < n && pt.T[firstIn] < int32(bEnd*1000) {
+		return positionTriple(pt, firstIn)
+	}
+	if firstIn > 0 {
+		return positionTriple(pt, firstIn-1)
+	}
+	return nil
+}
+
+// anyEventInWindow reports whether the event-list stream has any timestamp
+// in [bStart, bEnd) — AnyReducer's result over eventListSamples, computed
+// with a binary search instead of a scan. The stream is sorted ascending.
+func anyEventInWindow(stream []int32, bStart, bEnd float64) any {
+	bStartMs := int32(bStart * 1000)
+	i := sort.Search(len(stream), func(i int) bool { return stream[i] >= bStartMs })
+	return i < len(stream) && stream[i] < int32(bEnd*1000)
 }
 
 // collectSamples walks the appropriate stream of p and returns Samples
 // suitable for reduction. Carry-forward semantics: for change streams,
 // the last entry with T <= bStart is included so reducers like "last"
 // behave as "value at end of window even when nothing changed inside."
-func collectSamples(p result.PlayerStream, field string, bStart, bEnd float64) []Sample {
+func collectSamples(p *result.PlayerStream, field string, bStart, bEnd float64) []Sample {
 	kind, ok := FieldKindFor(field)
 	if !ok {
 		return nil
@@ -364,7 +492,7 @@ func collectSamples(p result.PlayerStream, field string, bStart, bEnd float64) [
 	return nil
 }
 
-func changeI16Samples(p result.PlayerStream, field string, bStart, bEnd float64) []Sample {
+func changeI16Samples(p *result.PlayerStream, field string, bStart, bEnd float64) []Sample {
 	stream := streamI16(p, field)
 	if stream == nil {
 		return nil
@@ -372,7 +500,7 @@ func changeI16Samples(p result.PlayerStream, field string, bStart, bEnd float64)
 	return changeSamplesI16(stream, bStart, bEnd)
 }
 
-func changeStrSamples(p result.PlayerStream, field string, bStart, bEnd float64) []Sample {
+func changeStrSamples(p *result.PlayerStream, field string, bStart, bEnd float64) []Sample {
 	stream := streamStr(p, field)
 	if stream == nil {
 		return nil
@@ -380,7 +508,7 @@ func changeStrSamples(p result.PlayerStream, field string, bStart, bEnd float64)
 	return changeSamplesStr(stream, bStart, bEnd)
 }
 
-func intervalSamples(p result.PlayerStream, field string, bStart, bEnd float64) []Sample {
+func intervalSamples(p *result.PlayerStream, field string, bStart, bEnd float64) []Sample {
 	stream := streamInterval(p, field)
 	if stream == nil {
 		return nil
@@ -415,7 +543,7 @@ func intervalSamples(p result.PlayerStream, field string, bStart, bEnd float64) 
 // first in-window sample (or carry in gap buckets); "last" returns
 // the last in-window sample (or carry); "mean"/"min"/"max" don't
 // include the carry unless the bucket is empty.
-func positionSamples(p result.PlayerStream, bStart, bEnd float64) []Sample {
+func positionSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
 	if p.Position == nil {
 		return nil
 	}
@@ -455,7 +583,7 @@ func positionTriple(pt *result.PositionTrack, i int) [3]int32 {
 	return [3]int32{pt.X[i], pt.Y[i], pt.Z[i]}
 }
 
-func eventListSamples(p result.PlayerStream, field string, bStart, bEnd float64) []Sample {
+func eventListSamples(p *result.PlayerStream, field string, bStart, bEnd float64) []Sample {
 	stream := streamEventList(p, field)
 	if stream == nil {
 		return nil
@@ -552,7 +680,7 @@ func intervalContains(stream []result.Interval, tMs int32) bool {
 // streamI16 / streamStr / streamInterval / streamEventList dispatch
 // by field code on a PlayerStream. Returns nil for unknown codes —
 // callers have already validated, so this is a runtime guardrail.
-func streamI16(p result.PlayerStream, field string) []result.ChangeI16 {
+func streamI16(p *result.PlayerStream, field string) []result.ChangeI16 {
 	switch field {
 	case FieldHealth:
 		return p.Health
@@ -572,14 +700,14 @@ func streamI16(p result.PlayerStream, field string) []result.ChangeI16 {
 	return nil
 }
 
-func streamStr(p result.PlayerStream, field string) []result.ChangeStr {
+func streamStr(p *result.PlayerStream, field string) []result.ChangeStr {
 	if field == FieldArmorType {
 		return p.ArmorType
 	}
 	return nil
 }
 
-func streamInterval(p result.PlayerStream, field string) []result.Interval {
+func streamInterval(p *result.PlayerStream, field string) []result.Interval {
 	switch field {
 	case FieldRL:
 		return p.RL
@@ -604,7 +732,7 @@ func streamInterval(p result.PlayerStream, field string) []result.Interval {
 // streamEventList returns the raw int32-ms timestamp slice for a
 // spawn/death-style event field. Callers wrap the seconds conversion
 // where the public Sample type (float64 seconds) is materialised.
-func streamEventList(p result.PlayerStream, field string) []int32 {
+func streamEventList(p *result.PlayerStream, field string) []int32 {
 	switch field {
 	case FieldSpawns:
 		return p.Spawns
@@ -639,7 +767,8 @@ func aggregateTeams(
 			td[key] = n
 		}
 	}
-	for _, p := range players {
+	for pi := range players {
+		p := &players[pi]
 		pdata, ok := reduced[p.Name]
 		if !ok {
 			continue

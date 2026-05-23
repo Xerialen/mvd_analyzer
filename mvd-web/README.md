@@ -89,24 +89,85 @@ strip above the main pane.
 2. `app.js` hands the bytes to `worker.js` via `postMessage`.
 3. The worker calls `analyzeMVD(bytes, filename)` on the WASM instance.
 4. WASM code (`cmd/wasm/main.go`) runs the mvd-analytics default pipeline
-   and marshals the Result to JSON. The worker then runs two
-   schema-v7 bridge calls — `getDefaultBuckets()` (builds the legacy
-   50 ms []HighResBucket array via `view.Buckets`) and
-   `recomputeRegionControl(defaults)` (region-control bucket states
-   at 50 ms) — and bundles both JSON blobs into the result message.
-   These extras exist because the existing frontend panels still
-   read `result.timelineAnalysis.highResBuckets` and
-   `.regionControl.bucketStates` synchronously; Phase 1.5 (per-panel
+   and marshals the Result to JSON. The worker posts this back
+   **immediately** as a `result` message — the main thread renders the
+   Summary and the other non-bucket tabs right away.
+5. **Then**, off the critical path, the worker runs the two schema-v7
+   bridge calls — `getDefaultBuckets()` (builds the legacy 50 ms
+   []HighResBucket array via `view.Buckets`) and
+   `recomputeRegionControl(defaults)` (region-control bucket states at
+   50 ms) — and posts them as a second `buckets` message. These are
+   expensive (the bucket build alone is multiple seconds in WASM), and
+   only the Timeline/Map tabs need them, so deferring them roughly halves
+   time-to-interactive. They exist at all because the existing panels
+   still read `result.timelineAnalysis.highResBuckets` and
+   `.regionControl.bucketStates`; Phase 1.5 (per-panel
    `getBuckets({windowMs})` calls) will drop the bridge step.
-5. Worker sends the bundled message back to `app.js`. `analyzeInWorker`
-   parses the result JSON, stashes the bridge outputs onto
-   `result.timelineAnalysis.highResBuckets` /
-   `.regionControl.bucketStates`, then resolves the promise. `app.js`
-   clears the no-demo class, switches to the Summary tab, and
-   renders across the tabs.
+6. On `result`, `app.js` parses the JSON, clears the no-demo class,
+   switches to the Summary tab, and renders all tabs. The main-thread
+   inits are cheap, so they run now even though the bucket-derived
+   fields are still empty — the scoreboard, chat, pack drops, pickups,
+   key moments and loc graph are fully populated; only the timeline
+   graph, map trails and region overlay are blank. On the later
+   `buckets` message, `applyDeferredBuckets()` stashes the payload onto
+   `result.timelineAnalysis.highResBuckets` / `.regionControl
+   .bucketStates`, **re-runs** the bucket-dependent inits
+   (`initRegionControlData`, `displayTimelineAnalysis`, `initMapView`),
+   and re-renders the active tab so Timeline/Map fill in. The win is
+   purely that the worker no longer blocks on the bucket build before
+   delivering the result.
+
+`cmd/wasm/main.go` also exports `getDemoInfo()`, which returns just the
+KTX demoinfo summary (`result.DemoInfo` — map, players, teams, scores,
+date) from the pinned `lastResult` as JSON. It is zero extra cost (the
+data is already computed) and lets a consumer read the match summary
+without re-marshalling the full Result. Note: the demoinfo block is
+written near the **end** of the MVD stream, so obtaining it still
+requires decoding the whole demo — cheap to *read*, not cheap to *skip
+ahead to*.
 
 The WASM boundary is the only place that bridges Go and JS. The rest of
 the frontend is dependency-free JS plus a sprinkle of CSS.
+
+## Performance timing (console)
+
+Every demo load prints a structured per-stage breakdown to the browser
+console (look for the `[mvd-timing]` group) and stashes the same object
+on `window.__mvdTimings`. It is dev-facing instrumentation only — there
+is no UI for it. Stages reported, in load order:
+
+- **wasm load** (one-time): fetch + `instantiateStreaming` + `go.run`,
+  timed in `worker.js` and sent on the `ready` message.
+- **network**: `gameInfoFetch` (Supabase metadata) and `demoDownload`,
+  timed on the main thread in `app.js`.
+- **WASM analyze**: total wall time of the `analyzeMVD` call, plus the
+  Go-side per-phase split from `getAnalysisTimings()` — `init`,
+  `eventPass` (decode + gzip + all OnEvent dispatch), one
+  `finalize:<analyzer>` row per analyzer (so `finalize:timelineAnalysis` — the
+  loc-resolution work — is isolated), one `post:<name>` row per
+  post-processor (`locGraphPost`, `regionControlPost`), and `marshal`.
+- **loc/bsp fetch**: per-map `fetchLocSync` / `fetchBspSync` durations.
+  These run **synchronously inside** the `analyzeMVD` call, so their
+  time is already included in the WASM analyze wall time *and* inside
+  `finalize:timelineAnalysis`. To get the **pure loc-resolution compute**,
+  subtract `locFetch + bspFetch` from `finalize:timelineAnalysis`.
+- **result JSON.parse** (main thread), each tab render
+  (`displayTimelineAnalysis`, `displayKeyMoments`, `displayPackDrops`,
+  `displayPickupsTab`, `initMapView`, `initLocGraphView`), and the
+  async `map geometry fetch` (logged separately as it resolves after
+  the UI is shown).
+
+The breakdown reflects **time-to-interactive** — it ends when the Summary
+and non-bucket tabs are painted. The deferred 50 ms bucket build
+(`getDefaultBuckets` + `recomputeRegionControl`) runs after that and is
+logged on its own line (`deferred bucket build (off critical path)`),
+followed by a `Timeline/Map ready` line when `applyDeferredBuckets`
+finishes wiring those tabs.
+
+This exists to replace guesswork about where load time goes (e.g. "is
+loc the slowest?") with measured data before optimizing. It is what
+surfaced the two big costs — the parse event pass and the (now deferred)
+bucket build.
 
 ## Demo search
 

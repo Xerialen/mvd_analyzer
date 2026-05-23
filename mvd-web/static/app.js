@@ -91,6 +91,69 @@ let analyzeReject = null;
 let recomputeResolve = null;
 let recomputeReject = null;
 
+// ─── Load-timing instrumentation ────────────────────────────────────────────
+// Structured per-stage timing for the demo load path, printed to the console
+// (see mvd-web/README.md). `mvdTiming` holds one-time facts (wasm load);
+// `loadTiming` is a per-demo accumulator built up across network → WASM →
+// render and flushed by finishLoadTiming(). Also stashed on window.__mvdTimings.
+let mvdTiming = { wasmLoadMs: null };
+let loadTiming = null;
+let pendingGameInfoMs = null; // game-info fetch happens before loadTiming starts
+
+function startLoadTiming() {
+    loadTiming = { t0: performance.now(), net: {}, render: [], worker: null, parseMs: 0 };
+}
+function markNet(name, ms) {
+    if (loadTiming) loadTiming.net[name] = +ms.toFixed(1);
+}
+function timeRender(name, fn) {
+    if (!loadTiming) return fn();
+    const t = performance.now();
+    try {
+        return fn();
+    } finally {
+        loadTiming.render.push({ stage: name, ms: +(performance.now() - t).toFixed(2) });
+    }
+}
+function finishLoadTiming() {
+    if (!loadTiming) return;
+    const lt = loadTiming;
+    loadTiming = null; // close the window before any async render fires
+    const total = performance.now() - lt.t0;
+    const summary = {
+        wasmLoadMs: mvdTiming.wasmLoadMs,
+        network: lt.net,
+        worker: lt.worker,
+        parseMs: +lt.parseMs.toFixed(1),
+        render: lt.render,
+        downloadToUiMs: +total.toFixed(1),
+    };
+    window.__mvdTimings = summary;
+    try {
+        console.groupCollapsed(`[mvd-timing] load breakdown — ${total.toFixed(0)} ms download→UI`);
+        if (mvdTiming.wasmLoadMs != null) {
+            console.log(`wasm load (one-time): ${mvdTiming.wasmLoadMs.toFixed(1)} ms`);
+        }
+        console.log('network (ms):', lt.net);
+        if (lt.worker) {
+            const w = lt.worker;
+            const locMs = (w.locFetch || []).reduce((s, f) => s + f.ms, 0);
+            const bspMs = (w.bspFetch || []).reduce((s, f) => s + f.ms, 0);
+            console.log(
+                `WASM analyze: ${w.wasmAnalyzeMs.toFixed(1)} ms ` +
+                `(incl. loc fetch ${locMs.toFixed(1)} ms, bsp fetch ${bspMs.toFixed(1)} ms — ` +
+                `subtract from finalize:timelineAnalysis for pure loc compute)`
+            );
+            console.table((w.goPhases || []).map(p => ({ phase: p.name, ms: +p.ms.toFixed(2) })));
+        }
+        console.log(`result JSON.parse (main thread): ${lt.parseMs.toFixed(1)} ms`);
+        console.table(lt.render);
+        console.groupEnd();
+    } catch (e) {
+        console.warn('[mvd-timing] log failed:', e);
+    }
+}
+
 // Hide the wasm-loading overlay. When auto-loading a demo from a URL
 // (?gameId=...), keep it up through the demo download/analyse so the
 // user never sees a half-populated Search/Summary tab in the
@@ -112,6 +175,7 @@ function setLoadingOverlayMessage(text) {
 worker.onmessage = (e) => {
     if (e.data.type === 'ready') {
         wasmReady = true;
+        if (typeof e.data.wasmLoadMs === 'number') mvdTiming.wasmLoadMs = e.data.wasmLoadMs;
         const params = new URLSearchParams(location.search);
         const willAutoLoadDemo = !!(params.get('gameId') || params.get('hub'));
         if (willAutoLoadDemo) {
@@ -137,12 +201,16 @@ worker.onmessage = (e) => {
         if (analyzeResolve) {
             analyzeResolve({
                 json: e.data.json,
-                bucketsJSON: e.data.bucketsJSON,
-                regionStatesJSON: e.data.regionStatesJSON,
+                timings: e.data.timings,
             });
             analyzeResolve = null;
             analyzeReject = null;
         }
+    } else if (e.data.type === 'buckets') {
+        // Deferred 50ms bucket + region-control payload — arrives a few
+        // seconds after 'result'. Stash it and render the Timeline/Map
+        // tabs that displayResults intentionally skipped.
+        applyDeferredBuckets(e.data);
     } else if (e.data.type === 'error') {
         if (analyzeReject) {
             analyzeReject(new Error(e.data.message));
@@ -174,28 +242,15 @@ function analyzeInWorker(bytes, filename) {
     return new Promise((resolve, reject) => {
         analyzeResolve = (payload) => {
             try {
+                const tParse = performance.now();
                 const result = JSON.parse(payload.json);
-                if (result && result.timelineAnalysis && payload.bucketsJSON) {
-                    try {
-                        const buckets = JSON.parse(payload.bucketsJSON);
-                        if (Array.isArray(buckets)) {
-                            result.timelineAnalysis.highResBuckets = buckets;
-                        }
-                    } catch (e) {
-                        console.warn('parse legacy buckets failed:', e);
-                    }
+                if (loadTiming) {
+                    loadTiming.parseMs = performance.now() - tParse;
+                    loadTiming.worker = payload.timings || null;
                 }
-                if (result && result.timelineAnalysis && result.timelineAnalysis.regionControl && payload.regionStatesJSON) {
-                    try {
-                        const rs = JSON.parse(payload.regionStatesJSON);
-                        if (!rs.error && rs.bucketStates) {
-                            result.timelineAnalysis.regionControl.bucketStates = rs.bucketStates;
-                            if (rs.stats) result.timelineAnalysis.regionControl.stats = rs.stats;
-                        }
-                    } catch (e) {
-                        console.warn('parse default region states failed:', e);
-                    }
-                }
+                // Buckets / region states arrive later via the 'buckets'
+                // message and are stashed by applyDeferredBuckets — the
+                // summary renders without waiting for them.
                 resolve(result);
             } catch (e) {
                 reject(e);
@@ -208,6 +263,54 @@ function analyzeInWorker(bytes, filename) {
             [bytes.buffer]
         );
     });
+}
+
+// applyDeferredBuckets stashes the worker's deferred 50ms bucket + region
+// outputs onto the current result, then RE-RUNS the bucket-dependent
+// initialisers (region control, timeline, map). They already ran once in
+// displayResults with the bucket-derived fields empty (blank timeline
+// graph / map trails / region overlay); re-running them now that the data
+// is present fills those in. Finally re-render the active tab so a
+// Timeline/Map view the user already opened repaints. Called when the
+// 'buckets' message arrives, a few seconds after the result.
+function applyDeferredBuckets(data) {
+    if (!currentResult) return;
+    const ta = currentResult.timelineAnalysis;
+    if (ta && data.bucketsJSON) {
+        try {
+            const buckets = JSON.parse(data.bucketsJSON);
+            if (Array.isArray(buckets)) ta.highResBuckets = buckets;
+        } catch (e) {
+            console.warn('parse deferred buckets failed:', e);
+        }
+    }
+    if (ta && ta.regionControl && data.regionStatesJSON) {
+        try {
+            const rs = JSON.parse(data.regionStatesJSON);
+            if (!rs.error && rs.bucketStates) {
+                ta.regionControl.bucketStates = rs.bucketStates;
+                if (rs.stats) ta.regionControl.stats = rs.stats;
+            }
+        } catch (e) {
+            console.warn('parse deferred region states failed:', e);
+        }
+    }
+
+    // Re-run the inits, now that bucket-derived data is present. Order
+    // matches displayResults: region control feeds timeline + map.
+    if (ta && ta.regionControl) initRegionControlData(currentResult);
+    if (ta || currentResult.messages?.events) displayTimelineAnalysis(currentResult);
+    if (ta) initMapView(currentResult);
+
+    // Re-render whichever tab is active so Timeline/Map paint with the new
+    // data (re-clicking re-runs the tab's render path; harmless on Summary).
+    const active = document.querySelector('.sidebar-btn.active');
+    if (active) active.click();
+
+    if (typeof data.bucketsMs === 'number') {
+        const deferred = (data.bucketsMs + (data.regionMs || 0)).toFixed(0);
+        console.log(`[mvd-timing] Timeline/Map ready — ${deferred} ms of bucket work ran off the critical path`);
+    }
 }
 
 // recomputeInWorker round-trips an edited regions definition through
@@ -581,6 +684,7 @@ async function uploadFile(file) {
     try {
         if (!wasmReady) throw new Error('Analyzer is still loading, please wait...');
 
+        startLoadTiming();
         const buffer = await file.arrayBuffer();
         const bytes = new Uint8Array(buffer);
         const result = await analyzeInWorker(bytes, file.name);
@@ -617,7 +721,9 @@ async function loadFromHub() {
         const gameId = parseGameId(input);
 
         status.textContent = 'Fetching game info...';
+        const tInfo = performance.now();
         const game = await fetchGameFromHub(gameId);
+        pendingGameInfoMs = performance.now() - tInfo;
 
         await loadGameFromHub(game);
     } catch (error) {
@@ -641,9 +747,16 @@ async function loadGameFromHub(game) {
 
     document.getElementById('hub-input').value = game.id;
 
+    startLoadTiming();
+    if (pendingGameInfoMs != null) {
+        markNet('gameInfoFetch', pendingGameInfoMs);
+        pendingGameInfoMs = null;
+    }
     status.textContent = 'Downloading demo...';
     status.className = 'status loading';
+    const tDownload = performance.now();
     const demoBytes = await downloadDemoFromHub(game);
+    markNet('demoDownload', performance.now() - tDownload);
 
     status.textContent = 'Analyzing...';
     const filename = generateDemoFilename(game);
@@ -935,36 +1048,42 @@ function displayResults(result) {
         displayWeaponsChart(result.frags.byWeapon);
     }
 
-    // Region control data (needed by both timeline and map)
+    // Region control data (needed by both timeline and map). Cheap on the
+    // main thread; the multi-second cost was the worker's bucket build,
+    // which now runs after the result is delivered. These run here with the
+    // bucket-derived fields still empty (timeline graph / map trails /
+    // region overlay blank) and applyDeferredBuckets() re-runs them once the
+    // 'buckets' message lands. displayTimelineAnalysis also populates the
+    // Chat tab's events and the timeline strip, so it must run now.
     if (result.timelineAnalysis?.regionControl) {
         initRegionControlData(result);
     }
 
     // Timeline Analysis (new graphical view)
     if (result.timelineAnalysis || result.messages?.events) {
-        displayTimelineAnalysis(result);
+        timeRender('displayTimelineAnalysis', () => displayTimelineAnalysis(result));
     }
 
     // Key Moments (powerup runs + frag streaks). Call unconditionally so
     // the function gets a chance to clear stale DOM from a previous demo;
     // displayKeyMoments handles empty powerupEvents / fragStreaks on its own.
     if (result.timelineAnalysis) {
-        displayKeyMoments(result);
+        timeRender('displayKeyMoments', () => displayKeyMoments(result));
     }
 
     // Pack Drops — always call so stale rows are cleared between demos.
-    displayPackDrops(result);
+    timeRender('displayPackDrops', () => displayPackDrops(result));
 
     // Pickups — per-entity item pickups + KTX-tooks verification.
-    displayPickupsTab(result);
+    timeRender('displayPickupsTab', () => displayPickupsTab(result));
 
     // Map View
     if (result.timelineAnalysis) {
-        initMapView(result);
+        timeRender('initMapView', () => initMapView(result));
     }
 
     // Loc Graph
-    initLocGraphView(result);
+    timeRender('initLocGraphView', () => initLocGraphView(result));
 
     // Make all static tables sortable
     document.querySelectorAll('.stats-table').forEach(makeSortable);
@@ -975,6 +1094,9 @@ function displayResults(result) {
     // Reveal the now-populated UI (overlay may already be hidden if the
     // demo was loaded interactively rather than via ?gameId=).
     hideLoadingOverlay();
+
+    // Flush the consolidated load-timing breakdown to the console.
+    finishLoadTiming();
 }
 
 // ─── Sortable Tables ──────────────────────────────────────────────────────
@@ -2620,6 +2742,20 @@ function resetUIToCleanState() {
 
 function resetTimelineState() {
     if (mapState.isPlaying) stopPlayback();
+
+    // Map view data is rebuilt by initMapView, which is now deferred until
+    // the 50ms buckets arrive (see applyDeferredBuckets). Clear it here so a
+    // fast demo-swap can't render the previous demo's map during the window
+    // before the new demo's buckets finish building.
+    mapState.locations = [];
+    mapState.locationGroups = null;
+    mapState.mapGeometry = null;
+    mapState.fullTrails = {};
+    mapState.dropEvents = [];
+    mapState.bucketStates = null;
+    mapState.lastRenderedBucket = null;
+    mapState.renderDirty = true;
+
     timelineState.highResBuckets = [];
     timelineState.highResDuration = 0.05;
     timelineState.events = [];
@@ -4877,9 +5013,11 @@ function initMapView(result) {
     const rawMapName = result.demoInfo && result.demoInfo.map ? result.demoInfo.map : '';
     const mapBasename = rawMapName.toLowerCase().replace(/^maps\//, '').replace(/\.bsp$/, '');
     if (mapBasename) {
+        const tGeom = performance.now();
         fetch(`maps/${mapBasename}.json`)
             .then(r => r.ok ? r.json() : null)
             .then(geom => {
+                console.log(`[mvd-timing] map geometry fetch (async): ${(performance.now() - tGeom).toFixed(1)} ms`);
                 if (!geom || !Array.isArray(geom.locs) || geom.locs.length === 0) return;
                 // The unnamed backdrop bucket (name === "") is drawn as a
                 // neutral underlay by drawLocationLayer; cache its triangle
