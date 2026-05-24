@@ -83,6 +83,54 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 		return e
 	}
 
+	// addWeight folds dt into a conditioned node LocWeights (RL/LG-armed or
+	// quad), lazily allocating it so locs the condition never touched stay
+	// nil (omitempty in JSON).
+	addWeight := func(w **LocWeights, player, team string, dt float64) {
+		if *w == nil {
+			*w = &LocWeights{ByPlayer: make(map[string]float64)}
+		}
+		(*w).Total += dt
+		(*w).ByPlayer[player] += dt
+		if team != "" {
+			if (*w).ByTeam == nil {
+				(*w).ByTeam = make(map[string]float64)
+			}
+			(*w).ByTeam[team] += dt
+		}
+	}
+
+	// addEdgeWeight is the transition-count analogue of addWeight for a
+	// conditioned LocEdgeWeights.
+	addEdgeWeight := func(w **LocEdgeWeights, player, team string) {
+		if *w == nil {
+			*w = &LocEdgeWeights{ByPlayer: make(map[string]int)}
+		}
+		(*w).Total++
+		(*w).ByPlayer[player]++
+		if team != "" {
+			if (*w).ByTeam == nil {
+				(*w).ByTeam = make(map[string]int)
+			}
+			(*w).ByTeam[team]++
+		}
+	}
+
+	// makeInside returns a predicate reporting whether time t falls inside
+	// any of a player's sorted, non-overlapping presence intervals. It
+	// advances an internal cursor, so it is only valid for queries at
+	// monotonically non-decreasing t — which is how the position track is
+	// walked below.
+	makeInside := func(ivs []Interval) func(int32) bool {
+		idx := 0
+		return func(t int32) bool {
+			for idx < len(ivs) && ivs[idx].End <= t {
+				idx++
+			}
+			return idx < len(ivs) && ivs[idx].Start <= t && t < ivs[idx].End
+		}
+	}
+
 	for _, p := range result.Streams.Players {
 		pt := p.Position
 		if pt == nil || len(pt.T) == 0 || len(pt.Li) != len(pt.T) {
@@ -90,6 +138,12 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 		}
 		boundaries := mergeBoundaries(p.Spawns, p.Deaths)
 		bIdx := 0
+		// Presence predicates for the conditioned metrics, walked at the
+		// same monotonically increasing sample times as the position track.
+		insideRL := makeInside(p.RL)
+		insideLG := makeInside(p.LG)
+		insideQuad := makeInside(p.Quad)
+		insidePent := makeInside(p.Pent)
 		// Per-player cursor: tracks the loc + position of the last
 		// sample we counted. Reset at boundary crossings (death/spawn)
 		// and at gaps in the loc track (Li=0).
@@ -153,6 +207,24 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 				node.ByTeam[team] += dt
 			}
 
+			// Conditioned metrics: this sample's combat posture, used for
+			// both node-time and (below) the transition it may trigger.
+			// Evaluate all three predicates (no short-circuit) so each cursor
+			// tracks t independently.
+			rl, lg, quad, pent := insideRL(t), insideLG(t), insideQuad(t), insidePent(t)
+			armed := rl || lg
+			if armed {
+				addWeight(&node.Armed, p.Name, team, dt)
+			} else {
+				addWeight(&node.Unarmed, p.Name, team, dt)
+			}
+			if quad {
+				addWeight(&node.Quad, p.Name, team, dt)
+			}
+			if pent {
+				addWeight(&node.Pent, p.Name, team, dt)
+			}
+
 			if !havePrev {
 				curLoc = locName
 				curX = x
@@ -185,6 +257,20 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 						edge.ByTeam = make(map[string]int)
 					}
 					edge.ByTeam[team]++
+				}
+				// Condition the transition on the destination sample's
+				// posture so each metric yields a self-contained movement
+				// graph (armed/quad edges + nodes).
+				if armed {
+					addEdgeWeight(&edge.Armed, p.Name, team)
+				} else {
+					addEdgeWeight(&edge.Unarmed, p.Name, team)
+				}
+				if quad {
+					addEdgeWeight(&edge.Quad, p.Name, team)
+				}
+				if pent {
+					addEdgeWeight(&edge.Pent, p.Name, team)
 				}
 				curLoc = locName
 			}

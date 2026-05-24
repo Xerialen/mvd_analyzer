@@ -411,9 +411,16 @@ detector dedupling against it as a safety net — deaths whose
 `dem_stats` block was directed at a different player slot are no
 longer dropped (PlayerStream.Spawns / Deaths counts rise; LocGraph
 edges, LocTrails durations, RegionControl ticks, and WeaponPickups
-windows shift across the now-present boundaries).
+windows shift across the now-present boundaries). Schema v11 makes the
+50 ms bucket view column-major (`view.ColumnarBuckets`) the default
+across web / REST / MCP. Schema v12 adds optional `armed`,
+`unarmed`, `quad` and `pent` weights to each `LocGraph` node (time) *and*
+edge (transition counts) — the same breakdown restricted to samples where
+the player held RL/LG, held neither, or had an active quad / pent — so
+consumers can render a self-contained loc graph / heatmap per combat
+posture.
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `10`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `12`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

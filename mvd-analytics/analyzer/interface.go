@@ -146,7 +146,10 @@ type (
 	MatchSettings          = result.MatchSettings
 	LocGraphResult         = result.LocGraphResult
 	LocNode                = result.LocNode
+	LocWeights             = result.LocWeights
 	LocEdge                = result.LocEdge
+	LocEdgeWeights         = result.LocEdgeWeights
+	Interval               = result.Interval
 	ItemsResult            = result.ItemsResult
 	ItemTimeline           = result.ItemTimeline
 	ItemPhase              = result.ItemPhase

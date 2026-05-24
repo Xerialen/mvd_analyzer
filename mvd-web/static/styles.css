@@ -1570,6 +1570,84 @@ table tbody tr:hover {
     bottom: 0;
 }
 
+/* Loc Heatmap */
+.locheatmap-desc {
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 8px;
+    max-width: 60ch;
+}
+
+/* Standalone metric selector governing the loc graph + heatmap. */
+.locmetric-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.locmetric-label {
+    font-weight: 600;
+}
+
+.locmetric-hint {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+/* Heatmap matrices (loc heatmap + region control) — sortable .stats-table. */
+.heatmap-table-wrap {
+    overflow-x: auto;
+}
+
+.heatmap-table {
+    font-size: 0.78rem;
+}
+
+.heatmap-table th.heatmap-col,
+.heatmap-table td.heatmap-cell {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.heatmap-table th.heatmap-col {
+    font-weight: normal;
+}
+
+.heatmap-table th.heatmap-col-team {
+    font-weight: bold;
+}
+
+.heatmap-table td.heatmap-rowname {
+    white-space: nowrap;
+}
+
+.heatmap-table .heatmap-col-sep {
+    border-left: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+/* Sequential viridis legend — gradient stops mirror HEAT_STOPS in app.js. */
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.heatmap-legend-bar {
+    width: 120px;
+    height: 10px;
+    border-radius: 2px;
+    background: linear-gradient(to right,
+        rgb(68, 1, 84) 0%,
+        rgb(59, 82, 139) 25%,
+        rgb(33, 145, 140) 50%,
+        rgb(94, 201, 98) 75%,
+        rgb(253, 231, 37) 100%);
+}
+
 /* Diverging Health/Armor Graph */
 .health-armor-graph-diverging {
     height: 200px;
@@ -2679,14 +2757,6 @@ th.sortable.sort-desc::after {
 .region-config-actions button:hover {
     border-color: var(--accent-cyan);
     color: #fff;
-}
-
-.region-control-table {
-    font-size: 0.8rem;
-}
-
-.region-control-table td {
-    text-align: center;
 }
 
 .map-legend h4 {

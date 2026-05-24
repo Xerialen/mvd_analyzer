@@ -684,13 +684,26 @@ Defined in `result/locgraph.go`.
 
 ### LocNode
 
-`{ name, x, y, z, total, byPlayer, byTeam }` — total seconds spent at
-each named location, aggregated all-players + per-player + per-team.
+`{ name, x, y, z, total, byPlayer, byTeam, armed?, unarmed?, quad?, pent? }`
+— total seconds spent at each named location, aggregated all-players +
+per-player + per-team. `armed`, `unarmed`, `quad` and `pent` are optional
+`LocWeights` (`{ total, byPlayer, byTeam }`, same shape) carrying that
+breakdown restricted to samples where the player held RL or LG (`armed`),
+held neither (`unarmed`, the complement of `armed`), or had an active
+quad / pent powerup; omitted when no observed sample met the condition.
+They let consumers re-weight the graph by combat posture without
+re-walking streams (schema v12).
 
 ### LocEdge
 
-`{ from, to, kind, total, byPlayer, byTeam }` — directed transitions
-between locs. `kind` = `walk` / `jump` / `telefrag` / `teleport`.
+`{ from, to, kind, total, byPlayer, byTeam, armed?, unarmed?, quad?, pent? }`
+— directed transitions between locs. `kind` = `normal` / `teleport`.
+`armed`, `unarmed`, `quad` and `pent` are optional `LocEdgeWeights`
+(`{ total, byPlayer, byTeam }`, int counts) carrying the subset of
+transitions made while the player held RL or LG (`armed`), held neither
+(`unarmed`), or had an active quad / pent at the destination sample, so
+the loc graph can be drawn as a self-contained movement graph per combat
+posture (schema v12). Omitted when no transition met the condition.
 
 ## ItemsResult (`items`)
 

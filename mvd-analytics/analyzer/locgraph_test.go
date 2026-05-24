@@ -165,6 +165,124 @@ func TestBuildLocGraph_BasicTransitionsAndTeleport(t *testing.T) {
 	}
 }
 
+// Verify the Armed (RL/LG) and Quad conditioned weights only count the
+// samples whose timestamp falls inside the player's presence intervals,
+// and never exceed the unconditioned node total.
+func TestBuildLocGraph_ArmedAndQuadConditioning(t *testing.T) {
+	locTable := []string{"", "A", "B"}
+	locationData := []MapLocation{{Name: "A", X: 0, Y: 0}, {Name: "B", X: 100, Y: 0}}
+
+	// p1: loc A at ms 0,50; loc B at ms 100,150. Every gap is 50 ms so
+	// each sample contributes dt = 0.05 s.
+	specs := []bucketSpec{
+		{t: 0.00, x: 0, y: 0, li: 1},
+		{t: 0.05, x: 0, y: 0, li: 1},
+		{t: 0.10, x: 100, y: 0, li: 2},
+		{t: 0.15, x: 100, y: 0, li: 2},
+	}
+	p1 := makePlayerStreamFromBuckets("p1", "red", specs)
+	// Armed for [0,101) ms — covers samples at 0, 50, 100 but not 150.
+	p1.RL = []result.Interval{{Start: 0, End: 101}}
+	// Quad for [140,1000) ms — covers only the sample at 150.
+	p1.Quad = []result.Interval{{Start: 140, End: 1000}}
+	// Pent for [0,40) ms — covers only the first A sample (ms 0).
+	p1.Pent = []result.Interval{{Start: 0, End: 40}}
+
+	res := &Result{
+		Streams: &result.Streams{
+			Global:  result.GlobalStream{MatchStart: 0, MatchEnd: 300},
+			Players: []result.PlayerStream{p1},
+		},
+		TimelineAnalysis: &TimelineAnalysisResult{LocTable: locTable, LocationData: locationData},
+		DemoInfo:         &DemoInfoResult{Players: []DemoInfoPlayer{{Name: "p1", Team: "red"}}},
+	}
+
+	graph := BuildLocGraph(res)
+	if graph == nil {
+		t.Fatal("expected graph, got nil")
+	}
+	nodes := map[string]LocNode{}
+	for _, n := range graph.Locs {
+		nodes[n.Name] = n
+	}
+	const D = 0.05
+	A, B := nodes["A"], nodes["B"]
+
+	if !approxEq(A.Total, 2*D) || !approxEq(B.Total, 2*D) {
+		t.Fatalf("totals A=%v B=%v want %v each", A.Total, B.Total, 2*D)
+	}
+
+	// Armed: both A samples, but only the first B sample (ms 100).
+	if A.Armed == nil || !approxEq(A.Armed.Total, 2*D) {
+		t.Errorf("A.Armed = %+v, want total %v", A.Armed, 2*D)
+	} else {
+		if !approxEq(A.Armed.ByPlayer["p1"], 2*D) {
+			t.Errorf("A.Armed.ByPlayer[p1] = %v, want %v", A.Armed.ByPlayer["p1"], 2*D)
+		}
+		if !approxEq(A.Armed.ByTeam["red"], 2*D) {
+			t.Errorf("A.Armed.ByTeam[red] = %v, want %v", A.Armed.ByTeam["red"], 2*D)
+		}
+	}
+	if B.Armed == nil || !approxEq(B.Armed.Total, 1*D) {
+		t.Errorf("B.Armed = %+v, want total %v", B.Armed, 1*D)
+	}
+
+	// Quad: only the B sample at ms 150 — A never had quad, so it stays nil.
+	if A.Quad != nil {
+		t.Errorf("A.Quad = %+v, want nil", A.Quad)
+	}
+	if B.Quad == nil || !approxEq(B.Quad.Total, 1*D) {
+		t.Errorf("B.Quad = %+v, want total %v", B.Quad, 1*D)
+	}
+
+	// Pent: only the first A sample (ms 0) — B never had pent.
+	if A.Pent == nil || !approxEq(A.Pent.Total, 1*D) {
+		t.Errorf("A.Pent = %+v, want total %v", A.Pent, 1*D)
+	}
+	if B.Pent != nil {
+		t.Errorf("B.Pent = %+v, want nil", B.Pent)
+	}
+
+	// Unarmed is the complement of Armed: only the ms-150 B sample lacked
+	// RL/LG, so A (both samples armed) has no Unarmed and B has one sample.
+	if A.Unarmed != nil {
+		t.Errorf("A.Unarmed = %+v, want nil", A.Unarmed)
+	}
+	if B.Unarmed == nil || !approxEq(B.Unarmed.Total, 1*D) {
+		t.Errorf("B.Unarmed = %+v, want total %v", B.Unarmed, 1*D)
+	}
+	// Armed + Unarmed time must reconstitute each loc's total.
+	armedB := 0.0
+	if B.Armed != nil {
+		armedB = B.Armed.Total
+	}
+	if !approxEq(armedB+B.Unarmed.Total, B.Total) {
+		t.Errorf("B armed+unarmed = %v, want total %v", armedB+B.Unarmed.Total, B.Total)
+	}
+
+	// Conditioned metrics can never exceed the unconditioned total.
+	if B.Armed != nil && B.Armed.Total > B.Total+1e-9 {
+		t.Errorf("B.Armed.Total %v > B.Total %v", B.Armed.Total, B.Total)
+	}
+
+	// The A→B transition fires at the destination sample (ms 100), which is
+	// armed but not quad — so the edge carries an Armed weight, no Quad.
+	edges := map[string]LocEdge{}
+	for _, e := range graph.Edges {
+		edges[e.From+"→"+e.To] = e
+	}
+	ab := edges["A→B"]
+	if ab.Total != 1 {
+		t.Fatalf("A→B total = %d, want 1", ab.Total)
+	}
+	if ab.Armed == nil || ab.Armed.Total != 1 || ab.Armed.ByPlayer["p1"] != 1 || ab.Armed.ByTeam["red"] != 1 {
+		t.Errorf("A→B.Armed = %+v, want total/p1/red = 1", ab.Armed)
+	}
+	if ab.Quad != nil {
+		t.Errorf("A→B.Quad = %+v, want nil", ab.Quad)
+	}
+}
+
 func approxEq(a, b float64) bool {
 	// Node-time is float64 accumulated from int32-ms-derived dts;
 	// a small fp tolerance is still sensible since the *.05 dts

@@ -128,7 +128,16 @@ package result
 //     versions the outward view/query wire surface so API / MCP / web
 //     consumers can feature-detect the new default bucket shape and
 //     cached view responses are invalidated.
-const CurrentSchemaVersion = 11
+//
+// v12:
+//   - LocGraph nodes and edges gain optional Armed / Unarmed / Quad / Pent
+//     weights: the same Total / ByPlayer / ByTeam time (node) and
+//     transition-count (edge) breakdown restricted to samples where the
+//     player held RL or LG (Armed), held neither (Unarmed), or had an
+//     active Quad / Pent powerup. Additive and backward-compatible (all
+//     omitempty), but the bump invalidates cached loc-graph responses so
+//     consumers pick them up.
+const CurrentSchemaVersion = 12
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

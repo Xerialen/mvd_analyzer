@@ -8098,6 +8098,19 @@
   "locGraph": {
     "edges": [
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 10,
+            "shazam": 12,
+            "squeeze": 2,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 12,
+            "n n": 13
+          },
+          "total": 25
+        },
         "byPlayer": {
           "Milton": 11,
           "shazam": 13,
@@ -8111,9 +8124,35 @@
         "from": "GL",
         "kind": "normal",
         "to": "LG",
-        "total": 34
+        "total": 34,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 1,
+            "squeeze": 5,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 6,
+            "n n": 3
+          },
+          "total": 9
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 7,
+            "shazam": 11,
+            "squeeze": 11,
+            "stepcop": 6
+          },
+          "byTeam": {
+            "1": 18,
+            "n n": 17
+          },
+          "total": 35
+        },
         "byPlayer": {
           "Milton": 7,
           "shazam": 11,
@@ -8130,6 +8169,18 @@
         "total": 35
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 2,
+            "squeeze": 5,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 5,
+            "n n": 4
+          },
+          "total": 9
+        },
         "byPlayer": {
           "shazam": 2,
           "squeeze": 5,
@@ -8145,6 +8196,15 @@
         "total": 9
       },
       {
+        "armed": {
+          "byPlayer": {
+            "stepcop": 2
+          },
+          "byTeam": {
+            "n n": 2
+          },
+          "total": 2
+        },
         "byPlayer": {
           "stepcop": 2
         },
@@ -8157,6 +8217,19 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 15,
+            "shazam": 23,
+            "squeeze": 16,
+            "stepcop": 11
+          },
+          "byTeam": {
+            "1": 31,
+            "n n": 34
+          },
+          "total": 65
+        },
         "byPlayer": {
           "Milton": 15,
           "shazam": 23,
@@ -8173,6 +8246,19 @@
         "total": 65
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 24,
+            "shazam": 26,
+            "squeeze": 14,
+            "stepcop": 7
+          },
+          "byTeam": {
+            "1": 38,
+            "n n": 33
+          },
+          "total": 71
+        },
         "byPlayer": {
           "Milton": 24,
           "shazam": 26,
@@ -8189,6 +8275,19 @@
         "total": 71
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 5,
+            "shazam": 10,
+            "squeeze": 6,
+            "stepcop": 5
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 15
+          },
+          "total": 26
+        },
         "byPlayer": {
           "Milton": 5,
           "shazam": 10,
@@ -8205,6 +8304,18 @@
         "total": 26
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "squeeze": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 1
+          },
+          "total": 3
+        },
         "byPlayer": {
           "Milton": 1,
           "squeeze": 1,
@@ -8220,6 +8331,17 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 1
+          },
+          "total": 2
+        },
         "byPlayer": {
           "Milton": 1,
           "stepcop": 1
@@ -8234,6 +8356,18 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 2
+          },
+          "total": 3
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 1,
@@ -8249,6 +8383,18 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "squeeze": 1,
+            "stepcop": 3
+          },
+          "byTeam": {
+            "1": 5,
+            "n n": 3
+          },
+          "total": 8
+        },
         "byPlayer": {
           "Milton": 4,
           "squeeze": 1,
@@ -8261,9 +8407,31 @@
         "from": "LG",
         "kind": "normal",
         "to": "low",
-        "total": 9
+        "total": 9,
+        "unarmed": {
+          "byPlayer": {
+            "stepcop": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 13,
+            "shazam": 17,
+            "squeeze": 12,
+            "stepcop": 6
+          },
+          "byTeam": {
+            "1": 25,
+            "n n": 23
+          },
+          "total": 48
+        },
         "byPlayer": {
           "Milton": 14,
           "shazam": 17,
@@ -8277,9 +8445,32 @@
         "from": "LG.GA",
         "kind": "normal",
         "to": "LG",
-        "total": 50
+        "total": 50,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 1
+          },
+          "total": 2
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 3,
+            "shazam": 3,
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 3
+          },
+          "total": 7
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 3,
@@ -8295,6 +8486,17 @@
         "total": 7
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 2
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 2
+          },
+          "total": 6
+        },
         "byPlayer": {
           "Milton": 4,
           "shazam": 2
@@ -8309,6 +8511,19 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 2,
+            "squeeze": 2,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 3,
+            "n n": 3
+          },
+          "total": 6
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 2,
@@ -8325,6 +8540,19 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 6,
+            "squeeze": 4,
+            "stepcop": 3
+          },
+          "byTeam": {
+            "1": 8,
+            "n n": 9
+          },
+          "total": 17
+        },
         "byPlayer": {
           "Milton": 4,
           "shazam": 6,
@@ -8341,6 +8569,18 @@
         "total": 17
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 4,
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 4
+          },
+          "total": 6
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 4,
@@ -8356,6 +8596,19 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 8,
+            "shazam": 20,
+            "squeeze": 7,
+            "stepcop": 11
+          },
+          "byTeam": {
+            "1": 15,
+            "n n": 31
+          },
+          "total": 46
+        },
         "byPlayer": {
           "Milton": 8,
           "shazam": 20,
@@ -8372,6 +8625,18 @@
         "total": 46
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 4,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 5
+          },
+          "total": 6
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 4,
@@ -8387,6 +8652,19 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 19,
+            "squeeze": 7,
+            "stepcop": 9
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 28
+          },
+          "total": 39
+        },
         "byPlayer": {
           "Milton": 4,
           "shazam": 19,
@@ -8403,6 +8681,18 @@
         "total": 39
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 3,
+            "shazam": 3,
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 3
+          },
+          "total": 7
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 3,
@@ -8427,9 +8717,29 @@
         "from": "Quad.stairs",
         "kind": "normal",
         "to": "GL",
-        "total": 2
+        "total": 2,
+        "unarmed": {
+          "byPlayer": {
+            "stepcop": 2
+          },
+          "byTeam": {
+            "n n": 2
+          },
+          "total": 2
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 1
+          },
+          "total": 2
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 3,
@@ -8443,7 +8753,20 @@
         "from": "Quad.stairs",
         "kind": "normal",
         "to": "LG",
-        "total": 11
+        "total": 11,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 2,
+            "squeeze": 2,
+            "stepcop": 3
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 5
+          },
+          "total": 9
+        }
       },
       {
         "byPlayer": {
@@ -8455,9 +8778,27 @@
         "from": "Quad.stairs",
         "kind": "normal",
         "to": "LG.GA",
-        "total": 1
+        "total": 1,
+        "unarmed": {
+          "byPlayer": {
+            "stepcop": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "shazam": 1
         },
@@ -8470,6 +8811,19 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 3,
+            "squeeze": 10,
+            "stepcop": 5
+          },
+          "byTeam": {
+            "1": 14,
+            "n n": 8
+          },
+          "total": 22
+        },
         "byPlayer": {
           "Milton": 4,
           "shazam": 5,
@@ -8483,9 +8837,32 @@
         "from": "Quad.stairs",
         "kind": "normal",
         "to": "Quad.tele",
-        "total": 26
+        "total": 26,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 2,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "n n": 4
+          },
+          "total": 4
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 11,
+            "shazam": 6,
+            "squeeze": 2,
+            "stepcop": 12
+          },
+          "byTeam": {
+            "1": 13,
+            "n n": 18
+          },
+          "total": 31
+        },
         "byPlayer": {
           "Milton": 11,
           "shazam": 8,
@@ -8499,9 +8876,32 @@
         "from": "Quad.stairs",
         "kind": "normal",
         "to": "high",
-        "total": 35
+        "total": 35,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 2,
+            "squeeze": 2
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 2
+          },
+          "total": 4
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 2
+          },
+          "total": 3
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 1,
@@ -8517,6 +8917,19 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 6,
+            "shazam": 4,
+            "squeeze": 2,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 8,
+            "n n": 6
+          },
+          "total": 14
+        },
         "byPlayer": {
           "Milton": 6,
           "shazam": 4,
@@ -8533,6 +8946,15 @@
         "total": 14
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "shazam": 1
         },
@@ -8545,6 +8967,17 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 3,
+            "shazam": 1
+          },
+          "byTeam": {
+            "1": 3,
+            "n n": 1
+          },
+          "total": 4
+        },
         "byPlayer": {
           "Milton": 4,
           "shazam": 8,
@@ -8558,9 +8991,35 @@
         "from": "Quad.tele",
         "kind": "normal",
         "to": "Quad.stairs",
-        "total": 26
+        "total": 26,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 7,
+            "squeeze": 7,
+            "stepcop": 7
+          },
+          "byTeam": {
+            "1": 8,
+            "n n": 14
+          },
+          "total": 22
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 2,
+            "squeeze": 10,
+            "stepcop": 5
+          },
+          "byTeam": {
+            "1": 12,
+            "n n": 7
+          },
+          "total": 19
+        },
         "byPlayer": {
           "Milton": 7,
           "shazam": 4,
@@ -8574,9 +9033,35 @@
         "from": "Quad.tele",
         "kind": "teleport",
         "to": "YA.entry",
-        "total": 29
+        "total": 29,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 5,
+            "shazam": 2,
+            "squeeze": 2,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 7,
+            "n n": 3
+          },
+          "total": 10
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 15,
+            "shazam": 12,
+            "squeeze": 11,
+            "stepcop": 15
+          },
+          "byTeam": {
+            "1": 26,
+            "n n": 27
+          },
+          "total": 53
+        },
         "byPlayer": {
           "Milton": 15,
           "shazam": 12,
@@ -8593,6 +9078,18 @@
         "total": 53
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "squeeze": 7,
+            "stepcop": 7
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 7
+          },
+          "total": 18
+        },
         "byPlayer": {
           "Milton": 4,
           "squeeze": 7,
@@ -8608,6 +9105,19 @@
         "total": 18
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 16,
+            "shazam": 12,
+            "squeeze": 12,
+            "stepcop": 16
+          },
+          "byTeam": {
+            "1": 28,
+            "n n": 28
+          },
+          "total": 56
+        },
         "byPlayer": {
           "Milton": 16,
           "shazam": 12,
@@ -8624,6 +9134,19 @@
         "total": 56
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 6,
+            "squeeze": 3,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 8
+          },
+          "total": 12
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 9,
@@ -8637,9 +9160,33 @@
         "from": "SSG",
         "kind": "normal",
         "to": "GL",
-        "total": 23
+        "total": 23,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 3,
+            "squeeze": 5,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 7,
+            "n n": 4
+          },
+          "total": 11
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 1
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 1
+          },
+          "total": 3
+        },
         "byPlayer": {
           "Milton": 6,
           "shazam": 8,
@@ -8653,9 +9200,34 @@
         "from": "SSG",
         "kind": "normal",
         "to": "LG",
-        "total": 19
+        "total": 19,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 7,
+            "squeeze": 1,
+            "stepcop": 4
+          },
+          "byTeam": {
+            "1": 5,
+            "n n": 11
+          },
+          "total": 16
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 3,
+            "shazam": 1,
+            "squeeze": 2
+          },
+          "byTeam": {
+            "1": 5,
+            "n n": 1
+          },
+          "total": 6
+        },
         "byPlayer": {
           "Milton": 5,
           "shazam": 1,
@@ -8669,9 +9241,31 @@
         "from": "SSG",
         "kind": "normal",
         "to": "SSG.stairs",
-        "total": 11
+        "total": 11,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2,
+            "stepcop": 3
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 3
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 3,
+            "shazam": 3
+          },
+          "byTeam": {
+            "1": 3,
+            "n n": 3
+          },
+          "total": 6
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 3,
@@ -8684,9 +9278,30 @@
         "from": "SSG.stairs",
         "kind": "normal",
         "to": "SSG",
-        "total": 7
+        "total": 7,
+        "unarmed": {
+          "byPlayer": {
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 5,
+            "shazam": 4,
+            "squeeze": 2
+          },
+          "byTeam": {
+            "1": 7,
+            "n n": 4
+          },
+          "total": 11
+        },
         "byPlayer": {
           "Milton": 7,
           "shazam": 4,
@@ -8700,9 +9315,33 @@
         "from": "SSG.stairs",
         "kind": "normal",
         "to": "high.tele",
-        "total": 16
+        "total": 16,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2,
+            "stepcop": 3
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 3
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 1,
+            "squeeze": 7,
+            "stepcop": 5
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 6
+          },
+          "total": 17
+        },
         "byPlayer": {
           "Milton": 8,
           "shazam": 2,
@@ -8716,9 +9355,34 @@
         "from": "YA",
         "kind": "normal",
         "to": "RA",
-        "total": 24
+        "total": 24,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 4,
+            "shazam": 1,
+            "squeeze": 2
+          },
+          "byTeam": {
+            "1": 6,
+            "n n": 1
+          },
+          "total": 7
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 6,
+            "shazam": 1,
+            "squeeze": 13,
+            "stepcop": 11
+          },
+          "byTeam": {
+            "1": 19,
+            "n n": 12
+          },
+          "total": 31
+        },
         "byPlayer": {
           "Milton": 7,
           "shazam": 1,
@@ -8732,9 +9396,34 @@
         "from": "YA",
         "kind": "normal",
         "to": "YA.entry",
-        "total": 36
+        "total": 36,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1,
+            "squeeze": 3,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 1
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 7,
+            "shazam": 2,
+            "squeeze": 16,
+            "stepcop": 9
+          },
+          "byTeam": {
+            "1": 23,
+            "n n": 11
+          },
+          "total": 34
+        },
         "byPlayer": {
           "Milton": 13,
           "shazam": 3,
@@ -8748,9 +9437,35 @@
         "from": "YA.entry",
         "kind": "normal",
         "to": "YA",
-        "total": 47
+        "total": 47,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 6,
+            "shazam": 1,
+            "squeeze": 5,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 2
+          },
+          "total": 13
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 6,
+            "shazam": 5,
+            "squeeze": 17,
+            "stepcop": 13
+          },
+          "byTeam": {
+            "1": 23,
+            "n n": 18
+          },
+          "total": 41
+        },
         "byPlayer": {
           "Milton": 13,
           "shazam": 15,
@@ -8764,9 +9479,34 @@
         "from": "YA.entry",
         "kind": "normal",
         "to": "high",
-        "total": 71
+        "total": 71,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 7,
+            "shazam": 10,
+            "squeeze": 5,
+            "stepcop": 8
+          },
+          "byTeam": {
+            "1": 12,
+            "n n": 18
+          },
+          "total": 30
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2,
+            "squeeze": 1,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 3,
+            "n n": 2
+          },
+          "total": 5
+        },
         "byPlayer": {
           "Milton": 2,
           "squeeze": 1,
@@ -8782,6 +9522,19 @@
         "total": 5
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 11,
+            "shazam": 10,
+            "squeeze": 8,
+            "stepcop": 7
+          },
+          "byTeam": {
+            "1": 19,
+            "n n": 17
+          },
+          "total": 36
+        },
         "byPlayer": {
           "Milton": 19,
           "shazam": 20,
@@ -8795,9 +9548,35 @@
         "from": "high",
         "kind": "normal",
         "to": "LG",
-        "total": 70
+        "total": 70,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 8,
+            "shazam": 10,
+            "squeeze": 9,
+            "stepcop": 7
+          },
+          "byTeam": {
+            "1": 17,
+            "n n": 17
+          },
+          "total": 34
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 3,
+            "squeeze": 2,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 3,
+            "n n": 5
+          },
+          "total": 8
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 3,
@@ -8811,9 +9590,31 @@
         "from": "high",
         "kind": "normal",
         "to": "LG.GA",
-        "total": 10
+        "total": 10,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2
+          },
+          "byTeam": {
+            "1": 2
+          },
+          "total": 2
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 8,
+            "shazam": 1,
+            "squeeze": 3,
+            "stepcop": 10
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 11
+          },
+          "total": 22
+        },
         "byPlayer": {
           "Milton": 8,
           "shazam": 1,
@@ -8827,9 +9628,31 @@
         "from": "high",
         "kind": "normal",
         "to": "Quad.stairs",
-        "total": 24
+        "total": 24,
+        "unarmed": {
+          "byPlayer": {
+            "stepcop": 2
+          },
+          "byTeam": {
+            "n n": 2
+          },
+          "total": 2
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 7,
+            "shazam": 4,
+            "squeeze": 10,
+            "stepcop": 10
+          },
+          "byTeam": {
+            "1": 17,
+            "n n": 14
+          },
+          "total": 31
+        },
         "byPlayer": {
           "Milton": 9,
           "shazam": 4,
@@ -8843,9 +9666,29 @@
         "from": "high",
         "kind": "normal",
         "to": "YA.entry",
-        "total": 34
+        "total": 34,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 1
+          },
+          "total": 3
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "stepcop": 4
+          },
+          "byTeam": {
+            "n n": 4
+          },
+          "total": 4
+        },
         "byPlayer": {
           "Milton": 1,
           "stepcop": 4
@@ -8857,9 +9700,31 @@
         "from": "high",
         "kind": "normal",
         "to": "high.tele",
-        "total": 5
+        "total": 5,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1
+          },
+          "byTeam": {
+            "1": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 3,
+            "shazam": 2,
+            "squeeze": 6,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 9,
+            "n n": 4
+          },
+          "total": 13
+        },
         "byPlayer": {
           "Milton": 3,
           "shazam": 3,
@@ -8873,9 +9738,30 @@
         "from": "high.tele",
         "kind": "normal",
         "to": "Quad.stairs",
-        "total": 18
+        "total": 18,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 1,
+            "stepcop": 4
+          },
+          "byTeam": {
+            "n n": 5
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 2
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 2
+          },
+          "total": 3
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 2
@@ -8890,6 +9776,18 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 6,
+            "shazam": 6,
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 7,
+            "n n": 6
+          },
+          "total": 13
+        },
         "byPlayer": {
           "Milton": 6,
           "shazam": 6,
@@ -8902,9 +9800,31 @@
         "from": "high.tele",
         "kind": "normal",
         "to": "SSG.stairs",
-        "total": 14
+        "total": 14,
+        "unarmed": {
+          "byPlayer": {
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 14,
+            "shazam": 12,
+            "squeeze": 8,
+            "stepcop": 14
+          },
+          "byTeam": {
+            "1": 22,
+            "n n": 26
+          },
+          "total": 48
+        },
         "byPlayer": {
           "Milton": 20,
           "shazam": 15,
@@ -8918,9 +9838,35 @@
         "from": "high.tele",
         "kind": "normal",
         "to": "high",
-        "total": 67
+        "total": 67,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 6,
+            "shazam": 3,
+            "squeeze": 5,
+            "stepcop": 5
+          },
+          "byTeam": {
+            "1": 11,
+            "n n": 8
+          },
+          "total": 19
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 2,
+            "squeeze": 2,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 3
+          },
+          "total": 7
+        },
         "byPlayer": {
           "Milton": 2,
           "shazam": 3,
@@ -8934,9 +9880,27 @@
         "from": "high.tele",
         "kind": "teleport",
         "to": "low.tele",
-        "total": 8
+        "total": 8,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1
+          },
+          "byTeam": {
+            "1": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "Milton": 1
         },
@@ -8949,6 +9913,15 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "shazam": 1
         },
@@ -8961,6 +9934,19 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 1,
+            "shazam": 7,
+            "squeeze": 1,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 2,
+            "n n": 9
+          },
+          "total": 11
+        },
         "byPlayer": {
           "Milton": 1,
           "shazam": 7,
@@ -8977,6 +9963,15 @@
         "total": 11
       },
       {
+        "armed": {
+          "byPlayer": {
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "squeeze": 1
         },
@@ -8989,6 +9984,16 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "n n": 2
+          },
+          "total": 2
+        },
         "byPlayer": {
           "shazam": 1,
           "stepcop": 1
@@ -9002,6 +10007,19 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 1,
+            "squeeze": 1,
+            "stepcop": 1
+          },
+          "byTeam": {
+            "1": 3,
+            "n n": 2
+          },
+          "total": 5
+        },
         "byPlayer": {
           "Milton": 2,
           "shazam": 1,
@@ -9018,6 +10036,17 @@
         "total": 5
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 1,
+            "squeeze": 1
+          },
+          "byTeam": {
+            "1": 1,
+            "n n": 1
+          },
+          "total": 2
+        },
         "byPlayer": {
           "shazam": 1,
           "squeeze": 1
@@ -9032,6 +10061,19 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 21,
+            "shazam": 21,
+            "squeeze": 18,
+            "stepcop": 20
+          },
+          "byTeam": {
+            "1": 39,
+            "n n": 41
+          },
+          "total": 80
+        },
         "byPlayer": {
           "Milton": 21,
           "shazam": 21,
@@ -9048,6 +10090,19 @@
         "total": 80
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 20,
+            "shazam": 19,
+            "squeeze": 18,
+            "stepcop": 16
+          },
+          "byTeam": {
+            "1": 38,
+            "n n": 35
+          },
+          "total": 73
+        },
         "byPlayer": {
           "Milton": 20,
           "shazam": 19,
@@ -9064,6 +10119,19 @@
         "total": 73
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2,
+            "shazam": 3,
+            "squeeze": 2,
+            "stepcop": 2
+          },
+          "byTeam": {
+            "1": 4,
+            "n n": 5
+          },
+          "total": 9
+        },
         "byPlayer": {
           "Milton": 2,
           "shazam": 4,
@@ -9077,11 +10145,33 @@
         "from": "low.tele",
         "kind": "normal",
         "to": "low",
-        "total": 10
+        "total": 10,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 1
+          },
+          "byTeam": {
+            "n n": 1
+          },
+          "total": 1
+        }
       }
     ],
     "locs": [
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 15.531999999999957,
+            "shazam": 22.427000000000056,
+            "squeeze": 15.797999999999949,
+            "stepcop": 13.13199999999997
+          },
+          "byTeam": {
+            "1": 31.33000000000029,
+            "n n": 35.559000000000275
+          },
+          "total": 66.88900000000095
+        },
         "byPlayer": {
           "Milton": 17.951999999999973,
           "shazam": 24.2260000000001,
@@ -9094,11 +10184,37 @@
         },
         "name": "GL",
         "total": 75.4870000000017,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2.419999999999996,
+            "shazam": 1.7989999999999977,
+            "squeeze": 3.2839999999999914,
+            "stepcop": 1.0950000000000004
+          },
+          "byTeam": {
+            "1": 5.703999999999986,
+            "n n": 2.8939999999999912
+          },
+          "total": 8.59799999999998
+        },
         "x": 324.625,
         "y": -482.625,
         "z": -103.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 54.54200000000048,
+            "shazam": 59.89800000000045,
+            "squeeze": 35.56200000000034,
+            "stepcop": 30.38000000000027
+          },
+          "byTeam": {
+            "1": 90.10400000000288,
+            "n n": 90.278000000003
+          },
+          "total": 180.3820000000137
+        },
         "byPlayer": {
           "Milton": 58.96500000000059,
           "shazam": 66.11600000000084,
@@ -9111,11 +10227,37 @@
         },
         "name": "LG",
         "total": 201.23200000001444,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 4.422999999999983,
+            "shazam": 6.217999999999977,
+            "squeeze": 4.276999999999988,
+            "stepcop": 5.931999999999979
+          },
+          "byTeam": {
+            "1": 8.699999999999973,
+            "n n": 12.149999999999954
+          },
+          "total": 20.850000000000026
+        },
         "x": 500.75,
         "y": -378.625,
         "z": -103.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 28.90700000000027,
+            "shazam": 39.70100000000019,
+            "squeeze": 29.979000000000145,
+            "stepcop": 11.827999999999966
+          },
+          "byTeam": {
+            "1": 58.88600000000041,
+            "n n": 51.52900000000021
+          },
+          "total": 110.41500000000562
+        },
         "byPlayer": {
           "Milton": 29.679000000000283,
           "shazam": 40.5910000000002,
@@ -9128,11 +10270,36 @@
         },
         "name": "LG.GA",
         "total": 113.04400000000577,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 0.7720000000000006,
+            "shazam": 0.8900000000000007,
+            "stepcop": 0.9670000000000006
+          },
+          "byTeam": {
+            "1": 0.7720000000000006,
+            "n n": 1.856999999999998
+          },
+          "total": 2.6289999999999942
+        },
         "x": 500.75,
         "y": -134.5,
         "z": -103.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 4.879999999999983,
+            "shazam": 9.551999999999966,
+            "squeeze": 6.35599999999998,
+            "stepcop": 8.417999999999974
+          },
+          "byTeam": {
+            "1": 11.235999999999963,
+            "n n": 17.969999999999967
+          },
+          "total": 29.206000000000273
+        },
         "byPlayer": {
           "Milton": 6.782999999999982,
           "shazam": 9.551999999999966,
@@ -9145,11 +10312,36 @@
         },
         "name": "LG.tele",
         "total": 32.975000000000364,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1.9029999999999971,
+            "squeeze": 0.9200000000000007,
+            "stepcop": 0.9460000000000006
+          },
+          "byTeam": {
+            "1": 2.822999999999993,
+            "n n": 0.9460000000000006
+          },
+          "total": 3.768999999999987
+        },
         "x": 686.625,
         "y": -272.125,
         "z": -103.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 7.911999999999982,
+            "shazam": 19.54699999999994,
+            "squeeze": 6.902999999999979,
+            "stepcop": 8.31299999999999
+          },
+          "byTeam": {
+            "1": 14.814999999999928,
+            "n n": 27.860000000000138
+          },
+          "total": 42.675000000000445
+        },
         "byPlayer": {
           "Milton": 24.431000000000104,
           "shazam": 42.519000000000254,
@@ -9162,11 +10354,37 @@
         },
         "name": "MH",
         "total": 115.66100000000519,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 16.518999999999945,
+            "shazam": 22.972000000000076,
+            "squeeze": 14.04799999999992,
+            "stepcop": 19.446999999999985
+          },
+          "byTeam": {
+            "1": 30.567000000000256,
+            "n n": 42.41900000000038
+          },
+          "total": 72.98600000000138
+        },
         "x": 111.875,
         "y": 48,
         "z": -295.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 10.547999999999972,
+            "shazam": 26.20100000000012,
+            "squeeze": 8.893999999999977,
+            "stepcop": 14.191999999999947
+          },
+          "byTeam": {
+            "1": 19.442,
+            "n n": 40.393000000000356
+          },
+          "total": 59.835000000000896
+        },
         "byPlayer": {
           "Milton": 10.547999999999972,
           "shazam": 26.20100000000012,
@@ -9184,6 +10402,19 @@
         "z": -295.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 2.0829999999999966,
+            "shazam": 1.6289999999999982,
+            "squeeze": 0.9780000000000006,
+            "stepcop": 0.9100000000000007
+          },
+          "byTeam": {
+            "1": 3.060999999999993,
+            "n n": 2.538999999999994
+          },
+          "total": 5.599999999999984
+        },
         "byPlayer": {
           "Milton": 2.0829999999999966,
           "shazam": 1.6289999999999982,
@@ -9201,6 +10432,19 @@
         "z": -103.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 41.14900000000014,
+            "shazam": 45.23300000000027,
+            "squeeze": 28.806000000000218,
+            "stepcop": 67.34100000000092
+          },
+          "byTeam": {
+            "1": 69.95500000000146,
+            "n n": 112.57400000000531
+          },
+          "total": 182.52900000001338
+        },
         "byPlayer": {
           "Milton": 44.007000000000154,
           "shazam": 53.2600000000003,
@@ -9213,11 +10457,37 @@
         },
         "name": "Quad.stairs",
         "total": 217.90500000001612,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 2.857999999999992,
+            "shazam": 8.026999999999981,
+            "squeeze": 9.765999999999973,
+            "stepcop": 14.72499999999994
+          },
+          "byTeam": {
+            "1": 12.623999999999954,
+            "n n": 22.752000000000056
+          },
+          "total": 35.37600000000033
+        },
         "x": 138.625,
         "y": -245.75,
         "z": -71.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 6.671999999999976,
+            "shazam": 5.057999999999987,
+            "squeeze": 13.010999999999958,
+            "stepcop": 6.82199999999998
+          },
+          "byTeam": {
+            "1": 19.683000000000014,
+            "n n": 11.87999999999995
+          },
+          "total": 31.56300000000036
+        },
         "byPlayer": {
           "Milton": 15.717999999999945,
           "shazam": 17.557000000000002,
@@ -9230,11 +10500,37 @@
         },
         "name": "Quad.tele",
         "total": 70.66400000000132,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 9.045999999999975,
+            "shazam": 12.498999999999961,
+            "squeeze": 10.567999999999973,
+            "stepcop": 6.9879999999999844
+          },
+          "byTeam": {
+            "1": 19.614000000000043,
+            "n n": 19.486999999999995
+          },
+          "total": 39.101000000000305
+        },
         "x": -143.875,
         "y": -208.125,
         "z": -71.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 40.77000000000028,
+            "shazam": 17.58199999999995,
+            "squeeze": 58.527000000000776,
+            "stepcop": 43.68000000000017
+          },
+          "byTeam": {
+            "1": 99.29700000000418,
+            "n n": 61.26200000000051
+          },
+          "total": 160.55900000001114
+        },
         "byPlayer": {
           "Milton": 49.71900000000054,
           "shazam": 28.995000000000193,
@@ -9247,11 +10543,37 @@
         },
         "name": "RA",
         "total": 202.6490000000138,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 8.94899999999998,
+            "shazam": 11.412999999999965,
+            "squeeze": 6.177999999999982,
+            "stepcop": 15.549999999999931
+          },
+          "byTeam": {
+            "1": 15.126999999999924,
+            "n n": 26.963000000000193
+          },
+          "total": 42.090000000000366
+        },
         "x": 777.875,
         "y": -878.375,
         "z": -231.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 6.194999999999986,
+            "shazam": 6.196999999999979,
+            "squeeze": 4.301999999999987,
+            "stepcop": 5.357999999999982
+          },
+          "byTeam": {
+            "1": 10.496999999999954,
+            "n n": 11.554999999999954
+          },
+          "total": 22.05200000000006
+        },
         "byPlayer": {
           "Milton": 6.194999999999986,
           "shazam": 6.196999999999979,
@@ -9269,6 +10591,19 @@
         "z": -295.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 16.79699999999996,
+            "shazam": 20.060000000000024,
+            "squeeze": 18.966999999999995,
+            "stepcop": 3.422999999999988
+          },
+          "byTeam": {
+            "1": 35.76400000000033,
+            "n n": 23.483000000000082
+          },
+          "total": 59.247000000000554
+        },
         "byPlayer": {
           "Milton": 34.14900000000031,
           "shazam": 63.308000000000526,
@@ -9281,11 +10616,36 @@
         },
         "name": "SSG",
         "total": 174.5370000000108,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 17.351999999999972,
+            "shazam": 43.24800000000035,
+            "squeeze": 31.41500000000014,
+            "stepcop": 23.275000000000077
+          },
+          "byTeam": {
+            "1": 48.76700000000045,
+            "n n": 66.52300000000078
+          },
+          "total": 115.29000000000511
+        },
         "x": 338.875,
         "y": -892.375,
         "z": -103.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 5.731999999999988,
+            "shazam": 4.649999999999985,
+            "squeeze": 3.14999999999999
+          },
+          "byTeam": {
+            "1": 8.881999999999973,
+            "n n": 4.649999999999985
+          },
+          "total": 13.531999999999949
+        },
         "byPlayer": {
           "Milton": 7.172999999999984,
           "shazam": 4.649999999999985,
@@ -9298,11 +10658,36 @@
         },
         "name": "SSG.stairs",
         "total": 18.16799999999997,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 1.440999999999999,
+            "squeeze": 1.0130000000000006,
+            "stepcop": 2.1819999999999964
+          },
+          "byTeam": {
+            "1": 2.453999999999995,
+            "n n": 2.1819999999999964
+          },
+          "total": 4.635999999999985
+        },
         "x": 367.875,
         "y": -1231.875,
         "z": -23.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 33.02200000000029,
+            "shazam": 4.849999999999986,
+            "squeeze": 57.43500000000022,
+            "stepcop": 22.782000000000046
+          },
+          "byTeam": {
+            "1": 90.45700000000278,
+            "n n": 27.632000000000147
+          },
+          "total": 118.08900000000557
+        },
         "byPlayer": {
           "Milton": 39.29300000000041,
           "shazam": 5.433999999999985,
@@ -9315,11 +10700,37 @@
         },
         "name": "YA",
         "total": 136.90400000000716,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 6.270999999999978,
+            "shazam": 0.5840000000000004,
+            "squeeze": 10.552999999999951,
+            "stepcop": 1.406999999999999
+          },
+          "byTeam": {
+            "1": 16.82399999999992,
+            "n n": 1.990999999999997
+          },
+          "total": 18.81499999999998
+        },
         "x": 1157.625,
         "y": -593.125,
         "z": 24
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 16.05899999999996,
+            "shazam": 8.593999999999976,
+            "squeeze": 37.664000000000364,
+            "stepcop": 29.086000000000258
+          },
+          "byTeam": {
+            "1": 53.72300000000042,
+            "n n": 37.68000000000037
+          },
+          "total": 91.40300000000381
+        },
         "byPlayer": {
           "Milton": 28.456000000000174,
           "shazam": 17.911999999999985,
@@ -9332,11 +10743,37 @@
         },
         "name": "YA.entry",
         "total": 140.82600000000735,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 12.396999999999943,
+            "shazam": 9.317999999999964,
+            "squeeze": 12.872999999999953,
+            "stepcop": 14.834999999999933
+          },
+          "byTeam": {
+            "1": 25.270000000000078,
+            "n n": 24.153000000000098
+          },
+          "total": 49.423000000000506
+        },
         "x": 816,
         "y": -226.875,
         "z": 24
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 65.59200000000058,
+            "shazam": 34.12400000000028,
+            "squeeze": 47.775000000000325,
+            "stepcop": 76.43600000000177
+          },
+          "byTeam": {
+            "1": 113.367000000005,
+            "n n": 110.56000000000519
+          },
+          "total": 223.9270000000122
+        },
         "byPlayer": {
           "Milton": 74.4190000000018,
           "shazam": 43.07400000000037,
@@ -9349,11 +10786,37 @@
         },
         "name": "high",
         "total": 258.5910000000154,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 8.826999999999973,
+            "shazam": 8.94999999999999,
+            "squeeze": 7.359999999999984,
+            "stepcop": 9.526999999999967
+          },
+          "byTeam": {
+            "1": 16.18699999999993,
+            "n n": 18.476999999999972
+          },
+          "total": 34.66400000000021
+        },
         "x": 566.375,
         "y": 3.125,
         "z": 24
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 37.59600000000028,
+            "shazam": 25.698000000000192,
+            "squeeze": 38.597000000000314,
+            "stepcop": 31.658000000000214
+          },
+          "byTeam": {
+            "1": 76.19300000000175,
+            "n n": 57.356000000000655
+          },
+          "total": 133.5490000000073
+        },
         "byPlayer": {
           "Milton": 53.70500000000027,
           "shazam": 32.91600000000036,
@@ -9366,11 +10829,37 @@
         },
         "name": "high.tele",
         "total": 191.90500000000992,
+        "unarmed": {
+          "byPlayer": {
+            "Milton": 16.108999999999924,
+            "shazam": 7.217999999999982,
+            "squeeze": 12.939999999999946,
+            "stepcop": 22.089000000000038
+          },
+          "byTeam": {
+            "1": 29.049000000000156,
+            "n n": 29.30700000000021
+          },
+          "total": 58.356000000000634
+        },
         "x": 318.125,
         "y": -876.375,
         "z": 24
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 73.65800000000166,
+            "shazam": 86.0920000000029,
+            "squeeze": 33.03600000000032,
+            "stepcop": 61.566000000000614
+          },
+          "byTeam": {
+            "1": 106.69400000000483,
+            "n n": 147.65800000000837
+          },
+          "total": 254.35200000002075
+        },
         "byPlayer": {
           "Milton": 73.65800000000166,
           "shazam": 86.91700000000296,
@@ -9383,11 +10872,32 @@
         },
         "name": "low",
         "total": 255.78200000002087,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 0.8250000000000005,
+            "stepcop": 0.6050000000000003
+          },
+          "byTeam": {
+            "n n": 1.4299999999999988
+          },
+          "total": 1.4299999999999988
+        },
         "x": 375.625,
         "y": -224.75,
         "z": -295.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "shazam": 0.9200000000000006,
+            "squeeze": 0.6560000000000004
+          },
+          "byTeam": {
+            "1": 0.6560000000000004,
+            "n n": 0.9200000000000006
+          },
+          "total": 1.5759999999999987
+        },
         "byPlayer": {
           "shazam": 0.9200000000000006,
           "squeeze": 0.6560000000000004
@@ -9403,6 +10913,19 @@
         "z": -295.875
       },
       {
+        "armed": {
+          "byPlayer": {
+            "Milton": 23.132000000000005,
+            "shazam": 27.12600000000023,
+            "squeeze": 28.47400000000019,
+            "stepcop": 25.17000000000012
+          },
+          "byTeam": {
+            "1": 51.60600000000043,
+            "n n": 52.29600000000049
+          },
+          "total": 103.90200000000453
+        },
         "byPlayer": {
           "Milton": 23.132000000000005,
           "shazam": 28.091000000000253,
@@ -9415,6 +10938,15 @@
         },
         "name": "low.tele",
         "total": 104.86700000000472,
+        "unarmed": {
+          "byPlayer": {
+            "shazam": 0.9650000000000007
+          },
+          "byTeam": {
+            "n n": 0.9650000000000007
+          },
+          "total": 0.9650000000000007
+        },
         "x": 654.75,
         "y": -9.625,
         "z": -295.875
@@ -14268,7 +15800,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "streams": {
     "global": {
       "matchEnd": 600050,

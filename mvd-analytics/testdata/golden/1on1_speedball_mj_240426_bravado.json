@@ -3631,6 +3631,17 @@
   "locGraph": {
     "edges": [
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 5
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 5
+          },
+          "total": 6
+        },
         "byPlayer": {
           "mj": 1,
           "speedball": 5
@@ -3645,6 +3656,17 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 8
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 8
+          },
+          "total": 10
+        },
         "byPlayer": {
           "mj": 10,
           "speedball": 8
@@ -3656,9 +3678,29 @@
         "from": "GA",
         "kind": "normal",
         "to": "RL",
-        "total": 18
+        "total": 18,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 8
+          },
+          "byTeam": {
+            "mj": 8
+          },
+          "total": 8
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 5
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 5
+          },
+          "total": 9
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 6
@@ -3670,9 +3712,27 @@
         "from": "GA",
         "kind": "normal",
         "to": "SNG",
-        "total": 10
+        "total": 10,
+        "unarmed": {
+          "byPlayer": {
+            "speedball": 1
+          },
+          "byTeam": {
+            "speedball": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 1
+          },
+          "byTeam": {
+            "speedball": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "speedball": 1
         },
@@ -3685,6 +3745,15 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "mj": 1
         },
@@ -3697,6 +3766,17 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 9,
+            "speedball": 20
+          },
+          "byTeam": {
+            "mj": 9,
+            "speedball": 20
+          },
+          "total": 29
+        },
         "byPlayer": {
           "mj": 19,
           "speedball": 25
@@ -3708,9 +3788,31 @@
         "from": "GL",
         "kind": "normal",
         "to": "LG",
-        "total": 44
+        "total": 44,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 10,
+            "speedball": 5
+          },
+          "byTeam": {
+            "mj": 10,
+            "speedball": 5
+          },
+          "total": 15
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 13
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 13
+          },
+          "total": 14
+        },
         "byPlayer": {
           "mj": 1,
           "speedball": 13
@@ -3725,6 +3827,17 @@
         "total": 14
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 1
+          },
+          "total": 2
+        },
         "byPlayer": {
           "mj": 1,
           "speedball": 1
@@ -3739,6 +3852,17 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 9
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 9
+          },
+          "total": 12
+        },
         "byPlayer": {
           "mj": 3,
           "speedball": 10
@@ -3750,9 +3874,27 @@
         "from": "GL",
         "kind": "normal",
         "to": "SNG",
-        "total": 13
+        "total": 13,
+        "unarmed": {
+          "byPlayer": {
+            "speedball": 1
+          },
+          "byTeam": {
+            "speedball": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 2
+          },
+          "byTeam": {
+            "speedball": 2
+          },
+          "total": 2
+        },
         "byPlayer": {
           "speedball": 2
         },
@@ -3765,6 +3907,17 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 6,
+            "speedball": 5
+          },
+          "byTeam": {
+            "mj": 6,
+            "speedball": 5
+          },
+          "total": 11
+        },
         "byPlayer": {
           "mj": 13,
           "speedball": 6
@@ -3776,9 +3929,31 @@
         "from": "GL",
         "kind": "normal",
         "to": "holes",
-        "total": 19
+        "total": 19,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 7,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 7,
+            "speedball": 1
+          },
+          "total": 8
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 6,
+            "speedball": 11
+          },
+          "byTeam": {
+            "mj": 6,
+            "speedball": 11
+          },
+          "total": 17
+        },
         "byPlayer": {
           "mj": 6,
           "speedball": 11
@@ -3793,6 +3968,17 @@
         "total": 17
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 13
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 13
+          },
+          "total": 15
+        },
         "byPlayer": {
           "mj": 2,
           "speedball": 13
@@ -3807,6 +3993,17 @@
         "total": 15
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 4
+          },
+          "total": 7
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 5
@@ -3818,9 +4015,31 @@
         "from": "LG",
         "kind": "normal",
         "to": "SNG",
-        "total": 9
+        "total": 9,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 1
+          },
+          "total": 2
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 3
+          },
+          "total": 7
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 3
@@ -3835,6 +4054,17 @@
         "total": 7
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 8,
+            "speedball": 14
+          },
+          "byTeam": {
+            "mj": 8,
+            "speedball": 14
+          },
+          "total": 22
+        },
         "byPlayer": {
           "mj": 11,
           "speedball": 16
@@ -3846,9 +4076,29 @@
         "from": "LG",
         "kind": "normal",
         "to": "low RL",
-        "total": 27
+        "total": 27,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 2
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 2
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 8
+          },
+          "byTeam": {
+            "speedball": 8
+          },
+          "total": 8
+        },
         "byPlayer": {
           "speedball": 8
         },
@@ -3861,6 +4111,17 @@
         "total": 8
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 7
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 7
+          },
+          "total": 9
+        },
         "byPlayer": {
           "mj": 2,
           "speedball": 7
@@ -3875,6 +4136,15 @@
         "total": 9
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 2
+          },
+          "byTeam": {
+            "speedball": 2
+          },
+          "total": 2
+        },
         "byPlayer": {
           "speedball": 2
         },
@@ -3887,6 +4157,15 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3
+          },
+          "byTeam": {
+            "mj": 3
+          },
+          "total": 3
+        },
         "byPlayer": {
           "mj": 3
         },
@@ -3899,6 +4178,15 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3
+          },
+          "byTeam": {
+            "mj": 3
+          },
+          "total": 3
+        },
         "byPlayer": {
           "mj": 3
         },
@@ -3911,6 +4199,17 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 4
+          },
+          "total": 5
+        },
         "byPlayer": {
           "mj": 1,
           "speedball": 4
@@ -3925,6 +4224,15 @@
         "total": 5
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 3
+          },
+          "byTeam": {
+            "speedball": 3
+          },
+          "total": 3
+        },
         "byPlayer": {
           "speedball": 3
         },
@@ -3937,6 +4245,17 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 10
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 10
+          },
+          "total": 13
+        },
         "byPlayer": {
           "mj": 3,
           "speedball": 10
@@ -3951,6 +4270,17 @@
         "total": 13
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 15
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 15
+          },
+          "total": 19
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 15
@@ -3965,6 +4295,17 @@
         "total": 19
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 3
+          },
+          "total": 4
+        },
         "byPlayer": {
           "mj": 1,
           "speedball": 3
@@ -3979,6 +4320,17 @@
         "total": 4
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 7,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 7,
+            "speedball": 3
+          },
+          "total": 10
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 3
@@ -3993,6 +4345,17 @@
         "total": 10
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 3
+          },
+          "total": 4
+        },
         "byPlayer": {
           "mj": 1,
           "speedball": 3
@@ -4007,6 +4370,17 @@
         "total": 4
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 14,
+            "speedball": 6
+          },
+          "byTeam": {
+            "mj": 14,
+            "speedball": 6
+          },
+          "total": 20
+        },
         "byPlayer": {
           "mj": 14,
           "speedball": 7
@@ -4018,9 +4392,29 @@
         "from": "RL",
         "kind": "normal",
         "to": "holes",
-        "total": 21
+        "total": 21,
+        "unarmed": {
+          "byPlayer": {
+            "speedball": 1
+          },
+          "byTeam": {
+            "speedball": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 8,
+            "speedball": 8
+          },
+          "byTeam": {
+            "mj": 8,
+            "speedball": 8
+          },
+          "total": 16
+        },
         "byPlayer": {
           "mj": 9,
           "speedball": 8
@@ -4032,9 +4426,29 @@
         "from": "RL",
         "kind": "normal",
         "to": "lava",
-        "total": 17
+        "total": 17,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 4
+          },
+          "total": 6
+        },
         "byPlayer": {
           "mj": 3,
           "speedball": 4
@@ -4046,9 +4460,29 @@
         "from": "SNG",
         "kind": "normal",
         "to": "GA",
-        "total": 7
+        "total": 7,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 14,
+            "speedball": 28
+          },
+          "byTeam": {
+            "mj": 14,
+            "speedball": 28
+          },
+          "total": 42
+        },
         "byPlayer": {
           "mj": 15,
           "speedball": 31
@@ -4060,9 +4494,31 @@
         "from": "SNG",
         "kind": "teleport",
         "to": "GL",
-        "total": 46
+        "total": 46,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 3
+          },
+          "total": 4
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 16
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 16
+          },
+          "total": 19
+        },
         "byPlayer": {
           "mj": 8,
           "speedball": 17
@@ -4074,9 +4530,29 @@
         "from": "SNG",
         "kind": "normal",
         "to": "high LG packs",
-        "total": 25
+        "total": 25,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 5,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 5,
+            "speedball": 1
+          },
+          "total": 6
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 2
+          },
+          "byTeam": {
+            "speedball": 2
+          },
+          "total": 2
+        },
         "byPlayer": {
           "speedball": 2
         },
@@ -4089,6 +4565,17 @@
         "total": 2
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 6
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 6
+          },
+          "total": 8
+        },
         "byPlayer": {
           "mj": 3,
           "speedball": 6
@@ -4100,9 +4587,29 @@
         "from": "SNG",
         "kind": "normal",
         "to": "low RL",
-        "total": 9
+        "total": 9,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 13,
+            "speedball": 17
+          },
+          "byTeam": {
+            "mj": 13,
+            "speedball": 17
+          },
+          "total": 30
+        },
         "byPlayer": {
           "mj": 17,
           "speedball": 17
@@ -4114,9 +4621,29 @@
         "from": "YA",
         "kind": "normal",
         "to": "high LG packs",
-        "total": 34
+        "total": 34,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 4
+          },
+          "byTeam": {
+            "mj": 4
+          },
+          "total": 4
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 8
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 8
+          },
+          "total": 11
+        },
         "byPlayer": {
           "mj": 18,
           "speedball": 9
@@ -4128,9 +4655,29 @@
         "from": "YA",
         "kind": "normal",
         "to": "lava",
-        "total": 27
+        "total": 27,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 15,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 15,
+            "speedball": 1
+          },
+          "total": 16
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "mj": 1
         },
@@ -4143,6 +4690,17 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 4
+          },
+          "total": 6
+        },
         "byPlayer": {
           "mj": 5,
           "speedball": 6
@@ -4154,9 +4712,31 @@
         "from": "high LG packs",
         "kind": "normal",
         "to": "LG",
-        "total": 11
+        "total": 11,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 2
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 2
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 1
+          },
+          "total": 3
+        },
         "byPlayer": {
           "mj": 2,
           "speedball": 1
@@ -4171,6 +4751,17 @@
         "total": 3
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 5,
+            "speedball": 20
+          },
+          "byTeam": {
+            "mj": 5,
+            "speedball": 20
+          },
+          "total": 25
+        },
         "byPlayer": {
           "mj": 9,
           "speedball": 20
@@ -4182,9 +4773,29 @@
         "from": "high LG packs",
         "kind": "normal",
         "to": "SNG",
-        "total": 29
+        "total": 29,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 4
+          },
+          "byTeam": {
+            "mj": 4
+          },
+          "total": 4
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 10,
+            "speedball": 14
+          },
+          "byTeam": {
+            "mj": 10,
+            "speedball": 14
+          },
+          "total": 24
+        },
         "byPlayer": {
           "mj": 11,
           "speedball": 14
@@ -4196,9 +4807,29 @@
         "from": "high LG packs",
         "kind": "normal",
         "to": "YA",
-        "total": 25
+        "total": 25,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 1,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 1,
+            "speedball": 4
+          },
+          "total": 5
+        },
         "byPlayer": {
           "mj": 2,
           "speedball": 4
@@ -4210,9 +4841,29 @@
         "from": "high LG packs",
         "kind": "normal",
         "to": "lava",
-        "total": 6
+        "total": 6,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 5,
+            "speedball": 10
+          },
+          "byTeam": {
+            "mj": 5,
+            "speedball": 10
+          },
+          "total": 15
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 10
@@ -4224,9 +4875,29 @@
         "from": "high LG packs",
         "kind": "normal",
         "to": "low RL",
-        "total": 17
+        "total": 17,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 2
+          },
+          "byTeam": {
+            "mj": 2
+          },
+          "total": 2
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 5,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 5,
+            "speedball": 4
+          },
+          "total": 9
+        },
         "byPlayer": {
           "mj": 5,
           "speedball": 4
@@ -4241,6 +4912,17 @@
         "total": 9
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 3
+          },
+          "total": 7
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 4
@@ -4252,9 +4934,31 @@
         "from": "holes",
         "kind": "normal",
         "to": "GL",
-        "total": 11
+        "total": 11,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 1
+          },
+          "total": 4
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 5,
+            "speedball": 4
+          },
+          "byTeam": {
+            "mj": 5,
+            "speedball": 4
+          },
+          "total": 9
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 5
@@ -4266,9 +4970,31 @@
         "from": "holes",
         "kind": "normal",
         "to": "RL",
-        "total": 12
+        "total": 12,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 1
+          },
+          "total": 3
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3,
+            "speedball": 3
+          },
+          "byTeam": {
+            "mj": 3,
+            "speedball": 3
+          },
+          "total": 6
+        },
         "byPlayer": {
           "mj": 3,
           "speedball": 3
@@ -4283,6 +5009,17 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 2
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 2
+          },
+          "total": 6
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 2
@@ -4297,6 +5034,15 @@
         "total": 6
       },
       {
+        "armed": {
+          "byPlayer": {
+            "speedball": 1
+          },
+          "byTeam": {
+            "speedball": 1
+          },
+          "total": 1
+        },
         "byPlayer": {
           "speedball": 1
         },
@@ -4309,6 +5055,17 @@
         "total": 1
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 9
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 9
+          },
+          "total": 13
+        },
         "byPlayer": {
           "mj": 17,
           "speedball": 10
@@ -4320,9 +5077,31 @@
         "from": "lava",
         "kind": "normal",
         "to": "RL",
-        "total": 27
+        "total": 27,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 13,
+            "speedball": 1
+          },
+          "byTeam": {
+            "mj": 13,
+            "speedball": 1
+          },
+          "total": 14
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 6,
+            "speedball": 12
+          },
+          "byTeam": {
+            "mj": 6,
+            "speedball": 12
+          },
+          "total": 18
+        },
         "byPlayer": {
           "mj": 16,
           "speedball": 12
@@ -4334,9 +5113,29 @@
         "from": "lava",
         "kind": "normal",
         "to": "YA",
-        "total": 28
+        "total": 28,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 10
+          },
+          "byTeam": {
+            "mj": 10
+          },
+          "total": 10
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 2,
+            "speedball": 2
+          },
+          "byTeam": {
+            "mj": 2,
+            "speedball": 2
+          },
+          "total": 4
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 2
@@ -4348,9 +5147,29 @@
         "from": "lava",
         "kind": "normal",
         "to": "high LG packs",
-        "total": 9
+        "total": 9,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 5
+          },
+          "byTeam": {
+            "mj": 5
+          },
+          "total": 5
+        }
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 7
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 7
+          },
+          "total": 11
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 7
@@ -4365,6 +5184,17 @@
         "total": 11
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 7,
+            "speedball": 15
+          },
+          "byTeam": {
+            "mj": 7,
+            "speedball": 15
+          },
+          "total": 22
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 15
@@ -4379,6 +5209,17 @@
         "total": 22
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 4,
+            "speedball": 15
+          },
+          "byTeam": {
+            "mj": 4,
+            "speedball": 15
+          },
+          "total": 19
+        },
         "byPlayer": {
           "mj": 4,
           "speedball": 15
@@ -4393,6 +5234,17 @@
         "total": 19
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 6,
+            "speedball": 8
+          },
+          "byTeam": {
+            "mj": 6,
+            "speedball": 8
+          },
+          "total": 14
+        },
         "byPlayer": {
           "mj": 7,
           "speedball": 8
@@ -4404,11 +5256,31 @@
         "from": "low RL",
         "kind": "normal",
         "to": "high LG packs",
-        "total": 15
+        "total": 15,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 1
+          },
+          "byTeam": {
+            "mj": 1
+          },
+          "total": 1
+        }
       }
     ],
     "locs": [
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 15.482999999999969,
+            "speedball": 20.83100000000002
+          },
+          "byTeam": {
+            "mj": 15.482999999999969,
+            "speedball": 20.83100000000002
+          },
+          "total": 36.31400000000007
+        },
         "byPlayer": {
           "mj": 24.719000000000133,
           "speedball": 21.851000000000045
@@ -4419,11 +5291,33 @@
         },
         "name": "GA",
         "total": 46.569999999999915,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 9.235999999999976,
+            "speedball": 1.0200000000000007
+          },
+          "byTeam": {
+            "mj": 9.235999999999976,
+            "speedball": 1.0200000000000007
+          },
+          "total": 10.25599999999997
+        },
         "x": -49.875,
         "y": -198.125,
         "z": 24
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 66.54300000000015,
+            "speedball": 91.45400000000383
+          },
+          "byTeam": {
+            "mj": 66.54300000000015,
+            "speedball": 91.45400000000383
+          },
+          "total": 157.9970000000073
+        },
         "byPlayer": {
           "mj": 95.48500000000514,
           "speedball": 104.48200000000577
@@ -4434,11 +5328,33 @@
         },
         "name": "GL",
         "total": 199.96700000001522,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 28.942000000000096,
+            "speedball": 13.027999999999942
+          },
+          "byTeam": {
+            "mj": 28.942000000000096,
+            "speedball": 13.027999999999942
+          },
+          "total": 41.97000000000005
+        },
         "x": -176.5,
         "y": 288.125,
         "z": 296
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 24.366,
+            "speedball": 31.757000000000268
+          },
+          "byTeam": {
+            "mj": 24.366,
+            "speedball": 31.757000000000268
+          },
+          "total": 56.123
+        },
         "byPlayer": {
           "mj": 27.92400000000008,
           "speedball": 34.306000000000225
@@ -4449,11 +5365,33 @@
         },
         "name": "LG",
         "total": 62.22999999999992,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 3.5579999999999865,
+            "speedball": 2.5489999999999937
+          },
+          "byTeam": {
+            "mj": 3.5579999999999865,
+            "speedball": 2.5489999999999937
+          },
+          "total": 6.1069999999999895
+        },
         "x": 19.5,
         "y": 691.375,
         "z": 296
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 3.3819999999999935,
+            "speedball": 24.206000000000063
+          },
+          "byTeam": {
+            "mj": 3.3819999999999935,
+            "speedball": 24.206000000000063
+          },
+          "total": 27.588000000000065
+        },
         "byPlayer": {
           "mj": 3.3819999999999935,
           "speedball": 24.206000000000063
@@ -4469,6 +5407,17 @@
         "z": 104
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 6.023000000000003,
+            "speedball": 3.254999999999988
+          },
+          "byTeam": {
+            "mj": 6.023000000000003,
+            "speedball": 3.254999999999988
+          },
+          "total": 9.277999999999958
+        },
         "byPlayer": {
           "mj": 6.023000000000003,
           "speedball": 3.254999999999988
@@ -4484,6 +5433,17 @@
         "z": 280
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 21.539999999999985,
+            "speedball": 44.77700000000019
+          },
+          "byTeam": {
+            "mj": 21.539999999999985,
+            "speedball": 44.77700000000019
+          },
+          "total": 66.31700000000039
+        },
         "byPlayer": {
           "mj": 21.539999999999985,
           "speedball": 44.77700000000019
@@ -4499,6 +5459,17 @@
         "z": 152
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 66.06299999999983,
+            "speedball": 37.07800000000014
+          },
+          "byTeam": {
+            "mj": 66.06299999999983,
+            "speedball": 37.07800000000014
+          },
+          "total": 103.14100000000538
+        },
         "byPlayer": {
           "mj": 81.08200000000195,
           "speedball": 39.0590000000001
@@ -4509,11 +5480,33 @@
         },
         "name": "RL",
         "total": 120.1410000000078,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 15.018999999999942,
+            "speedball": 1.9809999999999959
+          },
+          "byTeam": {
+            "mj": 15.018999999999942,
+            "speedball": 1.9809999999999959
+          },
+          "total": 16.99999999999998
+        },
         "x": 564.25,
         "y": -55.75,
         "z": 168
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 23.233,
+            "speedball": 56.88699999999984
+          },
+          "byTeam": {
+            "mj": 23.233,
+            "speedball": 56.88699999999984
+          },
+          "total": 80.12000000000205
+        },
         "byPlayer": {
           "mj": 28.829000000000157,
           "speedball": 59.07599999999972
@@ -4524,11 +5517,33 @@
         },
         "name": "SNG",
         "total": 87.90500000000331,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 5.595999999999987,
+            "speedball": 2.1889999999999965
+          },
+          "byTeam": {
+            "mj": 5.595999999999987,
+            "speedball": 2.1889999999999965
+          },
+          "total": 7.78499999999999
+        },
         "x": 1.5,
         "y": 448.5,
         "z": 24
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 40.24000000000009,
+            "speedball": 55.070999999999955
+          },
+          "byTeam": {
+            "mj": 40.24000000000009,
+            "speedball": 55.070999999999955
+          },
+          "total": 95.31100000000454
+        },
         "byPlayer": {
           "mj": 76.14400000000127,
           "speedball": 57.01899999999992
@@ -4539,11 +5554,33 @@
         },
         "name": "YA",
         "total": 133.1630000000087,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 35.90400000000013,
+            "speedball": 1.9479999999999982
+          },
+          "byTeam": {
+            "mj": 35.90400000000013,
+            "speedball": 1.9479999999999982
+          },
+          "total": 37.85200000000019
+        },
         "x": 960.875,
         "y": 441.125,
         "z": 104
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 65.15799999999975,
+            "speedball": 90.35900000000345
+          },
+          "byTeam": {
+            "mj": 65.15799999999975,
+            "speedball": 90.35900000000345
+          },
+          "total": 155.51700000001006
+        },
         "byPlayer": {
           "mj": 88.480000000003,
           "speedball": 93.08900000000382
@@ -4554,11 +5591,33 @@
         },
         "name": "high LG packs",
         "total": 181.56900000001372,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 23.32200000000017,
+            "speedball": 2.7299999999999924
+          },
+          "byTeam": {
+            "mj": 23.32200000000017,
+            "speedball": 2.7299999999999924
+          },
+          "total": 26.052000000000234
+        },
         "x": 273.25,
         "y": 520.5,
         "z": 168
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 26.189000000000114,
+            "speedball": 9.99299999999999
+          },
+          "byTeam": {
+            "mj": 26.189000000000114,
+            "speedball": 9.99299999999999
+          },
+          "total": 36.182000000000244
+        },
         "byPlayer": {
           "mj": 33.17300000000018,
           "speedball": 12.039999999999969
@@ -4569,11 +5628,33 @@
         },
         "name": "holes",
         "total": 45.21300000000009,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 6.983999999999984,
+            "speedball": 2.0469999999999966
+          },
+          "byTeam": {
+            "mj": 6.983999999999984,
+            "speedball": 2.0469999999999966
+          },
+          "total": 9.030999999999983
+        },
         "x": -7.5,
         "y": -76.5,
         "z": 296
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 9.65499999999998,
+            "speedball": 15.990999999999945
+          },
+          "byTeam": {
+            "mj": 9.65499999999998,
+            "speedball": 15.990999999999945
+          },
+          "total": 25.646000000000015
+        },
         "byPlayer": {
           "mj": 32.60900000000021,
           "speedball": 16.754999999999935
@@ -4584,11 +5665,33 @@
         },
         "name": "lava",
         "total": 49.364000000000026,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 22.954000000000068,
+            "speedball": 0.7640000000000003
+          },
+          "byTeam": {
+            "mj": 22.954000000000068,
+            "speedball": 0.7640000000000003
+          },
+          "total": 23.718000000000092
+        },
         "x": 736.875,
         "y": 88,
         "z": 72
       },
       {
+        "armed": {
+          "byPlayer": {
+            "mj": 70.92100000000092,
+            "speedball": 86.39700000000309
+          },
+          "byTeam": {
+            "mj": 70.92100000000092,
+            "speedball": 86.39700000000309
+          },
+          "total": 157.31800000000737
+        },
         "byPlayer": {
           "mj": 80.64800000000237,
           "speedball": 90.1230000000036
@@ -4599,6 +5702,17 @@
         },
         "name": "low RL",
         "total": 170.77100000000823,
+        "unarmed": {
+          "byPlayer": {
+            "mj": 9.726999999999977,
+            "speedball": 3.7259999999999867
+          },
+          "byTeam": {
+            "mj": 9.726999999999977,
+            "speedball": 3.7259999999999867
+          },
+          "total": 13.452999999999953
+        },
         "x": -45.875,
         "y": 1000.125,
         "z": 24
@@ -5292,7 +6406,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "streams": {
     "global": {
       "matchEnd": 600001,

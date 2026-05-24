@@ -68,6 +68,16 @@ belongs in the frontend.
   belongs in the commit history.
 - Match existing code style — no new lint configs, no reformatting
   of untouched files.
+- **Team colors (frontend).** There is one canonical team→color
+  mapping used everywhere the user sees a team — Summary, scoreboard,
+  map, timeline, region control, loc heatmap. It is the palette
+  `TEAM_COLORS` in `mvd-web/static/app.js` indexed by a team's position
+  in `timelineState.teams`, the frag-sorted order set once in
+  `displayResults()` (winning team = index 0). Never derive team colors
+  from `demoInfo.teams` order or any other per-feature ordering — that
+  re-introduces the mismatch where a team is e.g. blue in the Summary
+  but red elsewhere. Use `getTeamOrder()` / `timelineState.teams` to map
+  a team name to its color index. The CSS mirror is `--team-a..--team-d`.
 - **Always run tests.** `make test` (which runs
   `go test ./mvd-reader/... ./mvd-analytics/... ./mvd-web/...`) before every
   commit, no exceptions for "trivial" changes. If a test you don't

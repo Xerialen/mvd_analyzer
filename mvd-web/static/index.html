@@ -53,8 +53,8 @@
             <button class="sidebar-btn" data-tab="map" title="Map">
                 <span class="sidebar-btn-label">Map</span>
             </button>
-            <button class="sidebar-btn" data-tab="loc-graph" title="Loc Graph">
-                <span class="sidebar-btn-label">Loc Graph</span>
+            <button class="sidebar-btn" data-tab="loc-graph" title="Locs &amp; Regions">
+                <span class="sidebar-btn-label">Locs &amp; Regions</span>
             </button>
             <button class="sidebar-btn" data-tab="keymoments" title="Key Moments">
                 <span class="sidebar-btn-label">Key Moments</span>
@@ -582,32 +582,55 @@
                         <button id="map-reset-view" title="Reset pan / zoom">Reset view</button>
                         <button id="map-fullscreen" title="Toggle fullscreen">Fullscreen</button>
                     </div>
-                    <div id="region-control-panel" style="display: none;">
-                        <h4>Region Control</h4>
-                        <div id="region-config" class="region-config"></div>
-                        <table class="stats-table region-control-table" id="region-control-table">
-                            <thead>
-                                <tr>
-                                    <th>Region</th>
-                                    <th id="rc-teamA-hdr" title="Team has player with RL/LG, opponent doesn't">-</th>
-                                    <th id="rc-teamA-weak-hdr" title="Team has player without RL/LG, opponent absent">- weak</th>
-                                    <th title="Both teams present, each with at least one RL/LG holder">Contested</th>
-                                    <th title="Both teams present, neither has any RL/LG">Cont. weak</th>
-                                    <th title="No players in region">Empty</th>
-                                    <th id="rc-teamB-weak-hdr" title="Team has player without RL/LG, opponent absent">- weak</th>
-                                    <th id="rc-teamB-hdr" title="Team has player with RL/LG, opponent doesn't">-</th>
-                                </tr>
-                            </thead>
+                </div>
+            </div>
+
+            <!-- Locs & Regions Tab -->
+            <div id="tab-loc-graph" class="tab-content">
+                <div class="empty-state">Load or search a demo to begin.</div>
+                <!-- Region Control (definition editor + per-region control matrix) -->
+                <div class="panel" id="region-control-panel" style="display: none;">
+                    <h3>Region Control</h3>
+                    <div class="locheatmap-desc">
+                        Group locs into named regions. Rows = regions, columns = control
+                        states (the team color underlines which columns are which).
+                        Cell color is normalised <em>per region</em> (brightest = that
+                        region's dominant control state, Empty excluded), so compare colors
+                        across a row — not down a column. The printed % is the absolute
+                        match fraction. Click a column header to sort; hover for details.
+                    </div>
+                    <div id="region-config" class="region-config"></div>
+                    <div class="heatmap-legend">
+                        <span>less</span><span class="heatmap-legend-bar"></span><span>more</span>
+                    </div>
+                    <div class="heatmap-table-wrap">
+                        <table class="stats-table heatmap-table region-control-table" id="region-control-table">
+                            <thead><tr id="region-control-thead-row"></tr></thead>
                             <tbody id="region-control-body"></tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- Loc Graph Tab -->
-            <div id="tab-loc-graph" class="tab-content">
-                <div class="empty-state">Load or search a demo to begin.</div>
+                <!-- Metric selector — governs the loc graph + heatmap below
+                     (Region Control above is independent of it). -->
+                <div class="panel locmetric-panel">
+                    <h3>Loc Analysis Metric</h3>
+                    <div class="locmetric-row">
+                        <label class="locmetric-label">Metric:
+                            <select id="locgraph-metric" title="Weight the loc graph and heatmap by total time, time holding RL/LG (or not), or time with an active quad or pent">
+                                <option value="all" selected>Full time</option>
+                                <option value="armed">With RL / LG</option>
+                                <option value="unarmed">Without RL / LG</option>
+                                <option value="quad">With Quad</option>
+                                <option value="pent">With Pent</option>
+                            </select>
+                        </label>
+                        <span class="locmetric-hint">Applies to the loc graph and heatmap below.</span>
+                    </div>
+                </div>
+
                 <div class="panel locgraph-panel">
+                    <h3>Loc Graph</h3>
                     <div class="locgraph-controls">
                         <label>Filter:
                             <select id="locgraph-filter">
@@ -660,8 +683,34 @@
                     <div class="timeline-legend">
                         <span class="legend-item"><span class="legend-color" style="background:#8fb3ff;"></span> Normal edge</span>
                         <span class="legend-item"><span class="legend-color" style="background:#00d9ff;"></span> Teleport edge</span>
-                        <span class="legend-item">Node size = time spent · Edge width = transition count</span>
+                        <span class="legend-item">Node size = occupancy · Edge width = transitions · both for the selected metric</span>
                         <span class="legend-item">Drag nodes · scroll to zoom · click for details</span>
+                    </div>
+                </div>
+
+                <!-- Loc Heatmap -->
+                <div class="panel locheatmap-panel" id="locheatmap-panel" style="display: none;">
+                    <h3>Loc Heatmap</h3>
+                    <div class="locheatmap-desc">
+                        Rows = locs, for the metric selected above. The first columns
+                        are the teams (all members combined), then one column per
+                        player grouped by team. Each cell shows the share of that
+                        column's time spent in the loc, normalised to its own busiest
+                        loc; cell intensity uses the viridis scale and the team color
+                        underlines each header. Click a column header to sort; hover a
+                        cell for exact time.
+                    </div>
+                    <div class="heatmap-legend">
+                        <span>less</span><span class="heatmap-legend-bar"></span><span>more</span>
+                    </div>
+                    <div class="heatmap-table-wrap">
+                        <table class="stats-table heatmap-table" id="locheatmap-table">
+                            <thead><tr id="locheatmap-thead-row"></tr></thead>
+                            <tbody id="locheatmap-body"></tbody>
+                        </table>
+                    </div>
+                    <div id="locheatmap-no-data" class="map-no-data" style="display:none">
+                        <p>No loc data available for this demo.</p>
                     </div>
                 </div>
             </div>

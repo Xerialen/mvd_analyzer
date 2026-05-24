@@ -69,7 +69,7 @@ A slim top bar (wordmark + commit-hash version + GitHub link) sits
 above a Grafana-style frame: a fixed left **sidebar** with one button
 per analysis tab, and a **main pane** that fills the rest of the
 viewport (no width cap). Sidebar order is `Search`, `Summary`,
-`Timeline`, `Chat`, `Map`, `Loc Graph`, `Key Moments`, `Pack Drops`.
+`Timeline`, `Chat`, `Map`, `Locs & Regions`, `Key Moments`, `Pack Drops`.
 
 The Search tab is the first tab and is always available — it holds the
 file picker, the hub-URL load row, and the filter form for browsing
@@ -284,6 +284,79 @@ Items currently taken are dimmed on the map and highlighted-dim in
 the sidebar so verifying the event stream against gameplay is
 visual. The panel updates live during playback via the 200 ms
 full-sync tick in `animatePlayback`.
+
+## Locs & Regions tab
+
+(`data-tab="loc-graph"`; the URL slug is now `locs-regions`, with
+`loc-graph` still accepted — see the tab-alias note below.) Top to bottom:
+**Region Control**, then a standalone **Metric** selector, then the loc
+**graph** and **heatmap**. All read `result.locGraph` (loc nodes weighted
+by time-spent, transition edges; per-player and per-team breakdowns baked
+onto every node) plus `demoInfo.{teams,players}` / `mapState.controlStats`
+— no extra analyzer pass.
+
+The **Metric** selector (`#locgraph-metric`, its own panel above the graph
+so it clearly governs both loc views but *not* Region Control) reweights
+the loc graph and heatmap by combat posture, yielding a **self-contained
+graph per case** — its own nodes *and* edges: *Full time* (all observed
+time), *With RL / LG* (the `armed` LocWeights / LocEdgeWeights), *Without
+RL / LG* (`unarmed`, the complement), *With Quad* (`quad`), or *With Pent*
+(`pent`). It drives node sizes (occupancy: `getLocMetric` →
+`metricWeightsOf` → `nodeWeightFor`), edge widths (movement:
+`metricEdgeWeightsOf` → `edgeWeightFor`, edges absent from the case are
+pruned and locs with no presence dimmed), and the heatmap (which renders
+for every metric, including the sparse quad / pent cases).
+`populateLocMetricOptions` hides the metrics a given demo has no data for
+(presence of the node's `armed`/`quad`/`pent` sub-object == availability;
+e.g. quad usually absent in 1v1), and falls back to *Full time* if the
+current pick goes away — so a metric can't leave an empty graph + table.
+
+- The **movement graph** — a Cytoscape.js node/edge diagram with the
+  filter / edge-mode / layout controls, driven by `initLocGraphView` and
+  `buildOrRefreshCytoscape`.
+- The **Loc Heatmap** (`buildLocHeatmap`) — rows are locs (busiest
+  first); the leading columns are the **teams** (every member's time
+  combined), then one column per **player** grouped by team, with a
+  separator before the player block. Cell intensity is that column's
+  share of its (metric) time in the loc, normalised **per column** to its
+  own busiest loc (sqrt-curved). The team columns are dropped for duels
+  and single-team demos.
+- **Region Control** (`buildRegionHeatmap`) — the region definition
+  editor (`buildRegionConfig`, group locs into named regions; save/load
+  JSON) plus the per-region control matrix: rows are regions, columns are
+  the seven control states (teamA control/weak, contested, cont. weak,
+  empty, teamB weak/control). Moved here from the Map tab; the live
+  region *overlay* and *status* still render on the Map. Initialised by
+  `initRegionControl` (from `initMapView`) and recomputed through the
+  `recomputeRegionControl` WASM bridge on edits (`renderRegionControlFromGo`).
+  Cells are normalised **per region** to that region's busiest control
+  state (Empty excluded — it is filler, not a control state, and would
+  swamp the scale) so each row spans the full colormap; the printed %
+  stays the absolute match fraction.
+
+The two matrices share one renderer, `renderHeatmapTable`, fed a
+policy-free model — `{ rows:[{name,cells:[{i,p}]}], columns:[{label,full,
+team,teamIdx,…}], teamCols, cellTitle }` where `i` is a 0..1 intensity
+(normalisation already baked in by the `build*` function) and `p` the
+printed %. It renders a sortable `.stats-table` (crisp text + free column
+sorting via `makeSortable`, tbody built with the shared `renderTableRows`
+helper) rather than a canvas; each cell is viridis-shaded
+(`heatColorRGB` / `HEAT_STOPS`, mirrored by the CSS `.heatmap-legend-bar`
+gradient — chosen for red/green colour-vision-deficiency safety) with a
+contrast-aware ink and a `data-sort-value`. Team identity rides on the
+canonical `TEAM_COLORS`-by-`timelineState.teams` mapping (see the repo
+CLAUDE.md "Team colors" convention) as a colored underline on the
+relevant column headers. Player column headers show a truncated name with
+the full name on the header `title` — QuakeWorld's in-game short name
+(`cl_fakename`) is a client-side say_team text prefix, not carried in the
+demo stream, so there's no per-player short name to read.
+
+**Tab URL alias.** The tab's internal `data-tab` stayed `loc-graph` (so
+JS / CSS selectors are unchanged), but the rename to "Locs & Regions" gave
+it the canonical URL slug `locs-regions`. `switchTab` / `applyUrlState`
+run incoming `?tab` through `resolveTabName` (`locs-regions → loc-graph`)
+and `updateUrlState` writes `locs-regions`, so new links use the new slug
+while old `?tab=loc-graph` links keep resolving.
 
 ## Regenerating map geometry
 
