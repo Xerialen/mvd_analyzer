@@ -593,6 +593,40 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "mj": {
+        "byWeapon": {
+          "gl": 112,
+          "lg": 403,
+          "rl": 4524,
+          "sg": 208
+        },
+        "givenEff": 5247,
+        "givenRaw": 5483,
+        "hits": 94,
+        "selfEff": 536,
+        "selfRaw": 536,
+        "takenEff": 8750,
+        "takenRaw": 9900
+      },
+      "speedball": {
+        "byWeapon": {
+          "lg": 4387,
+          "rl": 4259,
+          "sg": 44,
+          "ssg": 60
+        },
+        "givenEff": 8750,
+        "givenRaw": 9900,
+        "hits": 232,
+        "selfEff": 1776,
+        "selfRaw": 1804,
+        "takenEff": 5247,
+        "takenRaw": 5483
+      }
+    }
+  },
   "demoInfo": {
     "date": "2026-04-24 22:54:38 +0000",
     "demo": "duel_speedball_vs_mj[bravado]20260424-2244.mvd",
@@ -6406,7 +6440,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "streams": {
     "global": {
       "matchEnd": 600001,

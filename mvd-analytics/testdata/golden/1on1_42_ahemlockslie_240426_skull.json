@@ -339,6 +339,39 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "42": {
+        "byWeapon": {
+          "lg": 2697,
+          "rl": 3953,
+          "sg": 40,
+          "ssg": 12
+        },
+        "givenEff": 6702,
+        "givenRaw": 7255,
+        "hits": 155,
+        "selfEff": 530,
+        "selfRaw": 533,
+        "takenEff": 4695,
+        "takenRaw": 5086
+      },
+      "AHemlocksLie": {
+        "byWeapon": {
+          "lg": 551,
+          "rl": 4092,
+          "sg": 52
+        },
+        "givenEff": 4695,
+        "givenRaw": 5086,
+        "hits": 77,
+        "selfEff": 396,
+        "selfRaw": 398,
+        "takenEff": 6702,
+        "takenRaw": 7255
+      }
+    }
+  },
   "demoInfo": {
     "date": "2026-04-24 16:26:13 +0000",
     "demo": "duel_ahemlockslie_vs_42[skull]20260424-1616.mvd",
@@ -5591,7 +5624,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "streams": {
     "global": {
       "matchEnd": 599993,

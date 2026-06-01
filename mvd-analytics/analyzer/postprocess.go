@@ -120,6 +120,20 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 		}
 	}
 
+	if res.Damage != nil {
+		// Rebase per-hit timestamps to match-relative ms so they join the
+		// (already-rebased) per-player armor / RL / LG intervals. Clamp
+		// rather than drop: the analyzer already print-gated to the match
+		// window, so any residual sub-match-start hit is a boundary artifact;
+		// dropping it would desync Hits from the byPlayer totals.
+		for i := range res.Damage.Hits {
+			res.Damage.Hits[i].TimeMs -= matchStartMs
+			if res.Damage.Hits[i].TimeMs < 0 {
+				res.Damage.Hits[i].TimeMs = 0
+			}
+		}
+	}
+
 	for i := range res.Backpacks {
 		res.Backpacks[i].Time -= matchStartMs
 	}

@@ -137,7 +137,18 @@ package result
 //     active Quad / Pent powerup. Additive and backward-compatible (all
 //     omitempty), but the bump invalidates cached loc-graph responses so
 //     consumers pick them up.
-const CurrentSchemaVersion = 12
+//
+// v13:
+//   - Adds Result.Damage: per-hit damage decoded from KTX's
+//     mvdhidden_dmgdone (0x0007) blocks, previously decoded by the reader
+//     but surfaced by no analyzer. DamageResult carries per-player unbound
+//     totals (givenRaw/teamRaw/selfRaw/takenRaw + byWeapon) and a per-hit
+//     Hits log resolved to player identities. IMPORTANT: the wire value is
+//     unbound_dmg_dealt (overkill-inclusive, NOT health-capped — KTX
+//     combat.c:819), a different quantity from the health-capped demoInfo
+//     scoreboard (combat.c:1082); see result/damage.go. Additive
+//     (omitempty), but the bump signals the new section to consumers.
+const CurrentSchemaVersion = 13
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -160,5 +171,6 @@ type Result struct {
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
 	Streams          *Streams                `json:"streams,omitempty"`
+	Damage           *DamageResult           `json:"damage,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }

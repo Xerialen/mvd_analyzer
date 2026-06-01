@@ -2081,6 +2081,79 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "Milton": {
+        "byWeapon": {
+          "lg": 3615,
+          "rl": 6435,
+          "sg": 204,
+          "ssg": 20
+        },
+        "givenEff": 10274,
+        "givenRaw": 12213,
+        "hits": 246,
+        "selfEff": 643,
+        "selfRaw": 682,
+        "takenEff": 8129,
+        "takenRaw": 9419,
+        "teamEff": 265,
+        "teamRaw": 343
+      },
+      "shazam": {
+        "byWeapon": {
+          "gl": 210,
+          "lg": 3713,
+          "rl": 4087,
+          "sg": 320,
+          "ssg": 92
+        },
+        "givenEff": 8422,
+        "givenRaw": 9640,
+        "hits": 229,
+        "selfEff": 493,
+        "selfRaw": 531,
+        "takenEff": 7804,
+        "takenRaw": 9309,
+        "teamEff": 132,
+        "teamRaw": 132
+      },
+      "squeeze": {
+        "byWeapon": {
+          "lg": 4915,
+          "rl": 2109,
+          "sg": 272,
+          "ssg": 201
+        },
+        "givenEff": 7497,
+        "givenRaw": 8677,
+        "hits": 243,
+        "selfEff": 576,
+        "selfRaw": 583,
+        "takenEff": 7902,
+        "takenRaw": 9009,
+        "teamEff": 266,
+        "teamRaw": 293
+      },
+      "stepcop": {
+        "byWeapon": {
+          "lg": 3049,
+          "rl": 4124,
+          "sg": 384,
+          "ssg": 52
+        },
+        "givenEff": 7609,
+        "givenRaw": 8788,
+        "hits": 205,
+        "selfEff": 641,
+        "selfRaw": 670,
+        "takenEff": 9967,
+        "takenRaw": 11581,
+        "teamEff": 328,
+        "teamRaw": 354
+      }
+    }
+  },
   "demoInfo": {
     "date": "2026-04-25 13:17:15 +0200",
     "demo": "2on2_1_vs_n_n[dm4]20260425-1307.mvd",
@@ -15800,7 +15873,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "streams": {
     "global": {
       "matchEnd": 600050,

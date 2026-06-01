@@ -303,6 +303,7 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterDerived(NewItemAnalyzer())
 	r.RegisterDerived(NewBackpackAnalyzer())
 	r.RegisterDerived(NewWeaponPickupsAnalyzer())
+	r.RegisterDerived(NewDamageAnalyzer())
 
 	// Post-processors run in registration order on the assembled
 	// Result. Order matters: time normalisation has to land first so

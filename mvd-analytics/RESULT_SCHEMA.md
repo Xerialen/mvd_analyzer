@@ -16,7 +16,7 @@ analyzer are also covered there.
 
 | Field | JSON key | Type | Intent |
 |---|---|---|---|
-| SchemaVersion | `schemaVersion` | int | Identifies JSON schema shape; bump on every breaking change. Currently **10**. |
+| SchemaVersion | `schemaVersion` | int | Identifies JSON schema shape; bump on every breaking change. Currently **13**. |
 | FilePath | `filePath` | string | Source path / display label of the analyzed demo. |
 | Match | `match` | *MatchResult | Match summary: map, game dir, duration, players, teams. |
 | Frags | `frags` | *FragResult | Total / per-player / per-weapon frag breakdown plus chronological frag list. |
@@ -729,8 +729,49 @@ dropTime }`. `kills` is the kills-before-next-death effectiveness
 metric (only non-zero on first acquisition in a life — redundant grabs
 stay listed as zero-kill entries so denial labelling still works).
 
+## DamageResult (`damage`)
+
+Added in v13. Defined in `result/damage.go`. KTX-only (decoded from the
+`mvdhidden_dmgdone` 0x0007 blocks; absent on demos without per-hit damage
+broadcast).
+
+`{ byPlayer: { <name>: PlayerDamage }, hits: []DamageHit }`.
+
+- `PlayerDamage` = `{ givenRaw, teamRaw, selfRaw, takenRaw, givenEff, teamEff, selfEff, takenEff, byWeapon: {<weapon>: int}, hits }`.
+- `DamageHit` = `{ a (attacker), v (victim), d (raw damage), de (effective damage), w (weapon), s (splash), t (match-relative ms) }`.
+
+**Two flavours — `Raw` (unbound) and `Eff` (effective/capped):**
+
+- **`*Raw`** is the wire value `unbound_dmg_dealt`: the full hit **not capped
+  by the victim's remaining health** (overkill included), bounded only to
+  `9999` (KTX `combat.c:809,819`). It is **not** the scoreboard; the only valid
+  relationship is the directional invariant **Σ `givenRaw` ≥
+  `demoInfo.dmg.given`**, gap = total overkill (~8 % 1on1, ~24 % 4on4). Do not
+  relabel `givenRaw` as scoreboard "given".
+- **`*Eff`** reconstructs KTX's scoreboard quantity per hit via the exact
+  absorption accounting: `save = min(ceil(armortype·D), armour)`,
+  `take = D − save`, `credit = save + bound(0, take, health)` (`combat.c:634,
+  648,655,796`); armortype (GA .3 / YA .6 / RA .8) from the held armour bit in
+  `StatItems`. (NOT a naive `health+armour` clamp — armour absorbs only its
+  fraction, so health overkill on an armoured victim is dropped correctly.)
+  `byWeapon` holds the effective split. **Σ Eff reconciles with `demoInfo`:
+  clean duels EXACTLY, team games within ~0.7 %** (residual from the
+  telefrag-scoring `k_dmgfrags` cvar, reconnect folding, ceil rounding). **Use
+  `Eff` for skill/carry metrics (DDR, stacked-DDR)** so numbers stay comparable
+  to ktxstats / DeepFrag. The `9999` telefrag sentinel is reconstructed as what
+  KTX removed (armour + health), not dropped.
+
+See `result/damage.go` and the self-running reconciliation harness
+`analyzer/damage_validation_test.go` (deaths exact vs `demoInfo`; raw
+directional; effective-total within tolerance; closed-system + negative
+controls).
+
 ## Cross-references / join keys
 
+- `damage.byPlayer[name]` ↔ `frags.byPlayer[name]` ↔ `demoInfo.players[].name`
+  — same resolved identity; join per-hit damage to frags/scoreboard.
+- `damage.hits[].t` → `streams.players[].rl`/`lg`/`a` intervals — join each
+  hit to the attacker/victim armor & weapon posture (the stacked-DDR unlock).
 - `weaponPickups[i].backpackEnt` ↔ `backpacks[j].entNum` —
   drop-to-pickup join, `source=="backpack"` only.
 - `streams.players[].li[].v` → `timelineAnalysis.locTable[i]` —
@@ -768,6 +809,8 @@ duplication exists, the canonical fix lives on the other side.
 
 | Version | Changes |
 |---|---|
+| v13 | `Damage` (`damage`) added — per-hit damage decoded from KTX's `mvdhidden_dmgdone` (0x0007) blocks, previously decoded by the reader but surfaced by no analyzer. Per-player totals in two flavours — **`*Raw`** (the unbound wire value, overkill-inclusive; `Σ givenRaw ≥ demoInfo.given`) and **`*Eff`** (effective: each hit run through KTX's exact armour-absorption + health-cap accounting, reconstructing the scoreboard — `Σ Eff` reconciles with `demoInfo` exactly for duels, ~0.7 % for team games) — plus `byWeapon` and a per-hit `hits` log (`d` raw / `de` effective) resolved to identities. Use `Eff` for skill/carry metrics. Wire = `unbound_dmg_dealt` (`combat.c:819`); scoreboard = `save + bound(take, health)` (`combat.c:648,796`). Additive (all `omitempty`); validated by `analyzer/damage_validation_test.go`. |
+| v12 | `LocGraph` nodes/edges gain optional `Armed`/`Unarmed`/`Quad`/`Pent` weight breakdowns (time on nodes, transition counts on edges) restricted to the player's RL/LG-held, neither-held, or active-powerup samples. Additive and backward-compatible (all `omitempty`); the bump invalidates cached loc-graph responses. |
 | v11 | Bucket views gain a **column-major layout** (`view.ColumnarBuckets`): one dense typed array per `(player, field)` over the player's active span, implicit time axis (`time(i) = startMs + i*windowMs`), a `0`/`1` `alive[]` liveness mask, sparse per-field `validFrom`, booleans/alive as `0`/`1`, loc always the raw `li` index. It is the **default** for the web (`getDefaultBuckets`), REST `/buckets`, and MCP `getBuckets`; the row-major `BucketsView` stays available via `layout=row`. The legacy `HighResBucket`/`HighResPlayerData`/`HighResTeamData` shim and `view.ToLegacyHighResBuckets` are removed. The `Result` **structure is unchanged** — this bump versions the outward *view/query* wire surface so API/MCP/web consumers can feature-detect the new default shape and cached view responses (ETag/`X-Schema-Version`) are invalidated. |
 | v10 | DeathEvent / SpawnEvent now derive primarily from the `DF_DEAD` bit in `svc_playerinfo` (broadcast every frame for every player) instead of relying solely on `STAT_HEALTH` crossings (directed at the active POV via `dem_stats`). The stat-based detector still runs and is deduplicated against the new signal — whichever fires first wins. Deaths whose `dem_stats` block was addressed to a different player slot are now captured; `PlayerStream.Spawns`/`Deaths` counts go up for affected demos. Downstream `LocGraph` edges (some spurious `teleport` edges across previously-missed deaths disappear), `LocTrails`, `RegionControl`, `WeaponPickups` (kills-before-next-death windows), and streak boundaries shift accordingly. Field shapes are unchanged. |
 | v9 | Loc attribution gains visibility awareness via `mvd-analytics/locvis` (V6: Euclidean primary + PVS-veto). When a per-map BSP is available the analyzer rejects loc-points outside the player's potentially-visible-set, eliminating the brief "wall-bleed" phantom visits V1 produced. Field shapes unchanged: only the contents of `PlayerStream.Loc` (`li`) and everything derived (LocTrails, LocGraph edges, RegionControl) shift for maps with a BSP. Maps without a BSP fall back to V1 — bit-identical to v8 for those. Background: [`experiments/locattr/V2b-V6-HANDOFF.md`](../experiments/locattr/V2b-V6-HANDOFF.md). |

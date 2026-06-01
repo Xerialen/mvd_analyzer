@@ -420,7 +420,7 @@ the player held RL/LG, held neither, or had an active quad / pent — so
 consumers can render a self-contained loc graph / heatmap per combat
 posture.
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `12`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `13`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

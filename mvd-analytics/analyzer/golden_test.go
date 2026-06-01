@@ -192,6 +192,13 @@ func canonicalJSON(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 	delete(m, "filePath")
+	// The per-hit damage log is ~thousands of records per 4on4 match and
+	// bloats the corpus; pin the per-player aggregates (damage.byPlayer)
+	// for regression and drop the raw hit list, mirroring how streams are
+	// sampled down.
+	if dmg, ok := m["damage"].(map[string]interface{}); ok {
+		delete(dmg, "hits")
+	}
 	sampleStreams(m)
 	out, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
