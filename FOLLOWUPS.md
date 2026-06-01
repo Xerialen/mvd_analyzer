@@ -279,3 +279,29 @@ convert ms→seconds at the read site.
 Design rationale and the convention to follow when adding new
 timestamped fields are documented in
 [`mvd-analytics/RESULT_SCHEMA.md`](mvd-analytics/RESULT_SCHEMA.md#schema-v8-all-times-are-int32-milliseconds).
+
+## Schema v13 per-hit damage — completed (with two notes)
+
+`Result.Damage` surfaces the long-dormant `DamageEvent` (0x0007) into the
+schema (`analyzer/damage.go`, `result/damage.go`, validated by
+`analyzer/damage_validation_test.go`). Per-player + per-hit, in `raw` (unbound
+wire) and `eff` (KTX-scoreboard-reconstructed) flavours. Two things a future
+reader should know:
+
+- **The golden corpus was stale before this landed — and the byte-exact
+  golden test is effectively Linux-CI-only.** On Windows, `core.autocrlf=true`
+  checks the LF-in-repo goldens out as CRLF, so `TestGoldenCorpus` fails on a
+  pure line-ending diff locally; and CI skips it without cached demos. The
+  committed goldens had drifted from the v12 locgraph `armed`/`unarmed`/`quad`
+  weights; regenerating for v13 (`-update-golden`) refreshed both. If you touch
+  goldens, regenerate on Linux (or accept the CRLF caveat) and expect the v12
+  locgraph delta to ride along until someone lands it separately. Consider a
+  `.gitattributes` (`testdata/golden/** text eol=lf`) to make the test runnable
+  on Windows.
+
+- **`eff` damage reconciles to ~0.7% on team games, exact on duels.** The
+  residual is wire-ambiguous: telefrag credit is `k_dmgfrags`-cvar dependent
+  (the cvar isn't in the demo) and reconnect identity-folding adds noise. The
+  harness allows 1.5%. Tightening would need the cvar (not recoverable) — not
+  worth chasing. The enemy/team *split* is reported-not-asserted for the same
+  resolution-boundary reason; the classification-independent totals are exact.

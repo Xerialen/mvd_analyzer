@@ -27,10 +27,10 @@ that downstream consumers render, summarise, or feed to an agent.
 - `analyzer/` — the `Analyzer` interface, the read-only event/userinfo
   `Context`, the typed `CoreOutputs` bundle that producer analysers
   populate for downstream consumers, and the `Registry` that drives a
-  run. `NewDefaultRegistry()` wires up ten production analysers split
+  run. `NewDefaultRegistry()` wires up eleven production analysers split
   into two phases: **core** (`demoinfo`, `identity`, `frag` — the
   producers that fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
-  `messages`, `timeline`, `items`, `backpacks`, `weapon_pickups`)
+  `messages`, `timeline`, `items`, `backpacks`, `weapon_pickups`, `damage`)
   finalise after, with `CoreOutputs` already populated. Four default
   result post-processors run last (time normalisation, duel team
   rewrite, locgraph synthesis, region-control classification) — see
@@ -125,7 +125,7 @@ it.
 | Slice | Default analysers | Why |
 |---|---|---|
 | **Core** | [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
-| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. |
+| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md), [`damage`](analyzer/damage.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. |
 | **Post-processors** | `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `locGraphPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (time normalisation must run before locgraph). |
 | **Shelved** | [`tracks`](analyzer/tracks.md) | Code present, not registered. Awaiting a mvd-web consumer. |
 
@@ -244,6 +244,7 @@ type Result struct {
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
     Backpacks        []BackpackDrop           // RL/LG backpack drops (from KTX //ktx drop hint)
     WeaponPickups    []WeaponPickup           // slot-weapon pickups + kills-before-next-death metric
+    Damage           *DamageResult            // per-hit damage (raw + effective) from KTX 0x0007 blocks
     Errors           []string
 }
 ```
@@ -453,6 +454,45 @@ Closing this needs either a wider KTX hint or synthesising the SSG/SNG/GL
 backpack pickup from the picker's STAT_ITEMS bit flip at backpack-touch
 time; until then treat SSG/SNG/GL/NG pickup totals as world-pickup counts,
 not total acquisitions.
+
+### Damage
+
+`result.Damage` (`*DamageResult`, from `DamageAnalyzer`) surfaces the per-hit
+damage decoded from KTX's `mvdhidden_dmgdone` (0x0007) blocks — long emitted on
+the event stream as `DamageEvent` but, until schema v13, consumed by nothing.
+Per-player totals + a per-hit log, each in two flavours:
+
+- **`*Raw`** — the unbound wire value `unbound_dmg_dealt` (overkill-inclusive;
+  KTX combat.c:819). `Σ givenRaw ≥ demoInfo.given`, gap = total overkill.
+- **`*Eff`** — effective damage reconstructed via KTX's exact accounting
+  (`save = min(ceil(armortype·D), armor)`, `take = D − save`,
+  `credit = save + bound(0, take, health)`; armortype from the held armour bit
+  in STAT_ITEMS). `Σ Eff` reconciles with the `demoInfo` scoreboard — exactly
+  for duels, ~0.7% for team games. **Use `Eff` for DDR / carry metrics** so the
+  numbers stay comparable to ktxstats / DeepFrag.
+
+The two are different quantities by design (raw is overkill-inclusive, the
+scoreboard is health-capped) — never relabel `givenRaw` as a scoreboard
+"given". Full semantics in `result/damage.go`; field reference in
+[`RESULT_SCHEMA.md`](RESULT_SCHEMA.md); the standing reconciliation against the
+embedded `demoInfo` oracle (deaths exact, raw directional, effective within
+tolerance, closed-system + negative controls) is `analyzer/damage_validation_test.go`.
+
+```go
+type PlayerDamage struct {
+    GivenRaw, TeamRaw, SelfRaw, TakenRaw int // unbound (overkill-inclusive)
+    GivenEff, TeamEff, SelfEff, TakenEff int // effective (== demoInfo semantics)
+    ByWeapon map[string]int                  // GivenEff split by weapon
+    Hits     int
+}
+type DamageHit struct {
+    Attacker, Victim string
+    Damage, DamageEff int    // raw / effective
+    Weapon string
+    Splash bool
+    TimeMs int32             // match-relative
+}
+```
 
 ## Writing a new analyzer
 

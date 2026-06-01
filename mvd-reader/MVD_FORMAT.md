@@ -1399,6 +1399,7 @@ Offset  Size  Field
 - Entity numbers are 1-indexed (entity 0 is world). Convert to player number: `player_num = entity - 1`
 - The `damage_amount` is **raw/unbound damage** including overkill (see [Damage Tracking](#damage-tracking-details))
 - Splash damage flag indicates indirect damage (e.g., rocket splash, not direct hit)
+- **Consumed since schema v13:** `mvd-analytics`'s `damage` analyzer surfaces these into `Result.Damage` — both the raw value here and an `eff` (effective) value that reconstructs KTX's health-capped scoreboard (`save + bound(take, health)`), which reconciles with `demoInfo.dmg.*`. See `mvd-analytics/analyzer/damage.md`.
 
 **Example parsing**:
 ```go

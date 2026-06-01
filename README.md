@@ -383,7 +383,9 @@ backpacks (RL/LG drops attributed to the dropping player via KTX's
 `//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
 effectiveness metric; joins to backpacks via `backpackEnt` ==
-`backpacks[].entNum`). Schema v7 introduced `streams` as the canonical
+`backpacks[].entNum`), and damage (per-hit damage from KTX's 0x0007 blocks,
+in `raw` unbound and `eff` effectiveness-reconstructed flavours — added v13).
+Schema v7 introduced `streams` as the canonical
 event-rate storage — every per-player field (vitals, weapons, ammo,
 position) recorded at the rate it actually changed. Schema v8 stores
 **every timestamped field** as `int32` milliseconds rather than float

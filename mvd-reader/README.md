@@ -60,7 +60,7 @@ The concrete event list, in stable order:
 | `KindStatUpdate` | `StatUpdateEvent` | Per-player stat delta (health, armor, weapons, ...) |
 | `KindFragUpdate` | `FragUpdateEvent` | Frag count changes (server-authoritative) |
 | `KindPlayerInfo` | `PlayerPositionEvent` | Per-player position / angle sample |
-| `KindDamage` | `DamageEvent` | Damage dealt (from KTX hidden messages) |
+| `KindDamage` | `DamageEvent` | Damage dealt (from KTX hidden messages; surfaced into `Result.Damage` since schema v13) |
 | `KindDemoInfo` | `DemoInfoEvent` | KTX `*demoinfo` JSON dump |
 | `KindIntermission` | `IntermissionEvent` | Scoreboard-camera takeover (match ended) |
 | `KindStuffText` | `StuffTextEvent` | Server-pushed console command |
