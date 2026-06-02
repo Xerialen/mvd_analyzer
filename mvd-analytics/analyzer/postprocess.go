@@ -34,6 +34,9 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 		for i := range ta.FragEvents {
 			ta.FragEvents[i].Time -= matchStartMs
 		}
+		for i := range ta.DeathEvents {
+			ta.DeathEvents[i].Time -= matchStartMs
+		}
 		for i := range ta.PowerupEvents {
 			ta.PowerupEvents[i].Time -= matchStartMs
 			ta.PowerupEvents[i].EndTime -= matchStartMs

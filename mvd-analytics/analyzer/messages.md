@@ -31,7 +31,9 @@ already plain), so consumers should treat a missing `messageClean` as
    `(time, type, player, message)` — see the dedup note below.
 2. Obituaries are parsed by `parseObituarySimple` — a separate parser
    from frag.go that produces `MatchEvent`s carrying the raw print
-   text. Pattern coverage mirrors `frag.go` for consistency.
+   text. Pattern coverage mirrors `frag.go` for consistency, including
+   the infix Satan's-power-deflect self-telefrag (`satanDeflectVictim`,
+   shared with frag.go) so every death has a matching frag event.
 3. Live team lookup during OnEvent uses `findPlayerByName` (3-pass
    exact → normalized → substring match against `ctx.Players`).
 4. Finalize backfills missing teams using `co.Names.TeamForName(name)`

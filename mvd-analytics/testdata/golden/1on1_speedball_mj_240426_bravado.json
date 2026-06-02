@@ -962,8 +962,7 @@
     },
     "byWeapon": {
       "lg": 34,
-      "rl": 31,
-      "suicide": 1
+      "rl": 31
     },
     "frags": [
       {
@@ -1349,7 +1348,7 @@
         "killer": "speedball",
         "time": 574235,
         "victim": "speedball",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "speedball",
@@ -6861,7 +6860,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 14,
+  "schemaVersion": 18,
   "streams": {
     "global": {
       "matchEnd": 600001,
@@ -102192,6 +102191,303 @@
     ]
   },
   "timelineAnalysis": {
+    "deathEvents": [
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 41740
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 50572
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 65500
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 68131
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 78027
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 81690
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 87742
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 90591
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 99131
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 105002
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 113885
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 165730
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 178912
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 181672
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 195043
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 199179
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 203407
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 211875
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 220979
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 231557
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 245785
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 246629
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 279980
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 291521
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 297819
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 303838
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 307864
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 329665
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 335184
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 349203
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 355385
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 361411
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 370458
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 372938
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 382944
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 396710
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 400048
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 403628
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 407797
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 416918
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 437958
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 443799
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 445123
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 447881
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 454270
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 490154
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 494128
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 497566
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 499544
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 509311
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 524480
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 533714
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 546169
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 558088
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 565455
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 571698
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 574205
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 585322
+      },
+      {
+        "player": "mj",
+        "team": "mj",
+        "time": 592958
+      }
+    ],
     "demoOffset": 10091,
     "fragEvents": [
       {
@@ -102671,6 +102967,333 @@
         "playerUserID": 70,
         "team": "mj",
         "time": 247551
+      }
+    ],
+    "killEvents": [
+      {
+        "player": "mj",
+        "team": "red",
+        "time": 17732
+      },
+      {
+        "player": "mj",
+        "team": "red",
+        "time": 45624
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 51831
+      },
+      {
+        "player": "mj",
+        "team": "red",
+        "time": 55585
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 60663
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 75591
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 78222
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 88118
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 91781
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 97833
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 100682
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 109222
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 115093
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 123976
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 175821
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 189003
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 191763
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 205134
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 209270
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 213498
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 221966
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 231070
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 241648
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 255876
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 256720
+      },
+      {
+        "player": "mj",
+        "team": "red",
+        "time": 271383
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 290071
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 301612
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 307910
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 313929
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 317955
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 339756
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 345275
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 359294
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 365476
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 371502
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 380549
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 383029
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 393035
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 406801
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 410139
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 413719
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 417888
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 427009
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 448049
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 453890
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 455214
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 457972
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 464361
+      },
+      {
+        "player": "mj",
+        "team": "red",
+        "time": 472011
+      },
+      {
+        "player": "mj",
+        "team": "red",
+        "time": 486618
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 500245
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 504219
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 507657
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 509635
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 519402
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 534571
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 543805
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 556260
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 568179
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 575546
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 581789
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 584296
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 595413
+      },
+      {
+        "player": "speedball",
+        "team": "",
+        "time": 603049
       }
     ],
     "locTable": [

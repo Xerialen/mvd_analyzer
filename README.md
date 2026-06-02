@@ -420,9 +420,33 @@ across web / REST / MCP. Schema v12 adds optional `armed`,
 edge (transition counts) — the same breakdown restricted to samples where
 the player held RL/LG, held neither, or had an active quad / pent — so
 consumers can render a self-contained loc graph / heatmap per combat
-posture.
+posture. Schema v13 adds the `mapEntities` section — the map's static
+designed layout (item spawns, player spawnpoints, teleport
+sources/destinations, buttons) from the offline-generated mapents corpus
+— which v14 extends with brush entities (teleport/button/door volumes
+with bounds) plus the teleport source→destination link. Schema v15 adds
+`timelineAnalysis.deathEvents`: a per-player death stream (`{time, player,
+team}`) parallel to `fragEvents`, sourced from the authoritative protocol
+DeathEvent (every death counts once), so the Timeline tab can draw
+per-player frags-up / deaths-down charts and KTX-style efficiency
+(`frags / (frags + deaths)`). Schema v16 adds `frags.byPlayer[].teamkills`
+(KTX "tk") and recovers teamkills whose obituary names only one party, so
+they re-enter `frags.frags` as complete killer↔victim pairs: killer-named
+("X loses another friend") fill in the victim from the coincident
+`DeathEvent`; victim-named ("X was telefragged by his teammate") fill in
+the killer by combining position co-location with the teamkiller's −1
+frag-delta. Across the test corpus this brings per-player teamkills to an
+exact match with KTX's authoritative `tk`. Schema v18 adds
+`timelineAnalysis.killEvents`: a per-player enemy-kill stream (`{time,
+player, team}`) keyed on the killer, parallel to `deathEvents` and sourced
+from the canonical frag log (suicides/teamkills excluded), so the Timeline
+tab's per-player drill-down plots an exact cumulative kills − deaths +/-
+that reconciles with `frags.byPlayer[].kills` and the kills-based
+efficiency. (Team is best-effort and ungated, unlike `deathEvents`, so a
+player's curve survives POV demos with an incomplete name↔team join — the
+consumer groups by player name.)
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `12`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `18`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

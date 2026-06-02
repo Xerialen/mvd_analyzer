@@ -2809,7 +2809,8 @@
           "rl": 41
         },
         "deaths": 52,
-        "kills": 76
+        "kills": 76,
+        "teamkills": 2
       },
       "shazam": {
         "byWeapon": {
@@ -2827,7 +2828,8 @@
           "ssg": 2
         },
         "deaths": 50,
-        "kills": 57
+        "kills": 57,
+        "teamkills": 1
       },
       "stepcop": {
         "byWeapon": {
@@ -2836,17 +2838,15 @@
           "sg": 1
         },
         "deaths": 72,
-        "kills": 46
+        "kills": 46,
+        "teamkills": 2
       }
     },
     "byWeapon": {
-      "lava": 2,
       "lg": 119,
       "rl": 104,
       "sg": 2,
-      "ssg": 2,
-      "suicide": 8,
-      "teamkill": 5
+      "ssg": 2
     },
     "frags": [
       {
@@ -3041,7 +3041,7 @@
         "killer": "stepcop",
         "time": 95806,
         "victim": "stepcop",
-        "weapon": "suicide"
+        "weapon": "gl"
       },
       {
         "killer": "shazam",
@@ -3092,6 +3092,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "Milton",
+        "time": 112691,
+        "victim": "squeeze",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "squeeze",
         "time": 116588,
         "victim": "stepcop",
@@ -3114,7 +3121,7 @@
         "killer": "Milton",
         "time": 119029,
         "victim": "Milton",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "shazam",
@@ -3133,6 +3140,13 @@
         "time": 132025,
         "victim": "stepcop",
         "weapon": "rl"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "Milton",
+        "time": 132743,
+        "victim": "squeeze",
+        "weapon": "teamkill"
       },
       {
         "killer": "shazam",
@@ -3169,7 +3183,7 @@
         "killer": "squeeze",
         "time": 146353,
         "victim": "squeeze",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "Milton",
@@ -3326,6 +3340,13 @@
         "time": 202581,
         "victim": "squeeze",
         "weapon": "rl"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "squeeze",
+        "time": 208481,
+        "victim": "Milton",
+        "weapon": "teamkill"
       },
       {
         "killer": "stepcop",
@@ -3716,7 +3737,7 @@
         "killer": "Milton",
         "time": 366651,
         "victim": "Milton",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "squeeze",
@@ -3790,7 +3811,7 @@
         "killer": "stepcop",
         "time": 403288,
         "victim": "stepcop",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "squeeze",
@@ -4025,7 +4046,7 @@
         "killer": "shazam",
         "time": 499591,
         "victim": "shazam",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "Milton",
@@ -4094,6 +4115,20 @@
         "weapon": "lg"
       },
       {
+        "isTeamKill": true,
+        "killer": "stepcop",
+        "time": 532013,
+        "victim": "shazam",
+        "weapon": "teamkill"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "stepcop",
+        "time": 534262,
+        "victim": "shazam",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "shazam",
         "time": 538328,
         "victim": "squeeze",
@@ -4104,7 +4139,7 @@
         "killer": "stepcop",
         "time": 539946,
         "victim": "stepcop",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "shazam",
@@ -4213,7 +4248,7 @@
         "killer": "shazam",
         "time": 580078,
         "victim": "shazam",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "shazam",
@@ -4282,7 +4317,7 @@
         "weapon": "rl"
       }
     ],
-    "totalFrags": 237
+    "totalFrags": 242
   },
   "items": {
     "items": [
@@ -16400,7 +16435,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 14,
+  "schemaVersion": 18,
   "streams": {
     "global": {
       "matchEnd": 600050,
@@ -232785,6 +232820,1218 @@
     ]
   },
   "timelineAnalysis": {
+    "deathEvents": [
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 5234
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 9398
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 10603
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 12416
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 13935
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 15167
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 19809
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 19984
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 25639
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 29026
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 35414
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 36958
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 42927
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 45127
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 46371
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 49146
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 51234
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 56496
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 60730
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 62598
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 64250
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 69108
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 71618
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 75055
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 79678
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 82304
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 84182
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 85263
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 88403
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 90189
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 94431
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 95806
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 98849
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 99889
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 99889
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 104085
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 105769
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 106884
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 109080
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 110734
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 112691
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 116588
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 117045
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 117390
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 119029
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 123679
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 125417
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 132025
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 132743
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 132756
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 135760
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 139876
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 142403
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 145715
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 146353
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 147066
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 149617
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 151002
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 153315
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 154392
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 158404
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 159496
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 163027
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 165886
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 166781
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 167803
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 168596
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 170277
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 170277
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 173092
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 173666
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 180837
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 182871
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 189194
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 189391
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 192071
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 194107
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 194210
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 197042
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 200096
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 202581
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 208481
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 211845
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 212210
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 216360
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 217754
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 223099
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 223458
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 223976
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 227365
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 232243
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 234830
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 235886
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 236470
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 238649
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 241337
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 242930
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 245055
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 245990
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 251436
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 251556
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 255042
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 256456
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 257979
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 260889
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 260964
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 263651
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 266547
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 269324
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 269873
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 272547
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 276179
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 278302
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 281417
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 284736
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 287036
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 288592
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 290580
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 294473
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 306821
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 310448
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 310729
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 313430
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 318040
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 323002
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 323924
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 326181
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 328423
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 329389
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 330860
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 332167
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 334415
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 337288
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 339832
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 343252
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 344292
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 349145
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 350879
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 352664
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 353547
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 355732
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 356027
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 358921
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 359872
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 362741
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 363267
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 366651
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 368528
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 372068
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 374860
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 377831
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 379944
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 383703
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 384494
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 388665
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 398291
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 398650
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 401327
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 403288
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 406579
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 407122
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 410548
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 411591
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 415989
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 416964
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 418418
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 418999
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 422115
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 424094
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 425094
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 428249
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 429378
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 430388
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 431624
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 433470
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 435205
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 436318
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 439694
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 442444
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 443102
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 451119
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 455114
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 459849
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 464340
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 470390
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 470892
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 478459
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 480397
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 482483
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 483194
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 485834
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 488789
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 491262
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 495457
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 496229
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 499003
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 499429
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 499591
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 501624
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 503041
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 507229
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 508363
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 508822
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 512016
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 514899
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 517533
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 522696
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 524730
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 527029
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 532013
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 534262
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 538328
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 539946
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 540363
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 541391
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 547042
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 547530
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 550034
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 551462
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 552195
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 557041
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 559098
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 561862
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 563162
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 563584
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 564319
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 566974
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 568653
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 577273
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 579301
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 580078
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 580078
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 581639
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 582679
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 583730
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 589780
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 590259
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 593249
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 594220
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 596227
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 598103
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 598973
+      }
+    ],
     "demoOffset": 10160,
     "fragEvents": [
       {
@@ -234316,6 +235563,1143 @@
         "playerUserID": 14,
         "team": "1",
         "time": 261986
+      }
+    ],
+    "killEvents": [
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 15394
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 19558
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 20763
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 22576
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 24095
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 25327
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 29969
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 30144
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 35799
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 39186
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 45574
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 47118
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 53087
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 55287
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 56531
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 59306
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 61394
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 66656
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 70890
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 72758
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 79268
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 81778
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 85215
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 89838
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 92464
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 94342
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 95423
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 98563
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 100349
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 104591
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 109009
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 110049
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 110049
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 114245
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 115929
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 117044
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 119240
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 120894
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 126748
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 127205
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 127550
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 133839
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 135577
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 142185
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 142916
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 145920
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 150036
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 152563
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 155875
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 157226
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 159777
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 161162
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 163475
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 164552
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 168564
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 169656
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 173187
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 176046
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 176941
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 177963
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 178756
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 180437
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 180437
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 183252
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 183826
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 190997
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 193031
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 199354
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 199551
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 202231
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 204267
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 204370
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 207202
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 210256
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 212741
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 222005
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 222370
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 226520
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 227914
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 233259
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 233618
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 234136
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 237525
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 242403
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 244990
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 246046
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 246630
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 248809
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 251497
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 253090
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 255215
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 256150
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 261596
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 261716
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 265202
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 266616
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 268139
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 271049
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 271124
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 273811
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 276707
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 279484
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 280033
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 282707
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 286339
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 288462
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 291577
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 294896
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 297196
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 298752
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 300740
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 304633
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 316981
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 320608
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 320889
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 323590
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 328200
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 333162
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 334084
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 336341
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 338583
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 339549
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 341020
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 342327
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 344575
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 347448
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 349992
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 353412
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 354452
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 359305
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 361039
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 362824
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 363707
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 365892
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 366187
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 369081
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 370032
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 372901
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 373427
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 378688
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 382228
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 385020
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 387991
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 390104
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 393863
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 398825
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 408451
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 408810
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 411487
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 416739
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 417282
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 420708
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 421751
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 426149
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 427124
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 428578
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 429159
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 432275
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 434254
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 435254
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 438409
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 439538
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 440548
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 441784
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 443630
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 445365
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 446478
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 449854
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 452604
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 453262
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 461279
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 465274
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 470009
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 474500
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 480550
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 481052
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 488619
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 490557
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 492643
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 493354
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 495994
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 498949
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 501422
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 505617
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 506389
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 509163
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 509589
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 511784
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 513201
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 517389
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 518523
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 518982
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 522176
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 525059
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 527693
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 532856
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 534890
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 537189
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 548488
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 550523
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 551551
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 557202
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 557690
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 560194
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 561622
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 562355
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 567201
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 569258
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 572022
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 573322
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 573744
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 574479
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 577134
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 578813
+      },
+      {
+        "player": "stepcop",
+        "team": "n n",
+        "time": 587433
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 589461
+      },
+      {
+        "player": "shazam",
+        "team": "n n",
+        "time": 590238
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 591799
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 592839
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 593890
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 599940
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 600419
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 603409
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 604380
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 606387
+      },
+      {
+        "player": "squeeze",
+        "team": "1",
+        "time": 608263
+      },
+      {
+        "player": "Milton",
+        "team": "1",
+        "time": 609133
       }
     ],
     "locTable": [

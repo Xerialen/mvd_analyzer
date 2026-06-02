@@ -1577,7 +1577,8 @@
           "sg": 1
         },
         "deaths": 31,
-        "kills": 34
+        "kills": 34,
+        "teamkills": 1
       },
       "gLAd": {
         "byWeapon": {
@@ -1588,7 +1589,8 @@
           "sng": 1
         },
         "deaths": 13,
-        "kills": 36
+        "kills": 36,
+        "teamkills": 2
       },
       "kippo": {
         "byWeapon": {
@@ -1604,7 +1606,8 @@
           "rl": 12
         },
         "deaths": 29,
-        "kills": 18
+        "kills": 18,
+        "teamkills": 2
       }
     },
     "byWeapon": {
@@ -1612,9 +1615,7 @@
       "lg": 42,
       "rl": 60,
       "sg": 3,
-      "sng": 1,
-      "suicide": 5,
-      "teamkill": 5
+      "sng": 1
     },
     "frags": [
       {
@@ -1622,7 +1623,7 @@
         "killer": "gLAd",
         "time": 6523,
         "victim": "gLAd",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "SS",
@@ -1635,6 +1636,13 @@
         "time": 7368,
         "victim": "SS",
         "weapon": "rl"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "rusti",
+        "time": 14856,
+        "victim": "kippo",
+        "weapon": "teamkill"
       },
       {
         "killer": "kippo",
@@ -1655,6 +1663,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "rusti",
+        "time": 34142,
+        "victim": "kippo",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "rusti",
         "time": 44530,
         "victim": "gLAd",
@@ -1665,7 +1680,7 @@
         "killer": "SS",
         "time": 45606,
         "victim": "SS",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "SS",
@@ -1702,6 +1717,13 @@
         "time": 101878,
         "victim": "rusti",
         "weapon": "lg"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "gLAd",
+        "time": 111964,
+        "victim": "SS",
+        "weapon": "teamkill"
       },
       {
         "killer": "kippo",
@@ -1842,6 +1864,13 @@
         "weapon": "lg"
       },
       {
+        "isTeamKill": true,
+        "killer": "gLAd",
+        "time": 211813,
+        "victim": "SS",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "gLAd",
         "time": 213007,
         "victim": "kippo",
@@ -1870,7 +1899,7 @@
         "killer": "SS",
         "time": 247290,
         "victim": "SS",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "gLAd",
@@ -1913,7 +1942,7 @@
         "killer": "kippo",
         "time": 285903,
         "victim": "kippo",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "rusti",
@@ -2028,7 +2057,7 @@
         "killer": "kippo",
         "time": 363592,
         "victim": "kippo",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "SS",
@@ -2119,6 +2148,13 @@
         "time": 459090,
         "victim": "gLAd",
         "weapon": "lg"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "SS",
+        "time": 466202,
+        "victim": "gLAd",
+        "weapon": "teamkill"
       },
       {
         "killer": "SS",
@@ -2301,7 +2337,7 @@
         "weapon": "lg"
       }
     ],
-    "totalFrags": 113
+    "totalFrags": 118
   },
   "items": {
     "items": [
@@ -10954,7 +10990,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 14,
+  "schemaVersion": 18,
   "streams": {
     "global": {
       "matchEnd": 600000,
@@ -222264,6 +222300,598 @@
     ]
   },
   "timelineAnalysis": {
+    "deathEvents": [
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 6523
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 7273
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 7368
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 14856
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 15050
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 26752
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 29362
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 34142
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 44530
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 45606
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 54530
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 54905
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 61332
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 61891
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 63948
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 101878
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 111964
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 114567
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 117524
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 118749
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 118825
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 120561
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 121031
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 122733
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 127560
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 132121
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 134757
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 141759
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 144481
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 155161
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 157441
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 163895
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 174874
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 176574
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 180003
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 181465
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 182821
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 186763
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 201311
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 210494
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 211813
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 213007
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 240219
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 241109
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 243862
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 247290
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 268073
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 271644
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 280244
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 280378
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 283617
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 285903
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 285903
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 288073
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 291125
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 292112
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 295045
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 301864
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 308532
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 312057
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 313914
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 316005
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 325668
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 329231
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 337594
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 340511
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 342327
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 358638
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 360835
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 362872
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 363592
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 363592
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 367134
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 371534
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 372482
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 375468
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 378546
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 393623
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 397170
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 397207
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 406558
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 407508
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 416080
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 420729
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 424881
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 427690
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 459090
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 466202
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 469128
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 471384
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 473725
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 477776
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 489112
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 495252
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 498398
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 502981
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 504148
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 505865
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 508787
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 511108
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 513277
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 514812
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 516825
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 529289
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 529366
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 541537
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 543316
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 545898
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 563897
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 566312
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 570015
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 574015
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 574212
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 576445
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 577714
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 584285
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 585818
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 589025
+      }
+    ],
     "demoOffset": 10090,
     "fragEvents": [
       {
@@ -223051,6 +223679,548 @@
         "playerUserID": 76,
         "team": "pora",
         "time": 505096
+      }
+    ],
+    "killEvents": [
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 17363
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 17458
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 25140
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 36842
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 39452
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 54620
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 64620
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 64995
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 71422
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 71981
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 74038
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 111968
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 124657
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 127614
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 128839
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 128915
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 130651
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 131121
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 132823
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 137650
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 142211
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 144847
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 151849
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 154571
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 165251
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 167531
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 173985
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 184964
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 186664
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 190093
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 191555
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 192911
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 196853
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 211401
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 220584
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 223097
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 250309
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 251199
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 253952
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 278163
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 281734
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 290334
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 290468
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 293707
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 295993
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 298163
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 301215
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 302202
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 305135
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 311954
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 318622
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 322147
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 324004
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 326095
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 335758
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 339321
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 347684
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 350601
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 352417
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 368728
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 370925
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 372962
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 373682
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 377224
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 381624
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 382572
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 385558
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 388636
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 403713
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 407260
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 407297
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 416648
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 417598
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 426170
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 430819
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 434971
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 437780
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 469180
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 479218
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 481474
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 483815
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 487866
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 499202
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 505342
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 508488
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 513071
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 514238
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 515955
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 518877
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 521198
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 523367
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 524902
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 526915
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 539379
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 539456
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 551627
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 553406
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 555988
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 573987
+      },
+      {
+        "player": "kippo",
+        "team": "pora",
+        "time": 576402
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 580105
+      },
+      {
+        "player": "rusti",
+        "team": "pora",
+        "time": 584105
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 584302
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 586535
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 587804
+      },
+      {
+        "player": "gLAd",
+        "team": "nAnI",
+        "time": 594375
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 595908
+      },
+      {
+        "player": "SS",
+        "team": "nAnI",
+        "time": 599115
       }
     ],
     "locTable": [

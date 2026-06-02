@@ -31,10 +31,10 @@ that downstream consumers render, summarise, or feed to an agent.
   into two phases: **core** (`demoinfo`, `identity`, `frag` — the
   producers that fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
   `messages`, `timeline`, `items`, `backpacks`, `weapon_pickups`)
-  finalise after, with `CoreOutputs` already populated. Four default
-  result post-processors run last (time normalisation, duel team
-  rewrite, locgraph synthesis, region-control classification) — see
-  `postprocess.go`.
+  finalise after, with `CoreOutputs` already populated. Five default
+  result post-processors run last (victim-named teamkill recovery, time
+  normalisation, duel team rewrite, locgraph synthesis, region-control
+  classification) — see `postprocess.go` and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
   `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
   `StateAt`, `LocTrails`, `RegionControl`) read `result.Streams` and
@@ -126,7 +126,7 @@ it.
 |---|---|---|
 | **Core** | [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
 | **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. |
-| **Post-processors** | `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `locGraphPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (time normalisation must run before locgraph). |
+| **Post-processors** | `recoverTelefragTeamkills`, `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (telefrag recovery runs before time normalisation so positions/frag-events/obituaries share the demo-relative clock; time normalisation must run before locgraph). |
 | **Shelved** | [`tracks`](analyzer/tracks.md) | Code present, not registered. Awaiting a mvd-web consumer. |
 
 Each analyser has a one-page README in `analyzer/` covering what it
@@ -251,7 +251,7 @@ type Result struct {
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `12`). For "how long was the match"
+`CurrentSchemaVersion` (currently `18`). For "how long was the match"
 read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
 (integer, KTX-authoritative); the legacy top-level `duration` was
 removed in v6.

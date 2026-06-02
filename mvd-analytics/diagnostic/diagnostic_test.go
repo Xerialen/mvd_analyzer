@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
@@ -235,5 +236,66 @@ func checkDataQuality(r *analyzer.Result) []string {
 		}
 	}
 
+	// Death reconciliation: every authoritative DeathEvent must be
+	// explained by an obituary. Named kills, suicides, and recovered
+	// killer-named teamkills land in Frags.Frags (victim set); victim-named
+	// teamkills ("X was telefragged by his teammate") name only the victim
+	// and so appear only as frag messages. A death with neither is a
+	// genuine parse gap — an obituary pattern we don't recognize at all.
+	if r.TimelineAnalysis != nil && r.Frags != nil {
+		deathsByPlayer := map[string]int{}
+		for _, de := range r.TimelineAnalysis.DeathEvents {
+			deathsByPlayer[de.Player]++
+		}
+		fragVictims := map[string]int{}
+		for _, f := range r.Frags.Frags {
+			fragVictims[f.Victim]++
+		}
+		victimNamedTK := map[string]int{}
+		if r.Messages != nil {
+			for _, ev := range r.Messages.Events {
+				if ev.Type != "frag" {
+					continue
+				}
+				text := ev.MessageClean
+				if text == "" {
+					text = ev.Message
+				}
+				if v := victimNamedTeamkillVictim(text); v != "" {
+					victimNamedTK[v]++
+				}
+			}
+		}
+		for player, deaths := range deathsByPlayer {
+			orphans := deaths - fragVictims[player] - victimNamedTK[player]
+			if orphans > 1 {
+				warn("unexplained deaths for %q: %d (deaths=%d, frag-victim=%d, victim-named-tk=%d) — likely unparsed obituaries",
+					player, orphans, deaths, fragVictims[player], victimNamedTK[player])
+			}
+		}
+	}
+
 	return warnings
+}
+
+// victimNamedTeamkillVictim returns the victim name when msg is a
+// victim-named teamkill obituary (killer is the generic "teammate", so the
+// frag never enters Frags.Frags), else "". Mirrors the tkVictimPatterns in
+// the frag analyzer; kept local so the diagnostic harness has no analyzer
+// internals dependency.
+func victimNamedTeamkillVictim(msg string) string {
+	patterns := []string{
+		" was telefragged by his teammate",
+		" was telefragged by her teammate",
+		" was crushed by his teammate",
+		" was crushed by her teammate",
+		" was jumped by his teammate",
+		" was jumped by her teammate",
+	}
+	for _, p := range patterns {
+		if i := strings.Index(msg, p); i > 0 {
+			return strings.TrimSpace(msg[:i])
+		}
+	}
+	return ""
 }

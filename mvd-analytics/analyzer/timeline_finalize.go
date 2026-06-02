@@ -59,6 +59,52 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		}
 	}
 
+	// Convert raw deaths to per-player death events for the frags/deaths
+	// drill-down. Same authoritative protocol DeathEvent source and same
+	// at-death-time identity resolution / team-gating as fragEvents, so a
+	// player's death count here matches their scoreboard deaths (and thus
+	// KTX efficiency = frags/(frags+deaths)).
+	deathEvents := make([]TimelineDeathEvent, 0, len(a.rawDeaths))
+	for _, raw := range a.rawDeaths {
+		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
+		if team != "" {
+			deathEvents = append(deathEvents, TimelineDeathEvent{
+				Time:   msTime(raw.Time),
+				Player: playerName,
+				Team:   team,
+			})
+		}
+	}
+
+	// Convert the canonical frag log to per-player kill events for the
+	// frags/deaths drill-down. Keyed on the killer and filtered to real
+	// enemy kills (suicides/teamkills excluded, generic killers skipped) —
+	// exactly the condition frags.byPlayer[name].kills is counted under
+	// (frag.go handleObituaryPrint), so a player's cumulative killEvents
+	// reconciles with byPlayer.kills and the kills-based efficiency.
+	// FragEntry.Time is already int32 ms.
+	//
+	// Unlike fragEvents/deathEvents we do NOT gate on a resolvable team:
+	// byPlayer.kills doesn't either, so gating here would silently drop a
+	// player's whole kill curve in POV demos where the name↔team join is
+	// incomplete (the consumer groups by player name and ignores team).
+	// Team is therefore best-effort via the name table.
+	var killEvents []TimelineKillEvent
+	for _, fe := range a.coreFragEntries() {
+		if fe.IsSuicide || fe.IsTeamKill || isGenericPlayer(fe.Killer) {
+			continue
+		}
+		team := ""
+		if names != nil {
+			team = names.TeamForName(fe.Killer)
+		}
+		killEvents = append(killEvents, TimelineKillEvent{
+			Time:   fe.Time,
+			Player: fe.Killer,
+			Team:   team,
+		})
+	}
+
 	// Detect powerup pickup events for Key Moments
 	powerupEvents := a.detectPowerupEvents()
 
@@ -175,6 +221,8 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	result.TimelineAnalysis = &TimelineAnalysisResult{
 		MatchStartTime: msTime(a.timing.StartTime),
 		FragEvents:     fragEvents,
+		DeathEvents:    deathEvents,
+		KillEvents:     killEvents,
 		PowerupEvents:  powerupEvents,
 		FragStreaks:    fragStreaks,
 		LocationData:   locationData,

@@ -10,6 +10,8 @@ type TimelineAnalysisResult struct {
 	MatchStartTime int32                `json:"matchStartTime"`          // When match actually started (after warmup), in ms
 	DemoOffset     int32                `json:"demoOffset,omitempty"`    // Milliseconds from demo start to match start (for Hub viewer links)
 	FragEvents     []TimelineFragEvent  `json:"fragEvents,omitempty"`    // Frag events for score timeline
+	DeathEvents    []TimelineDeathEvent `json:"deathEvents,omitempty"`   // Per-player deaths for the frags/deaths drill-down
+	KillEvents     []TimelineKillEvent  `json:"killEvents,omitempty"`    // Per-player enemy kills for the frags/deaths drill-down
 	PowerupEvents  []PowerupEvent       `json:"powerupEvents,omitempty"` // Powerup pickups for Key Moments
 	FragStreaks    []FragStreakEvent    `json:"fragStreaks,omitempty"`   // Top longest frag streaks for Key Moments
 	LocationData   []MapLocation        `json:"locationData,omitempty"`  // Location points from .loc file for map view
@@ -107,6 +109,32 @@ type TimelineFragEvent struct {
 	Player string `json:"player"` // Player name who got the frag
 	Team   string `json:"team"`
 	Delta  int    `json:"delta"` // Frag count change (+1 for kill, -1 for suicide/teamkill)
+}
+
+// TimelineDeathEvent represents a single death pinned to the player who
+// died, for the per-player frags/deaths drill-down. Sourced from the
+// authoritative protocol DeathEvent (every death counts once — enemy
+// kill, suicide, world, or being teamkilled), matching KTX's
+// player->deaths (ktx/src/client.c) and thus its efficiency definition.
+// Time is integer milliseconds (schema v8).
+type TimelineDeathEvent struct {
+	Time   int32  `json:"time"`
+	Player string `json:"player"` // Player name who died
+	Team   string `json:"team"`
+}
+
+// TimelineKillEvent represents a single enemy kill pinned to the player
+// who got it (the killer), for the per-player frags/deaths drill-down.
+// Sourced from the same canonical frag log (FragEntries) that
+// frags.byPlayer[name].kills is counted from, filtered to real enemy
+// kills (suicides and teamkills excluded). A player's cumulative
+// killEvents therefore reconciles exactly with byPlayer.kills and with
+// the kills-based efficiency = kills/(kills+deaths). Time is integer
+// milliseconds (schema v8).
+type TimelineKillEvent struct {
+	Time   int32  `json:"time"`
+	Player string `json:"player"` // Player name who got the kill (killer)
+	Team   string `json:"team"`
 }
 
 // PowerupEvent represents a powerup pickup event for Key Moments.

@@ -1,10 +1,18 @@
 package analyzer
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-reader/events"
 )
+
+// teamkillMatchWindowMs bounds how far a killer-named teamkill obituary
+// may sit from the authoritative DeathEvent it caused when recovering the
+// victim. Obituary print and DF_DEAD transition share the demo clock and
+// land on the same frame in practice (observed Δ0); the small window only
+// guards against clock jitter.
+const teamkillMatchWindowMs int32 = 256
 
 // FragAnalyzer detects frags from print messages
 type FragAnalyzer struct {
@@ -18,6 +26,17 @@ type FragAnalyzer struct {
 	// time), collected from the protocol DeathEvent and resolved to a
 	// player identity in Finalize. See the DeathEvent case in OnEvent.
 	deathSlots []slotDeath
+	// genericTeamkills are killer-named teamkill obituaries ("X loses
+	// another friend", "X checks his glasses", ...) whose victim is the
+	// generic "teammate" and so were dropped from frags. Finalize counts
+	// them against the killer and recovers the victim by matching the
+	// coincident DeathEvent on the killer's team.
+	genericTeamkills []FragEntry
+	// victimNamedTeamkills are the mirror case ("X was telefragged by his
+	// teammate") — victim known, killer generic. Exposed via CoreOutputs so
+	// the recoverTelefragTeamkills post-processor can recover the killer
+	// from position co-location + the teamkiller's frag-penalty.
+	victimNamedTeamkills []FragEntry
 }
 
 // slotDeath is one match-time death pinned to the wire slot that died
@@ -37,6 +56,7 @@ func (a *FragAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 // (timeline, weapon_pickups) via CoreOutputs.FragEntries.
 func (a *FragAnalyzer) PopulateCore(co *CoreOutputs) {
 	co.FragEntries = a.frags
+	co.VictimNamedTeamkills = a.victimNamedTeamkills
 }
 
 // NewFragAnalyzer creates a new frag analyzer
@@ -103,8 +123,22 @@ func (a *FragAnalyzer) handleObituaryPrint(e *events.PrintEvent) {
 	// Only add to frags list if both parties are identifiable
 	if !killerIsGeneric && !victimIsGeneric {
 		a.frags = append(a.frags, *frag)
+	} else if frag.IsTeamKill && !killerIsGeneric && victimIsGeneric {
+		// Killer-named teamkill: attacker known, victim generic. Stash for
+		// Finalize to count + recover the victim from the DeathEvent.
+		a.genericTeamkills = append(a.genericTeamkills, *frag)
+	} else if frag.IsTeamKill && killerIsGeneric && !victimIsGeneric {
+		// Victim-named teamkill: victim known, attacker generic. Stash for
+		// the post-processor to recover the killer (position + frag-delta).
+		a.victimNamedTeamkills = append(a.victimNamedTeamkills, *frag)
 	}
-	a.byWeapon[frag.Weapon]++
+
+	// Global per-weapon tally is enemy kills only — exclude suicides and
+	// teamkills so a weapon self-detonation (now under its real weapon,
+	// rl/gl/lg) doesn't inflate that weapon's kills.
+	if !frag.IsSuicide && !frag.IsTeamKill {
+		a.byWeapon[frag.Weapon]++
+	}
 
 	// Update killer stats
 	// Don't count teamkills as kills (teamkiller loses a frag, doesn't gain one)
@@ -155,6 +189,8 @@ func (a *FragAnalyzer) Finalize(result *Result) error {
 		}
 	}
 
+	a.recoverTeamkills()
+
 	result.Frags = &FragResult{
 		TotalFrags: len(a.frags),
 		Frags:      a.frags,
@@ -162,6 +198,90 @@ func (a *FragAnalyzer) Finalize(result *Result) error {
 		ByPlayer:   a.byPlayer,
 	}
 	return nil
+}
+
+// recoverTeamkills counts each killer-named teamkill against its killer
+// and recovers the victim by pairing the obituary with the authoritative
+// DeathEvent it caused — a death at ~the same time whose victim resolves
+// to a teammate of the killer. Recovered teamkills (now a complete
+// killer↔victim pair) rejoin the frag log. Death totals are untouched:
+// the death was already counted in the deathSlots loop above.
+//
+// A death is only eligible if it isn't already explained by a named-victim
+// frag, so a teamkill can't steal a regular kill's death; each death is
+// consumed at most once. Resolution needs core (team table), so this is a
+// no-op without it — the count is then simply not recovered.
+func (a *FragAnalyzer) recoverTeamkills() {
+	if a.core == nil || len(a.genericTeamkills) == 0 {
+		return
+	}
+
+	// Pre-resolve every death once and mark those already claimed by a
+	// named-victim frag at ~the same time.
+	type rd struct {
+		name string
+		tMs  int32
+	}
+	resolved := make([]rd, len(a.deathSlots))
+	claimed := make([]bool, len(a.deathSlots))
+	for i, d := range a.deathSlots {
+		name := a.resolveDeathName(d.slot, d.tMs)
+		resolved[i] = rd{name: name, tMs: d.tMs}
+		if name == "" {
+			continue
+		}
+		for _, f := range a.frags {
+			if f.Victim == name && absI32(f.Time-d.tMs) <= teamkillMatchWindowMs {
+				claimed[i] = true
+				break
+			}
+		}
+	}
+
+	for _, tk := range a.genericTeamkills {
+		a.getOrCreatePlayer(tk.Killer).TeamKills++
+		killerTeam := a.core.Names.TeamForName(tk.Killer)
+
+		best, bestGap := -1, teamkillMatchWindowMs+1
+		for i := range resolved {
+			if claimed[i] || resolved[i].name == "" ||
+				resolved[i].name == tk.Killer || isGenericPlayer(resolved[i].name) {
+				continue
+			}
+			// Require same team when both teams resolve; stay lenient when
+			// the victim's team is unknown.
+			if killerTeam != "" {
+				if vt := a.core.Names.TeamForName(resolved[i].name); vt != "" && vt != killerTeam {
+					continue
+				}
+			}
+			if gap := absI32(resolved[i].tMs - tk.Time); gap < bestGap {
+				bestGap, best = gap, i
+			}
+		}
+		if best >= 0 {
+			claimed[best] = true
+			entry := tk
+			entry.Victim = resolved[best].name
+			// "X gets a frag for the other team" sets IsSuicide on the
+			// killer-self frag-log convention; once we know the real victim
+			// it's a teamkill, not a suicide (killer != victim).
+			entry.IsSuicide = false
+			a.frags = append(a.frags, entry)
+		}
+	}
+
+	// Appended teamkills break the time ordering consumers assume (score
+	// timeline, binary search); restore it. Stable so equal-time entries
+	// keep their relative order.
+	sort.SliceStable(a.frags, func(i, j int) bool { return a.frags[i].Time < a.frags[j].Time })
+}
+
+func absI32(x int32) int32 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // resolveDeathName maps a death's wire slot to the canonical player
@@ -238,27 +358,31 @@ func (a *FragAnalyzer) checkSuicide(msg string, time float64) *FragEntry {
 		pattern string
 		weapon  string
 	}{
-		// Suicide command
+		// The /kill console command (dtSUICIDE, −2 frags). "suicide" is
+		// reserved for this — every other self-kill keeps the weapon/cause
+		// that produced it (with IsSuicide set), so consumers can tell a
+		// real /kill from a weapon self-detonation. IsSuicide already keeps
+		// these out of per-weapon *kill* counts (see handleObituaryPrint).
 		{" suicides", "suicide"},
 
 		// Rocket Launcher self-damage (from KTX client.c)
-		// These are suicides, counted under "suicide" not "rl" to avoid double-counting
-		{" discovers blast radius", "suicide"},
-		// KTX catch-all self-kill (client.c:5254). Must precede the
-		// shorter " becomes bored with life" substring it contains.
+		{" discovers blast radius", "rl"},
+		// KTX catch-all self-kill of unknown cause (client.c:5254). Must
+		// precede the shorter " becomes bored with life" substring it
+		// contains; cause unknown, so it stays "suicide".
 		{" somehow becomes bored with life", "suicide"},
-		{" becomes bored with life", "suicide"},
+		{" becomes bored with life", "rl"},
 
-		// Grenade Launcher self-damage (counted as "suicide" not "gl")
-		{" tries to put the pin back in", "suicide"},
+		// Grenade Launcher self-damage
+		{" tries to put the pin back in", "gl"},
 
-		// Lightning Gun discharge self-damage (counted as "suicide" not "lg")
-		{" electrocutes himself", "suicide"},
-		{" electrocutes herself", "suicide"},
-		{" heats up the water", "suicide"},
-		{" discharges into the water", "suicide"},
-		{" discharges into the slime", "suicide"},
-		{" discharges into the lava", "suicide"},
+		// Lightning Gun discharge self-damage
+		{" electrocutes himself", "lg"},
+		{" electrocutes herself", "lg"},
+		{" heats up the water", "lg"},
+		{" discharges into the water", "lg"},
+		{" discharges into the slime", "lg"},
+		{" discharges into the lava", "lg"},
 
 		// Water drowning (from KTX client.c)
 		{" sleeps with the fishes", "water"},
@@ -454,17 +578,7 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 // checkSatanDeflect handles the "Satan's power deflects X's telefrag"
 // obit — see KTX ktx/src/client.c:5141.
 func (a *FragAnalyzer) checkSatanDeflect(msg string, time float64) *FragEntry {
-	const prefix = "Satan's power deflects "
-	const suffix = "'s telefrag"
-	if !strings.HasPrefix(msg, prefix) {
-		return nil
-	}
-	rest := msg[len(prefix):]
-	end := strings.Index(rest, suffix)
-	if end <= 0 {
-		return nil
-	}
-	victim := strings.TrimSpace(rest[:end])
+	victim := satanDeflectVictim(msg)
 	if victim == "" {
 		return nil
 	}
@@ -475,6 +589,25 @@ func (a *FragAnalyzer) checkSatanDeflect(msg string, time float64) *FragEntry {
 		Weapon:    "tele",
 		IsSuicide: true,
 	}
+}
+
+// satanDeflectVictim returns the dying player's name for a dtTELE2
+// "Satan's power deflects X's telefrag" obituary (a self-telefrag booked
+// as a suicide, ktx/src/client.c:5141), or "" if msg isn't that form. The
+// victim sits between a fixed prefix and suffix (infix), so prefix-based
+// suicide scans miss it. Shared by the messages analyzer.
+func satanDeflectVictim(msg string) string {
+	const prefix = "Satan's power deflects "
+	const suffix = "'s telefrag"
+	if !strings.HasPrefix(msg, prefix) {
+		return ""
+	}
+	rest := msg[len(prefix):]
+	end := strings.Index(rest, suffix)
+	if end <= 0 {
+		return ""
+	}
+	return strings.TrimSpace(rest[:end])
 }
 
 // checkTeamKill checks for team kill patterns

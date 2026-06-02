@@ -2804,7 +2804,8 @@
           "sg": 2
         },
         "deaths": 52,
-        "kills": 55
+        "kills": 55,
+        "teamkills": 3
       },
       "wd.cao": {
         "byWeapon": {
@@ -2813,7 +2814,8 @@
           "sg": 4
         },
         "deaths": 56,
-        "kills": 49
+        "kills": 49,
+        "teamkills": 1
       },
       "wd.char": {
         "byWeapon": {
@@ -2821,7 +2823,8 @@
           "rl": 47
         },
         "deaths": 34,
-        "kills": 73
+        "kills": 73,
+        "teamkills": 4
       },
       "wd.dilbert": {
         "byWeapon": {
@@ -2830,15 +2833,14 @@
           "sg": 1
         },
         "deaths": 79,
-        "kills": 25
+        "kills": 25,
+        "teamkills": 2
       }
     },
     "byWeapon": {
       "lg": 52,
       "rl": 143,
-      "sg": 7,
-      "suicide": 9,
-      "teamkill": 10
+      "sg": 7
     },
     "frags": [
       {
@@ -2864,6 +2866,13 @@
         "time": 11945,
         "victim": "psy*overon",
         "weapon": "lg"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "wd.char",
+        "time": 13248,
+        "victim": "wd.cao",
+        "weapon": "teamkill"
       },
       {
         "killer": "wd.cao",
@@ -2996,7 +3005,7 @@
         "killer": "wd.cao",
         "time": 57778,
         "victim": "wd.cao",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "wd.char",
@@ -3063,7 +3072,7 @@
         "killer": "wd.cao",
         "time": 81547,
         "victim": "wd.cao",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "wd.char",
@@ -3154,6 +3163,13 @@
         "time": 127037,
         "victim": "wd.char",
         "weapon": "rl"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "wd.dilbert",
+        "time": 128685,
+        "victim": "psy*overon",
+        "weapon": "teamkill"
       },
       {
         "killer": "wd.cao",
@@ -3334,7 +3350,7 @@
         "killer": "wd.cao",
         "time": 218461,
         "victim": "wd.cao",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "psy*overon",
@@ -3355,6 +3371,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "psy*overon",
+        "time": 234910,
+        "victim": "wd.dilbert",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "wd.char",
         "time": 236026,
         "victim": "psy*overon",
@@ -3367,6 +3390,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "wd.char",
+        "time": 240545,
+        "victim": "wd.cao",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "wd.cao",
         "time": 243281,
         "victim": "psy*overon",
@@ -3377,7 +3407,7 @@
         "killer": "wd.cao",
         "time": 243295,
         "victim": "wd.cao",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "wd.char",
@@ -3396,14 +3426,14 @@
         "killer": "psy*overon",
         "time": 253126,
         "victim": "psy*overon",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "isSuicide": true,
         "killer": "psy*overon",
         "time": 255303,
         "victim": "psy*overon",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "wd.dilbert",
@@ -3676,6 +3706,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "wd.char",
+        "time": 364303,
+        "victim": "wd.cao",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "wd.cao",
         "time": 367297,
         "victim": "psy*overon",
@@ -3754,6 +3791,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "wd.cao",
+        "time": 396713,
+        "victim": "wd.char",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "wd.char",
         "time": 401531,
         "victim": "wd.dilbert",
@@ -3778,6 +3822,13 @@
         "weapon": "rl"
       },
       {
+        "isTeamKill": true,
+        "killer": "wd.char",
+        "time": 415155,
+        "victim": "wd.cao",
+        "weapon": "teamkill"
+      },
+      {
         "killer": "psy*overon",
         "time": 417208,
         "victim": "wd.cao",
@@ -3788,6 +3839,13 @@
         "time": 423083,
         "victim": "wd.cao",
         "weapon": "rl"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "psy*overon",
+        "time": 427791,
+        "victim": "wd.dilbert",
+        "weapon": "teamkill"
       },
       {
         "killer": "wd.char",
@@ -3914,7 +3972,7 @@
         "killer": "wd.dilbert",
         "time": 487324,
         "victim": "wd.dilbert",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "wd.cao",
@@ -3957,7 +4015,7 @@
         "killer": "wd.cao",
         "time": 509492,
         "victim": "wd.cao",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "wd.char",
@@ -4038,11 +4096,18 @@
         "weapon": "lg"
       },
       {
+        "isTeamKill": true,
+        "killer": "wd.dilbert",
+        "time": 553790,
+        "victim": "psy*overon",
+        "weapon": "teamkill"
+      },
+      {
         "isSuicide": true,
         "killer": "wd.dilbert",
         "time": 555939,
         "victim": "wd.dilbert",
-        "weapon": "suicide"
+        "weapon": "rl"
       },
       {
         "killer": "psy*overon",
@@ -4067,6 +4132,13 @@
         "time": 567111,
         "victim": "wd.dilbert",
         "weapon": "rl"
+      },
+      {
+        "isTeamKill": true,
+        "killer": "psy*overon",
+        "time": 568699,
+        "victim": "wd.dilbert",
+        "weapon": "teamkill"
       },
       {
         "killer": "wd.char",
@@ -4117,7 +4189,7 @@
         "weapon": "lg"
       }
     ],
-    "totalFrags": 211
+    "totalFrags": 221
   },
   "items": {
     "items": [
@@ -14450,7 +14522,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 14,
+  "schemaVersion": 18,
   "streams": {
     "global": {
       "matchEnd": 600040,
@@ -225776,6 +225848,1113 @@
     ]
   },
   "timelineAnalysis": {
+    "deathEvents": [
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 5596
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 7508
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 9672
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 11945
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 13248
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 15320
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 16216
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 19492
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 19870
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 24780
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 28177
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 31348
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 33285
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 35708
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 37508
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 39333
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 41468
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 42585
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 44593
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 44663
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 46929
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 50274
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 52904
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 55973
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 56632
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 57748
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 57778
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 61830
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 61845
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 65039
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 65154
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 66317
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 68131
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 71669
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 73790
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 74092
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 79530
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 81547
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 82247
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 84155
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 89142
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 90505
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 95115
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 97745
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 99301
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 111337
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 111561
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 116288
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 120273
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 123531
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 124882
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 125842
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 127037
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 128685
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 129479
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 129674
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 132193
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 138232
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 139985
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 142598
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 144857
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 149649
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 153494
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 169556
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 177806
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 178066
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 180025
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 181806
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 185840
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 187688
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 188986
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 190689
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 190855
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 193369
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 193883
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 198282
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 200038
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 203046
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 204565
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 207283
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 209133
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 211883
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 216154
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 218461
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 224907
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 225993
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 233439
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 234910
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 236026
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 240247
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 240545
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 243281
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 243295
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 244282
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 249913
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 253126
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 255303
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 257887
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 258830
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 259759
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 262892
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 263649
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 267324
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 271996
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 273870
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 275324
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 277389
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 281035
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 284347
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 285209
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 287207
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 287207
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 288297
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 293178
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 295411
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 298009
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 302055
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 306294
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 309534
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 311581
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 312794
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 317866
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 320960
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 323635
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 323698
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 328441
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 332933
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 336609
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 338855
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 340675
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 343103
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 344793
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 346511
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 349939
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 351215
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 352891
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 354311
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 354826
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 357203
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 357341
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 360126
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 364303
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 364303
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 367297
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 370599
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 371293
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 373073
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 377776
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 379111
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 382615
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 383525
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 385168
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 385945
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 391362
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 396183
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 396713
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 396713
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 401531
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 404459
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 407987
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 413792
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 415155
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 417208
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 423083
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 427791
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 431220
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 431493
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 436031
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 445023
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 445567
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 448492
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 450725
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 451636
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 455187
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 455587
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 457489
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 461847
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 464738
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 464894
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 465986
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 468187
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 477279
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 479477
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 484175
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 484453
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 487324
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 489139
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 490239
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 496175
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 499071
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 507315
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 509477
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 509492
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 510388
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 514440
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 519076
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 519076
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 521717
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 528841
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 531959
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 534621
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 543154
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 545603
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 548842
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 552276
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 553591
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 553790
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 555939
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 560459
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 562423
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 564374
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 567111
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 568699
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 571799
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 572024
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 576790
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 580608
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 584915
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 587147
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 591295
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 593793
+      }
+    ],
     "demoOffset": 10104,
     "fragEvents": [
       {
@@ -227175,6 +228354,1018 @@
         "playerUserID": 36,
         "team": "pys",
         "time": 556011
+      }
+    ],
+    "killEvents": [
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 15700
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 17612
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 19776
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 22049
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 25424
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 26320
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 29596
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 29974
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 34884
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 38281
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 41452
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 43389
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 45812
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 47612
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 49437
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 51572
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 52689
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 54697
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 54767
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 57033
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 60378
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 63008
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 66077
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 66736
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 67852
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 71934
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 71949
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 75143
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 75258
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 76421
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 78235
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 81773
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 83894
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 84196
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 89634
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 92351
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 94259
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 99246
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 100609
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 105219
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 107849
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 109405
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 121441
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 121665
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 126392
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 130377
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 133635
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 134986
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 135946
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 137141
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 139583
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 139778
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 142297
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 148336
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 150089
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 152702
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 154961
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 159753
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 163598
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 179660
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 187910
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 188170
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 190129
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 191910
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 195944
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 197792
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 199090
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 200793
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 200959
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 203473
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 203987
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 208386
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 210142
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 213150
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 214669
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 217387
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 219237
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 221987
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 226258
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 235011
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 236097
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 243543
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 246130
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 250351
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 253385
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 254386
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 260017
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 267991
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 268934
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 269863
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 272996
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 273753
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 277428
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 282100
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 283974
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 285428
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 287493
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 291139
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 294451
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 295313
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 297311
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 297311
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 298401
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 303282
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 305515
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 308113
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 312159
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 316398
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 319638
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 321685
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 322898
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 327970
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 331064
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 333739
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 333802
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 338545
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 343037
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 346713
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 348959
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 350779
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 353207
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 354897
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 356615
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 360043
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 361319
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 362995
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 364415
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 364930
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 367307
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 367445
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 370230
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 374407
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 377401
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 380703
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 381397
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 383177
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 387880
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 389215
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 392719
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 393629
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 395272
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 396049
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 401466
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 406287
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 406817
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 411635
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 414563
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 418091
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 423896
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 427312
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 433187
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 441324
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 441597
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 446135
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 455127
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 455671
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 458596
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 460829
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 461740
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 465291
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 465691
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 467593
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 471951
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 474842
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 474998
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 476090
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 478291
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 487383
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 489581
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 494279
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 494557
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 499243
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 500343
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 506279
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 509175
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 517419
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 519581
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 520492
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 524544
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 529180
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 529180
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 531821
+      },
+      {
+        "player": "wd.cao",
+        "team": "wd",
+        "time": 538945
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 542063
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 544725
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 553258
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 555707
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 558946
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 562380
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 563695
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 570563
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 572527
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 574478
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 577215
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 581903
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 582128
+      },
+      {
+        "player": "wd.dilbert",
+        "team": "pys",
+        "time": 586894
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 590712
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 595019
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 597251
+      },
+      {
+        "player": "psy*overon",
+        "team": "pys",
+        "time": 601399
+      },
+      {
+        "player": "wd.char",
+        "team": "wd",
+        "time": 603897
       }
     ],
     "locTable": [

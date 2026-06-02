@@ -254,10 +254,11 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// Run registered post-processors in order. Each one operates on the
 	// fully-finalized Result; CoreOutputs is passed through for read
 	// access. The default ordering (set in NewDefaultRegistry) is:
-	//   1. normalizeMatchRelativeTimes
-	//   2. normalizeDuelTeams
-	//   3. locGraphPost
-	//   4. regionControlPost
+	//   1. recoverTelefragTeamkills
+	//   2. normalizeMatchRelativeTimes
+	//   3. duelTeamNormalize
+	//   4. locGraphPost
+	//   5. regionControlPost
 	// — but the slice is otherwise unconstrained. Add a step by
 	// calling r.RegisterPostProcessor(...) before Analyze.
 	for _, p := range r.postProcessors {
@@ -306,11 +307,14 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterDerived(NewWeaponPickupsAnalyzer())
 
 	// Post-processors run in registration order on the assembled
-	// Result. Order matters: time normalisation has to land first so
-	// downstream processors see match-relative timestamps; duel team
-	// rewrite next so per-player team labels are stable; locgraph and
-	// regionControl last because they consume both rewritten teams
-	// and normalised time anchors.
+	// Result. Order matters: telefrag-teamkill recovery runs first, before
+	// the match-relative shift, so obituary times, Streams positions, and
+	// FragEvents still share one (demo-relative) clock; time normalisation
+	// lands next so downstream processors see match-relative timestamps;
+	// duel team rewrite after that so per-player team labels are stable;
+	// locgraph and regionControl last because they consume both rewritten
+	// teams and normalised time anchors.
+	r.RegisterPostProcessor(recoverTelefragTeamkills)
 	r.RegisterPostProcessor(normalizeMatchRelativeTimes)
 	r.RegisterPostProcessor(duelTeamNormalize)
 	r.RegisterPostProcessor(locGraphPost)

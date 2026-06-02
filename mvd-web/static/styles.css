@@ -1155,9 +1155,58 @@ table tbody tr:hover {
     bottom: 25px;
     width: 2px;
     background: var(--accent-cyan);
-    pointer-events: none;
+    /* Grabbable: dragging the line scrubs the clock. A wider transparent
+       ::before gives a comfortable hit target while the visible line stays 2px. */
+    pointer-events: auto;
+    cursor: ew-resize;
     z-index: 5;
     opacity: 0.8;
+}
+
+.current-time-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    right: -5px;
+}
+
+/* Per-player minis reserve no in-canvas axis (they share one axis row at the
+   bottom of the grid), so the line spans the full row height instead of the
+   team graphs' 25px axis strip. */
+.per-player-canvas-wrap .current-time-indicator {
+    bottom: 0;
+}
+
+/* While dragging a playhead line, force the resize cursor everywhere so it
+   doesn't flicker as the pointer leaves the 2px line. */
+body.graph-scrubbing,
+body.graph-scrubbing * {
+    cursor: ew-resize !important;
+}
+
+/* Shared time axis row at the bottom of a per-player grid. The empty
+   .per-player-label spacer aligns the tick track with the graph column. */
+.per-player-axis-cell {
+    margin-top: 2px;
+}
+
+.per-player-axis-track {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 14px;
+}
+
+.per-player-axis-track span {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #888;
+    font-family: monospace;
+    white-space: nowrap;
 }
 
 .timeline-legend {
@@ -1568,6 +1617,81 @@ table tbody tr:hover {
 
 #region-time-indicator {
     bottom: 0;
+}
+
+/* Per-player drill-downs under the Team Health/Armor + Weapons panels */
+.per-player-detail {
+    margin-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+}
+
+.per-player-detail > summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #aaa;
+    user-select: none;
+}
+
+.per-player-detail > summary:hover {
+    color: #ddd;
+}
+
+.per-player-detail[open] > summary {
+    margin-bottom: 8px;
+}
+
+/* Health/armor minis: full-width rows stacked vertically, matching the
+   per-player weapons layout (label column + full-width canvas). */
+.per-player-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.per-player-cell {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+}
+
+.per-player-label {
+    min-width: 80px;
+    max-width: 80px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+    padding-right: 6px;
+    align-self: center;
+}
+
+.per-player-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Frags/deaths drill-down: a two-line label (name + frags/deaths · eff%)
+   needs a touch more width and wrapping than the single-line minis above. */
+#frags-per-player .per-player-label {
+    min-width: 104px;
+    max-width: 104px;
+    white-space: normal;
+    line-height: 1.15;
+}
+
+#frags-per-player .fd-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#frags-per-player .fd-stat {
+    font-size: 0.68rem;
+    color: #999;
 }
 
 /* Loc Heatmap */

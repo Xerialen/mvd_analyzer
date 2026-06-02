@@ -21,7 +21,8 @@ type FragEntry struct {
 
 // PlayerFrags holds per-player frag statistics.
 type PlayerFrags struct {
-	Kills    int            `json:"kills"`
-	Deaths   int            `json:"deaths"`
-	ByWeapon map[string]int `json:"byWeapon"`
+	Kills     int            `json:"kills"`
+	Deaths    int            `json:"deaths"`
+	TeamKills int            `json:"teamkills,omitempty"` // Teammates this player killed (KTX "tk"). Killer-named obituaries only; see frag analyzer.
+	ByWeapon  map[string]int `json:"byWeapon"`
 }

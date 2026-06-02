@@ -35,6 +35,13 @@ type CoreOutputs struct {
 	// obituaries or the frag analyser was not registered.
 	FragEntries []FragEntry
 
+	// VictimNamedTeamkills are teamkill obituaries that name only the
+	// victim ("X was telefragged by his teammate"). The killer is the
+	// generic "teammate", so they never enter FragEntries; the
+	// recoverTelefragTeamkills post-processor recovers the killer from
+	// position co-location + the teamkiller's -1 frag-delta.
+	VictimNamedTeamkills []FragEntry
+
 	// Slots is the per-slot resolved player view: Name is the demoinfo
 	// display name when the slot matches a demoinfo entry (via login or
 	// name join), otherwise the userinfo name from ctx.Players[slot].

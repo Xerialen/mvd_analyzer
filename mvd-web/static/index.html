@@ -376,9 +376,61 @@
                     </div>
                 </div>
 
-                <!-- Weapons & Powerups (full width) -->
+                <!-- Cumulative Frags Timeline -->
+                <div class="panel timeline-health-panel-full">
+                    <h3>Score Timeline</h3>
+                    <div class="health-graph-wrapper">
+                        <div class="timeline-y-axis" id="score-y-axis">
+                            <span class="y-label y-top" id="score-y-top">+20</span>
+                            <span class="y-label y-mid">0</span>
+                            <span class="y-label y-bottom" id="score-y-bottom">-20</span>
+                        </div>
+                        <div class="health-graph-outer">
+                            <canvas class="timeline-canvas" id="score-canvas"></canvas>
+                            <div class="current-time-indicator" id="score-time-indicator"></div>
+                        </div>
+                    </div>
+                    <div class="timeline-legend">
+                        <span class="legend-item"><span id="legend-score-team-a">Team A leading ↑</span></span>
+                        <span class="legend-item"><span id="legend-score-team-b">Team B leading ↓</span></span>
+                    </div>
+                    <details class="per-player-detail" id="frags-per-player-details">
+                        <summary>Per-player frags / deaths (efficiency)</summary>
+                        <div class="per-player-grid" id="frags-per-player"></div>
+                    </details>
+                </div>
+
+                <!-- Health/Armor (diverging style) -->
+                <div class="panel timeline-health-panel-full">
+                    <h3>Team Health/Armor</h3>
+                    <div class="health-graph-wrapper">
+                        <div class="timeline-y-axis" id="health-y-axis">
+                            <span class="y-label y-top" id="health-y-top">800</span>
+                            <span class="y-label y-mid">0</span>
+                            <span class="y-label y-bottom" id="health-y-bottom">800</span>
+                        </div>
+                        <div class="health-graph-outer">
+                            <canvas class="timeline-canvas" id="health-armor-canvas"></canvas>
+                            <div class="current-time-indicator" id="health-time-indicator"></div>
+                        </div>
+                    </div>
+                    <div class="timeline-legend">
+                        <span class="legend-item"><span id="legend-health-team-a">Team A ↑</span></span>
+                        <span class="legend-item"><span id="legend-health-team-b">Team B ↓</span></span>
+                        <span class="legend-item"><span class="legend-color health"></span> Health</span>
+                        <span class="legend-item"><span class="legend-color ra"></span> RA</span>
+                        <span class="legend-item"><span class="legend-color ya"></span> YA</span>
+                        <span class="legend-item"><span class="legend-color ga"></span> GA</span>
+                    </div>
+                    <details class="per-player-detail" id="ha-per-player-details">
+                        <summary>Per-player health/armor</summary>
+                        <div class="per-player-grid" id="ha-per-player"></div>
+                    </details>
+                </div>
+
+                <!-- Weapons (full width) -->
                 <div class="panel timeline-detail-graph-panel-full">
-                    <h3>Weapons & Powerups <span id="time-range-label"></span></h3>
+                    <h3>Weapons <span id="time-range-label"></span></h3>
                     <div class="detail-graph-wrapper">
                         <div class="timeline-y-axis" id="detail-y-axis">
                             <span class="y-label y-top">4</span>
@@ -399,6 +451,16 @@
                         <span class="legend-item"><span class="legend-dot rl"></span> RL drop</span>
                         <span class="legend-item"><span class="legend-dot lg"></span> LG drop</span>
                     </div>
+                    <details class="per-player-detail" id="weapons-per-player-details">
+                        <summary>Per-player weapons</summary>
+                        <div class="region-timeline-wrapper per-player-rows">
+                            <div class="region-timeline-labels" id="weapons-per-player-labels"></div>
+                            <div class="region-timeline-outer">
+                                <canvas class="timeline-canvas" id="weapons-per-player-canvas"></canvas>
+                                <div class="current-time-indicator pp-time-indicator" id="weapons-pp-time-indicator"></div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- Powerups -->
@@ -431,70 +493,6 @@
                         <span class="legend-item"><span class="legend-color" id="rc-legend-a-ctrl"></span> <span id="rc-tl-teamA">Team A</span> ctrl</span>
                         <span class="legend-item"><span class="legend-color" style="background: rgb(255, 255, 255);"></span> Contested</span>
                         <span class="legend-item"><span class="legend-color" id="rc-legend-b-ctrl"></span> <span id="rc-tl-teamB">Team B</span> ctrl</span>
-                    </div>
-                </div>
-
-                <!-- Health/Armor (diverging style) -->
-                <div class="panel timeline-health-panel-full">
-                    <h3>Team Health/Armor</h3>
-                    <div class="health-graph-wrapper">
-                        <div class="timeline-y-axis" id="health-y-axis">
-                            <span class="y-label y-top" id="health-y-top">800</span>
-                            <span class="y-label y-mid">0</span>
-                            <span class="y-label y-bottom" id="health-y-bottom">800</span>
-                        </div>
-                        <div class="health-graph-outer">
-                            <canvas class="timeline-canvas" id="health-armor-canvas"></canvas>
-                            <div class="current-time-indicator" id="health-time-indicator"></div>
-                        </div>
-                    </div>
-                    <div class="timeline-legend">
-                        <span class="legend-item"><span id="legend-health-team-a">Team A ↑</span></span>
-                        <span class="legend-item"><span id="legend-health-team-b">Team B ↓</span></span>
-                        <span class="legend-item"><span class="legend-color health"></span> Health</span>
-                        <span class="legend-item"><span class="legend-color ra"></span> RA</span>
-                        <span class="legend-item"><span class="legend-color ya"></span> YA</span>
-                        <span class="legend-item"><span class="legend-color ga"></span> GA</span>
-                    </div>
-                </div>
-
-                <!-- Frags per 10s (diverging style) -->
-                <div class="panel timeline-health-panel-full">
-                    <h3>Frags per 10s</h3>
-                    <div class="health-graph-wrapper">
-                        <div class="timeline-y-axis" id="frags-y-axis">
-                            <span class="y-label y-top" id="frags-y-top">10</span>
-                            <span class="y-label y-mid">0</span>
-                            <span class="y-label y-bottom" id="frags-y-bottom">10</span>
-                        </div>
-                        <div class="health-graph-outer">
-                            <canvas class="timeline-canvas" id="frags-canvas"></canvas>
-                            <div class="current-time-indicator" id="frags-time-indicator"></div>
-                        </div>
-                    </div>
-                    <div class="timeline-legend">
-                        <span class="legend-item"><span id="legend-frags-team-a">Team A ↑</span></span>
-                        <span class="legend-item"><span id="legend-frags-team-b">Team B ↓</span></span>
-                    </div>
-                </div>
-
-                <!-- Cumulative Frags Timeline -->
-                <div class="panel timeline-health-panel-full">
-                    <h3>Score Timeline</h3>
-                    <div class="health-graph-wrapper">
-                        <div class="timeline-y-axis" id="score-y-axis">
-                            <span class="y-label y-top" id="score-y-top">+20</span>
-                            <span class="y-label y-mid">0</span>
-                            <span class="y-label y-bottom" id="score-y-bottom">-20</span>
-                        </div>
-                        <div class="health-graph-outer">
-                            <canvas class="timeline-canvas" id="score-canvas"></canvas>
-                            <div class="current-time-indicator" id="score-time-indicator"></div>
-                        </div>
-                    </div>
-                    <div class="timeline-legend">
-                        <span class="legend-item"><span id="legend-score-team-a">Team A leading ↑</span></span>
-                        <span class="legend-item"><span id="legend-score-team-b">Team B leading ↓</span></span>
                     </div>
                 </div>
 

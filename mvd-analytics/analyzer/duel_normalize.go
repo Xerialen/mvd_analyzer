@@ -185,6 +185,12 @@ func normalizeDuelTeams(result *Result) {
 				fe.Team = t
 			}
 		}
+		for i := range result.TimelineAnalysis.DeathEvents {
+			de := &result.TimelineAnalysis.DeathEvents[i]
+			if t, ok := nameToTeam[de.Player]; ok {
+				de.Team = t
+			}
+		}
 		for i := range result.TimelineAnalysis.FragStreaks {
 			fs := &result.TimelineAnalysis.FragStreaks[i]
 			if t, ok := nameToTeam[fs.PlayerName]; ok {

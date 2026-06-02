@@ -1256,9 +1256,32 @@ function displayTeams(teams) {
     });
 }
 
+// Per-player suicides counted from our frag log (every self / world-dealt
+// death prints a suicide obituary), keyed by victim. KTX demoinfo
+// stats.suicides books world-dealt deaths (falls, trigger_hurt) on the `world`
+// entity instead of the victim, so it undercounts; the frag log is the
+// complete record. See MVD_FORMAT.md "World-dealt deaths". Returns null when no
+// frag log is present so callers can fall back to demoinfo.
+function suicidesFromFragLog() {
+    const log = currentResult?.frags?.frags;
+    if (!log) return null;
+    const out = {};
+    for (const f of log) if (f.isSuicide) out[f.victim] = (out[f.victim] || 0) + 1;
+    return out;
+}
+
 function displayPlayerStats(players) {
     const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
     const teamOrder = getTeamOrder(sorted);
+    // Prefer our analysis counts over KTX demoinfo: frags.byPlayer fixes
+    // stats.kills + the per-weapon kills (both over-count pentagram-deflect
+    // telefrags / dtTELE2 and reset after a reconnect), and the frag log fixes
+    // stats.suicides (drops world-dealt deaths). Deaths agree with KTX but we
+    // read ours so kills/deaths/efficiency share one source, and byWeapon is
+    // enemy kills only so RL+LG+… reconciles with the total. Fall back to
+    // demoinfo per name when a player doesn't join. See MVD_FORMAT.md.
+    const byPlayer = currentResult?.frags?.byPlayer || {};
+    const suicidesMap = suicidesFromFragLog();
 
     // Show the handicap column only when at least one player on this demo
     // has a non-default handicap. KTX omits the JSON field entirely when the
@@ -1270,10 +1293,12 @@ function displayPlayerStats(players) {
     });
 
     renderTableRows('scoreboard-body', sorted, player => {
-        const kills = player.stats?.kills || 0;
-        const deaths = player.stats?.deaths || 0;
-        const rlKills = player.weapons?.rl?.kills?.enemy || 0;
-        const lgKills = player.weapons?.lg?.kills?.enemy || 0;
+        const bp = byPlayer[player.name];
+        const kills = bp ? bp.kills : (player.stats?.kills || 0);
+        const deaths = bp ? bp.deaths : (player.stats?.deaths || 0);
+        const suicides = suicidesMap ? (suicidesMap[player.name] || 0) : (player.stats?.suicides || 0);
+        const rlKills = bp ? (bp.byWeapon?.rl || 0) : (player.weapons?.rl?.kills?.enemy || 0);
+        const lgKills = bp ? (bp.byWeapon?.lg || 0) : (player.weapons?.lg?.kills?.enemy || 0);
         const efficiency = (kills + deaths) > 0 ? ((kills / (kills + deaths)) * 100).toFixed(1) : '0.0';
         // Bot badge: render the skill level inline when present, since bots
         // in a match are rare enough that seeing "BOT 10" at a glance is
@@ -1298,7 +1323,7 @@ function displayPlayerStats(players) {
             <td>${lgKills}</td>
             <td>${deaths}</td>
             <td>${player.stats?.tk || 0}</td>
-            <td>${player.stats?.suicides || 0}</td>
+            <td>${suicides}</td>
             <td>${player.dmg?.given || 0}</td>
             <td>${player.dmg?.taken || 0}</td>
             <td>${player.dmg?.['enemy-weapons'] ?? 0}</td>
@@ -1606,16 +1631,24 @@ function displayPlayerStatsTeams(players) {
     const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
+    // Same accurate-count sourcing as displayPlayerStats so the team totals
+    // reconcile with the per-player rows. See MVD_FORMAT.md.
+    const byPlayer = currentResult?.frags?.byPlayer || {};
+    const suicidesMap = suicidesFromFragLog();
+    const killsOf = p => (byPlayer[p.name] ? byPlayer[p.name].kills : (p.stats?.kills || 0));
+    const deathsOf = p => (byPlayer[p.name] ? byPlayer[p.name].deaths : (p.stats?.deaths || 0));
+    const suicidesOf = p => (suicidesMap ? (suicidesMap[p.name] || 0) : (p.stats?.suicides || 0));
+    const wKillsOf = (p, w) => (byPlayer[p.name] ? (byPlayer[p.name].byWeapon?.[w] || 0) : (p.weapons?.[w]?.kills?.enemy || 0));
 
     renderTableRows('player-stats-team-body', teamOrder, team => {
         const members = groups[team] || [];
         const frags = members.reduce((s, p) => s + (p.stats?.frags || 0), 0);
-        const kills = members.reduce((s, p) => s + (p.stats?.kills || 0), 0);
-        const rlKills = members.reduce((s, p) => s + (p.weapons?.rl?.kills?.enemy || 0), 0);
-        const lgKills = members.reduce((s, p) => s + (p.weapons?.lg?.kills?.enemy || 0), 0);
-        const deaths = members.reduce((s, p) => s + (p.stats?.deaths || 0), 0);
+        const kills = members.reduce((s, p) => s + killsOf(p), 0);
+        const rlKills = members.reduce((s, p) => s + wKillsOf(p, 'rl'), 0);
+        const lgKills = members.reduce((s, p) => s + wKillsOf(p, 'lg'), 0);
+        const deaths = members.reduce((s, p) => s + deathsOf(p), 0);
         const tk = members.reduce((s, p) => s + (p.stats?.tk || 0), 0);
-        const suicides = members.reduce((s, p) => s + (p.stats?.suicides || 0), 0);
+        const suicides = members.reduce((s, p) => s + suicidesOf(p), 0);
         const dmgGiven = members.reduce((s, p) => s + (p.dmg?.given || 0), 0);
         const dmgTaken = members.reduce((s, p) => s + (p.dmg?.taken || 0), 0);
         const ewep = members.reduce((s, p) => s + (p.dmg?.['enemy-weapons'] ?? 0), 0);
@@ -2652,7 +2685,7 @@ function resetUIToCleanState() {
     // Timeline canvases
     for (const cid of [
         'detail-graph-canvas', 'health-armor-canvas',
-        'frags-canvas', 'score-canvas',
+        'score-canvas', 'weapons-per-player-canvas',
         'powerup-canvas', 'region-control-canvas',
     ]) {
         const c = document.getElementById(cid);
@@ -2786,6 +2819,8 @@ function resetTimelineState() {
     timelineState.highResDuration = 0.05;
     timelineState.events = [];
     timelineState.fragEvents = [];
+    timelineState.deathEvents = [];
+    timelineState.killEvents = [];
     timelineState.duration = 0;
     timelineState.matchStartTime = 0;
     timelineState.demoOffset = 0;
@@ -2805,7 +2840,7 @@ function resetTimelineState() {
         if (el) el.innerHTML = '';
     });
     // Clear canvases
-    for (const cid of ['detail-graph-canvas', 'health-armor-canvas', 'frags-canvas', 'score-canvas']) {
+    for (const cid of ['detail-graph-canvas', 'health-armor-canvas', 'score-canvas']) {
         const c = document.getElementById(cid);
         if (c && c.getContext) {
             const ctx = c.getContext('2d');
@@ -2845,6 +2880,8 @@ function displayTimelineAnalysis(result) {
     timelineState.duration = (result.match?.duration || 600000) * 0.001;
     timelineState.events = (result.messages?.events || []).map(e => ({ ...e, time: e.time * 0.001 }));
     timelineState.fragEvents = (timeline?.fragEvents || []).map(f => ({ ...f, time: f.time * 0.001 })); // Frag events from stat tracking
+    timelineState.deathEvents = (timeline?.deathEvents || []).map(d => ({ ...d, time: d.time * 0.001 })); // Per-player deaths (every death) for the frags/deaths drill-down
+    timelineState.killEvents = (timeline?.killEvents || []).map(k => ({ ...k, time: k.time * 0.001 })); // Per-player enemy kills (killer-keyed) for the frags/deaths drill-down
     timelineState.backpacks = (result.backpacks || []).map(d => ({ ...d, time: d.time * 0.001 })); // RL/LG drops from KTX hint
     timelineState.powerupEvents = (timeline?.powerupEvents || []).map(ev => ({ // per-run records: player, team, frags, duration
         ...ev,
@@ -3364,42 +3401,501 @@ function buildHASegments(td) {
     return segs;
 }
 
-// ─── Data preparation: Frags ────────────────────────────────────────────────
+// ─── Per-player drill-downs (health/armor + weapons) ─────────────────────────
+//
+// Both the Team Health/Armor and Weapons panels expand to a per-player view.
+// All series come from the columnar bucket view already on the client
+// (timelineState.bucketView.players[name], read via playerValAt/playerAliveAt)
+// plus timelineState.backpacks for weapon-drop dots — no extra data fetch.
 
-const FRAG_BIN_SIZE = 10; // seconds; fixed so bars stay put when you zoom/pan
-
-function prepFragsData(startTime, endTime, teams) {
-    const fragEvents = timelineState.fragEvents || [];
-    if (teams.length < 2) return { points: [], max: 5 };
-    // Align bins to absolute multiples of FRAG_BIN_SIZE so a given frag
-    // always falls in the same bin regardless of the current view range.
-    const firstBin = Math.floor(startTime / FRAG_BIN_SIZE) * FRAG_BIN_SIZE;
-    const lastBin  = Math.ceil(endTime  / FRAG_BIN_SIZE) * FRAG_BIN_SIZE;
-    const numBins  = Math.max(0, Math.round((lastBin - firstBin) / FRAG_BIN_SIZE));
-    if (numBins === 0) return { points: [], max: 5 };
-    const aFrags = new Float32Array(numBins);
-    const bFrags = new Float32Array(numBins);
-    for (const f of fragEvents) {
-        if (f.time < firstBin || f.time >= lastBin) continue;
-        const bin = Math.floor((f.time - firstBin) / FRAG_BIN_SIZE);
-        if (f.team === teams[0]) aFrags[bin] += (f.delta || 1);
-        else if (f.team === teams[1]) bFrags[bin] += (f.delta || 1);
+// Group the bucket-view players into [teamAPlayers, teamBPlayers] following
+// timelineState.teams order. Team membership mirrors updateTeamStatus: prefer
+// demoInfo.players, fall back to the map's playerSymbols. Players whose team
+// can't be resolved (spectators, mid-game joiners) are dropped.
+function timelinePlayersByTeam() {
+    const teams = timelineState.teams;
+    const view = timelineState.bucketView;
+    const out = [[], []];
+    if (teams.length < 2 || !view || !view.players) return out;
+    const demoPlayers = currentResult?.demoInfo?.players || [];
+    const teamOf = (name) => {
+        const dp = demoPlayers.find(p => p.name === name);
+        if (dp?.team) return dp.team;
+        return mapState.playerSymbols?.[name]?.team;
+    };
+    for (const name of Object.keys(view.players)) {
+        const t = teamOf(name);
+        const ti = t === teams[0] ? 0 : t === teams[1] ? 1 : -1;
+        if (ti < 0) continue;
+        out[ti].push(name);
     }
-    const [rA, gA, bA2] = hexToRgb(TEAM_COLORS[0]);
-    const [rB, gB, bB2] = hexToRgb(TEAM_COLORS[1]);
-    const cA = `rgba(${rA},${gA},${bA2},0.8)`;
-    const cB = `rgba(${rB},${gB},${bB2},0.8)`;
-    let maxVal = 5;
+    out[0].sort();
+    out[1].sort();
+    return out;
+}
+
+// Single-player health+armor stack for the mini chart. Health (green) at the
+// bottom, then armor coloured by its type (RA/YA/GA).
+function buildPlayerHASegments(h, a, at) {
+    const segs = [];
+    if (h > 0) segs.push({ h, color: GRAPH_COLORS.HEALTH });
+    if (a > 0) {
+        const color = at === 'ra' ? GRAPH_COLORS.RA
+                    : at === 'ga' ? GRAPH_COLORS.GA
+                    : GRAPH_COLORS.YA; // ya or unknown
+        segs.push({ h: a, color });
+    }
+    return segs;
+}
+
+function prepPlayerHAData(cp, startTime, endTime) {
+    const view = timelineState.bucketView;
+    const hrDur = timelineState.highResDuration || 0.05;
     const points = [];
-    for (let i = 0; i < numBins; i++) {
-        maxVal = Math.max(maxVal, aFrags[i], bFrags[i]);
+    if (!view || !view.count || !cp) return points;
+    const idx0 = bucketIndexAtOrAfter(view, startTime);
+    for (let i = idx0; i < view.count; i++) {
+        const bt = bucketTimeSec(view, i);
+        if (bt > endTime) break;
+        // playerValAt returns undefined when the player is dead/absent at this
+        // bucket — emit an empty stack so the chart shows a gap there.
+        const h = playerValAt(cp, 'h', i) || 0;
+        const a = playerValAt(cp, 'a', i) || 0;
+        const at = playerValAt(cp, 'at', i) || '';
+        points.push({ t: bt, dt: hrDur, up: buildPlayerHASegments(h, a, at) });
+    }
+    return points;
+}
+
+// Compact single-direction stacked renderer for the per-player mini charts.
+// Reuses setupGraphCanvas + the scanline hold-last sampling from
+// renderDivergingGraph, but stacks upward from the baseline only and skips the
+// diverging mirror, zero divider, and x-axis (the team chart above carries it).
+function renderMiniStack(canvasId, { startTime, endTime, points, maxValue, height }) {
+    const setup = setupGraphCanvas(canvasId, height || 44);
+    if (!setup) return;
+    const { ctx, W, H, dpr } = setup;
+    const PAD = Math.round(2 * dpr);
+    const baseY = H - PAD;
+    const usableH = H - 2 * PAD;
+
+    ctx.fillStyle = PLOT_BG_COLOR;
+    ctx.fillRect(0, 0, W, H);
+
+    const duration = endTime - startTime;
+    if (duration <= 0 || !points || points.length === 0 || maxValue <= 0) return;
+
+    let cursor = -1;
+    const sampleAt = (tQuery) => {
+        while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
+        if (cursor < 0) return null;
+        const pt = points[cursor];
+        if (cursor === points.length - 1) {
+            const endT = pt.t + (pt.dt || 0);
+            if (endT > 0 && tQuery > endT) return null;
+        }
+        return pt;
+    };
+
+    for (let px = 0; px < W; px++) {
+        const tPx = startTime + (px / W) * duration;
+        const pt = sampleAt(tPx);
+        if (!pt || !pt.up) continue;
+        let yAcc = baseY;
+        let yPrev = Math.round(baseY);
+        for (const seg of pt.up) {
+            if (seg.h > 0) {
+                yAcc -= (seg.h / maxValue) * usableH;
+                const yCur = Math.round(yAcc);
+                const segH = yPrev - yCur;
+                if (segH > 0) {
+                    ctx.fillStyle = seg.color;
+                    ctx.fillRect(px, yCur, 1, segH);
+                }
+                yPrev = yCur;
+            }
+        }
+    }
+}
+
+// Render one mini health/armor chart per player under the Team Health/Armor
+// panel. The per-player canvases are built lazily and rebuilt only when the
+// roster changes (signature check); on every view change we just re-render.
+function renderHealthArmorPerPlayer(startTime, endTime) {
+    const container = document.getElementById('ha-per-player');
+    if (!container) return;
+    const teams = timelineState.teams;
+    const view = timelineState.bucketView;
+    if (!view || !view.count || teams.length < 2) {
+        // Clearing the DOM must invalidate the rebuild cache too: otherwise a
+        // later render with the same roster signature skips the rebuild and
+        // iterates now-detached _cells, rendering nothing. This bit when a new
+        // demo's buckets arrive deferred (the first render runs view-less).
+        container.innerHTML = '';
+        container._sig = null;
+        container._cells = [];
+        return;
+    }
+
+    const grouped = timelinePlayersByTeam();
+    const sig = grouped.map(g => g.join('|')).join('#');
+    if (container._sig !== sig) {
+        container.innerHTML = '';
+        container._cells = [];
+        for (let ti = 0; ti < 2; ti++) {
+            grouped[ti].forEach((name, idx) => {
+                const cid = `ha-pp-${ti}-${idx}`;
+                const cell = document.createElement('div');
+                cell.className = 'per-player-cell';
+                const label = document.createElement('div');
+                label.className = 'per-player-label';
+                label.textContent = name;
+                label.title = name;
+                label.style.color = TEAM_COLORS[ti] || '#ccc';
+                const wrap = document.createElement('div');
+                wrap.className = 'per-player-canvas-wrap';
+                const canvas = document.createElement('canvas');
+                canvas.id = cid;
+                canvas.className = 'timeline-canvas';
+                const indicator = document.createElement('div');
+                indicator.className = 'current-time-indicator pp-time-indicator';
+                wrap.appendChild(canvas);
+                wrap.appendChild(indicator);
+                cell.appendChild(label);
+                cell.appendChild(wrap);
+                container.appendChild(cell);
+                installGraphPanZoom(cid);
+                installIndicatorScrub(indicator, wrap);
+                container._cells.push({ name, cid });
+            });
+        }
+        container._sig = sig;
+    }
+
+    // Shared max across all players (rounded up) so the minis are comparable.
+    let maxVal = 300;
+    const prepped = {};
+    for (const { name } of container._cells) {
+        const pts = prepPlayerHAData(view.players[name], startTime, endTime);
+        prepped[name] = pts;
+        for (const p of pts) {
+            let s = 0;
+            for (const seg of p.up) s += seg.h;
+            if (s > maxVal) maxVal = s;
+        }
+    }
+    for (const { name, cid } of container._cells) {
+        const cv = document.getElementById(cid);
+        if (cv) cv.style.width = ''; // let the cell reflow on resize
+        renderMiniStack(cid, { startTime, endTime, points: prepped[name] || [], maxValue: maxVal, height: 44 });
+    }
+    renderSharedTimeAxis(container, startTime, endTime);
+}
+
+// ─── Per-player frags / deaths drill-down ───────────────────────────────────
+//
+// One compact +/- chart per player under the Score Timeline, mirroring the team
+// Score Timeline above: the player's running plus/minus = cumulative enemy
+// kills minus cumulative deaths. When ahead (more kills than deaths) the area
+// rises above the divider in the team colour; when behind it drops below in a
+// dimmed team colour. Kills come from killEvents (the canonical frag log,
+// suicides/teamkills excluded) and deaths from deathEvents (every death counts
+// once), so the full-match endpoint equals byPlayer.kills − byPlayer.deaths and
+// reconciles with the kills-based efficiency = kills/(kills+deaths)
+// (ktx/src/statsTables.c calculateEfficiency) shown on each row.
+
+// Darken a team hex toward black so the behind-half reads as a muted mirror of
+// the team-coloured ahead-half (position above/below the divider already
+// separates them; the shade keeps team identity).
+function dimColor(hex) {
+    const [r, g, b] = hexToRgb(hex);
+    return `rgb(${Math.round(r * 0.55)},${Math.round(g * 0.55)},${Math.round(b * 0.55)})`;
+}
+
+// Build sampled +/- points for one player plus the window-end kill/death
+// totals. Mirrors prepScoreData: carry the running totals from match start so
+// the window's left edge shows the cumulative plus/minus, then plot the single
+// net value (kills − deaths) as up when positive / down when negative.
+function prepPlayerFragDeathData(name, startTime, endTime, upColor, downColor) {
+    const ke = timelineState.killEvents || [];
+    const de = timelineState.deathEvents || [];
+
+    let kills = 0, deaths = 0;
+    for (const k of ke) {
+        if (k.time >= startTime) break;
+        if (k.player === name) kills += 1;
+    }
+    for (const d of de) {
+        if (d.time >= startTime) break;
+        if (d.player === name) deaths += 1;
+    }
+
+    // Merge this player's in-window kill and death events by time, then
+    // accumulate into a net (kills − deaths) step series.
+    const evs = [];
+    for (const k of ke) {
+        if (k.time < startTime) continue;
+        if (k.time > endTime) break;
+        if (k.player === name) evs.push({ time: k.time, dn: 1 });
+    }
+    for (const d of de) {
+        if (d.time < startTime) continue;
+        if (d.time > endTime) break;
+        if (d.player === name) evs.push({ time: d.time, dn: -1 });
+    }
+    evs.sort((a, b) => a.time - b.time);
+
+    const stepAt = [{ time: startTime, net: kills - deaths }];
+    let ck = kills, cd = deaths;
+    for (const e of evs) {
+        if (e.dn > 0) ck += 1; else cd += 1;
+        stepAt.push({ time: e.time, net: ck - cd });
+    }
+    stepAt.push({ time: endTime, net: ck - cd });
+
+    const duration = endTime - startTime;
+    const sampleRate = Math.max(0.5, duration / 400);
+    let maxVal = 1;
+    const points = [];
+    let si = 0;
+    for (let t = startTime; t < endTime; t += sampleRate) {
+        while (si + 1 < stepAt.length && stepAt[si + 1].time <= t) si++;
+        const v = stepAt[si].net;
+        maxVal = Math.max(maxVal, Math.abs(v));
         points.push({
-            t: firstBin + i * FRAG_BIN_SIZE, dt: FRAG_BIN_SIZE,
-            up: [{ h: aFrags[i], color: cA }],
-            down: [{ h: bFrags[i], color: cB }],
+            t, dt: sampleRate,
+            up: v > 0 ? [{ h: v, color: upColor }] : [],
+            down: v < 0 ? [{ h: -v, color: downColor }] : [],
         });
     }
-    return { points, max: maxVal };
+    return { points, max: maxVal, kills: ck, deaths: cd };
+}
+
+// Compact diverging renderer for the per-player frags/deaths minis: net frags
+// stack up from the center, deaths stack down, sharing maxValue. Mirrors
+// renderMiniStack's scanline sampling, mirrored across a faint center divider.
+function renderMiniDiverging(canvasId, { startTime, endTime, points, maxValue, height }) {
+    const setup = setupGraphCanvas(canvasId, height || 44);
+    if (!setup) return;
+    const { ctx, W, H, dpr } = setup;
+    const PAD = Math.round(2 * dpr);
+    const midY = Math.round(H / 2);
+    const halfH = (H - 2 * PAD) / 2;
+
+    ctx.fillStyle = PLOT_BG_COLOR;
+    ctx.fillRect(0, 0, W, H);
+
+    const duration = endTime - startTime;
+    if (duration > 0 && points && points.length && maxValue > 0) {
+        let cursor = -1;
+        const sampleAt = (tQuery) => {
+            while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
+            if (cursor < 0) return null;
+            const pt = points[cursor];
+            if (cursor === points.length - 1) {
+                const endT = pt.t + (pt.dt || 0);
+                if (endT > 0 && tQuery > endT) return null;
+            }
+            return pt;
+        };
+        for (let px = 0; px < W; px++) {
+            const tPx = startTime + (px / W) * duration;
+            const pt = sampleAt(tPx);
+            if (!pt) continue;
+            // Up (net frags, above center).
+            let yAcc = midY, yPrev = midY;
+            if (pt.up) for (const seg of pt.up) {
+                if (seg.h > 0) {
+                    yAcc -= (seg.h / maxValue) * halfH;
+                    const yCur = Math.round(yAcc);
+                    const segH = yPrev - yCur;
+                    if (segH > 0) { ctx.fillStyle = seg.color; ctx.fillRect(px, yCur, 1, segH); }
+                    yPrev = yCur;
+                }
+            }
+            // Down (deaths, below center).
+            yAcc = midY; yPrev = midY;
+            if (pt.down) for (const seg of pt.down) {
+                if (seg.h > 0) {
+                    yAcc += (seg.h / maxValue) * halfH;
+                    const yCur = Math.round(yAcc);
+                    const segH = yCur - yPrev;
+                    if (segH > 0) { ctx.fillStyle = seg.color; ctx.fillRect(px, yPrev, 1, segH); }
+                    yPrev = yCur;
+                }
+            }
+        }
+    }
+
+    // Center divider.
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillRect(0, midY, W, Math.max(1, Math.round(dpr)));
+}
+
+// Render one mini +/- chart per player under the Score Timeline panel. Built
+// lazily, rebuilt only when the roster changes (signature check). Each row is
+// scaled by its OWN |net| max (0 stays centred) so a player whose plus/minus
+// swings little still fills the row instead of collapsing to a few pixels next
+// to a high-swing team-mate. The labels track the playhead via
+// updateFragsPerPlayerStats.
+function renderFragsPerPlayer(startTime, endTime) {
+    const container = document.getElementById('frags-per-player');
+    if (!container) return;
+    const teams = timelineState.teams;
+    const view = timelineState.bucketView;
+    if (!view || !view.count || teams.length < 2) {
+        // Clearing the DOM must invalidate the rebuild cache too: otherwise a
+        // later render with the same roster signature skips the rebuild and
+        // iterates now-detached _cells, rendering nothing. This bit when a new
+        // demo's buckets arrive deferred (the first render runs view-less).
+        container.innerHTML = '';
+        container._sig = null;
+        container._cells = [];
+        return;
+    }
+
+    const grouped = timelinePlayersByTeam();
+    const sig = grouped.map(g => g.join('|')).join('#');
+    if (container._sig !== sig) {
+        container.innerHTML = '';
+        container._cells = [];
+        for (let ti = 0; ti < 2; ti++) {
+            grouped[ti].forEach((name, idx) => {
+                const cid = `fd-pp-${ti}-${idx}`;
+                const cell = document.createElement('div');
+                cell.className = 'per-player-cell';
+                const label = document.createElement('div');
+                label.className = 'per-player-label fd-label';
+                label.style.color = TEAM_COLORS[ti] || '#ccc';
+                const nameEl = document.createElement('div');
+                nameEl.className = 'fd-name';
+                nameEl.textContent = name;
+                nameEl.title = name;
+                const statEl = document.createElement('div');
+                statEl.className = 'fd-stat';
+                label.appendChild(nameEl);
+                label.appendChild(statEl);
+                const wrap = document.createElement('div');
+                wrap.className = 'per-player-canvas-wrap';
+                const canvas = document.createElement('canvas');
+                canvas.id = cid;
+                canvas.className = 'timeline-canvas';
+                const indicator = document.createElement('div');
+                indicator.className = 'current-time-indicator pp-time-indicator';
+                wrap.appendChild(canvas);
+                wrap.appendChild(indicator);
+                cell.appendChild(label);
+                cell.appendChild(wrap);
+                container.appendChild(cell);
+                installGraphPanZoom(cid);
+                installIndicatorScrub(indicator, wrap);
+                container._cells.push({ name, cid, ti, statEl });
+            });
+        }
+        container._sig = sig;
+    }
+
+    for (const { name, ti, cid } of container._cells) {
+        const upColor = TEAM_COLORS[ti] || '#ccc';
+        const d = prepPlayerFragDeathData(name, startTime, endTime, upColor, dimColor(upColor));
+        const cv = document.getElementById(cid);
+        if (cv) cv.style.width = '';
+        // Per-player max (symmetric about 0): each row uses its full height.
+        renderMiniDiverging(cid, { startTime, endTime, points: d.points, maxValue: d.max, height: 44 });
+    }
+    updateFragsPerPlayerStats();
+    renderSharedTimeAxis(container, startTime, endTime);
+}
+
+// Update the per-player frags/deaths labels to the cumulative kills / deaths
+// and efficiency AT the current playback time (not whole-match totals), so the
+// numbers track the playhead as it moves / scrubs. Counts the kill and death
+// event streams in one pass each; no-op when the drill-down isn't built.
+function updateFragsPerPlayerStats() {
+    const container = document.getElementById('frags-per-player');
+    if (!container || !container._cells || !container._cells.length) return;
+    const t = mapState.currentTime;
+    const kc = {}, dc = {};
+    for (const e of (timelineState.killEvents || [])) if (e.time <= t) kc[e.player] = (kc[e.player] || 0) + 1;
+    for (const e of (timelineState.deathEvents || [])) if (e.time <= t) dc[e.player] = (dc[e.player] || 0) + 1;
+    for (const { name, statEl } of container._cells) {
+        if (!statEl) continue;
+        const k = kc[name] || 0, d = dc[name] || 0;
+        const eff = (k + d) > 0 ? Math.round((k / (k + d)) * 100) : 0;
+        statEl.textContent = `${k}/${d} · ${eff}%`;
+        statEl.title = `${k} kills / ${d} deaths · ${eff}% efficiency at ${formatDuration(t)}`;
+    }
+}
+
+// Per-player weapons timeline: one combined row per player coloured by whether
+// they hold RL / LG / both, with weapon-drop events as dots. Reuses
+// renderSpansTimeline (one row per player) with team-coloured labels.
+function prepPlayerWeaponSpans(cp, startTime, endTime) {
+    const view = timelineState.bucketView;
+    const spans = [];
+    if (!view || !view.count || !cp) return spans;
+    const idx0 = bucketIndexAtOrAfter(view, startTime);
+    let curState = null, curStart = startTime;
+    for (let i = idx0; i < view.count; i++) {
+        const bt = bucketTimeSec(view, i);
+        if (bt > endTime) break;
+        let state = null;
+        if (playerAliveAt(cp, i)) {
+            const rl = !!playerValAt(cp, 'rl', i);
+            const lg = !!playerValAt(cp, 'lg', i);
+            if (rl && lg) state = 'rllg';
+            else if (rl) state = 'rl';
+            else if (lg) state = 'lg';
+        }
+        if (state !== curState) {
+            if (curState) spans.push({ start: curStart, end: bt, state: curState });
+            curState = state;
+            curStart = bt;
+        }
+    }
+    if (curState) spans.push({ start: curStart, end: endTime, state: curState });
+    return spans;
+}
+
+function renderWeaponsPerPlayer(startTime, endTime) {
+    const labelsEl = document.getElementById('weapons-per-player-labels');
+    if (!labelsEl) return;
+    const teams = timelineState.teams;
+    const view = timelineState.bucketView;
+    if (!view || !view.count || teams.length < 2) { labelsEl.innerHTML = ''; return; }
+
+    const grouped = timelinePlayersByTeam();
+    const rows = [];
+    const rowPlayers = [];
+    for (let ti = 0; ti < 2; ti++) {
+        for (const name of grouped[ti]) {
+            rows.push({
+                name,
+                color: TEAM_COLORS[ti] || '#ccc',
+                spans: prepPlayerWeaponSpans(view.players[name], startTime, endTime),
+            });
+            rowPlayers.push(name);
+        }
+    }
+    if (rows.length === 0) { labelsEl.innerHTML = ''; return; }
+
+    const dropMarks = [];
+    for (const d of (timelineState.backpacks || [])) {
+        if (d.time < startTime || d.time > endTime) continue;
+        const row = rowPlayers.indexOf(d.player);
+        if (row < 0) continue;
+        const color = d.weapon === 'rl' ? GRAPH_COLORS.RL
+                    : d.weapon === 'lg' ? GRAPH_COLORS.LG
+                    : null;
+        if (!color) continue;
+        dropMarks.push({ row, time: d.time, color });
+    }
+
+    renderSpansTimeline('weapons-per-player-canvas', 'weapons-per-player-labels', {
+        startTime, endTime, rows,
+        stateColors: { rl: GRAPH_COLORS.RL, lg: GRAPH_COLORS.LG, rllg: GRAPH_COLORS.RLLG },
+        dropMarks,
+    });
 }
 
 // ─── Data preparation: Score ────────────────────────────────────────────────
@@ -3511,6 +4007,14 @@ function ensureGraphPanGlobals() {
         const dx = e.clientX - graphPanState.lastX;
         graphPanState.lastX = e.clientX;
         setViewRange(start - dx * secPerPx, end - dx * secPerPx);
+        // Pin the playhead to its on-screen position while panning: shift the
+        // current time by the amount the window actually moved (after the
+        // [0,duration] clamp), so the indicator line stays put and the unified
+        // caret + clock + map follow. Not zoomed ⇒ the window can't move ⇒
+        // applied === 0 ⇒ the playhead holds.
+        const [newStart] = currentViewRange();
+        const applied = newStart - start;
+        if (applied !== 0) setCurrentTime(mapState.currentTime + applied);
     });
     document.addEventListener('mouseup', () => {
         if (!graphPanState.canvas) return;
@@ -3553,6 +4057,90 @@ function installGraphPanZoom(canvasId) {
     });
 
     canvas.style.cursor = 'grab';
+}
+
+// ─── Current-time scrubbing on the graphs ───────────────────────────────────
+//
+// Grabbing the current-time line on any timeline graph (team or per-player,
+// normal or zoomed) sets the playback time. The indicator div sits above the
+// canvas; its parent (the graph-outer / canvas-wrap / spans-outer) holds the
+// canvas at full width and so shares the canvas's time→x mapping, which we
+// invert through currentViewRange. One global move/up pair, mirroring
+// graphPanState.
+const graphScrubState = { el: null };
+let graphScrubGlobalsInstalled = false;
+
+function ensureGraphScrubGlobals() {
+    if (graphScrubGlobalsInstalled) return;
+    graphScrubGlobalsInstalled = true;
+    document.addEventListener('mousemove', (e) => {
+        const el = graphScrubState.el;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0) return;
+        const [start, end] = currentViewRange();
+        const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        setCurrentTime(start + frac * (end - start));
+    });
+    document.addEventListener('mouseup', () => {
+        if (!graphScrubState.el) return;
+        graphScrubState.el = null;
+        document.body.classList.remove('graph-scrubbing');
+    });
+}
+
+// Make a current-time indicator line draggable to scrub. measureEl (the
+// element whose width maps to the view range) defaults to the indicator's
+// parent, which holds the canvas at full width.
+function installIndicatorScrub(indicatorEl, measureEl) {
+    if (!indicatorEl || indicatorEl._scrubInstalled) return;
+    indicatorEl._scrubInstalled = true;
+    ensureGraphScrubGlobals();
+    indicatorEl.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        graphScrubState.el = measureEl || indicatorEl.parentElement;
+        document.body.classList.add('graph-scrubbing');
+        e.preventDefault();
+        e.stopPropagation();
+    });
+}
+
+// Render one shared time axis at the bottom of a per-player grid, aligned with
+// the graph column (an empty label-width spacer + a tick track spanning the
+// canvas column). Rebuilt on every view change since labels depend on the
+// window. The team graphs draw their axis on-canvas and the per-player weapons
+// spans canvas draws its own; the compact frags/health minis share this single
+// axis instead of repeating one per row.
+function renderSharedTimeAxis(gridEl, startTime, endTime) {
+    if (!gridEl) return;
+    let axis = gridEl.querySelector(':scope > .per-player-axis-cell');
+    let track;
+    if (!axis) {
+        axis = document.createElement('div');
+        axis.className = 'per-player-cell per-player-axis-cell';
+        const spacer = document.createElement('div');
+        spacer.className = 'per-player-label';
+        track = document.createElement('div');
+        track.className = 'per-player-axis-track';
+        axis.appendChild(spacer);
+        axis.appendChild(track);
+    } else {
+        track = axis.querySelector('.per-player-axis-track');
+    }
+    gridEl.appendChild(axis); // keep the axis as the last row
+    track.innerHTML = '';
+    const duration = endTime - startTime;
+    if (duration <= 0) return;
+    const wCss = track.clientWidth || 300;
+    const targetTicks = Math.max(4, Math.min(10, Math.floor(wCss / 100)));
+    const interval = pickTickInterval(duration, targetTicks);
+    const firstTick = Math.ceil(startTime / interval) * interval;
+    for (let t = firstTick; t <= endTime + 1e-6; t += interval) {
+        const span = document.createElement('span');
+        span.textContent = formatDuration(t);
+        span.style.left = `${((t - startTime) / duration) * 100}%`;
+        track.appendChild(span);
+    }
 }
 
 // ─── Unified Timeline Widget ──────────────────────────────────────────────
@@ -3662,13 +4250,49 @@ function setupUnifiedTimeline() {
 
     // --- Pan/zoom on every diverging graph + spans timelines ---
     ['detail-graph-canvas', 'powerup-canvas', 'region-control-canvas',
-     'health-armor-canvas', 'frags-canvas', 'score-canvas'].forEach(installGraphPanZoom);
+     'health-armor-canvas', 'score-canvas',
+     // Per-player weapons spans canvas — same Ctrl/Cmd+scroll zoom + drag-pan.
+     'weapons-per-player-canvas'].forEach(installGraphPanZoom);
+
+    // --- Drag the current-time line on any graph to scrub the clock ---
+    ['detail-time-indicator', 'powerup-time-indicator', 'region-time-indicator',
+     'health-time-indicator', 'score-time-indicator',
+     'weapons-pp-time-indicator'].forEach(id =>
+        installIndicatorScrub(document.getElementById(id)));
 
     // --- Hover tooltip on weapon-graph drop dots ---
     attachWeaponGraphTooltip();
 
     // --- Hover tooltip on powerup-timeline spans ---
     attachPowerupTimelineTooltip();
+
+    // --- Per-player drill-down toggles: render on first open (and on every
+    // re-open) at the current view range. Subsequent view changes re-render
+    // via updateDetailGraph / updateHealthArmorGraph while the panel is open.
+    // updateTimeIndicators after the first render seats the freshly-created
+    // current-time lines at the playhead (they'd otherwise sit at 0% until the
+    // next view/time change).
+    const haDet = document.getElementById('ha-per-player-details');
+    if (haDet && !haDet._toggleWired) {
+        haDet._toggleWired = true;
+        haDet.addEventListener('toggle', () => {
+            if (haDet.open) { renderHealthArmorPerPlayer(...currentViewRange()); updateTimeIndicators(); }
+        });
+    }
+    const wpDet = document.getElementById('weapons-per-player-details');
+    if (wpDet && !wpDet._toggleWired) {
+        wpDet._toggleWired = true;
+        wpDet.addEventListener('toggle', () => {
+            if (wpDet.open) { renderWeaponsPerPlayer(...currentViewRange()); updateTimeIndicators(); }
+        });
+    }
+    const fpDet = document.getElementById('frags-per-player-details');
+    if (fpDet && !fpDet._toggleWired) {
+        fpDet._toggleWired = true;
+        fpDet.addEventListener('toggle', () => {
+            if (fpDet.open) { renderFragsPerPlayer(...currentViewRange()); updateTimeIndicators(); }
+        });
+    }
 
     // --- Window resize: detail-panel canvases are sized in pixels from
     // container.clientWidth, so they don't reflow with the viewport on
@@ -3683,7 +4307,7 @@ function setupUnifiedTimeline() {
 
 const TIMELINE_CANVAS_IDS = [
     'detail-graph-canvas', 'powerup-canvas', 'region-control-canvas',
-    'health-armor-canvas', 'frags-canvas', 'score-canvas',
+    'health-armor-canvas', 'score-canvas', 'weapons-per-player-canvas',
 ];
 
 let _timelineResizeRafId = null;
@@ -3802,7 +4426,6 @@ function updateTimeIndicators() {
         'powerup-time-indicator',
         'region-time-indicator',
         'health-time-indicator',
-        'frags-time-indicator',
         'score-time-indicator'
     ];
 
@@ -3821,6 +4444,15 @@ function updateTimeIndicators() {
             el.style.left = `${pct}%`;
         }
     }
+
+    // Per-player drill-down lines share the same view window, so the same
+    // pct applies. These exist only while a drill-down is open.
+    document.querySelectorAll('.pp-time-indicator').forEach(el => {
+        el.style.left = `${pct}%`;
+    });
+
+    // Per-player frags/deaths labels read the cumulative score at the playhead.
+    updateFragsPerPlayerStats();
 
     // Update team status table
     updateTeamStatus();
@@ -3841,13 +4473,19 @@ function updateDetailView() {
         document.getElementById('time-range-label').textContent = '';
     }
 
-    // Update all detail panels (axes are drawn on canvas by the unified renderer)
+    // Update all detail panels (axes are drawn on canvas by the unified
+    // renderer). Order mirrors the DOM: score, health/armor, weapons, then
+    // the optional span timelines.
+    updateScoreTimeline(start, end);
+    updateHealthArmorGraph(start, end);
     updateDetailGraph(start, end);
     updatePowerupTimeline(start, end);
     updateRegionControlTimeline(start, end);
-    updateHealthArmorGraph(start, end);
-    updateFragsGraph(start, end);
-    updateScoreTimeline(start, end);
+
+    // Re-glue the current-time lines to the new window. Without this the
+    // indicators keep their last left% after a zoom/pan/select and end up
+    // over the wrong time until the next setCurrentTime.
+    updateTimeIndicators();
 }
 
 // ─── Chat Tab ──────────────────────────────────────────────────────────────
@@ -4037,6 +4675,10 @@ function updateDetailGraph(startTime, endTime) {
     weaponGraphHitState.endTime   = endTime;
     weaponGraphHitState.W         = canvas ? canvas.clientWidth : 0;
     weaponGraphHitState.dropMarks = dropMarks;
+
+    if (document.getElementById('weapons-per-player-details')?.open) {
+        renderWeaponsPerPlayer(startTime, endTime);
+    }
 }
 
 // Mousemove tooltip on the weapon-graph canvas: highlights the drop
@@ -4117,20 +4759,10 @@ function updateHealthArmorGraph(startTime, endTime) {
         startTime, endTime, dataPoints: points, maxValue: max,
         yAxisId: 'health-y-axis',
     });
-}
 
-function updateFragsGraph(startTime, endTime) {
-    const teams = timelineState.teams;
-    if (teams.length < 2) return;
-    const { points, max } = prepFragsData(startTime, endTime, teams);
-    const legendA = document.getElementById('legend-frags-team-a');
-    const legendB = document.getElementById('legend-frags-team-b');
-    if (legendA) legendA.textContent = `${teams[0]} ↑`;
-    if (legendB) legendB.textContent = `${teams[1]} ↓`;
-    renderDivergingGraph('frags-canvas', {
-        startTime, endTime, dataPoints: points, maxValue: max,
-        yAxisId: 'frags-y-axis',
-    });
+    if (document.getElementById('ha-per-player-details')?.open) {
+        renderHealthArmorPerPlayer(startTime, endTime);
+    }
 }
 
 function updateScoreTimeline(startTime, endTime) {
@@ -4145,6 +4777,10 @@ function updateScoreTimeline(startTime, endTime) {
         startTime, endTime, dataPoints: points, maxValue: max,
         yAxisId: 'score-y-axis', yTopLabel: `+${max}`, yBottomLabel: `-${max}`,
     });
+
+    if (document.getElementById('frags-per-player-details')?.open) {
+        renderFragsPerPlayer(startTime, endTime);
+    }
 }
 
 // ─── Region Control Timeline ────────────────────────────────────────────────
@@ -4203,7 +4839,10 @@ function prepRegionControlData(startTime, endTime, teams) {
 // {start, end, state} spans; stateColors maps state strings to fill
 // colors. Used by both the region-control timeline and the powerup
 // timeline so they share one renderer instead of two near-copies.
-function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, stateColors }) {
+// dropMarks (optional): [{row, time, color}] — small dots painted in a
+// row, e.g. weapon-drop events on the per-player weapons timeline. Callers
+// that don't pass it (powerups, region control) render unchanged.
+function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, stateColors, dropMarks }) {
     const labelsEl = document.getElementById(labelsId);
     if (!labelsEl) return;
     const setup = setupGraphCanvas(canvasId, rows.length * RC_ROW_H + RC_AXIS_H);
@@ -4221,6 +4860,7 @@ function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, sta
         lab.className = 'region-timeline-label';
         lab.style.height = RC_ROW_H + 'px';
         lab.style.lineHeight = RC_ROW_H + 'px';
+        if (r.color) lab.style.color = r.color;
         lab.textContent = r.name;
         lab.title = r.name;
         labelsEl.appendChild(lab);
@@ -4246,6 +4886,19 @@ function renderSpansTimeline(canvasId, labelsId, { startTime, endTime, rows, sta
             ctx.fillRect(x1, y + ROW_PAD, w, ROW_H - 2 * ROW_PAD);
         }
     });
+
+    if (dropMarks && dropMarks.length) {
+        const dotR = 3 * dpr;
+        for (const m of dropMarks) {
+            const x = ((m.time - startTime) / duration) * W;
+            if (x < -dotR || x > W + dotR) continue;
+            const y = m.row * ROW_H + ROW_H / 2;
+            ctx.fillStyle = m.color;
+            ctx.beginPath();
+            ctx.arc(x, y, dotR, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
 
     drawXAxisTicks(ctx, { W, Wcss, dpr, graphH, startTime, endTime });
 }

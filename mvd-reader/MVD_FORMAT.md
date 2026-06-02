@@ -1452,6 +1452,97 @@ The `deathtype` field in damage events and obituaries identifies the weapon or c
 | 27 | `DT_SUICIDE` | Suicide (/kill) | "suicides" |
 | 28 | `DT_UNKNOWN` | Unknown | - |
 
+### Pentagram-deflect telefrag (dtTELE2) — a kill that doesn't score
+
+`dtTELE2` is the "Satan's power deflects X's telefrag" case: a player tries
+to telefrag someone holding **666 health (pentagram / invulnerability)**, the
+telefrag is deflected, and the *attacker* (telefragger) dies instead. This
+produces a three-way divergence in KTX's own books that you must account for
+when reconciling kill counts (*source: KTX `src/client.c:5124–5161`*):
+
+```c
+} else if (attacker->ct == ctPlayer) {
+    attacker->kills += 1;          // the 666-holder's kills counter IS bumped
+}
+if (dtTELE2 == targ->deathtype) {
+    G_bprint(... "Satan's power deflects %s's telefrag", victimname);
+    targ->s.v.frags -= 1;          // the dead telefragger loses a frag
+    logfrag(targ, targ);           // the frag LOG books it as the victim's SUICIDE
+    return;                        // returns BEFORE the 666-holder's s.v.frags += 1
+}
+```
+
+So one deflect leaves three inconsistent records, all from KTX:
+
+| record | sees the deflect as the holder's kill? |
+|---|---|
+| `player->kills` (demoinfo `stats.kills`) | **yes** — bumped at the top |
+| `s.v.frags` (demoinfo `stats.frags`, the scoreboard) | **no** — the `return` skips scoring |
+| frag log / per-weapon `kills` (`logfrag`) | **no** — booked as the victim's self-telefrag |
+
+Consequences for a parser:
+- The obituary text names **only the dead telefragger** ("Satan's power
+  deflects sailorman's telefrag") — there is **no way to attribute the kill to
+  the 666-holder from the print alone**. Reconstructing it requires the
+  powerup state (who held pentagram) at that time; the holder is co-located
+  with the victim by construction (the victim spawned onto them).
+- Therefore obituary-derived and frag-score-derived kill counts will sit
+  **one below** demoinfo `stats.kills` for each deflect the holder absorbed.
+  This is **not a parse miss** — it is KTX crediting a kill that deliberately
+  does not score. `stats.frags` and the per-weapon totals agree with the
+  lower (obituary-derived) count; only the headline `stats.kills` is higher.
+- `dtTELE3` ("X was telefragged by Y's Satan's power", a 666-holder Y
+  telefragging X) is the symmetric case and likewise returns before scoring.
+
+### World-dealt deaths — the `suicides` stat lands on `world`
+
+A sibling of the dtTELE2 quirk, in the *same* counter block: KTX bumps the
+**`suicides` counter on `attacker`, not on the victim** (*source: KTX
+`src/client.c:5130–5133`*):
+
+```c
+else if ((targ == attacker) || (attacker->ct != ctPlayer)) {
+    attacker->suicides += 1;     // attacker's counter, not targ's
+}
+```
+
+For a normal self-kill (`/kill`, blowing yourself up with your own rocket
+or grenade) the attacker **is** the victim (`targ == attacker`), so it lands
+correctly. But environmental deaths are inflicted by the **`world`** entity,
+e.g. fall damage (*`src/client.c:4428`*):
+
+```c
+self->deathtype = dtFALL;
+T_Damage(self, world, world, 5);   // inflictor = world, attacker = world
+```
+
+Here `targ == attacker` is false and `attacker->ct != ctPlayer` is true, so
+`world->suicides += 1` runs — the victim's `suicides` stat is **never
+touched**. The same applies to other world-dealt damage (`trigger_hurt`, and
+any death whose `T_Damage` attacker is `world`).
+
+What stays correct: the victim's `deaths` (`targ->deaths += 1`) and frag
+score (`targ->s.v.frags -= 1` in the non-player-attacker branch,
+`src/client.c:5608`). Only the **`suicides` counter** is lost to `world`.
+
+Consequence for a parser: demoinfo `stats.suicides` undercounts a player's
+self-deaths by the number of world-dealt deaths (falls, trigger_hurt, …)
+they suffered. The obituary stream is the complete record — every such death
+still prints its own suicide obituary ("X fell to his death", "X cratered")
+and produces a `DeathEvent`. Don't treat `stats.suicides` as the count of a
+player's self-inflicted deaths.
+
+> **KTX version.** Both quirks above (dtTELE2 deflect-kill and world-dealt
+> `suicides`) were verified against KTX **`MOD_VERSION` 1.47-dev** — git
+> `1.46-52-g8eddb65` (commit `8eddb65`, 2026-04-07), `src/client.c`
+> `ClientObituary`. The worked-example demo (gameId 211840) ran KTX
+> `1.47-dev-qwc`. These are bugs in that version's counter bookkeeping and
+> **may be fixed in newer KTX** — re-check `ClientObituary` (the
+> `attacker->kills` / `attacker->suicides` block ~line 5130, the dtTELE2
+> early return ~5141, and the fall `T_Damage(self, world, world, …)` ~4428)
+> against the KTX version that recorded the demo before assuming the
+> divergence still holds.
+
 ### Damage Attribution Classification
 
 Death types are classified by who receives credit for the damage:

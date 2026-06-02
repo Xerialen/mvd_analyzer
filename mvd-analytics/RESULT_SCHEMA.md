@@ -78,7 +78,7 @@ Defined in `result/frag.go`.
 |---|---|---|
 | TotalFrags | `totalFrags` | int |
 | Frags | `frags` | []FragEntry |
-| ByWeapon | `byWeapon` | map[string]int |
+| ByWeapon | `byWeapon` | map[string]int — **enemy kills only** (v15; suicides/teamkills excluded) |
 | ByPlayer | `byPlayer` | map[string]*PlayerFrags |
 
 ### FragEntry
@@ -88,9 +88,26 @@ Defined in `result/frag.go`.
 | Time | `time` | int32 (match-relative ms) |
 | Killer | `killer` | string |
 | Victim | `victim` | string |
-| Weapon | `weapon` | string (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `sg`, `ax`) |
+| Weapon | `weapon` | string (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `sg`, `ax`, `tele`, env: `lava`/`fall`/`water`/`slime`/`world`/`squish`) |
 | IsSuicide | `isSuicide` | bool (omitempty) |
 | IsTeamKill | `isTeamKill` | bool (omitempty) |
+
+At schema v17, a self-kill carries the **weapon/cause that produced it**
+(`rl`/`gl`/`lg` for weapon self-detonations, env labels for lava/fall/etc.)
+with `isSuicide` set; only the `/kill` console command (KTX "X suicides",
+−2 frags) keeps weapon `suicide`. So a real `/kill` is distinguishable
+from a weapon self-detonation, and recovered teamkills never carry a stale
+`isSuicide` (killer ≠ victim).
+
+Includes **teamkills** recovered at schema v16, both kinds whose obituary
+names only one party. *Killer-named* ("X loses another friend") fill in
+the victim by matching the coincident authoritative `DeathEvent` on the
+killer's team. *Victim-named* ("X was telefragged by his teammate") fill
+in the killer by combining position co-location with the teamkiller's −1
+frag-delta (the two signals must agree, so a rare alias can't
+misattribute) — these recover only when the position/score evidence is
+unambiguous; a few may stay unattributed (readable from
+`MessagesResult.Events[type=frag]`).
 
 ### PlayerFrags
 
@@ -98,6 +115,7 @@ Defined in `result/frag.go`.
 |---|---|---|
 | Kills | `kills` | int |
 | Deaths | `deaths` | int |
+| TeamKills | `teamkills` | int (omitempty) — KTX "tk"; killer-named teamkills only (v14) |
 | ByWeapon | `byWeapon` | map[string]int |
 
 ## MessagesResult (`messages`)
@@ -160,6 +178,8 @@ size, any reducer set; see [Streams](#streams-streams) and
 | MatchStartTime | `matchStartTime` | int32 ms (always 0 after post-process) |
 | DemoOffset | `demoOffset` | int32 ms (warmup before match start) |
 | FragEvents | `fragEvents` | []TimelineFragEvent |
+| DeathEvents | `deathEvents` | []TimelineDeathEvent |
+| KillEvents | `killEvents` | []TimelineKillEvent |
 | PowerupEvents | `powerupEvents` | []PowerupEvent |
 | FragStreaks | `fragStreaks` | []FragStreakEvent |
 | LocationData | `locationData` | []MapLocation (loc anchor points) |
@@ -179,6 +199,33 @@ Bucketed data is served as `view.BucketsView` (row) or
 `-1` suicide / teamkill, `+2` for the rare gib double-frag KTX edge).
 Reconstruct the killer ↔ victim relationship from `FragResult.Frags[]`
 or `MessagesResult.Events[type=frag]` by matching `time`.
+
+### TimelineDeathEvent
+
+`{ time, player, team }`. One record per death, sourced from the
+authoritative protocol DeathEvent and gated to match time exactly like
+`fragEvents` — every death counts once (enemy kill, suicide, world, or
+being teamkilled), so a player's death count here matches their
+scoreboard deaths and KTX efficiency `frags / (frags + deaths)`
+(`ktx/src/statsTables.c` `calculateEfficiency`). Unlike `frags.frags`,
+this does not drop teamkill victims whose obituary names only the
+attacker. Pairs with `killEvents` for the Timeline tab's per-player
++/- (cumulative kills − deaths) drill-down.
+
+### TimelineKillEvent
+
+`{ time, player, team }`. One record per enemy kill, keyed on the
+**killer**, sourced from the canonical frag log (`FragResult.Frags[]` /
+`CoreOutputs.FragEntries`) filtered to real enemy kills (suicides and
+teamkills excluded). A player's cumulative `killEvents` reconciles
+exactly with `frags.byPlayer[].kills` and thus the kills-based
+efficiency `kills / (kills + deaths)`. Parallel to `deathEvents`; the
+Timeline per-player drill-down plots `killEvents − deathEvents` as a
+windowed +/- area. `team` is best-effort via the name table and — unlike
+`deathEvents` — is **not** gated to non-empty: `byPlayer.kills` isn't
+either, so gating would silently drop a player's whole kill curve in POV
+demos with an incomplete name↔team join (the consumer groups by player
+name and ignores `team`).
 
 ### PowerupEvent
 
@@ -802,6 +849,8 @@ Pick the shape that matches your consumer:
 | Frag list | `frags.frags[]` | `messages.events[type=frag]` | …you want kill-classification flags (`isSuicide`, `isTeamKill`). |
 | Frag list | `messages.events[type=frag]` | `frags.frags[]` | …you want the obit text for display. |
 | Score timeline | `timelineAnalysis.fragEvents` | `frags.frags[]` | …you only need delta over time (no killer/victim). |
+| Per-player deaths | `timelineAnalysis.deathEvents` | `frags.byPlayer[].deaths` | …you need per-death timing (not just totals); counts every death, no teamkill-victim drops. |
+| Per-player kills | `timelineAnalysis.killEvents` | `frags.byPlayer[].kills` | …you need per-kill timing keyed on the killer (enemy kills only); cumulative count reconciles with `byPlayer.kills`. |
 | Per-player stats | `match.players[]` | `demoInfo.players[]` | …you only need name/team/frags. |
 | Per-player stats | `demoInfo.players[]` | `match.players[]` | …you need accuracy / damage / pickups (KTX demos only). |
 | Match length | `match.duration` | `demoInfo.duration` | …you want the parser-derived float. |
@@ -819,6 +868,10 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v18 | `TimelineAnalysis` gains `KillEvents`: a per-player enemy-kill stream (`{time, player, team}`) keyed on the killer, parallel to `DeathEvents`, from the canonical frag log filtered to real enemy kills (suicides/teamkills excluded). Cumulative `killEvents` per player reconciles with `frags.byPlayer[].kills` and the kills-based efficiency; the Timeline per-player drill-down plots `killEvents − deathEvents` as a windowed +/-. `team` is best-effort and, unlike `deathEvents`, ungated. Additive (`omitempty`). |
+| v17 | Self-kill weapon labels in `Frags.Frags` are no longer flattened to `suicide`: only the `/kill` console command (KTX "X suicides", −2 frags) keeps weapon `suicide`; weapon self-detonations carry their real weapon (`rl`/`gl`/`lg`) with `isSuicide` set. `Frags.ByWeapon` is now enemy kills only (suicides/teamkills excluded). Recovered teamkills no longer carry a stale `isSuicide`. |
+| v16 | `PlayerFrags` gains `teamkills` (KTX "tk"), and teamkills whose obituary names only one party re-enter `Frags.Frags` as complete killer↔victim pairs (killer-named recover the victim from the coincident `DeathEvent`; victim-named recover the killer via position co-location + the teamkiller's −1 frag-delta). Brings per-player teamkills to an exact match with KTX's `tk`. |
+| v15 | `TimelineAnalysis` gains `DeathEvents`: a per-player death stream (`{time, player, team}`) parallel to `FragEvents`, from the authoritative protocol `DeathEvent` (every death counts once), for the Timeline per-player frags/deaths drill-down and KTX-style efficiency `frags / (frags + deaths)`. Additive (`omitempty`). |
 | v14 | `MapEntities` gains **brush entities** — `teleportSrc` (`trigger_teleport`), `button` (`func_button`), `door` (`func_door`) — placed at their BSP submodel bbox centre with a `bounds` (trigger/door volume), plus the teleport source→destination link (`teleportSrc.target` == `teleportDst.targetName`). v13 carried point entities (items, spawns, teleport destinations) only. |
 | v13 | New `MapEntities` section: the map's static designed layout (item spawns, player spawnpoints, teleport destinations/sources, buttons) with type + location, from the offline-generated mapents corpus (BSP entity lumps) keyed by map name. Additive (`omitempty`); absent when no corpus exists for the map. |
 | v12 | `LocNode` and `LocEdge` gain optional combat-posture weights — `armed` / `unarmed` / `quad` / `pent` breakdowns (`LocWeights` on nodes, `LocEdgeWeights` on edges) restricted to samples where the player held RL or LG, held neither, or had an active quad / pent. Lets consumers re-weight the loc graph by combat posture without re-walking streams. Field additions only; each weight is omitted when no observed sample met its condition. |

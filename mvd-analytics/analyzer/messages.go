@@ -422,6 +422,21 @@ func (a *MessagesAnalyzer) parseObituarySimple(msg string, time float64) *MatchE
 		}
 	}
 
+	// Satan's-power deflection (dtTELE2): an infix self-telefrag suicide the
+	// prefix loop above can't catch. Tag it so messages stays a complete
+	// obituary stream (one frag event per death). See frag.go.
+	if victim := satanDeflectVictim(msg); victim != "" && !isGenericPlayer(victim) {
+		return &MatchEvent{
+			Time:    msTime(time),
+			Type:    "frag",
+			Player:  victim,
+			Team:    a.getPlayerTeam(victim),
+			Message: msg,
+			Victim:  victim,
+			Weapon:  "tele",
+		}
+	}
+
 	return nil
 }
 
