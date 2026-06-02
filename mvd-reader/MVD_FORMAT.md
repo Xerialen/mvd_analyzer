@@ -1143,10 +1143,10 @@ If `type_id == 0xFFFF`, read another short for extended type range.
 | 0x0008 | `mvdhidden_usercmd_weapons_ss` | Server-side weapon data | **Requires server flag** |
 | 0x0009 | `mvdhidden_usercmd_weapon_instruction` | Weapon instruction | **Requires server flag** |
 | 0x000A | `mvdhidden_paused_duration` | Paused time (QTV only) | QTV only |
-| 0x000B | `mvdhidden_demo_start_timestamp_ms` | Unix timestamp (ms) at demo start (uint64) | Newer mvdsv |
+| 0x000B | `mvdhidden_demo_start_timestamp_ms` | Unix timestamp (ms) at demo start (ULEB128 varint) | Newer mvdsv |
 | 0xFFFF | `mvdhidden_extended` | Extended type (read next short) | - |
 
-**Newer types**: the table above tracks qwprot as of 2026. Older parsers will warn `unknown hidden message type 0x000b` on any demo recorded by an mvdsv that includes the [PR #17 / `500bd4b`](https://github.com/QW-Group/qwprot/commit/500bd4b) addition; the payload is a single `uint64` little-endian Unix-millisecond timestamp captured at the moment the server opened the MVD file (intended for stream/voice synchronisation). It's safe to skip if you don't consume it, but recognising it explicitly cleans up the warning stream.
+**Newer types**: the table above tracks qwprot as of 2026. Older parsers will warn `unknown hidden message type 0x000b` on any demo recorded by an mvdsv that includes the [PR #17 / `500bd4b`](https://github.com/QW-Group/qwprot/commit/500bd4b) addition; the payload is a Unix-millisecond timestamp captured at the moment the server opened the MVD file, **ULEB128 varint-encoded** (7 data bits per byte, high bit = continuation — *not* a fixed-width little-endian `uint64`; a ~2026 value is 6 bytes), intended for stream/voice synchronisation. It's safe to skip if you don't consume it, but recognising it explicitly cleans up the warning stream. mvdsv writes it via `Sys_TimestampMilliseconds()` in `SV_MVDEmbedStartTimestamp` (`src/sv_demo_misc.c`).
 
 ### Hidden Message Availability
 
@@ -3177,7 +3177,7 @@ Enables `mvdhidden_usercmd` (0x0001) recording per player. Used primarily for ra
 - Corrected [`svc_updateping`](#svc_updateping-36): the ping is a **short** (2 bytes), not a byte. Total payload after the cmd byte is 3 bytes, not 2. A 1-byte drift here, multiplied across the per-second ping broadcasts of an 8-player match, was the actual root cause of the 121329 player-loss bug.
 - Added [`svc_spawnstaticsound`](#svc_spawnstaticsound-29) (cmd 29) with the correct 9/15 byte size. Earlier versions of the analyzer were skipping 11/17 bytes here — drift in setup-packet ambient-sound entries silently corrupted the entity baseline burst that follows.
 - Added [KTX stat sentinels](#ktx-stat-sentinels-out-of-band-huge-stat-values) section covering KTX's reuse of `STAT_HEALTH`/`STAT_ARMOR`/`STAT_FRAGS`/ammo as out-of-band HUD signalling channels (`health = 1000 + damage`, `armorvalue = velocity + 1000`). These are invisible during gameplay because they get overwritten next frame, but freeze into post-intermission samples — the canonical fix is filter-at-stat-handler combined with stop-sampling-at-`svc_intermission`.
-- Added `mvdhidden_demo_start_timestamp_ms` (0x000B) to the [Hidden Message Types](#hidden-message-types) table. Newer mvdsv builds emit this 8-byte uint64 unix-millisecond timestamp at demo start for stream/voice synchronisation; older parsers will report it as `unknown_hidden 0x000b`.
+- Added `mvdhidden_demo_start_timestamp_ms` (0x000B) to the [Hidden Message Types](#hidden-message-types) table. Newer mvdsv builds emit this ULEB128 varint-encoded unix-millisecond timestamp at demo start for stream/voice synchronisation; older parsers will report it as `unknown_hidden 0x000b`.
 - Added [`svc_centerprint`](#svc_centerprint-26) section documenting KTX's reuse of the centerprint stream as a structured match-settings table during the 10-second countdown. Values are encoded with `redtext()` and `dig3()` so they need [`Q_normalizetext`](#player-name-normalization) before they're readable.
 - Added [Demo Metadata Sources](#demo-metadata-sources) — a top-level reference for *all four* protocol-level metadata sources (`fullserverinfo` stufftext, `svc_serverinfo` updates, the countdown centerprint, and the `mvdhidden_demoinfo` JSON) with the complete set of standard mvdsv `CVAR_SERVERINFO` keys, KTX-added serverinfo keys, the spawn-algorithm short→long-name lookup table, and the merge-and-precedence rules a tournament viewer needs to combine them.
 - Added [Item tracking via entity state](#item-tracking-via-entity-state) — the protocol-level way to observe pickups and respawns by diffing `modelindex` transitions in `svc_packetentities` / `svc_deltapacketentities`. Replaces any reliance on KTX's `//ktx took` prints for item-up/down status. Includes the Quake 1 item model-path table used for entity classification, the MVD-ignores-PVS invariant that lets "entity absent from packet" mean "picked up," and the same-tick insta-regrab invisibility that KTX prints uniquely catch.
@@ -3195,7 +3195,7 @@ The hidden message system (`MVD_PEXT1_HIDDEN_MESSAGES`, bit 5 = 0x20) was added 
 - **0x0001 - usercmd**: Player input commands
 - **0x0003 - demoinfo**: Embedded JSON metadata (match info, player stats)
 - **0x0007 - dmgdone**: Damage events with attacker, victim, weapon, and amount
-- **0x000B - demo_start_timestamp_ms** *(2026, qwprot PR #17)*: uint64 unix-millisecond timestamp captured at demo start, for synchronising voice recordings / stream overlays with the demo timeline.
+- **0x000B - demo_start_timestamp_ms** *(2026, qwprot PR #17)*: ULEB128 varint-encoded unix-millisecond timestamp captured at demo start, for synchronising voice recordings / stream overlays with the demo timeline.
 
 ### Damage Tracking Evolution
 
