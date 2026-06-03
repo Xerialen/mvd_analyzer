@@ -12400,18 +12400,27 @@
     "map": "Aerowalk",
     "players": [
       {
+        "deaths": 56,
         "frags": 43,
+        "kills": 49,
         "name": "wd.cao",
+        "suicides": 5,
         "team": "wd"
       },
       {
+        "deaths": 52,
         "frags": 50,
+        "kills": 55,
         "name": "psy*overon",
+        "suicides": 2,
         "team": "pys"
       },
       {
+        "deaths": 34,
         "frags": 69,
+        "kills": 73,
         "name": "wd.char",
+        "suicides": 0,
         "team": "wd"
       }
     ],
@@ -14522,7 +14531,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "streams": {
     "global": {
       "matchEnd": 600040,

@@ -6635,13 +6635,19 @@
     "map": "Claustrophobopolis",
     "players": [
       {
+        "deaths": 22,
         "frags": 7,
+        "kills": 10,
         "name": "betowen",
+        "suicides": 3,
         "team": "betowen"
       },
       {
+        "deaths": 13,
         "frags": 16,
+        "kills": 19,
         "name": "banan falco",
+        "suicides": 3,
         "team": "banan falco"
       }
     ],
@@ -7074,7 +7080,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "streams": {
     "global": {
       "matchEnd": 599980,

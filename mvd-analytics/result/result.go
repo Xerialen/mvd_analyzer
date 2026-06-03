@@ -193,7 +193,20 @@ package result
 //     +/- that reconciles with byPlayer.kills and kills-based efficiency.
 //     Additive and omitempty, but the bump invalidates cached timeline
 //     responses so consumers pick it up.
-const CurrentSchemaVersion = 18
+//
+// v19:
+//   - MatchResult.PlayerStat gains Kills, Deaths and Suicides: the
+//     frag-log-corrected counts, so MatchResult.Players is a complete
+//     corrected scoreboard rather than just the net frag tally. They
+//     supersede the KTX demoinfo stats, which credit several self/positional
+//     deaths to the wrong entity — pentagram-deflect telefrags (dtTELE2)
+//     inflate the deflector's kills, and world-dealt suicides (fall/lava/
+//     squish/drown) bump the world entity's counter, not the victim's
+//     (ktx/src/client.c:5132), so demoinfo undercounts suicides. 0 when the
+//     demo carried no frag log. The API /overview player rows surface the
+//     same Kills/Deaths/Suicides so non-web consumers get the correction the
+//     web UI already applied. Field additions only.
+const CurrentSchemaVersion = 19
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

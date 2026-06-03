@@ -174,7 +174,7 @@ all endpoints and aren't repeated.
 Warm the cache and resolve the canonical id. Idempotent.
 
 ```jsonc
-{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 14 }
+{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 19 }
 ```
 
 Use `demoId` for subsequent calls to skip the gameId→sha lookup.
@@ -186,13 +186,13 @@ single call to populate a match header and decide which panels to show.
 
 ```jsonc
 {
-  "schemaVersion": 14,
+  "schemaVersion": 19,
   "map": "dm6", "gameDir": "qw",
   "mode": "4on4",            // omitempty
   "duration": 613.4,         // seconds
   "matchStart": 0, "matchEnd": 613.4,
   "teams":   [ { "name": "Die", "frags": 89 }, … ],          // sorted desc
-  "players": [ { "name": "bps", "team": "Die", "frags": 35 }, … ],
+  "players": [ { "name": "bps", "team": "Die", "frags": 35, "kills": 38, "deaths": 21, "suicides": 2 }, … ], // corrected scoreboard; sorted by frags desc
   "topStreaks":  [ { "player":"bps","weapon":"rl","length":7,"start":234.1,"duration":18.3 } ], // ≤5
   "topPowerups": [ { "player":"milton","type":"quad","start":412.0,"duration":29.7,"frags":5 } ], // ≤5
   "locCount": 47,
@@ -416,7 +416,7 @@ indices client-side.
 
 - **`/chat`** (`from`, `to`, `players`, `types`) — chat + teamsay only;
   `[]result.MatchEvent`.
-- **`/healthz`** — `{ "ok": true, "schemaVersion": 14 }`.
+- **`/healthz`** — `{ "ok": true, "schemaVersion": 19 }`.
 - **`/v1/version`** — `{ "hash", "tag", "buildDate" }`.
 
 ### 4.16 Per-map static data — `GET /v1/maps/{map}/…`

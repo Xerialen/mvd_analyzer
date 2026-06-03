@@ -12,21 +12,21 @@ import (
 // echoing the whole Result. Time fields are integer milliseconds
 // (matches schema v8).
 type Overview struct {
-	SchemaVersion    int                `json:"schemaVersion"`
-	FilePath         string             `json:"filePath,omitempty"`
-	Map              string             `json:"map,omitempty"`
-	GameDir          string             `json:"gameDir,omitempty"`
-	Mode             string             `json:"mode,omitempty"`
-	Matchtag         string             `json:"matchtag,omitempty"`
-	Duration         int32              `json:"duration"`
-	MatchStart       int32              `json:"matchStart"`
-	MatchEnd         int32              `json:"matchEnd"`
-	Teams            []OverviewTeam     `json:"teams,omitempty"`
-	Players          []OverviewPlayer   `json:"players"`
-	TopStreaks       []OverviewStreak   `json:"topStreaks,omitempty"`
-	TopPowerups      []OverviewPowerup  `json:"topPowerups,omitempty"`
-	LocCount         int                `json:"locCount"`
-	HasRegionControl bool               `json:"hasRegionControl"`
+	SchemaVersion    int               `json:"schemaVersion"`
+	FilePath         string            `json:"filePath,omitempty"`
+	Map              string            `json:"map,omitempty"`
+	GameDir          string            `json:"gameDir,omitempty"`
+	Mode             string            `json:"mode,omitempty"`
+	Matchtag         string            `json:"matchtag,omitempty"`
+	Duration         int32             `json:"duration"`
+	MatchStart       int32             `json:"matchStart"`
+	MatchEnd         int32             `json:"matchEnd"`
+	Teams            []OverviewTeam    `json:"teams,omitempty"`
+	Players          []OverviewPlayer  `json:"players"`
+	TopStreaks       []OverviewStreak  `json:"topStreaks,omitempty"`
+	TopPowerups      []OverviewPowerup `json:"topPowerups,omitempty"`
+	LocCount         int               `json:"locCount"`
+	HasRegionControl bool              `json:"hasRegionControl"`
 	// PlayerUserIDs maps player name → hub.quakeworld.nu user id. Use it
 	// to build deep links of the form
 	// https://hub.quakeworld.nu/games/<gameId>?track=<userId>.
@@ -45,13 +45,16 @@ type OverviewTeam struct {
 	Frags int    `json:"frags"`
 }
 
-// OverviewPlayer carries each player's identity + frag count. Per-player
-// kills/deaths come from FragResult.ByPlayer when available; absence is
-// not an error (some demos lack the data).
+// OverviewPlayer carries each player's identity + scoreboard line, taken
+// from MatchResult.Players: Frags is the canonical net score, Kills/Deaths/
+// Suicides the frag-log-corrected counts (0 when the demo had no frag log).
 type OverviewPlayer struct {
-	Name  string `json:"name"`
-	Team  string `json:"team,omitempty"`
-	Frags int    `json:"frags"`
+	Name     string `json:"name"`
+	Team     string `json:"team,omitempty"`
+	Frags    int    `json:"frags"`
+	Kills    int    `json:"kills"`
+	Deaths   int    `json:"deaths"`
+	Suicides int    `json:"suicides"`
 }
 
 // OverviewStreak is a slimmed-down result.FragStreakEvent.
@@ -95,6 +98,7 @@ func BuildOverview(r *result.Result) Overview {
 		for _, p := range r.Match.Players {
 			ov.Players = append(ov.Players, OverviewPlayer{
 				Name: p.Name, Team: p.Team, Frags: p.Frags,
+				Kills: p.Kills, Deaths: p.Deaths, Suicides: p.Suicides,
 			})
 		}
 		for _, t := range r.Match.Teams {

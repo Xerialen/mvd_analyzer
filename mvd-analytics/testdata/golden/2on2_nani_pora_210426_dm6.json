@@ -7951,23 +7951,35 @@
     "map": "The Dark Zone",
     "players": [
       {
+        "deaths": 13,
         "frags": 33,
+        "kills": 36,
         "name": "gLAd",
+        "suicides": 1,
         "team": "nAnI"
       },
       {
+        "deaths": 45,
         "frags": 18,
+        "kills": 20,
         "name": "kippo",
+        "suicides": 2,
         "team": "pora"
       },
       {
+        "deaths": 31,
         "frags": 31,
+        "kills": 34,
         "name": "SS",
+        "suicides": 2,
         "team": "nAnI"
       },
       {
+        "deaths": 29,
         "frags": 16,
+        "kills": 18,
         "name": "rusti",
+        "suicides": 0,
         "team": "pora"
       }
     ],
@@ -10990,7 +11002,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "streams": {
     "global": {
       "matchEnd": 600000,

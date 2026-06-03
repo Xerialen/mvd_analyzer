@@ -446,7 +446,17 @@ efficiency. (Team is best-effort and ungated, unlike `deathEvents`, so a
 player's curve survives POV demos with an incomplete name↔team join — the
 consumer groups by player name.)
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `18`).
+Schema v19 adds `match.players[].kills`, `.deaths` and `.suicides` — the
+frag-log-corrected counts, independent of the sometimes-wrong KTX demoinfo
+stats. KTX credits several self / positional deaths to the wrong entity:
+pentagram-deflect telefrags inflate the deflector's kills, and world-dealt
+suicides (fall / lava / squish / drown) bump the world entity's counter
+instead of the victim's, so demoinfo undercounts suicides. This makes
+`match.players` a complete corrected scoreboard, and the API `/overview`
+surfaces the same counts so non-web consumers get the correction the web
+Summary already applied.
+
+Every breaking change bumps `CurrentSchemaVersion` (currently `19`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

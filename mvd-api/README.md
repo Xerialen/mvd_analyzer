@@ -119,7 +119,7 @@ tier 2. There is no automatic eviction; documented as a follow-up
 mvd-api -addr :8080 -cache-dir /tmp/mvd-cache &
 
 curl -s localhost:8080/healthz
-# {"ok":true,"schemaVersion":14}
+# {"ok":true,"schemaVersion":19}
 
 curl -s -X POST localhost:8080/v1/demos/gameId:12345
 # first call:  fromCache:false

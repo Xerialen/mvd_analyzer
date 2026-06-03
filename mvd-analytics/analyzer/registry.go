@@ -257,8 +257,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	//   1. recoverTelefragTeamkills
 	//   2. normalizeMatchRelativeTimes
 	//   3. duelTeamNormalize
-	//   4. locGraphPost
-	//   5. regionControlPost
+	//   4. scoreboardStatsPost
+	//   5. locGraphPost
+	//   6. regionControlPost
 	// — but the slice is otherwise unconstrained. Add a step by
 	// calling r.RegisterPostProcessor(...) before Analyze.
 	for _, p := range r.postProcessors {
@@ -317,6 +318,7 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterPostProcessor(recoverTelefragTeamkills)
 	r.RegisterPostProcessor(normalizeMatchRelativeTimes)
 	r.RegisterPostProcessor(duelTeamNormalize)
+	r.RegisterPostProcessor(scoreboardStatsPost)
 	r.RegisterPostProcessor(locGraphPost)
 	r.RegisterPostProcessor(regionControlPost)
 	return r

@@ -277,6 +277,40 @@ func duelTeamNormalize(res *Result, _ *CoreOutputs) {
 	normalizeDuelTeams(res)
 }
 
+// scoreboardStatsPost fills MatchResult.Players[].Kills/Deaths from the
+// frag-log-corrected FragResult.ByPlayer, joining on the final display
+// name. It runs as a post-processor (not in the match analyser's
+// Finalize) for two reasons: ByPlayer is only final after
+// recoverTelefragTeamkills, and the join must use the *assembled*
+// result's names — the same basis the web UI joins on — because a slot's
+// Finalize-time name can differ from its final display name. Players
+// whose name has no ByPlayer entry keep 0/0 (no frag log, or a name that
+// never appeared in an obituary). KTX demoinfo stats are left untouched.
+func scoreboardStatsPost(res *Result, _ *CoreOutputs) {
+	if res.Match == nil || res.Frags == nil {
+		return
+	}
+	// Suicides: count self-inflicted deaths (IsSuicide, killer == victim) per
+	// victim from the final frag log. KTX demoinfo undercounts these — a
+	// world-dealt self-death (fall / lava / squish / drown) bumps the world
+	// entity's suicide counter, not the victim's (ktx/src/client.c:5132), and
+	// a pentagram-deflect self-telefrag isn't credited to the victim either.
+	suicides := make(map[string]int)
+	for _, f := range res.Frags.Frags {
+		if f.IsSuicide {
+			suicides[f.Victim]++
+		}
+	}
+	for i := range res.Match.Players {
+		name := res.Match.Players[i].Name
+		if pf := res.Frags.ByPlayer[name]; pf != nil {
+			res.Match.Players[i].Kills = pf.Kills
+			res.Match.Players[i].Deaths = pf.Deaths
+		}
+		res.Match.Players[i].Suicides = suicides[name]
+	}
+}
+
 // locGraphPost runs BuildLocGraph on the assembled Result. Has to run
 // after the time and duel normalisations so the loc nodes/edges use
 // the same time base and team labels as the rest of the result.

@@ -6180,13 +6180,19 @@
     "map": "Bravado -",
     "players": [
       {
+        "deaths": 7,
         "frags": 58,
+        "kills": 59,
         "name": "speedball",
+        "suicides": 1,
         "team": "speedball"
       },
       {
+        "deaths": 59,
         "frags": 6,
+        "kills": 6,
         "name": "mj",
+        "suicides": 0,
         "team": "mj"
       }
     ],
@@ -6860,7 +6866,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "streams": {
     "global": {
       "matchEnd": 600001,

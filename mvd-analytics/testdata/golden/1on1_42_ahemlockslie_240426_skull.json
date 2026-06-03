@@ -5524,13 +5524,19 @@
     "map": "Skull Hunt",
     "players": [
       {
+        "deaths": 22,
         "frags": 9,
+        "kills": 10,
         "name": "AHemlocksLie",
+        "suicides": 1,
         "team": "AHemlocksLie"
       },
       {
+        "deaths": 11,
         "frags": 20,
+        "kills": 21,
         "name": "42",
+        "suicides": 1,
         "team": "42"
       }
     ],
@@ -6035,7 +6041,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "streams": {
     "global": {
       "matchEnd": 599993,

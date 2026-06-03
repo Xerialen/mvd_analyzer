@@ -11595,18 +11595,27 @@
     "map": "The Bad Place",
     "players": [
       {
+        "deaths": 68,
         "frags": 46,
+        "kills": 48,
         "name": "shazam",
+        "suicides": 2,
         "team": "n n"
       },
       {
+        "deaths": 72,
         "frags": 41,
+        "kills": 46,
         "name": "stepcop",
+        "suicides": 3,
         "team": "n n"
       },
       {
+        "deaths": 52,
         "frags": 70,
+        "kills": 76,
         "name": "Milton",
+        "suicides": 4,
         "team": "1"
       }
     ],
@@ -16435,7 +16444,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "streams": {
     "global": {
       "matchEnd": 600050,
