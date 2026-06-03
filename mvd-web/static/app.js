@@ -1304,10 +1304,7 @@ function displayPlayerStats(players) {
         const suicides = mp ? mp.suicides : (suicidesMap ? (suicidesMap[player.name] || 0) : (player.stats?.suicides || 0));
         const rlKills = bp ? (bp.byWeapon?.rl || 0) : (player.weapons?.rl?.kills?.enemy || 0);
         const lgKills = bp ? (bp.byWeapon?.lg || 0) : (player.weapons?.lg?.kills?.enemy || 0);
-        // Efficiency is KTX frags-based: frags / (frags + deaths) (ktx/src/
-        // statsTables.c calculateEfficiency) — what the community reads off KTX
-        // scoreboards. Not kills-based; see RESULT_SCHEMA.md.
-        const efficiency = (frags + deaths) > 0 ? ((frags / (frags + deaths)) * 100).toFixed(1) : '0.0';
+        const efficiency = (kills + deaths) > 0 ? ((kills / (kills + deaths)) * 100).toFixed(1) : '0.0';
         // Bot badge: render the skill level inline when present, since bots
         // in a match are rare enough that seeing "BOT 10" at a glance is
         // more useful than hiding it behind a hover. Fall back to a plain
@@ -1666,8 +1663,7 @@ function displayPlayerStatsTeams(players) {
         const ping = members.length > 0
             ? (members.reduce((s, p) => s + (p.ping || 0), 0) / members.length).toFixed(0)
             : 0;
-        // KTX frags-based efficiency (see player-row note above).
-        const efficiency = (frags + deaths) > 0 ? ((frags / (frags + deaths)) * 100).toFixed(1) : '0.0';
+        const efficiency = (kills + deaths) > 0 ? ((kills / (kills + deaths)) * 100).toFixed(1) : '0.0';
         return `
             <td>${escapeHtml(team)}</td>
             <td>${frags}</td>
@@ -3604,15 +3600,14 @@ function renderHealthArmorPerPlayer(startTime, endTime) {
 // ─── Per-player frags / deaths drill-down ───────────────────────────────────
 //
 // One compact +/- chart per player under the Score Timeline, mirroring the team
-// Score Timeline above: the player's running plus/minus = cumulative net frags
-// minus cumulative deaths. When ahead (more frags than deaths) the area rises
-// above the divider in the team colour; when behind it drops below in a dimmed
-// team colour. Frags come from fragEvents (the net-score deltas: +1 per enemy
-// kill, −1 per suicide/teamkill — a player's delta sum reconciles exactly with
-// match.players.frags) and deaths from deathEvents (every death counts once),
-// so the full-match endpoint equals match.frags − match.deaths and matches the
-// KTX frags-based efficiency = frags/(frags+deaths) (ktx/src/statsTables.c
-// calculateEfficiency) shown on each row.
+// Score Timeline above: the player's running plus/minus = cumulative enemy
+// kills minus cumulative deaths. When ahead (more kills than deaths) the area
+// rises above the divider in the team colour; when behind it drops below in a
+// dimmed team colour. Kills come from killEvents (the canonical frag log,
+// suicides/teamkills excluded) and deaths from deathEvents (every death counts
+// once), so the full-match endpoint equals byPlayer.kills − byPlayer.deaths and
+// reconciles with the kills-based efficiency = kills/(kills+deaths)
+// (ktx/src/statsTables.c calculateEfficiency) shown on each row.
 
 // Darken a team hex toward black so the behind-half reads as a muted mirror of
 // the team-coloured ahead-half (position above/below the divider already
@@ -3622,48 +3617,46 @@ function dimColor(hex) {
     return `rgb(${Math.round(r * 0.55)},${Math.round(g * 0.55)},${Math.round(b * 0.55)})`;
 }
 
-// Build sampled +/- points for one player plus the window-end frag/death
+// Build sampled +/- points for one player plus the window-end kill/death
 // totals. Mirrors prepScoreData: carry the running totals from match start so
 // the window's left edge shows the cumulative plus/minus, then plot the single
-// net value (frags − deaths) as up when positive / down when negative.
+// net value (kills − deaths) as up when positive / down when negative.
 function prepPlayerFragDeathData(name, startTime, endTime, upColor, downColor) {
-    const fe = timelineState.fragEvents || [];
+    const ke = timelineState.killEvents || [];
     const de = timelineState.deathEvents || [];
 
-    let frags = 0, deaths = 0;
-    for (const f of fe) {
-        if (f.time >= startTime) break;
-        if (f.player === name) frags += (f.delta || 1);
+    let kills = 0, deaths = 0;
+    for (const k of ke) {
+        if (k.time >= startTime) break;
+        if (k.player === name) kills += 1;
     }
     for (const d of de) {
         if (d.time >= startTime) break;
         if (d.player === name) deaths += 1;
     }
 
-    // Merge this player's in-window frag-score deltas and deaths by time, then
-    // accumulate into a net (frags − deaths) step series. A suicide appears in
-    // both streams (−1 frag and +1 death), so it moves the net by −2 — matching
-    // how it hits the frags and deaths scoreboard columns.
+    // Merge this player's in-window kill and death events by time, then
+    // accumulate into a net (kills − deaths) step series.
     const evs = [];
-    for (const f of fe) {
-        if (f.time < startTime) continue;
-        if (f.time > endTime) break;
-        if (f.player === name) evs.push({ time: f.time, dFrag: (f.delta || 1) });
+    for (const k of ke) {
+        if (k.time < startTime) continue;
+        if (k.time > endTime) break;
+        if (k.player === name) evs.push({ time: k.time, dn: 1 });
     }
     for (const d of de) {
         if (d.time < startTime) continue;
         if (d.time > endTime) break;
-        if (d.player === name) evs.push({ time: d.time, dDeath: 1 });
+        if (d.player === name) evs.push({ time: d.time, dn: -1 });
     }
     evs.sort((a, b) => a.time - b.time);
 
-    const stepAt = [{ time: startTime, net: frags - deaths }];
-    let cf = frags, cd = deaths;
+    const stepAt = [{ time: startTime, net: kills - deaths }];
+    let ck = kills, cd = deaths;
     for (const e of evs) {
-        if (e.dFrag !== undefined) cf += e.dFrag; else cd += 1;
-        stepAt.push({ time: e.time, net: cf - cd });
+        if (e.dn > 0) ck += 1; else cd += 1;
+        stepAt.push({ time: e.time, net: ck - cd });
     }
-    stepAt.push({ time: endTime, net: cf - cd });
+    stepAt.push({ time: endTime, net: ck - cd });
 
     const duration = endTime - startTime;
     const sampleRate = Math.max(0.5, duration / 400);
@@ -3680,7 +3673,7 @@ function prepPlayerFragDeathData(name, startTime, endTime, upColor, downColor) {
             down: v < 0 ? [{ h: -v, color: downColor }] : [],
         });
     }
-    return { points, max: maxVal, frags: cf, deaths: cd };
+    return { points, max: maxVal, kills: ck, deaths: cd };
 }
 
 // Compact diverging renderer for the per-player frags/deaths minis: net frags
@@ -3819,24 +3812,23 @@ function renderFragsPerPlayer(startTime, endTime) {
     renderSharedTimeAxis(container, startTime, endTime);
 }
 
-// Update the per-player frags/deaths labels to the cumulative frags / deaths
-// and KTX frags-based efficiency AT the current playback time (not whole-match
-// totals), so the numbers track the playhead as it moves / scrubs. Sums the
-// frag-score deltas and counts deaths up to t; no-op when the drill-down isn't
-// built.
+// Update the per-player frags/deaths labels to the cumulative kills / deaths
+// and efficiency AT the current playback time (not whole-match totals), so the
+// numbers track the playhead as it moves / scrubs. Counts the kill and death
+// event streams in one pass each; no-op when the drill-down isn't built.
 function updateFragsPerPlayerStats() {
     const container = document.getElementById('frags-per-player');
     if (!container || !container._cells || !container._cells.length) return;
     const t = mapState.currentTime;
-    const fc = {}, dc = {};
-    for (const e of (timelineState.fragEvents || [])) if (e.time <= t) fc[e.player] = (fc[e.player] || 0) + (e.delta || 1);
+    const kc = {}, dc = {};
+    for (const e of (timelineState.killEvents || [])) if (e.time <= t) kc[e.player] = (kc[e.player] || 0) + 1;
     for (const e of (timelineState.deathEvents || [])) if (e.time <= t) dc[e.player] = (dc[e.player] || 0) + 1;
     for (const { name, statEl } of container._cells) {
         if (!statEl) continue;
-        const f = fc[name] || 0, d = dc[name] || 0;
-        const eff = (f + d) > 0 ? Math.round((f / (f + d)) * 100) : 0;
-        statEl.textContent = `${f}/${d} · ${eff}%`;
-        statEl.title = `${f} frags / ${d} deaths · ${eff}% efficiency at ${formatDuration(t)}`;
+        const k = kc[name] || 0, d = dc[name] || 0;
+        const eff = (k + d) > 0 ? Math.round((k / (k + d)) * 100) : 0;
+        statEl.textContent = `${k}/${d} · ${eff}%`;
+        statEl.title = `${k} kills / ${d} deaths · ${eff}% efficiency at ${formatDuration(t)}`;
     }
 }
 
