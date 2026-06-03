@@ -155,6 +155,21 @@ const (
 	ITQuad            = mvd.ITQuad
 )
 
+// Damage-source helpers re-exported so Layer-2 consumers map a
+// DamageEvent.DeathType (and obituary deathtype) to a weapon / cause
+// without reaching into the mvd wire package directly.
+var (
+	// DeathTypeToWeapon maps a deathtype to a weapon name ("rl", "lg",
+	// "sg", ...) or damage-source label.
+	DeathTypeToWeapon = mvd.DeathTypeToWeapon
+	// IsEnvironmentalDamage reports whether a deathtype is
+	// world/self-inflicted (lava, slime, drowning, fall, trigger, suicide).
+	IsEnvironmentalDamage = mvd.IsEnvironmentalDamage
+	// EnvironmentalDamageType returns the environmental category
+	// ("lava", "fall", "drown", "trigger", ...) or "" for non-environmental.
+	EnvironmentalDamageType = mvd.EnvironmentalDamageType
+)
+
 // NormalizeQuakeText folds the Quake extended-ASCII character set into
 // plain UTF-8. Players' names and chat come off the wire in the Quake
 // encoding; analytics code normalises via this helper before comparing

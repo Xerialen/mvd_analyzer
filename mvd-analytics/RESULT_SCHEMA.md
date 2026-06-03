@@ -26,6 +26,7 @@ analyzer are also covered there.
 | Metadata | `metadata` | *MetadataResult | Server cvars (fullserverinfo) + parsed match-settings centerprint. |
 | LocGraph | `locGraph` | *LocGraphResult | Loc-to-loc movement graph (nodes + transitions). |
 | Items | `items` | *ItemsResult | Per-entity pickup / respawn timeline (per match). |
+| Damage | `damage` | *DamageResult | Per-hit damage log + aggregates (matrix, per-weapon, given/taken, EWep victim-weapon buckets) from the KTX `mvdhidden_dmgdone` stream, with a KTX-scoreboard cross-check. |
 | MapEntities | `mapEntities` | *MapEntitiesResult | Static designed map layout (item spawns, spawnpoints, teleporters, buttons) from the BSP entity corpus. |
 | Backpacks | `backpacks` | []BackpackDrop | RL/LG backpack drops from KTX `//ktx drop` hint. |
 | WeaponPickups | `weaponPickups` | []WeaponPickup | Slot-weapon acquisitions with kills-before-next-death effectiveness. |
@@ -123,6 +124,131 @@ unambiguous; a few may stay unattributed (readable from
 | Deaths | `deaths` | int |
 | TeamKills | `teamkills` | int (omitempty) — KTX "tk"; killer-named teamkills only (v14) |
 | ByWeapon | `byWeapon` | map[string]int |
+
+## DamageResult (`damage`)
+
+Defined in `result/damage.go`. Reconstructed from the KTX
+`mvdhidden_dmgdone` stream (see `mvd-reader/MVD_FORMAT.md`). Present only
+when the demo carries that stream (KTX with MVD-hidden extensions).
+
+**Unbound vs bounded.** All amounts are **unbound** — the full hit
+including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
+end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
+hit to the victim's remaining health. So these figures run higher than
+the scoreboard, most on killing blows and telefrags. The `scoreboard`
+sub-object surfaces both side by side; the divergence is expected.
+
+Per-player and matrix aggregates count **match-time** hits only (KTX
+scoreboard parity); the `events` log keeps every hit (incl. warmup), each
+with the match-relative `time` so consumers can window it.
+
+**Positional kills (telefrag, stomp) are excluded from every damage
+figure.** A telefrag (deathtype `tele`) is an instant kill reported on
+the wire as the 9999 sentinel; a stomp (deathtype `stomp`, landing on a
+head) is a movement kill, not a weapon. Left in, a telefrag's 9999 would
+dominate the attacker's `given` / `byWeapon` / `ewep` and the totals.
+Both are pulled out into `telefrags` / `stomps` (and the opt-in
+`telefrag` / `stomp` events) and counted per-player in
+`PlayerDamage.telefrags` / `.stomps`. The kill still appears in
+`FragResult` and as a `frag` event. (KTX's scoreboard `dmg.given` does
+fold in a *bounded* ~victim-health telefrag/stomp amount, so a player's
+`streamGiven` may sit slightly under `scoreGiven` for that reason —
+separate from the overkill effect.)
+
+| Field | JSON key | Type |
+|---|---|---|
+| TotalDamage | `totalDamage` | int (match-time, all sources; excl. telefrags + stomps) |
+| Events | `events` | []DamageEntry (chronological; excl. telefrags + stomps) |
+| ByWeapon | `byWeapon` | map[string]int (enemy damage by attacker weapon) |
+| ByPlayer | `byPlayer` | map[string]*PlayerDamage |
+| Matrix | `matrix` | []DamagePair (attacker→victim totals) |
+| Telefrags | `telefrags` | []PositionalKill (omitempty — instant kills, separate from damage) |
+| Stomps | `stomps` | []PositionalKill (omitempty — head-stomp kills, separate from damage) |
+| Scoreboard | `scoreboard` | *DamageReconciliation (omitempty) |
+
+### PositionalKill
+
+A telefrag (`telefrags`, deathtype `tele`) or stomp (`stomps`, deathtype
+`stomp`) — an instant kill from occupying a player's space rather than a
+weapon. No damage amount (a telefrag is the 9999 instakill sentinel; a
+stomp is a movement kill).
+
+| Field | JSON key | Type |
+|---|---|---|
+| Time | `time` | int32 (match-relative ms) |
+| Attacker | `attacker` | string (killer) |
+| Victim | `victim` | string |
+| IsTeam | `isTeam` | bool (omitempty — same team) |
+
+### DamageEntry
+
+| Field | JSON key | Type |
+|---|---|---|
+| Time | `time` | int32 (match-relative ms) |
+| Attacker | `attacker` | string (`world` for environmental / non-player inflictor) |
+| Victim | `victim` | string |
+| Weapon | `weapon` | string (attacker weapon `rl`/`lg`/…, or env category `fall`/`lava`/…) |
+| Damage | `damage` | int (unbound) |
+| IsSplash | `isSplash` | bool (omitempty) |
+| IsEnv | `isEnv` | bool (omitempty — world/environmental) |
+| IsSelf | `isSelf` | bool (omitempty — attacker == victim) |
+| IsTeam | `isTeam` | bool (omitempty — same team, not self) |
+| VictimWep | `victimWep` | string (omitempty — victim's class at hit: `sg`/`mid`/`lg`/`rl`/`both`; set only on enemy hits) |
+
+### PlayerDamage
+
+`Given` counts enemy damage only; `Taken` counts **all** sources (enemy +
+team + self + env), so it runs above the KTX `dmg.taken` (which is
+enemy-player damage only — `dmg_t`, `combat.c:1083`; it excludes team,
+self, and environmental). The `EnemyVs*` buckets partition `Given` by the **victim's**
+held weapons at hit time — KTX "ewep" semantics, keyed on the *target's*
+inventory, not the attacker's weapon. Mutually exclusive, priority
+RL+LG > RL > LG > mid > sg (NG counts as shotgun-tier). `ewep` is the
+sum of the LG/RL/both buckets = damage dealt to enemies holding RL or LG.
+
+| Field | JSON key | Type |
+|---|---|---|
+| Given | `given` | int (to enemies) |
+| Taken | `taken` | int (all sources) |
+| GivenTeam | `givenTeam` | int |
+| GivenSelf | `givenSelf` | int |
+| TakenEnv | `takenEnv` | int |
+| ByWeapon | `byWeapon` | map[string]int (enemy given, by attacker weapon) |
+| EnemyVsSG | `enemyVsSg` | int (victim held shotgun-tier only) |
+| EnemyVsMid | `enemyVsMid` | int (victim held ssg/sng/gl) |
+| EnemyVsLG | `enemyVsLg` | int (victim held LG, not RL) |
+| EnemyVsRL | `enemyVsRl` | int (victim held RL, not LG) |
+| EnemyVsBoth | `enemyVsBoth` | int (victim held both RL and LG) |
+| EWep | `ewep` | int (= enemyVsLg + enemyVsRl + enemyVsBoth) |
+| Telefrags | `telefrags` | int (omitempty — instant-kill telefrags DEALT; not damage, excluded from `given`) |
+| Stomps | `stomps` | int (omitempty — head-stomp kills DEALT; not damage, excluded from `given`) |
+
+### DamagePair
+
+| Field | JSON key | Type |
+|---|---|---|
+| Attacker | `attacker` | string |
+| Victim | `victim` | string |
+| Damage | `damage` | int |
+| ByWeapon | `byWeapon` | map[string]int (attacker weapon → damage to this victim) |
+
+### DamageReconciliation / DamageDelta
+
+Diagnostic cross-check vs the KTX scoreboard (`demoInfo.players[].dmg`).
+Keyed by player name. The `stream*` fields are **this pipeline's
+unbound** figures (overkill-inclusive, from the `mvdhidden_dmgdone`
+stream); the `score*` fields are **KTX's bounded** figures (capped to
+victim health, from the scoreboard JSON). `score*` ≤ `stream*` by the
+overkill; `scoreEwep` is the KTX `enemy-weapons` field.
+
+| Field (DamageDelta) | JSON key | Type |
+|---|---|---|
+| StreamGiven | `streamGiven` | int (unbound, this pipeline) |
+| ScoreGiven | `scoreGiven` | int (bounded, KTX scoreboard) |
+| StreamTaken | `streamTaken` | int (unbound, this pipeline) |
+| ScoreTaken | `scoreTaken` | int (bounded, KTX scoreboard) |
+| StreamEWep | `streamEwep` | int (unbound, this pipeline) |
+| ScoreEWep | `scoreEwep` | int (bounded, KTX scoreboard) |
 
 ## MessagesResult (`messages`)
 
@@ -874,6 +1000,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v20 | New `Damage` section: per-hit damage log + aggregates (attacker→victim `matrix`, per-weapon, given/taken, and the **EWep** victim-weapon buckets `enemyVsSg/Mid/Lg/Rl/Both` where `ewep=lg+rl+both`) reconstructed from the KTX `mvdhidden_dmgdone` stream, plus a `scoreboard` cross-check vs `demoInfo.players[].dmg`. Amounts are unbound (include overkill). **Positional kills** — telefrags (deathtype `tele`, the 9999 instakill sentinel) and stomps (deathtype `stomp`) — are excluded from all damage figures and surfaced separately as `damage.telefrags`/`damage.stomps` + `PlayerDamage.telefrags`/`.stomps` + the opt-in `telefrag`/`stomp` events. Also a Layer-1 change: world/environmental damage-taken (lava/fall/trigger) is now emitted with an `Attacker == -1` "world" sentinel rather than dropped. Additive (`omitempty`); absent when the demo lacks the KTX hidden-damage stream. |
 | v19 | `MatchResult.PlayerStat` gains `kills`, `deaths` and `suicides` — the frag-log-corrected counts, making `match.players` a complete corrected scoreboard rather than just the net frag tally. They supersede the KTX demoinfo `stats`, which credit several self / positional deaths to the wrong entity: pentagram-deflect telefrags (`dtTELE2`) inflate the deflector's kills, and world-dealt suicides (fall / lava / squish / drown) bump the world entity's counter instead of the victim's (`ktx/src/client.c:5132`), so demoinfo undercounts suicides. `0` when the demo carried no frag log. Filled by the `scoreboardStatsPost` post-processor (kills/deaths from `Frags.ByPlayer` joined on the final display name; suicides counted from the `IsSuicide` frag entries). The API `/overview` player rows surface the same `kills`/`deaths`/`suicides`, so non-web consumers get the correction the web Summary already applied. Field additions only. |
 | v18 | `TimelineAnalysis` gains `KillEvents`: a per-player enemy-kill stream (`{time, player, team}`) keyed on the killer, parallel to `DeathEvents`, from the canonical frag log filtered to real enemy kills (suicides/teamkills excluded). Cumulative `killEvents` per player reconciles with `frags.byPlayer[].kills` and the kills-based efficiency; the Timeline per-player drill-down plots `killEvents − deathEvents` as a windowed +/-. `team` is best-effort and, unlike `deathEvents`, ungated. Additive (`omitempty`). |
 | v17 | Self-kill weapon labels in `Frags.Frags` are no longer flattened to `suicide`: only the `/kill` console command (KTX "X suicides", −2 frags) keeps weapon `suicide`; weapon self-detonations carry their real weapon (`rl`/`gl`/`lg`) with `isSuicide` set. `Frags.ByWeapon` is now enemy kills only (suicides/teamkills excluded). Recovered teamkills no longer carry a stale `isSuicide`. |

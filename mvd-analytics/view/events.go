@@ -131,6 +131,81 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 			})
 		}
 	}
+	if want["damage"] && r.Damage != nil {
+		for _, d := range r.Damage.Events {
+			ts := msToSec(d.Time)
+			if !inWindow(ts, filter.StartTime, end) {
+				continue
+			}
+			// A player filter matches damage they dealt OR received.
+			if !pf.accepts(d.Attacker) && !pf.accepts(d.Victim) {
+				continue
+			}
+			detail := map[string]any{
+				"victim": d.Victim,
+				"damage": d.Damage,
+				"weapon": d.Weapon,
+			}
+			if d.IsSplash {
+				detail["isSplash"] = true
+			}
+			if d.IsEnv {
+				detail["isEnv"] = true
+			}
+			if d.IsSelf {
+				detail["isSelf"] = true
+			}
+			if d.IsTeam {
+				detail["isTeam"] = true
+			}
+			if d.VictimWep != "" {
+				detail["victimWep"] = d.VictimWep
+			}
+			events = append(events, TaggedEvent{
+				T: ts, Type: "damage", Player: d.Attacker, Detail: detail,
+			})
+		}
+	}
+	if want["telefrag"] && r.Damage != nil {
+		// Telefrags also appear as "frag" events (from obituaries); this is
+		// the dedicated lens, opt-in so the default kill feed isn't doubled.
+		for _, tf := range r.Damage.Telefrags {
+			ts := msToSec(tf.Time)
+			if !inWindow(ts, filter.StartTime, end) {
+				continue
+			}
+			if !pf.accepts(tf.Attacker) && !pf.accepts(tf.Victim) {
+				continue
+			}
+			detail := map[string]any{"victim": tf.Victim}
+			if tf.IsTeam {
+				detail["isTeam"] = true
+			}
+			events = append(events, TaggedEvent{
+				T: ts, Type: "telefrag", Player: tf.Attacker, Detail: detail,
+			})
+		}
+	}
+	if want["stomp"] && r.Damage != nil {
+		// Like telefrag: stomp kills also appear as "frag" events, so this
+		// dedicated lens is opt-in to avoid doubling the kill feed.
+		for _, st := range r.Damage.Stomps {
+			ts := msToSec(st.Time)
+			if !inWindow(ts, filter.StartTime, end) {
+				continue
+			}
+			if !pf.accepts(st.Attacker) && !pf.accepts(st.Victim) {
+				continue
+			}
+			detail := map[string]any{"victim": st.Victim}
+			if st.IsTeam {
+				detail["isTeam"] = true
+			}
+			events = append(events, TaggedEvent{
+				T: ts, Type: "stomp", Player: st.Attacker, Detail: detail,
+			})
+		}
+	}
 	if want["chat"] && r.Messages != nil {
 		for _, msg := range r.Messages.Events {
 			ts := msToSec(msg.Time)

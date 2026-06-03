@@ -546,12 +546,20 @@ func (p *Parser) parseHiddenDamage(r *mvd.BufferReader, time float64, dataLen in
 	attackerPlayer := int(attackerEnt) - 1
 	victimPlayer := int(victimEnt) - 1
 
-	// Only emit if valid player numbers
-	if attackerPlayer >= 0 && attackerPlayer < mvd.MaxClients &&
-		victimPlayer >= 0 && victimPlayer < mvd.MaxClients &&
-		damage > 0 {
+	// Emit whenever the victim is a player and damage was dealt. KTX sends
+	// mvdhidden_dmgdone when either attacker or victim is a player
+	// (ktx/src/combat.c:810), so world/environmental damage-taken (lava,
+	// fall, trigger, drowning) arrives with a non-player attacker — edict 0
+	// (worldspawn) or a non-client entity. Those records are real
+	// damage-taken signal, so we surface them with Attacker == -1 ("world")
+	// rather than dropping them. The player→player path is unchanged.
+	if victimPlayer >= 0 && victimPlayer < mvd.MaxClients && damage > 0 {
+		attacker := attackerPlayer
+		if attacker < 0 || attacker >= mvd.MaxClients {
+			attacker = -1 // world / non-player inflictor
+		}
 		return p.emit(&DamageEvent{
-			Attacker:  attackerPlayer,
+			Attacker:  attacker,
 			Victim:    victimPlayer,
 			Damage:    int(damage),
 			DeathType: deathType,

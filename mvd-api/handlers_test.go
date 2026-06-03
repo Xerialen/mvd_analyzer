@@ -648,3 +648,108 @@ func getRaw(t *testing.T, url string) ([]byte, int) {
 	body, _ := io.ReadAll(resp.Body)
 	return body, resp.StatusCode
 }
+
+func damageResult() *result.Result {
+	return &result.Result{
+		SchemaVersion: result.CurrentSchemaVersion,
+		Damage: &result.DamageResult{
+			TotalDamage: 300,
+			ByWeapon:    map[string]int{"rl": 200, "sg": 100},
+			ByPlayer: map[string]*result.PlayerDamage{
+				"alpha": {Given: 200, Taken: 50, EWep: 120, EnemyVsRL: 120, ByWeapon: map[string]int{"rl": 200}},
+				"bravo": {Given: 100, Taken: 200, ByWeapon: map[string]int{"sg": 100}},
+			},
+			Matrix: []result.DamagePair{
+				{Attacker: "alpha", Victim: "bravo", Damage: 200, ByWeapon: map[string]int{"rl": 200}},
+				{Attacker: "bravo", Victim: "alpha", Damage: 100, ByWeapon: map[string]int{"sg": 100}},
+			},
+			Events: []result.DamageEntry{
+				{Time: 1000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 200, VictimWep: "rl"},
+				{Time: 2000, Attacker: "bravo", Victim: "alpha", Weapon: "sg", Damage: 100},
+			},
+			Telefrags: []result.PositionalKill{
+				{Time: 1500, Attacker: "alpha", Victim: "bravo"},
+			},
+			Stomps: []result.PositionalKill{
+				{Time: 1700, Attacker: "bravo", Victim: "alpha"},
+			},
+		},
+	}
+}
+
+func TestDamage_Unavailable(t *testing.T) {
+	// Stub demo has no Damage section.
+	srv := newTestServer(t, storeWithStub())
+	defer srv.Close()
+	_, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/damage")
+	if status != 422 {
+		t.Errorf("status = %d; want 422", status)
+	}
+}
+
+func TestDamage_FullAndFilters(t *testing.T) {
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": damageResult()}})
+	defer srv.Close()
+
+	// Unfiltered: full result.
+	full := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage", 200)
+	if full["totalDamage"].(float64) != 300 {
+		t.Errorf("totalDamage = %v, want 300", full["totalDamage"])
+	}
+	if bw, _ := full["byPlayer"].(map[string]any); len(bw) != 2 {
+		t.Errorf("byPlayer count = %d, want 2", len(bw))
+	}
+
+	// players=alpha narrows byPlayer + matrix + events to alpha's interactions.
+	pf := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?players=alpha", 200)
+	bp, _ := pf["byPlayer"].(map[string]any)
+	if len(bp) != 1 || bp["alpha"] == nil {
+		t.Errorf("players filter byPlayer = %v, want only alpha", bp)
+	}
+	mtx, _ := pf["matrix"].([]any)
+	if len(mtx) != 2 { // alpha->bravo and bravo->alpha both involve alpha
+		t.Errorf("players filter matrix = %d rows, want 2", len(mtx))
+	}
+
+	// Telefrags ride along, filtered by player and kept out of weapon damage.
+	if tf, _ := full["telefrags"].([]any); len(tf) != 1 {
+		t.Errorf("full telefrags = %d, want 1", len(tf))
+	}
+	if tf, _ := pf["telefrags"].([]any); len(tf) != 1 {
+		t.Errorf("players=alpha telefrags = %d, want 1 (alpha telefragged bravo)", len(tf))
+	}
+
+	// weapon=rl narrows byWeapon + events, and excludes telefrags (not a weapon).
+	wf := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapon=rl", 200)
+	bw, _ := wf["byWeapon"].(map[string]any)
+	if len(bw) != 1 || bw["rl"] == nil {
+		t.Errorf("weapon filter byWeapon = %v, want only rl", bw)
+	}
+	ev, _ := wf["events"].([]any)
+	if len(ev) != 1 {
+		t.Errorf("weapon filter events = %d, want 1 (the rl hit)", len(ev))
+	}
+	if tf, present := wf["telefrags"]; present && tf != nil {
+		if arr, _ := tf.([]any); len(arr) != 0 {
+			t.Errorf("weapon=rl telefrags = %d, want 0 (telefrag is not weapon damage)", len(arr))
+		}
+	}
+	// weapon=tele retrieves telefrags specifically (and excludes stomps).
+	tw := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapon=tele", 200)
+	if tf, _ := tw["telefrags"].([]any); len(tf) != 1 {
+		t.Errorf("weapon=tele telefrags = %d, want 1", len(tf))
+	}
+	if st, present := tw["stomps"]; present && st != nil {
+		if arr, _ := st.([]any); len(arr) != 0 {
+			t.Errorf("weapon=tele stomps = %d, want 0", len(arr))
+		}
+	}
+	// Stomps ride along on the full result and under weapon=stomp.
+	if st, _ := full["stomps"].([]any); len(st) != 1 {
+		t.Errorf("full stomps = %d, want 1", len(st))
+	}
+	sw := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapon=stomp", 200)
+	if st, _ := sw["stomps"].([]any); len(st) != 1 {
+		t.Errorf("weapon=stomp stomps = %d, want 1", len(st))
+	}
+}

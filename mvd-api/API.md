@@ -121,6 +121,7 @@ Non-2xx responses use a stable envelope:
 | 422 | `demoinfo_unavailable` | non-KTX server or aborted match |
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
+| 422 | `damage_unavailable` | no KTX `mvdhidden_dmgdone` damage stream |
 | 422 | `locgraph_unavailable` | no position track |
 | 422 | `region_control_unavailable` | no region-control layout for this map |
 | 502 | `hub_upstream` | network / 5xx from the hub |
@@ -174,7 +175,7 @@ all endpoints and aren't repeated.
 Warm the cache and resolve the canonical id. Idempotent.
 
 ```jsonc
-{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 19 }
+{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 20 }
 ```
 
 Use `demoId` for subsequent calls to skip the gameId→sha lookup.
@@ -186,7 +187,7 @@ single call to populate a match header and decide which panels to show.
 
 ```jsonc
 {
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "map": "dm6", "gameDir": "qw",
   "mode": "4on4",            // omitempty
   "duration": 613.4,         // seconds
@@ -225,6 +226,36 @@ Params: `players`, `weapon`. Total + per-player + per-weapon breakdown +
 the full chronological kill log. Shape: `result.FragResult` →
 [RESULT_SCHEMA.md §FragResult](../mvd-analytics/RESULT_SCHEMA.md#fragresult-frags).
 For a kill feed with obituary text, prefer `/events?types=frag`.
+
+### 4.5b `GET /v1/demos/{id}/damage`
+
+Params: `players`, `weapon`. Per-hit damage reconstructed from the KTX
+`mvdhidden_dmgdone` stream: total + per-player (`given`/`taken`/team/self,
+per-weapon, and the **EWep** victim-weapon buckets
+`enemyVsSg/enemyVsMid/enemyVsLg/enemyVsRl/enemyVsBoth` where
+`ewep = lg+rl+both` = damage dealt to enemies *holding* RL/LG) +
+attacker→victim `matrix` + the full chronological `events` log +
+`telefrags` + `stomps` + a `scoreboard` cross-check against the KTX
+end-of-match totals. Shape: `result.DamageResult` →
+[RESULT_SCHEMA.md §DamageResult](../mvd-analytics/RESULT_SCHEMA.md#damageresult-damage).
+
+**Units:** damage is **unbound** (includes overkill), so totals run
+higher than the KTX scoreboard, which bounds each hit to the victim's
+remaining health — see the `scoreboard` deltas (each pairs an `stream*`
+unbound figure with the `score*` bounded KTX figure). The `weapon` filter
+matches the **attacker's** weapon; the EWep buckets are keyed on the
+**victim's** held weapons. `players` matches attacker OR victim. For the
+raw time-ordered log alone use `/events?types=damage`.
+
+**Positional kills** — telefrags (deathtype `tele`, the `9999` instakill
+sentinel) and stomps (deathtype `stomp`, landing on a head) — are
+**excluded** from every damage figure (a telefrag's 9999 would otherwise
+dominate `given`/`byWeapon`/`ewep`/`totalDamage`; a stomp is a movement
+kill, not a weapon). They are listed separately under `telefrags` /
+`stomps`, counted per-player in `byPlayer.<name>.telefrags` / `.stomps`,
+and exposed as the opt-in `telefrag` / `stomp` events (see §4.8). The
+`weapon` filter treats their implicit weapon as `tele` / `stomp`. The
+kill itself still appears in `/frags` and as a `frag` event.
 
 ### 4.6 `GET /v1/demos/{id}/loc-graph`
 
@@ -283,8 +314,16 @@ event log. Shape: `view.EventsView`.
 
 `types` selects event kinds; the **default set** (when `types` is empty)
 is `frag,powerup,streak,spawn,death,weapon,item,chat`. High-frequency
-state events `health`, `armor`, `loc` are **excluded by default** — pass
-them explicitly to opt in.
+state events `health`, `armor`, `loc`, and per-hit `damage` are
+**excluded by default** — pass them explicitly to opt in. A `damage`
+event carries `detail{ victim, damage, weapon, isSplash?, isEnv?,
+isSelf?, isTeam?, victimWep? }`; `players` matches its attacker or
+victim. For aggregates use `/damage` instead.
+
+`telefrag` and `stomp` are also **opt-in** (the kill already appears as a
+`frag` event, so they're left out of the default feed to avoid doubling
+the kill count). Each carries `detail{ victim, isTeam? }` with `player` =
+the killer.
 
 ```jsonc
 // ?types=spawn,death&from=100&to=160
@@ -416,7 +455,7 @@ indices client-side.
 
 - **`/chat`** (`from`, `to`, `players`, `types`) — chat + teamsay only;
   `[]result.MatchEvent`.
-- **`/healthz`** — `{ "ok": true, "schemaVersion": 19 }`.
+- **`/healthz`** — `{ "ok": true, "schemaVersion": 20 }`.
 - **`/v1/version`** — `{ "hash", "tag", "buildDate" }`.
 
 ### 4.16 Per-map static data — `GET /v1/maps/{map}/…`

@@ -30,7 +30,7 @@ mvd-mcp version
 
 ## Tool surface
 
-Nine tools. Inputs are typed Go structs with JSON-Schema inference
+Twenty-one tools. Inputs are typed Go structs with JSON-Schema inference
 (this file); outputs are passed through as opaque JSON — see
 [`../mvd-api/README.md`](../mvd-api/README.md) for the response shape
 of each per-demo endpoint, and
@@ -46,6 +46,7 @@ vocabulary, and the reducer registry.
 | `getDemoInfo` | `mvd-api` `GET /v1/demos/{id}/demoinfo` |
 | `getMetadata` | `mvd-api` `GET /v1/demos/{id}/metadata` |
 | `getFrags` | `mvd-api` `GET /v1/demos/{id}/frags` |
+| `getDamage` | `mvd-api` `GET /v1/demos/{id}/damage` |
 | `getLocGraph` | `mvd-api` `GET /v1/demos/{id}/loc-graph` |
 | `getChat` | `mvd-api` `GET /v1/demos/{id}/chat` |
 | `getBackpacks` | `mvd-api` `GET /v1/demos/{id}/backpacks` |
@@ -162,6 +163,29 @@ Frag aggregates + the full kill log. Cheaper than aggregating
 
 Output: `result.FragResult` —
 `{ totalFrags, byPlayer: {name: {kills, deaths, byWeapon}}, byWeapon: {weapon: count}, frags: [{time, killer, victim, weapon, isSuicide, isTeamKill}, ...] }`.
+
+#### `getDamage({demoId, ...})`
+
+Per-hit damage aggregates + log, reconstructed from the KTX
+`mvdhidden_dmgdone` stream. Cheaper than aggregating
+`getEvents(types:["damage"])` client-side; use that for the raw
+time-ordered per-hit log.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `demoId`  | `string` (required) | — | — |
+| `players` | `string[]` | all | Restrict aggregates + log to entries involving these (attacker OR victim) |
+| `weapon`  | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
+
+Output: `result.DamageResult` — `{ totalDamage, byWeapon, byPlayer: {name:
+{given, taken, givenTeam, givenSelf, takenEnv, byWeapon, enemyVsSg,
+enemyVsMid, enemyVsLg, enemyVsRl, enemyVsBoth, ewep}}, matrix: [{attacker,
+victim, damage, byWeapon}], events: [{time, attacker, victim, weapon,
+damage, victimWep, ...}], scoreboard }`. **EWep** (= `enemyVsLg +
+enemyVsRl + enemyVsBoth`) is damage dealt to enemies *holding* RL/LG,
+keyed on the **victim's** inventory. Amounts are **unbound** (include
+overkill; a telefrag reports 9999), so totals run higher than the KTX
+scoreboard — see `scoreboard` for the cross-check.
 
 #### `getLocGraph({demoId})`
 

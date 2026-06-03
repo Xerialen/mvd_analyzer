@@ -2146,6 +2146,7466 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "psy*overon": {
+        "byWeapon": {
+          "lg": 1830,
+          "rl": 7315,
+          "sg": 200
+        },
+        "enemyVsBoth": 3769,
+        "enemyVsLg": 0,
+        "enemyVsMid": 443,
+        "enemyVsRl": 3710,
+        "enemyVsSg": 1423,
+        "ewep": 7479,
+        "given": 9345,
+        "givenSelf": 898,
+        "givenTeam": 707,
+        "taken": 10641,
+        "takenEnv": 185
+      },
+      "wd.cao": {
+        "byWeapon": {
+          "gl": 231,
+          "lg": 2160,
+          "rl": 5832,
+          "sg": 352
+        },
+        "enemyVsBoth": 2324,
+        "enemyVsLg": 564,
+        "enemyVsMid": 404,
+        "enemyVsRl": 4341,
+        "enemyVsSg": 942,
+        "ewep": 7229,
+        "given": 8575,
+        "givenSelf": 1096,
+        "givenTeam": 413,
+        "taken": 10307,
+        "takenEnv": 55
+      },
+      "wd.char": {
+        "byWeapon": {
+          "lg": 3900,
+          "rl": 7478,
+          "sg": 12,
+          "sng": 72
+        },
+        "enemyVsBoth": 2798,
+        "enemyVsLg": 571,
+        "enemyVsMid": 460,
+        "enemyVsRl": 5039,
+        "enemyVsSg": 2594,
+        "ewep": 8408,
+        "given": 11462,
+        "givenSelf": 1614,
+        "givenTeam": 881,
+        "taken": 9720,
+        "takenEnv": 70
+      },
+      "wd.dilbert": {
+        "byWeapon": {
+          "gl": 65,
+          "lg": 570,
+          "rl": 5702,
+          "sg": 216
+        },
+        "enemyVsBoth": 3489,
+        "enemyVsLg": 331,
+        "enemyVsMid": 262,
+        "enemyVsRl": 2013,
+        "enemyVsSg": 458,
+        "ewep": 5833,
+        "given": 6553,
+        "givenSelf": 759,
+        "givenTeam": 228,
+        "taken": 12318,
+        "takenEnv": 145
+      }
+    },
+    "byWeapon": {
+      "gl": 296,
+      "lg": 8460,
+      "rl": 26327,
+      "sg": 780,
+      "sng": 72
+    },
+    "events": [
+      {
+        "attacker": "wd.char",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 1779,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 4,
+        "time": 2854,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 98,
+        "isSplash": true,
+        "time": 3011,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 3011,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 91,
+        "isSplash": true,
+        "time": 3774,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 3774,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 103,
+        "isSplash": true,
+        "time": 4594,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 4608,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 5596,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 6816,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 6920,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 80,
+        "isSplash": true,
+        "time": 7010,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 7024,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 7404,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 7508,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 8181,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "time": 8855,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 9269,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 9467,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 9571,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 9672,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 11544,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 11752,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 11855,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 11945,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 4,
+        "time": 13012,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 340,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 13248,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 15320,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 72,
+        "isSplash": true,
+        "time": 15320,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 15320,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 104,
+        "isSplash": true,
+        "time": 16216,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "isTeam": true,
+        "time": 16596,
+        "victim": "psy*overon",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 104,
+        "isSplash": true,
+        "time": 19492,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 67,
+        "isSplash": true,
+        "time": 19870,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 21,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 19918,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 20299,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 92,
+        "isSplash": true,
+        "time": 22924,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 22973,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 23586,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 24559,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 24676,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 24780,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 87,
+        "isSplash": true,
+        "time": 24814,
+        "victim": "wd.char",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 26533,
+        "victim": "wd.char",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 26566,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 27462,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 28066,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 28177,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 28533,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 30183,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 30204,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 30287,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 30324,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 30532,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 31036,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 59,
+        "isSplash": true,
+        "time": 31348,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 32323,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 59,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 32551,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 33235,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 48,
+        "isSplash": true,
+        "time": 33285,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 33714,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 56,
+        "isSplash": true,
+        "time": 35008,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 35024,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 35708,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 35724,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 36699,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 37508,
+        "victim": "wd.char",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 37528,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 38545,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 68,
+        "isSplash": true,
+        "time": 39333,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 12,
+        "time": 40761,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 62,
+        "isSplash": true,
+        "time": 40884,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 41468,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 42585,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 49,
+        "isSplash": true,
+        "time": 42779,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 46,
+        "isSplash": true,
+        "time": 43975,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "time": 44011,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 44593,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 61,
+        "isSplash": true,
+        "time": 44663,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 90,
+        "isSplash": true,
+        "time": 46929,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 61,
+        "isSplash": true,
+        "time": 47136,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 47456,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 48825,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 63,
+        "isSplash": true,
+        "time": 48825,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 50274,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 112,
+        "isSplash": true,
+        "time": 50413,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 50897,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 51001,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 51908,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 52193,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 71,
+        "isSplash": true,
+        "time": 52583,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 52611,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 52904,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 47,
+        "isSplash": true,
+        "time": 53715,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 54908,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 77,
+        "isSplash": true,
+        "time": 55560,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 55973,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 55973,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 56632,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 82,
+        "isSplash": true,
+        "time": 57748,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 57778,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 59415,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 4,
+        "time": 61050,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 59,
+        "isSplash": true,
+        "time": 61050,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 61050,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 61064,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 84,
+        "isSplash": true,
+        "time": 61830,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 100,
+        "isSplash": true,
+        "time": 61845,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 65,
+        "isSplash": true,
+        "time": 63885,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 29,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 64091,
+        "victim": "wd.cao",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 60,
+        "isSplash": true,
+        "time": 64091,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "time": 64136,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "time": 64637,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 65039,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 55,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 65039,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "time": 65154,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 66317,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 66317,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 78,
+        "isSplash": true,
+        "time": 68131,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 70235,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 70907,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 71477,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 71669,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 71685,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 84,
+        "isSplash": true,
+        "time": 72930,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 72945,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "time": 73715,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 46,
+        "isSplash": true,
+        "time": 73790,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 99,
+        "isSplash": true,
+        "time": 74092,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 75830,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 75875,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 76975,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 67,
+        "isSplash": true,
+        "time": 78478,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 78492,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 79453,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 41,
+        "isSplash": true,
+        "time": 79530,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 81328,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 83,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 81328,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 81344,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 81547,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 54,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 81547,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 82247,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 84155,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 85259,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 86408,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 53,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 87858,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 62,
+        "isSplash": true,
+        "time": 88297,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 88313,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 88611,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 88717,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 57,
+        "isSplash": true,
+        "time": 88972,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 88986,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 62,
+        "isSplash": true,
+        "time": 89142,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 89170,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 102,
+        "isSplash": true,
+        "time": 90505,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 95080,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 95115,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 69,
+        "isSplash": true,
+        "time": 95428,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 44,
+        "isSplash": true,
+        "time": 97745,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 41,
+        "isSplash": true,
+        "time": 97816,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 48,
+        "isSplash": true,
+        "time": 97845,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 85,
+        "isSplash": true,
+        "time": 99301,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 100337,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 100952,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 101027,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 101952,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 64,
+        "isSplash": true,
+        "time": 102469,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 102519,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 110402,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 110416,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 70,
+        "isSplash": true,
+        "time": 110856,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 110870,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 111017,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 71,
+        "isSplash": true,
+        "time": 111090,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 111120,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 111337,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 111455,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 111561,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 44,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 112845,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 116078,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 116288,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 49,
+        "isSplash": true,
+        "time": 118612,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 120079,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 120273,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 86,
+        "isSplash": true,
+        "time": 120440,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 123531,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 97,
+        "isSplash": true,
+        "time": 123819,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 69,
+        "isSplash": true,
+        "time": 124026,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 124053,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 124365,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 124572,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 124662,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 124869,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 124882,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 94,
+        "isSplash": true,
+        "time": 125842,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 127037,
+        "victim": "wd.char",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 127037,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "time": 128457,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "isTeam": true,
+        "time": 128685,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 88,
+        "isSplash": true,
+        "time": 128685,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 128739,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 120,
+        "time": 129479,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 129674,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 77,
+        "isSplash": true,
+        "time": 131492,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 131505,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 132193,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 135144,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 135249,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 135270,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 135375,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 135777,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 137102,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 137726,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 137830,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 138039,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 138232,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 139572,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 139689,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 139791,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 139985,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 142390,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 71,
+        "isSplash": true,
+        "time": 142598,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 142845,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 143985,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 144352,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 144456,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 144582,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 144676,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 144857,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 146520,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 146705,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 146816,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 62,
+        "isSplash": true,
+        "time": 147842,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 148856,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 149234,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 149338,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 149352,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 149454,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 149649,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "isTeam": true,
+        "time": 149986,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 82,
+        "isSplash": true,
+        "time": 153494,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 153648,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 153793,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 103,
+        "isSplash": true,
+        "time": 157291,
+        "victim": "wd.char",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 157322,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 160325,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 161415,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 62,
+        "isSplash": true,
+        "time": 161719,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 41,
+        "isSplash": true,
+        "time": 161719,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 166596,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 166974,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 74,
+        "isSplash": true,
+        "time": 169556,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 171739,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 64,
+        "isSplash": true,
+        "time": 171752,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 66,
+        "isSplash": true,
+        "time": 172273,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 49,
+        "isSplash": true,
+        "time": 174882,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 73,
+        "isSplash": true,
+        "time": 175156,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 21,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 175271,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 176043,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 73,
+        "isSplash": true,
+        "time": 177616,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 108,
+        "isSplash": true,
+        "time": 177806,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 177825,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 64,
+        "isSplash": true,
+        "time": 178066,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 12,
+        "time": 179633,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 180025,
+        "victim": "wd.char",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 181806,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 181806,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 184128,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 184182,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 184439,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 184481,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 184585,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 69,
+        "isSplash": true,
+        "time": 185205,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 85,
+        "isSplash": true,
+        "time": 185840,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 66,
+        "isSplash": true,
+        "time": 187688,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 188246,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 120,
+        "time": 188986,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 56,
+        "isSplash": true,
+        "time": 189229,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 120,
+        "time": 190689,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 190855,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 48,
+        "isSplash": true,
+        "time": 192659,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 60,
+        "isSplash": true,
+        "time": 193217,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 58,
+        "isSplash": true,
+        "time": 193322,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 193369,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 193883,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 193905,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 67,
+        "isSplash": true,
+        "time": 196075,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 196102,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 70,
+        "isSplash": true,
+        "time": 196529,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 95,
+        "isSplash": true,
+        "time": 198282,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 200038,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 56,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 200038,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 201580,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 12,
+        "time": 202078,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 54,
+        "isSplash": true,
+        "time": 202127,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 76,
+        "isSplash": true,
+        "time": 202127,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 203046,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 203754,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 204013,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 204565,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 204581,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 207283,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 208633,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "time": 208687,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 208837,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 208948,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 209133,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 210699,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 211218,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 211218,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 211779,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 211883,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 216154,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 218442,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 218461,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 222110,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 222414,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 222516,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 224727,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 69,
+        "isSplash": true,
+        "time": 224907,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 54,
+        "isSplash": true,
+        "time": 224907,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 225993,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 226022,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 226932,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 12,
+        "time": 227806,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 229719,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 87,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 231308,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 21,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 232349,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 57,
+        "isSplash": true,
+        "time": 232525,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 77,
+        "isSplash": true,
+        "time": 233089,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 68,
+        "isSplash": true,
+        "time": 233439,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "isTeam": true,
+        "time": 234910,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 234930,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 235740,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 235844,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 236026,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 238946,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 52,
+        "isSplash": true,
+        "time": 239078,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 239201,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 45,
+        "isSplash": true,
+        "time": 239565,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 43,
+        "isSplash": true,
+        "time": 240247,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "isTeam": true,
+        "time": 240545,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 92,
+        "isSplash": true,
+        "time": 242425,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 242439,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 242997,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 69,
+        "isSplash": true,
+        "time": 243281,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 243295,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 243840,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 244282,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 244295,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 248258,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 65,
+        "isSplash": true,
+        "time": 249913,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 78,
+        "isSplash": true,
+        "time": 252490,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 85,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 252622,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 252740,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 253078,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 253078,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 253126,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 253126,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 254827,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 254841,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 255285,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 255303,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 255582,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 16,
+        "time": 257127,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 77,
+        "isSplash": true,
+        "time": 257737,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 257751,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 257766,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 257766,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 55,
+        "isSplash": true,
+        "time": 257887,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 95,
+        "isSplash": true,
+        "time": 258830,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 18,
+        "time": 258857,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 18,
+        "time": 258996,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 18,
+        "time": 259165,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 259759,
+        "victim": "wd.char",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 42,
+        "isSplash": true,
+        "time": 262494,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 84,
+        "isSplash": true,
+        "time": 262892,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 263636,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 66,
+        "isSplash": true,
+        "time": 263649,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 267179,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 84,
+        "isSplash": true,
+        "time": 267324,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 54,
+        "isSplash": true,
+        "time": 271375,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 63,
+        "isSplash": true,
+        "time": 271996,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 273025,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 56,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 273025,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 273496,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 75,
+        "isSplash": true,
+        "time": 273870,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 273887,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 94,
+        "isSplash": true,
+        "time": 275282,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 275295,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "time": 275324,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 277389,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 279701,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 42,
+        "isSplash": true,
+        "time": 280324,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 96,
+        "isSplash": true,
+        "time": 280610,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 280840,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 281035,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 281898,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 96,
+        "isSplash": true,
+        "time": 283641,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 55,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 283641,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 283659,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 94,
+        "isSplash": true,
+        "time": 283775,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "time": 284347,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 285209,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 285222,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 62,
+        "isSplash": true,
+        "time": 286554,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 16,
+        "time": 287193,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 287207,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 102,
+        "isSplash": true,
+        "time": 287207,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 287207,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 287269,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 79,
+        "isSplash": true,
+        "time": 287325,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 288297,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 289285,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 290491,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 46,
+        "isSplash": true,
+        "time": 290723,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 290999,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 292880,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 293178,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 47,
+        "isSplash": true,
+        "time": 294945,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 295307,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 295411,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 83,
+        "isSplash": true,
+        "time": 298009,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 53,
+        "isSplash": true,
+        "time": 301255,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 301327,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 64,
+        "isSplash": true,
+        "time": 302055,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 302974,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 305002,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 305610,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 305999,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 306091,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 306204,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 306294,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 306611,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 307598,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 59,
+        "isSplash": true,
+        "time": 307933,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 69,
+        "isSplash": true,
+        "time": 308025,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 85,
+        "isSplash": true,
+        "time": 308594,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 308922,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 309015,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 309125,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 309418,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 309534,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 75,
+        "isSplash": true,
+        "time": 309597,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 310145,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 54,
+        "isSplash": true,
+        "time": 311581,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 49,
+        "isSplash": true,
+        "time": 311610,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 311895,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 312286,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 312594,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 312794,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 316418,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 316528,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 316528,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 316528,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 317063,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 58,
+        "isSplash": true,
+        "time": 317231,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 317336,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 317441,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 96,
+        "isSplash": true,
+        "time": 317866,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 319233,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 319389,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 320794,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 54,
+        "isSplash": true,
+        "time": 320960,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 83,
+        "isSplash": true,
+        "time": 321008,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 60,
+        "isSplash": true,
+        "time": 321853,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 53,
+        "isSplash": true,
+        "time": 322635,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 80,
+        "isSplash": true,
+        "time": 322774,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 43,
+        "isSplash": true,
+        "time": 323635,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 62,
+        "isSplash": true,
+        "time": 323698,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 327935,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 328051,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 328337,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 328441,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 328597,
+        "victim": "wd.char",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 328881,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 8,
+        "time": 330767,
+        "victim": "wd.char",
+        "victimWep": "lg",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 16,
+        "time": 331271,
+        "victim": "wd.char",
+        "victimWep": "lg",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 332523,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 332739,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 332829,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 332933,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 335463,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 336011,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 336115,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 336361,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 336418,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 336609,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 87,
+        "isSplash": true,
+        "time": 336683,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 338855,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 339398,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 339471,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 339502,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 77,
+        "isSplash": true,
+        "time": 339587,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 339587,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 43,
+        "isSplash": true,
+        "time": 340591,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 93,
+        "isSplash": true,
+        "time": 340675,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 342267,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 48,
+        "isSplash": true,
+        "time": 342281,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 342281,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 18,
+        "time": 342982,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 95,
+        "isSplash": true,
+        "time": 343103,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 343163,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 63,
+        "isSplash": true,
+        "time": 344793,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 50,
+        "isSplash": true,
+        "time": 344826,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 345346,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 345431,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 345639,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 345735,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 346043,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 346511,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 346527,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 59,
+        "isSplash": true,
+        "time": 347199,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 348385,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 16,
+        "time": 349427,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 349939,
+        "victim": "psy*overon",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 28,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 349957,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 16,
+        "time": 350090,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 351095,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 351215,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 351835,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 83,
+        "isSplash": true,
+        "time": 352817,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 352830,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 352891,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 353619,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 56,
+        "isSplash": true,
+        "time": 353800,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 354129,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 24,
+        "time": 354129,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 354233,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 354311,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 354528,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 354725,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 354826,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 356887,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 356995,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 357100,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 357203,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 357341,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 83,
+        "isSplash": true,
+        "time": 359115,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 65,
+        "isSplash": true,
+        "time": 360126,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 363219,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 363807,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 363908,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 78,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 364303,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 70,
+        "isSplash": true,
+        "time": 364303,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 4,
+        "time": 366111,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 366579,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 366639,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 12,
+        "time": 366639,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 88,
+        "isSplash": true,
+        "time": 366714,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 16,
+        "time": 367297,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 80,
+        "isSplash": true,
+        "time": 368350,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 368584,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 368983,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 84,
+        "isSplash": true,
+        "time": 370181,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 120,
+        "time": 370181,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 120,
+        "time": 370599,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 63,
+        "isSplash": true,
+        "time": 371293,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 372329,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 372735,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 76,
+        "isSplash": true,
+        "time": 373073,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 373103,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 375731,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 47,
+        "isSplash": true,
+        "time": 376181,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 8,
+        "time": 376679,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 102,
+        "isSplash": true,
+        "time": 377776,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 102,
+        "isSplash": true,
+        "time": 379111,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 379124,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 56,
+        "isSplash": true,
+        "time": 380887,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 381292,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 381413,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 382003,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 382315,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 382615,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 96,
+        "isSplash": true,
+        "time": 383525,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 384557,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 384603,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 384603,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 385168,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 12,
+        "time": 385595,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 385627,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 385736,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 385839,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 385945,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 388494,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 388596,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 391069,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 43,
+        "isSplash": true,
+        "time": 391069,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 391170,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 391273,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 391362,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 43,
+        "isSplash": true,
+        "time": 391466,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 53,
+        "isSplash": true,
+        "time": 391857,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 395531,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 53,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 395531,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 91,
+        "isSplash": true,
+        "time": 396183,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 396199,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 76,
+        "isSplash": true,
+        "time": 396713,
+        "victim": "psy*overon",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 43,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 396713,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 397517,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 43,
+        "isSplash": true,
+        "time": 400599,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 87,
+        "isSplash": true,
+        "time": 400985,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 401040,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 45,
+        "isSplash": true,
+        "time": 401531,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 402323,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 41,
+        "isSplash": true,
+        "time": 403447,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 403862,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 404031,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 404049,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 404367,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 404459,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 404714,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 88,
+        "isSplash": true,
+        "time": 406805,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 406959,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 407090,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 84,
+        "isSplash": true,
+        "time": 407167,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 407284,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 407480,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 72,
+        "isSplash": true,
+        "time": 407987,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 409667,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 64,
+        "isSplash": true,
+        "time": 410791,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 411019,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 413129,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 413279,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 62,
+        "isSplash": true,
+        "time": 413792,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 99,
+        "isSplash": true,
+        "time": 414823,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 84,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 415155,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 416687,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 417208,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 417208,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 419156,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 419312,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 57,
+        "isSplash": true,
+        "time": 420169,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 420182,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 420447,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 62,
+        "isSplash": true,
+        "time": 420948,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 420991,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 421091,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 421153,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 67,
+        "isSplash": true,
+        "time": 423083,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 423205,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 425025,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 425153,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 425217,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 425739,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 425766,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 425945,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 66,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 427791,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 75,
+        "isSplash": true,
+        "time": 427923,
+        "victim": "wd.cao",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 46,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 429972,
+        "victim": "wd.char",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 120,
+        "time": 431220,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 45,
+        "isSplash": true,
+        "time": 431493,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 434389,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 85,
+        "isSplash": true,
+        "time": 436031,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 438431,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 438543,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 438934,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 48,
+        "isSplash": true,
+        "time": 439155,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 443407,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 443529,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 444425,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 44,
+        "isSplash": true,
+        "time": 444636,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 444714,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 444829,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 445023,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 59,
+        "isSplash": true,
+        "time": 445567,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 21,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 447064,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 82,
+        "isSplash": true,
+        "time": 447921,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 447936,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 83,
+        "isSplash": true,
+        "time": 448492,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 448505,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 450725,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 451636,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 80,
+        "isSplash": true,
+        "time": 451636,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 453167,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 79,
+        "isSplash": true,
+        "time": 453443,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 24,
+        "time": 453868,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 61,
+        "isSplash": true,
+        "time": 454171,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 30,
+        "time": 454535,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 62,
+        "isSplash": true,
+        "time": 454569,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 454659,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 455187,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 455205,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 78,
+        "isSplash": true,
+        "time": 455587,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 24,
+        "time": 456557,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 457489,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 458667,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 94,
+        "isSplash": true,
+        "time": 461361,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 461739,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 461847,
+        "victim": "wd.dilbert",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 92,
+        "isSplash": true,
+        "time": 464323,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 464587,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 464676,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 464738,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 54,
+        "isSplash": true,
+        "time": 464738,
+        "victim": "wd.dilbert",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 98,
+        "isSplash": true,
+        "time": 464894,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 465285,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 465388,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 85,
+        "isSplash": true,
+        "time": 465647,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 465647,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 465688,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 465986,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 467691,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 468187,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 468205,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 470882,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 470911,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 474103,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 476175,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 70,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 476505,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 477279,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 53,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 477279,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 67,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 478063,
+        "victim": "wd.dilbert",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 89,
+        "isSplash": true,
+        "time": 479477,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 479842,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 483675,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 483778,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 483883,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 483986,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 91,
+        "isSplash": true,
+        "time": 484175,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 100,
+        "isSplash": true,
+        "time": 484453,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 88,
+        "isSplash": true,
+        "time": 487035,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 487063,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 487324,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 489003,
+        "victim": "psy*overon",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 489035,
+        "victim": "psy*overon",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 489107,
+        "victim": "psy*overon",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 489139,
+        "victim": "psy*overon",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 489927,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 490035,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 490139,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 490239,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 64,
+        "isSplash": true,
+        "time": 490707,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 495153,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 495795,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 120,
+        "time": 496175,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 497759,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 498921,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 120,
+        "time": 499071,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 499263,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 501061,
+        "victim": "wd.cao",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 503012,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 503312,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 504323,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 97,
+        "isSplash": true,
+        "time": 505619,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 42,
+        "isSplash": true,
+        "time": 506336,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 57,
+        "isSplash": true,
+        "time": 506395,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "isTeam": true,
+        "time": 507029,
+        "victim": "wd.dilbert",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 507063,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 507155,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "isTeam": true,
+        "time": 507233,
+        "victim": "wd.dilbert",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 274,
+        "isSplash": true,
+        "time": 507315,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 48,
+        "time": 508771,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 365,
+        "isSplash": true,
+        "time": 509477,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 130,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 509492,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 510388,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 511478,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 100,
+        "isSplash": true,
+        "time": 511622,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 28,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 511648,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 512688,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 514440,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 514477,
+        "victim": "wd.char",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 58,
+        "isSplash": true,
+        "time": 518324,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 518539,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 519076,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 53,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 519076,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 78,
+        "isSplash": true,
+        "time": 519076,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 16,
+        "time": 520711,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 12,
+        "time": 521217,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 20,
+        "time": 521717,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 60,
+        "isSplash": true,
+        "time": 522933,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 523362,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 4,
+        "time": 523505,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 523555,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 523855,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 523957,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 524061,
+        "victim": "psy*overon",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 91,
+        "isSplash": true,
+        "time": 526011,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 528841,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 528855,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 80,
+        "isSplash": true,
+        "time": 530667,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 55,
+        "isSplash": true,
+        "time": 531191,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 531219,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 531518,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 99,
+        "isSplash": true,
+        "time": 531959,
+        "victim": "psy*overon",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 28,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 531977,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 534383,
+        "victim": "wd.dilbert",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 60,
+        "isSplash": true,
+        "time": 534459,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 534621,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 534621,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 537511,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 42,
+        "isSplash": true,
+        "time": 538802,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 540634,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 83,
+        "isSplash": true,
+        "time": 540749,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 540811,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 66,
+        "isSplash": true,
+        "time": 543154,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 41,
+        "isSplash": true,
+        "time": 545491,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 545603,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 48,
+        "isSplash": true,
+        "time": 547335,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 51,
+        "isSplash": true,
+        "time": 548291,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 54,
+        "isSplash": true,
+        "time": 548842,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 551296,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 82,
+        "isSplash": true,
+        "time": 551323,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 552078,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 552276,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 77,
+        "isSplash": true,
+        "time": 553071,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 120,
+        "time": 553591,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 94,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 553790,
+        "victim": "psy*overon",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 555939,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 560048,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 560258,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 560362,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 560459,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 68,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 560459,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 560835,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 88,
+        "isSplash": true,
+        "time": 561539,
+        "victim": "wd.dilbert",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 561539,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 562167,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 66,
+        "isSplash": true,
+        "time": 562230,
+        "victim": "wd.char",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 77,
+        "isSplash": true,
+        "time": 562423,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 564374,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 57,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 565634,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 110,
+        "time": 567111,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 567478,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "isTeam": true,
+        "time": 568699,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 65,
+        "isSplash": true,
+        "time": 570828,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 30,
+        "time": 571575,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 71,
+        "isSplash": true,
+        "time": 571799,
+        "victim": "wd.dilbert",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 30,
+        "time": 571983,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 572024,
+        "victim": "wd.cao",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 572423,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 66,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 575231,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 110,
+        "time": 576790,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 576842,
+        "victim": "wd.dilbert",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 50,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 577660,
+        "victim": "wd.cao",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 578087,
+        "victim": "wd.char",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 82,
+        "isSplash": true,
+        "time": 579555,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 580309,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 580413,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "damage": 41,
+        "isSplash": true,
+        "time": 580556,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 580608,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 581535,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 110,
+        "time": 583439,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 93,
+        "isSplash": true,
+        "time": 584101,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "wd.cao",
+        "damage": 64,
+        "isSplash": true,
+        "time": 584360,
+        "victim": "psy*overon",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 71,
+        "isSplash": true,
+        "time": 584915,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 587147,
+        "victim": "wd.cao",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 587955,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 591295,
+        "victim": "wd.cao",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 591893,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 592894,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 593111,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 593400,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 593504,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 593595,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 30,
+        "time": 593793,
+        "victim": "wd.dilbert",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "psy*overon",
+        "damage": 110,
+        "time": 596279,
+        "victim": "wd.char",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 596413,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 597465,
+        "victim": "psy*overon",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "wd.char",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 599958,
+        "victim": "wd.char",
+        "weapon": "rl"
+      }
+    ],
+    "matrix": [
+      {
+        "attacker": "psy*overon",
+        "byWeapon": {
+          "lg": 1110,
+          "rl": 4210,
+          "sg": 96
+        },
+        "damage": 5416,
+        "victim": "wd.cao"
+      },
+      {
+        "attacker": "psy*overon",
+        "byWeapon": {
+          "lg": 720,
+          "rl": 3105,
+          "sg": 104
+        },
+        "damage": 3929,
+        "victim": "wd.char"
+      },
+      {
+        "attacker": "wd.cao",
+        "byWeapon": {
+          "gl": 112,
+          "lg": 1290,
+          "rl": 3166,
+          "sg": 288
+        },
+        "damage": 4856,
+        "victim": "psy*overon"
+      },
+      {
+        "attacker": "wd.cao",
+        "byWeapon": {
+          "gl": 119,
+          "lg": 870,
+          "rl": 2666,
+          "sg": 64
+        },
+        "damage": 3719,
+        "victim": "wd.dilbert"
+      },
+      {
+        "attacker": "wd.char",
+        "byWeapon": {
+          "lg": 1650,
+          "rl": 2770,
+          "sng": 54
+        },
+        "damage": 4474,
+        "victim": "psy*overon"
+      },
+      {
+        "attacker": "wd.char",
+        "byWeapon": {
+          "lg": 2250,
+          "rl": 4708,
+          "sg": 12,
+          "sng": 18
+        },
+        "damage": 6988,
+        "victim": "wd.dilbert"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "byWeapon": {
+          "gl": 65,
+          "lg": 360,
+          "rl": 2290,
+          "sg": 144
+        },
+        "damage": 2859,
+        "victim": "wd.cao"
+      },
+      {
+        "attacker": "wd.dilbert",
+        "byWeapon": {
+          "lg": 210,
+          "rl": 3412,
+          "sg": 72
+        },
+        "damage": 3694,
+        "victim": "wd.char"
+      }
+    ],
+    "scoreboard": {
+      "byPlayer": {
+        "psy*overon": {
+          "scoreEwep": 6154,
+          "scoreGiven": 7665,
+          "scoreTaken": 7657,
+          "streamEwep": 7479,
+          "streamGiven": 9345,
+          "streamTaken": 10641
+        },
+        "wd.cao": {
+          "scoreEwep": 5638,
+          "scoreGiven": 6857,
+          "scoreTaken": 6693,
+          "streamEwep": 7229,
+          "streamGiven": 8575,
+          "streamTaken": 10307
+        },
+        "wd.char": {
+          "scoreEwep": 6824,
+          "scoreGiven": 9573,
+          "scoreTaken": 6727,
+          "streamEwep": 8408,
+          "streamGiven": 11462,
+          "streamTaken": 9720
+        },
+        "wd.dilbert": {
+          "scoreEwep": 5099,
+          "scoreGiven": 5755,
+          "scoreTaken": 8773,
+          "streamEwep": 5833,
+          "streamGiven": 6553,
+          "streamTaken": 12318
+        }
+      }
+    },
+    "totalDamage": 42986
+  },
   "demoInfo": {
     "date": "2026-04-25 02:33:08 -0300",
     "demo": "2on2_wd_vs_pys[aerowalk]20260425-0222.mvd",
@@ -14531,7 +21991,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "streams": {
     "global": {
       "matchEnd": 600040,

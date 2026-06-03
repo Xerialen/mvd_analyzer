@@ -1399,6 +1399,13 @@ Offset  Size  Field
 - Entity numbers are 1-indexed (entity 0 is world). Convert to player number: `player_num = entity - 1`
 - The `damage_amount` is **raw/unbound damage** including overkill (see [Damage Tracking](#damage-tracking-details))
 - Splash damage flag indicates indirect damage (e.g., rocket splash, not direct hit)
+- KTX emits the record when **either** the attacker or the victim is a player
+  (`ktx/src/combat.c:810`). The parser emits a `DamageEvent` whenever the
+  **victim** is a player and `damage > 0`. World/environmental damage-taken
+  (lava, fall, `trigger_hurt`, drowning) arrives with a non-player attacker —
+  worldspawn (entity 0 → slot −1) or a non-client entity — and is surfaced with
+  **`Attacker == -1` (the "world" sentinel)** rather than dropped, so
+  damage-taken totals are complete. Player→player records are unchanged.
 
 **Example parsing**:
 ```go

@@ -251,6 +251,129 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
+// handleDamage: GET /v1/demos/{id}/damage — per-hit damage log +
+// aggregates (matrix, per-weapon, given/taken, EWep victim-weapon
+// buckets) + the KTX-scoreboard cross-check. Optional filters narrow all
+// views to entries involving the named players / weapon.
+//
+// Query params:
+//
+//	players  csv — restrict ByPlayer / Matrix / Events / Scoreboard to
+//	             entries where attacker or victim is in the set
+//	weapon   csv — restrict ByWeapon keys + Matrix/Events + per-player
+//	             ByWeapon to these (attacker) weapons
+func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
+	res, _, ok := s.resolveDemo(w, r)
+	if !ok {
+		return
+	}
+	if res.Damage == nil {
+		writeError(w, http.StatusUnprocessableEntity, "damage_unavailable",
+			"this demo has no damage data (no KTX mvdhidden_dmgdone stream)")
+		return
+	}
+	q := r.URL.Query()
+	playerSet := csvSet(q.Get("players"))
+	weaponSet := csvSet(q.Get("weapon"))
+	if len(playerSet) == 0 && len(weaponSet) == 0 {
+		writeJSON(w, http.StatusOK, res.Damage)
+		return
+	}
+
+	out := &result.DamageResult{TotalDamage: res.Damage.TotalDamage}
+
+	if res.Damage.ByPlayer != nil {
+		out.ByPlayer = make(map[string]*result.PlayerDamage, len(res.Damage.ByPlayer))
+		for name, pd := range res.Damage.ByPlayer {
+			if len(playerSet) > 0 && !playerSet[name] {
+				continue
+			}
+			if len(weaponSet) > 0 {
+				clone := *pd
+				clone.ByWeapon = map[string]int{}
+				for wpn, n := range pd.ByWeapon {
+					if weaponSet[wpn] {
+						clone.ByWeapon[wpn] = n
+					}
+				}
+				out.ByPlayer[name] = &clone
+			} else {
+				out.ByPlayer[name] = pd
+			}
+		}
+	}
+	if res.Damage.ByWeapon != nil {
+		out.ByWeapon = make(map[string]int, len(res.Damage.ByWeapon))
+		for wpn, n := range res.Damage.ByWeapon {
+			if len(weaponSet) > 0 && !weaponSet[wpn] {
+				continue
+			}
+			out.ByWeapon[wpn] = n
+		}
+	}
+	for _, mp := range res.Damage.Matrix {
+		if len(playerSet) > 0 && !playerSet[mp.Attacker] && !playerSet[mp.Victim] {
+			continue
+		}
+		if len(weaponSet) > 0 {
+			pair := result.DamagePair{Attacker: mp.Attacker, Victim: mp.Victim, ByWeapon: map[string]int{}}
+			for wpn, n := range mp.ByWeapon {
+				if weaponSet[wpn] {
+					pair.ByWeapon[wpn] = n
+					pair.Damage += n
+				}
+			}
+			if pair.Damage == 0 {
+				continue
+			}
+			out.Matrix = append(out.Matrix, pair)
+		} else {
+			out.Matrix = append(out.Matrix, mp)
+		}
+	}
+	for _, de := range res.Damage.Events {
+		if len(weaponSet) > 0 && !weaponSet[de.Weapon] {
+			continue
+		}
+		if len(playerSet) > 0 && !playerSet[de.Attacker] && !playerSet[de.Victim] {
+			continue
+		}
+		out.Events = append(out.Events, de)
+	}
+	// Telefrags / stomps carry no weapon; treat their implicit weapon as
+	// "tele" / "stomp" so weapon=tele|stomp retrieves them and any other
+	// weapon= filter excludes them.
+	for _, tf := range res.Damage.Telefrags {
+		if len(weaponSet) > 0 && !weaponSet["tele"] {
+			continue
+		}
+		if len(playerSet) > 0 && !playerSet[tf.Attacker] && !playerSet[tf.Victim] {
+			continue
+		}
+		out.Telefrags = append(out.Telefrags, tf)
+	}
+	for _, st := range res.Damage.Stomps {
+		if len(weaponSet) > 0 && !weaponSet["stomp"] {
+			continue
+		}
+		if len(playerSet) > 0 && !playerSet[st.Attacker] && !playerSet[st.Victim] {
+			continue
+		}
+		out.Stomps = append(out.Stomps, st)
+	}
+	if res.Damage.Scoreboard != nil {
+		sb := &result.DamageReconciliation{ByPlayer: map[string]*result.DamageDelta{}}
+		for name, d := range res.Damage.Scoreboard.ByPlayer {
+			if len(playerSet) > 0 && !playerSet[name] {
+				continue
+			}
+			sb.ByPlayer[name] = d
+		}
+		out.Scoreboard = sb
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 // handleChat: GET /v1/demos/{id}/chat — chat-only slice of
 // result.Messages.Events, with optional player / time-window / type
 // filters.

@@ -27,10 +27,10 @@ that downstream consumers render, summarise, or feed to an agent.
 - `analyzer/` — the `Analyzer` interface, the read-only event/userinfo
   `Context`, the typed `CoreOutputs` bundle that producer analysers
   populate for downstream consumers, and the `Registry` that drives a
-  run. `NewDefaultRegistry()` wires up ten production analysers split
+  run. `NewDefaultRegistry()` wires up the production analysers split
   into two phases: **core** (`demoinfo`, `identity`, `frag` — the
   producers that fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
-  `messages`, `timeline`, `items`, `backpacks`, `weapon_pickups`)
+  `messages`, `timeline`, `items`, `damage`, `backpacks`, `weapon_pickups`)
   finalise after, with `CoreOutputs` already populated. Six default
   result post-processors run last (victim-named teamkill recovery, time
   normalisation, duel team rewrite, scoreboard kills/deaths/suicides
@@ -127,7 +127,7 @@ it.
 | Slice | Default analysers | Why |
 |---|---|---|
 | **Core** | [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
-| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. |
+| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. |
 | **Post-processors** | `recoverTelefragTeamkills`, `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (telefrag recovery runs before time normalisation so positions/frag-events/obituaries share the demo-relative clock; `scoreboardStatsPost` copies the frag-log-corrected kills/deaths/suicides onto `match.players`, joining on the final display name after teamkill recovery; time normalisation must run before locgraph). |
 | **Shelved** | [`tracks`](analyzer/tracks.md) | Code present, not registered. Awaiting a mvd-web consumer. |
 

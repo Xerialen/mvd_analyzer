@@ -26,6 +26,7 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string) http.Handle
 	mux.HandleFunc("GET /v1/demos/{id}/demoinfo", s.handleDemoInfo)
 	mux.HandleFunc("GET /v1/demos/{id}/metadata", s.handleMetadata)
 	mux.HandleFunc("GET /v1/demos/{id}/frags", s.handleFrags)
+	mux.HandleFunc("GET /v1/demos/{id}/damage", s.handleDamage)
 	mux.HandleFunc("GET /v1/demos/{id}/loc-graph", s.handleLocGraph)
 	mux.HandleFunc("GET /v1/demos/{id}/chat", s.handleChat)
 	mux.HandleFunc("GET /v1/demos/{id}/backpacks", s.handleBackpacks)

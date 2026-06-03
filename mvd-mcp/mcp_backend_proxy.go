@@ -231,6 +231,20 @@ func (p *proxyBackend) GetFrags(ctx context.Context, in GetFragsInput) (any, err
 	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/frags", q)
 }
 
+func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, error) {
+	if in.DemoID == "" {
+		return nil, errors.New("demoId required")
+	}
+	q := url.Values{}
+	if len(in.Players) > 0 {
+		q.Set("players", strings.Join(in.Players, ","))
+	}
+	if len(in.Weapon) > 0 {
+		q.Set("weapon", strings.Join(in.Weapon, ","))
+	}
+	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/damage", q)
+}
+
 func (p *proxyBackend) GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error) {
 	if in.DemoID == "" {
 		return nil, errors.New("demoId required")

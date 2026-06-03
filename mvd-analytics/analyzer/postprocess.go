@@ -136,6 +136,12 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 			res.WeaponPickups[i].DropTime -= matchStartMs
 		}
 	}
+
+	if res.Damage != nil {
+		for i := range res.Damage.Events {
+			res.Damage.Events[i].Time -= matchStartMs
+		}
+	}
 }
 
 // shiftAndFilterChangeI16 subtracts matchStartMs from each entry's T

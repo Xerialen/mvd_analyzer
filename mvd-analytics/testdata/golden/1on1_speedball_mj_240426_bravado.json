@@ -593,6 +593,3523 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "mj": {
+        "byWeapon": {
+          "gl": 112,
+          "lg": 450,
+          "rl": 4713,
+          "sg": 208
+        },
+        "enemyVsBoth": 4744,
+        "enemyVsLg": 0,
+        "enemyVsMid": 82,
+        "enemyVsRl": 542,
+        "enemyVsSg": 115,
+        "ewep": 5286,
+        "given": 5483,
+        "givenSelf": 536,
+        "givenTeam": 0,
+        "taken": 10506,
+        "takenEnv": 70
+      },
+      "speedball": {
+        "byWeapon": {
+          "lg": 4770,
+          "rl": 5026,
+          "sg": 44,
+          "ssg": 60
+        },
+        "enemyVsBoth": 1799,
+        "enemyVsLg": 893,
+        "enemyVsMid": 710,
+        "enemyVsRl": 4971,
+        "enemyVsSg": 1527,
+        "ewep": 7663,
+        "given": 9900,
+        "givenSelf": 1804,
+        "givenTeam": 0,
+        "taken": 7337,
+        "takenEnv": 50
+      }
+    },
+    "byWeapon": {
+      "gl": 112,
+      "lg": 5220,
+      "rl": 9739,
+      "sg": 252,
+      "ssg": 60
+    },
+    "events": [
+      {
+        "attacker": "speedball",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 1221,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 2901,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 4381,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "mj",
+        "damage": 102,
+        "isSplash": true,
+        "time": 4649,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 78,
+        "isSplash": true,
+        "time": 6000,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 6558,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 7641,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 7662,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 58,
+        "isSplash": true,
+        "time": 14408,
+        "victim": "speedball",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 15143,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 21486,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 21896,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 22135,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "mj",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 22299,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 55,
+        "isSplash": true,
+        "time": 22546,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 31941,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 69,
+        "isSplash": true,
+        "time": 33343,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 34520,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 34629,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 34727,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 34831,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 35031,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 35123,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 35143,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 35221,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 35325,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 35429,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 35533,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 16,
+        "time": 38507,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 64,
+        "isSplash": true,
+        "time": 38798,
+        "victim": "speedball",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 12,
+        "time": 39019,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 51,
+        "isSplash": true,
+        "time": 40286,
+        "victim": "speedball",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 41637,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 41740,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 42546,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 45221,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 45305,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 45325,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 45390,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 45494,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 20,
+        "time": 47409,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "ssg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 8,
+        "time": 48110,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "ssg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 52,
+        "isSplash": true,
+        "time": 49071,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 70,
+        "isSplash": true,
+        "time": 50572,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 51,
+        "isSplash": true,
+        "time": 53052,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 59520,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 59715,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 59734,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 63,
+        "isSplash": true,
+        "time": 64474,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 65201,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 65312,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 65500,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 68131,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 70565,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 74442,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 74787,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 66,
+        "isSplash": true,
+        "time": 76461,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 78027,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 79547,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 81690,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 84293,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 87742,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 87742,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 87742,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 69,
+        "isSplash": true,
+        "time": 89293,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 89313,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 90495,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 90591,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 93643,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 99131,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 103981,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 104085,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 104898,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 105002,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 109482,
+        "victim": "mj",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 113046,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 113138,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 113254,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 113885,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 80,
+        "isSplash": true,
+        "time": 118501,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 119768,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 121223,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 45,
+        "isSplash": true,
+        "time": 123566,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 80,
+        "isSplash": true,
+        "time": 132794,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 72,
+        "isSplash": true,
+        "time": 133756,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 139808,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 141522,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 141730,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 141834,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 142021,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 142340,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 147678,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 54,
+        "isSplash": true,
+        "time": 147834,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 149496,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 149704,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 41,
+        "isSplash": true,
+        "time": 149918,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 150263,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 67,
+        "isSplash": true,
+        "time": 154964,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 56,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 161464,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 162496,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 162600,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 162691,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 165425,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 165523,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 165730,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 42,
+        "isSplash": true,
+        "time": 167905,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 170749,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 178698,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 178808,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 178912,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 180276,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 4,
+        "time": 180795,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 181244,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 24,
+        "time": 181295,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 181672,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 182718,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 185848,
+        "victim": "mj",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "mj",
+        "damage": 56,
+        "isSplash": true,
+        "time": 186705,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 87,
+        "isSplash": true,
+        "time": 191705,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 62,
+        "isSplash": true,
+        "time": 192452,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 195043,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 197734,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 197841,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 198342,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 42,
+        "isSplash": true,
+        "time": 199179,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 49,
+        "isSplash": true,
+        "time": 202238,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 202939,
+        "victim": "mj",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 55,
+        "isSplash": true,
+        "time": 203407,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 206466,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 209231,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 209335,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 209446,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 77,
+        "isSplash": true,
+        "time": 209498,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 209556,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 209926,
+        "victim": "mj",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 209939,
+        "victim": "mj",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 210154,
+        "victim": "mj",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 210362,
+        "victim": "mj",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 211556,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 211777,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 211875,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 43,
+        "isSplash": true,
+        "time": 212043,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 218713,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 218829,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 218927,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 220271,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 95,
+        "isSplash": true,
+        "time": 220979,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 222881,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 67,
+        "isSplash": true,
+        "time": 223986,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 230485,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 231557,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 239304,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 243480,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 73,
+        "isSplash": true,
+        "time": 243986,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 244110,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 244123,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 80,
+        "isSplash": true,
+        "time": 245785,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 8,
+        "time": 246577,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 246629,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 246648,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 248954,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 253837,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 253947,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 254045,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 254149,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 254246,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 72,
+        "isSplash": true,
+        "time": 255084,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 52,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 257383,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 88,
+        "isSplash": true,
+        "time": 258350,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 258947,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 259045,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 259188,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 261292,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 16,
+        "time": 274305,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 276149,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 278292,
+        "victim": "mj",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 278383,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 278591,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 278889,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 279188,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 279299,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 279396,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 90,
+        "isSplash": true,
+        "time": 279520,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 53,
+        "isSplash": true,
+        "time": 279980,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 286656,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 45,
+        "isSplash": true,
+        "time": 287871,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 289500,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 98,
+        "isSplash": true,
+        "time": 290345,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 291027,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 291235,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 291430,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 291521,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 101,
+        "isSplash": true,
+        "time": 296604,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 96,
+        "isSplash": true,
+        "time": 297280,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 297819,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 302936,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 303630,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 303728,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 303838,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 45,
+        "isSplash": true,
+        "time": 306924,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 307171,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 307261,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 54,
+        "isSplash": true,
+        "time": 307371,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 307475,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 307864,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 309405,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 329080,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 329280,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 329379,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 329665,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 71,
+        "isSplash": true,
+        "time": 330950,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 88,
+        "isSplash": true,
+        "time": 335184,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 336449,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 337223,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 338016,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 338865,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 346411,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 70,
+        "isSplash": true,
+        "time": 347808,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 112,
+        "isSplash": true,
+        "time": 349203,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 349203,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 351359,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 8,
+        "time": 351450,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 351575,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 351658,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 354021,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 42,
+        "isSplash": true,
+        "time": 355385,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 359268,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 58,
+        "isSplash": true,
+        "time": 360788,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 76,
+        "isSplash": true,
+        "time": 361411,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 12,
+        "time": 364047,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 12,
+        "time": 364554,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 12,
+        "time": 365073,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 46,
+        "isSplash": true,
+        "time": 366237,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 4,
+        "time": 367294,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 367593,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 370458,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 59,
+        "isSplash": true,
+        "time": 372190,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 62,
+        "isSplash": true,
+        "time": 372523,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 29,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 372541,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 70,
+        "isSplash": true,
+        "time": 372938,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 28,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 372952,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 374502,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 374601,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 76,
+        "isSplash": true,
+        "time": 382074,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 28,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 382087,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 382848,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 65,
+        "isSplash": true,
+        "time": 382898,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 382944,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 385866,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 389515,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 390471,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 390679,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 393472,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 61,
+        "isSplash": true,
+        "time": 393489,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 393567,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 44,
+        "isSplash": true,
+        "time": 394303,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 394939,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 396121,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 396225,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 396619,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 396710,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 400048,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 60,
+        "isSplash": true,
+        "time": 402563,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 16,
+        "time": 403438,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 403529,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 403628,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 16,
+        "time": 405537,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 47,
+        "isSplash": true,
+        "time": 405827,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 49,
+        "isSplash": true,
+        "time": 407191,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 407797,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 415230,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 76,
+        "isSplash": true,
+        "time": 415866,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 416525,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 49,
+        "isSplash": true,
+        "time": 416607,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 416628,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 416918,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 59,
+        "isSplash": true,
+        "time": 420408,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 62,
+        "isSplash": true,
+        "time": 424191,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 57,
+        "isSplash": true,
+        "time": 431941,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 432655,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 433057,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 78,
+        "isSplash": true,
+        "time": 433893,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 437867,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 437958,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 441555,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 443071,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 443188,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 81,
+        "isSplash": true,
+        "time": 443799,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 110,
+        "time": 445123,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 446166,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 446967,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 447478,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 447776,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 447881,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 453370,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 453370,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 92,
+        "isSplash": true,
+        "time": 454218,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 454231,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 89,
+        "isSplash": true,
+        "time": 454270,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 454296,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 458604,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 94,
+        "isSplash": true,
+        "time": 460695,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 71,
+        "isSplash": true,
+        "time": 460981,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 46,
+        "isSplash": true,
+        "time": 461920,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 64,
+        "isSplash": true,
+        "time": 461920,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 32,
+        "time": 464828,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "ssg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 12,
+        "time": 465881,
+        "victim": "speedball",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 12,
+        "time": 466387,
+        "victim": "speedball",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 53,
+        "isSplash": true,
+        "time": 467387,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 16,
+        "time": 468751,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 50,
+        "isSplash": true,
+        "time": 468942,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 21,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 471037,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 476050,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 96,
+        "isSplash": true,
+        "time": 476527,
+        "victim": "speedball",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 69,
+        "isSplash": true,
+        "time": 484501,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 487359,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 487449,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 56,
+        "isSplash": true,
+        "time": 488881,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 488903,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 489748,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 47,
+        "isSplash": true,
+        "time": 489816,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 490050,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 490154,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 491452,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 493829,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 493930,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 494034,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 494128,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 50,
+        "isSplash": true,
+        "time": 497034,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 84,
+        "isSplash": true,
+        "time": 497566,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 499255,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 24,
+        "time": 499271,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 499346,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 499453,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 499544,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 54,
+        "isSplash": true,
+        "time": 506519,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 507220,
+        "victim": "mj",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 509103,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 509311,
+        "victim": "mj",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 518675,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 92,
+        "isSplash": true,
+        "time": 522389,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 77,
+        "isSplash": true,
+        "time": 522424,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 522424,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 522424,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 52,
+        "isSplash": true,
+        "time": 523337,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 523974,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 524190,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 89,
+        "isSplash": true,
+        "time": 524234,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 524386,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 524480,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 60,
+        "isSplash": true,
+        "time": 532182,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 532815,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 533636,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 56,
+        "isSplash": true,
+        "time": 533714,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 101,
+        "isSplash": true,
+        "time": 543567,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 545234,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 545442,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 545442,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 545533,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 545637,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 545736,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 545931,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 30,
+        "time": 546039,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 74,
+        "isSplash": true,
+        "time": 546169,
+        "victim": "mj",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 553832,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 555984,
+        "victim": "mj",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 556222,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 83,
+        "isSplash": true,
+        "time": 556884,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 556897,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 82,
+        "isSplash": true,
+        "time": 557079,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 558088,
+        "victim": "mj",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 45,
+        "isSplash": true,
+        "time": 561962,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 59,
+        "isSplash": true,
+        "time": 563542,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 63,
+        "isSplash": true,
+        "time": 564840,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 564854,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 565455,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 42,
+        "isSplash": true,
+        "time": 565741,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 568274,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 569802,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 570088,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 570582,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 570789,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 570884,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 570988,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 571400,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 4,
+        "time": 571417,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 571594,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 571698,
+        "victim": "mj",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 82,
+        "isSplash": true,
+        "time": 573533,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 46,
+        "isSplash": true,
+        "time": 573659,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 99,
+        "isSplash": true,
+        "time": 574205,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 574235,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 579923,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 69,
+        "isSplash": true,
+        "time": 580469,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 580495,
+        "victim": "speedball",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 79,
+        "isSplash": true,
+        "time": 580634,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 580634,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 582361,
+        "victim": "speedball",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "mj",
+        "damage": 110,
+        "time": 582897,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 24,
+        "time": 585235,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 95,
+        "isSplash": true,
+        "time": 585322,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "mj",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 591505,
+        "victim": "mj",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 592465,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 592560,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 592958,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "speedball",
+        "damage": 30,
+        "time": 598014,
+        "victim": "mj",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "mj",
+        "damage": 56,
+        "isSplash": true,
+        "time": 599962,
+        "victim": "speedball",
+        "victimWep": "both",
+        "weapon": "rl"
+      }
+    ],
+    "matrix": [
+      {
+        "attacker": "mj",
+        "byWeapon": {
+          "gl": 112,
+          "lg": 450,
+          "rl": 4713,
+          "sg": 208
+        },
+        "damage": 5483,
+        "victim": "speedball"
+      },
+      {
+        "attacker": "speedball",
+        "byWeapon": {
+          "lg": 4770,
+          "rl": 5026,
+          "sg": 44,
+          "ssg": 60
+        },
+        "damage": 9900,
+        "victim": "mj"
+      }
+    ],
+    "scoreboard": {
+      "byPlayer": {
+        "mj": {
+          "scoreEwep": 5071,
+          "scoreGiven": 5268,
+          "scoreTaken": 8750,
+          "streamEwep": 5286,
+          "streamGiven": 5483,
+          "streamTaken": 10506
+        },
+        "speedball": {
+          "scoreEwep": 6727,
+          "scoreGiven": 8750,
+          "scoreTaken": 5268,
+          "streamEwep": 7663,
+          "streamGiven": 9900,
+          "streamTaken": 7337
+        }
+      }
+    },
+    "totalDamage": 17843
+  },
   "demoInfo": {
     "date": "2026-04-24 22:54:38 +0000",
     "demo": "duel_speedball_vs_mj[bravado]20260424-2244.mvd",
@@ -6866,7 +10383,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "streams": {
     "global": {
       "matchEnd": 600001,

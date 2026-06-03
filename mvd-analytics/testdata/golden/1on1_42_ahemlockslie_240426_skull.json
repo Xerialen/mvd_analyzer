@@ -339,6 +339,2516 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "42": {
+        "byWeapon": {
+          "lg": 2880,
+          "rl": 4323,
+          "sg": 40,
+          "ssg": 12
+        },
+        "enemyVsBoth": 3505,
+        "enemyVsLg": 432,
+        "enemyVsMid": 0,
+        "enemyVsRl": 3206,
+        "enemyVsSg": 112,
+        "ewep": 7143,
+        "given": 7255,
+        "givenSelf": 533,
+        "givenTeam": 0,
+        "taken": 5689,
+        "takenEnv": 70
+      },
+      "AHemlocksLie": {
+        "byWeapon": {
+          "lg": 570,
+          "rl": 4464,
+          "sg": 52
+        },
+        "enemyVsBoth": 4269,
+        "enemyVsLg": 0,
+        "enemyVsMid": 179,
+        "enemyVsRl": 479,
+        "enemyVsSg": 159,
+        "ewep": 4748,
+        "given": 5086,
+        "givenSelf": 398,
+        "givenTeam": 0,
+        "taken": 7728,
+        "takenEnv": 75
+      }
+    },
+    "byWeapon": {
+      "lg": 3450,
+      "rl": 8787,
+      "sg": 92,
+      "ssg": 12
+    },
+    "events": [
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": -4299,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 3065,
+        "victim": "42",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 3065,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 24,
+        "time": 3120,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "42",
+        "damage": 8,
+        "time": 3757,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 49,
+        "isSplash": true,
+        "time": 3974,
+        "victim": "42",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 8432,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 12,
+        "time": 11142,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 11938,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 95,
+        "isSplash": true,
+        "time": 13623,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 63,
+        "isSplash": true,
+        "time": 14636,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 18083,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 35896,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 35990,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 38558,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 38558,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 38665,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 38974,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 39262,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 39366,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 39493,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 90,
+        "isSplash": true,
+        "time": 40467,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 40574,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 45662,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 56003,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 64402,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 64496,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65002,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65093,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65301,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65394,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65506,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65610,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65700,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65804,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 65899,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 12,
+        "time": 66220,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "ssg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 66285,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 66804,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 67103,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 67103,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 67194,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 67583,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 67687,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 68589,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 90,
+        "isSplash": true,
+        "time": 68589,
+        "victim": "AHemlocksLie",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 68589,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 75402,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 91,
+        "isSplash": true,
+        "time": 77129,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 49,
+        "isSplash": true,
+        "time": 77155,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 97,
+        "isSplash": true,
+        "time": 77823,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 54,
+        "isSplash": true,
+        "time": 77887,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 69,
+        "isSplash": true,
+        "time": 83755,
+        "victim": "42",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 84820,
+        "victim": "42",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 81,
+        "isSplash": true,
+        "time": 95466,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 96885,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 96885,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 59,
+        "isSplash": true,
+        "time": 97115,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 111681,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 111934,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 111990,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 112288,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 121168,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 121573,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 121651,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 48,
+        "isSplash": true,
+        "time": 124817,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 125834,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 125834,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 126583,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 8,
+        "time": 128933,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 90,
+        "isSplash": true,
+        "time": 130609,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 66,
+        "isSplash": true,
+        "time": 130700,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 133664,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 137599,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 147310,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 59,
+        "isSplash": true,
+        "time": 148482,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 75,
+        "isSplash": true,
+        "time": 149180,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 90,
+        "isSplash": true,
+        "time": 149232,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 83,
+        "isSplash": true,
+        "time": 149946,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 64,
+        "isSplash": true,
+        "time": 150079,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 73,
+        "isSplash": true,
+        "time": 161024,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 63,
+        "isSplash": true,
+        "time": 161193,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 164517,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 173767,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 87,
+        "isSplash": true,
+        "time": 173767,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 96,
+        "isSplash": true,
+        "time": 174754,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 68,
+        "isSplash": true,
+        "time": 175066,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 60,
+        "isSplash": true,
+        "time": 175868,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 67,
+        "isSplash": true,
+        "time": 187868,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 67,
+        "isSplash": true,
+        "time": 188881,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 196313,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 198153,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 198198,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 199416,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 63,
+        "isSplash": true,
+        "time": 199650,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 69,
+        "isSplash": true,
+        "time": 202777,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 73,
+        "isSplash": true,
+        "time": 203556,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 205218,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 205312,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 206208,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 56,
+        "isSplash": true,
+        "time": 216052,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 216052,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 217244,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 219854,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 75,
+        "isSplash": true,
+        "time": 220026,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 224507,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 229676,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 73,
+        "isSplash": true,
+        "time": 241919,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 68,
+        "isSplash": true,
+        "time": 242598,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 242698,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 73,
+        "isSplash": true,
+        "time": 242698,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 49,
+        "isSplash": true,
+        "time": 243338,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 243338,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 50,
+        "isSplash": true,
+        "time": 243802,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 244958,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 245283,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 245377,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 245426,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 245478,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 245584,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 245633,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 245675,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 248467,
+        "victim": "AHemlocksLie",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 248649,
+        "victim": "AHemlocksLie",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 249945,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 250909,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 271698,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 271792,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 83,
+        "isSplash": true,
+        "time": 271857,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 272195,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 272390,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 272490,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 58,
+        "isSplash": true,
+        "time": 272714,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 276636,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 287441,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 287597,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 95,
+        "isSplash": true,
+        "time": 298558,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 298646,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 299350,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 299658,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 299750,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 299844,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 300856,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 62,
+        "isSplash": true,
+        "time": 307542,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 307997,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 99,
+        "isSplash": true,
+        "time": 308077,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 308077,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 71,
+        "isSplash": true,
+        "time": 309048,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 94,
+        "isSplash": true,
+        "time": 310739,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 85,
+        "isSplash": true,
+        "time": 311308,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 311505,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 315350,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 315350,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 52,
+        "isSplash": true,
+        "time": 323282,
+        "victim": "AHemlocksLie",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 60,
+        "isSplash": true,
+        "time": 324727,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 324727,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 325778,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 72,
+        "isSplash": true,
+        "time": 326846,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 328269,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 340022,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 65,
+        "isSplash": true,
+        "time": 341220,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 72,
+        "isSplash": true,
+        "time": 341801,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 349623,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 350297,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 61,
+        "isSplash": true,
+        "time": 360021,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 365154,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 365246,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 365333,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 98,
+        "isSplash": true,
+        "time": 365333,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 365348,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 366839,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 366907,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 367034,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 367138,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 367242,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 77,
+        "isSplash": true,
+        "time": 371476,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 371801,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 371891,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 372180,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 372294,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 73,
+        "isSplash": true,
+        "time": 372359,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 60,
+        "isSplash": true,
+        "time": 388933,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 390917,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 392917,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 394397,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 394803,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 69,
+        "isSplash": true,
+        "time": 395076,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 395089,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 395398,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 395592,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 395697,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 395790,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 395894,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 396203,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 396293,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 110,
+        "time": 403046,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 403046,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 403190,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 89,
+        "isSplash": true,
+        "time": 405683,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 54,
+        "isSplash": true,
+        "time": 411515,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 86,
+        "isSplash": true,
+        "time": 417985,
+        "victim": "42",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 419800,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 422956,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 423164,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 423255,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 423647,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 423762,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 424059,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 424164,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 424244,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 64,
+        "isSplash": true,
+        "time": 424452,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 425062,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 425632,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 78,
+        "isSplash": true,
+        "time": 426584,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 426584,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 88,
+        "isSplash": true,
+        "time": 427618,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 49,
+        "isSplash": true,
+        "time": 436059,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 58,
+        "isSplash": true,
+        "time": 436643,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 439477,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 441630,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 441630,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 70,
+        "isSplash": true,
+        "time": 441696,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 80,
+        "isSplash": true,
+        "time": 446579,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 451644,
+        "victim": "42",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 452138,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 452529,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 452631,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 452735,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 452839,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 452919,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 453865,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 464579,
+        "victim": "AHemlocksLie",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "42",
+        "damage": 76,
+        "isSplash": true,
+        "time": 479773,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 75,
+        "isSplash": true,
+        "time": 482695,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 87,
+        "isSplash": true,
+        "time": 483396,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 483396,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 484048,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 75,
+        "isSplash": true,
+        "time": 484048,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 64,
+        "isSplash": true,
+        "time": 484295,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 486920,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 487023,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 497929,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 498033,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 498115,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 498228,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 45,
+        "isSplash": true,
+        "time": 498308,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 509098,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 509176,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 509551,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 509551,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 510074,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 510477,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 53,
+        "isSplash": true,
+        "time": 510772,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 511280,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 30,
+        "time": 511386,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 20,
+        "time": 511994,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "42",
+        "damage": 42,
+        "isSplash": true,
+        "time": 512215,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 512760,
+        "victim": "AHemlocksLie",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 79,
+        "isSplash": true,
+        "time": 512760,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 512954,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 526111,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 526215,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 51,
+        "isSplash": true,
+        "time": 526488,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 526516,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 526812,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 20,
+        "time": 530019,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 95,
+        "isSplash": true,
+        "time": 541122,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 91,
+        "isSplash": true,
+        "time": 541122,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 98,
+        "isSplash": true,
+        "time": 542851,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 83,
+        "isSplash": true,
+        "time": 542981,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 56,
+        "isSplash": true,
+        "time": 543658,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 543658,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 78,
+        "isSplash": true,
+        "time": 543788,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 544450,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 544450,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 92,
+        "isSplash": true,
+        "time": 544528,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 110,
+        "time": 581085,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 44,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 581085,
+        "victim": "42",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 89,
+        "isSplash": true,
+        "time": 582031,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "damage": 59,
+        "isSplash": true,
+        "time": 582748,
+        "victim": "42",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 55,
+        "isSplash": true,
+        "time": 583125,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 583915,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 584008,
+        "victim": "AHemlocksLie",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 590047,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 590346,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 590463,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 590553,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "42",
+        "damage": 30,
+        "time": 590655,
+        "victim": "AHemlocksLie",
+        "victimWep": "rl",
+        "weapon": "lg"
+      }
+    ],
+    "matrix": [
+      {
+        "attacker": "42",
+        "byWeapon": {
+          "lg": 2880,
+          "rl": 4323,
+          "sg": 40,
+          "ssg": 12
+        },
+        "damage": 7255,
+        "victim": "AHemlocksLie"
+      },
+      {
+        "attacker": "AHemlocksLie",
+        "byWeapon": {
+          "lg": 570,
+          "rl": 4464,
+          "sg": 52
+        },
+        "damage": 5086,
+        "victim": "42"
+      }
+    ],
+    "scoreboard": {
+      "byPlayer": {
+        "42": {
+          "scoreEwep": 6590,
+          "scoreGiven": 6702,
+          "scoreTaken": 4695,
+          "streamEwep": 7143,
+          "streamGiven": 7255,
+          "streamTaken": 5689
+        },
+        "AHemlocksLie": {
+          "scoreEwep": 4357,
+          "scoreGiven": 4695,
+          "scoreTaken": 6702,
+          "streamEwep": 4748,
+          "streamGiven": 5086,
+          "streamTaken": 7728
+        }
+      }
+    },
+    "totalDamage": 13417
+  },
   "demoInfo": {
     "date": "2026-04-24 16:26:13 +0000",
     "demo": "duel_ahemlockslie_vs_42[skull]20260424-1616.mvd",
@@ -6041,7 +8551,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "streams": {
     "global": {
       "matchEnd": 599993,

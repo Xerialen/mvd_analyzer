@@ -898,6 +898,4927 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "SS": {
+        "byWeapon": {
+          "gl": 161,
+          "lg": 1140,
+          "rl": 5405,
+          "sg": 124
+        },
+        "enemyVsBoth": 2633,
+        "enemyVsLg": 90,
+        "enemyVsMid": 240,
+        "enemyVsRl": 3062,
+        "enemyVsSg": 805,
+        "ewep": 5785,
+        "given": 6830,
+        "givenSelf": 625,
+        "givenTeam": 199,
+        "taken": 6788,
+        "takenEnv": 45
+      },
+      "gLAd": {
+        "byWeapon": {
+          "gl": 163,
+          "lg": 3120,
+          "rl": 2925,
+          "sg": 244,
+          "sng": 90
+        },
+        "enemyVsBoth": 1904,
+        "enemyVsLg": 178,
+        "enemyVsMid": 485,
+        "enemyVsRl": 2682,
+        "enemyVsSg": 1293,
+        "ewep": 4764,
+        "given": 6542,
+        "givenSelf": 301,
+        "givenTeam": 264,
+        "taken": 3962,
+        "takenEnv": 40
+      },
+      "kippo": {
+        "byWeapon": {
+          "gl": 222,
+          "lg": 1380,
+          "rl": 3734,
+          "sg": 152
+        },
+        "enemyVsBoth": 3000,
+        "enemyVsLg": 107,
+        "enemyVsMid": 72,
+        "enemyVsRl": 1507,
+        "enemyVsSg": 802,
+        "ewep": 4614,
+        "given": 5488,
+        "givenSelf": 504,
+        "givenTeam": 0,
+        "taken": 8264,
+        "takenEnv": 32
+      },
+      "rusti": {
+        "byWeapon": {
+          "gl": 55,
+          "lg": 1170,
+          "rl": 2451,
+          "sg": 112
+        },
+        "enemyVsBoth": 1727,
+        "enemyVsLg": 59,
+        "enemyVsMid": 0,
+        "enemyVsRl": 1613,
+        "enemyVsSg": 389,
+        "ewep": 3399,
+        "given": 3788,
+        "givenSelf": 319,
+        "givenTeam": 268,
+        "taken": 6281,
+        "takenEnv": 50
+      }
+    },
+    "byWeapon": {
+      "gl": 601,
+      "lg": 6810,
+      "rl": 14515,
+      "sg": 632,
+      "sng": 90
+    },
+    "events": [
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": -3117,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 91,
+        "isSplash": true,
+        "time": 5027,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 41,
+        "isSplash": true,
+        "time": 5168,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 63,
+        "isSplash": true,
+        "time": 5532,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 65,
+        "isSplash": true,
+        "time": 5809,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 66,
+        "isSplash": true,
+        "time": 6246,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 86,
+        "isSplash": true,
+        "time": 6342,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 6416,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 6454,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 6523,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 65,
+        "isSplash": true,
+        "time": 6523,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 7273,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 103,
+        "isSplash": true,
+        "time": 7273,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 95,
+        "isSplash": true,
+        "time": 7368,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 9234,
+        "victim": "kippo",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 9351,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 9692,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 12311,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 81,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 14856,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 86,
+        "isSplash": true,
+        "time": 15050,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 92,
+        "isSplash": true,
+        "time": 23886,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 26480,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 65,
+        "isSplash": true,
+        "time": 26752,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 28117,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 59,
+        "isSplash": true,
+        "time": 28145,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 28608,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 44,
+        "isSplash": true,
+        "time": 28896,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 28896,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 95,
+        "isSplash": true,
+        "time": 29362,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 32063,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 32166,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 43,
+        "isSplash": true,
+        "time": 32453,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 44,
+        "isSplash": true,
+        "time": 33205,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 33872,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 90,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 34142,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 45,
+        "isSplash": true,
+        "time": 37557,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 43516,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 102,
+        "isSplash": true,
+        "time": 43663,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 43724,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 44438,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "time": 44438,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 44530,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 56,
+        "isSplash": true,
+        "time": 45311,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 82,
+        "isSplash": true,
+        "time": 45606,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 45606,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 49,
+        "isSplash": true,
+        "time": 53012,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 16,
+        "time": 53724,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 53827,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 54023,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 79,
+        "isSplash": true,
+        "time": 54530,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 54605,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 54905,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 56260,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 56480,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 59904,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 60204,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 60493,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 60584,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 60701,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 61089,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 61104,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 61193,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 61332,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 73,
+        "isSplash": true,
+        "time": 61332,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 61891,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 110,
+        "time": 63948,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 23,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 63948,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "time": 67786,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 43,
+        "isSplash": true,
+        "time": 67786,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 80,
+        "isSplash": true,
+        "time": 71843,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 46,
+        "isSplash": true,
+        "time": 71932,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 2,
+        "isEnv": true,
+        "time": 78231,
+        "victim": "kippo",
+        "weapon": "squish"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 78538,
+        "victim": "kippo",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "SS",
+        "damage": 43,
+        "isSplash": true,
+        "time": 79410,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 62,
+        "isSplash": true,
+        "time": 79801,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 50,
+        "isSplash": true,
+        "time": 81915,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 96,
+        "isSplash": true,
+        "time": 84148,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 66,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 84241,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 86525,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 101281,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 101383,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 101412,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 101446,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 101679,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 101878,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 107490,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 107733,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 69,
+        "isSplash": true,
+        "time": 108542,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 86,
+        "isSplash": true,
+        "time": 110253,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 110928,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 24,
+        "time": 111756,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 86,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 111964,
+        "victim": "SS",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 41,
+        "isSplash": true,
+        "time": 112185,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 113968,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 114072,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 114163,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 114266,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 114281,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 114357,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 114372,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 114463,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 114483,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 114552,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 114567,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 116994,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 117008,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 117524,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 53,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 118086,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 118353,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 118554,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 118749,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 59,
+        "isSplash": true,
+        "time": 118825,
+        "victim": "gLAd",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 16,
+        "time": 120213,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 120561,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 53,
+        "isSplash": true,
+        "time": 120589,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 121031,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 121031,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 122733,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 122733,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 126158,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 24,
+        "time": 126449,
+        "victim": "gLAd",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 18,
+        "time": 126670,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 18,
+        "time": 126885,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 24,
+        "time": 126956,
+        "victim": "gLAd",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 18,
+        "time": 127060,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 18,
+        "time": 127355,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 24,
+        "time": 127449,
+        "victim": "gLAd",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 18,
+        "time": 127560,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "sng"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 131729,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 131913,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 132030,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 132121,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 77,
+        "isSplash": true,
+        "time": 132279,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 71,
+        "isSplash": true,
+        "time": 134514,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 134757,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 47,
+        "isSplash": true,
+        "time": 135897,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 68,
+        "isSplash": true,
+        "time": 138434,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 139044,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 112,
+        "isSplash": true,
+        "time": 139299,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 141539,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 63,
+        "isSplash": true,
+        "time": 141759,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 8,
+        "time": 143617,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 72,
+        "isSplash": true,
+        "time": 143832,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 8,
+        "time": 144123,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 23,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 144481,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 80,
+        "isSplash": true,
+        "time": 144481,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 51,
+        "isSplash": true,
+        "time": 146901,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 62,
+        "isSplash": true,
+        "time": 147172,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 148577,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 65,
+        "isSplash": true,
+        "time": 148694,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 155161,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 88,
+        "isSplash": true,
+        "time": 155161,
+        "victim": "kippo",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 77,
+        "isSplash": true,
+        "time": 156843,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 157441,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 62,
+        "isSplash": true,
+        "time": 163895,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 163895,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 163895,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 110,
+        "time": 171699,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 173017,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 173780,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 173868,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 99,
+        "isSplash": true,
+        "time": 174037,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 174173,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 71,
+        "isSplash": true,
+        "time": 174326,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 174381,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 174478,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 174874,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 84,
+        "isSplash": true,
+        "time": 175245,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 175964,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 176574,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 179912,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 180003,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 181218,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 181465,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 181465,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 182419,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 182510,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 182821,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 4,
+        "time": 186600,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 186763,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 45,
+        "isSplash": true,
+        "time": 191944,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 192925,
+        "victim": "kippo",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 52,
+        "isSplash": true,
+        "time": 193632,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 193678,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 193782,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 55,
+        "isSplash": true,
+        "time": 195571,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 44,
+        "isSplash": true,
+        "time": 196846,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 55,
+        "isSplash": true,
+        "time": 200623,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 201311,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 93,
+        "isSplash": true,
+        "time": 204442,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 51,
+        "isSplash": true,
+        "time": 204580,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 205002,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 205002,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 67,
+        "isSplash": true,
+        "time": 207261,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 94,
+        "isSplash": true,
+        "time": 207995,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 58,
+        "isSplash": true,
+        "time": 209143,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 210410,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 43,
+        "isSplash": true,
+        "time": 210436,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 210494,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 210910,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 211813,
+        "victim": "SS",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 85,
+        "isSplash": true,
+        "time": 212414,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 16,
+        "time": 212579,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 213007,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 80,
+        "isSplash": true,
+        "time": 214518,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 218712,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 58,
+        "isSplash": true,
+        "time": 225959,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 61,
+        "isSplash": true,
+        "time": 226686,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 53,
+        "isSplash": true,
+        "time": 230006,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 48,
+        "isSplash": true,
+        "time": 230590,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 235564,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 238256,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 238545,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 238545,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 239213,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 75,
+        "isSplash": true,
+        "time": 239231,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 239524,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 239615,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 240025,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 62,
+        "isSplash": true,
+        "time": 240075,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "isTeam": true,
+        "time": 240167,
+        "victim": "SS",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 240219,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 241109,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 12,
+        "time": 243194,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 243373,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 243466,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 243557,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 8,
+        "time": 243700,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 243862,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 86,
+        "isSplash": true,
+        "time": 246485,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 246485,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 246726,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 247115,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 71,
+        "isSplash": true,
+        "time": 247290,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 247290,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 247438,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "SS",
+        "damage": 46,
+        "isSplash": true,
+        "time": 262750,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 76,
+        "isSplash": true,
+        "time": 264756,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 267106,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 267464,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 267574,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 267683,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 267761,
+        "victim": "gLAd",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 267774,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 268073,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 268607,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 271254,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 271335,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 271448,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 271644,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 278072,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 63,
+        "isSplash": true,
+        "time": 278820,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 279659,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 34,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 280053,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 81,
+        "isSplash": true,
+        "time": 280053,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 280244,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 106,
+        "isSplash": true,
+        "time": 280378,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 280378,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 282749,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 283034,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 283229,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 283617,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 68,
+        "isSplash": true,
+        "time": 284396,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 70,
+        "isSplash": true,
+        "time": 285150,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 285903,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 285903,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 110,
+        "time": 288073,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 290411,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 290520,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 290546,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 290624,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 290917,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 291125,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 291631,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 291721,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 291748,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 77,
+        "isSplash": true,
+        "time": 292084,
+        "victim": "gLAd",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 292112,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 76,
+        "isSplash": true,
+        "time": 294203,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 79,
+        "isSplash": true,
+        "time": 294360,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 42,
+        "isSplash": true,
+        "time": 295045,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 301864,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 67,
+        "isSplash": true,
+        "time": 308500,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 71,
+        "isSplash": true,
+        "time": 308532,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 46,
+        "isSplash": true,
+        "time": 310112,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 310175,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 70,
+        "isSplash": true,
+        "time": 310252,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 310810,
+        "victim": "kippo",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 310810,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 93,
+        "isSplash": true,
+        "time": 310810,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 311501,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 311708,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 93,
+        "isSplash": true,
+        "time": 312057,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 313006,
+        "victim": "rusti",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 313201,
+        "victim": "rusti",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 313214,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 65,
+        "isSplash": true,
+        "time": 313914,
+        "victim": "rusti",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 16,
+        "time": 315972,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 316005,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 323785,
+        "victim": "rusti",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 324212,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 325370,
+        "victim": "rusti",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 325565,
+        "victim": "rusti",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 325668,
+        "victim": "rusti",
+        "victimWep": "lg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 328849,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 328932,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 328979,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 329043,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 329174,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 329231,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 332932,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 334408,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "SS",
+        "damage": 42,
+        "isSplash": true,
+        "time": 335315,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 52,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 336693,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 336797,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 336875,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 337029,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 49,
+        "isSplash": true,
+        "time": 337029,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 337594,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 87,
+        "isSplash": true,
+        "time": 340005,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 20,
+        "time": 340511,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 67,
+        "isSplash": true,
+        "time": 341341,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 75,
+        "isSplash": true,
+        "time": 342327,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 352670,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 65,
+        "isSplash": true,
+        "time": 355592,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 355807,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 356095,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 356172,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 67,
+        "isSplash": true,
+        "time": 357125,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 46,
+        "isSplash": true,
+        "time": 357145,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "isTeam": true,
+        "time": 358132,
+        "victim": "SS",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 358638,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 358638,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 4,
+        "time": 359885,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 76,
+        "isSplash": true,
+        "time": 359926,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 16,
+        "time": 360379,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 78,
+        "isSplash": true,
+        "time": 360835,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 86,
+        "isSplash": true,
+        "time": 361821,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 362549,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 362851,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 90,
+        "isSplash": true,
+        "time": 362872,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 81,
+        "isSplash": true,
+        "time": 363145,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 363592,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 363592,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 57,
+        "isSplash": true,
+        "time": 363938,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 364055,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 366352,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 67,
+        "isSplash": true,
+        "time": 366352,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 78,
+        "isSplash": true,
+        "time": 367134,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 371534,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 58,
+        "isSplash": true,
+        "time": 371534,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 372276,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "time": 372482,
+        "victim": "rusti",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 372482,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 375160,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 375248,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 375357,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 375468,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "isSplash": true,
+        "time": 375884,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 24,
+        "time": 378079,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 378119,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 378340,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 378434,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 378546,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 378743,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 383572,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 68,
+        "isSplash": true,
+        "time": 383935,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 49,
+        "isSplash": true,
+        "time": 386390,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 53,
+        "isSplash": true,
+        "time": 386511,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 53,
+        "isSplash": true,
+        "time": 391130,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 391650,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 392818,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 392922,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 393416,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 393520,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 393623,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 396584,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 396675,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 396883,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 397170,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 397207,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 51,
+        "isSplash": true,
+        "time": 397316,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 402575,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 405859,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 405950,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 406261,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 56,
+        "isSplash": true,
+        "time": 406350,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 406456,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 406558,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 111,
+        "isSplash": true,
+        "time": 407508,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 12,
+        "time": 408908,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 12,
+        "time": 409406,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 66,
+        "isSplash": true,
+        "time": 409751,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 413769,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 413973,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 414115,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 414647,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 414855,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 414899,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 415093,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 415440,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 415496,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 415804,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 83,
+        "isSplash": true,
+        "time": 415832,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 416011,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 416080,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 420688,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 420729,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 422015,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 422114,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 422219,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 70,
+        "isSplash": true,
+        "time": 424881,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 425870,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 63,
+        "isSplash": true,
+        "time": 427195,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 20,
+        "time": 427209,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 427467,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 427690,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 86,
+        "isSplash": true,
+        "time": 427690,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 75,
+        "isSplash": true,
+        "time": 451113,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 451400,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 451489,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 458492,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 458596,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 458868,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 458973,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 459076,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 459090,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 459999,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 460296,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 460411,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 460492,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 8,
+        "isTeam": true,
+        "time": 460751,
+        "victim": "SS",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 460800,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 460891,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 461257,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 461605,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 20,
+        "time": 461774,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 462008,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 16,
+        "time": 462281,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 4,
+        "time": 463295,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "time": 463800,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 41,
+        "isSplash": true,
+        "time": 463904,
+        "victim": "gLAd",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 465865,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 80,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 466202,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 55,
+        "isSplash": true,
+        "time": 468413,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 469024,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 469128,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 471384,
+        "victim": "gLAd",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 106,
+        "isSplash": true,
+        "time": 471384,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 472332,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "SS",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 473088,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 90,
+        "isSplash": true,
+        "time": 473725,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 473725,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 91,
+        "isSplash": true,
+        "time": 476539,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 82,
+        "isSplash": true,
+        "time": 477776,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 84,
+        "isSplash": true,
+        "time": 481825,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 57,
+        "isSplash": true,
+        "time": 482565,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 77,
+        "isSplash": true,
+        "time": 485581,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 110,
+        "time": 489112,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 76,
+        "isSplash": true,
+        "time": 489112,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 494178,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 494581,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 494632,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 495187,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 495252,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 495473,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 497265,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 497356,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "time": 497369,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 497369,
+        "victim": "gLAd",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 60,
+        "isSplash": true,
+        "time": 498398,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 110,
+        "time": 502981,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 73,
+        "isSplash": true,
+        "time": 504135,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 504148,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 77,
+        "isSplash": true,
+        "time": 505865,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 8,
+        "time": 507848,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 67,
+        "isSplash": true,
+        "time": 508020,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 24,
+        "time": 508472,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 72,
+        "isSplash": true,
+        "time": 508787,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 510046,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 46,
+        "isSplash": true,
+        "time": 510459,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 110,
+        "time": 511108,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 28,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 511108,
+        "victim": "rusti",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 61,
+        "isSplash": true,
+        "time": 512797,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 38,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 513277,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 70,
+        "isSplash": true,
+        "time": 513277,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 514812,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 41,
+        "isSplash": true,
+        "time": 514812,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 110,
+        "time": 516825,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 520383,
+        "victim": "SS",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "SS",
+        "damage": 74,
+        "isSplash": true,
+        "time": 526058,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 93,
+        "isSplash": true,
+        "time": 528019,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 528445,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 528743,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 74,
+        "isSplash": true,
+        "time": 528743,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 95,
+        "isSplash": true,
+        "time": 529289,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 87,
+        "isSplash": true,
+        "time": 529366,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 67,
+        "isSplash": true,
+        "isTeam": true,
+        "time": 530509,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 538054,
+        "victim": "kippo",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 46,
+        "isSplash": true,
+        "time": 540511,
+        "victim": "gLAd",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 30,
+        "time": 541171,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 90,
+        "isSplash": true,
+        "time": 541537,
+        "victim": "kippo",
+        "victimWep": "lg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 542638,
+        "victim": "rusti",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "time": 543316,
+        "victim": "kippo",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 545017,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 545223,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 545329,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 545498,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 545599,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 545898,
+        "victim": "SS",
+        "victimWep": "both",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 12,
+        "time": 550793,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 560536,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 560871,
+        "victim": "gLAd",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 562974,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 563001,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "isTeam": true,
+        "time": 563068,
+        "victim": "kippo",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 563533,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 29,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 563897,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 74,
+        "isSplash": true,
+        "time": 563897,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 24,
+        "time": 565455,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 565470,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 77,
+        "isSplash": true,
+        "time": 565470,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 27,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 566312,
+        "victim": "kippo",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 74,
+        "isSplash": true,
+        "time": 566312,
+        "victim": "SS",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 567962,
+        "victim": "SS",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 569301,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 569407,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 569496,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 569807,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 51,
+        "isSplash": true,
+        "time": 569807,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 570015,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 46,
+        "isSplash": true,
+        "time": 572351,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 573911,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 30,
+        "time": 574015,
+        "victim": "SS",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 110,
+        "time": 574212,
+        "victim": "rusti",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 59,
+        "isSplash": true,
+        "time": 575338,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 575549,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 575651,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 575951,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "kippo",
+        "damage": 55,
+        "isSplash": true,
+        "time": 576055,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 576445,
+        "victim": "kippo",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 110,
+        "time": 577714,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 580522,
+        "victim": "kippo",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 93,
+        "isSplash": true,
+        "time": 582430,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 24,
+        "time": 582505,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "rusti",
+        "damage": 24,
+        "time": 583003,
+        "victim": "gLAd",
+        "victimWep": "both",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 583597,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 583895,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 584196,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 30,
+        "time": 584285,
+        "victim": "rusti",
+        "victimWep": "sg",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 55,
+        "isSplash": true,
+        "time": 585818,
+        "victim": "kippo",
+        "victimWep": "both",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 588716,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 588817,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 588908,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 589025,
+        "victim": "kippo",
+        "victimWep": "mid",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "gLAd",
+        "damage": 70,
+        "isSplash": true,
+        "time": 589856,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 53,
+        "isSplash": true,
+        "time": 595998,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 597778,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 598155,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "SS",
+        "damage": 30,
+        "time": 598366,
+        "victim": "rusti",
+        "victimWep": "rl",
+        "weapon": "lg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 599011,
+        "victim": "SS",
+        "weapon": "fall"
+      }
+    ],
+    "matrix": [
+      {
+        "attacker": "SS",
+        "byWeapon": {
+          "lg": 720,
+          "rl": 2808,
+          "sg": 44
+        },
+        "damage": 3572,
+        "victim": "kippo"
+      },
+      {
+        "attacker": "SS",
+        "byWeapon": {
+          "gl": 161,
+          "lg": 420,
+          "rl": 2597,
+          "sg": 80
+        },
+        "damage": 3258,
+        "victim": "rusti"
+      },
+      {
+        "attacker": "gLAd",
+        "byWeapon": {
+          "gl": 106,
+          "lg": 1830,
+          "rl": 1642,
+          "sg": 220,
+          "sng": 90
+        },
+        "damage": 3888,
+        "victim": "kippo"
+      },
+      {
+        "attacker": "gLAd",
+        "byWeapon": {
+          "gl": 57,
+          "lg": 1290,
+          "rl": 1283,
+          "sg": 24
+        },
+        "damage": 2654,
+        "victim": "rusti"
+      },
+      {
+        "attacker": "kippo",
+        "byWeapon": {
+          "gl": 110,
+          "lg": 720,
+          "rl": 2355,
+          "sg": 28
+        },
+        "damage": 3213,
+        "victim": "SS"
+      },
+      {
+        "attacker": "kippo",
+        "byWeapon": {
+          "gl": 112,
+          "lg": 660,
+          "rl": 1379,
+          "sg": 124
+        },
+        "damage": 2275,
+        "victim": "gLAd"
+      },
+      {
+        "attacker": "rusti",
+        "byWeapon": {
+          "gl": 55,
+          "lg": 870,
+          "rl": 1676,
+          "sg": 40
+        },
+        "damage": 2641,
+        "victim": "SS"
+      },
+      {
+        "attacker": "rusti",
+        "byWeapon": {
+          "lg": 300,
+          "rl": 775,
+          "sg": 72
+        },
+        "damage": 1147,
+        "victim": "gLAd"
+      }
+    ],
+    "scoreboard": {
+      "byPlayer": {
+        "SS": {
+          "scoreEwep": 5054,
+          "scoreGiven": 5991,
+          "scoreTaken": 4981,
+          "streamEwep": 5785,
+          "streamGiven": 6830,
+          "streamTaken": 6788
+        },
+        "gLAd": {
+          "scoreEwep": 4324,
+          "scoreGiven": 5797,
+          "scoreTaken": 3135,
+          "streamEwep": 4764,
+          "streamGiven": 6542,
+          "streamTaken": 3962
+        },
+        "kippo": {
+          "scoreEwep": 4232,
+          "scoreGiven": 4845,
+          "scoreTaken": 6444,
+          "streamEwep": 4614,
+          "streamGiven": 5488,
+          "streamTaken": 8264
+        },
+        "rusti": {
+          "scoreEwep": 2941,
+          "scoreGiven": 3271,
+          "scoreTaken": 5344,
+          "streamEwep": 3399,
+          "streamGiven": 3788,
+          "streamTaken": 6281
+        }
+      }
+    },
+    "totalDamage": 25295
+  },
   "demoInfo": {
     "date": "2026-04-21 18:32:10 +0000",
     "demo": "2on2_nani_vs_pora[dm6]20260421-1822.mvd",
@@ -11002,7 +15923,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "streams": {
     "global": {
       "matchEnd": 600000,

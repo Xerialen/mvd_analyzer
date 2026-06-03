@@ -287,6 +287,2596 @@
       "weapon": "rl"
     }
   ],
+  "damage": {
+    "byPlayer": {
+      "banan falco": {
+        "byWeapon": {
+          "rl": 5389,
+          "sg": 76,
+          "ssg": 40,
+          "unknown": 4
+        },
+        "enemyVsBoth": 0,
+        "enemyVsLg": 0,
+        "enemyVsMid": 378,
+        "enemyVsRl": 3879,
+        "enemyVsSg": 1252,
+        "ewep": 3879,
+        "given": 5509,
+        "givenSelf": 1558,
+        "givenTeam": 0,
+        "taken": 6623,
+        "takenEnv": 233
+      },
+      "betowen": {
+        "byWeapon": {
+          "gl": 268,
+          "rl": 4412,
+          "sg": 152
+        },
+        "enemyVsBoth": 0,
+        "enemyVsLg": 0,
+        "enemyVsMid": 0,
+        "enemyVsRl": 4367,
+        "enemyVsSg": 465,
+        "ewep": 4367,
+        "given": 4832,
+        "givenSelf": 1732,
+        "givenTeam": 0,
+        "taken": 7716,
+        "takenEnv": 475
+      }
+    },
+    "byWeapon": {
+      "gl": 268,
+      "rl": 9801,
+      "sg": 228,
+      "ssg": 40,
+      "unknown": 4
+    },
+    "events": [
+      {
+        "attacker": "betowen",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 6728,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 14143,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 23961,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 23961,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 24078,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 101,
+        "isSplash": true,
+        "time": 24078,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 35,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 24883,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 98,
+        "isSplash": true,
+        "time": 24883,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 47,
+        "isSplash": true,
+        "time": 25039,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 25844,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 27013,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 29299,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 55,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 33753,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 36538,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 48,
+        "isSplash": true,
+        "time": 38078,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 47,
+        "isSplash": true,
+        "time": 38663,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 39091,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 23,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 39091,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 43947,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 46,
+        "isSplash": true,
+        "time": 45233,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 94,
+        "isSplash": true,
+        "time": 45973,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 49532,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 43,
+        "isSplash": true,
+        "time": 51896,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 26,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 52545,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 53130,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 79,
+        "isSplash": true,
+        "time": 54103,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 24,
+        "time": 54766,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 84,
+        "isSplash": true,
+        "time": 59000,
+        "victim": "banan falco",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 89,
+        "isSplash": true,
+        "time": 59856,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 86,
+        "isSplash": true,
+        "time": 59896,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 81,
+        "isSplash": true,
+        "time": 65064,
+        "victim": "banan falco",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 91,
+        "isSplash": true,
+        "time": 65636,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 44,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 76051,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 99,
+        "isSplash": true,
+        "time": 79454,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 79532,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 80116,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 80116,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 24,
+        "time": 80778,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 85,
+        "isSplash": true,
+        "time": 80935,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 44,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 80935,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 66,
+        "isSplash": true,
+        "time": 84610,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 64,
+        "isSplash": true,
+        "time": 85388,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 87142,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 90129,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 91869,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 71,
+        "isSplash": true,
+        "time": 100506,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 104323,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 58,
+        "isSplash": true,
+        "time": 111181,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 50,
+        "isSplash": true,
+        "time": 112057,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 39,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 113570,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 114116,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 92,
+        "isSplash": true,
+        "time": 116830,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 116947,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 75,
+        "isSplash": true,
+        "time": 122778,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 93,
+        "isSplash": true,
+        "time": 129817,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 44,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 129817,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 130947,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 89,
+        "isSplash": true,
+        "time": 131182,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 24,
+        "time": 131609,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 131843,
+        "victim": "banan falco",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 53,
+        "isSplash": true,
+        "time": 131882,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 4,
+        "time": 132116,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 53,
+        "isSplash": true,
+        "time": 133401,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 133401,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 2,
+        "isSelf": true,
+        "time": 142349,
+        "victim": "betowen",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 143011,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 72,
+        "isSplash": true,
+        "time": 153985,
+        "victim": "betowen",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 156362,
+        "victim": "betowen",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 157323,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 98,
+        "isSplash": true,
+        "time": 158492,
+        "victim": "betowen",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 44,
+        "isSplash": true,
+        "time": 160284,
+        "victim": "betowen",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 109,
+        "isSplash": true,
+        "time": 161757,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 104,
+        "isSplash": true,
+        "time": 165479,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 54,
+        "isSplash": true,
+        "time": 166570,
+        "victim": "betowen",
+        "victimWep": "mid",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 175439,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 181011,
+        "victim": "banan falco",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 182764,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 184160,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 184160,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 2,
+        "isEnv": true,
+        "time": 184199,
+        "victim": "banan falco",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "world",
+        "damage": 30,
+        "isEnv": true,
+        "time": 184349,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 30,
+        "isEnv": true,
+        "time": 184582,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 184777,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 184972,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 185206,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 2,
+        "isEnv": true,
+        "time": 185790,
+        "victim": "banan falco",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 185985,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 185985,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 186180,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 2,
+        "isEnv": true,
+        "time": 186297,
+        "victim": "banan falco",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 186764,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 186803,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 2,
+        "isEnv": true,
+        "time": 186803,
+        "victim": "banan falco",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 186998,
+        "victim": "banan falco",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 69,
+        "isSplash": true,
+        "time": 188556,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 32,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 188790,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 88,
+        "isSplash": true,
+        "time": 197842,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 84,
+        "isSplash": true,
+        "time": 199154,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 199231,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 52,
+        "isSplash": true,
+        "time": 200004,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 95,
+        "isSplash": true,
+        "time": 200270,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 90,
+        "isSplash": true,
+        "time": 200803,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 78,
+        "isSplash": true,
+        "time": 200998,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSplash": true,
+        "time": 202043,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 62,
+        "isSplash": true,
+        "time": 202895,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 21,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 207141,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 208621,
+        "victim": "banan falco",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 227237,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 227465,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 242997,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 242997,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSplash": true,
+        "time": 243114,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 48,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 243769,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 95,
+        "isSplash": true,
+        "time": 243769,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 98,
+        "isSplash": true,
+        "time": 243880,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 67,
+        "isSplash": true,
+        "time": 244660,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 244660,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 90,
+        "isSplash": true,
+        "time": 244698,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 244816,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 245400,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 84,
+        "isSplash": true,
+        "time": 245400,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 8,
+        "time": 247804,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 4,
+        "time": 248309,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 251348,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 40,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 263166,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 55,
+        "isSplash": true,
+        "time": 274413,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "gl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 275652,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 75,
+        "isSplash": true,
+        "time": 277737,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 47,
+        "isSplash": true,
+        "time": 280802,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 281542,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 281542,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 50,
+        "isSplash": true,
+        "time": 281542,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 281737,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 46,
+        "isSplash": true,
+        "time": 281932,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 281970,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 282162,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 282354,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 282587,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 282776,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 283010,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 283204,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 283400,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 283633,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 283828,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 2,
+        "time": 284023,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 2,
+        "time": 284023,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "unknown"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 284023,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 284256,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 284452,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 284646,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 284873,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 285067,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 285296,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 285490,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 285685,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 285919,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 20,
+        "isEnv": true,
+        "time": 286113,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 51,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 295191,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 306633,
+        "victim": "banan falco",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 47,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 318269,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 336788,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 336788,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 101,
+        "isSplash": true,
+        "time": 336788,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 22,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 336788,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 337684,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 338269,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 52,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 338269,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 30,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 338348,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 59,
+        "isSplash": true,
+        "time": 338348,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 341295,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 48,
+        "isSplash": true,
+        "time": 349516,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 81,
+        "isSplash": true,
+        "time": 350061,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 88,
+        "isSplash": true,
+        "time": 351308,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 56,
+        "isSplash": true,
+        "time": 351308,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 62,
+        "isSplash": true,
+        "time": 352411,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 356620,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 10,
+        "isEnv": true,
+        "time": 356620,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 30,
+        "isEnv": true,
+        "time": 356814,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 30,
+        "isEnv": true,
+        "time": 357048,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "world",
+        "damage": 30,
+        "isEnv": true,
+        "time": 357243,
+        "victim": "betowen",
+        "weapon": "lava"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 359412,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 53,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 365879,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 4,
+        "time": 372736,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 372892,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 20,
+        "time": 373235,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 20,
+        "time": 373775,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 78,
+        "isSplash": true,
+        "time": 373852,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 24,
+        "time": 374281,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 374554,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 50,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 374554,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 379917,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 384242,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 85,
+        "isSplash": true,
+        "time": 387476,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 52,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 387632,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 52,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 395334,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 396853,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 403930,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 85,
+        "isSplash": true,
+        "time": 411164,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 43,
+        "isSplash": true,
+        "time": 411164,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 411748,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 76,
+        "isSplash": true,
+        "time": 411748,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 58,
+        "isSplash": true,
+        "time": 411819,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 411819,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 20,
+        "time": 413645,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 4,
+        "time": 414152,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 62,
+        "isSplash": true,
+        "time": 414269,
+        "victim": "banan falco",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 415424,
+        "victim": "banan falco",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 415424,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 87,
+        "isSplash": true,
+        "time": 417281,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 425801,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 428358,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 428943,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 90,
+        "isSplash": true,
+        "time": 429022,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 23,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 429762,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 100,
+        "isSplash": true,
+        "time": 429762,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 63,
+        "isSplash": true,
+        "time": 444449,
+        "victim": "banan falco",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 52,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 445066,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 54,
+        "isSplash": true,
+        "time": 445489,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 68,
+        "isSplash": true,
+        "time": 446099,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 91,
+        "isSplash": true,
+        "time": 446761,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 446956,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 62,
+        "isSplash": true,
+        "time": 447658,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 460371,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 69,
+        "isSplash": true,
+        "time": 467345,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 91,
+        "isSplash": true,
+        "time": 468177,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 42,
+        "isSplash": true,
+        "time": 468943,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 469683,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 29,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 469683,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 69,
+        "isSplash": true,
+        "time": 469800,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 57,
+        "isSplash": true,
+        "time": 470852,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 59,
+        "isSplash": true,
+        "time": 470891,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 471047,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 80,
+        "isSplash": true,
+        "time": 471397,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 23,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 471397,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 59,
+        "isSplash": true,
+        "time": 472293,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 472371,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 41,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 474540,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 484747,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 492929,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 56,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 492929,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 47,
+        "isSplash": true,
+        "time": 493046,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 493696,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 54,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 493696,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 37,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 493735,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 94,
+        "isSplash": true,
+        "time": 493735,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 110,
+        "time": 494515,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 494515,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 43,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 503812,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 86,
+        "isSplash": true,
+        "time": 514306,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 516475,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 68,
+        "isSplash": true,
+        "time": 519838,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 49,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 519878,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 56,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 523266,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 8,
+        "time": 526228,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 102,
+        "isSplash": true,
+        "time": 526539,
+        "victim": "betowen",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 24,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 526539,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 110,
+        "time": 529527,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 73,
+        "isSplash": true,
+        "time": 529527,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 40,
+        "time": 530189,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "ssg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 76,
+        "isSplash": true,
+        "time": 539150,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 54,
+        "isSplash": true,
+        "time": 540539,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 540695,
+        "victim": "banan falco",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 80,
+        "isSplash": true,
+        "time": 541240,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 36,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 541240,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 80,
+        "isSplash": true,
+        "time": 541786,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 83,
+        "isSplash": true,
+        "time": 542565,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 48,
+        "isSplash": true,
+        "time": 542760,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 62,
+        "isSplash": true,
+        "time": 543227,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 31,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 543383,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 83,
+        "isSplash": true,
+        "time": 543383,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 16,
+        "time": 545097,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 65,
+        "isSplash": true,
+        "time": 545709,
+        "victim": "banan falco",
+        "victimWep": "sg",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 12,
+        "time": 546097,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 12,
+        "time": 546604,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "sg"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 556890,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 561311,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 83,
+        "isSplash": true,
+        "time": 563902,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 567837,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 59,
+        "isSplash": true,
+        "time": 590668,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "world",
+        "damage": 5,
+        "isEnv": true,
+        "time": 591603,
+        "victim": "betowen",
+        "weapon": "fall"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 89,
+        "isSplash": true,
+        "time": 591681,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 42,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 592259,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 50,
+        "isSplash": true,
+        "time": 592259,
+        "victim": "banan falco",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 33,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 593928,
+        "victim": "betowen",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 80,
+        "isSplash": true,
+        "time": 594785,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 74,
+        "isSplash": true,
+        "time": 595558,
+        "victim": "betowen",
+        "victimWep": "rl",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 25,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 595558,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "banan falco",
+        "damage": 45,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 598902,
+        "victim": "banan falco",
+        "weapon": "rl"
+      },
+      {
+        "attacker": "betowen",
+        "damage": 46,
+        "isSelf": true,
+        "isSplash": true,
+        "time": 599285,
+        "victim": "betowen",
+        "weapon": "rl"
+      }
+    ],
+    "matrix": [
+      {
+        "attacker": "banan falco",
+        "byWeapon": {
+          "rl": 5389,
+          "sg": 76,
+          "ssg": 40,
+          "unknown": 4
+        },
+        "damage": 5509,
+        "victim": "betowen"
+      },
+      {
+        "attacker": "betowen",
+        "byWeapon": {
+          "gl": 268,
+          "rl": 4412,
+          "sg": 152
+        },
+        "damage": 4832,
+        "victim": "banan falco"
+      }
+    ],
+    "scoreboard": {
+      "byPlayer": {
+        "banan falco": {
+          "scoreEwep": 3408,
+          "scoreGiven": 4826,
+          "scoreTaken": 4560,
+          "streamEwep": 3879,
+          "streamGiven": 5509,
+          "streamTaken": 6623
+        },
+        "betowen": {
+          "scoreEwep": 4248,
+          "scoreGiven": 4560,
+          "scoreTaken": 4826,
+          "streamEwep": 4367,
+          "streamGiven": 4832,
+          "streamTaken": 7716
+        }
+      }
+    },
+    "totalDamage": 14339
+  },
   "demoInfo": {
     "date": "2026-04-24 18:27:08 +0200",
     "demo": "duel_betowen_vs_banan_falco[dm2]260424-1816-duel1.mvd",
@@ -7080,7 +9670,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "streams": {
     "global": {
       "matchEnd": 599980,

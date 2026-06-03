@@ -56,6 +56,7 @@ Send `If-None-Match` to get a cheap 304.
 | GET | `/v1/demos/{id}/demoinfo` | — | `result.DemoInfoResult` (KTX scoreboard — per-player weapon accuracy, kills/deaths/TK, damage, sprees, item counts, RL/LG transfers) |
 | GET | `/v1/demos/{id}/metadata` | — | `result.MetadataResult` (full fullserverinfo cvars + KTX match settings: timelimit, fraglimit, spawnmodel, antilag, midair, instagib, …) |
 | GET | `/v1/demos/{id}/frags` | `players`, `weapon` | `result.FragResult` (totalFrags + byPlayer + byWeapon + full kill log) |
+| GET | `/v1/demos/{id}/damage` | `players`, `weapon` | `result.DamageResult` (per-hit damage log + byPlayer/byWeapon/matrix + EWep victim-weapon buckets + KTX-scoreboard cross-check; unbound/overkill amounts) |
 | GET | `/v1/demos/{id}/loc-graph` | — | `result.LocGraphResult` (per-map loc adjacency + edge weights) |
 | GET | `/v1/demos/{id}/chat` | `from`, `to`, `players`, `types` | `[]result.MatchEvent` (chat + teamsay only; types defaults to both) |
 | GET | `/v1/demos/{id}/backpacks` | `players`, `weapon` | `[]result.BackpackDrop` (RL/LG drops via `//ktx drop`) |
@@ -119,7 +120,7 @@ tier 2. There is no automatic eviction; documented as a follow-up
 mvd-api -addr :8080 -cache-dir /tmp/mvd-cache &
 
 curl -s localhost:8080/healthz
-# {"ok":true,"schemaVersion":19}
+# {"ok":true,"schemaVersion":20}
 
 curl -s -X POST localhost:8080/v1/demos/gameId:12345
 # first call:  fromCache:false

@@ -206,7 +206,19 @@ package result
 //     demo carried no frag log. The API /overview player rows surface the
 //     same Kills/Deaths/Suicides so non-web consumers get the correction the
 //     web UI already applied. Field additions only.
-const CurrentSchemaVersion = 19
+//
+// v20:
+//   - New Damage (DamageResult) section: per-hit damage log + aggregates
+//     (attacker→victim matrix, per-weapon, given/taken, and the EWep
+//     victim-weapon buckets enemyVsSg/Mid/Lg/Rl/Both where ewep=lg+rl+both)
+//     reconstructed from the KTX mvdhidden_dmgdone stream, plus a scoreboard
+//     cross-check vs demoInfo.players[].dmg. Positional kills (telefrag,
+//     stomp) are excluded from all damage figures and surfaced separately
+//     (Damage.Telefrags/Stomps, opt-in telefrag/stomp events). Also a
+//     Layer-1 change: world/environmental damage-taken is emitted with an
+//     Attacker == -1 "world" sentinel rather than dropped. Additive
+//     (omitempty); absent when the demo lacks the KTX hidden-damage stream.
+const CurrentSchemaVersion = 20
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -227,6 +239,7 @@ type Result struct {
 	Metadata         *MetadataResult         `json:"metadata,omitempty"`
 	LocGraph         *LocGraphResult         `json:"locGraph,omitempty"`
 	Items            *ItemsResult            `json:"items,omitempty"`
+	Damage           *DamageResult           `json:"damage,omitempty"`
 	MapEntities      *MapEntitiesResult      `json:"mapEntities,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`

@@ -27,11 +27,11 @@ func (e *FragUpdateEvent) EventTime() float64   { return e.Time }
 
 // DamageEvent is emitted when damage is dealt (from hidden messages)
 type DamageEvent struct {
-	Attacker  int     // Attacker player number (entity - 1)
-	Victim    int     // Victim player number (entity - 1)
-	Damage    int     // Amount of damage dealt
-	DeathType int     // Weapon/death type (DtRL, DtSG, etc.)
-	IsSplash  bool    // True if splash damage
+	Attacker  int  // Attacker player number (entity - 1); -1 for world / non-player inflictor (lava, fall, trigger, ...)
+	Victim    int  // Victim player number (entity - 1)
+	Damage    int  // Amount of damage dealt
+	DeathType int  // Weapon/death type (DtRL, DtSG, etc.)
+	IsSplash  bool // True if splash damage
 	Time      float64
 }
 

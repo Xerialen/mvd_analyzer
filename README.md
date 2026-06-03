@@ -129,9 +129,9 @@ make build-all-platforms                    # cross-compile both mvd-api and mvd
 
 #### Tool surface
 
-Nineteen tools — one for discovery, two for cache control + curated
+Twenty-one tools — one for discovery, two for cache control + curated
 summary, the high-level Result-section pass-throughs (KTX demoinfo,
-metadata, frags, loc-graph, chat, backpacks, items, map entities,
+metadata, frags, damage, loc-graph, chat, backpacks, items, map entities,
 weapon-pickups), and six for the view query layer:
 
 | Tool | Backing |
@@ -145,6 +145,7 @@ weapon-pickups), and six for the view query layer:
 | `getDemoInfo(demoId)` | `mvd-api` `/demoinfo` (KTX scoreboard) |
 | `getMetadata(demoId)` | `mvd-api` `/metadata` (server cvars + match settings) |
 | `getFrags(demoId, players, weapon)` | `mvd-api` `/frags` (aggregates + full kill log) |
+| `getDamage(demoId, players, weapon)` | `mvd-api` `/damage` (per-hit log + matrix + EWep buckets + scoreboard cross-check) |
 | `getLocGraph(demoId)` | `mvd-api` `/loc-graph` (per-map loc adjacency) |
 | `getChat(demoId, players, from, to, types)` | `mvd-api` `/chat` |
 | `getBackpacks(demoId, players, weapon)` | `mvd-api` `/backpacks` |
@@ -381,6 +382,9 @@ Defined in [`mvd-analytics/result`](mvd-analytics/result/result.go). `Result` is
 a JSON-serializable struct with sub-results from every analyzer that ran:
 match, frags, messages, demoinfo, timeline analysis, metadata, locgraph,
 items (per-item pickup / respawn timeline — works on any MVD source),
+damage (per-hit damage log + aggregates — attacker→victim matrix,
+per-weapon, given/taken, and the EWep victim-weapon buckets — from the
+KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
 `//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
@@ -456,7 +460,15 @@ instead of the victim's, so demoinfo undercounts suicides. This makes
 surfaces the same counts so non-web consumers get the correction the web
 Summary already applied.
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `19`).
+Schema v20 adds the `damage` section: per-hit damage reconstructed from the
+KTX `mvdhidden_dmgdone` stream, with an attacker→victim `matrix`, per-weapon
+and per-player given/taken totals, the **EWep** victim-weapon buckets
+(`enemyVsSg/Mid/Lg/Rl/Both`, where `ewep = lg + rl + both`), and a
+`scoreboard` cross-check against the KTX end-of-match totals. Positional
+kills (telefrags, stomps) are surfaced separately and kept out of every
+damage figure.
+
+Every breaking change bumps `CurrentSchemaVersion` (currently `20`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
@@ -646,6 +658,21 @@ diff -r /tmp/before /tmp/after
    `weapons.<w>.pickups.spawn-taken` but fall short of `total-taken` by
    the backpack grabs (systemic; RL/LG reconcile fully). See
    [mvd-analytics/README.md](mvd-analytics/README.md#weapon-pickups).
+
+6. **Damage is unbound (overkill)**: `result.Damage` is reconstructed
+   from the KTX `mvdhidden_dmgdone` stream, which reports the **full** hit
+   including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
+   end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
+   hit to the victim's remaining health, so the reconstructed totals run
+   higher — most on killing blows. The `damage.scoreboard` cross-check
+   surfaces both side by side; the divergence is expected, not a defect.
+   **Positional kills** — telefrags (the 9999 instakill sentinel) and
+   stomps (landing on a head) — are excluded from all damage figures and
+   tracked separately (`damage.telefrags`/`damage.stomps`, the opt-in
+   `telefrag`/`stomp` events) so they don't swamp `given`/`ewep`/`byWeapon`.
+   Available only on KTX demos with the MVD-hidden extension; the `EWep`
+   victim-weapon buckets additionally depend on reconstructing each
+   victim's inventory from `STAT_ITEMS` updates.
 
 ## Reference sources
 
