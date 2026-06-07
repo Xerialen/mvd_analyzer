@@ -219,15 +219,14 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// regionControlPost (which calls view.RegionControl) to fill in
 	// BucketStates/Stats from streams.
 	result.TimelineAnalysis = &TimelineAnalysisResult{
-		MatchStartTime: msTime(a.timing.StartTime),
-		FragEvents:     fragEvents,
-		DeathEvents:    deathEvents,
-		KillEvents:     killEvents,
-		PowerupEvents:  powerupEvents,
-		FragStreaks:    fragStreaks,
-		LocationData:   locationData,
-		LocTable:       locTable,
-		PlayerUserIDs:  playerUserIDsByName,
+		FragEvents:    fragEvents,
+		DeathEvents:   deathEvents,
+		KillEvents:    killEvents,
+		PowerupEvents: powerupEvents,
+		FragStreaks:   fragStreaks,
+		LocationData:  locationData,
+		LocTable:      locTable,
+		PlayerUserIDs: playerUserIDsByName,
 	}
 
 	matchEnd := a.timing.EndTime
@@ -246,6 +245,23 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	}
 	if streams := a.buildStreamsResult(slotToName, slotToTeam, a.timing.StartTime, matchEnd); streams != nil {
 		result.Streams = streams
+
+		// As of schema v23 the demo/wall-clock anchor lives on Streams.Global —
+		// it describes how to map a stream's match time to wall-clock time, so
+		// it belongs next to the match window rather than in TimelineAnalysis.
+
+		// Wall-clock anchor. The mvdhidden 0x000B block is the millisecond-
+		// accurate source; when it is absent, deriveDemoStartAnchor fills these
+		// from the whole-second serverinfo `epoch` cvar in post-processing.
+		if a.demoStartFromHidden {
+			result.Streams.Global.DemoStartUnixMs = a.demoStartUnixMs
+			result.Streams.Global.DemoStartAccuracyMs = 1
+		}
+
+		// Coalesce paused_duration samples into per-pause segments. AtMs is
+		// demo-relative here; normalizeMatchRelativeTimes rebases it (and sets
+		// Global.DemoOffset) once the match-start shift is known.
+		result.Streams.Global.Pauses = coalescePauses(a.rawPauses)
 	}
 
 	// Region control: detect regions + resolve team labels. The
@@ -306,4 +322,46 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		}
 	}
 	return nil
+}
+
+// pauseCoalesceGapSec separates one pause from the next. mvdsv emits a
+// paused_duration sample per idle frame (idlefps 4–30, so ≤250ms apart) and
+// the game clock is frozen across a pause, so intra-pause samples cluster
+// within a few hundred ms; distinct pauses are separated by real gameplay
+// (seconds). 0.5s cleanly splits them. A pause/unpause/pause cycle shorter
+// than this merges into one segment — acceptable, the summed duration is
+// preserved.
+const pauseCoalesceGapSec = 0.5
+
+// coalescePauses folds the raw per-idle-frame paused_duration samples into one
+// segment per pause. AtMs is the frozen game time the pause sits at (the latest
+// sample time in the run — the plateau the demo clock holds while paused);
+// DurationMs is the summed real wall-clock time of the run. Times are
+// demo-relative here; normalizeMatchRelativeTimes rebases AtMs to match time.
+func coalescePauses(samples []pauseSample) []TimelinePause {
+	if len(samples) == 0 {
+		return nil
+	}
+	var pauses []TimelinePause
+	runStartIdx := 0
+	flush := func(end int) {
+		dur := 0
+		for _, s := range samples[runStartIdx:end] {
+			dur += s.DurationMs
+		}
+		// Latest sample time is the frozen plateau; the leading transition
+		// frame sits a few ms earlier.
+		pauses = append(pauses, TimelinePause{
+			AtMs:       msTime(samples[end-1].Time),
+			DurationMs: int32(dur),
+		})
+	}
+	for i := 1; i < len(samples); i++ {
+		if samples[i].Time-samples[i-1].Time > pauseCoalesceGapSec {
+			flush(i)
+			runStartIdx = i
+		}
+	}
+	flush(len(samples))
+	return pauses
 }

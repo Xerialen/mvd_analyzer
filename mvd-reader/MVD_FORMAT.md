@@ -1142,9 +1142,41 @@ If `type_id == 0xFFFF`, read another short for extended type range.
 | 0x0007 | `mvdhidden_dmgdone` | Damage dealt info | **Common** |
 | 0x0008 | `mvdhidden_usercmd_weapons_ss` | Server-side weapon data | **Requires server flag** |
 | 0x0009 | `mvdhidden_usercmd_weapon_instruction` | Weapon instruction | **Requires server flag** |
-| 0x000A | `mvdhidden_paused_duration` | Paused time (QTV only) | QTV only |
+| 0x000A | `mvdhidden_paused_duration` | Real ms elapsed during one paused idle frame | Now in .mvd too — **malformed framing**, see below |
 | 0x000B | `mvdhidden_demo_start_timestamp_ms` | Unix timestamp (ms) at demo start (ULEB128 varint) | Newer mvdsv |
 | 0xFFFF | `mvdhidden_extended` | Extended type (read next short) | - |
+
+**`0x000A` paused_duration — written to the .mvd, but malformed.** Older docs
+called this "QTV only", and in the vendored mvdsv tree
+`SV_MVDWritePausedTimeToStreams` (`src/sv_demo.c`) still writes it only to
+`DEST_STREAM`. But current **production** mvdsv (e.g. Berlin "MVDSV 1.20-dev")
+also embeds it in the recorded demo: one block per *idle frame* while the game
+is paused, carrying a single byte of real wall-clock milliseconds elapsed since
+the previous frame (`sv_send.c:1411`, clamped 0–255). The game clock (`sv.time`)
+is frozen while paused, so the normal demo time-delta bytes are `0` and the
+**sum of the duration bytes across a contiguous run is the real length of that
+pause** — the only in-file signal of how much wall-clock time a pause consumed.
+Two ~6.6 s pauses in `duel-with-pauses.mvd` decode to 127 blocks totalling
+13199 ms, matching the gap between the `0x000B` demo-open time and the demoinfo
+close date.
+
+**Caveat — it omits the block-length header.** Unlike every other hidden block,
+the paused block is hand-written and **skips the leading 4-byte `block_length`
+field** described above. The `dem_multiple` payload is a bare
+`[type_id:u16][duration:byte]` (3 bytes, `dem_multiple` size = 3) instead of the
+standard `[block_length:u32][type_id:u16][payload]`. A generic hidden-block
+parser reads the `type_id` as a truncated length and bails. This is an mvdsv bug:
+the QTV-only writer (`sv_demo.c:559-582`) was reused to also write the file
+without adding the inner length field that `MVDWrite_HiddenBlock` /
+`mvdhidden_block_header_t` supply for the standard blocks (cf. `sv_user.c:4187`,
+`sv_demo_misc.c:849`). [QW-Group/mvdsv PR #210](https://github.com/QW-Group/mvdsv/pull/210)
+fixes this: the block becomes the canonical `[u32 length=1][u16 0x000A][byte]`
+(`dem_multiple` size 7, body still one duration byte). The mvd-reader parser
+handles **both** forms — it special-cases the 3-byte bare form and decodes the
+length-prefixed PR #210 form via the normal block loop — so demos from current
+and fixed servers parse identically. `mvd-analytics` folds the per-frame samples
+into per-pause segments — see `pauses[]` and the `demoStartUnixMs` wall-clock
+formula in RESULT_SCHEMA.md.
 
 **Newer types**: the table above tracks qwprot as of 2026. Older parsers will warn `unknown hidden message type 0x000b` on any demo recorded by an mvdsv that includes the [PR #17 / `500bd4b`](https://github.com/QW-Group/qwprot/commit/500bd4b) addition; the payload is a Unix-millisecond timestamp captured at the moment the server opened the MVD file, **ULEB128 varint-encoded** (7 data bits per byte, high bit = continuation — *not* a fixed-width little-endian `uint64`; a ~2026 value is 6 bytes), intended for stream/voice synchronisation. It's safe to skip if you don't consume it, but recognising it explicitly cleans up the warning stream. mvdsv writes it via `Sys_TimestampMilliseconds()` in `SV_MVDEmbedStartTimestamp` (`src/sv_demo_misc.c`).
 
@@ -3195,7 +3227,8 @@ The hidden message system (`MVD_PEXT1_HIDDEN_MESSAGES`, bit 5 = 0x20) was added 
 - **0x0001 - usercmd**: Player input commands
 - **0x0003 - demoinfo**: Embedded JSON metadata (match info, player stats)
 - **0x0007 - dmgdone**: Damage events with attacker, victim, weapon, and amount
-- **0x000B - demo_start_timestamp_ms** *(2026, qwprot PR #17)*: ULEB128 varint-encoded unix-millisecond timestamp captured at demo start, for synchronising voice recordings / stream overlays with the demo timeline.
+- **0x000A - paused_duration** *(2026)*: one byte of real wall-clock ms per idle frame while the game is paused, embedded in the .mvd by current production mvdsv (was previously written only to QTV streams). The game clock freezes while paused, so summing these over a pause recovers its real duration — the in-file basis for mapping a paused demo's game time back to wall clock. **Written without the standard 4-byte block-length header** (bare `[type_id][byte]`), so the parser decodes it via a dedicated path; see the `0x000A` note under [Hidden Message Types](#hidden-message-types) and `pauses[]` in RESULT_SCHEMA.md.
+- **0x000B - demo_start_timestamp_ms** *(2026, qwprot PR #17)*: ULEB128 varint-encoded unix-millisecond timestamp captured at demo start, for synchronising voice recordings / stream overlays with the demo timeline. The decoder emits the value faithfully, but **not every 0x000B block is a valid timestamp**: some 2026 demos carry a 1–2 byte block here that decodes to a tiny non-timestamp value (61, 11701 observed; those demos also carry a correct whole-second `epoch` serverinfo cvar). Consumers must range-check before treating it as a wall clock — `mvd-analytics` does this and falls back to `epoch` (see `demoStartUnixMs` in RESULT_SCHEMA.md).
 
 ### Damage Tracking Evolution
 

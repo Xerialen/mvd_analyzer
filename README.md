@@ -346,9 +346,11 @@ Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `CenterPrintEvent`, `ServerInfoEvent`, `DeathEvent`, `SpawnEvent`,
 `ItemSpawnEvent`, `ItemStateEvent`, `BackpackDropHintEvent`,
 `ItemPickupHintEvent`, `BackpackPickupHintEvent`,
-`ItemPickupPrintEvent`, `BackpackPickupPrintEvent`. Domain types
-carried by events — `ServerData`, `PlayerInfo`, `PlayerState`,
-`Stats` — are source-agnostic.
+`ItemPickupPrintEvent`, `BackpackPickupPrintEvent`,
+`DemoStartTimestampEvent` (mvdhidden `0x000B` wall-clock anchor),
+`PausedDurationEvent` (mvdhidden `0x000A` per-frame pause duration).
+Domain types carried by events — `ServerData`, `PlayerInfo`,
+`PlayerState`, `Stats` — are source-agnostic.
 
 `DeathEvent` / `SpawnEvent` are derived events the parser synthesises
 from `StatHealth` edges so analytics never has to reconstruct
@@ -468,7 +470,29 @@ and per-player given/taken totals, the **EWep** victim-weapon buckets
 kills (telefrags, stomps) are surfaced separately and kept out of every
 damage figure.
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `20`).
+`streams.global` carries a wall-clock anchor so a consumer can project any
+match-relative game time onto real-world time (for syncing voice tracks /
+stream overlays): `demoStartUnixMs` (server clock, Unix epoch ms, at demo
+open), `demoStartAccuracyMs` (its resolution — `1` from the millisecond
+mvdhidden `0x000B` block, `1000` from the whole-second serverinfo `epoch`
+cvar), `demoOffset` (demo-open → match-start), and `pauses[]`
+(`{ atMs, durationMs }` per pause). The game clock freezes during a pause
+while wall-clock time runs on, so pauses must be folded in:
+
+```
+wallClockMs = demoStartUnixMs + demoOffset + gameMs + Σ durationMs (atMs ≤ gameMs)
+```
+
+The pause durations come from the mvdhidden `0x000A` `paused_duration` blocks
+mvdsv embeds once per paused idle frame (the parser handles their
+non-standard, length-header-less framing; QW-Group/mvdsv PR #210 adds the
+canonical framing, also supported). Anchor fields are omitted when the demo
+carries no wall-clock source; implausible `0x000B` payloads fall back to
+`epoch`. (Introduced in v21–v22 on `timelineAnalysis`; **moved to
+`streams.global` and exposed via the REST `/overview` `timing` block in
+v23**, alongside `matchStart`/`matchEnd`.)
+
+Every breaking change bumps `CurrentSchemaVersion` (currently `23`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
@@ -673,6 +697,25 @@ diff -r /tmp/before /tmp/after
    Available only on KTX demos with the MVD-hidden extension; the `EWep`
    victim-weapon buckets additionally depend on reconstructing each
    victim's inventory from `STAT_ITEMS` updates.
+
+7. **Wall-clock anchor resolution / availability**: `streams.global`'s
+   `demoStartUnixMs` is millisecond-accurate (`demoStartAccuracyMs = 1`)
+   only when the demo carries the mvdhidden `0x000B` block; otherwise it
+   degrades to the whole-second serverinfo `epoch` cvar
+   (`demoStartAccuracyMs = 1000`), and is absent entirely when neither is
+   present (e.g. non-KTX or pre-2026 demos). It anchors **demo open**, not
+   match start — consumers add `demoOffset` to reach the match. Some 2026
+   demos emit a `0x000B` block that is not a timestamp at all (a 1–2 byte
+   non-wall-clock value); those are range-checked out and fall back to
+   `epoch`. See [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) and
+   [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md#hidden-message-types).
+   For **paused** demos the wall-clock mapping also needs
+   `streams.global.pauses[]`: the durations come from the mvdhidden `0x000A`
+   `paused_duration` block, which only current production mvdsv embeds in
+   the .mvd (older servers wrote it to QTV streams only) and which is
+   written with non-standard framing (no inner block-length header) — both
+   are handled, but a demo from a server that doesn't embed it has no
+   per-pause signal, so its wall-clock mapping drifts by the pause time.
 
 ## Reference sources
 

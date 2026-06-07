@@ -305,10 +305,13 @@ data is produced on demand by `mvd-analytics/view.Buckets` (any window
 size, any reducer set; see [Streams](#streams-streams) and
 [Query API](#query-api)), not baked into the parse-time result.
 
+The match window and the wall-clock anchor (`matchStart`/`matchEnd`,
+`demoOffset`, `demoStartUnixMs`, `demoStartAccuracyMs`, `pauses`) live in
+[`streams.global`](#globalstream) as of schema v23 — they describe how to
+read the streams' times, so they sit next to them.
+
 | Field | JSON key | Type |
 |---|---|---|
-| MatchStartTime | `matchStartTime` | int32 ms (always 0 after post-process) |
-| DemoOffset | `demoOffset` | int32 ms (warmup before match start) |
 | FragEvents | `fragEvents` | []TimelineFragEvent |
 | DeathEvents | `deathEvents` | []TimelineDeathEvent |
 | KillEvents | `killEvents` | []TimelineKillEvent |
@@ -480,10 +483,50 @@ state, loc trails) are computed on demand from this storage by the
 
 ### GlobalStream
 
+The match window plus the demo/wall-clock anchor (moved here from
+`timelineAnalysis` at schema v23).
+
 | Field | JSON key | Type | Notes |
 |---|---|---|---|
-| MatchStart | `matchStart` | int32 | Match window start in milliseconds (always 0 after post-process). |
+| MatchStart | `matchStart` | int32 | Match window start in milliseconds (always 0 after post-process — it *is* the time origin). |
 | MatchEnd | `matchEnd` | int32 | Match window end in milliseconds. |
+| DemoOffset | `demoOffset` | int32, omitempty | Ms from demo open (≈ countdown start) to match start. |
+| DemoStartUnixMs | `demoStartUnixMs` | int64, omitempty | Server wall clock (Unix epoch ms) at demo open. |
+| DemoStartAccuracyMs | `demoStartAccuracyMs` | int32, omitempty | Resolution of `demoStartUnixMs`: `1` or `1000`. |
+| Pauses | `pauses` | []TimelinePause, omitempty | Per-pause wall-clock segments; see below. |
+
+**Wall-clock anchor.** All other times in the result are match-relative
+(`t=0` is match start). The anchor lets a consumer project any
+match-relative game time `g` (ms) onto a real-world wall clock for
+syncing external data (voice tracks, stream overlays):
+
+```
+wallClockMs = demoStartUnixMs + demoOffset + g + P(g)   (±demoStartAccuracyMs)
+P(g)        = Σ pauses[i].durationMs  for  pauses[i].atMs <= g
+```
+
+`demoStartUnixMs` is the server's clock at **demo open** (demo `t=0`, ≈
+countdown start — not match start; `demoOffset` bridges the two).
+`demoStartAccuracyMs` is its resolution: `1` from the millisecond
+[mvdhidden 0x000B block](../mvd-reader/MVD_FORMAT.md#hidden-message-types),
+`1000` from the whole-second serverinfo `epoch` cvar. The anchor fields
+are omitted when the demo carries no usable wall-clock source; implausible
+0x000B payloads (some demos emit a non-timestamp block here) fall back to
+`epoch`. The REST `/overview` endpoint mirrors this anchor in its `timing`
+block.
+
+The `P(g)` term accounts for **pauses**: the game clock freezes during a
+pause while wall-clock time keeps running, so without it the mapping
+drifts by the total pause time on any paused demo. `P(g)` is `0` (and
+`pauses` may be absent) otherwise.
+
+Each `pauses[]` entry is a **TimelinePause** `{ atMs, durationMs }`: `atMs`
+is the match-relative game time the clock froze at (negative if the pause
+happened during the countdown), `durationMs` the real wall-clock time the
+pause consumed. Recovered from the [mvdhidden 0x000A `paused_duration`
+blocks](../mvd-reader/MVD_FORMAT.md#hidden-message-types) mvdsv embeds once
+per idle frame while paused (summed per pause), in `atMs` order. Absent
+when the demo has no pauses or the server does not embed the block.
 
 ### PlayerStream
 
@@ -534,9 +577,9 @@ exceed ±32 768 in any axis.
 
 Every timestamped field in this schema — `PositionTrack.T`,
 `PlayerStream.Spawns/Deaths`, `ChangeI16.T` / `ChangeStr.T`,
-`Interval.Start/End`, `GlobalStream.MatchStart/End`,
+`Interval.Start/End`, `GlobalStream.MatchStart/End/DemoOffset`,
+`GlobalStream.Pauses[].AtMs/DurationMs`,
 `MatchResult.Duration/StartTime/EndTime`,
-`TimelineAnalysisResult.MatchStartTime/DemoOffset`,
 `TimelineFragEvent.Time`, `PowerupEvent.Time/EndTime/Duration`,
 `FragStreakEvent.Time/EndTime/Duration`, `MatchEvent.Time`,
 `FragEntry.Time`, `BackpackDrop.Time`,
@@ -579,8 +622,8 @@ truth. Integer storage:
 3. **Postprocess** (`normalizeMatchRelativeTimes` in
    `analyzer/postprocess.go`): if the field shifts with match start,
    add it there. Everything works in int32 ms;
-   `matchStartMs` comes from `res.TimelineAnalysis.MatchStartTime`
-   directly.
+   `matchStartMs` comes from `res.Streams.Global.MatchStart`
+   (pre-normalize, the demo-relative match start) directly.
 4. **View layer** (`mvd-analytics/view/`): if the field is queryable
    via `view.Buckets` / `view.Events` / `view.StreamSlice` /
    `view.StateAt`, follow the existing pattern — accept window

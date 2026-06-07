@@ -8551,9 +8551,12 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 20,
+  "schemaVersion": 23,
   "streams": {
     "global": {
+      "demoOffset": 10104,
+      "demoStartAccuracyMs": 1000,
+      "demoStartUnixMs": 1777047363000,
       "matchEnd": 599993,
       "matchStart": 0
     },
@@ -109763,7 +109766,6 @@
         "time": 590655
       }
     ],
-    "demoOffset": 10104,
     "fragEvents": [
       {
         "delta": 1,
@@ -110704,7 +110706,6 @@
         "z": -103.875
       }
     ],
-    "matchStartTime": 0,
     "playerUserIDs": {
       "42": 21,
       "AHemlocksLie": 20

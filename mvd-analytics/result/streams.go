@@ -63,13 +63,39 @@ type PlayerStream struct {
 	Deaths []int32 `json:"d,omitempty"`
 }
 
-// GlobalStream carries match-window anchors so consumers can resolve
-// what "start" / "end" mean without cross-referencing other Result
-// fields. Times are integer milliseconds since the stream's time
-// origin (schema v8 — see PositionTrack for the unit rationale).
+// GlobalStream carries the match window plus the demo/wall-clock anchor —
+// everything needed to interpret a stream time without cross-referencing
+// other Result sections. Match-relative times are integer milliseconds
+// since the stream's time origin (schema v8 — see PositionTrack for the
+// unit rationale); MatchStart is always 0 (it *is* the origin) and is kept
+// as an explicit anchor.
+//
+// Wall-clock mapping (schema v23 moved the anchor here from
+// TimelineAnalysisResult). For any match-relative game time g (ms):
+//
+//	wallClockMs = DemoStartUnixMs + DemoOffset + g + P(g)   (±DemoStartAccuracyMs)
+//	P(g)        = Σ Pauses[i].DurationMs for Pauses[i].AtMs <= g
+//
+// The game clock freezes during a pause while wall-clock time runs on, so
+// the P(g) term is what keeps the mapping correct on paused demos; it is 0
+// (and Pauses may be empty) otherwise.
 type GlobalStream struct {
-	MatchStart int32 `json:"matchStart"`
-	MatchEnd   int32 `json:"matchEnd"`
+	MatchStart int32 `json:"matchStart"` // always 0 — the match-relative time origin
+	MatchEnd   int32 `json:"matchEnd"`   // match end (≈ duration) in match-relative ms
+	// DemoOffset is ms from demo open (demo t=0, ≈ countdown start) to match
+	// start; it bridges match-relative time and demo time.
+	DemoOffset int32 `json:"demoOffset,omitempty"`
+	// DemoStartUnixMs is the server's clock (Unix epoch ms) at demo open.
+	DemoStartUnixMs int64 `json:"demoStartUnixMs,omitempty"`
+	// DemoStartAccuracyMs is its resolution: 1 from the mvdhidden 0x000B
+	// millisecond block, 1000 from the whole-second serverinfo `epoch` cvar.
+	// Absent (0) when no wall-clock source is present.
+	DemoStartAccuracyMs int32 `json:"demoStartAccuracyMs,omitempty"`
+	// Pauses lists each game pause as a flat segment in the game→wall-clock
+	// mapping, in match-relative AtMs order. Derived from the mvdhidden
+	// 0x000A (paused_duration) blocks; absent on demos with no pauses or
+	// recorded by a server that does not embed the block.
+	Pauses []TimelinePause `json:"pauses,omitempty"`
 }
 
 // PositionTrack is columnar to compress JSON. Indices align across the

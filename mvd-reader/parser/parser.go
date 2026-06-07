@@ -39,6 +39,7 @@ const (
 	EventItemPickupPrint
 	EventBackpackPickupPrint
 	EventDemoStartTimestamp
+	EventPausedDuration
 )
 
 // IntermissionEvent is emitted when the server enters intermission
@@ -116,9 +117,9 @@ type Parser struct {
 	// svc_playerinfo for this slot yet" so the first sample doesn't
 	// fabricate a DeathEvent for a player who joined the demo already
 	// dead (no prior alive state to transition from).
-	playerDead       [mvd.MaxClients]bool
-	playerDeadKnown  [mvd.MaxClients]bool
-	playerSeenInfo   [mvd.MaxClients]bool
+	playerDead      [mvd.MaxClients]bool
+	playerDeadKnown [mvd.MaxClients]bool
+	playerSeenInfo  [mvd.MaxClients]bool
 	// matchStarted flips on the first svc_print whose text matches one
 	// of the canonical match-start phrases (see matchStartedFromPrint).
 	// It gates the obituary-derived DeathEvent path in
@@ -129,12 +130,12 @@ type Parser struct {
 	// the still-to-arrive stat-based DeathEvent. Gating obit emission
 	// on this flag keeps warmup obits silent and lets the dedup state
 	// flow normally once the match is live.
-	matchStarted    bool
-	handlers        []Handler
-	floatCoords     bool
-	fteExtensions   uint32 // FTE protocol extension flags
-	diagnosticMode  bool
-	warnings        []Warning
+	matchStarted   bool
+	handlers       []Handler
+	floatCoords    bool
+	fteExtensions  uint32 // FTE protocol extension flags
+	diagnosticMode bool
+	warnings       []Warning
 
 	// Entity state tracking — fills from svc_modellist, svc_spawnbaseline,
 	// and svc_packetentities / svc_deltapacketentities so the parser
@@ -440,6 +441,22 @@ func (p *Parser) parseHiddenMessage(msg *mvd.DemoMessage) error {
 	r := mvd.NewBufferReader(msg.Payload)
 	time := msg.Time
 
+	// Malformed paused-duration block workaround. mvdsv's
+	// SV_MVDWritePausedTimeToStreams (sv_demo.c:559) hand-writes the
+	// mvdhidden_paused_duration (0x000A) block WITHOUT the leading 4-byte
+	// mvdhidden_block_header_t.length field every other hidden block carries
+	// (cf. sv_user.c:4187-4190). The dem_multiple payload is therefore a bare
+	// [type_id:u16][duration:byte] (exactly 3 bytes) instead of the standard
+	// [length:u32][type_id:u16][payload]. The block loop below would read the
+	// type_id as a truncated length and bail, so detect that exact shape here.
+	// A standard single block is >= 6 bytes (4+2 header), so len==3 is
+	// unambiguous; a correctly-framed future build falls through to the
+	// MVDHiddenPausedDuration case in the loop instead.
+	if len(msg.Payload) == 3 &&
+		uint16(msg.Payload[0])|uint16(msg.Payload[1])<<8 == mvd.MVDHiddenPausedDuration {
+		return p.emit(&PausedDurationEvent{DurationMs: int(msg.Payload[2]), Time: time})
+	}
+
 	for r.Remaining() > 0 {
 		// Read block length (4 bytes). EOF here mid-stream means the
 		// final block header was truncated — that's a parse error, not a
@@ -449,7 +466,10 @@ func (p *Parser) parseHiddenMessage(msg *mvd.DemoMessage) error {
 			p.warn(time, "parse_error", "hidden block: truncated length header (%v)", err)
 			return nil
 		}
-		if blockLen < 2 || blockLen > maxHiddenBlockSize {
+		// blockLen counts the bytes after the type_id. 1 is legitimate (a
+		// single-byte payload, e.g. a correctly-framed paused_duration block);
+		// 0 is a degenerate empty block we refuse.
+		if blockLen < 1 || blockLen > maxHiddenBlockSize {
 			p.warn(time, "parse_error", "hidden block with invalid length %d", blockLen)
 			return nil
 		}
@@ -479,6 +499,16 @@ func (p *Parser) parseHiddenMessage(msg *mvd.DemoMessage) error {
 		case mvd.MVDHiddenDemoStartTimestampMs:
 			if err := p.parseHiddenDemoStart(r, time, dataLen); err != nil {
 				p.warn(time, "parse_error", "hidden demo_start_timestamp_ms: %v", err)
+				return nil
+			}
+		case mvd.MVDHiddenPausedDuration:
+			// Correctly-framed paused-duration block (standard length-prefixed
+			// form): dem_multiple payload [u32 length=1][u16 0x000A][byte]. This
+			// is what QW-Group/mvdsv PR #210 emits once merged; the bare,
+			// header-less form current mvdsv writes is handled up front in
+			// parseHiddenMessage. Both decode to the same PausedDurationEvent.
+			if err := p.parseHiddenPausedDuration(r, time, dataLen); err != nil {
+				p.warn(time, "parse_error", "hidden paused_duration: %v", err)
 				return nil
 			}
 		default:
@@ -603,6 +633,27 @@ func (p *Parser) parseHiddenDemoInfo(r *mvd.BufferReader, time float64, dataLen 
 	})
 }
 
+// parseHiddenPausedDuration parses a length-prefixed mvdhidden_paused_duration
+// (0x000A) block: a single byte of real wall-clock milliseconds elapsed during
+// one paused idle frame. This handles the standard-framed form emitted by
+// QW-Group/mvdsv PR #210 (length=1, one body byte); the bare, header-less form
+// current mvdsv actually emits is decoded up front in parseHiddenMessage.
+func (p *Parser) parseHiddenPausedDuration(r *mvd.BufferReader, time float64, dataLen int) error {
+	if dataLen < 1 {
+		return r.Skip(dataLen)
+	}
+	dur, err := r.ReadByte()
+	if err != nil {
+		return err
+	}
+	if dataLen > 1 {
+		if err := r.Skip(dataLen - 1); err != nil {
+			return err
+		}
+	}
+	return p.emit(&PausedDurationEvent{DurationMs: int(dur), Time: time})
+}
+
 // parseHiddenDemoStart parses mvdhidden_demo_start_timestamp_ms (0x000B).
 //
 // The payload is the wall-clock time the server opened the MVD file, as Unix
@@ -620,13 +671,9 @@ func (p *Parser) parseHiddenDemoStart(r *mvd.BufferReader, time float64, dataLen
 	}
 
 	// Read the whole block so the reader stays aligned for the next block.
-	body := make([]byte, dataLen)
-	for i := 0; i < dataLen; i++ {
-		b, err := r.ReadByte()
-		if err != nil {
-			return err
-		}
-		body[i] = b
+	body, err := r.ReadBytes(dataLen)
+	if err != nil {
+		return err
 	}
 
 	return p.emit(&DemoStartTimestampEvent{UnixMs: int64(decodeULEB128(body)), Time: time})
@@ -994,12 +1041,12 @@ func skipDeltaPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint3
 
 // Entity update flag bits (from protocol.h)
 const (
-	uOrigin1     = 1 << 9
-	uOrigin2     = 1 << 10
-	uOrigin3     = 1 << 11
-	uAngle2      = 1 << 12
-	uFrame       = 1 << 13
-	uMoreBits    = 1 << 15
+	uOrigin1  = 1 << 9
+	uOrigin2  = 1 << 10
+	uOrigin3  = 1 << 11
+	uAngle2   = 1 << 12
+	uFrame    = 1 << 13
+	uMoreBits = 1 << 15
 	// Low byte flags (read if uMoreBits set)
 	uAngle1      = 1 << 0
 	uAngle3      = 1 << 1
@@ -1009,9 +1056,9 @@ const (
 	uEffects     = 1 << 5
 	uFTEEvenMore = 1 << 7
 	// FTE morebits flags
-	uFTETrans    = 1 << 1
-	uFTEModelDbl = 1 << 3
-	uFTEYetMore  = 1 << 7
+	uFTETrans     = 1 << 1
+	uFTEModelDbl  = 1 << 3
+	uFTEYetMore   = 1 << 7
 	uFTEColourMod = 1 << 10 // bit 2 of second byte (after shift by 8)
 )
 

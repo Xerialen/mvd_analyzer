@@ -6,18 +6,19 @@ package result
 //
 // HighResBuckets and HighResDuration were deleted at schema v7;
 // bucketed data is now produced on demand by qwanalytics/view.Buckets.
+// Timing and the wall-clock anchor moved to Streams.Global at schema v23
+// (MatchStartTime, DemoOffset, DemoStartUnixMs, DemoStartAccuracyMs, Pauses).
+// What remains here is the event-shaped derived data plus map/loc metadata.
 type TimelineAnalysisResult struct {
-	MatchStartTime int32                `json:"matchStartTime"`          // When match actually started (after warmup), in ms
-	DemoOffset     int32                `json:"demoOffset,omitempty"`    // Milliseconds from demo start to match start (for Hub viewer links)
-	FragEvents     []TimelineFragEvent  `json:"fragEvents,omitempty"`    // Frag events for score timeline
-	DeathEvents    []TimelineDeathEvent `json:"deathEvents,omitempty"`   // Per-player deaths for the frags/deaths drill-down
-	KillEvents     []TimelineKillEvent  `json:"killEvents,omitempty"`    // Per-player enemy kills for the frags/deaths drill-down
-	PowerupEvents  []PowerupEvent       `json:"powerupEvents,omitempty"` // Powerup pickups for Key Moments
-	FragStreaks    []FragStreakEvent    `json:"fragStreaks,omitempty"`   // Top longest frag streaks for Key Moments
-	LocationData   []MapLocation        `json:"locationData,omitempty"`  // Location points from .loc file for map view
-	LocTable       []string             `json:"locTable,omitempty"`      // Interned loc names; index 0 is "" sentinel.
-	PlayerUserIDs  map[string]int       `json:"playerUserIDs,omitempty"` // Player name -> UserID for Hub viewer links
-	RegionControl  *RegionControlResult `json:"regionControl,omitempty"` // Region control stats
+	FragEvents    []TimelineFragEvent  `json:"fragEvents,omitempty"`    // Frag events for score timeline
+	DeathEvents   []TimelineDeathEvent `json:"deathEvents,omitempty"`   // Per-player deaths for the frags/deaths drill-down
+	KillEvents    []TimelineKillEvent  `json:"killEvents,omitempty"`    // Per-player enemy kills for the frags/deaths drill-down
+	PowerupEvents []PowerupEvent       `json:"powerupEvents,omitempty"` // Powerup pickups for Key Moments
+	FragStreaks   []FragStreakEvent    `json:"fragStreaks,omitempty"`   // Top longest frag streaks for Key Moments
+	LocationData  []MapLocation        `json:"locationData,omitempty"`  // Location points from .loc file for map view
+	LocTable      []string             `json:"locTable,omitempty"`      // Interned loc names; index 0 is "" sentinel.
+	PlayerUserIDs map[string]int       `json:"playerUserIDs,omitempty"` // Player name -> UserID for Hub viewer links
+	RegionControl *RegionControlResult `json:"regionControl,omitempty"` // Region control stats
 }
 
 // ControlRegion represents a named area on the map for control tracking.
@@ -109,6 +110,19 @@ type TimelineFragEvent struct {
 	Player string `json:"player"` // Player name who got the frag
 	Team   string `json:"team"`
 	Delta  int    `json:"delta"` // Frag count change (+1 for kill, -1 for suicide/teamkill)
+}
+
+// TimelinePause represents one game pause as a flat segment in the
+// game-time→wall-clock mapping. AtMs is the match-relative game time (ms)
+// at which the game clock froze (negative if the pause occurred during the
+// countdown/warmup). DurationMs is the real wall-clock time the pause
+// consumed, recovered by summing the mvdhidden 0x000A (paused_duration)
+// samples mvdsv embeds once per idle frame while paused. See the
+// TimelineAnalysisResult.DemoStartUnixMs formula for how consumers fold
+// these into a wall-clock mapping.
+type TimelinePause struct {
+	AtMs       int32 `json:"atMs"`       // match-relative game time the pause sits at (clock frozen here)
+	DurationMs int32 `json:"durationMs"` // real wall-clock ms the pause lasted
 }
 
 // TimelineDeathEvent represents a single death pinned to the player who

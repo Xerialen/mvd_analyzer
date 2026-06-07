@@ -75,6 +75,8 @@ The concrete event list, in stable order:
 | `KindBackpackPickupHint` | `BackpackPickupHintEvent` | KTX `//ktx bp` stuffcmd: `(BackpackEnt, PlayerEnt)` — symmetric to `//ktx drop`, fires only for RL/LG packs |
 | `KindItemPickupPrint` | `ItemPickupPrintEvent` | Per-client `svc_print` "You got the X" / "You receive N health" — covers ammo boxes and H15/H25 that `//ktx took` misses. **Subject to per-client `msg` cvar filter; frequently absent in competitive demos.** |
 | `KindBackpackPickupPrint` | `BackpackPickupPrintEvent` | Per-client `svc_print` "You get " backpack opener — covers all backpack classes, including the SSG/NG/GL packs that `//ktx bp` skips. Same server-side-filter caveat as `ItemPickupPrintEvent`. |
+| `KindDemoStartTimestamp` | `DemoStartTimestampEvent` | mvdhidden `0x000B`: wall-clock (Unix epoch ms, ULEB128) at demo open — anchor for syncing the demo to real time |
+| `KindPausedDuration` | `PausedDurationEvent` | mvdhidden `0x000A`: real wall-clock ms for one paused idle frame. One per frame while paused (clock frozen); sum a run for the pause length. Note the non-standard, length-header-less framing — see [MVD_FORMAT.md](MVD_FORMAT.md#hidden-message-types) |
 
 `DeathEvent` and `SpawnEvent` are derived events synthesised by the
 parser from protocol-level `StatHealth` transitions. They fire at the

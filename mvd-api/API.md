@@ -187,7 +187,7 @@ single call to populate a match header and decide which panels to show.
 
 ```jsonc
 {
-  "schemaVersion": 20,
+  "schemaVersion": 23,
   "map": "dm6", "gameDir": "qw",
   "mode": "4on4",            // omitempty
   "duration": 613.4,         // seconds
@@ -198,6 +198,12 @@ single call to populate a match header and decide which panels to show.
   "topPowerups": [ { "player":"milton","type":"quad","start":412.0,"duration":29.7,"frags":5 } ], // ≤5
   "locCount": 47,
   "hasRegionControl": true,   // false ⇒ hide the region panel
+  "timing": {                 // omitempty; demo-open wall-clock anchor (from streams.global)
+    "demoOffset": 10125,           // ms, demo open → match start
+    "demoStartUnixMs": 1780756716100,  // server clock at demo open
+    "demoStartAccuracyMs": 1,          // 1 = mvdhidden 0x000B ms block; 1000 = `epoch` cvar
+    "pauses": [ { "atMs": 18340, "durationMs": 6641 } ]  // omitempty; per-pause segments
+  },
   "playerUserIDs": { "bps": 123 },  // for hub.quakeworld.nu/games/<id>?track=<userId>
   "errors": [ … ]             // omitempty; non-empty ⇒ degraded analysis
 }
@@ -205,6 +211,20 @@ single call to populate a match header and decide which panels to show.
 
 `topStreaks`/`topPowerups` cap at 5; for the full lists use `/events`.
 Composed in [`overview.go`](overview.go).
+
+**Wall-clock mapping.** Use `timing` to convert any match-relative game
+time `g` (ms) to a real-world clock — handy for syncing voice tracks or
+stream overlays. The game clock freezes during a pause, so fold the pauses
+in:
+
+```
+wallClockMs = demoStartUnixMs + demoOffset + g + Σ pauses[i].durationMs (atMs ≤ g)
+              (±demoStartAccuracyMs)
+```
+
+`timing` is omitted when the demo carries no wall-clock source; `pauses` is
+omitted when the match had none. See
+[RESULT_SCHEMA.md → GlobalStream](../mvd-analytics/RESULT_SCHEMA.md#globalstream).
 
 ### 4.3 `GET /v1/demos/{id}/demoinfo`
 

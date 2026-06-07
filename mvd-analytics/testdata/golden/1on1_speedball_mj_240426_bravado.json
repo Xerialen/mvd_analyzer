@@ -10383,9 +10383,12 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 20,
+  "schemaVersion": 23,
   "streams": {
     "global": {
+      "demoOffset": 10091,
+      "demoStartAccuracyMs": 1000,
+      "demoStartUnixMs": 1777070668000,
       "matchEnd": 600001,
       "matchStart": 0
     },
@@ -106011,7 +106014,6 @@
         "time": 592958
       }
     ],
-    "demoOffset": 10091,
     "fragEvents": [
       {
         "delta": 1,
@@ -106915,7 +106917,6 @@
         "z": 72
       }
     ],
-    "matchStartTime": 0,
     "playerUserIDs": {
       "mj": 70,
       "speedball": 72

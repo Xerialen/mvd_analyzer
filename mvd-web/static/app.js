@@ -2880,8 +2880,10 @@ function displayTimelineAnalysis(result) {
     // hub URL `from`/`to`, etc. all expect seconds), so convert ms→s once
     // here at intake. Anything copied into timelineState below is in
     // seconds and panels downstream are unchanged.
-    timelineState.matchStartTime = (timeline?.matchStartTime || 0) * 0.001;
-    timelineState.demoOffset = (timeline?.demoOffset || 0) * 0.001;
+    // Schema v23 moved the timing anchor from timelineAnalysis to
+    // streams.global. matchStartTime is always 0 (the match-relative origin).
+    timelineState.matchStartTime = 0;
+    timelineState.demoOffset = (result.streams?.global?.demoOffset || 0) * 0.001;
     timelineState.duration = (result.match?.duration || 600000) * 0.001;
     timelineState.events = (result.messages?.events || []).map(e => ({ ...e, time: e.time * 0.001 }));
     timelineState.fragEvents = (timeline?.fragEvents || []).map(f => ({ ...f, time: f.time * 0.001 })); // Frag events from stat tracking

@@ -261,6 +261,40 @@ func TestOverview(t *testing.T) {
 	}
 }
 
+// TestOverviewTiming checks that BuildOverview surfaces the wall-clock anchor
+// (streams.global) in its `timing` block — the v23 exposure that lets a
+// REST/MCP consumer map game time to real time without fetching streams.
+func TestOverviewTiming(t *testing.T) {
+	r := &result.Result{
+		Streams: &result.Streams{
+			Global: result.GlobalStream{
+				MatchStart:          0,
+				MatchEnd:            43035,
+				DemoOffset:          10125,
+				DemoStartUnixMs:     1780756716100,
+				DemoStartAccuracyMs: 1,
+				Pauses: []result.TimelinePause{
+					{AtMs: 18340, DurationMs: 6641},
+					{AtMs: 28074, DurationMs: 6558},
+				},
+			},
+		},
+	}
+	ov := BuildOverview(r)
+	if ov.Timing == nil {
+		t.Fatal("Timing block missing")
+	}
+	if ov.Timing.DemoOffset != 10125 || ov.Timing.DemoStartUnixMs != 1780756716100 ||
+		ov.Timing.DemoStartAccuracyMs != 1 || len(ov.Timing.Pauses) != 2 {
+		t.Errorf("Timing = %+v", ov.Timing)
+	}
+
+	// No wall-clock source → no timing block.
+	if got := BuildOverview(&result.Result{Streams: &result.Streams{}}); got.Timing != nil {
+		t.Errorf("Timing should be omitted when no anchor present, got %+v", got.Timing)
+	}
+}
+
 func TestOverviewOmitsErrorsWhenClean(t *testing.T) {
 	clean := stubResult()
 	clean.Errors = nil

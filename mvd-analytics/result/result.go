@@ -218,7 +218,40 @@ package result
 //     Layer-1 change: world/environmental damage-taken is emitted with an
 //     Attacker == -1 "world" sentinel rather than dropped. Additive
 //     (omitempty); absent when the demo lacks the KTX hidden-damage stream.
-const CurrentSchemaVersion = 20
+//
+// v21:
+//   - TimelineAnalysis gains a wall-clock anchor for the demo timeline:
+//     demoStartUnixMs (server clock, Unix epoch ms, at demo open / t=0)
+//     plus demoStartAccuracyMs (its resolution: 1 from the mvdhidden
+//     0x000B millisecond block, 1000 from the whole-second serverinfo
+//     `epoch` cvar). With the existing demoOffset, a consumer maps any
+//     match-relative game time to wall clock for syncing external data
+//     (voice, stream overlays). Additive (omitempty); absent when the
+//     demo carries no wall-clock source.
+//
+// v22:
+//   - TimelineAnalysis gains pauses[]: per-pause {atMs, durationMs} segments
+//     recovered from the mvdhidden 0x000A (paused_duration) blocks mvdsv
+//     embeds once per idle frame while paused. The game clock freezes during
+//     a pause, so the v21 wall-clock formula drifted by the total pause time
+//     on paused demos; folding Σ durationMs for atMs <= g into the mapping
+//     fixes it. The parser now decodes 0x000A (it omits the standard hidden
+//     block-length header — a bare type_id+byte — so it is read via a
+//     dedicated path). Additive (omitempty); absent when the demo has no
+//     pauses or was recorded by a server that does not embed the block.
+//
+// v23:
+//   - Move the wall-clock/timing anchor from timelineAnalysis to
+//     streams.global (breaking move, not additive): demoOffset,
+//     demoStartUnixMs, demoStartAccuracyMs, pauses now live there next to
+//     matchStart/matchEnd (the match window they time). The redundant
+//     timelineAnalysis.matchStartTime (always 0, duplicated by
+//     streams.global.matchStart) is dropped. timelineAnalysis keeps its
+//     event-shaped data + map metadata, including locTable. The /overview
+//     REST endpoint gains a `timing` block exposing the wall-clock anchor to
+//     REST/MCP consumers (previously only the in-process WASM build could
+//     read it).
+const CurrentSchemaVersion = 23
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

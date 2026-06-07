@@ -27,6 +27,11 @@ type Overview struct {
 	TopPowerups      []OverviewPowerup `json:"topPowerups,omitempty"`
 	LocCount         int               `json:"locCount"`
 	HasRegionControl bool              `json:"hasRegionControl"`
+	// Timing is the demo-open wall-clock anchor + pauses (from
+	// streams.global). It lets a REST/MCP consumer map any match-relative
+	// game time to real time without fetching streams. Omitted when the
+	// demo carries no wall-clock source. See OverviewTiming.
+	Timing *OverviewTiming `json:"timing,omitempty"`
 	// PlayerUserIDs maps player name → hub.quakeworld.nu user id. Use it
 	// to build deep links of the form
 	// https://hub.quakeworld.nu/games/<gameId>?track=<userId>.
@@ -43,6 +48,21 @@ type Overview struct {
 type OverviewTeam struct {
 	Name  string `json:"name"`
 	Frags int    `json:"frags"`
+}
+
+// OverviewTiming exposes the demo-open wall-clock anchor (streams.global) so a
+// REST/MCP consumer can map a match-relative game time g (ms) to real time:
+//
+//	wallClockMs = demoStartUnixMs + demoOffset + g + Σ pauses[i].durationMs (atMs <= g)
+//	             (±demoStartAccuracyMs)
+//
+// All fields omitempty; the block itself is omitted when no wall-clock source
+// is present. Pauses reuses the result shape: {atMs, durationMs}.
+type OverviewTiming struct {
+	DemoOffset          int32                  `json:"demoOffset,omitempty"`
+	DemoStartUnixMs     int64                  `json:"demoStartUnixMs,omitempty"`
+	DemoStartAccuracyMs int32                  `json:"demoStartAccuracyMs,omitempty"`
+	Pauses              []result.TimelinePause `json:"pauses,omitempty"`
 }
 
 // OverviewPlayer carries each player's identity + scoreboard line, taken
@@ -106,8 +126,17 @@ func BuildOverview(r *result.Result) Overview {
 		}
 	}
 	if r.Streams != nil {
-		ov.MatchStart = r.Streams.Global.MatchStart
-		ov.MatchEnd = r.Streams.Global.MatchEnd
+		g := r.Streams.Global
+		ov.MatchStart = g.MatchStart
+		ov.MatchEnd = g.MatchEnd
+		if g.DemoOffset != 0 || g.DemoStartUnixMs != 0 || len(g.Pauses) > 0 {
+			ov.Timing = &OverviewTiming{
+				DemoOffset:          g.DemoOffset,
+				DemoStartUnixMs:     g.DemoStartUnixMs,
+				DemoStartAccuracyMs: g.DemoStartAccuracyMs,
+				Pauses:              g.Pauses,
+			}
+		}
 	}
 	if r.Metadata != nil && r.Metadata.MatchSettings != nil {
 		ov.Mode = r.Metadata.MatchSettings.Mode

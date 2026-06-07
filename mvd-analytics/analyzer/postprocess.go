@@ -1,6 +1,9 @@
 package analyzer
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
 )
@@ -22,9 +25,13 @@ import (
 // All time fields are integer milliseconds at schema v8; the shift is
 // a single int32 subtraction per value.
 func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
+	// The match-start shift is carried, pre-normalize, on
+	// Streams.Global.MatchStart (the demo-relative match start the analyzer
+	// recorded). Schema v23 dropped the duplicate timelineAnalysis.matchStartTime
+	// that previously held it.
 	matchStartMs := int32(0)
-	if res.TimelineAnalysis != nil {
-		matchStartMs = res.TimelineAnalysis.MatchStartTime
+	if res.Streams != nil {
+		matchStartMs = res.Streams.Global.MatchStart
 	}
 	if matchStartMs <= 0 {
 		return
@@ -45,17 +52,24 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 			ta.FragStreaks[i].Time -= matchStartMs
 			ta.FragStreaks[i].EndTime -= matchStartMs
 		}
-		ta.DemoOffset = matchStartMs
-		ta.MatchStartTime = 0
 	}
 
 	// Shift every per-player stream's timestamps and drop warmup
-	// entries. The match-window anchors on Streams.Global also rebase.
+	// entries. The match-window + wall-clock anchors on Streams.Global also rebase.
 	if streams := res.Streams; streams != nil {
 		streams.Global.MatchStart -= matchStartMs
 		streams.Global.MatchEnd -= matchStartMs
 		if streams.Global.MatchStart < 0 {
 			streams.Global.MatchStart = 0
+		}
+		// Record the demo→match offset and rebase pause anchors to match time.
+		// AtMs only — DurationMs is a span, not a timestamp. Pauses during the
+		// countdown go negative; keep them, they still consume wall time the
+		// mapping must account for. DemoStartUnixMs is NOT shifted (it anchors
+		// demo open, not match start).
+		streams.Global.DemoOffset = matchStartMs
+		for i := range streams.Global.Pauses {
+			streams.Global.Pauses[i].AtMs -= matchStartMs
 		}
 		for pi := range streams.Players {
 			p := &streams.Players[pi]
@@ -275,6 +289,55 @@ func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
 	for i := range pt.T {
 		pt.T[i] -= matchStartMs
 	}
+}
+
+// deriveDemoStartAnchor fills the demo-open wall-clock anchor
+// (Streams.Global.DemoStartUnixMs / DemoStartAccuracyMs) from the
+// whole-second serverinfo `epoch` cvar when the millisecond-accurate
+// mvdhidden 0x000B block was not present. TimelineAnalyzer.Finalize
+// already set both fields (accuracy 1) when 0x000B was seen; this runs
+// only as the fallback, so a non-zero accuracy means "leave it alone".
+//
+// `epoch` is the server clock in whole Unix seconds at demo open — the
+// same instant 0x000B carries to the millisecond. It lives in
+// result.Metadata.ServerInfo, which is why this is a post-processor:
+// MetadataAnalyzer.Finalize has run by now. The anchor is demo-open, so
+// it is independent of the match-relative time shift and does not need
+// to run before/after normalizeMatchRelativeTimes. (Schema v23 moved the
+// anchor from TimelineAnalysis to Streams.Global.)
+func deriveDemoStartAnchor(res *Result, _ *CoreOutputs) {
+	if res.Streams == nil || res.Streams.Global.DemoStartAccuracyMs != 0 {
+		return // no streams, or 0x000B already supplied a finer anchor
+	}
+	if res.Metadata == nil || res.Metadata.ServerInfo == nil {
+		return
+	}
+	epoch, ok := res.Metadata.ServerInfo["epoch"]
+	if !ok {
+		return
+	}
+	secs, err := strconv.ParseInt(strings.TrimSpace(epoch), 10, 64)
+	if err != nil || !plausibleDemoStartUnixMs(secs*1000) {
+		return
+	}
+	res.Streams.Global.DemoStartUnixMs = secs * 1000
+	res.Streams.Global.DemoStartAccuracyMs = 1000
+}
+
+// Plausible wall-clock window for a demo-open anchor, in Unix epoch
+// milliseconds: [2000-01-01, 2100-01-01). QuakeWorld demos carrying a
+// wall-clock source are 2026+, so this generous window accepts every real
+// value while rejecting the non-timestamp 0x000B payloads some demos carry
+// (e.g. 61, 11701 — see the DemoStartTimestampEvent handling in timeline.go).
+const (
+	minDemoStartUnixMs = 946684800000  // 2000-01-01T00:00:00Z
+	maxDemoStartUnixMs = 4102444800000 // 2100-01-01T00:00:00Z
+)
+
+// plausibleDemoStartUnixMs reports whether v could be a real demo-open
+// wall clock rather than a garbage / non-timestamp value.
+func plausibleDemoStartUnixMs(v int64) bool {
+	return v >= minDemoStartUnixMs && v < maxDemoStartUnixMs
 }
 
 // duelTeamNormalize is the post-processor wrapper around
