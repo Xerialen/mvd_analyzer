@@ -48,6 +48,20 @@ type DemoInfoEvent struct {
 func (e *DemoInfoEvent) EventType() EventType { return EventDemoInfo }
 func (e *DemoInfoEvent) EventTime() float64   { return e.Time }
 
+// DemoStartTimestampEvent carries the wall-clock time the server opened the
+// MVD file (mvdhidden block 0x000B). UnixMs is Unix epoch milliseconds; it is
+// the sub-second-accurate companion to the whole-second serverinfo `epoch`
+// cvar and is the preferred anchor for synchronising external data (voice
+// recordings, stream overlays) to the demo timeline. Absent on demos recorded
+// before mvdsv added the block. Time is the demo-relative time of the block.
+type DemoStartTimestampEvent struct {
+	UnixMs int64   // Unix epoch milliseconds at demo open (wall clock)
+	Time   float64 // demo-relative time of the block (≈ 0)
+}
+
+func (e *DemoStartTimestampEvent) EventType() EventType { return EventDemoStartTimestamp }
+func (e *DemoStartTimestampEvent) EventTime() float64   { return e.Time }
+
 // DeathEvent is emitted when a player transitions from alive to dead.
 // Two protocol-level signals feed this:
 //   - StatHealth crossing >0 → ≤0 (this file). Reliable for the player

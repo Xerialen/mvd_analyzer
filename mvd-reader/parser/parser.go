@@ -38,6 +38,7 @@ const (
 	EventBackpackPickupHint
 	EventItemPickupPrint
 	EventBackpackPickupPrint
+	EventDemoStartTimestamp
 )
 
 // IntermissionEvent is emitted when the server enters intermission
@@ -476,14 +477,9 @@ func (p *Parser) parseHiddenMessage(msg *mvd.DemoMessage) error {
 				return nil
 			}
 		case mvd.MVDHiddenDemoStartTimestampMs:
-			// uint64 unix timestamp ms at demo start. Not currently consumed
-			// by any analyzer — skip the payload so we don't emit an
-			// unknown_hidden warning. Ref: qwprot protocol.h, commit 500bd4b.
-			if dataLen > 0 {
-				if err := r.Skip(dataLen); err != nil {
-					p.warn(time, "parse_error", "hidden demo_start_timestamp_ms: %v", err)
-					return nil
-				}
+			if err := p.parseHiddenDemoStart(r, time, dataLen); err != nil {
+				p.warn(time, "parse_error", "hidden demo_start_timestamp_ms: %v", err)
+				return nil
 			}
 		default:
 			p.warn(time, "unknown_hidden", "unknown hidden message type 0x%04x, %d bytes skipped", typeID, dataLen)
@@ -605,6 +601,50 @@ func (p *Parser) parseHiddenDemoInfo(r *mvd.BufferReader, time float64, dataLen 
 		Content:  content,
 		Time:     time,
 	})
+}
+
+// parseHiddenDemoStart parses mvdhidden_demo_start_timestamp_ms (0x000B).
+//
+// The payload is the wall-clock time the server opened the MVD file, as Unix
+// epoch milliseconds, ULEB128 varint-encoded (7 data bits per byte, high bit =
+// continuation) — NOT a fixed-width uint64. mvdsv writes it once after the
+// initial gamestate flush via Sys_TimestampMilliseconds(); a ~2026 value is 6
+// bytes. Ref: QW-Group/mvdsv SV_MVDEmbedStartTimestamp (src/sv_demo_misc.c).
+//
+// This is the only sub-second-accurate demo-start anchor; the serverinfo
+// `epoch` cvar carries the same instant truncated to whole seconds. Absent on
+// demos recorded before mvdsv added the block.
+func (p *Parser) parseHiddenDemoStart(r *mvd.BufferReader, time float64, dataLen int) error {
+	if dataLen <= 0 {
+		return nil
+	}
+
+	// Read the whole block so the reader stays aligned for the next block.
+	body := make([]byte, dataLen)
+	for i := 0; i < dataLen; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			return err
+		}
+		body[i] = b
+	}
+
+	return p.emit(&DemoStartTimestampEvent{UnixMs: int64(decodeULEB128(body)), Time: time})
+}
+
+// decodeULEB128 decodes an unsigned LEB128 varint: low-order group first, 7
+// data bits per byte, high bit set on every byte except the last.
+func decodeULEB128(b []byte) uint64 {
+	var v uint64
+	var shift uint
+	for _, x := range b {
+		v |= uint64(x&0x7f) << shift
+		if x&0x80 == 0 {
+			break
+		}
+		shift += 7
+	}
+	return v
 }
 
 // skipCommand attempts to skip an unknown command
