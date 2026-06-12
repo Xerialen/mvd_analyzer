@@ -320,6 +320,7 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterPostProcessor(normalizeMatchRelativeTimes)
 	r.RegisterPostProcessor(deriveDemoStartAnchor)
 	r.RegisterPostProcessor(duelTeamNormalize)
+	r.RegisterPostProcessor(airgibsPost)
 	r.RegisterPostProcessor(scoreboardStatsPost)
 	r.RegisterPostProcessor(locGraphPost)
 	r.RegisterPostProcessor(regionControlPost)

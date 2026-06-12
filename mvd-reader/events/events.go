@@ -60,6 +60,8 @@ const (
 	KindBackpackPickupPrint = parser.EventBackpackPickupPrint
 	KindDemoStartTimestamp  = parser.EventDemoStartTimestamp
 	KindPausedDuration      = parser.EventPausedDuration
+	KindMoverSpawn          = parser.EventMoverSpawn
+	KindMoverState          = parser.EventMoverState
 )
 
 // Concrete event types emitted on the Source.
@@ -87,6 +89,8 @@ type (
 	BackpackPickupPrintEvent = parser.BackpackPickupPrintEvent
 	DemoStartTimestampEvent  = parser.DemoStartTimestampEvent
 	PausedDurationEvent      = parser.PausedDurationEvent
+	MoverSpawnEvent          = parser.MoverSpawnEvent
+	MoverStateEvent          = parser.MoverStateEvent
 	EntityState              = parser.EntityState
 )
 

@@ -84,6 +84,8 @@ type streamBuilder struct {
 	posY  []int32
 	posZ  []int32
 	posLi []int16 // resolved loc index per sample, populated in finalize
+	posH  []int32 // height above floor per sample (result.NoFloor = none), populated in finalize when a clip hull is loaded
+	posLq []int8  // liquid state per sample ((type<<2)|level, 0 = dry), populated in finalize when the render BSP is loaded
 
 	spawns []int32
 	deaths []int32

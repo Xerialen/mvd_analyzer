@@ -3,7 +3,10 @@ package analyzer
 import (
 	"sort"
 
+	"github.com/mvd-analyzer/mvd-analytics/bspvis"
 	"github.com/mvd-analyzer/mvd-analytics/locvis"
+	"github.com/mvd-analyzer/mvd-analytics/mapbsp"
+	"github.com/mvd-analyzer/mvd-analytics/mapclip"
 	"github.com/mvd-analyzer/mvd-reader/events"
 )
 
@@ -16,6 +19,32 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	if a.locFinder == nil && a.core != nil && a.core.DemoInfo != nil && a.core.DemoInfo.Map != "" {
 		if finder, err := locvis.LoadForMap(a.core.DemoInfo.Map); err == nil {
 			a.locFinder = finder
+		}
+	}
+
+	// Load the clip hulls for floor-height traces: the worldspawn hull
+	// plus one per submodel the demo's mover entities reference, so the
+	// floor pass can stand players on lifts/doors at their streamed
+	// origins. Missing corpus (no BSP for the map, or an HL/Q2 format we
+	// don't parse) leaves clipHull nil → the PositionTrack.H column
+	// stays absent.
+	if a.clipHull == nil && a.core != nil && a.core.DemoInfo != nil && a.core.DemoInfo.Map != "" {
+		if hull, moverHulls, err := mapclip.LoadForMapWithMovers(a.core.DemoInfo.Map, a.moverSubModels()); err == nil {
+			a.clipHull = hull
+			a.moverHulls = moverHulls
+		}
+	}
+
+	// Load the hull-0 render BSP for the liquid-state column and
+	// liquid-surface heights (schema v28). Loaded directly from mapbsp
+	// rather than through locFinder: locvis requires the .loc corpus and
+	// is nil on maps that have a BSP but no locs, which would silently
+	// lose liquid data exactly where it's available.
+	if a.visBSP == nil && a.core != nil && a.core.DemoInfo != nil && a.core.DemoInfo.Map != "" {
+		if data := mapbsp.LoadBytes(a.core.DemoInfo.Map); data != nil {
+			if vb, err := bspvis.LoadBytes(data); err == nil {
+				a.visBSP = vb
+			}
 		}
 	}
 
@@ -161,6 +190,12 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// resulting sparse Loc change stream into each player's stream
 	// builder. Returns the ordered locTable we'll ship in Result.
 	locTable, locIndex := a.resolveLocsAndFilterBlips()
+
+	// Trace each player's height above the floor beneath them at every
+	// native-rate position sample (schema v24). Runs per-slot before the
+	// reconnect merge, same as the loc pass above; no-op when no clip
+	// hull is loaded for the map.
+	a.resolveFloorHeights()
 	// Drop the table entirely if only the sentinel slot exists — JSON
 	// omitempty will then skip the field on the wire.
 	if len(locTable) <= 1 {

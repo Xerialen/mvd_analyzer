@@ -54,12 +54,19 @@ that downstream consumers render, summarise, or feed to an agent.
   provides `fetchLocSync` so only the loc for the current demo is
   downloaded.
 - `mapgen/` — the Quake 1 BSP reader (`bsp/`) and floor-face extractor
-  (`mapgeom/`) used by the mapgen developer tool. Not part of the
-  runtime pipeline — it generates static per-map JSON ahead of time.
-  The BSP entities-lump decoder (`bsp/entities.go`) is available for
-  callers that want static map-item data, though the item analyzer
-  itself derives item state purely from the demo now and requires no
-  map preprocessing.
+  (`mapgeom/`) used by the mapgen developer tool. The geometry/entity
+  extraction is not part of the runtime pipeline — it generates static
+  per-map JSON ahead of time — but `bsp/` itself *is* used at runtime by
+  `mapclip` to read the `CLIPNODES` collision hull. The BSP
+  entities-lump decoder (`bsp/entities.go`) is available for callers
+  that want static map-item data, though the item analyzer itself
+  derives item state purely from the demo now and requires no map
+  preprocessing.
+- `mapbsp/` — the single best-effort source of raw per-map BSP bytes at
+  analyze time (native dir lookup / WASM `fetchBspSync`), shared by
+  `locvis` (visibility) and `mapclip` (floor height).
+- `mapclip/` — worldspawn player clip hull + downward floor trace that
+  fills `PositionTrack.H`. See "Floor height" below.
 - `diagnostic/` — opt-in integration harness that runs a demo corpus
   through the parser in warning-collection mode and runs data-quality
   checks on the analysis result.
@@ -581,11 +588,70 @@ run.
 The BSP parser is in [`bspvis/`](bspvis/) (Q1 v29 / 2PSB / BSP2,
 ~1000 LOC, no cgo). It is intentionally separate from
 [`mapgen/bsp/`](mapgen/bsp/) — that package reads the geometry lumps
-(vertices, edges, faces, models) for the floor-polygon `mapgen` tool;
-bspvis reads the visibility lumps (planes, nodes, leaves, visdata).
+(vertices, edges, faces, models) for the floor-polygon `mapgen` tool
+*and the `CLIPNODES` collision hull for `mapclip`*; bspvis reads the
+visibility lumps (planes, nodes, leaves, visdata).
+
+Both BSP consumers pull their bytes from one place,
+[`mapbsp.LoadBytes`](mapbsp/) (native: `SetBspDir` / `$MVDA_BSP_DIR` /
+`./bsps`; WASM: host `fetchBspSync`), so a deployment provisions BSPs
+once and both features light up — or degrade — together.
 
 Background and validated case study:
 [`experiments/locattr/V2b-V6-HANDOFF.md`](../experiments/locattr/V2b-V6-HANDOFF.md).
+
+## Floor height (`mapclip`)
+
+The per-sample height of each player above the floor beneath them —
+`PositionTrack.H` (`pos.h`, schema v24) — is produced by
+[`mapclip`](mapclip/). At finalize the timeline analyzer loads the map's
+worldspawn **player clip hull** (hull 1) straight from the BSP
+`CLIPNODES` lump via `mapclip.LoadForMapWithMovers` (same `mapbsp` byte
+source as `locvis`), then traces straight down from every native-rate
+position through it, reproducing the server's `PM_CategorizePosition`
+floor test (`mvdsv/src/cmodel.c` `RecursiveHullTrace`). Because it
+traces the collision hull — the rendering geometry inflated by the
+32×32×56 player box — the floor is width-aware, multi-level, and
+slope-correct, with no edge artifacts.
+
+Since schema v27 the trace scene also includes **moving brush-model
+entities**: the parser streams every inline `"*N"` submodel entity
+(lift, door, train) as `MoverSpawn`/`MoverState` events, the loader
+builds hull 1 of each referenced submodel, and the floor pass poses
+those hulls at the entity's origin for the sample's timestamp
+(`mapclip.HeightAboveFloorBoxScene`, mirroring the client's
+`CL_SetSolidEntities` physent setup) — the highest floor across all
+hulls wins. A player riding the dm2 RA lift reads ~0 instead of the
+height to the shaft floor far below.
+
+Since schema v26 the height is **footprint-aware** (`HeightAboveFloorBox`):
+rather than the single origin column, it traces a 3×3 grid of columns
+sampled ±8 around the origin and keeps the **highest** floor any of them
+finds. The hull is already inflated by the ±16 box, so the centre column
+alone is the true 32-wide box; the ±8 ring only adds a small safety band
+(effective reach ~48 wide). A player skimming a ledge or well rim has their origin briefly
+over the pit while the box overhangs the rim — a single-column trace there
+plunges to the floor far below and reads a huge height; the footprint
+query finds the near rim and reads small. (This is what stopped the well
+rim of anwalked's RA from logging a 553-unit "airgib" that was really a
+rim skim.) The single-column primitive remains as `HeightAboveFloor`.
+
+`h` reads ~0 when grounded and grows during a jump or airborne hit
+(airgib); the player-feet offset (24) is folded in so the value is 0 on
+the ground without the consumer knowing the hull dimensions (the
+absolute floor, if wanted, is `z − 24 − h`). `result.NoFloor` marks
+samples with no floor to measure from: over a void/pit, or an
+embedded/zero origin. There is no generated corpus to keep in sync; a
+map update is just a new `.bsp`.
+
+Since schema v28 the same pass also classifies each sample's **liquid
+state** into `PositionTrack.Lq` (`pos.lq`, packed `(type<<2)|level`) by
+mirroring the engine's `PM_CategorizePosition` probes against the
+render BSP (`bspvis.WaterLevel`), and liquids participate in `h`: a
+submerged sample (level ≥ 1) reads `h = 0` by definition, and a dry
+sample airborne above water/slime/lava measures down to the liquid
+surface (`bspvis.LiquidSurfaceBelow`) when it is the highest support.
+See [RESULT_SCHEMA.md](RESULT_SCHEMA.md) for the `lq` vocabulary.
 
 ## Running tests
 
@@ -614,6 +680,14 @@ Three layers exercise different things:
    (Use `./mvd-analytics/analyzer/...`, not the wider `./mvd-analytics/...`
    — `-update-golden` is registered only in this test package and
    wider scopes fail in `mapgen` with "flag provided but not defined".)
+
+   Golden output depends on the curated BSP corpus: the package's
+   `TestMain` (`setup_test.go`) points `MVDA_BSP_DIR` at the repo-root
+   `bsps/` directory, which feeds both the locvis visibility filter
+   (loc names) and the mapclip floor-height column (`pos.h`,
+   `airgibs`). Run `make bsps` before regenerating, or the goldens
+   silently degrade to V1 locs with no height data and every
+   provisioned machine's test run will diff against them.
 
    `filePath` is stripped before comparison (per-machine cache path).
    At schema v7 the parse-time `highResBuckets` is gone; the canonical

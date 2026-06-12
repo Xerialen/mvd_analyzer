@@ -40,6 +40,8 @@ const (
 	EventBackpackPickupPrint
 	EventDemoStartTimestamp
 	EventPausedDuration
+	EventMoverSpawn
+	EventMoverState
 )
 
 // IntermissionEvent is emitted when the server enters intermission
@@ -142,11 +144,13 @@ type Parser struct {
 	// itself can emit ItemSpawnEvent / ItemStateEvent for every pickup
 	// and respawn without downstream analyzers having to reconstruct
 	// entity state. See entities.go for the decoder.
-	modelList            []string
-	baselines            map[int]*EntityState
-	currentEntities      map[int]*EntityState
-	spawnedItems         map[int]string // ent -> kind, set once per item
-	lastEntityPacketTime float64        // time of the packet we're currently processing
+	modelList              []string
+	baselines              map[int]*EntityState
+	currentEntities        map[int]*EntityState
+	spawnedItems           map[int]string // ent -> kind, set once per item
+	spawnedMovers          map[int]int    // ent -> BSP submodel index, set once per inline brush entity
+	lastEntityPacketTime   float64        // time of the packet we're currently processing
+	lastEntityPacketTimeMs int32          // same instant in wire-native demo ms
 }
 
 // NewParser creates a new parser
@@ -390,6 +394,7 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 
 		case mvd.SvcPacketEntities:
 			p.lastEntityPacketTime = msg.Time
+			p.lastEntityPacketTimeMs = msg.TimeMs
 			if err := p.parsePacketEntities(r, false, p.floatCoords, p.fteExtensions); err != nil {
 				p.warn(msg.Time, "parse_error", "svc_packetentities: %v", err)
 				return nil
@@ -397,6 +402,7 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 
 		case mvd.SvcDeltaPacketEntities:
 			p.lastEntityPacketTime = msg.Time
+			p.lastEntityPacketTimeMs = msg.TimeMs
 			if err := p.parsePacketEntities(r, true, p.floatCoords, p.fteExtensions); err != nil {
 				p.warn(msg.Time, "parse_error", "svc_deltapacketentities: %v", err)
 				return nil

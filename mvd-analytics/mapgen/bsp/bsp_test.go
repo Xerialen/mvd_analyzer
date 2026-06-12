@@ -56,6 +56,16 @@ func buildFixture() []byte {
 	models = appendI32(models, 0)          // firstFace
 	models = appendI32(models, 1)          // numFaces
 
+	// Clipnodes (v29 dclipnode_t: planenum int32 + 2×int16). Two nodes
+	// exercising both child kinds: node 0 routes front→EMPTY, back→node 1;
+	// node 1 routes front→EMPTY, back→SOLID. Negative children must
+	// sign-extend to the CONTENTS_* codes.
+	var clip []byte
+	clip = appendI32(clip, 0)      // node 0 planenum
+	clip = appendI16(clip, -1, 1)  // children: EMPTY, node 1
+	clip = appendI32(clip, 0)      // node 1 planenum
+	clip = appendI16(clip, -1, -2) // children: EMPTY, SOLID
+
 	// Assemble header: version + 15 dentries.
 	lumps := make([][]byte, numLumps)
 	lumps[lumpPlanes] = planes
@@ -64,6 +74,7 @@ func buildFixture() []byte {
 	lumps[lumpEdges] = edges
 	lumps[lumpSurfedges] = surfedges
 	lumps[lumpModels] = models
+	lumps[lumpClipnodes] = clip
 
 	headerSize := 4 + numLumps*8
 	offsets := make([]int, numLumps)
@@ -103,6 +114,15 @@ func appendI32(dst []byte, vs ...int32) []byte {
 	var buf [4]byte
 	for _, v := range vs {
 		binary.LittleEndian.PutUint32(buf[:], uint32(v))
+		dst = append(dst, buf[:]...)
+	}
+	return dst
+}
+
+func appendI16(dst []byte, vs ...int16) []byte {
+	var buf [2]byte
+	for _, v := range vs {
+		binary.LittleEndian.PutUint16(buf[:], uint16(v))
 		dst = append(dst, buf[:]...)
 	}
 	return dst
@@ -156,6 +176,22 @@ func TestParseBytes_Fixture(t *testing.T) {
 	if bsp.Models[0].FirstFace != 0 || bsp.Models[0].NumFaces != 1 {
 		t.Errorf("model[0] face range = (%d,%d), want (0,1)",
 			bsp.Models[0].FirstFace, bsp.Models[0].NumFaces)
+	}
+}
+
+func TestParseBytes_Clipnodes(t *testing.T) {
+	bsp, err := ParseBytes(buildFixture())
+	if err != nil {
+		t.Fatalf("ParseBytes: %v", err)
+	}
+	if len(bsp.ClipNodes) != 2 {
+		t.Fatalf("clipnodes = %d, want 2", len(bsp.ClipNodes))
+	}
+	if bsp.ClipNodes[0].Children != [2]int32{-1, 1} {
+		t.Errorf("node 0 children = %v, want [-1 1]", bsp.ClipNodes[0].Children)
+	}
+	if bsp.ClipNodes[1].Children != [2]int32{-1, -2} {
+		t.Errorf("node 1 children = %v, want [-1 -2] (EMPTY, SOLID)", bsp.ClipNodes[1].Children)
 	}
 }
 

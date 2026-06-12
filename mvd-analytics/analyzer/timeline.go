@@ -1,8 +1,10 @@
 package analyzer
 
 import (
+	"github.com/mvd-analyzer/mvd-analytics/bspvis"
 	"github.com/mvd-analyzer/mvd-analytics/config"
 	"github.com/mvd-analyzer/mvd-analytics/locvis"
+	"github.com/mvd-analyzer/mvd-analytics/mapclip"
 	"github.com/mvd-analyzer/mvd-reader/events"
 )
 
@@ -54,8 +56,18 @@ type TimelineAnalyzer struct {
 	// during the countdown matter for the wall-clock mapping too.
 	rawPauses []pauseSample
 	locFinder           *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
+	clipHull            *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
+	visBSP              *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
 	blipThresholdMs     int                        // Per-player loc smoothing threshold, 0 disables
 	regionsOverride     []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
+	// movers is each inline brush-model entity's wire-state timeline
+	// (origin + visibility at demo-relative ms), accumulated from
+	// MoverSpawn/MoverState events — NOT gated on match start, the
+	// baseline pose arrives at demo open. moverHulls holds the matching
+	// submodel clip hulls, built in Finalize alongside clipHull; the
+	// floor-height pass poses them per sample (see resolveFloorHeights).
+	movers     map[int]*moverTrack
+	moverHulls map[int]*mapclip.Hull
 }
 
 // UseCoreOutputs is part of the CoreConsumer contract — Timeline
@@ -238,6 +250,10 @@ func (a *TimelineAnalyzer) OnEvent(event events.Event) error {
 		// clock is paused. Collect raw; Finalize coalesces into per-pause
 		// segments. See pauseSample.
 		a.rawPauses = append(a.rawPauses, pauseSample{Time: e.Time, DurationMs: e.DurationMs})
+	case *events.MoverSpawnEvent:
+		a.handleMoverSpawn(e)
+	case *events.MoverStateEvent:
+		a.handleMoverState(e)
 	}
 	return nil
 }

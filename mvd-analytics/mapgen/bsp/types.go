@@ -51,6 +51,22 @@ type Model struct {
 	NumFaces  int32
 }
 
+// ClipNode is one node of a collision hull (the CLIPNODES lump). PlaneNum
+// indexes Planes; a child >= 0 is another ClipNode index, a child < 0 is a
+// CONTENTS_* leaf value (CONTENTS_SOLID = -2, CONTENTS_EMPTY = -1, …). v29
+// stores children as signed int16; BSP2/2PSB widen them to int32. Both are
+// decoded into the same int32 fields at parse time (negative values are
+// sign-extended so the contents codes survive).
+//
+// The lump holds the clipnodes for every collision hull (player hull 1,
+// large hull 2) of every model concatenated; a hull is entered at its
+// model's HeadNodes[hull] root. We keep the whole array verbatim and let
+// the collision tracer (mapclip) walk it from the chosen root.
+type ClipNode struct {
+	PlaneNum int32
+	Children [2]int32
+}
+
 // BSP holds the decoded lumps we care about.
 type BSP struct {
 	Version   int32
@@ -60,4 +76,5 @@ type BSP struct {
 	Edges     []Edge
 	Surfedges []int32
 	Models    []Model
+	ClipNodes []ClipNode
 }

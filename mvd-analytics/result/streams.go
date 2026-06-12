@@ -123,13 +123,76 @@ type GlobalStream struct {
 // builder, region control, and the FieldLoc bucket reducer in
 // view.Buckets — read this column directly instead of deriving locs
 // from x/y/z separately.
+//
+// H is the player's height above the floor beneath them at each sample —
+// how far the feet are above the highest solid surface at or below the
+// player, from straight-down traces through the map's player clip hulls
+// (mapclip, schema v24). Since v26 it is measured over the player's
+// bounding-box footprint, not just the origin column: the highest floor
+// found under a 3x3 grid of columns sampled ±8 around the origin wins
+// (an effective ~48-wide footprint on the already-±16-box-inflated
+// hull), so a player skimming a ledge / well rim — origin momentarily
+// over the pit while the box overhangs the rim — reads the near floor
+// rather than the distant one far below. Since v27 the trace scene also
+// includes every moving brush-model entity (lift, door, train) posed at
+// its demo-streamed origin for the sample's time, so a player riding
+// the dm2 RA lift stands on the lift, not the shaft floor beneath it.
+// It reads ~0 when grounded and grows positive during a jump or
+// airborne hit (airgib), so a consumer can flag those without any
+// coordinate arithmetic. (The absolute floor surface, if needed, is
+// Z[i] - 24 - H[i] — the player origin rides 24 units above the floor
+// its feet rest on.)
+// Since v28 liquids participate too: a player in liquid (Lq level >= 1)
+// reads H = 0 by definition, and a player airborne above water / slime
+// / lava measures down to the liquid surface when it is the highest
+// support beneath them (bspvis.LiquidSurfaceBelow).
+// Sentinel NoFloor marks samples with no floor to measure from — over a
+// void/pit, an embedded origin, or the zero origin. Populated only when
+// a clip hull is loaded for the map (a provisioned BSP); otherwise the
+// column is nil/absent (omitempty). Same length as T when present.
+// Grounded samples are ~0 with a unit or two of slack from slopes and
+// the trace epsilon, so test |H| small rather than == 0.
+// Lq is the player's liquid state per sample (schema v28), computed by
+// mirroring the engine's PM_CategorizePosition waterlevel probes
+// against the map's render BSP (bspvis.WaterLevel): 0 = dry, else
+// (type << 2) | level with level 1–3 (feet / waist / eyes submerged)
+// and type LqWater/LqSlime/LqLava — so water reads 5/6/7, slime
+// 9/10/11, lava 13/14/15. Decode with LqLevel / LqType. Samples with
+// Lq level >= 1 have H = 0 by definition (the liquid surface is the
+// support); when a player is airborne ABOVE liquid, H measures down to
+// the liquid surface if it is the highest support under them.
+// Populated only when the map's BSP is provisioned (same source as H);
+// same length as T when present.
 type PositionTrack struct {
 	T  []int32 `json:"t"` // milliseconds since the stream's time origin
 	X  []int32 `json:"x"`
 	Y  []int32 `json:"y"`
 	Z  []int32 `json:"z"`
 	Li []int16 `json:"li,omitempty"`
+	H  []int32 `json:"h,omitempty"`  // height above the floor beneath the player; NoFloor = none
+	Lq []int8  `json:"lq,omitempty"` // liquid state: 0 dry, else (type<<2)|level
 }
+
+// Lq liquid-type codes (the high bits of a PositionTrack.Lq value).
+const (
+	LqWater int8 = 1
+	LqSlime int8 = 2
+	LqLava  int8 = 3
+)
+
+// LqLevel extracts the submersion level (0 none, 1 feet, 2 waist,
+// 3 eyes) from a PositionTrack.Lq value.
+func LqLevel(v int8) int { return int(v & 3) }
+
+// LqType extracts the liquid type (LqWater/LqSlime/LqLava, 0 when dry)
+// from a PositionTrack.Lq value.
+func LqType(v int8) int { return int(v >> 2) }
+
+// NoFloor is the sentinel in PositionTrack.H for a sample with no floor
+// beneath it (over a void/pit, or an embedded/zero origin) — the height
+// is undefined there. Chosen as math.MinInt32 so it can never be
+// mistaken for a real height.
+const NoFloor int32 = -2147483648
 
 // ChangeI16 is a single transition in an int16 stream. T is integer
 // milliseconds since the stream's time origin (schema v8).

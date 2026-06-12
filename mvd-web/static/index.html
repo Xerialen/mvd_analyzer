@@ -781,6 +781,27 @@
                         No frag streaks detected in this demo.
                     </div>
                 </div>
+                <div class="panel airgibs-panel">
+                    <h3>Airborne Rocket Gibs</h3>
+                    <table class="stats-table sortable-table" id="airgibs-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="height" title="Victim height above the floor at the hit">Height</th>
+                                <th data-sort="aboveShooter" class="sort-active sort-desc" title="Victim height above the shooter at the hit (negative: below the shooter)">Above shooter</th>
+                                <th data-sort="attacker">Attacker</th>
+                                <th data-sort="victim">Victim</th>
+                                <th data-sort="loc">Loc</th>
+                                <th data-sort="lethal">Lethal</th>
+                                <th data-sort="time">Time</th>
+                                <th>View</th>
+                            </tr>
+                        </thead>
+                        <tbody id="airgibs-body"></tbody>
+                    </table>
+                    <div id="airgibs-empty" class="empty-message" style="display: none;">
+                        No airborne rocket gibs detected (needs a map BSP for height data).
+                    </div>
+                </div>
             </div>
 
             <!-- Pack Drops Tab -->

@@ -313,6 +313,12 @@ func slicePosition(pt *result.PositionTrack, start, end float64) *result.Positio
 	// pt.T is int32 ms (schema v8); convert window once.
 	startMs := int32(start * 1000)
 	endMs := int32(end * 1000)
+	// Optional sample-aligned columns come along when present — a slice
+	// without them would silently drop the loc / floor-height data the
+	// full result carries for the same samples.
+	hasLi := len(pt.Li) == len(pt.T)
+	hasH := len(pt.H) == len(pt.T)
+	hasLq := len(pt.Lq) == len(pt.T)
 	out := &result.PositionTrack{}
 	for i := range pt.T {
 		t := pt.T[i]
@@ -326,6 +332,15 @@ func slicePosition(pt *result.PositionTrack, start, end float64) *result.Positio
 		out.X = append(out.X, pt.X[i])
 		out.Y = append(out.Y, pt.Y[i])
 		out.Z = append(out.Z, pt.Z[i])
+		if hasLi {
+			out.Li = append(out.Li, pt.Li[i])
+		}
+		if hasH {
+			out.H = append(out.H, pt.H[i])
+		}
+		if hasLq {
+			out.Lq = append(out.Lq, pt.Lq[i])
+		}
 	}
 	if len(out.T) == 0 {
 		return nil

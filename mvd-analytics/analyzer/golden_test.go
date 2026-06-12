@@ -257,17 +257,17 @@ func sampleStreams(m map[string]interface{}) {
 				p[key] = filterTimestamps(arr, windows)
 			}
 		}
-		// Position track (columnar) — slice each axis array.
+		// Position track (columnar) — slice every sample-aligned column
+		// by the same kept indices. A column left at full length would
+		// ship misaligned against the sliced t (and bloat the golden).
 		if pos, ok := p["pos"].(map[string]interface{}); ok {
 			ts, _ := pos["t"].([]interface{})
-			xs, _ := pos["x"].([]interface{})
-			ys, _ := pos["y"].([]interface{})
-			zs, _ := pos["z"].([]interface{})
 			keepIdx := indicesInWindows(ts, windows)
-			pos["t"] = pickByIndex(ts, keepIdx)
-			pos["x"] = pickByIndex(xs, keepIdx)
-			pos["y"] = pickByIndex(ys, keepIdx)
-			pos["z"] = pickByIndex(zs, keepIdx)
+			for _, key := range []string{"t", "x", "y", "z", "li", "h", "lq"} {
+				if arr, ok := pos[key].([]interface{}); ok {
+					pos[key] = pickByIndex(arr, keepIdx)
+				}
+			}
 		}
 	}
 }

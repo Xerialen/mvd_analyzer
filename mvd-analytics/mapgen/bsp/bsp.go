@@ -225,10 +225,10 @@ func ParseBytes(data []byte) (*BSP, error) {
 	for i := range bsp.Models {
 		b := modelBytes[i*modelSize:]
 		m := Model{
-			Mins:     Vec3{X: readF32(b[0:4]), Y: readF32(b[4:8]), Z: readF32(b[8:12])},
-			Maxs:     Vec3{X: readF32(b[12:16]), Y: readF32(b[16:20]), Z: readF32(b[20:24])},
-			Origin:   Vec3{X: readF32(b[24:28]), Y: readF32(b[28:32]), Z: readF32(b[32:36])},
-			VisLeafs: int32(binary.LittleEndian.Uint32(b[52:56])),
+			Mins:      Vec3{X: readF32(b[0:4]), Y: readF32(b[4:8]), Z: readF32(b[8:12])},
+			Maxs:      Vec3{X: readF32(b[12:16]), Y: readF32(b[16:20]), Z: readF32(b[20:24])},
+			Origin:    Vec3{X: readF32(b[24:28]), Y: readF32(b[28:32]), Z: readF32(b[32:36])},
+			VisLeafs:  int32(binary.LittleEndian.Uint32(b[52:56])),
 			FirstFace: int32(binary.LittleEndian.Uint32(b[56:60])),
 			NumFaces:  int32(binary.LittleEndian.Uint32(b[60:64])),
 		}
@@ -236,6 +236,35 @@ func ParseBytes(data []byte) (*BSP, error) {
 			m.HeadNodes[j] = int32(binary.LittleEndian.Uint32(b[36+j*4 : 40+j*4]))
 		}
 		bsp.Models[i] = m
+	}
+
+	// CLIPNODES — the collision-hull tree(s). v29 uses 2×int16 children
+	// (8-byte record); BSP2/2PSB widen children to 2×int32 (12-byte
+	// record). Children are signed: negative values are CONTENTS_* leaf
+	// codes, not node indices, so int16 children are sign-extended.
+	clipBytes, err := lumpBytes(lumpClipnodes)
+	if err != nil {
+		return nil, err
+	}
+	clipStride := clipnodeSize
+	if wideEdges {
+		clipStride = clipnodeSize29a
+	}
+	if len(clipBytes)%clipStride != 0 {
+		return nil, fmt.Errorf("bsp: clipnodes lump size %d not a multiple of %d", len(clipBytes), clipStride)
+	}
+	bsp.ClipNodes = make([]ClipNode, len(clipBytes)/clipStride)
+	for i := range bsp.ClipNodes {
+		b := clipBytes[i*clipStride:]
+		cn := ClipNode{PlaneNum: int32(binary.LittleEndian.Uint32(b[0:4]))}
+		if wideEdges {
+			cn.Children[0] = int32(binary.LittleEndian.Uint32(b[4:8]))
+			cn.Children[1] = int32(binary.LittleEndian.Uint32(b[8:12]))
+		} else {
+			cn.Children[0] = int32(int16(binary.LittleEndian.Uint16(b[4:6])))
+			cn.Children[1] = int32(int16(binary.LittleEndian.Uint16(b[6:8])))
+		}
+		bsp.ClipNodes[i] = cn
 	}
 
 	return bsp, nil

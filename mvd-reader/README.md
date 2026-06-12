@@ -77,6 +77,8 @@ The concrete event list, in stable order:
 | `KindBackpackPickupPrint` | `BackpackPickupPrintEvent` | Per-client `svc_print` "You get " backpack opener — covers all backpack classes, including the SSG/NG/GL packs that `//ktx bp` skips. Same server-side-filter caveat as `ItemPickupPrintEvent`. |
 | `KindDemoStartTimestamp` | `DemoStartTimestampEvent` | mvdhidden `0x000B`: wall-clock (Unix epoch ms, ULEB128) at demo open — anchor for syncing the demo to real time |
 | `KindPausedDuration` | `PausedDurationEvent` | mvdhidden `0x000A`: real wall-clock ms for one paused idle frame. One per frame while paused (clock frozen); sum a run for the pause length. Note the non-standard, length-header-less framing — see [MVD_FORMAT.md](MVD_FORMAT.md#hidden-message-types) |
+| `KindMoverSpawn` | `MoverSpawnEvent` | Inline brush-model ("*N") entity observed — lift/door/train identity: entnum, BSP submodel index, baseline origin |
+| `KindMoverState` | `MoverStateEvent` | Mover wire-state change — origin moved (per frame while travelling) or visibility flipped. Hold-last between events is the exact pose |
 
 `DeathEvent` and `SpawnEvent` are derived events synthesised by the
 parser from protocol-level `StatHealth` transitions. They fire at the
@@ -101,6 +103,20 @@ Classification uses standard Quake 1 item model paths (armor.mdl +
 skin for GA/YA/RA; maps/b_bh*.bsp for health; progs/g_*.mdl for
 weapons; progs/{quaddama,invulner,invisibl}.mdl for powerups) —
 protocol-level, not KTX-specific.
+
+`MoverSpawnEvent` and `MoverStateEvent` are synthesised from the same
+entity-state stream for inline brush-model entities — entities whose
+model is a `"*N"` submodel of the map BSP (func_plat, func_door,
+func_train, func_button, func_wall, func_illusionary). Triggers never
+appear: Quake progs `InitTrigger` clears their model, and mvdsv only
+writes entities with a non-zero modelindex (`sv_ents.c:790`).
+`MoverSpawnEvent` fires once per entity with its submodel index and
+baseline origin; `MoverStateEvent` fires on every origin change
+(per frame while a lift/door travels) and visibility flip. Because
+MVD deltas only re-send a changed origin, holding the last event's
+origin between events reproduces the entity's motion exactly — this
+is the demo-side input for posing submodel collision hulls the way
+the client does in `CL_SetSolidEntities` (ezquake `cl_ents.c`).
 
 `ItemPickupHintEvent` and `BackpackPickupHintEvent` are the
 authoritative KTX counterparts to `ItemStateEvent`: they pin each

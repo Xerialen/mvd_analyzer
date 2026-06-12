@@ -317,6 +317,7 @@ read the streams' times, so they sit next to them.
 | KillEvents | `killEvents` | []TimelineKillEvent |
 | PowerupEvents | `powerupEvents` | []PowerupEvent |
 | FragStreaks | `fragStreaks` | []FragStreakEvent |
+| Airgibs | `airgibs` | []AirgibEvent (top airborne rocket hits) |
 | LocationData | `locationData` | []MapLocation (loc anchor points) |
 | LocTable | `locTable` | []string (interned loc names; index 0 = ""). `Streams.Players[].Loc[].V` indexes into this. |
 | PlayerUserIDs | `playerUserIDs` | map[string]int (name → Hub viewer UserID) |
@@ -374,6 +375,38 @@ intentional: that channel is lean by design).
 `{ time, endTime, playerName, playerUserID, team, frags, duration,
 ewep }`. `ewep` = effective weapon = the weapon that scored the most
 kills during the streak.
+
+### AirgibEvent
+
+`{ time, attacker, attackerTeam, attackerUserID, victim, victimTeam,
+victimUserID, height, heightAboveAttacker, loc, damage, lethal }`. One
+record per direct
+enemy rocket hit landed on an airborne victim (an "airgib"). `height` is
+the victim's feet above the floor at the hit (`PositionTrack.H` units);
+`heightAboveAttacker` (schema v29) is the victim's origin minus the
+shooter's at the hit — the vertical gap the rocket climbed, negative
+when the victim was below the shooter, `0`/absent when the shooter had
+no position sample near the hit (a genuine dead-level hit also reads
+0); `loc` is the victim's loc there. `lethal` is whether the hit
+killed (a
+matching rocket frag near the hit — a highlight heuristic, see below).
+`attackerUserID` is the one to track for the Hub viewer link (shooter
+perspective).
+
+Derived by a post-processor (schema v25) from `Damage.Events` (the
+per-hit log), the streams' `PositionTrack.H` column, the frag log, and
+the loc table. A hit qualifies when `weapon == "rl"` and it is a **direct
+hit** (`isSplash` false), the attacker is an enemy (not self / teammate /
+world), and the victim's height at the hit is ≥ 96 units (≈ two player
+models). Every qualifying hit is emitted (uncapped since schema v30 —
+the ≥ 96 threshold already bounds the list), ordered by `height`
+descending; the web
+view re-sorts client-side. **Empty when the map has no clip hull** (no
+`PositionTrack.H` to read — same BSP provisioning as the
+visibility-aware loc filter). The `lethal` window can over-attribute on a
+rare back-to-back double-rocket exchange (two rockets, same
+attacker→victim, within the window) — fine for a highlight, not an exact
+killing-blow flag.
 
 ### MapLocation
 
@@ -556,10 +589,17 @@ origin (see PositionTrack for the unit rationale).
 
 ### PositionTrack
 
-Columnar to compress JSON. Indices align across the four arrays.
+Columnar to compress JSON. Indices align across all arrays. `t`/`x`/`y`/`z`
+are always present; `li` and `h` are optional (`omitempty`) per-sample
+columns populated during analysis when their inputs are available.
 
 ```
-PositionTrack = { "t": [int32...], "x": [int32...], "y": [int32...], "z": [int32...] }
+PositionTrack = {
+  "t": [int32...], "x": [int32...], "y": [int32...], "z": [int32...],
+  "li": [int16...],   // optional: loc index per sample
+  "h":  [int32...],   // optional: height above floor per sample
+  "lq": [int8...]     // optional: liquid state per sample
+}
 ```
 
 `t` is **integer milliseconds** since the stream's time origin. The
@@ -572,6 +612,59 @@ negative for pre-match warmup samples after time normalisation.
 
 `x` / `y` / `z` are `int32` (not `int16`) because Quake maps can
 exceed ±32 768 in any axis.
+
+`li` (when present) is the resolved loc-name index for each sample —
+indexes into `TimelineAnalysisResult.LocTable`, `0` = "no loc",
+smoothed by the blip filter. Same length as `t`. Absent when no `.loc`
+corpus is loaded for the map. (Distinct from `PlayerStream.Loc`, which
+is the *sparse* change-stream view of the same data.)
+
+`h` (when present, schema v24) is the **player's height above the floor
+beneath them** at each sample — how far the feet are above the highest
+solid surface at or below the player, from straight-down traces through
+the map's player clip hulls (parsed from the map's BSP `CLIPNODES` at
+analyze time; see `mvd-analytics/mapclip`). Same length as `t`. **Since
+schema v26** it is measured over the player's bounding-box footprint,
+not just the origin column: the highest floor under a 3×3 grid of
+columns sampled ±8 around the origin wins (an effective ~48-wide
+footprint on the already-±16-box-inflated hull), so a player skimming a
+ledge / well rim — origin momentarily over the pit while the box overhangs
+the rim — reads the **near** floor, not the distant one far below (this is
+what removed bogus high airgibs at spots like anwalked RA's well rim).
+**Since schema v27** the trace scene also includes every moving
+brush-model entity (lift, door, train) posed at its demo-streamed origin
+for the sample's time, so a player riding the dm2 RA lift stands on the
+lift, not the shaft floor beneath it. It
+reads **~0 when grounded** and grows positive during a jump or airborne
+hit (airgib), so
+a consumer flags those directly with no coordinate arithmetic — test
+`|h|` small rather than `== 0`, since slopes and the trace epsilon leave
+a unit or two of slack. (The absolute floor surface, if needed, is
+`z[i] - 24 - h[i]` — the player origin rides 24 units above the floor.)
+**Since schema v28** liquids participate: a sample in liquid (`lq`
+level ≥ 1) reads `h = 0` by definition — the liquid surface is the
+support, so swimmers don't read as airborne over the pool bottom — and
+a dry sample airborne above water/slime/lava measures down to the
+**liquid surface** when it is the highest support beneath the player.
+The sentinel `-2147483648` (`result.NoFloor`) marks a sample with **no
+floor to measure from** — over a void / bottomless pit, an embedded
+origin, or the zero origin. Absent entirely when no BSP is
+provisioned for the map (same best-effort BSP source as the
+visibility-aware loc filter), so floor height and PVS-veto loc
+attribution light up together.
+
+`lq` (when present, schema v28) is the **per-sample liquid state**,
+computed by mirroring the engine's `PM_CategorizePosition` waterlevel
+probes (feet z−23, waist z+4, eyes z+22) against the map's render BSP:
+`0` = dry, otherwise `(type << 2) | level` with level 1–3
+(feet/waist/eyes submerged) and type 1 water / 2 slime / 3 lava — so
+water reads 5/6/7, slime 9/10/11, lava 13/14/15. Decode with `lq & 3`
+(level) and `lq >> 2` (type); Go consumers use `result.LqLevel` /
+`result.LqType` and the `result.LqWater/LqSlime/LqLava` constants.
+Same length as `t`; absent when no BSP is provisioned. (One deliberate
+deviation from the engine predicate: `CONTENTS_SKY` does **not** count
+as liquid — the physics treats sky like water for drag, but a
+void-faller reported as swimming would mislead consumers.)
 
 ### Time units: all times are int32 milliseconds
 
@@ -1043,6 +1136,13 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v30 | `timelineAnalysis.airgibs` is no longer capped at the top 20: every qualifying hit (direct enemy rocket, victim ≥ 96 units above the floor) is emitted, still ordered by `height` descending. The qualification threshold already bounds the list to a handful per match, and a cap keyed on floor height could drop the hits a consumer sorting by `heightAboveAttacker` cares about most. |
+| v29 | `AirgibEvent` gains `heightAboveAttacker`: the victim's origin minus the shooter's at the hit (units; negative = victim below the shooter) — the vertical gap the rocket climbed, often the more impressive number for a highlight than the floor height. Computed from the two players' nearest position samples to the hit; `0`/absent when the shooter had no sample within the gap window. Ranking and the ≥ 96 qualification still use the floor height. Additive (`omitempty`). |
+| v28 | `PositionTrack` gains an `lq` column: per-sample **liquid state**, packed `(type << 2) \| level` — level 1–3 (feet/waist/eyes submerged, mirroring the engine's `PM_CategorizePosition` probes at z−23 / z+4 / z+22 against the map's render BSP), type 1 water / 2 slime / 3 lava (water 5/6/7, slime 9/10/11, lava 13/14/15; `0` = dry). Decode with `lq & 3` (level) and `lq >> 2` (type). `h` interacts with liquids: a sample in liquid (level ≥ 1) reads `h = 0` by definition, and a dry sample airborne above liquid measures down to the **liquid surface** when it is the highest support beneath the player. Additive (`omitempty`); absent when no BSP is provisioned for the map. |
+| v27 | `PositionTrack.H` now stands players on **moving brush-model entities** (lifts, doors, trains): the parser surfaces `"*N"` submodel entities as `MoverSpawn`/`MoverState` events and the floor trace runs over the worldspawn hull **plus** each mover's submodel clip hull posed at its demo-streamed origin for the sample's time (`mapclip.HeightAboveFloorBoxScene`) — the highest floor wins. A player riding the dm2 RA lift reads ~0 instead of the height to the shaft floor, which also removes the false airgib entries rocket hits on lift riders produced (dm2 `path.lift`/`Quad.button`). `NoFloor` narrows accordingly: "on a moving brush model" disappears as a cause, leaving void/pit, embedded and zero origins. Same shape and units; only values over movers change. |
+| v26 | `PositionTrack.H` is now measured over the player's **bounding-box footprint** instead of the single origin column: the height is taken to the highest floor found under a 3×3 grid of columns sampled ±8 around the origin (`mapclip.HeightAboveFloorBox`) — an effective ~48-wide footprint on the already-±16-box-inflated hull. A player skimming a ledge / well rim — origin momentarily over the pit while the box overhangs the rim — now reads the near floor (small `h`) rather than plunging to the distant floor far below. Same shape and units; only values near ledges change, which also removes the bogus high airgibs those samples produced (e.g. anwalked RA's well rim logged a 553-unit airgib that was really a rim skim). |
+| v25 | `TimelineAnalysis` gains `airgibs[]` (`AirgibEvent`): the top airborne rocket hits for Key Moments — each direct enemy rocket hit (splash excluded) whose victim was ≥ 96 units above the floor, annotated with attacker/victim (name, team, userid), hit time, victim loc and height, raw damage, and lethality (a matching rocket frag near the hit). Derived by a post-processor from `Damage.Events` + the streams' `PositionTrack.H` column + the frag log; capped at top 20 sorted by height descending. Additive (`omitempty`); empty when the map has no clip hull (no `H` column). |
+| v24 | `PositionTrack` gains an `h` column: the player's height above the floor directly beneath them at each native-rate sample (feet above the nearest solid surface below), from a straight-down trace through the map's worldspawn player clip hull (parsed from BSP `CLIPNODES` at analyze time by the new `mvd-analytics/mapclip` package; BSPs come from the same best-effort source as the visibility-aware loc filter via the shared `mvd-analytics/mapbsp` loader). Reads ~0 grounded and grows during a jump / airborne hit (airgib); absolute floor is `z − 24 − h` if needed. Sentinel `-2147483648` (`result.NoFloor`) marks samples with no floor to measure from (void/pit, or a moving brush model such as the dm2 lift, which the worldspawn-only hull excludes). Additive (`omitempty`); absent when no BSP is provisioned for the map. |
 | v20 | New `Damage` section: per-hit damage log + aggregates (attacker→victim `matrix`, per-weapon, given/taken, and the **EWep** victim-weapon buckets `enemyVsSg/Mid/Lg/Rl/Both` where `ewep=lg+rl+both`) reconstructed from the KTX `mvdhidden_dmgdone` stream, plus a `scoreboard` cross-check vs `demoInfo.players[].dmg`. Amounts are unbound (include overkill). **Positional kills** — telefrags (deathtype `tele`, the 9999 instakill sentinel) and stomps (deathtype `stomp`) — are excluded from all damage figures and surfaced separately as `damage.telefrags`/`damage.stomps` + `PlayerDamage.telefrags`/`.stomps` + the opt-in `telefrag`/`stomp` events. Also a Layer-1 change: world/environmental damage-taken (lava/fall/trigger) is now emitted with an `Attacker == -1` "world" sentinel rather than dropped. Additive (`omitempty`); absent when the demo lacks the KTX hidden-damage stream. |
 | v19 | `MatchResult.PlayerStat` gains `kills`, `deaths` and `suicides` — the frag-log-corrected counts, making `match.players` a complete corrected scoreboard rather than just the net frag tally. They supersede the KTX demoinfo `stats`, which credit several self / positional deaths to the wrong entity: pentagram-deflect telefrags (`dtTELE2`) inflate the deflector's kills, and world-dealt suicides (fall / lava / squish / drown) bump the world entity's counter instead of the victim's (`ktx/src/client.c:5132`), so demoinfo undercounts suicides. `0` when the demo carried no frag log. Filled by the `scoreboardStatsPost` post-processor (kills/deaths from `Frags.ByPlayer` joined on the final display name; suicides counted from the `IsSuicide` frag entries). The API `/overview` player rows surface the same `kills`/`deaths`/`suicides`, so non-web consumers get the correction the web Summary already applied. Field additions only. |
 | v18 | `TimelineAnalysis` gains `KillEvents`: a per-player enemy-kill stream (`{time, player, team}`) keyed on the killer, parallel to `DeathEvents`, from the canonical frag log filtered to real enemy kills (suicides/teamkills excluded). Cumulative `killEvents` per player reconciles with `frags.byPlayer[].kills` and the kills-based efficiency; the Timeline per-player drill-down plots `killEvents − deathEvents` as a windowed +/-. `team` is best-effort and, unlike `deathEvents`, ungated. Additive (`omitempty`). |

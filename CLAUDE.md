@@ -90,8 +90,9 @@ belongs in the frontend.
      `mvd-reader/parser/` (KTX pickup/drop/print, stats, userinfo),
      `mvd-analytics/analyzer/` (backpacks, duel normalisation, items,
      loc graph, metadata, obituaries, pickup invariants, timeline +
-     blip filter, weapon pickups), `mvd-analytics/internal/hubfetch/`,
-     and `mvd-analytics/mapgen/{bsp,mapgeom}/`.
+     blip filter, weapon pickups, floor-height traces),
+     `mvd-analytics/internal/hubfetch/`,
+     `mvd-analytics/mapgen/{bsp,mapgeom}/`, and `mvd-analytics/mapclip/`.
   2. **Golden corpus** — `mvd-analytics/analyzer/golden_test.go` reads
      `mvd-analytics/testdata/corpus.json` (a manifest of hub.quakeworld.nu
      gameIds), fetches each demo on first run into

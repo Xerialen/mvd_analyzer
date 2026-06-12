@@ -251,7 +251,95 @@ package result
 //     REST endpoint gains a `timing` block exposing the wall-clock anchor to
 //     REST/MCP consumers (previously only the in-process WASM build could
 //     read it).
-const CurrentSchemaVersion = 23
+//
+// v24:
+//   - PositionTrack gains an H column: the player's height above the
+//     floor directly beneath them at each native-rate sample (feet above
+//     the nearest solid surface below), from a straight-down trace
+//     through the map's worldspawn player clip hull. The hull is parsed
+//     from the map's BSP CLIPNODES at analyze time by the new mapclip
+//     package, with BSP bytes from the same best-effort source as the
+//     visibility-aware loc filter (the shared mapbsp loader) — no
+//     generated corpus. H reads ~0 when grounded and grows during a jump
+//     / airborne hit (airgib), so consumers flag those directly; the
+//     absolute floor is Z - 24 - H if needed. Sentinel result.NoFloor
+//     marks samples with no floor to measure from (void/pit, or a moving
+//     brush model such as the dm2 lift, which the worldspawn-only hull
+//     excludes). Additive (omitempty); absent when no BSP is provisioned
+//     for the map.
+//
+// v25:
+//   - TimelineAnalysis gains airgibs[]: the top airborne rocket hits
+//     (AirgibEvent) for Key Moments — each DIRECT enemy rocket hit (splash
+//     excluded) whose victim was >= 96 units above the floor (≈ two player
+//     models), annotated with attacker/victim (name, team, userid), the
+//     hit time, the victim's loc and height, raw damage, and whether it
+//     was lethal (a matching rocket frag near the hit). Derived by a
+//     post-processor from result.Damage (per-hit log) + the streams'
+//     PositionTrack.H column + the frag log; capped and sorted by height
+//     descending. Additive (omitempty); empty when the map has no clip
+//     hull (no H column) so no airborne height can be computed.
+//
+// v26:
+//   - PositionTrack.H is now measured over the player's bounding-box
+//     footprint, not just the origin column: the height is taken to the
+//     highest floor found under a 3x3 grid of columns sampled ±8 around
+//     the origin (mapclip HeightAboveFloorBox). On the already-±16-box-
+//     inflated hull that is an effective ~48-wide footprint — the true
+//     box plus a small safety band. A player skimming a ledge
+//     / well rim — origin momentarily over the pit while the box overhangs
+//     the rim — now reads the near floor (small H) instead of plunging to
+//     the distant floor far below. Same shape and units; only values near
+//     ledges change, which also removes the bogus high airgibs those
+//     samples produced (e.g. anwalked RA's well rim logged a 553-unit
+//     airgib that was really a rim skim).
+//
+// v27:
+//   - PositionTrack.H now stands players on moving brush-model entities
+//     (lifts, doors, trains): the parser surfaces "*N" submodel entities
+//     as MoverSpawn/MoverState events, and the floor trace runs over the
+//     worldspawn hull PLUS each mover's submodel clip hull posed at its
+//     demo-streamed origin for the sample's timestamp (mapclip
+//     HeightAboveFloorBoxScene) — the highest floor wins. A player
+//     riding the dm2 RA lift reads ~0 instead of the height to the
+//     shaft floor, which also removes the false "airgib" entries rocket
+//     hits on lift riders produced (dm2 "path.lift"/"Quad.button", dm3
+//     "lifts"). NoFloor accordingly narrows: "on a moving brush model"
+//     disappears as a cause, leaving void/pit, embedded and zero
+//     origins. Same shape and units; only values over movers change.
+//
+// v28:
+//   - PositionTrack gains an Lq column: per-sample liquid state, packed
+//     (type << 2) | level — level 1-3 (feet/waist/eyes submerged,
+//     mirroring the engine's PM_CategorizePosition probes against the
+//     map's render BSP), type LqWater/LqSlime/LqLava (water 5/6/7,
+//     slime 9/10/11, lava 13/14/15; 0 = dry). Decode with
+//     result.LqLevel / result.LqType. Additive (omitempty); absent when
+//     no BSP is provisioned.
+//   - H interacts with liquids: a sample in liquid (Lq level >= 1)
+//     reads H = 0 by definition (the surface is the support — swimmers
+//     in the dm3 pool no longer read as airborne over the pool bottom),
+//     and a dry sample airborne above water/slime/lava measures down to
+//     the liquid surface when it is the highest support beneath the
+//     player (bspvis.LiquidSurfaceBelow).
+//
+// v29:
+//   - AirgibEvent gains heightAboveAttacker: the victim's origin minus
+//     the shooter's at the hit (units; negative = victim below) — the
+//     vertical gap the rocket climbed, often the more impressive number
+//     for a highlight than the floor height. From the two players'
+//     nearest position samples to the hit; 0/omitted when the shooter
+//     had no sample near the hit. Ranking and the >= 96 threshold still
+//     use the floor height; the web table adds a sortable column.
+//
+// v30:
+//   - TimelineAnalysis.Airgibs is no longer capped at the top 20: every
+//     hit that qualifies (direct enemy rocket, victim >= 96 units above
+//     the floor) is emitted, still sorted by floor height descending.
+//     The qualification threshold already bounds the list to a handful
+//     per match, and a cap keyed on floor height could drop the hits a
+//     consumer sorting by heightAboveAttacker cares about most.
+const CurrentSchemaVersion = 30
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

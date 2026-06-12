@@ -1,7 +1,9 @@
 package parser
 
 import (
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-reader/mvd"
@@ -66,6 +68,45 @@ type ItemStateEvent struct {
 func (e *ItemStateEvent) EventType() EventType { return EventItemState }
 func (e *ItemStateEvent) EventTime() float64   { return e.Time }
 
+// MoverSpawnEvent fires once per inline brush-model entity — an entity
+// whose model is a "*N" submodel of the map BSP (func_plat, func_door,
+// func_train, func_button, func_wall, func_illusionary) — the first
+// time the demo stream makes it observable (normally its
+// svc_spawnbaseline). Triggers never appear: Quake progs InitTrigger
+// clears their model, and mvdsv only writes entities with a non-zero
+// modelindex and model (sv_ents.c:790). SubModel is N, the index of
+// the BSP submodel whose geometry the entity poses; Origin is the
+// entity origin at spawn — the model-space offset the engine traces
+// that submodel at (ezquake cl_ents.c CL_SetSolidEntities).
+type MoverSpawnEvent struct {
+	EntNum   int
+	Model    string // inline model path from the precache list: "*1", "*2", ...
+	SubModel int    // N — index into the map BSP's submodel (dmodel) array
+	Origin   [3]float32
+	Time     float64
+	TimeMs   int32
+}
+
+func (e *MoverSpawnEvent) EventType() EventType { return EventMoverSpawn }
+func (e *MoverSpawnEvent) EventTime() float64   { return e.Time }
+
+// MoverStateEvent fires on every wire-state change of a tracked mover:
+// its origin moved (the lift/door/train travelling — MVD deltas only
+// re-send a changed origin, so between events the pose is exactly the
+// last value) or its visibility flipped (modelindex cleared / U_REMOVE,
+// then restored). Origin is the entity origin of the new state; for a
+// newly-invisible mover it is the last visible origin.
+type MoverStateEvent struct {
+	EntNum  int
+	Origin  [3]float32
+	Visible bool
+	Time    float64
+	TimeMs  int32 // wire-native demo ms, same clock as PlayerPositionEvent.TimeMs
+}
+
+func (e *MoverStateEvent) EventType() EventType { return EventMoverState }
+func (e *MoverStateEvent) EventTime() float64   { return e.Time }
+
 // modelPathToKind maps standard Quake 1 item model paths to the compact
 // kind strings we surface in the Result schema. Unrecognised paths
 // (player models, projectiles, gibs, etc.) return "" so the analyzer
@@ -119,6 +160,28 @@ func classifyItem(modelPath string, skin int) string {
 		return ""
 	}
 	return modelPathToKind[strings.ToLower(modelPath)]
+}
+
+// classifyMover reports whether modelPath names an inline brush
+// submodel of the map BSP ("*1", "*2", …) and returns the submodel
+// index. Submodel 0 is the worldspawn itself and never appears as an
+// entity model, so it is rejected along with non-inline paths.
+func classifyMover(modelPath string) (int, bool) {
+	if len(modelPath) < 2 || modelPath[0] != '*' {
+		return 0, false
+	}
+	n, err := strconv.Atoi(modelPath[1:])
+	if err != nil || n <= 0 {
+		return 0, false
+	}
+	return n, true
+}
+
+// wireMs converts a float demo time (seconds) back to the wire-native
+// integer milliseconds it was decoded from. Lossless: the decoder
+// derives Time as TimeMs/1000.
+func wireMs(t float64) int32 {
+	return int32(math.Round(t * 1000))
 }
 
 // resolveModel returns the model path for a modelindex from the
@@ -199,7 +262,8 @@ func (p *Parser) parseSpawnBaseline2(r *mvd.BufferReader, time float64, floatCoo
 
 // registerBaseline stores a baseline, seeds the current-frame state
 // from it (so the item starts "up"), emits ItemSpawnEvent if this is
-// a tracked item kind.
+// a tracked item kind and MoverSpawnEvent if it is an inline
+// brush-model entity.
 func (p *Parser) registerBaseline(entNum int, state *EntityState, time float64) error {
 	if p.baselines == nil {
 		p.baselines = make(map[int]*EntityState)
@@ -210,6 +274,10 @@ func (p *Parser) registerBaseline(entNum int, state *EntityState, time float64) 
 	if p.spawnedItems == nil {
 		p.spawnedItems = make(map[int]string)
 	}
+	if p.spawnedMovers == nil {
+		p.spawnedMovers = make(map[int]int)
+	}
+	prev := p.currentEntities[entNum]
 	copy := *state
 	p.baselines[entNum] = &copy
 	// A baseline replacing a prior one is rare but legal (server can
@@ -219,9 +287,10 @@ func (p *Parser) registerBaseline(entNum int, state *EntityState, time float64) 
 
 	// Classify against the model list. If the model list hasn't been
 	// received yet (rare — svc_modellist normally precedes baselines),
-	// re-classification runs again in finalizeEntityFrame.
+	// re-classification runs again in diffEntityTransitions.
+	path := p.resolveModel(state.ModelIndex)
 	kind := ""
-	if path := p.resolveModel(state.ModelIndex); path != "" {
+	if path != "" {
 		kind = classifyItem(path, state.SkinNum)
 	}
 	if kind != "" && p.spawnedItems[entNum] == "" {
@@ -232,6 +301,30 @@ func (p *Parser) registerBaseline(entNum int, state *EntityState, time float64) 
 			Origin: state.Origin,
 			Time:   time,
 		})
+	}
+	if sub, ok := classifyMover(path); ok {
+		if _, seen := p.spawnedMovers[entNum]; !seen {
+			p.spawnedMovers[entNum] = sub
+			return p.emit(&MoverSpawnEvent{
+				EntNum:   entNum,
+				Model:    path,
+				SubModel: sub,
+				Origin:   state.Origin,
+				Time:     time,
+				TimeMs:   wireMs(time),
+			})
+		}
+		// A resent baseline for a known mover resets its pose; surface
+		// it as a state change when it actually differs.
+		if prev == nil || prev.Origin != state.Origin || !prev.Present || prev.ModelIndex == 0 {
+			return p.emit(&MoverStateEvent{
+				EntNum:  entNum,
+				Origin:  state.Origin,
+				Visible: true,
+				Time:    time,
+				TimeMs:  wireMs(time),
+			})
+		}
 	}
 	return nil
 }
@@ -342,7 +435,7 @@ func (p *Parser) parsePacketEntities(r *mvd.BufferReader, delta, floatCoords boo
 		newFrame[entNum] = state
 	}
 
-	p.diffItemTransitions(newFrame, p.currentEntities, p.lastEntityPacketTime)
+	p.diffEntityTransitions(newFrame, p.currentEntities, p.lastEntityPacketTime, p.lastEntityPacketTimeMs)
 	p.currentEntities = newFrame
 	return nil
 }
@@ -522,19 +615,20 @@ func (p *Parser) readDelta(r *mvd.BufferReader, word uint32, from *EntityState, 
 	return state, entNum, nil
 }
 
-// diffItemTransitions compares the prior current-frame state against
+// diffEntityTransitions compares the prior current-frame state against
 // the new frame and emits ItemStateEvent on every visibility
-// transition of a tracked item entity.
+// transition of a tracked item entity and MoverStateEvent on every
+// origin / visibility change of a tracked inline brush-model entity.
 //
 // "Visible" means the entity is in the frame (Present==true) AND has a
 // non-zero modelindex. mvdsv filters entities by modelindex!=0 at emit
 // time (sv_ents.c:790), so for items "not in packet" is equivalent
 // to "modelindex is 0" — i.e. the item was picked up.
 //
-// Also emits ItemSpawnEvent for entities that hadn't been classified
-// yet (e.g. baseline arrived before the model list) when we can now
-// resolve the kind.
-func (p *Parser) diffItemTransitions(newFrame, oldFrame map[int]*EntityState, time float64) {
+// Also emits ItemSpawnEvent / MoverSpawnEvent for entities that hadn't
+// been classified yet (e.g. baseline arrived before the model list)
+// when we can now resolve the kind.
+func (p *Parser) diffEntityTransitions(newFrame, oldFrame map[int]*EntityState, time float64, timeMs int32) {
 	// Union of keys from old + new (tracked entities only). Sort the
 	// entity numbers before emitting so that downstream stateful
 	// consumers (e.g. items.go's layered attribution) see same-frame
@@ -553,50 +647,113 @@ func (p *Parser) diffItemTransitions(newFrame, oldFrame map[int]*EntityState, ti
 	sort.Ints(ents)
 
 	for _, ent := range ents {
-		// Resolve current kind. Prefer classifying against whatever
-		// state exists now so baselines that landed before the model
-		// list still get an ItemSpawnEvent once we can name the model.
 		s := newFrame[ent]
 		o := oldFrame[ent]
-		kind := p.spawnedItems[ent]
-		if kind == "" {
-			src := s
-			if src == nil {
-				src = o
-			}
-			if src != nil {
-				if path := p.resolveModel(src.ModelIndex); path != "" {
-					kind = classifyItem(path, src.SkinNum)
-					if kind != "" {
-						p.spawnedItems[ent] = kind
-						origin := src.Origin
-						if b := p.baselines[ent]; b != nil {
-							origin = b.Origin
-						}
-						_ = p.emit(&ItemSpawnEvent{
-							EntNum: ent,
-							Kind:   kind,
-							Origin: origin,
-							Time:   time,
-						})
+		p.diffItemEntity(ent, s, o, time)
+		p.diffMoverEntity(ent, s, o, time, timeMs)
+	}
+}
+
+// diffItemEntity emits the item spawn / state events for one entity of
+// a frame diff. Resolve current kind preferring whatever state exists
+// now, so baselines that landed before the model list still get an
+// ItemSpawnEvent once we can name the model.
+func (p *Parser) diffItemEntity(ent int, s, o *EntityState, time float64) {
+	kind := p.spawnedItems[ent]
+	if kind == "" {
+		src := s
+		if src == nil {
+			src = o
+		}
+		if src != nil {
+			if path := p.resolveModel(src.ModelIndex); path != "" {
+				kind = classifyItem(path, src.SkinNum)
+				if kind != "" {
+					p.spawnedItems[ent] = kind
+					origin := src.Origin
+					if b := p.baselines[ent]; b != nil {
+						origin = b.Origin
 					}
+					_ = p.emit(&ItemSpawnEvent{
+						EntNum: ent,
+						Kind:   kind,
+						Origin: origin,
+						Time:   time,
+					})
 				}
 			}
 		}
-		if kind == "" {
-			continue
-		}
+	}
+	if kind == "" {
+		return
+	}
 
-		oldVisible := o != nil && o.Present && o.ModelIndex != 0
-		newVisible := s != nil && s.Present && s.ModelIndex != 0
-		if oldVisible == newVisible {
-			continue
+	oldVisible := o != nil && o.Present && o.ModelIndex != 0
+	newVisible := s != nil && s.Present && s.ModelIndex != 0
+	if oldVisible == newVisible {
+		return
+	}
+	_ = p.emit(&ItemStateEvent{
+		EntNum: ent,
+		Kind:   kind,
+		Taken:  !newVisible,
+		Time:   time,
+	})
+}
+
+// diffMoverEntity emits the mover spawn / state events for one entity
+// of a frame diff. State events fire on visibility flips AND on origin
+// changes — a travelling lift re-sends its origin every frame it
+// moves, and the analyzer's pose timeline is exactly those changes
+// (hold-last between them, see MoverStateEvent).
+func (p *Parser) diffMoverEntity(ent int, s, o *EntityState, time float64, timeMs int32) {
+	if _, seenMover := p.spawnedMovers[ent]; !seenMover {
+		// Late classification: a mover whose baseline arrived before
+		// the model list gets its spawn here, same as items.
+		src := s
+		if src == nil {
+			src = o
 		}
-		_ = p.emit(&ItemStateEvent{
-			EntNum: ent,
-			Kind:   kind,
-			Taken:  !newVisible,
-			Time:   time,
+		if src == nil {
+			return
+		}
+		path := p.resolveModel(src.ModelIndex)
+		sub, ok := classifyMover(path)
+		if !ok {
+			return
+		}
+		p.spawnedMovers[ent] = sub
+		origin := src.Origin
+		if b := p.baselines[ent]; b != nil {
+			origin = b.Origin
+		}
+		_ = p.emit(&MoverSpawnEvent{
+			EntNum:   ent,
+			Model:    path,
+			SubModel: sub,
+			Origin:   origin,
+			Time:     time,
+			TimeMs:   timeMs,
 		})
 	}
+
+	oldVisible := o != nil && o.Present && o.ModelIndex != 0
+	newVisible := s != nil && s.Present && s.ModelIndex != 0
+	moved := oldVisible && newVisible && s.Origin != o.Origin
+	if oldVisible == newVisible && !moved {
+		return
+	}
+	origin := [3]float32{}
+	if newVisible {
+		origin = s.Origin
+	} else if o != nil {
+		origin = o.Origin
+	}
+	_ = p.emit(&MoverStateEvent{
+		EntNum:  ent,
+		Origin:  origin,
+		Visible: newVisible,
+		Time:    time,
+		TimeMs:  timeMs,
+	})
 }

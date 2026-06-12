@@ -2163,6 +2163,33 @@ th.sortable.sort-desc::after {
     gap: 15px;
 }
 
+/* The airgibs table is wider (more columns) and the headline highlight,
+   so it spans the full Key Moments grid width below the two top panels. */
+.keymoments-grid.active .airgibs-panel {
+    grid-column: 1 / -1;
+}
+
+/* Sortable table headers (used by the airgibs table). */
+.sortable-table thead th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+.sortable-table thead th[data-sort]:hover {
+    color: var(--accent-cyan);
+}
+.sortable-table thead th.sort-asc::after { content: ' \25B2'; font-size: 0.75em; opacity: 0.85; }
+.sortable-table thead th.sort-desc::after { content: ' \25BC'; font-size: 0.75em; opacity: 0.85; }
+
+/* Lethal airgib badge. */
+.airgib-lethal {
+    color: var(--team-a);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+}
+
 .packdrops-filters {
     display: flex;
     gap: 16px;

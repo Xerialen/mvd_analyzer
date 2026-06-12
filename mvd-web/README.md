@@ -70,6 +70,12 @@ above a Grafana-style frame: a fixed left **sidebar** with one button
 per analysis tab, and a **main pane** that fills the rest of the
 viewport (no width cap). Sidebar order is `Search`, `Summary`,
 `Timeline`, `Chat`, `Map`, `Locs & Regions`, `Key Moments`, `Pack Drops`.
+The **Key Moments** tab has three tables: powerup runs, longest frag
+streaks, and a full-width **Airborne Rocket Gibs** table — enemy rocket
+hits on airborne victims (`timelineAnalysis.airgibs`), sortable by any
+column and defaulting to height-above-shooter descending (the vertical
+gap the rocket climbed). Its rows are empty unless the map's BSP is
+provisioned (height needs the clip hull; see `PositionTrack.h`).
 
 The Search tab is the first tab and is always available — it holds the
 file picker, the hub-URL load row, and the filter form for browsing

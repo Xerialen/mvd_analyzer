@@ -11,8 +11,8 @@ const (
 	_             = 5 // NODES (unused)
 	_             = 6 // TEXINFO (unused)
 	lumpFaces     = 7
-	_             = 8  // LIGHTING (unused)
-	_             = 9  // CLIPNODES (unused)
+	_             = 8 // LIGHTING (unused)
+	lumpClipnodes = 9
 	_             = 10 // LEAFS (unused)
 	_             = 11 // MARKSURFACES (unused)
 	lumpEdges     = 12
@@ -31,6 +31,9 @@ const (
 	edgeSize29a  = 8  // BSP2/29a: 2 * uint32
 	surfedgeSize = 4  // int32
 	modelSize    = 64 // mins(12) + maxs(12) + origin(12) + headnodes(16) + visleafs(4) + firstFace(4) + numFaces(4)
+
+	clipnodeSize    = 8  // v29 dclipnode_t: planenum(4) + 2×int16
+	clipnodeSize29a = 12 // BSP2/2PSB dclipnode29a_t: planenum(4) + 2×int32
 )
 
 // Entities lump index is kept in case we need it later; mark it used to

@@ -348,7 +348,9 @@ Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `ItemPickupHintEvent`, `BackpackPickupHintEvent`,
 `ItemPickupPrintEvent`, `BackpackPickupPrintEvent`,
 `DemoStartTimestampEvent` (mvdhidden `0x000B` wall-clock anchor),
-`PausedDurationEvent` (mvdhidden `0x000A` per-frame pause duration).
+`PausedDurationEvent` (mvdhidden `0x000A` per-frame pause duration),
+`MoverSpawnEvent` / `MoverStateEvent` (inline brush-model entities —
+lifts, doors, trains — identity plus per-frame origin while moving).
 Domain types carried by events — `ServerData`, `PlayerInfo`,
 `PlayerState`, `Stats` — are source-agnostic.
 
@@ -544,6 +546,8 @@ mvd-analyzer/
     loc/                   .loc parser + embedded corpus (466 maps)
     hubfetch/              Resolve + download from hub.quakeworld.nu (used by mvd-api)
     mapgen/                Quake 1 BSP reader + floor-face extraction
+    mapbsp/                Shared best-effort BSP-bytes loader (locvis + mapclip)
+    mapclip/               Worldspawn player clip hull + downward floor trace (pos.h)
     diagnostic/            Opt-in bulk validation harness
     cmd/mapgen/            Developer tool: BSP → per-loc floor-polygon JSON
     cmd/qw-analyze/        Offline CLI: demo → json|md|events
@@ -716,6 +720,30 @@ diff -r /tmp/before /tmp/after
    written with non-standard framing (no inner block-length header) — both
    are handled, but a demo from a server that doesn't embed it has no
    per-pause signal, so its wall-clock mapping drifts by the pause time.
+
+8. **Floor height provisioning and edge cases**: the per-sample height
+   above the floor (`streams.players[].pos.h`, schema v24) is traced
+   through player clip hulls built from the map's BSP, via the same
+   best-effort provisioning as the visibility-aware loc filter — the
+   `h` column is absent for any map whose BSP isn't deployed (and for
+   the handful of HL/Quake 2-format maps the BSP parser rejects). Since
+   schema v26 the height is measured over the player's bounding-box
+   footprint, so a player skimming a ledge or well rim — origin over
+   the pit, box overhanging the rim — reads the near floor rather than
+   the distant one far below. Since schema v27 the trace scene also
+   poses every moving brush-model entity (the dm2 RA/quad lift,
+   func_door, func_train) at its demo-streamed origin, so riders read
+   ~0 instead of the static floor beneath the platform. Since schema
+   v28 liquids participate as well: a per-sample liquid-state column
+   (`pos.lq`, water/slime/lava × feet/waist/eyes) mirrors the engine's
+   `PM_CategorizePosition`, submerged samples read `h = 0` by
+   definition, and a jump over water measures to the water surface
+   rather than the floor beneath it. Remaining caveat:
+   func_illusionary is traced like any other inline brush model
+   (the same approximation the client's prediction makes in
+   `CL_SetSolidEntities`), so a player passing through one can briefly
+   read it as a floor. See
+   [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) (`PositionTrack.h`).
 
 ## Reference sources
 

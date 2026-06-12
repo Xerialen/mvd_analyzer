@@ -4,6 +4,8 @@ import (
 	"math"
 	"sort"
 
+	"github.com/mvd-analyzer/mvd-analytics/bspvis"
+	"github.com/mvd-analyzer/mvd-analytics/mapclip"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-reader/events"
 )
@@ -240,6 +242,12 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 		if len(b.posLi) == len(b.posT) {
 			pos.Li = append([]int16(nil), b.posLi...)
 		}
+		if len(b.posH) == len(b.posT) {
+			pos.H = append([]int32(nil), b.posH...)
+		}
+		if len(b.posLq) == len(b.posT) {
+			pos.Lq = append([]int8(nil), b.posLq...)
+		}
 		ps.Position = pos
 	}
 	if len(b.spawns) > 0 {
@@ -341,6 +349,8 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 	}
 
 	hasLi := len(src.posLi) == len(src.posT)
+	hasH := len(src.posH) == len(src.posT)
+	hasLq := len(src.posLq) == len(src.posT)
 	for i, t := range src.posT {
 		if !in(t) {
 			continue
@@ -351,6 +361,12 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 		b.posZ = append(b.posZ, src.posZ[i])
 		if hasLi {
 			b.posLi = append(b.posLi, src.posLi[i])
+		}
+		if hasH {
+			b.posH = append(b.posH, src.posH[i])
+		}
+		if hasLq {
+			b.posLq = append(b.posLq, src.posLq[i])
 		}
 	}
 
@@ -690,6 +706,167 @@ func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() (locTable []string, locIn
 		}
 	}
 	return locTable, locIndex
+}
+
+// resolveFloorHeights populates each player's PositionTrack.H column —
+// the feet-above-floor height — by tracing straight down through the
+// map's player clip hulls at every native-rate sample (schema v24).
+// Runs per-slot before the reconnect merge — the same staging as
+// resolveLocsAndFilterBlips — so appendSlice carries posH alongside
+// posLi into the merged stream.
+//
+// The trace scene is the worldspawn hull plus every mover entity's
+// submodel hull posed at its demo-streamed origin for the sample's
+// timestamp (schema v27) — a player riding the dm2 RA lift stands on
+// the lift, not the shaft floor far beneath it. Mover poses come from
+// the moverTrack timelines via forward cursors (samples are
+// time-ascending per slot); movers are scanned in entity-number order
+// so the per-sample max is deterministic across runs.
+//
+// Liquids participate too (schema v28). Each sample's liquid state is
+// classified against the hull-0 render BSP by mirroring the engine's
+// PM_CategorizePosition probes (bspvis.WaterLevel) into posLq, packed
+// (type<<2)|level. A sample in liquid (level >= 1) reads H = 0 by
+// definition — the liquid surface is the support, so the dm3 pool no
+// longer reports swimmers as airborne over the pool bottom. A dry
+// sample's support is the higher of the solid scene floor and the
+// liquid surface below the origin (bspvis.LiquidSurfaceBelow — one
+// column, liquid surfaces are flat), so a jump over water measures to
+// the water, not the floor beneath it.
+//
+// No-op when neither the clip hull nor the render BSP is loaded for
+// the map (no provisioned BSP): posH / posLq stay nil and the columns
+// are absent. Either can be present alone (a parse failure in one
+// loader doesn't take the other down). Samples at the zero origin,
+// over a void/pit, or with an embedded origin get the result.NoFloor
+// sentinel rather than a fabricated value.
+func (a *TimelineAnalyzer) resolveFloorHeights() {
+	if a.clipHull == nil && a.visBSP == nil {
+		return
+	}
+
+	// Movers whose submodel hull was built, in entity-number order.
+	type posableMover struct {
+		track *moverTrack
+		hull  *mapclip.Hull
+	}
+	moverEnts := make([]int, 0, len(a.movers))
+	for ent, mt := range a.movers {
+		if a.moverHulls[mt.subModel] != nil {
+			moverEnts = append(moverEnts, ent)
+		}
+	}
+	sort.Ints(moverEnts)
+	posable := make([]posableMover, len(moverEnts))
+	for i, ent := range moverEnts {
+		mt := a.movers[ent]
+		posable[i] = posableMover{track: mt, hull: a.moverHulls[mt.subModel]}
+	}
+	cursors := make([]int, len(posable))
+	scratch := make([]mapclip.PosedHull, 0, len(posable))
+
+	slots := make([]int, 0, len(a.playerState))
+	for slot := range a.playerState {
+		slots = append(slots, slot)
+	}
+	sort.Ints(slots)
+
+	for _, slot := range slots {
+		b := &a.playerState[slot].streams
+		if len(b.posT) == 0 {
+			continue
+		}
+		for i := range cursors {
+			cursors[i] = -1 // each slot rescans the tracks from the start
+		}
+		if a.clipHull != nil {
+			b.posH = make([]int32, len(b.posT))
+		}
+		if a.visBSP != nil {
+			b.posLq = make([]int8, len(b.posT))
+		}
+		for i := range b.posT {
+			x, y, z := float32(b.posX[i]), float32(b.posY[i]), float32(b.posZ[i])
+			if x == 0 && y == 0 && z == 0 {
+				if b.posH != nil {
+					b.posH[i] = result.NoFloor
+				}
+				continue
+			}
+
+			// Liquid state first: a submerged sample is supported by the
+			// liquid and skips the floor traces entirely.
+			if a.visBSP != nil {
+				level, cont := a.visBSP.WaterLevel(x, y, z)
+				b.posLq[i] = lqValue(level, cont)
+				if b.posLq[i] != 0 {
+					if b.posH != nil {
+						b.posH[i] = 0
+					}
+					continue
+				}
+			}
+			if b.posH == nil {
+				continue
+			}
+
+			scratch = scratch[:0]
+			for mi := range posable {
+				org, vis := posable[mi].track.atCursor(b.posT[i], &cursors[mi])
+				if !vis {
+					continue
+				}
+				scratch = append(scratch, mapclip.PosedHull{H: posable[mi].hull, Origin: org})
+			}
+			h, solidOk := mapclip.HeightAboveFloorBoxScene(a.clipHull, scratch, x, y, z)
+			// A liquid surface below the origin competes as a support:
+			// the higher of solid floor and surface wins. Heights are
+			// feet-relative, so smaller h = higher support.
+			if a.visBSP != nil {
+				if surfZ, _, ok := a.visBSP.LiquidSurfaceBelow(x, y, z); ok {
+					hSurf := (z - playerFeetOffset) - surfZ
+					if hSurf < 0 {
+						// Feet a sub-unit into the surface while the feet
+						// probe still reads dry — supported by the liquid.
+						hSurf = 0
+					}
+					if !solidOk || hSurf < h {
+						h, solidOk = hSurf, true
+					}
+				}
+			}
+			if solidOk {
+				b.posH[i] = int32(math.Round(float64(h)))
+			} else {
+				b.posH[i] = result.NoFloor
+			}
+		}
+	}
+}
+
+// playerFeetOffset mirrors mapclip's constant: -mins.z of the player
+// hull, the distance the origin rides above the floor the feet rest on.
+const playerFeetOffset = 24.0
+
+// lqValue packs a bspvis.WaterLevel result into the PositionTrack.Lq
+// encoding: 0 dry, else (type << 2) | level — water 5/6/7, slime
+// 9/10/11, lava 13/14/15.
+func lqValue(level int, contents int32) int8 {
+	if level <= 0 {
+		return 0
+	}
+	var typ int8
+	switch contents {
+	case bspvis.ContentsWater:
+		typ = result.LqWater
+	case bspvis.ContentsSlime:
+		typ = result.LqSlime
+	case bspvis.ContentsLava:
+		typ = result.LqLava
+	default:
+		return 0
+	}
+	return typ<<2 | int8(level&3)
 }
 
 // mergeBoundaries returns a sorted list of timestamps where the blip

@@ -49,9 +49,8 @@ func requireBspDir(t *testing.T, mapName string) string {
 func TestColjMHLowWallBleed_PrototypePosition(t *testing.T) {
 	bspDir := requireBspDir(t, "e1m2")
 
-	prev := bspDirOverride
 	SetBspDir(bspDir)
-	defer SetBspDir(prev)
+	defer SetBspDir("")
 
 	const playerX, playerY, playerZ = 392, 175, 295
 
@@ -102,9 +101,8 @@ func TestColjMHLowWallBleed_PrototypePosition(t *testing.T) {
 // (player position == loc position) must return that loc's name.
 func TestFloorPointPicksItself(t *testing.T) {
 	bspDir := requireBspDir(t, "dm6")
-	prev := bspDirOverride
 	SetBspDir(bspDir)
-	defer SetBspDir(prev)
+	defer SetBspDir("")
 
 	f, err := LoadForMap("dm6")
 	if err != nil {
@@ -144,9 +142,8 @@ func TestFloorPointPicksItself(t *testing.T) {
 func TestFallbackWithoutBSP(t *testing.T) {
 	// Point at an empty dir so the BSP load fails for every map.
 	tmp := t.TempDir()
-	prev := bspDirOverride
 	SetBspDir(tmp)
-	defer SetBspDir(prev)
+	defer SetBspDir("")
 
 	// Clear MVDA_BSP_DIR too, in case the developer environment sets it.
 	prevEnv, hadEnv := os.LookupEnv("MVDA_BSP_DIR")

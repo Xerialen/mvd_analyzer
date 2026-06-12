@@ -1897,6 +1897,132 @@ function displayKeyMoments(result) {
             streakBody.appendChild(tr);
         });
     }
+
+    // Airborne rocket gibs (sortable table, default by height).
+    displayAirgibs(result);
+}
+
+// Airgib table state: the raw events plus the active client-side sort.
+// Default sort is height-above-shooter descending — the vertical gap
+// the rocket climbed is what makes a hit look spectacular. (The
+// analyzer ships the list ordered by floor height; the table re-sorts
+// client-side and is re-sortable by any column.)
+const airgibState = { data: [], hubInfo: null, sortKey: 'aboveShooter', sortDir: 'desc', bound: false };
+
+function displayAirgibs(result) {
+    const body = document.getElementById('airgibs-body');
+    const empty = document.getElementById('airgibs-empty');
+    if (!body) return;
+
+    // time is int32 ms on the raw result; keep a seconds copy for seek/hub.
+    airgibState.data = (result.timelineAnalysis?.airgibs || []).map(a => ({
+        ...a,
+        timeSec: a.time * 0.001,
+    }));
+    airgibState.hubInfo = currentResult?.hubInfo || null;
+
+    if (!airgibState.bound) {
+        initAirgibSorting();
+        airgibState.bound = true;
+    }
+
+    if (airgibState.data.length === 0) {
+        body.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+    renderAirgibs();
+}
+
+function renderAirgibs() {
+    const body = document.getElementById('airgibs-body');
+    if (!body) return;
+    const { data, sortKey, sortDir, hubInfo } = airgibState;
+    const dir = sortDir === 'asc' ? 1 : -1;
+
+    const sorted = data.slice().sort((a, b) => {
+        let av, bv;
+        switch (sortKey) {
+            case 'attacker': return dir * (a.attacker || '').localeCompare(b.attacker || '') || (a.time - b.time);
+            case 'victim':   return dir * (a.victim || '').localeCompare(b.victim || '') || (a.time - b.time);
+            case 'loc':      return dir * (a.loc || '').localeCompare(b.loc || '') || (a.time - b.time);
+            case 'lethal':   av = a.lethal ? 1 : 0; bv = b.lethal ? 1 : 0; break;
+            case 'time':     av = a.time; bv = b.time; break;
+            // Absent on the wire means dead-level 0 (omitempty), or the
+            // rare missing shooter sample — both sort as the neutral 0.
+            case 'aboveShooter':
+                av = a.heightAboveAttacker ?? 0;
+                bv = b.heightAboveAttacker ?? 0;
+                break;
+            case 'height':
+            default:         av = a.height; bv = b.height; break;
+        }
+        if (av < bv) return -dir;
+        if (av > bv) return dir;
+        return a.time - b.time; // stable tiebreak
+    });
+
+    body.innerHTML = '';
+    sorted.forEach(a => {
+        const tr = document.createElement('tr');
+
+        let watchCell = '-';
+        if (hubInfo && hubInfo.gameId) {
+            const demoOff = timelineState.demoOffset || 0;
+            const fromTime = Math.max(0, Math.floor(a.timeSec + demoOff) - 5);
+            const toTime = Math.floor(a.timeSec + demoOff) + 3;
+            const trackId = a.attackerUserID || 0; // shooter perspective
+            const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+            watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
+        }
+
+        const lethalCell = a.lethal ? '<span class="airgib-lethal">gib</span>' : '';
+        // heightAboveAttacker is omitted on the wire for a dead-level 0
+        // (omitempty) and when the shooter had no position sample near
+        // the hit — render the neutral 0 for both.
+        const aboveShooterCell = a.heightAboveAttacker ?? 0;
+
+        tr.innerHTML = `
+            <td>${a.height}</td>
+            <td>${aboveShooterCell}</td>
+            <td>${escapeHtml(a.attacker || 'Unknown')}</td>
+            <td>${escapeHtml(a.victim || 'Unknown')}</td>
+            <td>${escapeHtml(a.loc || '-')}</td>
+            <td>${lethalCell}</td>
+            <td class="time-cell time-link">${formatDuration(a.timeSec)}</td>
+            <td>${watchCell}</td>
+        `;
+        tr.querySelector('.time-link').addEventListener('click', () => setCurrentTime(a.timeSec));
+        body.appendChild(tr);
+    });
+
+    updateAirgibSortIndicators();
+}
+
+function updateAirgibSortIndicators() {
+    document.querySelectorAll('#airgibs-table thead th[data-sort]').forEach(th => {
+        th.classList.remove('sort-active', 'sort-asc', 'sort-desc');
+        if (th.dataset.sort === airgibState.sortKey) {
+            th.classList.add('sort-active', airgibState.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+    });
+}
+
+function initAirgibSorting() {
+    document.querySelectorAll('#airgibs-table thead th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const key = th.dataset.sort;
+            if (airgibState.sortKey === key) {
+                airgibState.sortDir = airgibState.sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                airgibState.sortKey = key;
+                // Text columns read better ascending; numerics descending.
+                airgibState.sortDir = (key === 'attacker' || key === 'victim' || key === 'loc') ? 'asc' : 'desc';
+            }
+            renderAirgibs();
+        });
+    });
 }
 
 function getPowerupDisplay(type) {
