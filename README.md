@@ -572,6 +572,7 @@ mvd-analyzer/
 
 ## Documentation
 
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) — feature-level changes as they land on `main`, with dates and schema bumps
 - [mvd-reader/README.md](mvd-reader/README.md) — ingestion layer, how to add a source
 - [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md) — MVD binary format spec with ezQuake references
 - [mvd-analytics/README.md](mvd-analytics/README.md) — pipeline, how to add an analyzer, Result schema
