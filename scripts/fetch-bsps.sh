@@ -38,6 +38,7 @@ ENTRIES=(
   "dm3          https://github.com/quakeworld/id-maps-gpl/raw/refs/heads/main/dm3.bsp.gz         e6df9e9fd078b6d02aaa6c0f1ba40428111cb33da66dcf00234ba9ae2500a478"
   "dm6          https://github.com/quakeworld/id-maps-gpl/raw/refs/heads/main/dm6.bsp.gz         a092b170f37965ad29560de4877adc4cd35049ce6459a9fd4e847d2544ef94f2"
   "e1m2         https://github.com/quakeworld/id-maps-gpl/raw/refs/heads/main/e1m2.bsp.gz         62d270e89514e6e492fac0a8c5dea583ccabd6515a48919d750b08dd94fcb23a"
+  "dm4          https://github.com/quakeworld/id-maps-gpl/raw/refs/heads/main/dm4.bsp.gz         a9f0b90d85359182c6223fff2f3bec59d7ecf528896cc727ee07781fd4318b07"
   "aerowalk     https://maps.quakeworld.nu/core/aerowalk.bsp                                      6c297aaa5ccb8f10f6f7ee4991ba6663f887414e31e6eac8358510e14e4ec98b"
   "schloss      https://maps.quakeworld.nu/core/schloss.bsp                                       947d6a01e293d27f387080011fea0bfecda55c574cb664494c7dd21af71eb2dd"
   "phantoma     https://maps.quakeworld.nu/core/phantombase.bsp                                   14d743eb3bade9999dfddbdbf84b0859f2dc85e1294acaae041ae3c71953494e"
@@ -49,6 +50,8 @@ ENTRIES=(
   "anwalked     https://maps.quakeworld.nu/core/anwalked.bsp                                      0c808fe481290b543e293bc716bea4bff0e71e07f941f49e415ad882745ac68c"
   "stronghold   https://maps.quakeworld.nu/core/stronghold.bsp                                    640443115de7be4f99f88b8f25b3f91c6e54bd624154ac072802e63957dcb4e9"
   "defer        https://maps.quakeworld.nu/core/defer.bsp                                         c01d9ec4b634ac07f8a8beabab95640eee2113aa64a3637d182357bf1e0a9416"
+  "skull        https://maps.quakeworld.nu/core/skull.bsp                                         4d7af365db557331776d52d4b9d57068be2db73a440a95f85fd0679f826fe0e7"
+  "bravado      https://maps.quakeworld.nu/core/bravado.bsp                                       5f382d591ef5080322c4f8a2da07b22795c66104a7b9a2baccd4e72789d0789d"
 )
 
 check_sha() {

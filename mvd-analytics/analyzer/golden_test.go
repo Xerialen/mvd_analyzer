@@ -29,6 +29,7 @@ import (
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/hubfetch"
+	"github.com/mvd-analyzer/mvd-analytics/mapbsp"
 )
 
 // updateGolden regenerates every golden file from the current pipeline
@@ -74,7 +75,23 @@ func TestGoldenCorpus(t *testing.T) {
 				t.Fatalf("analyze %s: %v", entry.Label, err)
 			}
 
-			actual, err := canonicalJSON(result)
+			// The golden includes BSP-derived columns (pos.h floor height,
+			// pos.lq liquid) and floor-polygon loc resolution. When the
+			// map's BSP can't be resolved (no MVDA_BSP_DIR, no ./bsps) those
+			// degrade or vanish, so a comparison fails for the wrong reason
+			// and an -update-golden would overwrite a good golden with
+			// gutted data. Skip the comparison and refuse to regenerate.
+			if result.DemoInfo != nil && result.DemoInfo.Map != "" &&
+				mapbsp.LoadBytes(result.DemoInfo.Map) == nil {
+				msg := fmt.Sprintf("%s: BSP for map %q not resolvable — set MVDA_BSP_DIR to the full map set (lookup order: MVDA_BSP_DIR, ./bsps)",
+					entry.Label, result.DemoInfo.Map)
+				if *updateGolden {
+					t.Fatalf("refusing to regenerate %s — %s; would write a golden missing height/liquid/loc", entry.Label, msg)
+				}
+				t.Skip(msg)
+			}
+
+			actual, err := canonicalJSON(result, densePosDemos[entry.Label])
 			if err != nil {
 				t.Fatalf("canonicalise: %v", err)
 			}
@@ -168,7 +185,7 @@ func networkAllowed() bool {
 }
 
 // canonicalJSON marshals Result to deterministic JSON for golden
-// comparison. Two transforms are applied:
+// comparison. Three transforms are applied:
 //
 //  1. filePath is stripped — it's a per-machine cache path that would
 //     force a diff on every developer machine.
@@ -178,11 +195,17 @@ func networkAllowed() bool {
 //     and intervals are smaller but together still bloat the corpus.
 //     The three windows are enough sampling to catch bucketer /
 //     stream-emitter drift while keeping committed goldens around 1 MB.
+//  3. unless keepPos, the dense per-sample position/view track
+//     (streams.players[].pos) is dropped entirely — see
+//     dropPositionTracks. It is ~60 % of every file but exercises the
+//     same emitter / BSP-trace code on every demo, so it is pinned on
+//     just densePosDemos; the rest still verify the light change
+//     streams, intervals, locGraph, region-control and aggregates.
 //
 // Everything else (locGraph, schemaVersion, durations, weapon stats,
 // items, frags, …) is pinned in full; changes to those should be
 // deliberate, and -update-golden makes the intent explicit.
-func canonicalJSON(v interface{}) ([]byte, error) {
+func canonicalJSON(v interface{}, keepPos bool) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -193,11 +216,50 @@ func canonicalJSON(v interface{}) ([]byte, error) {
 	}
 	delete(m, "filePath")
 	sampleStreams(m)
+	if !keepPos {
+		dropPositionTracks(m)
+	}
 	out, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 	return append(out, '\n'), nil
+}
+
+// densePosDemos are the labels whose golden keeps the full per-sample
+// position/view track (streams.players[].pos: x/y/z, vp/vya, h/lq/li,
+// velocity). One full 4on4 (obsidian — eight players, exercises the
+// height + liquid BSP traces under load) and one duel (dm2 — the
+// two-player case) are enough to catch drift in the position / view /
+// height / liquid pipeline, which runs identically across demos.
+// Pinning it on all ten would roughly double the committed corpus for
+// no extra coverage.
+var densePosDemos = map[string]bool{
+	"4on4_ahoy_bhb_240426_obsidian":      true,
+	"1on1_bananfalco_betowen_240426_dm2": true,
+}
+
+// dropPositionTracks removes streams.players[].pos — the dense
+// per-sample position/view/height/liquid track that dominates the
+// corpus size — from every player. Called for demos outside
+// densePosDemos; the rest of streams.players (light change streams,
+// intervals, spawn/death timestamps) and all aggregate sections are
+// kept, so each demo still verifies loc graph, region control, items,
+// frags, damage and the sparse timelines.
+func dropPositionTracks(m map[string]interface{}) {
+	streams, ok := m["streams"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	players, ok := streams["players"].([]interface{})
+	if !ok {
+		return
+	}
+	for _, pi := range players {
+		if p, ok := pi.(map[string]interface{}); ok {
+			delete(p, "pos")
+		}
+	}
 }
 
 // goldenWindows is the three 15-second windows used to slice every

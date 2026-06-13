@@ -609,12 +609,18 @@ series in `streams.players[]` are sliced to three 15 s windows
 (`[0, 15]`, `[60, 75]`, last 15 s) before comparison — the native
 position track alone would otherwise run ~10 MB per 4on4 demo and
 swamp the git history (see [`golden_test.go`](mvd-analytics/analyzer/golden_test.go)
-`sampleStreams`). The three windows are enough sampling to catch
-stream-emitter / bucketer drift while keeping the committed corpus
-~4 MB per 4on4. Bucketed-view behavior is exercised through the unit
-tests in `mvd-analytics/view/equivalence_test.go`.
+`sampleStreams`). On top of that, the dense per-sample position/view
+track (`streams.players[].pos`) is pinned on only two demos — a full
+4on4 and a duel — and dropped from the rest (`dropPositionTracks`),
+since that pipeline is map-independent; this keeps the committed corpus
+~13 MB total instead of ~34 MB while still verifying every aggregate on
+all demos. The golden output also depends on the curated BSP set
+(`make bsps`): a demo whose BSP is missing is skipped in compare mode
+and hard-fails `-update-golden`, so a degraded run can't clobber a good
+golden. Bucketed-view behavior is exercised through the unit tests in
+`mvd-analytics/view/equivalence_test.go`.
 
-The manifest ships with nine demos (three each of 1on1, 2on2, 4on4).
+The manifest ships with ten demos (three 1on1, three 2on2, four 4on4).
 Add entries by appending to the JSON array; labels follow
 `mode_team1_team2_DDMMYY_map` (or player names for 1on1, where
 `team_names` is null on the hub).

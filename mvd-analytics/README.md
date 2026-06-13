@@ -706,8 +706,8 @@ Three layers exercise different things:
    `testdata/corpus.json`. On first run it downloads each demo into
    `testdata/cache/<gameId>.mvd.gz` (gitignored) and pins the
    serialised `Result` against `testdata/golden/<label>.json`. The
-   manifest currently ships with nine demos (three each of 1on1, 2on2,
-   4on4); `t.Skip` keeps `make test` green if it is ever emptied.
+   manifest currently ships with ten demos (three 1on1, three 2on2,
+   four 4on4); `t.Skip` keeps `make test` green if it is ever emptied.
    Regenerate goldens after an intentional change:
 
    ```bash
@@ -722,9 +722,11 @@ Three layers exercise different things:
    `TestMain` (`setup_test.go`) points `MVDA_BSP_DIR` at the repo-root
    `bsps/` directory, which feeds both the locvis visibility filter
    (loc names) and the mapclip floor-height column (`pos.h`,
-   `airgibs`). Run `make bsps` before regenerating, or the goldens
-   silently degrade to V1 locs with no height data and every
-   provisioned machine's test run will diff against them.
+   `airgibs`). Run `make bsps` before regenerating. If a demo's BSP is
+   not resolvable the test no longer degrades silently — it **skips**
+   that demo in compare mode and **hard-fails** an `-update-golden`
+   run, so a machine without the BSP corpus can't overwrite a good
+   golden with V1/no-height data.
 
    `filePath` is stripped before comparison (per-machine cache path).
    At schema v7 the parse-time `highResBuckets` is gone; the canonical
@@ -733,9 +735,15 @@ Three layers exercise different things:
    sliced to three 15 s windows (`[0, 15]`, `[60, 75]`, last 15 s)
    before comparison — `sampleStreams` in `golden_test.go` handles
    this so a 4on4 demo's ~10 MB native position track doesn't bloat
-   the committed corpus. Three windows are enough sampling to catch
-   stream-emitter / bucketer drift while keeping commits ~4 MB per
-   4on4. Everything else — `locGraph`, `schemaVersion`, ammo counts,
+   the committed corpus. On top of that, the dense per-sample
+   position/view track (`streams.players[].pos`: x/y/z, vp/vya, h/lq/li,
+   velocity) is pinned on only two demos — a full 4on4 and a duel
+   (`densePosDemos`) — and dropped from the other eight by
+   `dropPositionTracks`, since the emitter / BSP-trace code is identical
+   across demos. That keeps the committed corpus ~13 MB (was ~34 MB)
+   while still exercising the position pipeline on two demos and every
+   aggregate on all ten. Everything else — `locGraph`, `schemaVersion`,
+   ammo counts,
    frag totals, weapon stats, items, powerup events — is pinned in
    full, so any unintended drift surfaces. (The `locGraph` slices
    are sorted in `BuildLocGraph` for run-to-run determinism;
