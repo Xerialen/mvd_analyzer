@@ -71,10 +71,10 @@ func (p *Parser) parsePlayerInfo(r *mvd.BufferReader, time float64, timeMs int32
 	// Store updated position
 	p.playerPositions[playerNum] = origin
 
-	// Read angle components as the raw angle16 wire short — lossless;
-	// bypasses ReadAngle16's float-degree conversion so the exact value
-	// the server wrote survives into the result schema.
-	var angles [3]int16
+	// Read angle components as raw angle16 wire shorts. Like origins,
+	// svc_playerinfo angle components are delta-compressed, so omitted
+	// components inherit the last value seen for this player.
+	angles := p.playerAngles[playerNum]
 	for i := 0; i < 3; i++ {
 		if flags&(mvd.DFAngles<<i) != 0 {
 			raw, rerr := r.ReadUint16()
@@ -84,6 +84,7 @@ func (p *Parser) parsePlayerInfo(r *mvd.BufferReader, time float64, timeMs int32
 			angles[i] = int16(raw)
 		}
 	}
+	p.playerAngles[playerNum] = angles
 
 	// Skip remaining optional fields
 	if flags&mvd.DFModel != 0 {

@@ -110,6 +110,7 @@ type Parser struct {
 	players         [mvd.MaxClients]*mvd.PlayerInfo
 	playerStats     [mvd.MaxClients]*mvd.Stats
 	playerPositions [mvd.MaxClients][3]float32 // Last known position per player (for delta updates)
+	playerAngles    [mvd.MaxClients][3]int16   // Last known view angles per player (for delta updates)
 	// Per-player dead/alive bookkeeping for DeathEvent / SpawnEvent
 	// emission. Two signals feed it: the StatHealth edge detector in
 	// stats.go (>0 ↔ ≤0) and the DF_DEAD bit on every svc_playerinfo

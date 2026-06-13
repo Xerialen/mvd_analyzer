@@ -89,8 +89,9 @@ The valid **field codes** (`h`, `a`, `rl`, `pos`, `view`, `hgt`, `lq`,
 [RESULT_SCHEMA.md §Field vocabulary / Reducer registry](../mvd-analytics/RESULT_SCHEMA.md#field-vocabulary).
 Note (schema v31+): `pos` is **strictly x/y/z** (+ the per-sample loc
 label `li`). The player's **view direction** is the opt-in `view` field
-(raw `angle16` pitch/yaw, decode `deg = uint16(v)*360/65536`,
-pitch > 180° = looking up); floor height is `hgt`; liquid state is `lq`;
+(raw `angle16` pitch/yaw state after `svc_playerinfo` delta
+carry-forward, decode `deg = uint16(v)*360/65536`, pitch > 180° =
+looking up); floor height is `hgt`; liquid state is `lq`;
 **velocity** (vx/vy/vz, Quake units/sec, schema v32) is `vel`.
 Height/liquid no longer ride along `pos` — request each by code.
 

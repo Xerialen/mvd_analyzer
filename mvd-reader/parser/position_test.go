@@ -19,6 +19,58 @@ func buildPlayerInfoPayload(playerNum byte, flags uint16) []byte {
 	return out
 }
 
+func buildPlayerInfoPayloadFull(playerNum byte, flags uint16, origin [3]int16, angles [3]int16) []byte {
+	out := buildPlayerInfoPayload(playerNum, flags)
+	for i := 0; i < 3; i++ {
+		if flags&(mvd.DFOrigin<<i) != 0 {
+			out = binary.LittleEndian.AppendUint16(out, uint16(origin[i]))
+		}
+	}
+	for i := 0; i < 3; i++ {
+		if flags&(mvd.DFAngles<<i) != 0 {
+			out = binary.LittleEndian.AppendUint16(out, uint16(angles[i]))
+		}
+	}
+	return out
+}
+
+func TestParsePlayerInfo_CarriesForwardDeltaCompressedAngles(t *testing.T) {
+	p := NewParser(nil)
+	var positions []*PlayerPositionEvent
+	p.OnEvent(func(e Event) error {
+		if pos, ok := e.(*PlayerPositionEvent); ok {
+			positions = append(positions, pos)
+		}
+		return nil
+	})
+
+	baseFlags := uint16(mvd.DFOrigin | mvd.DFOriginY | mvd.DFOriginZ | mvd.DFAngles | mvd.DFAnglesY)
+	r := mvd.NewBufferReader(buildPlayerInfoPayloadFull(1, baseFlags, [3]int16{8, 16, 24}, [3]int16{1000, -2000, 0}))
+	if err := p.parsePlayerInfo(r, 1.0, 1000, false); err != nil {
+		t.Fatalf("parsePlayerInfo initial: %v", err)
+	}
+
+	r = mvd.NewBufferReader(buildPlayerInfoPayloadFull(1, 0, [3]int16{}, [3]int16{}))
+	if err := p.parsePlayerInfo(r, 1.016, 1016, false); err != nil {
+		t.Fatalf("parsePlayerInfo omitted angles: %v", err)
+	}
+
+	r = mvd.NewBufferReader(buildPlayerInfoPayloadFull(1, mvd.DFAnglesY, [3]int16{}, [3]int16{0, -1900, 0}))
+	if err := p.parsePlayerInfo(r, 1.029, 1029, false); err != nil {
+		t.Fatalf("parsePlayerInfo partial angle update: %v", err)
+	}
+
+	if len(positions) != 3 {
+		t.Fatalf("position events = %d, want 3", len(positions))
+	}
+	if got := positions[1].Angles; got != [3]int16{1000, -2000, 0} {
+		t.Errorf("omitted angle flags produced %v, want carried-forward [1000 -2000 0]", got)
+	}
+	if got := positions[2].Angles; got != [3]int16{1000, -1900, 0} {
+		t.Errorf("partial angle update produced %v, want pitch carry + yaw update [1000 -1900 0]", got)
+	}
+}
+
 // First svc_playerinfo for a slot, alive, must synthesise a SpawnEvent
 // so analytics has a starting boundary for the player.
 func TestParsePlayerInfo_FirstSeenAliveFiresSpawn(t *testing.T) {
@@ -93,11 +145,11 @@ func TestParsePlayerInfo_TransitionsFireDeathAndSpawn(t *testing.T) {
 		flags uint16
 		ms    int32
 	}{
-		{0, 1000},                       // alive
-		{0, 1100},                       // alive (no transition)
-		{mvd.DFDead, 1200},              // alive → dead
-		{mvd.DFDead | mvd.DFGIB, 1250},  // still dead (no second event)
-		{0, 1300},                       // dead → alive
+		{0, 1000},                      // alive
+		{0, 1100},                      // alive (no transition)
+		{mvd.DFDead, 1200},             // alive → dead
+		{mvd.DFDead | mvd.DFGIB, 1250}, // still dead (no second event)
+		{0, 1300},                      // dead → alive
 	} {
 		r := mvd.NewBufferReader(buildPlayerInfoPayload(2, frame.flags))
 		if err := p.parsePlayerInfo(r, float64(frame.ms)/1000.0, frame.ms, false); err != nil {

@@ -571,7 +571,7 @@ func parseModelList(r *BufferReader) string {
 
 This is the core message type for player positions in MVD. The format differs between MVD and standard QWD.
 
-**Update frequency**: Emitted every server frame (~77 Hz) for all players simultaneously. In a typical 4on4 match with 8 players, each `dem_all` message contains 8 `svc_playerinfo` commands — one per player. The median inter-update gap is ~13ms with virtually all gaps under 25ms. Uses delta compression, so only changed coordinates are transmitted per update.
+**Update frequency**: Emitted every server frame (~77 Hz) for all players simultaneously. In a typical 4on4 match with 8 players, each `dem_all` message contains 8 `svc_playerinfo` commands — one per player. The median inter-update gap is ~13ms with virtually all gaps under 25ms. Uses delta compression, so only changed origin and view-angle components are transmitted per update.
 
 ### MVD Format
 
@@ -647,8 +647,11 @@ mid-join (`sv_demo.c:1528-1578`) applies the same `* -3` pitch recovery,
 so the convention is uniform across the stream.
 
 The parser keeps these as the **raw `angle16` shorts** (no float
-narrowing) in `PlayerPositionEvent.Angles [3]int16`; the analytics layer
-persists pitch/yaw losslessly as the `PositionTrack.vp` / `vya` columns
+narrowing) in `PlayerPositionEvent.Angles [3]int16`. Because
+`svc_playerinfo` is delta-compressed, omitted angle components inherit
+the last value seen for that player, exactly like omitted origin
+components. The analytics layer persists the resulting per-sample
+pitch/yaw state losslessly as the `PositionTrack.vp` / `vya` columns
 (roll is dropped). Decode to degrees with `uint16(v) * 360/65536`.
 
 ### Model Index Extended Range
