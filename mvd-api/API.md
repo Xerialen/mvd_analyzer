@@ -84,9 +84,15 @@ Scale ms→s by `* 0.001`.
 - **`layout`** (`/buckets` only) — `column` (default, compact) or `row`.
   See §4.10.
 
-The valid **field codes** (`h`, `a`, `rl`, `pos`, `sp`, `d`, …) and
-**reducer names** are listed once in
+The valid **field codes** (`h`, `a`, `rl`, `pos`, `view`, `hgt`, `lq`,
+`vel`, `sp`, `d`, …) and **reducer names** are listed once in
 [RESULT_SCHEMA.md §Field vocabulary / Reducer registry](../mvd-analytics/RESULT_SCHEMA.md#field-vocabulary).
+Note (schema v31+): `pos` is **strictly x/y/z** (+ the per-sample loc
+label `li`). The player's **view direction** is the opt-in `view` field
+(raw `angle16` pitch/yaw, decode `deg = uint16(v)*360/65536`,
+pitch > 180° = looking up); floor height is `hgt`; liquid state is `lq`;
+**velocity** (vx/vy/vz, Quake units/sec, schema v32) is `vel`.
+Height/liquid no longer ride along `pos` — request each by code.
 
 ### 2.3 Caching (use it — the data is immutable)
 
@@ -387,6 +393,17 @@ scrubbers and detail charts.
     "rl": [ { "s": 105000, "e": 105182 }, { "s": 106834, "e": 110000 } ] } ] }  // ms
 ```
 
+```jsonc
+// ?players=sailorman&fields=view,hgt,lq&from=105&to=106   (position-derived)
+{ "startTime": 105, "endTime": 106,
+  "players": [ { "name": "sailorman",
+    // each projects into its own sibling track with its own t axis
+    "view": { "t": [105001,105014,…], "vp": [288,289,…], "vya": [16384,16390,…] }, // raw angle16
+    "hgt":  { "t": [105001,105014,…], "h":  [0,0,40,…] },     // units above floor (BSP only)
+    "lq":   { "t": [105001,105014,…], "lq": [0,0,5,…] },     // 0 dry, else (type<<2)|level
+    "vel":  { "t": [105001,105014,…], "vx": [312,318,…], "vy": [-44,…], "vz": [0,…] } } ] }  // units/sec
+```
+
 ⚠️ Entry `t` / `s` / `e` are **int32 ms** even though the envelope
 `startTime`/`endTime` are seconds (see §2.1). With `fields=sp,d` you get
 the raw spawn/death ms-timestamp arrays clipped to the window.
@@ -511,7 +528,16 @@ Common frontend features → the call that backs them.
 - **Map replay / movement trails (~77 fps)** → `GET /stream-slice?fields=pos&players=X&from=…&to=…`
   — the only native-rate position source. Stitch windows for the full
   match. Remember positions are **int32 ms**.
-- **Scrubber tooltip (state at playhead)** → `GET /state-at?time=T&fields=h,a,rl,pos`.
+- **Aim arrows / sightlines / "who's looking at whom" (~77 fps)** →
+  add `view` to the fields: `GET /stream-slice?fields=pos,view&players=X&from=…&to=…`.
+  Decode `vp`/`vya` with `deg = uint16(v)*360/65536`; forward vector
+  `= (cos p·cos y, cos p·sin y, −sin p)`.
+- **Speed curve / bunny-hop analysis** → add `vel`:
+  `GET /stream-slice?fields=vel&players=X&from=…&to=…`. Speed =
+  `hypot(vx,vy,vz)`, horizontal = `hypot(vx,vy)`; expect ±1-unit
+  quantization noise on the raw derivative, smooth client-side if needed.
+- **Scrubber tooltip (state at playhead)** → `GET /state-at?time=T&fields=h,a,rl,pos`
+  (add `view`/`hgt`/`lq` for look direction / height / liquid).
 - **Life events / deaths timeline** → `GET /events?types=spawn,death`.
 - **"Who controlled QUAD?"** → `GET /region-control?windowMs=10000`,
   read `stats.QUAD.byPlayer`.

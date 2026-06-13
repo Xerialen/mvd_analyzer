@@ -5,6 +5,19 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-06-13
+
+- **Player view direction & velocity** (schema v31–v32). Every
+  native-rate position sample now also carries **where the player is
+  looking** — view pitch/yaw kept losslessly as the raw `angle16` wire
+  value (`pos.vp`/`vya`, decode `uint16(v)*360/65536`) — and a derived
+  per-sample **velocity** vector in units/sec (`pos.vx`/`vy`/`vz`) from a
+  central-difference estimator that does not differentiate across
+  respawns, map teleporters, or time gaps. The view-layer query API and
+  CLI gain opt-in per-channel field codes: `pos` is now strictly x/y/z,
+  with `view`, `hgt`, `lq`, and `vel` each requestable on their own
+  (served by mvd-api `stream-slice` / `state-at` / `buckets`).
+
 ## 2026-06-12
 
 - **Per-sample floor height, airgibs, movers, liquids** (schema v24–v30,

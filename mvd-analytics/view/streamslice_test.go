@@ -91,48 +91,79 @@ func TestStreamSlicePosition(t *testing.T) {
 	}
 }
 
-// The optional sample-aligned columns (Li, H) must come along with the
-// slice — and stay absent when the source track doesn't carry them.
-func TestStreamSlicePositionOptionalColumns(t *testing.T) {
+// Clean break (schema v31): pos carries t/x/y/z and the per-sample loc
+// label li, but NOT height/liquid — those project into the hgt / lq
+// sibling tracks, and view direction into the view track. Each track
+// stays absent when the source doesn't carry its column.
+func TestStreamSliceColumnProjection(t *testing.T) {
 	r := makeStream(t, result.PlayerStream{
 		Name: "p1",
 		Position: &result.PositionTrack{
-			T:  []int32{0, 1000, 2000, 3000, 4000},
-			X:  []int32{0, 100, 200, 300, 400},
-			Y:  []int32{0, 0, 0, 0, 0},
-			Z:  []int32{0, 0, 0, 0, 0},
-			Li: []int16{1, 2, 3, 4, 5},
-			H:  []int32{0, 10, result.NoFloor, 30, 40},
-			Lq: []int8{0, 0, 5, 6, 7},
+			T:   []int32{0, 1000, 2000, 3000, 4000},
+			X:   []int32{0, 100, 200, 300, 400},
+			Y:   []int32{0, 0, 0, 0, 0},
+			Z:   []int32{0, 0, 0, 0, 0},
+			Li:  []int16{1, 2, 3, 4, 5},
+			H:   []int32{0, 10, result.NoFloor, 30, 40},
+			Lq:  []int8{0, 0, 5, 6, 7},
+			VP:  []int16{0, 100, 200, 300, 400},
+			VYa: []int16{0, -100, -200, -300, -400},
+			VX:  []int32{0, 11, 22, 33, 44},
+			VY:  []int32{0, -11, -22, -33, -44},
+			VZ:  []int32{0, 1, 2, 3, 4},
 		},
 	})
 	v, err := StreamSlice(r, StreamSliceOptions{
 		StartTime: 1.5,
 		EndTime:   3.5,
-		Fields:    []string{FieldPosition},
+		Fields:    []string{FieldPosition, FieldHeight, FieldLiquid, FieldView, FieldVelocity},
 	})
 	if err != nil {
 		t.Fatalf("StreamSlice: %v", err)
 	}
-	pos := v.Players[0].Position
+	sl := v.Players[0]
+
+	// pos: t/x/y/z + li only. H/Lq must NOT ride along pos anymore.
+	pos := sl.Position
 	if pos == nil {
 		t.Fatalf("Position nil")
 	}
-	if len(pos.Li) != len(pos.T) || len(pos.H) != len(pos.T) || len(pos.Lq) != len(pos.T) {
-		t.Fatalf("optional columns not aligned: t=%d li=%d h=%d lq=%d",
-			len(pos.T), len(pos.Li), len(pos.H), len(pos.Lq))
+	if len(pos.Li) != len(pos.T) {
+		t.Fatalf("pos li not aligned: t=%d li=%d", len(pos.T), len(pos.Li))
 	}
 	if pos.Li[0] != 3 || pos.Li[1] != 4 {
 		t.Errorf("pos.Li = %v, want [3, 4]", pos.Li)
 	}
-	if pos.H[0] != result.NoFloor || pos.H[1] != 30 {
-		t.Errorf("pos.H = %v, want [NoFloor, 30]", pos.H)
-	}
-	if pos.Lq[0] != 5 || pos.Lq[1] != 6 {
-		t.Errorf("pos.Lq = %v, want [5, 6]", pos.Lq)
+	if pos.H != nil || pos.Lq != nil || pos.VP != nil || pos.VYa != nil {
+		t.Errorf("pos must be strict x/y/z(+li); got H=%v Lq=%v VP=%v VYa=%v", pos.H, pos.Lq, pos.VP, pos.VYa)
 	}
 
-	// Without Li/H on the source, the slice must not materialize them.
+	// hgt: t + h.
+	if hgt := sl.Height; hgt == nil || len(hgt.H) != len(hgt.T) || hgt.H[0] != result.NoFloor || hgt.H[1] != 30 {
+		t.Errorf("hgt track = %+v, want H=[NoFloor, 30]", hgt)
+	}
+	// lq: t + lq.
+	if lq := sl.Liquid; lq == nil || len(lq.Lq) != len(lq.T) || lq.Lq[0] != 5 || lq.Lq[1] != 6 {
+		t.Errorf("lq track = %+v, want Lq=[5, 6]", lq)
+	}
+	// view: t + vp/vya.
+	vw := sl.View
+	if vw == nil || len(vw.VP) != len(vw.T) || len(vw.VYa) != len(vw.T) {
+		t.Fatalf("view track not aligned: %+v", vw)
+	}
+	if vw.VP[0] != 200 || vw.VP[1] != 300 || vw.VYa[0] != -200 || vw.VYa[1] != -300 {
+		t.Errorf("view = vp%v vya%v, want vp[200,300] vya[-200,-300]", vw.VP, vw.VYa)
+	}
+	// vel: t + vx/vy/vz.
+	vel := sl.Velocity
+	if vel == nil || len(vel.VX) != len(vel.T) || len(vel.VY) != len(vel.T) || len(vel.VZ) != len(vel.T) {
+		t.Fatalf("velocity track not aligned: %+v", vel)
+	}
+	if vel.VX[0] != 22 || vel.VX[1] != 33 || vel.VZ[0] != 2 {
+		t.Errorf("vel = vx%v vz%v, want vx[22,33] vz[2,3]", vel.VX, vel.VZ)
+	}
+
+	// A bare x/y/z track: pos carries no li, and hgt/lq/view stay absent.
 	r2 := makeStream(t, result.PlayerStream{
 		Name: "p1",
 		Position: &result.PositionTrack{
@@ -145,14 +176,18 @@ func TestStreamSlicePositionOptionalColumns(t *testing.T) {
 	v2, err := StreamSlice(r2, StreamSliceOptions{
 		StartTime: 0,
 		EndTime:   2,
-		Fields:    []string{FieldPosition},
+		Fields:    []string{FieldPosition, FieldHeight, FieldLiquid, FieldView, FieldVelocity},
 	})
 	if err != nil {
 		t.Fatalf("StreamSlice: %v", err)
 	}
-	pos2 := v2.Players[0].Position
-	if pos2 == nil || pos2.Li != nil || pos2.H != nil || pos2.Lq != nil {
-		t.Errorf("optional columns materialized on bare track: %+v", pos2)
+	sl2 := v2.Players[0]
+	if sl2.Position == nil || sl2.Position.Li != nil {
+		t.Errorf("li materialized on bare track: %+v", sl2.Position)
+	}
+	if sl2.Height != nil || sl2.Liquid != nil || sl2.View != nil || sl2.Velocity != nil {
+		t.Errorf("hgt/lq/view/vel materialized on bare track: hgt=%v lq=%v view=%v vel=%v",
+			sl2.Height, sl2.Liquid, sl2.View, sl2.Velocity)
 	}
 }
 

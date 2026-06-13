@@ -745,6 +745,17 @@ diff -r /tmp/before /tmp/after
    `CL_SetSolidEntities`), so a player passing through one can briefly
    read it as a floor. See
    [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) (`PositionTrack.h`).
+   Since **schema v31** each position sample also carries the player's
+   **view direction** (`pos.vp` / `pos.vya`) — pitch and yaw as the raw
+   `angle16` wire value, kept losslessly (decode `uint16(v)*360/65536`;
+   pitch > 180° = looking up). Unlike floor height it needs no BSP — the
+   angles ride the same `svc_playerinfo` samples as x/y/z. The view-layer
+   query API and CLI expose position channels independently: `pos` is
+   strictly x/y/z, with opt-in `view` / `hgt` / `lq` for look direction,
+   floor height, and liquid state. Since **schema v32** there is also a
+   derived per-sample **velocity** (`pos.vx`/`vy`/`vz`, Quake units/sec,
+   opt-in `vel`), computed by a central-difference estimator that does
+   not differentiate across respawns, teleporters, or time gaps.
 
 ## Reference sources
 

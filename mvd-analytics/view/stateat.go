@@ -41,6 +41,14 @@ type PlayerStateAt struct {
 	Loc *string     `json:"loc,omitempty"`
 	Li  *int16      `json:"li,omitempty"`
 	Pos *Position3D `json:"pos,omitempty"`
+	// View / Hgt / Lq are the point-in-time view direction, height above
+	// floor, and liquid state — snapped to the nearest position sample,
+	// like Pos. Hgt / Lq are present only when the map's BSP supplied
+	// those columns.
+	View *ViewAngles `json:"view,omitempty"`
+	Hgt  *int32      `json:"hgt,omitempty"`
+	Lq   *int8       `json:"lq,omitempty"`
+	Vel  *Velocity3D `json:"vel,omitempty"`
 
 	RL  *bool `json:"rl,omitempty"`
 	LG  *bool `json:"lg,omitempty"`
@@ -64,6 +72,21 @@ type Position3D struct {
 	X int32 `json:"x"`
 	Y int32 `json:"y"`
 	Z int32 `json:"z"`
+}
+
+// ViewAngles is the point-in-time view direction: raw angle16 pitch/yaw
+// (decode deg = uint16(v)*360/65536; pitch > 180 = up).
+type ViewAngles struct {
+	VP  int16 `json:"vp"`
+	VYa int16 `json:"vya"`
+}
+
+// Velocity3D is the point-in-time velocity vector in Quake units/sec,
+// snapped to the nearest sample (see PositionTrack.VX for derivation).
+type Velocity3D struct {
+	VX int32 `json:"vx"`
+	VY int32 `json:"vy"`
+	VZ int32 `json:"vz"`
 }
 
 // StateAt resolves each requested field at Time per player. For
@@ -187,10 +210,29 @@ func StateAt(r *result.Result, opts StateAtOptions) (*StateAtView, error) {
 			ps.Ring = boolPtr(intervalContains(p.Ring, tMs))
 		}
 
-		if requested[FieldPosition] && p.Position != nil && len(p.Position.T) > 0 {
-			idx := nearestPositionIndex(p.Position, opts.Time)
+		if (requested[FieldPosition] || requested[FieldView] || requested[FieldHeight] ||
+			requested[FieldLiquid] || requested[FieldVelocity]) &&
+			p.Position != nil && len(p.Position.T) > 0 {
+			pt := p.Position
+			idx := nearestPositionIndex(pt, opts.Time)
 			if idx >= 0 {
-				ps.Pos = &Position3D{X: p.Position.X[idx], Y: p.Position.Y[idx], Z: p.Position.Z[idx]}
+				if requested[FieldPosition] {
+					ps.Pos = &Position3D{X: pt.X[idx], Y: pt.Y[idx], Z: pt.Z[idx]}
+				}
+				if requested[FieldView] && len(pt.VP) == len(pt.T) && len(pt.VYa) == len(pt.T) {
+					ps.View = &ViewAngles{VP: pt.VP[idx], VYa: pt.VYa[idx]}
+				}
+				if requested[FieldHeight] && len(pt.H) == len(pt.T) {
+					v := pt.H[idx]
+					ps.Hgt = &v
+				}
+				if requested[FieldLiquid] && len(pt.Lq) == len(pt.T) {
+					v := pt.Lq[idx]
+					ps.Lq = &v
+				}
+				if requested[FieldVelocity] && len(pt.VX) == len(pt.T) && len(pt.VY) == len(pt.T) && len(pt.VZ) == len(pt.T) {
+					ps.Vel = &Velocity3D{VX: pt.VX[idx], VY: pt.VY[idx], VZ: pt.VZ[idx]}
+				}
 			}
 		}
 

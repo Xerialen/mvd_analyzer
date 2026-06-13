@@ -14,9 +14,14 @@ import (
 type PlayerPositionEvent struct {
 	PlayerNum int
 	Origin    [3]float32 // X, Y, Z world coordinates
-	Angles    [3]float32 // Pitch, Yaw, Roll
-	Time      float64
-	TimeMs    int32
+	// Angles is the raw angle16 wire value for [pitch, yaw, roll] — the
+	// exact 2-byte short the server wrote, kept losslessly (we do not
+	// narrow to float degrees). Decode to degrees with
+	// float(uint16(v)) * 360/65536; values land in [0,360), so a pitch
+	// > 180 means looking up. Roll is always 0 (the server zeroes it).
+	Angles [3]int16
+	Time   float64
+	TimeMs int32
 }
 
 func (e *PlayerPositionEvent) EventType() EventType { return EventPlayerInfo }
@@ -66,14 +71,17 @@ func (p *Parser) parsePlayerInfo(r *mvd.BufferReader, time float64, timeMs int32
 	// Store updated position
 	p.playerPositions[playerNum] = origin
 
-	// Read angle components
-	var angles [3]float32
+	// Read angle components as the raw angle16 wire short — lossless;
+	// bypasses ReadAngle16's float-degree conversion so the exact value
+	// the server wrote survives into the result schema.
+	var angles [3]int16
 	for i := 0; i < 3; i++ {
 		if flags&(mvd.DFAngles<<i) != 0 {
-			angles[i], err = r.ReadAngle16()
-			if err != nil {
-				return err
+			raw, rerr := r.ReadUint16()
+			if rerr != nil {
+				return rerr
 			}
+			angles[i] = int16(raw)
 		}
 	}
 

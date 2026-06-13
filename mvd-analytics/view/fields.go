@@ -18,6 +18,17 @@ const (
 	FieldArmorType = "at"
 	FieldLoc       = "li"
 	FieldPosition  = "pos"
+	// View / Height / Liquid project the per-sample view-direction,
+	// floor-height, and liquid-state columns of the position track
+	// independently of x/y/z. Opt-in (not in AllStandardFields): a
+	// consumer that wants where a player looks, how high they are, or
+	// whether they're submerged asks for it explicitly, and `pos` stays
+	// strictly x/y/z. Height (`hgt`, not `h` — that's Health) and Liquid
+	// are present only when the map's BSP was provisioned.
+	FieldView     = "view"
+	FieldHeight   = "hgt"
+	FieldLiquid   = "lq"
+	FieldVelocity = "vel" // velocity vx/vy/vz (units/sec), projected from the position track
 
 	FieldRL  = "rl"
 	FieldLG  = "lg"
@@ -45,9 +56,13 @@ type FieldKind int
 const (
 	KindChangeI16 FieldKind = iota
 	KindChangeStr
-	KindInterval // bool intervals
-	KindPosition // *PositionTrack
+	KindInterval  // bool intervals
+	KindPosition  // *PositionTrack (x/y/z)
 	KindEventList // []float64 timestamps (spawn/death)
+	KindView      // view direction (vp/vya) projected from *PositionTrack
+	KindHeight    // height-above-floor (h) projected from *PositionTrack
+	KindLiquid    // liquid state (lq) projected from *PositionTrack
+	KindVelocity  // velocity (vx/vy/vz) projected from *PositionTrack
 )
 
 // FieldKindFor returns the kind for a known field code; ok=false on an
@@ -63,6 +78,10 @@ var fieldKinds = map[string]FieldKind{
 	FieldArmorType: KindChangeStr,
 	FieldLoc:       KindChangeI16,
 	FieldPosition:  KindPosition,
+	FieldView:      KindView,
+	FieldHeight:    KindHeight,
+	FieldLiquid:    KindLiquid,
+	FieldVelocity:  KindVelocity,
 
 	FieldRL:  KindInterval,
 	FieldLG:  KindInterval,
@@ -86,7 +105,10 @@ var fieldKinds = map[string]FieldKind{
 // AllStandardFields is the canonical iteration order — used as the
 // default Fields filter and by the legacy bucket shim. Order chosen so
 // downstream JSON has a stable key sequence (helpful for byte-level
-// diffs across runs).
+// diffs across runs). FieldView / FieldHeight / FieldLiquid /
+// FieldVelocity are deliberately absent: they are opt-in, so a default
+// query keeps the pre-v31 shape and a consumer only pays for view /
+// height / liquid / velocity when it asks for them by code.
 var AllStandardFields = []string{
 	FieldHealth, FieldArmor, FieldArmorType, FieldLoc, FieldPosition,
 	FieldRL, FieldLG, FieldGL, FieldSSG, FieldSNG,
@@ -122,6 +144,10 @@ var DefaultReducers = map[string]string{
 	FieldArmorType: "first",
 	FieldLoc:       "first",
 	FieldPosition:  "first",
+	FieldView:      "first",
+	FieldHeight:    "first",
+	FieldLiquid:    "first",
+	FieldVelocity:  "first",
 
 	FieldRL:  "first",
 	FieldLG:  "first",

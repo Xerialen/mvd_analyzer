@@ -196,6 +196,10 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// reconnect merge, same as the loc pass above; no-op when no clip
 	// hull is loaded for the map.
 	a.resolveFloorHeights()
+	// Derive per-sample velocity (units/sec) from the position columns by
+	// central difference. Per-slot before the merge, like the passes
+	// above; needs no BSP.
+	a.resolveVelocities()
 	// Drop the table entirely if only the sentinel slot exists — JSON
 	// omitempty will then skip the field on the wire.
 	if len(locTable) <= 1 {

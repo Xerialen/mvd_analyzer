@@ -265,10 +265,11 @@ func shiftAndFilterInts(stream []int32, matchStartMs int32) []int32 {
 
 // shiftAndFilterPosition trims pre-match position samples and shifts
 // the survivors. Mutates pt in place. Every column that is sample-
-// aligned with T (X/Y/Z always, Li/H when present) must be trimmed by
-// the same keepFrom — consumers (BuildLocGraph, view.RegionControl,
-// airgibsPost) guard on `len(col) == len(pt.T)` and will silently skip
-// the player if the lengths drift. All time arithmetic is int32 ms.
+// aligned with T (X/Y/Z always, Li/H/Lq/VP/VYa/VX/VY/VZ when present)
+// must be trimmed by the same keepFrom — consumers (BuildLocGraph,
+// view.RegionControl, airgibsPost) guard on `len(col) == len(pt.T)` and
+// will silently skip the player if the lengths drift. All time
+// arithmetic is int32 ms.
 func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
 	if pt == nil || len(pt.T) == 0 {
 		return
@@ -291,6 +292,21 @@ func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
 		}
 		if len(pt.Lq) == oldLen {
 			pt.Lq = pt.Lq[keepFrom:]
+		}
+		if len(pt.VP) == oldLen {
+			pt.VP = pt.VP[keepFrom:]
+		}
+		if len(pt.VYa) == oldLen {
+			pt.VYa = pt.VYa[keepFrom:]
+		}
+		if len(pt.VX) == oldLen {
+			pt.VX = pt.VX[keepFrom:]
+		}
+		if len(pt.VY) == oldLen {
+			pt.VY = pt.VY[keepFrom:]
+		}
+		if len(pt.VZ) == oldLen {
+			pt.VZ = pt.VZ[keepFrom:]
 		}
 	}
 	for i := range pt.T {

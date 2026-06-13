@@ -402,6 +402,14 @@ func fastReduce(p *result.PlayerStream, field, reducer string, bStart, bEnd floa
 			return intervalContains(s, int32(bStart*1000)), true
 		case KindPosition:
 			return firstPosition(p.Position, bStart, bEnd), true
+		case KindView:
+			return firstView(p.Position, bStart, bEnd), true
+		case KindHeight:
+			return firstHeight(p.Position, bStart, bEnd), true
+		case KindLiquid:
+			return firstLiquid(p.Position, bStart, bEnd), true
+		case KindVelocity:
+			return firstVelocity(p.Position, bStart, bEnd), true
 		}
 	case "any":
 		if kind == KindEventList {
@@ -492,6 +500,14 @@ func collectSamples(p *result.PlayerStream, field string, bStart, bEnd float64) 
 		return intervalSamples(p, field, bStart, bEnd)
 	case KindPosition:
 		return positionSamples(p, bStart, bEnd)
+	case KindView:
+		return viewSamples(p, bStart, bEnd)
+	case KindHeight:
+		return heightSamples(p, bStart, bEnd)
+	case KindLiquid:
+		return liquidSamples(p, bStart, bEnd)
+	case KindVelocity:
+		return velocitySamples(p, bStart, bEnd)
 	case KindEventList:
 		return eventListSamples(p, field, bStart, bEnd)
 	}
@@ -587,6 +603,147 @@ func positionSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
 // positionTriple returns a [3]int32 array for sample i.
 func positionTriple(pt *result.PositionTrack, i int) [3]int32 {
 	return [3]int32{pt.X[i], pt.Y[i], pt.Z[i]}
+}
+
+// viewPair returns the [vp, vya] raw angle16 pair for sample i. int16 to
+// match the schema columns (and the split vp/vya columnar columns).
+func viewPair(pt *result.PositionTrack, i int) [2]int16 {
+	return [2]int16{pt.VP[i], pt.VYa[i]}
+}
+
+// firstView / firstHeight / firstLiquid mirror firstPosition for the
+// view-direction, floor-height, and liquid columns: the first in-window
+// sample, else the carry-forward sample, else nil. Each returns nil when
+// its column is absent (no view recorded, or no BSP for h/lq), so the
+// field is omitted exactly as the row builder's omitempty would.
+func firstView(pt *result.PositionTrack, bStart, bEnd float64) any {
+	if pt == nil || len(pt.VP) != len(pt.T) || len(pt.VYa) != len(pt.T) {
+		return nil
+	}
+	if i := firstPosIndex(pt, bStart, bEnd); i >= 0 {
+		return viewPair(pt, i)
+	}
+	return nil
+}
+
+func firstHeight(pt *result.PositionTrack, bStart, bEnd float64) any {
+	if pt == nil || len(pt.H) != len(pt.T) {
+		return nil
+	}
+	if i := firstPosIndex(pt, bStart, bEnd); i >= 0 {
+		return pt.H[i]
+	}
+	return nil
+}
+
+func firstLiquid(pt *result.PositionTrack, bStart, bEnd float64) any {
+	if pt == nil || len(pt.Lq) != len(pt.T) {
+		return nil
+	}
+	if i := firstPosIndex(pt, bStart, bEnd); i >= 0 {
+		// int16 (not int8) so the value boxes identically in the row and
+		// columnar paths — the parity test deep-equals the two, and the
+		// columnar i16 column can't represent int8 distinctly. The lq
+		// codes (0–15) are unchanged; decode with result.LqLevel/LqType.
+		return int16(pt.Lq[i])
+	}
+	return nil
+}
+
+func firstVelocity(pt *result.PositionTrack, bStart, bEnd float64) any {
+	if pt == nil || len(pt.VX) != len(pt.T) || len(pt.VY) != len(pt.T) || len(pt.VZ) != len(pt.T) {
+		return nil
+	}
+	if i := firstPosIndex(pt, bStart, bEnd); i >= 0 {
+		return velocityTriple(pt, i)
+	}
+	return nil
+}
+
+// firstPosIndex returns the index of the first sample in [bStart, bEnd),
+// else the carry-forward sample before bStart, else -1. Shared liveness
+// logic behind firstPosition/firstView/firstHeight/firstLiquid.
+func firstPosIndex(pt *result.PositionTrack, bStart, bEnd float64) int {
+	n := len(pt.T)
+	if n == 0 {
+		return -1
+	}
+	bStartMs := int32(bStart * 1000)
+	firstIn := sort.Search(n, func(i int) bool { return pt.T[i] >= bStartMs })
+	if firstIn < n && pt.T[firstIn] < int32(bEnd*1000) {
+		return firstIn
+	}
+	if firstIn > 0 {
+		return firstIn - 1
+	}
+	return -1
+}
+
+// viewSamples / heightSamples / liquidSamples mirror positionSamples for
+// the view, height, and liquid columns: in-window samples chronological,
+// or a single carry-forward sample in a gap bucket. Empty (nil) when the
+// underlying column is absent.
+func viewSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
+	pt := p.Position
+	if pt == nil || len(pt.VP) != len(pt.T) || len(pt.VYa) != len(pt.T) {
+		return nil
+	}
+	return columnSamples(pt, bStart, bEnd, func(i int) any { return viewPair(pt, i) })
+}
+
+func heightSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
+	pt := p.Position
+	if pt == nil || len(pt.H) != len(pt.T) {
+		return nil
+	}
+	return columnSamples(pt, bStart, bEnd, func(i int) any { return pt.H[i] })
+}
+
+func liquidSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
+	pt := p.Position
+	if pt == nil || len(pt.Lq) != len(pt.T) {
+		return nil
+	}
+	return columnSamples(pt, bStart, bEnd, func(i int) any { return int16(pt.Lq[i]) })
+}
+
+func velocitySamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
+	pt := p.Position
+	if pt == nil || len(pt.VX) != len(pt.T) || len(pt.VY) != len(pt.T) || len(pt.VZ) != len(pt.T) {
+		return nil
+	}
+	return columnSamples(pt, bStart, bEnd, func(i int) any { return velocityTriple(pt, i) })
+}
+
+// velocityTriple returns the [vx, vy, vz] units/sec vector for sample i.
+func velocityTriple(pt *result.PositionTrack, i int) [3]int32 {
+	return [3]int32{pt.VX[i], pt.VY[i], pt.VZ[i]}
+}
+
+// columnSamples is positionSamples generalised over a per-index value
+// accessor, so the view/height/liquid columns share the identical
+// window-membership and gap-bucket carry-forward semantics.
+func columnSamples(pt *result.PositionTrack, bStart, bEnd float64, valAt func(i int) any) []Sample {
+	n := len(pt.T)
+	if n == 0 {
+		return nil
+	}
+	bStartMs := int32(bStart * 1000)
+	bEndMs := int32(bEnd * 1000)
+	firstIn := sort.Search(n, func(i int) bool { return pt.T[i] >= bStartMs })
+	out := make([]Sample, 0, 4)
+	for i := firstIn; i < n; i++ {
+		t := pt.T[i]
+		if t >= bEndMs {
+			break
+		}
+		out = append(out, Sample{T: float64(t) * 0.001, V: valAt(i)})
+	}
+	if len(out) == 0 && firstIn > 0 {
+		idx := firstIn - 1
+		out = append(out, Sample{T: float64(pt.T[idx]) * 0.001, V: valAt(idx)})
+	}
+	return out
 }
 
 func eventListSamples(p *result.PlayerStream, field string, bStart, bEnd float64) []Sample {

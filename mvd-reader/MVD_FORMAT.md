@@ -615,6 +615,42 @@ if (flags & DF_WEAPONFRAME) 1  weapon_frame
 #define DF_MODEL        (1 << 11)  // 0x0800 - Model index present
 ```
 
+### View-angle semantics (what the angles actually are)
+
+The three `angle16` fields are the player's **view direction** — where
+they are looking — not a separate model orientation. The server fills
+them per frame in `SV_MVDWritePlayer` (`mvdsv/src/sv_ents.c:461-484`)
+from the player edict:
+
+```c
+VectorCopy(ent->v->angles, dcl->angles);
+dcl->angles[0] *= -3;            // recover true view pitch
+#ifdef USE_PR2
+if (cl->isBot) VectorCopy(ent->v->v_angle, dcl->angles); // bots: v_angle directly
+#endif
+dcl->angles[2] = 0;              // roll is always zeroed
+if (ent->v->health <= 0) { dcl->angles[0] = 0; dcl->angles[1] = ent->v->angles[1]; } // dead: don't look around
+```
+
+So per recorded frame:
+- **pitch** (`angle_pitch`) is the true view pitch. The QC progs store
+  the model entity's pitch as `-v_angle[PITCH]/3` (the model leans 1/3
+  of the look angle); the `* -3` here undoes that, recovering the actual
+  look pitch. After the unsigned `angle16` encode it lands in `[0,360)`,
+  so **pitch > 180° means looking up**.
+- **yaw** (`angle_yaw`) is the facing yaw (model yaw == player yaw).
+- **roll** (`angle_roll`) is **always 0** (`dcl->angles[2] = 0`).
+- A **dead** player's pitch is forced to 0 (corpse keeps yaw only).
+
+The initial full-state dump that opens a recording / serves a QTV
+mid-join (`sv_demo.c:1528-1578`) applies the same `* -3` pitch recovery,
+so the convention is uniform across the stream.
+
+The parser keeps these as the **raw `angle16` shorts** (no float
+narrowing) in `PlayerPositionEvent.Angles [3]int16`; the analytics layer
+persists pitch/yaw losslessly as the `PositionTrack.vp` / `vya` columns
+(roll is dropped). Decode to degrees with `uint16(v) * 360/65536`.
+
 ### Model Index Extended Range
 
 When `FTE_PEXT_MODELDBL` is enabled and both `DF_MODEL` and `DF_SKINNUM` are set:

@@ -40,7 +40,17 @@ type StreamSliceView struct {
 type PlayerSlice struct {
 	Name string `json:"name"`
 
+	// Position is strictly the x/y/z track (plus the per-sample loc-index
+	// label, li). Height (h), liquid (lq), and view direction (vp/vya)
+	// each project into their own sibling track so a consumer can request
+	// where a player is, how high they are, what liquid they're in, and
+	// where they look independently. Each track carries its own t axis
+	// (the slice window is small, so the duplication is negligible).
 	Position *result.PositionTrack `json:"pos,omitempty"`
+	View     *result.PositionTrack `json:"view,omitempty"`
+	Height   *result.PositionTrack `json:"hgt,omitempty"`
+	Liquid   *result.PositionTrack `json:"lq,omitempty"`
+	Velocity *result.PositionTrack `json:"vel,omitempty"`
 
 	Health    []result.ChangeI16 `json:"h,omitempty"`
 	Armor     []result.ChangeI16 `json:"a,omitempty"`
@@ -174,6 +184,18 @@ func StreamSlice(r *result.Result, opts StreamSliceOptions) (*StreamSliceView, e
 		if requested[FieldPosition] && p.Position != nil {
 			ps.Position = slicePosition(p.Position, start, end)
 		}
+		if requested[FieldView] && p.Position != nil {
+			ps.View = sliceView(p.Position, start, end)
+		}
+		if requested[FieldHeight] && p.Position != nil {
+			ps.Height = sliceHeight(p.Position, start, end)
+		}
+		if requested[FieldLiquid] && p.Position != nil {
+			ps.Liquid = sliceLiquid(p.Position, start, end)
+		}
+		if requested[FieldVelocity] && p.Position != nil {
+			ps.Velocity = sliceVelocity(p.Position, start, end)
+		}
 
 		out.Players = append(out.Players, ps)
 	}
@@ -306,6 +328,11 @@ func sliceInts(stream []int32, start, end float64) []int32 {
 	return out
 }
 
+// slicePosition projects the strict position track — t, x, y, z, and the
+// per-sample loc-index label li (the loc is a property of where the
+// player is, so it rides with the position). Height (h) and liquid (lq)
+// are NOT included here since schema v31: request them via the `hgt` /
+// `lq` field codes (sliceHeight / sliceLiquid).
 func slicePosition(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
 	if pt == nil {
 		return nil
@@ -313,12 +340,7 @@ func slicePosition(pt *result.PositionTrack, start, end float64) *result.Positio
 	// pt.T is int32 ms (schema v8); convert window once.
 	startMs := int32(start * 1000)
 	endMs := int32(end * 1000)
-	// Optional sample-aligned columns come along when present — a slice
-	// without them would silently drop the loc / floor-height data the
-	// full result carries for the same samples.
 	hasLi := len(pt.Li) == len(pt.T)
-	hasH := len(pt.H) == len(pt.T)
-	hasLq := len(pt.Lq) == len(pt.T)
 	out := &result.PositionTrack{}
 	for i := range pt.T {
 		t := pt.T[i]
@@ -335,15 +357,93 @@ func slicePosition(pt *result.PositionTrack, start, end float64) *result.Positio
 		if hasLi {
 			out.Li = append(out.Li, pt.Li[i])
 		}
-		if hasH {
-			out.H = append(out.H, pt.H[i])
-		}
-		if hasLq {
-			out.Lq = append(out.Lq, pt.Lq[i])
-		}
 	}
 	if len(out.T) == 0 {
 		return nil
 	}
+	return out
+}
+
+// sliceWindowIndices returns the [lo, hi) index range of pt.T samples
+// inside [start, end). Shared by the column projectors so they all agree
+// on window membership (inclusive lower bound, matching slicePosition).
+func sliceWindowIndices(pt *result.PositionTrack, start, end float64) (int, int) {
+	startMs := int32(start * 1000)
+	endMs := int32(end * 1000)
+	lo := 0
+	for lo < len(pt.T) && pt.T[lo] < startMs {
+		lo++
+	}
+	hi := lo
+	for hi < len(pt.T) && pt.T[hi] < endMs {
+		hi++
+	}
+	return lo, hi
+}
+
+// sliceView projects the view-direction columns (t, vp, vya). Returns nil
+// when the track has no view samples in the window.
+func sliceView(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
+	if pt == nil || len(pt.VP) != len(pt.T) || len(pt.VYa) != len(pt.T) {
+		return nil
+	}
+	lo, hi := sliceWindowIndices(pt, start, end)
+	if lo >= hi {
+		return nil
+	}
+	out := &result.PositionTrack{}
+	out.T = append(out.T, pt.T[lo:hi]...)
+	out.VP = append(out.VP, pt.VP[lo:hi]...)
+	out.VYa = append(out.VYa, pt.VYa[lo:hi]...)
+	return out
+}
+
+// sliceHeight projects the floor-height column (t, h). Returns nil when
+// the track has no height column (no BSP) or no samples in the window.
+func sliceHeight(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
+	if pt == nil || len(pt.H) != len(pt.T) {
+		return nil
+	}
+	lo, hi := sliceWindowIndices(pt, start, end)
+	if lo >= hi {
+		return nil
+	}
+	out := &result.PositionTrack{}
+	out.T = append(out.T, pt.T[lo:hi]...)
+	out.H = append(out.H, pt.H[lo:hi]...)
+	return out
+}
+
+// sliceLiquid projects the liquid-state column (t, lq). Returns nil when
+// the track has no liquid column (no BSP) or no samples in the window.
+func sliceLiquid(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
+	if pt == nil || len(pt.Lq) != len(pt.T) {
+		return nil
+	}
+	lo, hi := sliceWindowIndices(pt, start, end)
+	if lo >= hi {
+		return nil
+	}
+	out := &result.PositionTrack{}
+	out.T = append(out.T, pt.T[lo:hi]...)
+	out.Lq = append(out.Lq, pt.Lq[lo:hi]...)
+	return out
+}
+
+// sliceVelocity projects the velocity columns (t, vx, vy, vz). Returns
+// nil when the track has no velocity samples in the window.
+func sliceVelocity(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
+	if pt == nil || len(pt.VX) != len(pt.T) || len(pt.VY) != len(pt.T) || len(pt.VZ) != len(pt.T) {
+		return nil
+	}
+	lo, hi := sliceWindowIndices(pt, start, end)
+	if lo >= hi {
+		return nil
+	}
+	out := &result.PositionTrack{}
+	out.T = append(out.T, pt.T[lo:hi]...)
+	out.VX = append(out.VX, pt.VX[lo:hi]...)
+	out.VY = append(out.VY, pt.VY[lo:hi]...)
+	out.VZ = append(out.VZ, pt.VZ[lo:hi]...)
 	return out
 }

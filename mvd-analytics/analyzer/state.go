@@ -79,13 +79,18 @@ type streamBuilder struct {
 	// stay exact int32 here and downstream; converting to float seconds
 	// would reintroduce the precision drift this schema-v8 type was
 	// chosen to eliminate.
-	posT  []int32
-	posX  []int32
-	posY  []int32
-	posZ  []int32
-	posLi []int16 // resolved loc index per sample, populated in finalize
-	posH  []int32 // height above floor per sample (result.NoFloor = none), populated in finalize when a clip hull is loaded
-	posLq []int8  // liquid state per sample ((type<<2)|level, 0 = dry), populated in finalize when the render BSP is loaded
+	posT   []int32
+	posX   []int32
+	posY   []int32
+	posZ   []int32
+	posLi  []int16 // resolved loc index per sample, populated in finalize
+	posH   []int32 // height above floor per sample (result.NoFloor = none), populated in finalize when a clip hull is loaded
+	posLq  []int8  // liquid state per sample ((type<<2)|level, 0 = dry), populated in finalize when the render BSP is loaded
+	posVP  []int16 // view pitch per sample, raw angle16 — appended at record time alongside x/y/z
+	posVYa []int16 // view yaw per sample, raw angle16 — appended at record time alongside x/y/z
+	posVX  []int32 // velocity X per sample (units/sec), derived in finalize (resolveVelocities)
+	posVY  []int32 // velocity Y per sample (units/sec), derived in finalize
+	posVZ  []int32 // velocity Z per sample (units/sec), derived in finalize
 
 	spawns []int32
 	deaths []int32

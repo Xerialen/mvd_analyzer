@@ -12,7 +12,7 @@ import (
 func newStreamState(from, to int32) *timelinePlayerState {
 	s := &timelinePlayerState{}
 	for t := from; t < to; t += 100 {
-		s.streams.recordPosition(t, float32(t), 0, 0)
+		s.streams.recordPosition(t, float32(t), 0, 0, 0, 0)
 	}
 	s.streams.recordSpawn(from)
 	s.streams.recordDeath(to - 50)
@@ -84,7 +84,7 @@ func TestStreams_SharedSlotSplitsByHandover(t *testing.T) {
 	// One slot, two occupancies with real play.
 	st := newStreamState(0, 300_000)
 	for t := int32(400_000); t < 700_000; t += 100 {
-		st.streams.recordPosition(t, float32(t), 0, 0)
+		st.streams.recordPosition(t, float32(t), 0, 0, 0, 0)
 	}
 	st.streams.recordSpawn(400_000)
 	a.playerState[7] = st

@@ -31,6 +31,75 @@ func TestStateAtCarryForward(t *testing.T) {
 	}
 }
 
+// StateAt snaps view / hgt / lq to the nearest position sample, and
+// omits hgt/lq when the track lacks those columns (no BSP).
+func TestStateAtViewHeightLiquid(t *testing.T) {
+	r := makeStream(t, result.PlayerStream{
+		Name: "p1",
+		Position: &result.PositionTrack{
+			T:   []int32{0, 1000, 2000},
+			X:   []int32{0, 100, 200},
+			Y:   []int32{0, 0, 0},
+			Z:   []int32{0, 0, 0},
+			H:   []int32{5, 40, result.NoFloor},
+			Lq:  []int8{0, 5, 7},
+			VP:  []int16{10, 20, 30},
+			VYa: []int16{-10, -20, -30},
+			VX:  []int32{100, 200, 300},
+			VY:  []int32{-100, -200, -300},
+			VZ:  []int32{1, 2, 3},
+		},
+	})
+	v, err := StateAt(r, StateAtOptions{
+		Time:   1.1, // nearest sample is index 1 (t=1000)
+		Fields: []string{FieldView, FieldHeight, FieldLiquid, FieldVelocity},
+	})
+	if err != nil {
+		t.Fatalf("StateAt: %v", err)
+	}
+	st := v.Players["p1"]
+	if st.View == nil || st.View.VP != 20 || st.View.VYa != -20 {
+		t.Errorf("View at 1.1 = %+v, want {20,-20}", st.View)
+	}
+	if st.Hgt == nil || *st.Hgt != 40 {
+		t.Errorf("Hgt at 1.1 = %v, want 40", deref32(st.Hgt))
+	}
+	if st.Lq == nil || *st.Lq != 5 {
+		t.Errorf("Lq at 1.1 = %v, want 5", st.Lq)
+	}
+	if st.Vel == nil || st.Vel.VX != 200 || st.Vel.VY != -200 || st.Vel.VZ != 2 {
+		t.Errorf("Vel at 1.1 = %+v, want {200,-200,2}", st.Vel)
+	}
+
+	// Bare x/y/z track: view present (always recorded), but hgt/lq absent.
+	r2 := makeStream(t, result.PlayerStream{
+		Name: "p1",
+		Position: &result.PositionTrack{
+			T:   []int32{0, 1000},
+			X:   []int32{0, 100},
+			Y:   []int32{0, 0},
+			Z:   []int32{0, 0},
+			VP:  []int16{1, 2},
+			VYa: []int16{3, 4},
+		},
+	})
+	v2, _ := StateAt(r2, StateAtOptions{Time: 0, Fields: []string{FieldView, FieldHeight, FieldLiquid, FieldVelocity}})
+	st2 := v2.Players["p1"]
+	if st2.View == nil {
+		t.Errorf("view should be present on bare track")
+	}
+	if st2.Hgt != nil || st2.Lq != nil || st2.Vel != nil {
+		t.Errorf("hgt/lq/vel must be absent without their columns: hgt=%v lq=%v vel=%v", st2.Hgt, st2.Lq, st2.Vel)
+	}
+}
+
+func deref32(p *int32) int32 {
+	if p == nil {
+		return -1
+	}
+	return *p
+}
+
 func TestStateAtBeforeFirstSample(t *testing.T) {
 	r := makeStream(t, result.PlayerStream{
 		Name:   "p1",

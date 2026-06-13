@@ -403,6 +403,64 @@ func TestStreamSlice(t *testing.T) {
 	}
 }
 
+// The position-derived field codes (view / hgt / lq / vel, schema
+// v31/v32) must flow through the REST layer end-to-end: mvd-api passes
+// `fields` straight to the view layer, so this guards that the API
+// surfaces them (and still 400s an unknown code).
+func TestStreamSlice_ViewVelocityFields(t *testing.T) {
+	res := stubResult()
+	res.Streams.Players[0].Position = &result.PositionTrack{
+		T:   []int32{0, 100, 200, 300},
+		X:   []int32{0, 10, 20, 30},
+		Y:   []int32{0, 0, 0, 0},
+		Z:   []int32{0, 0, 0, 0},
+		VP:  []int16{0, 100, 200, 300},
+		VYa: []int16{0, -100, -200, -300},
+		VX:  []int32{100, 100, 100, 100},
+		VY:  []int32{0, 0, 0, 0},
+		VZ:  []int32{0, 0, 0, 0},
+	}
+	store := &fakeStore{byID: map[string]*result.Result{"gameId:42": res}}
+	srv := newTestServer(t, store)
+	defer srv.Close()
+
+	// stream-slice: view + vel each project into their own sibling track,
+	// and pos stays absent when not requested (clean break).
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/stream-slice?from=0&to=0.4&fields=view,vel&players=bps", 200)
+	players, _ := resp["players"].([]any)
+	if len(players) == 0 {
+		t.Fatal("stream-slice returned no players")
+	}
+	p0 := players[0].(map[string]any)
+	if _, ok := p0["view"]; !ok {
+		t.Errorf("stream-slice missing view track: %v", p0)
+	}
+	if _, ok := p0["vel"]; !ok {
+		t.Errorf("stream-slice missing vel track: %v", p0)
+	}
+	if _, ok := p0["pos"]; ok {
+		t.Errorf("pos should be absent when only view/vel requested: %v", p0)
+	}
+
+	// state-at: view + vel surface as point objects on the player.
+	st := getJSON(t, srv.URL+"/v1/demos/gameId:42/state-at?time=0.1&fields=view,vel&players=bps", 200)
+	sp := st["players"].(map[string]any)["bps"].(map[string]any)
+	if _, ok := sp["view"]; !ok {
+		t.Errorf("state-at missing view: %v", sp)
+	}
+	if _, ok := sp["vel"]; !ok {
+		t.Errorf("state-at missing vel: %v", sp)
+	}
+
+	// buckets accept the codes too (columnar default).
+	getJSON(t, srv.URL+"/v1/demos/gameId:42/buckets?windowMs=100&fields=vel&players=bps", 200)
+
+	// An unknown field code is rejected with 400 (no silent pass-through).
+	if _, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/stream-slice?from=0&to=1&fields=bogus"); status != 400 {
+		t.Errorf("unknown field status = %d; want 400", status)
+	}
+}
+
 func TestStateAt_MissingTime(t *testing.T) {
 	srv := newTestServer(t, storeWithStub())
 	defer srv.Close()

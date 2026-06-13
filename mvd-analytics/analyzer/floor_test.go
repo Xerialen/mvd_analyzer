@@ -35,9 +35,9 @@ func TestResolveFloorHeights_PopulatesColumn(t *testing.T) {
 	a := NewTimelineAnalyzer()
 	st := &timelinePlayerState{}
 	// Grounded, airborne, then a (0,0,0) origin that must sentinel out.
-	st.streams.recordPosition(0, 0, 0, 24)
-	st.streams.recordPosition(100, 0, 0, 124)
-	st.streams.recordPosition(200, 0, 0, 0)
+	st.streams.recordPosition(0, 0, 0, 24, 0, 0)
+	st.streams.recordPosition(100, 0, 0, 124, 0, 0)
+	st.streams.recordPosition(200, 0, 0, 0, 0, 0)
 	a.playerState[0] = st
 	a.clipHull = floorTestHull(t)
 
@@ -130,10 +130,10 @@ func TestResolveFloorHeights_StandsOnMover(t *testing.T) {
 	}
 
 	st := &timelinePlayerState{}
-	st.streams.recordPosition(500, 0, 0, 25)    // riding the lift at rest
-	st.streams.recordPosition(1500, 0, 0, 125)  // riding the risen lift
-	st.streams.recordPosition(2000, 300, 0, 125) // outside the lift bounds, airborne over the shaft
-	st.streams.recordPosition(3500, 0, 0, 125)  // lift invisible: shaft floor answers
+	st.streams.recordPosition(500, 0, 0, 25, 0, 0)    // riding the lift at rest
+	st.streams.recordPosition(1500, 0, 0, 125, 0, 0)  // riding the risen lift
+	st.streams.recordPosition(2000, 300, 0, 125, 0, 0) // outside the lift bounds, airborne over the shaft
+	st.streams.recordPosition(3500, 0, 0, 125, 0, 0)  // lift invisible: shaft floor answers
 	a.playerState[0] = st
 
 	a.resolveFloorHeights()
@@ -193,9 +193,9 @@ func TestResolveFloorHeights_Liquids(t *testing.T) {
 	a.clipHull = clipHull
 	a.visBSP = visBSP
 	st := &timelinePlayerState{}
-	st.streams.recordPosition(0, 0, 0, 100)   // airborne above the water
-	st.streams.recordPosition(100, 0, 0, 20)  // wading: feet wet (z-23), waist dry
-	st.streams.recordPosition(200, 0, 0, -50) // fully submerged
+	st.streams.recordPosition(0, 0, 0, 100, 0, 0)   // airborne above the water
+	st.streams.recordPosition(100, 0, 0, 20, 0, 0)  // wading: feet wet (z-23), waist dry
+	st.streams.recordPosition(200, 0, 0, -50, 0, 0) // fully submerged
 	a.playerState[0] = st
 
 	a.resolveFloorHeights()
@@ -224,7 +224,7 @@ func TestResolveFloorHeights_Liquids(t *testing.T) {
 	a2 := NewTimelineAnalyzer()
 	a2.visBSP = visBSP
 	st2 := &timelinePlayerState{}
-	st2.streams.recordPosition(0, 0, 0, -50)
+	st2.streams.recordPosition(0, 0, 0, -50, 0, 0)
 	a2.playerState[0] = st2
 	a2.resolveFloorHeights()
 	if st2.streams.posH != nil || len(st2.streams.posLq) != 1 || st2.streams.posLq[0] != 7 {
@@ -238,7 +238,7 @@ func TestResolveFloorHeights_Liquids(t *testing.T) {
 func TestResolveFloorHeights_NoHullNoColumn(t *testing.T) {
 	a := NewTimelineAnalyzer()
 	st := &timelinePlayerState{}
-	st.streams.recordPosition(0, 10, 20, 30)
+	st.streams.recordPosition(0, 10, 20, 30, 0, 0)
 	a.playerState[0] = st
 	// a.clipHull left nil.
 

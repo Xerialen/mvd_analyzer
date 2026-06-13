@@ -97,8 +97,22 @@ func reconstructPlayers(cb *view.ColumnarBuckets, i int) map[string]map[string]a
 				colVal(cp, "z", i).(int32),
 			}
 		}
+		if colVal(cp, "vp", i) != nil {
+			pdata[view.FieldView] = [2]int16{
+				colVal(cp, "vp", i).(int16),
+				colVal(cp, "vya", i).(int16),
+			}
+		}
+		if colVal(cp, "vx", i) != nil {
+			pdata[view.FieldVelocity] = [3]int32{
+				colVal(cp, "vx", i).(int32),
+				colVal(cp, "vy", i).(int32),
+				colVal(cp, "vz", i).(int32),
+			}
+		}
 		for field := range cp.Cols {
-			if field == "x" || field == "y" || field == "z" {
+			switch field {
+			case "x", "y", "z", "vp", "vya", "vx", "vy", "vz":
 				continue
 			}
 			if v := colVal(cp, field, i); v != nil {
@@ -227,6 +241,42 @@ func TestColumnarParityCorpus(t *testing.T) {
 						if team {
 							compareTeams(t, ctx, i, row.Buckets[i].Team, cb)
 						}
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestColumnarParityViewFields exercises the opt-in view/hgt/lq field
+// codes (absent from AllStandardFields, so the default parity test never
+// reaches them) — row and columnar must still agree bucket-for-bucket.
+func TestColumnarParityViewFields(t *testing.T) {
+	fields := []string{
+		view.FieldPosition, view.FieldView, view.FieldHeight,
+		view.FieldLiquid, view.FieldVelocity, view.FieldHealth,
+	}
+	for _, gameID := range []int{corpus4on4, corpus1on1} {
+		gameID := gameID
+		t.Run(fmt.Sprint(gameID), func(t *testing.T) {
+			r := loadDemo(t, gameID)
+			for _, win := range []int{50, 1000} {
+				opts := view.BucketsOptions{WindowMs: win, Fields: fields, LocIndex: true}
+				row, err := view.Buckets(r, opts)
+				if err != nil {
+					t.Fatalf("Buckets: %v", err)
+				}
+				cb, err := view.BucketsColumnar(r, opts)
+				if err != nil {
+					t.Fatalf("BucketsColumnar: %v", err)
+				}
+				if cb.Count != len(row.Buckets) {
+					t.Fatalf("win=%d count=%d, want %d", win, cb.Count, len(row.Buckets))
+				}
+				for i := range row.Buckets {
+					if got := reconstructPlayers(cb, i); !reflect.DeepEqual(got, row.Buckets[i].Players) {
+						t.Fatalf("win=%d bucket %d parity mismatch:\n columnar→row: %+v\n row:          %+v",
+							win, i, got, row.Buckets[i].Players)
 					}
 				}
 			}

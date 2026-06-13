@@ -14,7 +14,8 @@
 // Example invocations:
 //
 //	qw-analyze demo.mvd.gz                              # full JSON to stdout
-//	qw-analyze -include positions demo.mvd.gz           # full JSON with native position track
+//	qw-analyze -include positions demo.mvd.gz           # full JSON with native x/y/z track
+//	qw-analyze -include positions,view,height demo.mvd.gz # also view angles + floor height
 //	qw-analyze -format md demo.mvd.gz > report.md       # markdown summary
 //	qw-analyze -format events demo.mvd.gz | jq .        # event stream
 //	qw-analyze -view buckets -bucket 1s demo.mvd.gz     # 1s buckets
@@ -77,7 +78,7 @@ func main() {
 	minDwellStr := flag.String("min-dwell", "0", "drop transitions shorter than this for -view trails")
 	timeStr := flag.String("time", "", "time for -view state-at (required)")
 	includeTeam := flag.Bool("include-team", false, "emit per-team aggregates on -view buckets")
-	includeStr := flag.String("include", "", "comma-separated extras for -view full (supported: positions)")
+	includeStr := flag.String("include", "", "comma-separated position-track columns for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
@@ -238,11 +239,18 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 		return err
 	}
 
-	// -include positions is opt-in: by default strip native position
-	// tracks from JSON to keep the file small. (~12 MB per 4on4 match.)
-	if vopts == nil || !vopts.include["positions"] {
-		stripStreamPositions(res)
+	// Position-track columns are opt-in: by default strip the whole
+	// native-rate track from JSON to keep the file small (~12 MB per 4on4
+	// match). -include positions/view/height/liquid keeps each column set.
+	sel := streamColumnSelection{}
+	if vopts != nil {
+		sel.positions = vopts.include["positions"]
+		sel.view = vopts.include["view"]
+		sel.height = vopts.include["height"]
+		sel.liquid = vopts.include["liquid"]
+		sel.velocity = vopts.include["velocity"]
 	}
+	stripStreamColumns(res, sel)
 
 	enc := json.NewEncoder(w)
 	if pretty {
@@ -356,14 +364,58 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 	return fmt.Errorf("unhandled view %q", vopts.view)
 }
 
-// stripStreamPositions nils out PlayerStream.Position so JSON omits the
-// native-rate position track. -include positions skips this step.
-func stripStreamPositions(r *result.Result) {
+// streamColumnSelection records which position-track columns the
+// -include flag asked to keep. The whole track is dropped when none are
+// selected.
+type streamColumnSelection struct {
+	positions bool // x/y/z (+ the per-sample loc label li)
+	view      bool // vp/vya — view direction
+	height    bool // h — height above floor
+	liquid    bool // lq — liquid state
+	velocity  bool // vx/vy/vz — velocity
+}
+
+func (s streamColumnSelection) any() bool {
+	return s.positions || s.view || s.height || s.liquid || s.velocity
+}
+
+// stripStreamColumns drops position-track data the consumer did not ask
+// for. With no position-family -include token the whole track is nil'd
+// (the default — it is ~12 MB per 4on4). Otherwise the track is kept and
+// each optional column is nil'd unless its token was given, so a consumer
+// can include just view, just height, etc. without the rest. x/y/z are
+// the track's base and always remain when the track is kept.
+func stripStreamColumns(r *result.Result, sel streamColumnSelection) {
 	if r.Streams == nil {
 		return
 	}
 	for i := range r.Streams.Players {
-		r.Streams.Players[i].Position = nil
+		pt := r.Streams.Players[i].Position
+		if pt == nil {
+			continue
+		}
+		if !sel.any() {
+			r.Streams.Players[i].Position = nil
+			continue
+		}
+		if !sel.positions {
+			pt.Li = nil
+		}
+		if !sel.view {
+			pt.VP = nil
+			pt.VYa = nil
+		}
+		if !sel.height {
+			pt.H = nil
+		}
+		if !sel.liquid {
+			pt.Lq = nil
+		}
+		if !sel.velocity {
+			pt.VX = nil
+			pt.VY = nil
+			pt.VZ = nil
+		}
 	}
 }
 

@@ -98,12 +98,15 @@ func (b *streamBuilder) recordCells(tMs int32, v int16) {
 // recordPosition appends every native sample (no dedup; D11
 // asymmetry). Time is integer milliseconds — the canonical wire-native
 // unit; we never narrow it back to float to avoid drift across the
-// boundary comparisons in locgraph / blip filter.
-func (b *streamBuilder) recordPosition(tMs int32, x, y, z float32) {
+// boundary comparisons in locgraph / blip filter. vp/vya are the raw
+// angle16 view pitch/yaw shorts off the wire, stored losslessly.
+func (b *streamBuilder) recordPosition(tMs int32, x, y, z float32, vp, vya int16) {
 	b.posT = append(b.posT, tMs)
 	b.posX = append(b.posX, int32(x))
 	b.posY = append(b.posY, int32(y))
 	b.posZ = append(b.posZ, int32(z))
+	b.posVP = append(b.posVP, vp)
+	b.posVYa = append(b.posVYa, vya)
 }
 
 func (b *streamBuilder) recordSpawn(tMs int32) {
@@ -248,6 +251,21 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 		if len(b.posLq) == len(b.posT) {
 			pos.Lq = append([]int8(nil), b.posLq...)
 		}
+		if len(b.posVP) == len(b.posT) {
+			pos.VP = append([]int16(nil), b.posVP...)
+		}
+		if len(b.posVYa) == len(b.posT) {
+			pos.VYa = append([]int16(nil), b.posVYa...)
+		}
+		if len(b.posVX) == len(b.posT) {
+			pos.VX = append([]int32(nil), b.posVX...)
+		}
+		if len(b.posVY) == len(b.posT) {
+			pos.VY = append([]int32(nil), b.posVY...)
+		}
+		if len(b.posVZ) == len(b.posT) {
+			pos.VZ = append([]int32(nil), b.posVZ...)
+		}
 		ps.Position = pos
 	}
 	if len(b.spawns) > 0 {
@@ -351,6 +369,11 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 	hasLi := len(src.posLi) == len(src.posT)
 	hasH := len(src.posH) == len(src.posT)
 	hasLq := len(src.posLq) == len(src.posT)
+	hasVP := len(src.posVP) == len(src.posT)
+	hasVYa := len(src.posVYa) == len(src.posT)
+	hasVX := len(src.posVX) == len(src.posT)
+	hasVY := len(src.posVY) == len(src.posT)
+	hasVZ := len(src.posVZ) == len(src.posT)
 	for i, t := range src.posT {
 		if !in(t) {
 			continue
@@ -367,6 +390,21 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 		}
 		if hasLq {
 			b.posLq = append(b.posLq, src.posLq[i])
+		}
+		if hasVP {
+			b.posVP = append(b.posVP, src.posVP[i])
+		}
+		if hasVYa {
+			b.posVYa = append(b.posVYa, src.posVYa[i])
+		}
+		if hasVX {
+			b.posVX = append(b.posVX, src.posVX[i])
+		}
+		if hasVY {
+			b.posVY = append(b.posVY, src.posVY[i])
+		}
+		if hasVZ {
+			b.posVZ = append(b.posVZ, src.posVZ[i])
 		}
 	}
 
@@ -867,6 +905,109 @@ func lqValue(level int, contents int32) int8 {
 		return 0
 	}
 	return typ<<2 | int8(level&3)
+}
+
+// velGapCapMs is the largest inter-sample time gap (ms) the velocity
+// estimator will differentiate across. Native position samples arrive
+// ~every 13 ms (virtually all gaps < 25 ms, MVD_FORMAT.md), so a gap
+// beyond this means the player was dead, the game was paused, or the
+// slot changed hands — not real motion. The two samples either side then
+// bound separate motion segments and no velocity spans them.
+const velGapCapMs = 250
+
+// velTeleportSpeedUps is the speed (units/sec) above which a step between
+// two adjacent samples is treated as a teleport / origin discontinuity
+// rather than movement, and not differentiated across. The QW server
+// clamps real player speed to sv_maxvelocity (2000 ups default), so a
+// single step implying >2x that is a map teleporter, a forced setorigin,
+// or some other relocation the spawn/gap checks don't see — across which
+// a velocity would be a meaningless tens-of-thousands-ups spike. Generous
+// (2.25x the default clamp) so legitimate knockback / high-maxvelocity
+// servers are never clipped; teleports overshoot it by an order of
+// magnitude.
+const velTeleportSpeedUps = 4500.0
+
+// resolveVelocities fills each slot's posVX/VY/VZ from the native-rate
+// position columns with a central-difference estimator (second-order
+// accurate: v[i] = (p[i+1]-p[i-1]) / (t[i+1]-t[i-1])), falling back to a
+// one-sided difference at a segment end. It runs per-slot before the
+// reconnect merge — like resolveFloorHeights — so it never differentiates
+// across a reconnect seam. Within a slot it also refuses to span a
+// respawn (the origin teleports to the spawn point — not movement) or an
+// abnormal time gap (velGapCapMs); an isolated sample reads 0. Units are
+// Quake units per second. No BSP needed — velocity is derived purely from
+// the position/time columns.
+func (a *TimelineAnalyzer) resolveVelocities() {
+	slots := make([]int, 0, len(a.playerState))
+	for slot := range a.playerState {
+		slots = append(slots, slot)
+	}
+	sort.Ints(slots)
+
+	for _, slot := range slots {
+		b := &a.playerState[slot].streams
+		n := len(b.posT)
+		if n == 0 {
+			continue
+		}
+		b.posVX = make([]int32, n)
+		b.posVY = make([]int32, n)
+		b.posVZ = make([]int32, n)
+		for i := 0; i < n; i++ {
+			usePrev := i > 0 && velConnected(b, i-1, i)
+			useNext := i < n-1 && velConnected(b, i, i+1)
+			var lo, hi int
+			switch {
+			case usePrev && useNext:
+				lo, hi = i-1, i+1 // central difference
+			case usePrev:
+				lo, hi = i-1, i // backward difference at a segment end
+			case useNext:
+				lo, hi = i, i+1 // forward difference at a segment start
+			default:
+				continue // isolated sample: velocity stays 0
+			}
+			dt := float64(b.posT[hi] - b.posT[lo])
+			if dt <= 0 {
+				continue
+			}
+			s := 1000.0 / dt // ms delta → per-second
+			b.posVX[i] = int32(math.Round(float64(b.posX[hi]-b.posX[lo]) * s))
+			b.posVY[i] = int32(math.Round(float64(b.posY[hi]-b.posY[lo]) * s))
+			b.posVZ[i] = int32(math.Round(float64(b.posZ[hi]-b.posZ[lo]) * s))
+		}
+	}
+}
+
+// velConnected reports whether adjacent samples i and j (= i+1) belong to
+// the same motion segment — close enough in time, with no respawn
+// teleport between them — so a velocity may be differenced across them.
+func velConnected(b *streamBuilder, i, j int) bool {
+	dt := b.posT[j] - b.posT[i]
+	if dt <= 0 || dt > velGapCapMs {
+		return false
+	}
+	if spawnBetween(b.spawns, b.posT[i], b.posT[j]) {
+		return false
+	}
+	// Reject a non-physical displacement (a map teleporter or other origin
+	// discontinuity the spawn/gap checks miss): compare squared distance
+	// against the furthest a player could travel at velTeleportSpeedUps.
+	dx := float64(b.posX[j] - b.posX[i])
+	dy := float64(b.posY[j] - b.posY[i])
+	dz := float64(b.posZ[j] - b.posZ[i])
+	maxStep := velTeleportSpeedUps * float64(dt) / 1000.0
+	return dx*dx+dy*dy+dz*dz <= maxStep*maxStep
+}
+
+// spawnBetween reports whether any spawn timestamp falls in (lo, hi].
+// spawns is ascending (recordSpawn appends in time order). A respawn at s
+// teleports the player to a spawn point, so the sample at/after s sits at
+// a new origin — differentiating across it would fabricate a velocity
+// spike.
+func spawnBetween(spawns []int32, lo, hi int32) bool {
+	i := sort.Search(len(spawns), func(k int) bool { return spawns[k] > lo })
+	return i < len(spawns) && spawns[i] <= hi
 }
 
 // mergeBoundaries returns a sorted list of timestamps where the blip

@@ -267,7 +267,7 @@ func (a *TimelineAnalyzer) handlePositionUpdate(e *events.PlayerPositionEvent) {
 	// positions don't dedup). Match-time only; warmup positions would
 	// pollute the stream with garbage.
 	if a.timing.Started && !a.timing.Ended {
-		state.streams.recordPosition(e.TimeMs, e.Origin[0], e.Origin[1], e.Origin[2])
+		state.streams.recordPosition(e.TimeMs, e.Origin[0], e.Origin[1], e.Origin[2], e.Angles[0], e.Angles[1])
 	}
 }
 
