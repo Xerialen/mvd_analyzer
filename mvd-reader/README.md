@@ -118,6 +118,12 @@ origin between events reproduces the entity's motion exactly — this
 is the demo-side input for posing submodel collision hulls the way
 the client does in `CL_SetSolidEntities` (ezquake `cl_ents.c`).
 
+`svc_playerinfo` uses the same delta-compression pattern for player view
+angles: omitted pitch/yaw/roll components inherit the last value seen for
+that player. `PlayerPositionEvent.Angles` therefore exposes the current
+full view-angle state per emitted position sample, not just the sparse
+angle fields present in that packet.
+
 `ItemPickupHintEvent` and `BackpackPickupHintEvent` are the
 authoritative KTX counterparts to `ItemStateEvent`: they pin each
 pickup to a concrete player edict, replacing the nearest-origin
