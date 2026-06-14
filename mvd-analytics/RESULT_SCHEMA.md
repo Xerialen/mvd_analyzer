@@ -596,15 +596,15 @@ their inputs are available.
 
 ```
 PositionTrack = {
-  "t": [int32...], "x": [int32...], "y": [int32...], "z": [int32...],
-  "li":  [int16...],  // optional: loc index per sample
-  "h":   [int32...],  // optional: height above floor per sample
-  "lq":  [int8...],   // optional: liquid state per sample
-  "vp":  [int16...],  // optional: view pitch per sample (raw angle16)
-  "vya": [int16...],  // optional: view yaw per sample (raw angle16)
-  "vx":  [int32...],  // optional: velocity X per sample (units/sec)
-  "vy":  [int32...],  // optional: velocity Y per sample (units/sec)
-  "vz":  [int32...]   // optional: velocity Z per sample (units/sec)
+  "t": [int32...], "x": [float32...], "y": [float32...], "z": [float32...],
+  "li":  [int16...],   // optional: loc index per sample
+  "h":   [float32...], // optional: height above floor per sample
+  "lq":  [int8...],    // optional: liquid state per sample
+  "vp":  [int16...],   // optional: view pitch per sample (raw angle16)
+  "vya": [int16...],   // optional: view yaw per sample (raw angle16)
+  "vx":  [float32...], // optional: velocity X per sample (units/sec)
+  "vy":  [float32...], // optional: velocity Y per sample (units/sec)
+  "vz":  [float32...]  // optional: velocity Z per sample (units/sec)
 }
 ```
 
@@ -616,8 +616,16 @@ reading the JSON as seconds must scale by `* 0.001`. Range is ±24.8
 days, ample for matches that run minutes to hours; values can go
 negative for pre-match warmup samples after time normalisation.
 
-`x` / `y` / `z` are `int32` (not `int16`) because Quake maps can
-exceed ±32 768 in any axis.
+`x` / `y` / `z` are `float32` — the wire-native sub-unit origin
+(mvd-reader decodes coordinates as float32; the MVD wire carries them as
+eighth-unit fixed point, or as true floats under the float-coords
+extension). **Since schema v33** they are no longer rounded to whole
+units: schema v32 and earlier stored `int32`, silently truncating up to
+~1 unit per axis, which also coarsened the derived velocity. Quake maps
+exceed ±32 768 in any axis, so `int16` was never an option. The values
+are kept at **native float32 resolution in memory**; only the JSON text
+is rounded — to 3 decimals, which is lossless for eighth-unit coordinates
+(`.125`/`.25`/… round-trip exactly) and just sheds float artifacts.
 
 `li` (when present) is the resolved loc-name index for each sample —
 indexes into `TimelineAnalysisResult.LocTable`, `0` = "no loc",
@@ -652,9 +660,10 @@ level ≥ 1) reads `h = 0` by definition — the liquid surface is the
 support, so swimmers don't read as airborne over the pool bottom — and
 a dry sample airborne above water/slime/lava measures down to the
 **liquid surface** when it is the highest support beneath the player.
-The sentinel `-2147483648` (`result.NoFloor`) marks a sample with **no
-floor to measure from** — over a void / bottomless pit, an embedded
-origin, or the zero origin. Absent entirely when no BSP is
+The sentinel `-1000000000` (`result.NoFloor`, schema v33; was
+`-2147483648` while `h` was `int32`) marks a sample with **no floor to
+measure from** — over a void / bottomless pit, an embedded origin, or
+the zero origin. Absent entirely when no BSP is
 provisioned for the map (same best-effort BSP source as the
 visibility-aware loc filter), so floor height and PVS-veto loc
 attribution light up together.
@@ -691,10 +700,14 @@ field, from the position columns by a central-difference estimator
 (second-order accurate). The estimator does not differentiate across a
 respawn teleport, a map-teleporter relocation, or an abnormal time gap
 (death / pause / reconnect): such a step reads ~0 rather than a
-tens-of-thousands-ups spike, and an isolated sample reads 0. Because the
-source `x`/`y`/`z` are integer-rounded units sampled ~every 13 ms, the
-raw derivative carries ±1-unit quantization noise (a few tens of ups) —
-smooth client-side for a clean speed curve. Speed is `hypot(vx,vy,vz)`;
+tens-of-thousands-ups spike, and an isolated sample reads 0. **Since
+schema v33** the source `x`/`y`/`z` are float32 (no longer rounded to
+whole units), so the derivative is sub-unit precise — the ±1-unit
+position quantization that used to add a few tens of ups of noise is
+gone. Like positions, velocity is native float32 in memory and the JSON
+text is rounded to 3 decimals (the float32 division tail, e.g.
+`-58.333332`, is false precision below the estimator's noise floor);
+smooth client-side only if a softer curve is wanted. Speed is `hypot(vx,vy,vz)`;
 horizontal speed (the usual movement metric) is `hypot(vx,vy)`. Same
 length as `t`; populated whenever the track is (no BSP needed).
 
@@ -911,7 +924,8 @@ view.BucketsColumnar(r, view.BucketsOptions{WindowMs: 50, IncludeTeam: true})
 //        alive: [0/1 …],                 // liveness per bucket in the span
 //        validFrom: { field: idx },      // sparse; field valid from idx (omitted when == first)
 //        h|a|li|sh|nl|rk|cl: [int16 …],  // dense, carry-forward
-//        x|y|z: [int32 …],               // position split
+//        x|y|z: [float32 …],             // position split
+//        vx|vy|vz: [float32 …],          // velocity split; hgt: [float32 …]
 //        at: [string …],
 //        rl|lg|gl|ssg|sng|q|pe|r|sp|d: [0/1 …],
 //     } },
@@ -1191,6 +1205,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v33 | `PositionTrack` `x` / `y` / `z`, `vx` / `vy` / `vz`, and `h` change from `int32` to **`float32`** — the pipeline stops truncating the wire-native sub-unit origin (mvd-reader decodes coordinates as float32; the wire carries eighth-unit fixed point, or true floats under the float-coords extension). v32 and earlier rounded each axis to whole units (losing up to ~1 unit) and derived velocity from those rounded positions; velocity is now sub-unit precise, so the old ±1-unit quantization noise is gone. Values are kept at **native float32 in memory**; only the JSON text is rounded — to 3 decimals, applied by `PositionTrack.MarshalJSON` (lossless for eighth-unit coordinates; it just sheds the float division/epsilon tail on derived velocity & height). The `PositionTrack.H` `NoFloor` sentinel changes from `-2147483648` (`math.MinInt32`, which a float32 cannot represent exactly and serializes as `-2147483600`) to **`-1000000000`** (`-1e9`, exact in float32 and float64). The `buckets` x/y/z/vx/vy/vz/hgt columns get the same 3-decimal rounding; the point-in-time `state-at` `pos`/`vel`/`hgt` and the `AirgibEvent` heights are float32 too but emitted at full precision (low volume). Time axes stay `int32` ms; view angles stay `int16` raw `angle16`; loc/liquid columns unchanged. JSON keys unchanged; values now carry fractional digits where the wire delivered sub-unit positions. |
 | v32 | `PositionTrack` gains `vx` / `vy` / `vz` columns: the player's **velocity** per sample in Quake units/sec, derived from the position columns by a central-difference estimator (it does not differentiate across a respawn teleport, a map-teleporter relocation, or an abnormal time gap — those read ~0 instead of spiking). Additive (`omitempty`), populated whenever the track is (no BSP needed). New opt-in view-layer field code `vel` (vx/vy/vz) and CLI `-include velocity`. Expect ±1-unit quantization noise on the raw derivative (integer-rounded source positions); smooth client-side for a clean speed curve. |
 | v31 | `PositionTrack` gains `vp` / `vya` columns: the player's **view direction** (pitch, yaw) per sample as the raw `angle16` state, kept losslessly after `svc_playerinfo` delta carry-forward (decode `deg = uint16(v) * 360/65536`; values `[0,360)`, pitch > 180° = looking up; roll not stored). Additive (`omitempty`), populated whenever the track is — no BSP needed (the angles ride the same `svc_playerinfo` samples as x/y/z). New opt-in view-layer field codes expose per-channel selection: `view` (vp/vya), `hgt` (h), `lq` (lq). **Clean break:** the `view`-API `pos` code now returns strictly x/y/z (+`li`); height/liquid no longer ride along it — request `hgt` / `lq`. CLI `-include` becomes column-aware (`positions` / `view` / `height` / `liquid`). |
 | v30 | `timelineAnalysis.airgibs` is no longer capped at the top 20: every qualifying hit (direct enemy rocket, victim ≥ 96 units above the floor) is emitted, still ordered by `height` descending. The qualification threshold already bounds the list to a handful per match, and a cap keyed on floor height could drop the hits a consumer sorting by `heightAboveAttacker` cares about most. |

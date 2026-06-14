@@ -1980,11 +1980,14 @@ function renderAirgibs() {
         const lethalCell = a.lethal ? '<span class="airgib-lethal">gib</span>' : '';
         // heightAboveAttacker is omitted on the wire for a dead-level 0
         // (omitempty) and when the shooter had no position sample near
-        // the hit — render the neutral 0 for both.
-        const aboveShooterCell = a.heightAboveAttacker ?? 0;
+        // the hit — render the neutral 0 for both. Heights are float32
+        // units; round to 1 decimal for display (sorting uses the raw
+        // values above).
+        const round1 = v => Math.round(v * 10) / 10;
+        const aboveShooterCell = round1(a.heightAboveAttacker ?? 0);
 
         tr.innerHTML = `
-            <td>${a.height}</td>
+            <td>${round1(a.height)}</td>
             <td>${aboveShooterCell}</td>
             <td>${escapeHtml(a.attacker || 'Unknown')}</td>
             <td>${escapeHtml(a.victim || 'Unknown')}</td>

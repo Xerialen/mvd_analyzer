@@ -38,16 +38,16 @@ func TestStateAtViewHeightLiquid(t *testing.T) {
 		Name: "p1",
 		Position: &result.PositionTrack{
 			T:   []int32{0, 1000, 2000},
-			X:   []int32{0, 100, 200},
-			Y:   []int32{0, 0, 0},
-			Z:   []int32{0, 0, 0},
-			H:   []int32{5, 40, result.NoFloor},
+			X:   []float32{0, 100, 200},
+			Y:   []float32{0, 0, 0},
+			Z:   []float32{0, 0, 0},
+			H:   []float32{5, 40, result.NoFloor},
 			Lq:  []int8{0, 5, 7},
 			VP:  []int16{10, 20, 30},
 			VYa: []int16{-10, -20, -30},
-			VX:  []int32{100, 200, 300},
-			VY:  []int32{-100, -200, -300},
-			VZ:  []int32{1, 2, 3},
+			VX:  []float32{100, 200, 300},
+			VY:  []float32{-100, -200, -300},
+			VZ:  []float32{1, 2, 3},
 		},
 	})
 	v, err := StateAt(r, StateAtOptions{
@@ -76,9 +76,9 @@ func TestStateAtViewHeightLiquid(t *testing.T) {
 		Name: "p1",
 		Position: &result.PositionTrack{
 			T:   []int32{0, 1000},
-			X:   []int32{0, 100},
-			Y:   []int32{0, 0},
-			Z:   []int32{0, 0},
+			X:   []float32{0, 100},
+			Y:   []float32{0, 0},
+			Z:   []float32{0, 0},
 			VP:  []int16{1, 2},
 			VYa: []int16{3, 4},
 		},
@@ -93,7 +93,7 @@ func TestStateAtViewHeightLiquid(t *testing.T) {
 	}
 }
 
-func deref32(p *int32) int32 {
+func deref32(p *float32) float32 {
 	if p == nil {
 		return -1
 	}

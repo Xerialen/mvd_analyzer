@@ -94,6 +94,16 @@ carry-forward, decode `deg = uint16(v)*360/65536`, pitch > 180° =
 looking up); floor height is `hgt`; liquid state is `lq`;
 **velocity** (vx/vy/vz, Quake units/sec, schema v32) is `vel`.
 Height/liquid no longer ride along `pos` — request each by code.
+Note (schema v33+): the coordinate values `pos` x/y/z, `vel` vx/vy/vz,
+and `hgt` are **`float32`** Quake units (sub-unit precise — earlier
+versions rounded them to whole `int32` units), so expect fractional
+numbers in those arrays. In the dense outputs (`stream-slice` tracks and
+`buckets` columns) they are serialized **rounded to 3 decimals**
+(lossless for eighth-unit positions; trims the float tail on velocity),
+so a value reads `-58.333`, not `-58.333332`. The point-in-time
+`state-at` values are emitted at full float32 precision (low volume, so
+not rounded). Only the **time axes** stay int32 ms (above). The `hgt`
+no-floor sentinel is `-1000000000` (was `-2147483648`).
 
 ### 2.3 Caching (use it — the data is immutable)
 
@@ -383,7 +393,7 @@ scrubbers and detail charts.
     "name": "sailorman",
     "h":   [ { "t": 105000, "v": -7 }, { "t": 105182, "v": 100 } ],   // ms, value
     "pos": { "t": [105001,105014,105027,…],  // ms — 70 samples in this 1s window
-             "x": [-1072,-1072,-1072,…], "y": […], "z": […] }
+             "x": [-1072,-1071.875,-1071.5,…], "y": […], "z": […] }  // x/y/z float32 units
   } ] }
 ```
 
@@ -400,9 +410,9 @@ scrubbers and detail charts.
   "players": [ { "name": "sailorman",
     // each projects into its own sibling track with its own t axis
     "view": { "t": [105001,105014,…], "vp": [288,289,…], "vya": [16384,16390,…] }, // raw angle16
-    "hgt":  { "t": [105001,105014,…], "h":  [0,0,40,…] },     // units above floor (BSP only)
+    "hgt":  { "t": [105001,105014,…], "h":  [0,0,40.96875,…] }, // float32 units above floor (BSP only)
     "lq":   { "t": [105001,105014,…], "lq": [0,0,5,…] },     // 0 dry, else (type<<2)|level
-    "vel":  { "t": [105001,105014,…], "vx": [312,318,…], "vy": [-44,…], "vz": [0,…] } } ] }  // units/sec
+    "vel":  { "t": [105001,105014,…], "vx": [312.5,318.27,…], "vy": [-44.6,…], "vz": [0,…] } } ] }  // float32 units/sec
 ```
 
 ⚠️ Entry `t` / `s` / `e` are **int32 ms** even though the envelope
@@ -448,7 +458,7 @@ position is the nearest sample. Shape: `view.StateAtView`.
 { "t": 105,                                   // SECONDS
   "players": { "sailorman": {
     "h": -7, "a": 0, "rl": true,              // h<0 ⇒ dead at t (died 104.199)
-    "pos": { "x": -1072, "y": -348, "z": 216 } } } }
+    "pos": { "x": -1072, "y": -348.5, "z": 216.125 } } } }  // float32 units
 ```
 
 ### 4.12 `GET /v1/demos/{id}/loc-trails`

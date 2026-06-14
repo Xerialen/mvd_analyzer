@@ -284,6 +284,13 @@ func absI32(x int32) int32 {
 	return x
 }
 
+func absF32(x float32) float32 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
 // resolveDeathName maps a death's wire slot to the canonical player
 // identity active at the death time, falling back to the live userinfo
 // name when no identity / demoinfo entry covers the slot. SlotIdentityAt

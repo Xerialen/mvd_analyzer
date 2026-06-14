@@ -14,15 +14,15 @@ func airgibTestResult() *result.Result {
 		Name: "vic", Team: "red",
 		Position: &result.PositionTrack{
 			T:  []int32{900, 1000, 1100, 1200},
-			X:  []int32{0, 0, 0, 0},
-			Y:  []int32{0, 0, 0, 0},
-			Z:  []int32{180, 200, 24, 0},
+			X:  []float32{0, 0, 0, 0},
+			Y:  []float32{0, 0, 0, 0},
+			Z:  []float32{180, 200, 24, 0},
 			Li: []int16{1, 1, 1, 0},
-			H:  []int32{120, 150, 0, result.NoFloor}, // airborne, airborne, grounded, void
+			H:  []float32{120, 150, 0, result.NoFloor}, // airborne, airborne, grounded, void
 		},
 	}
 	att := result.PlayerStream{Name: "att", Team: "blue", Position: &result.PositionTrack{
-		T: []int32{1000}, X: []int32{0}, Y: []int32{0}, Z: []int32{40}, H: []int32{0},
+		T: []int32{1000}, X: []float32{0}, Y: []float32{0}, Z: []float32{40}, H: []float32{0},
 	}}
 	return &result.Result{
 		Streams: &result.Streams{Players: []result.PlayerStream{vic, att}},
@@ -56,10 +56,10 @@ func TestAirgibsPost_DetectsAirborneRocketHit(t *testing.T) {
 		t.Errorf("players = %s→%s, want att→vic", a.Attacker, a.Victim)
 	}
 	if a.Height != 150 {
-		t.Errorf("height = %d, want 150 (sample at t=1000)", a.Height)
+		t.Errorf("height = %g, want 150 (sample at t=1000)", a.Height)
 	}
 	if a.HeightAboveAttacker != 160 {
-		t.Errorf("heightAboveAttacker = %d, want 160 (victim Z 200 - shooter Z 40)", a.HeightAboveAttacker)
+		t.Errorf("heightAboveAttacker = %g, want 160 (victim Z 200 - shooter Z 40)", a.HeightAboveAttacker)
 	}
 	if a.Loc != "MID" {
 		t.Errorf("loc = %q, want MID", a.Loc)
@@ -84,7 +84,7 @@ func TestAirgibsPost_SortedByHeightUncapped(t *testing.T) {
 		pos.X = append(pos.X, 0)
 		pos.Y = append(pos.Y, 0)
 		pos.Z = append(pos.Z, 0)
-		pos.H = append(pos.H, int32(100+i)) // ascending height, all airborne
+		pos.H = append(pos.H, float32(100+i)) // ascending height, all airborne
 		dmg = append(dmg, result.DamageEntry{Time: tMs, Attacker: "att", Victim: "vic", Weapon: "rl", Damage: 100})
 	}
 	res := &result.Result{
@@ -100,16 +100,16 @@ func TestAirgibsPost_SortedByHeightUncapped(t *testing.T) {
 	}
 	for i := 1; i < len(got); i++ {
 		if got[i-1].Height < got[i].Height {
-			t.Fatalf("not sorted by height desc at %d: %d < %d", i, got[i-1].Height, got[i].Height)
+			t.Fatalf("not sorted by height desc at %d: %g < %g", i, got[i-1].Height, got[i].Height)
 		}
 	}
-	if got[0].Height != int32(100+n-1) {
-		t.Errorf("top height = %d, want %d", got[0].Height, 100+n-1)
+	if got[0].Height != float32(100+n-1) {
+		t.Errorf("top height = %g, want %d", got[0].Height, 100+n-1)
 	}
 	// The attacker has no stream in this fixture: the shooter gap stays
 	// at the neutral 0 rather than inventing a value.
 	if got[0].HeightAboveAttacker != 0 {
-		t.Errorf("heightAboveAttacker = %d, want 0 without an attacker track", got[0].HeightAboveAttacker)
+		t.Errorf("heightAboveAttacker = %g, want 0 without an attacker track", got[0].HeightAboveAttacker)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestAirgibsPost_NoHeightColumnNoAirgibs(t *testing.T) {
 	res := &result.Result{
 		Streams: &result.Streams{Players: []result.PlayerStream{{
 			Name:     "vic",
-			Position: &result.PositionTrack{T: []int32{1000}, X: []int32{0}, Y: []int32{0}, Z: []int32{0}},
+			Position: &result.PositionTrack{T: []int32{1000}, X: []float32{0}, Y: []float32{0}, Z: []float32{0}},
 		}}},
 		Damage: &result.DamageResult{Events: []result.DamageEntry{
 			{Time: 1000, Attacker: "att", Victim: "vic", Weapon: "rl", Damage: 110},

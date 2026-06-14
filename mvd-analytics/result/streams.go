@@ -181,25 +181,31 @@ type GlobalStream struct {
 // the native-rate samples. The estimator does not differentiate across a
 // respawn teleport or an abnormal time gap (death / pause / reconnect),
 // so a velocity reads ~0 over those rather than spiking; an isolated
-// sample reads 0. Because the source x/y/z are integer-rounded Quake
-// units sampled ~every 13 ms, expect ±1-unit quantization noise (a few
-// tens of ups) on the raw derivative — smooth client-side if a clean
-// speed curve is wanted. Speed is hypot(vx,vy,vz); horizontal speed
+// sample reads 0. The source x/y/z are float32 Quake units (the wire's
+// sub-unit origin, no longer rounded to whole units), sampled ~every
+// 13 ms, so the derivative is sub-unit precise — smooth client-side
+// only if a softer speed curve is wanted. Like x/y/z and h these are
+// native float32; only the JSON text is rounded to 3 decimals (see
+// PositionTrack.MarshalJSON / coord.go). Speed is hypot(vx,vy,vz); horizontal speed
 // (the usual "are they bunnying" metric) is hypot(vx,vy). Populated
 // whenever T is (no BSP needed); same length as T when present.
+// X/Y/Z, H and VX/VY/VZ are plain float32 (native resolution); the JSON
+// text is rounded to 3 decimals by PositionTrack.MarshalJSON (see
+// coord.go) — lossless for eighth-unit positions, trimming only the
+// float tail on derived velocity / height.
 type PositionTrack struct {
-	T   []int32 `json:"t"` // milliseconds since the stream's time origin
-	X   []int32 `json:"x"`
-	Y   []int32 `json:"y"`
-	Z   []int32 `json:"z"`
-	Li  []int16 `json:"li,omitempty"`
-	H   []int32 `json:"h,omitempty"`   // height above the floor beneath the player; NoFloor = none
-	Lq  []int8  `json:"lq,omitempty"`  // liquid state: 0 dry, else (type<<2)|level
-	VP  []int16 `json:"vp,omitempty"`  // view pitch, raw angle16 (decode: u16*360/65536; >180 = up)
-	VYa []int16 `json:"vya,omitempty"` // view yaw, raw angle16 (decode: u16*360/65536)
-	VX  []int32 `json:"vx,omitempty"`  // velocity X, Quake units/sec (central difference)
-	VY  []int32 `json:"vy,omitempty"`  // velocity Y, units/sec
-	VZ  []int32 `json:"vz,omitempty"`  // velocity Z, units/sec
+	T   []int32   `json:"t"` // milliseconds since the stream's time origin
+	X   []float32 `json:"x"`
+	Y   []float32 `json:"y"`
+	Z   []float32 `json:"z"`
+	Li  []int16   `json:"li,omitempty"`
+	H   []float32 `json:"h,omitempty"`   // height above the floor beneath the player; NoFloor = none
+	Lq  []int8    `json:"lq,omitempty"`  // liquid state: 0 dry, else (type<<2)|level
+	VP  []int16   `json:"vp,omitempty"`  // view pitch, raw angle16 (decode: u16*360/65536; >180 = up)
+	VYa []int16   `json:"vya,omitempty"` // view yaw, raw angle16 (decode: u16*360/65536)
+	VX  []float32 `json:"vx,omitempty"`  // velocity X, Quake units/sec (central difference)
+	VY  []float32 `json:"vy,omitempty"`  // velocity Y, units/sec
+	VZ  []float32 `json:"vz,omitempty"`  // velocity Z, units/sec
 }
 
 // Lq liquid-type codes (the high bits of a PositionTrack.Lq value).
@@ -219,9 +225,12 @@ func LqType(v int8) int { return int(v >> 2) }
 
 // NoFloor is the sentinel in PositionTrack.H for a sample with no floor
 // beneath it (over a void/pit, or an embedded/zero origin) — the height
-// is undefined there. Chosen as math.MinInt32 so it can never be
-// mistaken for a real height.
-const NoFloor int32 = -2147483648
+// is undefined there. Chosen as -1e9: far outside any real height (Quake
+// maps span at most ±32768 per axis) so it can never be mistaken for one,
+// and exactly representable in both float32 and float64 so it round-trips
+// through JSON unchanged (unlike math.MinInt32, which a float32 serializes
+// as -2147483600).
+const NoFloor float32 = -1e9
 
 // ChangeI16 is a single transition in an int16 stream. T is integer
 // milliseconds since the stream's time origin (schema v8).

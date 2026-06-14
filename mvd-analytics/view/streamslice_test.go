@@ -62,9 +62,9 @@ func TestStreamSlicePosition(t *testing.T) {
 		Position: &result.PositionTrack{
 			// Schema v8: T is int32 ms. Samples at 0, 1s, 2s, 3s, 4s.
 			T: []int32{0, 1000, 2000, 3000, 4000},
-			X: []int32{0, 100, 200, 300, 400},
-			Y: []int32{0, 0, 0, 0, 0},
-			Z: []int32{0, 0, 0, 0, 0},
+			X: []float32{0, 100, 200, 300, 400},
+			Y: []float32{0, 0, 0, 0, 0},
+			Z: []float32{0, 0, 0, 0, 0},
 		},
 	})
 	v, err := StreamSlice(r, StreamSliceOptions{
@@ -100,17 +100,17 @@ func TestStreamSliceColumnProjection(t *testing.T) {
 		Name: "p1",
 		Position: &result.PositionTrack{
 			T:   []int32{0, 1000, 2000, 3000, 4000},
-			X:   []int32{0, 100, 200, 300, 400},
-			Y:   []int32{0, 0, 0, 0, 0},
-			Z:   []int32{0, 0, 0, 0, 0},
+			X:   []float32{0, 100, 200, 300, 400},
+			Y:   []float32{0, 0, 0, 0, 0},
+			Z:   []float32{0, 0, 0, 0, 0},
 			Li:  []int16{1, 2, 3, 4, 5},
-			H:   []int32{0, 10, result.NoFloor, 30, 40},
+			H:   []float32{0, 10, result.NoFloor, 30, 40},
 			Lq:  []int8{0, 0, 5, 6, 7},
 			VP:  []int16{0, 100, 200, 300, 400},
 			VYa: []int16{0, -100, -200, -300, -400},
-			VX:  []int32{0, 11, 22, 33, 44},
-			VY:  []int32{0, -11, -22, -33, -44},
-			VZ:  []int32{0, 1, 2, 3, 4},
+			VX:  []float32{0, 11, 22, 33, 44},
+			VY:  []float32{0, -11, -22, -33, -44},
+			VZ:  []float32{0, 1, 2, 3, 4},
 		},
 	})
 	v, err := StreamSlice(r, StreamSliceOptions{
@@ -168,9 +168,9 @@ func TestStreamSliceColumnProjection(t *testing.T) {
 		Name: "p1",
 		Position: &result.PositionTrack{
 			T: []int32{0, 1000},
-			X: []int32{0, 100},
-			Y: []int32{0, 0},
-			Z: []int32{0, 0},
+			X: []float32{0, 100},
+			Y: []float32{0, 0},
+			Z: []float32{0, 0},
 		},
 	})
 	v2, err := StreamSlice(r2, StreamSliceOptions{

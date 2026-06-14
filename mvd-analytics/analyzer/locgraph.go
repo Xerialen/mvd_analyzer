@@ -177,8 +177,8 @@ func BuildLocGraph(result *Result) *LocGraphResult {
 				continue
 			}
 
-			x := float32(pt.X[i])
-			y := float32(pt.Y[i])
+			x := pt.X[i]
+			y := pt.Y[i]
 
 			// Node-time: residence in this loc grows by the gap to the
 			// next sample (clamped by locgraphSampleDt to avoid death

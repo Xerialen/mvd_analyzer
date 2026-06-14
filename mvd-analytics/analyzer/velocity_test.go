@@ -21,10 +21,10 @@ func TestResolveVelocities_ConstantMotion(t *testing.T) {
 	}
 	for i := range b.posVX {
 		if b.posVX[i] != 100 {
-			t.Errorf("vx[%d] = %d, want 100 units/sec", i, b.posVX[i])
+			t.Errorf("vx[%d] = %g, want 100 units/sec", i, b.posVX[i])
 		}
 		if b.posVY[i] != 0 || b.posVZ[i] != 0 {
-			t.Errorf("vy/vz[%d] = %d/%d, want 0", i, b.posVY[i], b.posVZ[i])
+			t.Errorf("vy/vz[%d] = %g/%g, want 0", i, b.posVY[i], b.posVZ[i])
 		}
 	}
 }
@@ -47,7 +47,7 @@ func TestResolveVelocities_NoSpikeAcrossRespawn(t *testing.T) {
 	b := &st.streams
 	for i, got := range b.posVX {
 		if got != 100 {
-			t.Errorf("vx[%d] = %d, want 100 (no teleport spike)", i, got)
+			t.Errorf("vx[%d] = %g, want 100 (no teleport spike)", i, got)
 		}
 	}
 }
@@ -68,7 +68,7 @@ func TestResolveVelocities_BreaksOnLargeGap(t *testing.T) {
 	b := &st.streams
 	// Sample 2 has no usable neighbour (prev edge spans the gap) → 0.
 	if b.posVX[2] != 0 {
-		t.Errorf("post-gap isolated sample vx = %d, want 0", b.posVX[2])
+		t.Errorf("post-gap isolated sample vx = %g, want 0", b.posVX[2])
 	}
 	// Samples 0,1 are connected (13 ms apart): 5 units / 13 ms ≈ 385 ups.
 	if b.posVX[0] == 0 || b.posVX[1] == 0 {
@@ -92,7 +92,7 @@ func TestResolveVelocities_NoSpikeAcrossTeleport(t *testing.T) {
 
 	for i, got := range st.streams.posVX {
 		if got > velTeleportSpeedUps || got < -velTeleportSpeedUps {
-			t.Errorf("vx[%d] = %d implies a teleport spike past the cap", i, got)
+			t.Errorf("vx[%d] = %g implies a teleport spike past the cap", i, got)
 		}
 	}
 }

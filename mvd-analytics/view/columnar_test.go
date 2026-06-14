@@ -37,10 +37,10 @@ func columnarToRow(r *result.Result, opts BucketsOptions, cb *ColumnarBuckets) *
 			}
 			pdata := make(map[string]any)
 			if xv := cp.valAt("x", i); xv != nil {
-				pdata[FieldPosition] = [3]int32{
-					cp.valAt("x", i).(int32),
-					cp.valAt("y", i).(int32),
-					cp.valAt("z", i).(int32),
+				pdata[FieldPosition] = [3]result.Coord{
+					result.Coord(cp.valAt("x", i).(float32)),
+					result.Coord(cp.valAt("y", i).(float32)),
+					result.Coord(cp.valAt("z", i).(float32)),
 				}
 			}
 			for field := range cp.Cols {
@@ -104,8 +104,8 @@ func gapFixture() *result.Result {
 	pos := &result.PositionTrack{}
 	for ms := int32(0); ms <= 9000; ms += 1000 {
 		pos.T = append(pos.T, ms)
-		pos.X = append(pos.X, ms)
-		pos.Y = append(pos.Y, -ms)
+		pos.X = append(pos.X, float32(ms))
+		pos.Y = append(pos.Y, float32(-ms))
 		pos.Z = append(pos.Z, 64)
 		pos.Li = append(pos.Li, int16(ms/1000))
 	}

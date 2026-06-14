@@ -28,9 +28,9 @@ func sampleStream() result.PlayerStream {
 		Quad:      []result.Interval{{Start: 450, End: 480}},
 		Position: &result.PositionTrack{
 			T:  []int32{0, 120, 260, 410, 980, 1300},
-			X:  []int32{10, 11, 12, 13, 14, 15},
-			Y:  []int32{20, 21, 22, 23, 24, 25},
-			Z:  []int32{30, 31, 32, 33, 34, 35},
+			X:  []float32{10, 11, 12, 13, 14, 15},
+			Y:  []float32{20, 21, 22, 23, 24, 25},
+			Z:  []float32{30, 31, 32, 33, 34, 35},
 			Li: []int16{1, 1, 2, 2, 2, 3},
 		},
 		Spawns: []int32{0, 1005},

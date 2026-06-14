@@ -13,10 +13,10 @@ import (
 // teammate was 1500+ away). The teamkiller's −1 frag penalty lands on the
 // same frame.
 const (
-	telefragPosHorizTol int32 = 40  // QU — 32-wide hull + sampling slop
-	telefragPosVertTol  int32 = 64  // QU — allow a hull height (stomp from above)
-	telefragPosTimeWin  int32 = 200 // ms — nearest position sample to the kill
-	telefragDeltaWin    int32 = 256 // ms — the −1 frag-penalty window
+	telefragPosHorizTol float32 = 40  // QU — 32-wide hull + sampling slop
+	telefragPosVertTol  float32 = 64  // QU — allow a hull height (stomp from above)
+	telefragPosTimeWin  int32   = 200 // ms — nearest position sample to the kill
+	telefragDeltaWin    int32   = 256 // ms — the −1 frag-penalty window
 )
 
 // recoverTelefragTeamkills attributes victim-named teammate teamkills
@@ -88,9 +88,9 @@ func recoverTelefragTeamkills(res *Result, co *CoreOutputs) {
 						continue
 					}
 					if mx, my, mz, ok := positionAt(mt, tk.Time); ok &&
-						absI32(mx-vx) <= telefragPosHorizTol &&
-						absI32(my-vy) <= telefragPosHorizTol &&
-						absI32(mz-vz) <= telefragPosVertTol {
+						absF32(mx-vx) <= telefragPosHorizTol &&
+						absF32(my-vy) <= telefragPosHorizTol &&
+						absF32(mz-vz) <= telefragPosVertTol {
 						posSet[m] = true
 					}
 				}
@@ -168,7 +168,7 @@ func onlyKey(m map[string]bool) string {
 
 // positionAt returns the (x,y,z) sample nearest tMs within
 // telefragPosTimeWin, or ok=false when no sample is that close.
-func positionAt(pt *result.PositionTrack, tMs int32) (x, y, z int32, ok bool) {
+func positionAt(pt *result.PositionTrack, tMs int32) (x, y, z float32, ok bool) {
 	n := len(pt.T)
 	if n == 0 {
 		return 0, 0, 0, false

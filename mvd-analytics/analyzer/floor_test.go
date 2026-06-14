@@ -47,14 +47,17 @@ func TestResolveFloorHeights_PopulatesColumn(t *testing.T) {
 	if len(b.posH) != 3 {
 		t.Fatalf("posH len = %d, want 3", len(b.posH))
 	}
-	if b.posH[0] != 0 {
-		t.Errorf("grounded sample height = %d, want 0", b.posH[0])
+	if absF32(b.posH[0]) > 0.1 {
+		t.Errorf("grounded sample height = %g, want ~0", b.posH[0])
 	}
-	if b.posH[1] != 100 {
-		t.Errorf("airborne sample height = %d, want 100", b.posH[1])
+	// ~100, not exactly: the clip-hull trace subtracts a 1/32-unit
+	// DIST_EPSILON, so a 100-unit drop reads 99.96875 (int rounding used
+	// to hide this; float32 surfaces it).
+	if absF32(b.posH[1]-100) > 0.1 {
+		t.Errorf("airborne sample height = %g, want ~100", b.posH[1])
 	}
 	if b.posH[2] != result.NoFloor {
-		t.Errorf("zero-origin sample height = %d, want NoFloor sentinel", b.posH[2])
+		t.Errorf("zero-origin sample height = %g, want NoFloor sentinel", b.posH[2])
 	}
 }
 
@@ -143,16 +146,16 @@ func TestResolveFloorHeights_StandsOnMover(t *testing.T) {
 		t.Fatalf("posH len = %d, want 4", len(h))
 	}
 	if h[0] < 0 || h[0] > 2 {
-		t.Errorf("rider at rest: H = %d, want ~1", h[0])
+		t.Errorf("rider at rest: H = %g, want ~1", h[0])
 	}
 	if h[1] < 0 || h[1] > 2 {
-		t.Errorf("rider risen: H = %d, want ~1", h[1])
+		t.Errorf("rider risen: H = %g, want ~1", h[1])
 	}
-	if want := int32(125 - 24 + 400); h[2] != want {
-		t.Errorf("outside lift: H = %d, want %d (shaft floor)", h[2], want)
+	if want := float32(125 - 24 + 400); absF32(h[2]-want) > 0.1 {
+		t.Errorf("outside lift: H = %g, want ~%g (shaft floor)", h[2], want)
 	}
-	if want := int32(125 - 24 + 400); h[3] != want {
-		t.Errorf("lift invisible: H = %d, want %d (shaft floor)", h[3], want)
+	if want := float32(125 - 24 + 400); absF32(h[3]-want) > 0.1 {
+		t.Errorf("lift invisible: H = %g, want ~%g (shaft floor)", h[3], want)
 	}
 }
 
@@ -206,17 +209,17 @@ func TestResolveFloorHeights_Liquids(t *testing.T) {
 	}
 	// Airborne: the water surface (0) beats the pool bottom (-200) as
 	// support → H = 100 - 24 - 0 = 76, and the sample is dry.
-	if lq[0] != 0 || h[0] != 76 {
-		t.Errorf("airborne sample: lq=%d h=%d, want lq=0 h=76", lq[0], h[0])
+	if lq[0] != 0 || absF32(h[0]-76) > 0.1 {
+		t.Errorf("airborne sample: lq=%d h=%g, want lq=0 h=~76", lq[0], h[0])
 	}
 	// Wading: feet-deep water (level 1) → (LqWater<<2)|1 = 5, H = 0.
 	if lq[1] != 5 || h[1] != 0 {
-		t.Errorf("wading sample: lq=%d h=%d, want lq=5 h=0", lq[1], h[1])
+		t.Errorf("wading sample: lq=%d h=%g, want lq=5 h=0", lq[1], h[1])
 	}
 	// Submerged: eyes-deep (level 3) → (LqWater<<2)|3 = 7, H = 0 — not
 	// the height above the pool bottom.
 	if lq[2] != 7 || h[2] != 0 {
-		t.Errorf("submerged sample: lq=%d h=%d, want lq=7 h=0", lq[2], h[2])
+		t.Errorf("submerged sample: lq=%d h=%g, want lq=7 h=0", lq[2], h[2])
 	}
 
 	// With only the render BSP (no clip hull), Lq still populates and

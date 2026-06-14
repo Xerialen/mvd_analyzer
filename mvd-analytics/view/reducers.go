@@ -23,7 +23,11 @@
 // I/O.
 package view
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/mvd-analyzer/mvd-analytics/result"
+)
 
 // Sample is a single (time, value) point fed into a Reducer. Time is
 // not used by every reducer (last/mean/min/max only need values), but
@@ -266,6 +270,8 @@ func numericToFloat(v any) (float64, bool) {
 	case int64:
 		return float64(n), true
 	case float32:
+		return float64(n), true
+	case result.Coord:
 		return float64(n), true
 	case float64:
 		return n, true

@@ -98,13 +98,14 @@ func (b *streamBuilder) recordCells(tMs int32, v int16) {
 // recordPosition appends every native sample (no dedup; D11
 // asymmetry). Time is integer milliseconds — the canonical wire-native
 // unit; we never narrow it back to float to avoid drift across the
-// boundary comparisons in locgraph / blip filter. vp/vya are the raw
-// angle16 view pitch/yaw shorts off the wire, stored losslessly.
+// boundary comparisons in locgraph / blip filter. x/y/z are kept as the
+// wire-native float32 origin (no truncation to whole units). vp/vya are
+// the raw angle16 view pitch/yaw shorts off the wire, stored losslessly.
 func (b *streamBuilder) recordPosition(tMs int32, x, y, z float32, vp, vya int16) {
 	b.posT = append(b.posT, tMs)
-	b.posX = append(b.posX, int32(x))
-	b.posY = append(b.posY, int32(y))
-	b.posZ = append(b.posZ, int32(z))
+	b.posX = append(b.posX, x)
+	b.posY = append(b.posY, y)
+	b.posZ = append(b.posZ, z)
 	b.posVP = append(b.posVP, vp)
 	b.posVYa = append(b.posVYa, vya)
 }
@@ -238,15 +239,15 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 	if len(b.posT) > 0 {
 		pos := &result.PositionTrack{
 			T: append([]int32(nil), b.posT...),
-			X: append([]int32(nil), b.posX...),
-			Y: append([]int32(nil), b.posY...),
-			Z: append([]int32(nil), b.posZ...),
+			X: append([]float32(nil), b.posX...),
+			Y: append([]float32(nil), b.posY...),
+			Z: append([]float32(nil), b.posZ...),
 		}
 		if len(b.posLi) == len(b.posT) {
 			pos.Li = append([]int16(nil), b.posLi...)
 		}
 		if len(b.posH) == len(b.posT) {
-			pos.H = append([]int32(nil), b.posH...)
+			pos.H = append([]float32(nil), b.posH...)
 		}
 		if len(b.posLq) == len(b.posT) {
 			pos.Lq = append([]int8(nil), b.posLq...)
@@ -258,13 +259,13 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 			pos.VYa = append([]int16(nil), b.posVYa...)
 		}
 		if len(b.posVX) == len(b.posT) {
-			pos.VX = append([]int32(nil), b.posVX...)
+			pos.VX = append([]float32(nil), b.posVX...)
 		}
 		if len(b.posVY) == len(b.posT) {
-			pos.VY = append([]int32(nil), b.posVY...)
+			pos.VY = append([]float32(nil), b.posVY...)
 		}
 		if len(b.posVZ) == len(b.posT) {
-			pos.VZ = append([]int32(nil), b.posVZ...)
+			pos.VZ = append([]float32(nil), b.posVZ...)
 		}
 		ps.Position = pos
 	}
@@ -710,7 +711,7 @@ func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() (locTable []string, locIn
 			b.posLi = b.posLi[:len(b.posT)]
 		}
 		for i := range b.posT {
-			x, y, z := float32(b.posX[i]), float32(b.posY[i]), float32(b.posZ[i])
+			x, y, z := b.posX[i], b.posY[i], b.posZ[i]
 			if x == 0 && y == 0 && z == 0 {
 				b.posLi[i] = 0
 				continue
@@ -818,13 +819,13 @@ func (a *TimelineAnalyzer) resolveFloorHeights() {
 			cursors[i] = -1 // each slot rescans the tracks from the start
 		}
 		if a.clipHull != nil {
-			b.posH = make([]int32, len(b.posT))
+			b.posH = make([]float32, len(b.posT))
 		}
 		if a.visBSP != nil {
 			b.posLq = make([]int8, len(b.posT))
 		}
 		for i := range b.posT {
-			x, y, z := float32(b.posX[i]), float32(b.posY[i]), float32(b.posZ[i])
+			x, y, z := b.posX[i], b.posY[i], b.posZ[i]
 			if x == 0 && y == 0 && z == 0 {
 				if b.posH != nil {
 					b.posH[i] = result.NoFloor
@@ -874,7 +875,7 @@ func (a *TimelineAnalyzer) resolveFloorHeights() {
 				}
 			}
 			if solidOk {
-				b.posH[i] = int32(math.Round(float64(h)))
+				b.posH[i] = h
 			} else {
 				b.posH[i] = result.NoFloor
 			}
@@ -950,9 +951,9 @@ func (a *TimelineAnalyzer) resolveVelocities() {
 		if n == 0 {
 			continue
 		}
-		b.posVX = make([]int32, n)
-		b.posVY = make([]int32, n)
-		b.posVZ = make([]int32, n)
+		b.posVX = make([]float32, n)
+		b.posVY = make([]float32, n)
+		b.posVZ = make([]float32, n)
 		for i := 0; i < n; i++ {
 			usePrev := i > 0 && velConnected(b, i-1, i)
 			useNext := i < n-1 && velConnected(b, i, i+1)
@@ -972,9 +973,9 @@ func (a *TimelineAnalyzer) resolveVelocities() {
 				continue
 			}
 			s := 1000.0 / dt // ms delta → per-second
-			b.posVX[i] = int32(math.Round(float64(b.posX[hi]-b.posX[lo]) * s))
-			b.posVY[i] = int32(math.Round(float64(b.posY[hi]-b.posY[lo]) * s))
-			b.posVZ[i] = int32(math.Round(float64(b.posZ[hi]-b.posZ[lo]) * s))
+			b.posVX[i] = float32((float64(b.posX[hi]) - float64(b.posX[lo])) * s)
+			b.posVY[i] = float32((float64(b.posY[hi]) - float64(b.posY[lo])) * s)
+			b.posVZ[i] = float32((float64(b.posZ[hi]) - float64(b.posZ[lo])) * s)
 		}
 	}
 }
@@ -993,9 +994,9 @@ func velConnected(b *streamBuilder, i, j int) bool {
 	// Reject a non-physical displacement (a map teleporter or other origin
 	// discontinuity the spawn/gap checks miss): compare squared distance
 	// against the furthest a player could travel at velTeleportSpeedUps.
-	dx := float64(b.posX[j] - b.posX[i])
-	dy := float64(b.posY[j] - b.posY[i])
-	dz := float64(b.posZ[j] - b.posZ[i])
+	dx := float64(b.posX[j]) - float64(b.posX[i])
+	dy := float64(b.posY[j]) - float64(b.posY[i])
+	dz := float64(b.posZ[j]) - float64(b.posZ[i])
 	maxStep := velTeleportSpeedUps * float64(dt) / 1000.0
 	return dx*dx+dy*dy+dz*dz <= maxStep*maxStep
 }

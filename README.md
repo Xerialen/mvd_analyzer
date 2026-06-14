@@ -762,7 +762,11 @@ diff -r /tmp/before /tmp/after
    floor height, and liquid state. Since **schema v32** there is also a
    derived per-sample **velocity** (`pos.vx`/`vy`/`vz`, Quake units/sec,
    opt-in `vel`), computed by a central-difference estimator that does
-   not differentiate across respawns, teleporters, or time gaps.
+   not differentiate across respawns, teleporters, or time gaps. Since
+   **schema v33** positions (x/y/z), velocity (vx/vy/vz), and floor
+   height (h) are **`float32`** — the wire-native sub-unit origin, no
+   longer truncated to whole units (which also sharpens the velocity);
+   the `h` no-floor sentinel is now `-1000000000`.
 
 ## Reference sources
 

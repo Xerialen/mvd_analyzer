@@ -411,14 +411,14 @@ func TestStreamSlice_ViewVelocityFields(t *testing.T) {
 	res := stubResult()
 	res.Streams.Players[0].Position = &result.PositionTrack{
 		T:   []int32{0, 100, 200, 300},
-		X:   []int32{0, 10, 20, 30},
-		Y:   []int32{0, 0, 0, 0},
-		Z:   []int32{0, 0, 0, 0},
+		X:   []float32{0, 10, 20, 30},
+		Y:   []float32{0, 0, 0, 0},
+		Z:   []float32{0, 0, 0, 0},
 		VP:  []int16{0, 100, 200, 300},
 		VYa: []int16{0, -100, -200, -300},
-		VX:  []int32{100, 100, 100, 100},
-		VY:  []int32{0, 0, 0, 0},
-		VZ:  []int32{0, 0, 0, 0},
+		VX:  []float32{100, 100, 100, 100},
+		VY:  []float32{0, 0, 0, 0},
+		VZ:  []float32{0, 0, 0, 0},
 	}
 	store := &fakeStore{byID: map[string]*result.Result{"gameId:42": res}}
 	srv := newTestServer(t, store)

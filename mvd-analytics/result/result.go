@@ -361,7 +361,20 @@ package result
 //     (vx/vy/vz) and CLI `-include velocity`. Expect ±1-unit
 //     quantization noise on the raw derivative (integer-rounded source
 //     positions); smooth client-side for a clean speed curve.
-const CurrentSchemaVersion = 32
+//
+// v33:
+//   - PositionTrack X/Y/Z, VX/VY/VZ and H change from int32 to float32,
+//     so we stop truncating the wire-native sub-unit origin (mvd-reader
+//     decodes coordinates as float32; the wire carries eighth-unit fixed
+//     point or true floats). Velocity, derived by central difference, is
+//     now sub-unit precise too — the old ±1-unit quantization noise from
+//     integer-rounded source positions is gone. The PositionTrack.H
+//     NoFloor sentinel changes from -2147483648 (math.MinInt32, which
+//     float32 cannot represent exactly and serializes as -2147483600) to
+//     -1000000000 (-1e9, exact in float32 and float64). Time axes stay
+//     int32 ms; view angles stay int16 (raw angle16); loc/liquid columns
+//     unchanged.
+const CurrentSchemaVersion = 33
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

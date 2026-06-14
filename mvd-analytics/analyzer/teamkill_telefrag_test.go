@@ -44,15 +44,15 @@ func TestCombineTeamkillSignals(t *testing.T) {
 func TestPositionAt(t *testing.T) {
 	pt := &result.PositionTrack{
 		T: []int32{1000, 1050, 1100, 5000},
-		X: []int32{10, 20, 30, 99},
-		Y: []int32{11, 21, 31, 99},
-		Z: []int32{12, 22, 32, 99},
+		X: []float32{10, 20, 30, 99},
+		Y: []float32{11, 21, 31, 99},
+		Z: []float32{12, 22, 32, 99},
 	}
 	tests := []struct {
 		name       string
 		q          int32
 		wantOK     bool
-		wantX      int32
+		wantX      float32
 	}{
 		{"exact sample", 1050, true, 20},
 		{"nearest below within window", 1060, true, 20},
@@ -67,7 +67,7 @@ func TestPositionAt(t *testing.T) {
 				t.Fatalf("positionAt(%d) ok=%v, want %v", tc.q, ok, tc.wantOK)
 			}
 			if ok && x != tc.wantX {
-				t.Fatalf("positionAt(%d) x=%d, want %d", tc.q, x, tc.wantX)
+				t.Fatalf("positionAt(%d) x=%g, want %g", tc.q, x, tc.wantX)
 			}
 		})
 	}

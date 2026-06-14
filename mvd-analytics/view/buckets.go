@@ -600,9 +600,10 @@ func positionSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
 	return out
 }
 
-// positionTriple returns a [3]int32 array for sample i.
-func positionTriple(pt *result.PositionTrack, i int) [3]int32 {
-	return [3]int32{pt.X[i], pt.Y[i], pt.Z[i]}
+// positionTriple returns a [3]result.Coord array for sample i (rounded
+// at JSON time; native float32 in memory).
+func positionTriple(pt *result.PositionTrack, i int) [3]result.Coord {
+	return [3]result.Coord{result.Coord(pt.X[i]), result.Coord(pt.Y[i]), result.Coord(pt.Z[i])}
 }
 
 // viewPair returns the [vp, vya] raw angle16 pair for sample i. int16 to
@@ -631,7 +632,7 @@ func firstHeight(pt *result.PositionTrack, bStart, bEnd float64) any {
 		return nil
 	}
 	if i := firstPosIndex(pt, bStart, bEnd); i >= 0 {
-		return pt.H[i]
+		return result.Coord(pt.H[i])
 	}
 	return nil
 }
@@ -696,7 +697,7 @@ func heightSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
 	if pt == nil || len(pt.H) != len(pt.T) {
 		return nil
 	}
-	return columnSamples(pt, bStart, bEnd, func(i int) any { return pt.H[i] })
+	return columnSamples(pt, bStart, bEnd, func(i int) any { return result.Coord(pt.H[i]) })
 }
 
 func liquidSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
@@ -715,9 +716,10 @@ func velocitySamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
 	return columnSamples(pt, bStart, bEnd, func(i int) any { return velocityTriple(pt, i) })
 }
 
-// velocityTriple returns the [vx, vy, vz] units/sec vector for sample i.
-func velocityTriple(pt *result.PositionTrack, i int) [3]int32 {
-	return [3]int32{pt.VX[i], pt.VY[i], pt.VZ[i]}
+// velocityTriple returns the [vx, vy, vz] units/sec vector for sample i
+// (rounded at JSON time; native float32 in memory).
+func velocityTriple(pt *result.PositionTrack, i int) [3]result.Coord {
+	return [3]result.Coord{result.Coord(pt.VX[i]), result.Coord(pt.VY[i]), result.Coord(pt.VZ[i])}
 }
 
 // columnSamples is positionSamples generalised over a per-index value

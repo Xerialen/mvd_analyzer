@@ -67,6 +67,8 @@ func colVal(cp *view.ColumnarPlayer, field string, i int) any {
 		return s[j]
 	case []int32:
 		return s[j]
+	case result.Coords:
+		return s[j]
 	case []float64:
 		return s[j]
 	case []string:
@@ -79,7 +81,7 @@ func colVal(cp *view.ColumnarPlayer, field string, i int) any {
 
 // reconstructPlayers rebuilds bucket i's row-major player map from the
 // columnar output: alive players only, non-nil fields only, x/y/z folded
-// back into a [3]int32 under FieldPosition.
+// back into a [3]result.Coord under FieldPosition.
 func reconstructPlayers(cb *view.ColumnarBuckets, i int) map[string]map[string]any {
 	out := make(map[string]map[string]any)
 	for name, cp := range cb.Players {
@@ -91,10 +93,10 @@ func reconstructPlayers(cb *view.ColumnarBuckets, i int) map[string]map[string]a
 		}
 		pdata := make(map[string]any)
 		if colVal(cp, "x", i) != nil {
-			pdata[view.FieldPosition] = [3]int32{
-				colVal(cp, "x", i).(int32),
-				colVal(cp, "y", i).(int32),
-				colVal(cp, "z", i).(int32),
+			pdata[view.FieldPosition] = [3]result.Coord{
+				result.Coord(colVal(cp, "x", i).(float32)),
+				result.Coord(colVal(cp, "y", i).(float32)),
+				result.Coord(colVal(cp, "z", i).(float32)),
 			}
 		}
 		if colVal(cp, "vp", i) != nil {
@@ -104,10 +106,10 @@ func reconstructPlayers(cb *view.ColumnarBuckets, i int) map[string]map[string]a
 			}
 		}
 		if colVal(cp, "vx", i) != nil {
-			pdata[view.FieldVelocity] = [3]int32{
-				colVal(cp, "vx", i).(int32),
-				colVal(cp, "vy", i).(int32),
-				colVal(cp, "vz", i).(int32),
+			pdata[view.FieldVelocity] = [3]result.Coord{
+				result.Coord(colVal(cp, "vx", i).(float32)),
+				result.Coord(colVal(cp, "vy", i).(float32)),
+				result.Coord(colVal(cp, "vz", i).(float32)),
 			}
 		}
 		for field := range cp.Cols {

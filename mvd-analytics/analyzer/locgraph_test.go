@@ -13,8 +13,8 @@ import (
 // streams shaped to produce those bucket frames.
 type bucketSpec struct {
 	t  float64
-	x  int32
-	y  int32
+	x  float32
+	y  float32
 	li int16
 	d  bool
 	sp bool

@@ -14,17 +14,17 @@ import (
 func TestShiftAndFilterPosition_TrimsAllColumns(t *testing.T) {
 	pt := &result.PositionTrack{
 		T:   []int32{100, 200, 300, 400},
-		X:   []int32{1, 2, 3, 4},
-		Y:   []int32{10, 20, 30, 40},
-		Z:   []int32{11, 22, 33, 44},
+		X:   []float32{1, 2, 3, 4},
+		Y:   []float32{10, 20, 30, 40},
+		Z:   []float32{11, 22, 33, 44},
 		Li:  []int16{5, 6, 7, 8},
-		H:   []int32{50, 60, result.NoFloor, 80},
+		H:   []float32{50, 60, result.NoFloor, 80},
 		Lq:  []int8{0, 5, 7, 0},
 		VP:  []int16{-100, -200, -300, -400},
 		VYa: []int16{1000, 2000, 3000, 4000},
-		VX:  []int32{1, 2, 3, 4},
-		VY:  []int32{5, 6, 7, 8},
-		VZ:  []int32{9, 10, 11, 12},
+		VX:  []float32{1, 2, 3, 4},
+		VY:  []float32{5, 6, 7, 8},
+		VZ:  []float32{9, 10, 11, 12},
 	}
 	shiftAndFilterPosition(pt, 300)
 
@@ -58,9 +58,9 @@ func TestShiftAndFilterPosition_TrimsAllColumns(t *testing.T) {
 func TestShiftAndFilterPosition_AbsentOptionalColumns(t *testing.T) {
 	pt := &result.PositionTrack{
 		T: []int32{100, 200},
-		X: []int32{1, 2},
-		Y: []int32{1, 2},
-		Z: []int32{1, 2},
+		X: []float32{1, 2},
+		Y: []float32{1, 2},
+		Z: []float32{1, 2},
 	}
 	shiftAndFilterPosition(pt, 200)
 	if len(pt.T) != 1 || pt.T[0] != 0 {

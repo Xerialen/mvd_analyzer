@@ -685,10 +685,12 @@ to differentiate across a discontinuity that isn't real movement: a
 respawn (a spawn timestamp between the samples), an abnormal time gap
 (`velGapCapMs`, death / pause / reconnect), or a teleporter-sized
 displacement (`velTeleportSpeedUps`, above the server's `sv_maxvelocity`
-clamp) — each reads ~0 instead of a tens-of-thousands-ups spike. The
-source positions are integer-rounded, so the raw derivative carries
-±1-unit quantization noise; smooth client-side for a clean speed curve.
-Exposed via the opt-in `vel` field code (and `-include velocity`).
+clamp) — each reads ~0 instead of a tens-of-thousands-ups spike. Since
+schema v33 the source positions are `float32` (the wire-native sub-unit
+origin, no longer rounded to whole units), so the raw derivative is
+sub-unit precise — the old ±1-unit quantization noise is gone; smooth
+client-side only for a softer curve. Exposed via the opt-in `vel` field
+code (and `-include velocity`).
 
 ## Running tests
 

@@ -46,7 +46,7 @@ type PlayerStateAt struct {
 	// like Pos. Hgt / Lq are present only when the map's BSP supplied
 	// those columns.
 	View *ViewAngles `json:"view,omitempty"`
-	Hgt  *int32      `json:"hgt,omitempty"`
+	Hgt  *float32    `json:"hgt,omitempty"`
 	Lq   *int8       `json:"lq,omitempty"`
 	Vel  *Velocity3D `json:"vel,omitempty"`
 
@@ -69,9 +69,9 @@ type PlayerStateAt struct {
 // Position3D is the JSON-friendly companion to PositionTrack for
 // point-in-time results. Snapped to the nearest sample.
 type Position3D struct {
-	X int32 `json:"x"`
-	Y int32 `json:"y"`
-	Z int32 `json:"z"`
+	X float32 `json:"x"`
+	Y float32 `json:"y"`
+	Z float32 `json:"z"`
 }
 
 // ViewAngles is the point-in-time view direction: raw angle16 pitch/yaw
@@ -84,9 +84,9 @@ type ViewAngles struct {
 // Velocity3D is the point-in-time velocity vector in Quake units/sec,
 // snapped to the nearest sample (see PositionTrack.VX for derivation).
 type Velocity3D struct {
-	VX int32 `json:"vx"`
-	VY int32 `json:"vy"`
-	VZ int32 `json:"vz"`
+	VX float32 `json:"vx"`
+	VY float32 `json:"vy"`
+	VZ float32 `json:"vz"`
 }
 
 // StateAt resolves each requested field at Time per player. For

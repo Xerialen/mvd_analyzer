@@ -107,7 +107,7 @@ func airgibsPost(res *Result, co *CoreOutputs) {
 		// samples to the hit; 0 when the shooter has no sample close
 		// enough (and on a genuine dead-level hit — omitempty folds
 		// both, the neutral value either way).
-		dz := int32(0)
+		dz := float32(0)
 		if as := streamByName[d.Attacker]; as != nil && as.Position != nil && len(as.Position.T) > 0 {
 			ai := nearestSampleIndex(as.Position.T, d.Time)
 			if ai >= 0 && absI32(as.Position.T[ai]-d.Time) <= airgibPosMaxGapMs {

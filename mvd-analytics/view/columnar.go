@@ -45,8 +45,9 @@ type ColumnarBuckets struct {
 // before the first pickup) records that absolute index in ValidFrom;
 // the leading slots hold a typed zero and must be treated as absent.
 // Cols values are typed slices: []int16 (h,a,li,sh,nl,rk,cl under
-// first/last), []int32 (x,y,z), []float64 (mean/min/max overrides),
-// []string (at), or []bool (weapons/powerups/spawn/death).
+// first/last), result.Coords (x,y,z,vx,vy,vz,hgt — float32 rounded at
+// JSON time), []float64 (mean/min/max overrides), []string (at), or
+// []bool (weapons/powerups/spawn/death).
 type ColumnarPlayer struct {
 	First     int
 	N         int
@@ -331,6 +332,19 @@ func buildColumn(p *result.PlayerStream, field, redName string, red Reducer, g b
 			}
 		}
 		col = s
+	case "f32":
+		s := make(result.Coords, n)
+		for j := 0; j < n; j++ {
+			v := reduceFieldValue(p, field, redName, red, g, cp.First+j)
+			if v == nil {
+				continue
+			}
+			mark(cp.First + j)
+			if f, ok := numericToFloat(v); ok {
+				s[j] = float32(f)
+			}
+		}
+		col = s
 	case "f64":
 		s := make([]float64, n)
 		for j := 0; j < n; j++ {
@@ -379,13 +393,13 @@ func buildColumn(p *result.PlayerStream, field, redName string, red Reducer, g b
 	return col, firstNonNil, true
 }
 
-// buildPositionCols splits the [3]int32 position reduction into the
-// dense x/y/z int32 columns. All three share one validFrom.
+// buildPositionCols splits the [3]result.Coord position reduction into
+// the dense x/y/z columns (result.Coords). All three share one validFrom.
 func buildPositionCols(p *result.PlayerStream, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer) {
 	n := cp.N
-	xs := make([]int32, n)
-	ys := make([]int32, n)
-	zs := make([]int32, n)
+	xs := make(result.Coords, n)
+	ys := make(result.Coords, n)
+	zs := make(result.Coords, n)
 	firstNonNil := -1
 	for j := 0; j < n; j++ {
 		v := reduceFieldValue(p, FieldPosition, redName, red, g, cp.First+j)
@@ -395,8 +409,8 @@ func buildPositionCols(p *result.PlayerStream, redName string, red Reducer, g bu
 		if firstNonNil < 0 {
 			firstNonNil = cp.First + j
 		}
-		if pos, ok := v.([3]int32); ok {
-			xs[j], ys[j], zs[j] = pos[0], pos[1], pos[2]
+		if pos, ok := v.([3]result.Coord); ok {
+			xs[j], ys[j], zs[j] = float32(pos[0]), float32(pos[1]), float32(pos[2])
 		}
 	}
 	if firstNonNil < 0 {
@@ -451,14 +465,14 @@ func buildViewCols(p *result.PlayerStream, redName string, red Reducer, g bucket
 	}
 }
 
-// buildVelocityCols splits the [3]int32 velocity reduction into the
-// dense vx/vy/vz int32 columns, mirroring buildPositionCols. All three
-// share one validFrom.
+// buildVelocityCols splits the [3]result.Coord velocity reduction into
+// the dense vx/vy/vz columns (result.Coords), mirroring buildPositionCols.
+// All three share one validFrom.
 func buildVelocityCols(p *result.PlayerStream, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer) {
 	n := cp.N
-	vxs := make([]int32, n)
-	vys := make([]int32, n)
-	vzs := make([]int32, n)
+	vxs := make(result.Coords, n)
+	vys := make(result.Coords, n)
+	vzs := make(result.Coords, n)
 	firstNonNil := -1
 	for j := 0; j < n; j++ {
 		v := reduceFieldValue(p, FieldVelocity, redName, red, g, cp.First+j)
@@ -468,8 +482,8 @@ func buildVelocityCols(p *result.PlayerStream, redName string, red Reducer, g bu
 		if firstNonNil < 0 {
 			firstNonNil = cp.First + j
 		}
-		if vel, ok := v.([3]int32); ok {
-			vxs[j], vys[j], vzs[j] = vel[0], vel[1], vel[2]
+		if vel, ok := v.([3]result.Coord); ok {
+			vxs[j], vys[j], vzs[j] = float32(vel[0]), float32(vel[1]), float32(vel[2])
 		}
 	}
 	if firstNonNil < 0 {
@@ -525,7 +539,7 @@ func columnElemType(field, redName string) string {
 	case KindView:
 		return "view" // handled by buildViewCols
 	case KindHeight:
-		return "i32" // single floor-height column (first/last)
+		return "f32" // single floor-height column (first/last)
 	case KindLiquid:
 		return "i16" // single liquid-state column (first/last); lq fits int8
 	case KindVelocity:
@@ -551,6 +565,8 @@ func (cp *ColumnarPlayer) valAt(field string, i int) any {
 	case []int16:
 		return s[j]
 	case []int32:
+		return s[j]
+	case result.Coords:
 		return s[j]
 	case []float64:
 		return s[j]
