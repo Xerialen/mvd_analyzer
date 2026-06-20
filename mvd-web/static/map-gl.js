@@ -120,12 +120,14 @@ const MapGL = {
     if (!this._inited) { this._pendingMap = mapName; }
     try {
       const resp = await fetch(`maps3d/${mapName}.bin`);
-      if (!resp.ok) { this._decoded = null; return; }
+      if (this._mapName !== mapName) return; // a newer loadMap superseded us
+      if (!resp.ok) { this._decoded = null; this._disposeMapGroup(); return; }
       const buf = await resp.arrayBuffer();
+      if (this._mapName !== mapName) return; // superseded during the read
       this._decoded = decodeM3D1(buf);
       if (this._inited) this._buildMapMesh();
     } catch (e) {
-      this._decoded = null;
+      if (this._mapName === mapName) { this._decoded = null; this._disposeMapGroup(); }
     }
   },
 
@@ -169,8 +171,16 @@ const MapGL = {
   },
 
   _buildFloors() {
-    if (!this._floorData || !this.scene) return;
-    if (this._floorGroup) { this.scene.remove(this._floorGroup); disposeTree(this._floorGroup); }
+    if (!this.scene) return;
+    // Dispose any previous floors first — covers demo switch and setFloors(null)
+    // (clear-on-reset), so stale loc floors/labels never linger.
+    if (this._floorGroup) {
+      this.scene.remove(this._floorGroup);
+      disposeTree(this._floorGroup);
+      this._floorGroup = null;
+      this._locMeshes = null;
+    }
+    if (!this._floorData) return; // cleared
     this._floorGroup = new THREE.Group();
     this._locMeshes = new Map();
     for (const loc of this._floorData.locs) {
@@ -356,6 +366,11 @@ const MapGL = {
     if (this._trailGroup) { this.entities.remove(this._trailGroup); disposeTree(this._trailGroup); this._trailGroup = null; }
     if (this._moverGroup) { this.entities.remove(this._moverGroup); disposeTree(this._moverGroup); this._moverGroup = null; this._movers = null; }
     if (this._entGroup) { this.entities.remove(this._entGroup); disposeTree(this._entGroup); this._entGroup = null; this._entKey = null; }
+    // Floors are per-demo too: clear them so a demo whose geometry fails to
+    // load doesn't keep the previous map's loc floors/labels. New geometry
+    // rebuilds via setFloors().
+    this._floorData = null;
+    this._buildFloors();
   },
 
   _syncPlayers(list, flags) {
@@ -375,7 +390,11 @@ const MapGL = {
   // doors) + teleport arrows. Rebuilt when the set changes (toggle/filter).
   _syncEntities(entities, teleArrows) {
     if (!this._entGroup) { this._entGroup = new THREE.Group(); this.entities.add(this._entGroup); }
-    const key = entities.length + '|' + teleArrows.length;
+    // Content signature, not just counts: filter toggles can swap which
+    // entities show without changing the total, so fold position+shape in.
+    let sig = 0;
+    for (const e of entities) sig = (sig * 31 + (e.x | 0) + (e.y | 0) * 7 + e.shape.charCodeAt(0)) | 0;
+    const key = entities.length + '|' + teleArrows.length + '|' + sig;
     if (key === this._entKey) return; // unchanged (static per learn-mode config)
     this._entKey = key;
     for (const c of this._entGroup.children) { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }
@@ -506,8 +525,11 @@ const MapGL = {
 
   dispose() {
     this.hide();
+    this.resetEntities();            // players/items/markers/trails/movers/entities/floors
     this._disposeMapGroup();
     this._removeScaffold();
+    if (this.controls) this.controls.dispose();
+    if (_xTex) { _xTex.dispose(); _xTex = null; } // shared death-marker texture
     if (this.renderer) {
       this.renderer.dispose();
       this.renderer.forceContextLoss?.();
@@ -706,13 +728,19 @@ function xMarkerTexture() {
   return _xTex;
 }
 
-// disposeTree releases GPU resources for an Object3D subtree.
+// disposeTree releases GPU resources for an Object3D subtree, including the
+// CanvasTextures behind label/marker sprites (Three.js does not free a
+// material's textures on material.dispose()). The shared death-marker texture
+// (_xTex) is intentionally preserved — it is reused across every marker.
 function disposeTree(obj) {
   obj.traverse((o) => {
     if (o.geometry) o.geometry.dispose();
     if (o.material) {
       const mats = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of mats) m.dispose();
+      for (const m of mats) {
+        if (m.map && m.map !== _xTex) m.map.dispose();
+        m.dispose();
+      }
     }
   });
 }

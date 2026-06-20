@@ -8242,8 +8242,10 @@ function glFrameState(time) {
                 else if (st === 'teamAWeakControl') { color = hexToInt(TEAM_COLORS[0]); alpha = 0.18; }
                 else if (st === 'teamBWeakControl') { color = hexToInt(TEAM_COLORS[1]); alpha = 0.18; }
                 else { color = 0xffffff; alpha = st === 'weakContested' ? 0.1 : 0.18; } // contested
-                for (const gname of (mapState.regionToGroups[region.name] || [])) {
-                    occupancy.push({ name: gname, color, alpha });
+                // regionToGroups stores group objects, not names — key the
+                // floor-overlay tint by the group's normalized name.
+                for (const g of (mapState.regionToGroups[region.name] || [])) {
+                    if (g && g.name) occupancy.push({ name: g.name, color, alpha });
                 }
             }
         }
