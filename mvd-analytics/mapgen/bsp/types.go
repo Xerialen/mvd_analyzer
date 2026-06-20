@@ -67,7 +67,16 @@ type ClipNode struct {
 	Children [2]int32
 }
 
-// BSP holds the decoded lumps we care about.
+// Texinfo is the BSP texinfo lump record (40 bytes on disk). Only the
+// miptex index is decoded — the projection vectors and flags are not
+// needed to classify liquid / trigger faces by texture name.
+type Texinfo struct {
+	MipTex int32 // index into the miptex directory (TexNames); -1 = none
+}
+
+// BSP holds the decoded lumps we care about. Texinfos and TexNames are
+// best-effort: a malformed texture lump leaves them empty rather than
+// failing the parse (floor-geometry extraction never needs textures).
 type BSP struct {
 	Version   int32
 	Planes    []Plane
@@ -77,4 +86,22 @@ type BSP struct {
 	Surfedges []int32
 	Models    []Model
 	ClipNodes []ClipNode
+	Texinfos  []Texinfo // by texinfo index (Face.TexinfoID)
+	TexNames  []string  // by miptex index (Texinfo.MipTex)
+}
+
+// FaceTexName returns the texture name assigned to face f, or "" when the
+// face has no resolvable texture: an out-of-range texinfo or miptex
+// index, a −1 "missing" miptex slot, or a texture lump that failed to
+// parse. Names are returned verbatim (engine convention is lowercase);
+// callers do their own case-insensitive matching.
+func (b *BSP) FaceTexName(f Face) string {
+	if int(f.TexinfoID) >= len(b.Texinfos) {
+		return ""
+	}
+	mt := b.Texinfos[f.TexinfoID].MipTex
+	if mt < 0 || int(mt) >= len(b.TexNames) {
+		return ""
+	}
+	return b.TexNames[mt]
 }

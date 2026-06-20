@@ -11,7 +11,7 @@ import (
 
 // floorHull builds a one-plane clip hull: a horizontal clip plane at
 // Z=24 with EMPTY above and SOLID below. Because the player origin rests
-// playerFeetOffset (24) above the floor it stands on, a clip plane at 24
+// PlayerFeetOffset (24) above the floor it stands on, a clip plane at 24
 // represents a real floor surface at Z=0 — FloorBelow should return ~0.
 func floorHull(t *testing.T) *bsp.BSP {
 	t.Helper()
@@ -38,8 +38,8 @@ func TestFloorBelow_SinglePlane(t *testing.T) {
 		t.Errorf("floor Z = %v, want ≈ 0", z)
 	}
 
-	// A grounded player sits playerFeetOffset above the floor.
-	if z2, ok := h.FloorBelow(0, 0, float32(playerFeetOffset)); !ok || math.Abs(float64(z2)) > 0.5 {
+	// A grounded player sits PlayerFeetOffset above the floor.
+	if z2, ok := h.FloorBelow(0, 0, float32(PlayerFeetOffset)); !ok || math.Abs(float64(z2)) > 0.5 {
 		t.Errorf("grounded FloorBelow = (%v,%v), want (≈0,true)", z2, ok)
 	}
 
@@ -49,10 +49,10 @@ func TestFloorBelow_SinglePlane(t *testing.T) {
 	}
 
 	// HeightAboveFloor reads ~0 grounded and the airborne delta otherwise.
-	if hg, ok := h.HeightAboveFloor(0, 0, float32(playerFeetOffset)); !ok || math.Abs(float64(hg)) > 0.5 {
+	if hg, ok := h.HeightAboveFloor(0, 0, float32(PlayerFeetOffset)); !ok || math.Abs(float64(hg)) > 0.5 {
 		t.Errorf("grounded height = (%v,%v), want (≈0,true)", hg, ok)
 	}
-	if ha, ok := h.HeightAboveFloor(0, 0, float32(playerFeetOffset)+100); !ok || math.Abs(float64(ha-100)) > 0.5 {
+	if ha, ok := h.HeightAboveFloor(0, 0, float32(PlayerFeetOffset)+100); !ok || math.Abs(float64(ha-100)) > 0.5 {
 		t.Errorf("airborne height = (%v,%v), want (≈100,true)", ha, ok)
 	}
 }
@@ -145,8 +145,8 @@ func TestHeightAboveFloorBox_RimSkim(t *testing.T) {
 	h := rimWellHull(t)
 
 	// Origin just inside the well (within footprintMargin of the X=0 rim
-	// edge), feet 9 above the rim plane: z = playerFeetOffset + 9 = 33.
-	const y, z = 0, float32(playerFeetOffset) + 9
+	// edge), feet 9 above the rim plane: z = PlayerFeetOffset + 9 = 33.
+	const y, z = 0, float32(PlayerFeetOffset) + 9
 	x := float32(footprintMargin) / 2
 
 	// Single column drops through the well opening to the floor at Z=-400.
@@ -243,7 +243,7 @@ func TestHeightAboveFloorBoxScene_LiftRider(t *testing.T) {
 
 	// Rider: lift risen to -100, player origin resting on it.
 	org := [3]float32{0, 0, -100}
-	z := float32(playerFeetOffset) - 100 + 0.5
+	z := float32(PlayerFeetOffset) - 100 + 0.5
 	movers := []PosedHull{{H: lift, Origin: org}}
 	h, ok := HeightAboveFloorBoxScene(world, movers, 0, 0, z)
 	if !ok || math.Abs(float64(h)) > 1.0 {
@@ -301,7 +301,7 @@ func TestLoadForMap_FromBSP(t *testing.T) {
 // TestFloorBelow_RealBSP is a developer smoke test against a vendored
 // BSP. It traces straight down from each player-spawn origin: a spawn
 // point's origin is the standing player origin, so the floor under it
-// must sit playerFeetOffset (24) below — within a couple of units after
+// must sit PlayerFeetOffset (24) below — within a couple of units after
 // integer rounding and slope. Skips when the per-machine maps/ tree is
 // absent (CI has no BSPs).
 func TestFloorBelow_RealBSP(t *testing.T) {

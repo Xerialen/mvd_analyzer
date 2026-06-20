@@ -15,6 +15,7 @@
 package bsp
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -267,7 +268,73 @@ func ParseBytes(data []byte) (*BSP, error) {
 		bsp.ClipNodes[i] = cn
 	}
 
+	// TEXINFO + MIPTEX — supplementary: used only to classify faces by
+	// texture name (liquids, triggers). They must never break floor
+	// extraction, so unlike the lumps above a parse problem here degrades
+	// to empty slices rather than erroring.
+	if tb, err := lumpBytes(lumpTexinfo); err == nil {
+		bsp.Texinfos = parseTexinfos(tb)
+	}
+	if mb, err := lumpBytes(lumpMiptex); err == nil {
+		bsp.TexNames = parseMiptexNames(mb)
+	}
+
 	return bsp, nil
+}
+
+// parseTexinfos decodes the miptex index from each 40-byte texinfo record.
+// A trailing partial record (corrupt lump) is ignored rather than fatal.
+func parseTexinfos(b []byte) []Texinfo {
+	n := len(b) / texinfoSize
+	if n == 0 {
+		return nil
+	}
+	out := make([]Texinfo, n)
+	for i := 0; i < n; i++ {
+		rec := b[i*texinfoSize:]
+		out[i] = Texinfo{MipTex: int32(binary.LittleEndian.Uint32(rec[32:36]))}
+	}
+	return out
+}
+
+// parseMiptexNames decodes the NUL-padded name of each miptex from the
+// MIPTEX lump (a dmiptexlump_t: int32 count, then count int32 offsets from
+// the lump start to each miptex_t whose first 16 bytes are the name; −1
+// means the slot is absent). Every bound is checked: a bogus count, a
+// truncated directory, or an offset past the lump leaves that entry's
+// name empty instead of panicking.
+func parseMiptexNames(b []byte) []string {
+	if len(b) < 4 {
+		return nil
+	}
+	num := int(int32(binary.LittleEndian.Uint32(b[0:4])))
+	if num <= 0 {
+		return nil
+	}
+	// Clamp to the directory entries that actually fit (truncated lump).
+	if max := (len(b) - 4) / 4; num > max {
+		num = max
+	}
+	if num <= 0 {
+		return nil
+	}
+	out := make([]string, num)
+	for i := 0; i < num; i++ {
+		ofs := int32(binary.LittleEndian.Uint32(b[4+i*4 : 8+i*4]))
+		if ofs < 0 || int(ofs)+miptexNameLen > len(b) {
+			continue // −1 (missing) or out-of-range → empty name
+		}
+		out[i] = nulString(b[ofs : int(ofs)+miptexNameLen])
+	}
+	return out
+}
+
+// nulString returns b up to its first NUL byte as a string.
+func nulString(b []byte) string {
+	if i := bytes.IndexByte(b, 0); i >= 0 {
+		b = b[:i]
+	}
+	return string(b)
 }
 
 // readF32 decodes a little-endian IEEE-754 float32.

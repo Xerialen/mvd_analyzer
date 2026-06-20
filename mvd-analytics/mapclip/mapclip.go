@@ -38,14 +38,14 @@ const (
 )
 
 const (
-	// playerFeetOffset is -mins.z of the standard Quake player hull
+	// PlayerFeetOffset is -mins.z of the standard Quake player hull
 	// ({-16,-16,-24}..{16,16,32}, mvdsv/src/cmodel.c:673). A straight-
 	// down hull-1 trace stops the player *origin* one DIST_EPSILON above
-	// the floor plane; the floor surface itself is playerFeetOffset below
+	// the floor plane; the floor surface itself is PlayerFeetOffset below
 	// that origin. FloorBelow subtracts it so the returned value is the
 	// real floor Z, and a grounded player satisfies origin.z - floorZ ≈
-	// playerFeetOffset.
-	playerFeetOffset = 24.0
+	// PlayerFeetOffset.
+	PlayerFeetOffset = 24.0
 
 	// footprintMargin is how far from the origin HeightAboveFloorBox
 	// samples floor columns. The traced hull is already the world inflated
@@ -56,6 +56,14 @@ const (
 	// skimming a ledge / well rim a few units past the box edge attached
 	// to the rim, without over-reaching to unrelated geometry.
 	footprintMargin = 8.0
+
+	// FootprintReach is the half-extent of a standing player's ground
+	// footprint: the ±16 player-box half-width plus footprintMargin, i.e.
+	// 24. It is the maximum XY distance between a player's origin and the
+	// floor that actually supports them. The usage-pruning pass
+	// (mapgen -demos) uses it as the XY tolerance for matching a recorded
+	// floor-contact sample to a floor polygon.
+	FootprintReach = 16.0 + footprintMargin
 
 	// distEpsilon matches DIST_EPSILON in mvdsv/src/cmodel.c:212 — the
 	// 1/32-unit nudge that keeps the impact point just off the plane.
@@ -129,7 +137,7 @@ func (h *Hull) HeightAboveFloor(x, y, z float32) (float32, bool) {
 	if !ok {
 		return 0, false
 	}
-	return (z - playerFeetOffset) - floorZ, true
+	return (z - PlayerFeetOffset) - floorZ, true
 }
 
 // HeightAboveFloorBox is the footprint-aware companion to
@@ -172,7 +180,7 @@ func (h *Hull) HeightAboveFloorBox(x, y, z float32) (float32, bool) {
 	if !any {
 		return 0, false
 	}
-	return (z - playerFeetOffset) - best, true
+	return (z - PlayerFeetOffset) - best, true
 }
 
 // footprintOffsets are the X/Y sample offsets HeightAboveFloorBox walks —
@@ -195,7 +203,7 @@ var footprintOffsets = [3]float32{-footprintMargin, 0, footprintMargin}
 // grounded heights read ≈0 with up to a unit of slack on either side.
 //
 // The value is the floor surface, so a player standing on it has
-// z - FloorBelow ≈ playerFeetOffset (24); a player jumping or airborne
+// z - FloorBelow ≈ PlayerFeetOffset (24); a player jumping or airborne
 // over it reads larger. Coordinates are world units (Z up).
 func (h *Hull) FloorBelow(x, y, z float32) (float32, bool) {
 	floorZ, ok, startsolid := h.floorTrace(x, y, z)
@@ -243,7 +251,7 @@ func (h *Hull) floorTrace(x, y, z float32) (floorZ float32, ok, startsolid bool)
 	if ht.fraction >= 1 {
 		return 0, false, false // nothing solid below within range
 	}
-	return ht.endpos[2] - playerFeetOffset, true, false
+	return ht.endpos[2] - PlayerFeetOffset, true, false
 }
 
 // trace return codes, mirroring RecursiveHullTrace's TR_* enum.

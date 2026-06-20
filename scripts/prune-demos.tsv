@@ -1,0 +1,27 @@
+# Usage-based floor-prune provenance for the 3D map corpus.
+#
+# Each map's committed geometry (mvd-web/static/maps/<map>.json) was
+# usage-pruned with mapgen -demos against the hub games listed here:
+# 3 most-recent 4on4 where available, else 5 2on2, else 5 1on1.
+# Reproduce: download the gameIds (hubfetch CDN), then
+#   mapgen -bsp-dir bsps -map <map> -demos <dir> -out-dir mvd-web/static/maps
+# Generated 2026-06-19. Format: <map>\t<mode>\t<comma-separated gameIds>
+#
+aerowalk	2on2	222566,222551,222550,222549,222529
+anwalked	4on4	220974,220350,220046,220041,220028,219245
+bravado	2on2	222600,222594,222573,222570,222568
+cmt4	4on4	216993,185509,179436,179144,174921,174818
+defer	4on4	222460,220055,218753,216835,216055,215868
+dm2	4on4	222318,222291,222216
+dm3	4on4	222305,222281,222209
+dm4	2on2	222599,222598,222591,222588,222589
+dm6	2on2	222017,222016,220831,220315,219866
+e1m2	4on4	222298,222162,221793,222649,221783,221644
+obsidian	4on4	220345,220064,220063,219271,217508,217329
+phantoma	4on4	82950,13950,13922
+qobblestone	4on4	222466,220338,220060,218599,217708,217512
+rocka	4on4	220330,220066,216284,216096,214824,214427
+schloss	4on4	222314,222310,222302
+skull	2on2	221578,200241,200238,199361,199178
+steam	4on4	222470,221895,220976,220965,220355,220344
+stronghold	4on4	220961,220185,220052,219263,217516,217313

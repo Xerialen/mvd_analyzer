@@ -98,6 +98,9 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 				shiftAndFilterPosition(p.Position, matchStartMs)
 			}
 		}
+		for mi := range streams.Movers {
+			shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
+		}
 	}
 
 	if res.Messages != nil {
@@ -311,6 +314,47 @@ func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
 	}
 	for i := range pt.T {
 		pt.T[i] -= matchStartMs
+	}
+}
+
+// shiftAndClampMoverStream rebases a mover's pose timeline to match time,
+// mutating m in place. Unlike player positions (whole pre-match samples
+// are dropped), a mover's pre-match poses must NOT all be discarded — a
+// parked lift's only wire state is its baseline at demo open, and dropping
+// it would leave the mover pose-less for the whole match. Instead the
+// latest pre-match state is kept and clamped to T=0 (the pose held at
+// match start); earlier pre-match states are dropped as superseded, and
+// in-match states shift normally. A mover first seen mid-match keeps all
+// its states. All columns stay index-aligned with T.
+func shiftAndClampMoverStream(m *result.MoverStream, matchStartMs int32) {
+	if m == nil || len(m.T) == 0 {
+		return
+	}
+	// Latest index at or before match start — the pose held at t=0.
+	carry := -1
+	for i, t := range m.T {
+		if t <= matchStartMs {
+			carry = i
+		} else {
+			break
+		}
+	}
+	start := carry
+	if start < 0 {
+		start = 0 // mover first appeared after match start; keep everything
+	}
+	if start > 0 {
+		m.T = m.T[start:]
+		m.X = m.X[start:]
+		m.Y = m.Y[start:]
+		m.Z = m.Z[start:]
+		m.Vis = m.Vis[start:]
+	}
+	for i := range m.T {
+		m.T[i] -= matchStartMs
+		if m.T[i] < 0 {
+			m.T[i] = 0 // the carried pre-match pose anchors at t=0
+		}
 	}
 }
 

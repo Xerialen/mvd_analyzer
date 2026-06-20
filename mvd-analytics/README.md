@@ -72,7 +72,28 @@ that downstream consumers render, summarise, or feed to an agent.
   checks on the analysis result.
 - `cmd/mapgen/` — developer tool: reads BSP + loc files, writes per-loc
   floor-polygon JSON for the web viewer
-  (`mvd-web/static/maps/<name>.json`).
+  (`mvd-web/static/maps/<name>.json`). Geometry version 4: triangles
+  carry per-vertex x,y,z (9 floats each) so the map tab can render the
+  floor plan in 3D, and optional
+  `liquids` (water/slime/lava volume meshes from the engine's turbulent
+  `*` textures) and `submodels` (brush-model lifts/doors, keyed by their
+  `*id` index and posed at runtime from the result's mover streams) (v4).
+  (A v3 top-level `walls` list fed a since-removed occluding "solid"
+  render; walls are still classified for diagnostics but no longer
+  emitted.) Degenerate zero-area fan triangles are dropped. Extraction thresholds
+  (floor slope, roof cap, origin height) are tunable via
+  `mapgeom.Params` / `BuildParams`. The optional
+  `-demos <dir>` flag turns on usage-based pruning: every `.mvd`/`.mvd.gz`
+  under the directory is analyzed (a fresh registry per demo), the floor
+  surface beneath each grounded, non-swimming sample
+  (`(X, Y, Z − PlayerFeetOffset − H)`) is collected per map, and floor
+  faces no sample lands on (within `-prune-xy-tol`, default
+  `mapclip.FootprintReach` = 24, and `-prune-z-tol`, default 16) are
+  dropped. Pruned files carry a `pruned` provenance block; maps with no
+  matching demos emit unpruned. The committed 3D corpus (the ~18 maps
+  with BSPs) is pruned this way against recent competitive games —
+  [`scripts/prune-demos.tsv`](../scripts/prune-demos.tsv) records the
+  exact map → mode → hub gameIds used, so the prune is reproducible.
 - `cmd/qw-analyze/` — CLI consumer. `qw-analyze demo.mvd` produces Result
   JSON; `-format md` produces a human summary; `-format events` dumps the
   raw event stream; `-bulk -out-dir dir/` processes a directory.
@@ -622,7 +643,10 @@ those hulls at the entity's origin for the sample's timestamp
 (`mapclip.HeightAboveFloorBoxScene`, mirroring the client's
 `CL_SetSolidEntities` physent setup) — the highest floor across all
 hulls wins. A player riding the dm2 RA lift reads ~0 instead of the
-height to the shaft floor far below.
+height to the shaft floor far below. Since schema v32 those same mover
+tracks are also exported as `streams.movers` (`MoverStream`, one per
+brush-model entity) so the web map can animate lifts/doors at their
+demo-streamed poses.
 
 Since schema v26 the height is **footprint-aware** (`HeightAboveFloorBox`):
 rather than the single origin column, it traces a 3×3 grid of columns

@@ -5,11 +5,11 @@ package bsp
 const (
 	lumpEntities  = 0
 	lumpPlanes    = 1
-	_             = 2 // MIPTEX (unused)
+	lumpMiptex    = 2
 	lumpVertexes  = 3
 	_             = 4 // VISIBILITY (unused)
 	_             = 5 // NODES (unused)
-	_             = 6 // TEXINFO (unused)
+	lumpTexinfo   = 6
 	lumpFaces     = 7
 	_             = 8 // LIGHTING (unused)
 	lumpClipnodes = 9
@@ -31,6 +31,9 @@ const (
 	edgeSize29a  = 8  // BSP2/29a: 2 * uint32
 	surfedgeSize = 4  // int32
 	modelSize    = 64 // mins(12) + maxs(12) + origin(12) + headnodes(16) + visleafs(4) + firstFace(4) + numFaces(4)
+
+	texinfoSize   = 40 // texinfo_t: vecs[2][4] float32 (32) + miptex int32 (4) + flags int32 (4); miptex at offset 32. Same width on v29 and BSP2.
+	miptexNameLen = 16 // miptex_t.name[16] — NUL-padded texture name at the start of each miptex_t
 
 	clipnodeSize    = 8  // v29 dclipnode_t: planenum(4) + 2×int16
 	clipnodeSize29a = 12 // BSP2/2PSB dclipnode29a_t: planenum(4) + 2×int32

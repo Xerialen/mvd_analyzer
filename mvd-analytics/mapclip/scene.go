@@ -77,5 +77,5 @@ func HeightAboveFloorBoxScene(world *Hull, movers []PosedHull, x, y, z float32) 
 	if !any {
 		return 0, false
 	}
-	return (z - playerFeetOffset) - best, true
+	return (z - PlayerFeetOffset) - best, true
 }

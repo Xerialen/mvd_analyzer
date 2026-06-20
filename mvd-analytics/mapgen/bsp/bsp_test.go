@@ -56,6 +56,20 @@ func buildFixture() []byte {
 	models = appendI32(models, 0)          // firstFace
 	models = appendI32(models, 1)          // numFaces
 
+	// Texinfo: one 40-byte record whose miptex index is 0. The projection
+	// vectors and flags are zero (unused by the parser).
+	var texinfo []byte
+	texinfo = appendF32(texinfo, 0, 0, 0, 0, 0, 0, 0, 0) // vecs[2][4]
+	texinfo = appendI32(texinfo, 0)                       // miptex
+	texinfo = appendI32(texinfo, 0)                       // flags
+
+	// Miptex: dmiptexlump_t with one entry "floor1". Layout: num(4),
+	// dataofs[0](4)=8, then the miptex_t whose first 16 bytes are the name.
+	var miptex []byte
+	miptex = appendI32(miptex, 1) // nummiptex
+	miptex = appendI32(miptex, 8) // dataofs[0] → start of the miptex_t
+	miptex = append(miptex, texName16("floor1")...)
+
 	// Clipnodes (v29 dclipnode_t: planenum int32 + 2×int16). Two nodes
 	// exercising both child kinds: node 0 routes front→EMPTY, back→node 1;
 	// node 1 routes front→EMPTY, back→SOLID. Negative children must
@@ -75,6 +89,8 @@ func buildFixture() []byte {
 	lumps[lumpSurfedges] = surfedges
 	lumps[lumpModels] = models
 	lumps[lumpClipnodes] = clip
+	lumps[lumpTexinfo] = texinfo
+	lumps[lumpMiptex] = miptex
 
 	headerSize := 4 + numLumps*8
 	offsets := make([]int, numLumps)
@@ -135,6 +151,13 @@ func appendU16(dst []byte, vs ...uint16) []byte {
 		dst = append(dst, buf[:]...)
 	}
 	return dst
+}
+
+// texName16 returns name padded with NULs to the 16-byte miptex_t.name field.
+func texName16(name string) []byte {
+	b := make([]byte, miptexNameLen)
+	copy(b, name)
+	return b
 }
 
 func TestParseBytes_Fixture(t *testing.T) {
@@ -219,5 +242,70 @@ func TestParseBytes_TooShort(t *testing.T) {
 	_, err := ParseBytes([]byte{29, 0, 0, 0})
 	if err == nil {
 		t.Fatal("expected too-short error")
+	}
+}
+
+func TestParseBytes_TexNames(t *testing.T) {
+	bsp, err := ParseBytes(buildFixture())
+	if err != nil {
+		t.Fatalf("ParseBytes: %v", err)
+	}
+	if len(bsp.Texinfos) != 1 {
+		t.Fatalf("texinfos = %d, want 1", len(bsp.Texinfos))
+	}
+	if len(bsp.TexNames) != 1 || bsp.TexNames[0] != "floor1" {
+		t.Fatalf("texNames = %#v, want [floor1]", bsp.TexNames)
+	}
+	if got := bsp.FaceTexName(bsp.Faces[0]); got != "floor1" {
+		t.Errorf("FaceTexName = %q, want \"floor1\"", got)
+	}
+	// A face pointing past the texinfo table resolves to "" (no panic).
+	if got := bsp.FaceTexName(Face{TexinfoID: 99}); got != "" {
+		t.Errorf("out-of-range FaceTexName = %q, want \"\"", got)
+	}
+}
+
+func TestParseMiptexNames_Robust(t *testing.T) {
+	// Valid single entry.
+	b := appendI32(nil, 1, 8)
+	b = append(b, texName16("water1")...)
+	if got := parseMiptexNames(b); len(got) != 1 || got[0] != "water1" {
+		t.Errorf("valid: got %#v, want [water1]", got)
+	}
+
+	// Empty / too-short lumps degrade to nil.
+	if got := parseMiptexNames(nil); got != nil {
+		t.Errorf("nil lump: got %#v, want nil", got)
+	}
+	if got := parseMiptexNames([]byte{1, 2}); got != nil {
+		t.Errorf("2-byte lump: got %#v, want nil", got)
+	}
+
+	// Count claims 1000 entries but the lump holds only one offset slot:
+	// clamp to what fits, never index past the slice.
+	huge := appendI32(nil, 1000, -1)
+	got := parseMiptexNames(huge)
+	if len(got) != 1 || got[0] != "" {
+		t.Errorf("over-count: got %#v, want one empty name", got)
+	}
+
+	// Offset −1 (missing slot) and an offset past EOF both yield "".
+	mixed := appendI32(nil, 2, -1, 9999)
+	mixed = append(mixed, texName16("ignored")...)
+	got = parseMiptexNames(mixed)
+	if len(got) != 2 || got[0] != "" || got[1] != "" {
+		t.Errorf("missing/out-of-range: got %#v, want two empty names", got)
+	}
+}
+
+func TestParseTexinfos_TrailingPartial(t *testing.T) {
+	// One full 40-byte record (miptex=3) plus 7 trailing junk bytes: the
+	// partial record is ignored, the full one decoded.
+	b := make([]byte, texinfoSize)
+	binary.LittleEndian.PutUint32(b[32:36], 3)
+	b = append(b, 1, 2, 3, 4, 5, 6, 7)
+	got := parseTexinfos(b)
+	if len(got) != 1 || got[0].MipTex != 3 {
+		t.Errorf("got %#v, want one texinfo miptex=3", got)
 	}
 }

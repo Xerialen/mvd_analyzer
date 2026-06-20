@@ -632,7 +632,47 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 	if len(streams.Players) == 0 {
 		return nil
 	}
+	streams.Movers = a.buildMoverStreams()
 	return streams
+}
+
+// buildMoverStreams exports each tracked brush-model entity's pose
+// timeline as a result.MoverStream, sorted by entity number for
+// deterministic output. Times stay demo-relative here;
+// normalizeMatchRelativeTimes rebases and clamps them.
+func (a *TimelineAnalyzer) buildMoverStreams() []result.MoverStream {
+	if len(a.movers) == 0 {
+		return nil
+	}
+	ents := make([]int, 0, len(a.movers))
+	for ent := range a.movers {
+		ents = append(ents, ent)
+	}
+	sort.Ints(ents)
+	out := make([]result.MoverStream, 0, len(ents))
+	for _, ent := range ents {
+		mt := a.movers[ent]
+		if mt == nil || len(mt.t) == 0 {
+			continue
+		}
+		ms := result.MoverStream{
+			EntNum:   ent,
+			SubModel: mt.subModel,
+			T:        append([]int32(nil), mt.t...),
+			X:        make([]float32, len(mt.org)),
+			Y:        make([]float32, len(mt.org)),
+			Z:        make([]float32, len(mt.org)),
+			Vis:      append([]bool(nil), mt.vis...),
+		}
+		for i, o := range mt.org {
+			ms.X[i], ms.Y[i], ms.Z[i] = o[0], o[1], o[2]
+		}
+		out = append(out, ms)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 const (
@@ -863,7 +903,7 @@ func (a *TimelineAnalyzer) resolveFloorHeights() {
 			// feet-relative, so smaller h = higher support.
 			if a.visBSP != nil {
 				if surfZ, _, ok := a.visBSP.LiquidSurfaceBelow(x, y, z); ok {
-					hSurf := (z - playerFeetOffset) - surfZ
+					hSurf := (z - mapclip.PlayerFeetOffset) - surfZ
 					if hSurf < 0 {
 						// Feet a sub-unit into the surface while the feet
 						// probe still reads dry — supported by the liquid.
@@ -882,10 +922,6 @@ func (a *TimelineAnalyzer) resolveFloorHeights() {
 		}
 	}
 }
-
-// playerFeetOffset mirrors mapclip's constant: -mins.z of the player
-// hull, the distance the origin rides above the floor the feet rest on.
-const playerFeetOffset = 24.0
 
 // lqValue packs a bspvis.WaterLevel result into the PositionTrack.Lq
 // encoding: 0 dry, else (type << 2) | level — water 5/6/7, slime

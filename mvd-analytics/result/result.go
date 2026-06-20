@@ -374,7 +374,29 @@ package result
 //     -1000000000 (-1e9, exact in float32 and float64). Time axes stay
 //     int32 ms; view angles stay int16 (raw angle16); loc/liquid columns
 //     unchanged.
-const CurrentSchemaVersion = 33
+//
+// v34:
+//   - TimelineAnalysis.LocationData now carries one MapLocation per loc
+//     name — the medoid of that name's corpus points — instead of every
+//     raw .loc point. The .loc corpus often repeats a name across several
+//     nearby points, which drew duplicate map labels; the medoid is the
+//     actual point minimizing summed distance to its same-name siblings
+//     (never an averaged mid-air position). Same field name and shape;
+//     the list is shorter. locgraph already read one point per name.
+//
+// v35:
+//   - Streams gains Movers []MoverStream: the pose timeline of every
+//     tracked brush-model entity (lift, door, plat, train). Each carries
+//     EntNum, SubModel (the "*N" brush-model index, matching the corpus
+//     SubModelMesh ID), and index-aligned T/X/Y/Z/Vis columns — the
+//     mover sits at (X,Y,Z)[i] at T[i] ms and is drawn when Vis[i].
+//     Origins are float32 (exact 1/8-unit wire values). Times are
+//     match-relative; the first entry is clamped to t=0 carrying the
+//     match-start pose so a parked mover (whose only wire state predates
+//     the match) still has one. Additive (omitempty); absent when the
+//     demo has no movers. The same internal mover tracks already feed the
+//     v27 floor-height pass.
+const CurrentSchemaVersion = 35
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

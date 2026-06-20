@@ -11,6 +11,33 @@ package result
 type Streams struct {
 	Players []PlayerStream `json:"players"`
 	Global  GlobalStream   `json:"global"`
+	// Movers is the pose timeline of every tracked brush-model entity
+	// (lifts, doors, plats, trains). Schema v32; omitted when the demo has
+	// no movers.
+	Movers []MoverStream `json:"movers,omitempty"`
+}
+
+// MoverStream is one brush-model entity's pose timeline (a lift, door,
+// plat or train). The columns align by index: at T[i] match-relative
+// milliseconds the model sits at (X,Y,Z)[i] and is drawn when Vis[i]. The
+// viewer offsets the corpus SubModel mesh (mapgeom SubModelMesh with the
+// same ID as SubModel here) by (X,Y,Z) to place it.
+//
+// Origins are float32 — wire values are exact 1/8-unit multiples and
+// int32 would quantize the pose stepping. Tracks are short: MVD delta
+// compression only re-sends an origin when it moves, so a parked mover is
+// a single entry and a travelling one re-sends per frame only while in
+// motion. The first entry is clamped to T=0 carrying the match-start pose
+// (normalizeMatchRelativeTimes) so a parked mover whose only wire state
+// predates the match still has a pose.
+type MoverStream struct {
+	EntNum   int       `json:"ent"`
+	SubModel int       `json:"sub"`
+	T        []int32   `json:"t"`
+	X        []float32 `json:"x"`
+	Y        []float32 `json:"y"`
+	Z        []float32 `json:"z"`
+	Vis      []bool    `json:"vis"`
 }
 
 // PlayerStream is one player's full event-rate state record. Name is

@@ -1,9 +1,11 @@
 package analyzer
 
 import (
+	"math"
 	"sort"
 
 	"github.com/mvd-analyzer/mvd-analytics/bspvis"
+	"github.com/mvd-analyzer/mvd-analytics/loc"
 	"github.com/mvd-analyzer/mvd-analytics/locvis"
 	"github.com/mvd-analyzer/mvd-analytics/mapbsp"
 	"github.com/mvd-analyzer/mvd-analytics/mapclip"
@@ -150,19 +152,14 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		}
 	}
 
-	// Export location data for map visualization
+	// Export one label point per loc name for map visualization (schema
+	// v31). The raw .loc corpus often has several points sharing a name;
+	// emitting them all drew duplicate labels in the web view. Keep the
+	// medoid — the actual corpus point minimizing summed distance to its
+	// same-name siblings — never an averaged, possibly mid-air, centroid.
 	var locationData []MapLocation
 	if a.locFinder != nil {
-		locs := a.locFinder.Locations()
-		locationData = make([]MapLocation, len(locs))
-		for i, l := range locs {
-			locationData[i] = MapLocation{
-				X:    l.X,
-				Y:    l.Y,
-				Z:    l.Z,
-				Name: l.Name,
-			}
-		}
+		locationData = medoidLocations(a.locFinder.Locations())
 	}
 
 	// Build slot->name mapping for exports.
@@ -403,4 +400,49 @@ func coalescePauses(samples []pauseSample) []TimelinePause {
 	}
 	flush(len(samples))
 	return pauses
+}
+
+// medoidLocations collapses the loc corpus to one MapLocation per name —
+// the medoid of that name's points (the point minimizing summed 3D
+// distance to its same-name siblings). The medoid is an actual corpus
+// point, so a name whose points straddle two disjoint spots resolves to
+// the more central real position rather than an averaged mid-air one.
+// Output order follows first-seen name order for determinism.
+func medoidLocations(locs []loc.Location) []MapLocation {
+	if len(locs) == 0 {
+		return nil
+	}
+	order := make([]string, 0)
+	byName := make(map[string][]loc.Location)
+	for _, l := range locs {
+		if _, ok := byName[l.Name]; !ok {
+			order = append(order, l.Name)
+		}
+		byName[l.Name] = append(byName[l.Name], l)
+	}
+	out := make([]MapLocation, 0, len(order))
+	for _, name := range order {
+		pts := byName[name]
+		best := 0
+		bestSum := float32(math.MaxFloat32)
+		for i := range pts {
+			var sum float32
+			for j := range pts {
+				if i == j {
+					continue
+				}
+				dx := pts[i].X - pts[j].X
+				dy := pts[i].Y - pts[j].Y
+				dz := pts[i].Z - pts[j].Z
+				sum += float32(math.Sqrt(float64(dx*dx + dy*dy + dz*dz)))
+			}
+			if i == 0 || sum < bestSum {
+				bestSum = sum
+				best = i
+			}
+		}
+		m := pts[best]
+		out = append(out, MapLocation{X: m.X, Y: m.Y, Z: m.Z, Name: m.Name})
+	}
+	return out
 }

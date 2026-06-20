@@ -494,7 +494,7 @@ carries no wall-clock source; implausible `0x000B` payloads fall back to
 `streams.global` and exposed via the REST `/overview` `timing` block in
 v23**, alongside `matchStart`/`matchEnd`.)
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `23`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `32`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference lives in
 [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

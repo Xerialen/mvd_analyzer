@@ -37,7 +37,7 @@ const PLAYER_SYMBOLS = ['*', 'x', '+', 'o', '◆', '▲', '●', '■'];
 const CHAT_PX_PER_SEC   = 17.5; // ~same density as the original 40s/700px window
 const CHAT_ITEM_HEIGHT  = 18;
 const DEATH_X_DURATION  = 2.0;  // seconds an "X" death marker stays on the map
-const PLAYBACK_FPS_MS   = 33;   // map playback throttle (~30 fps = 33 ms/frame)
+const PLAYBACK_FPS_MS   = 16;   // map playback throttle (~60 fps = 16 ms/frame)
 
 // Derive strong/weak color variants from a hex color for region control displays
 function hexToRgb(hex) {
@@ -5542,16 +5542,19 @@ function processLocationGroups(locations) {
         groups[normalizedName].points.push({ x: loc.x, y: loc.y, z: loc.z });
     }
 
-    // Calculate centroid for each group
+    // Calculate centroid for each group. z rides along so labels project to
+    // the group's actual floor height in the 3D view.
     for (const group of Object.values(groups)) {
-        let sumX = 0, sumY = 0;
+        let sumX = 0, sumY = 0, sumZ = 0;
         for (const p of group.points) {
             sumX += p.x;
             sumY += p.y;
+            sumZ += p.z || 0;
         }
         group.centroid = {
             x: sumX / group.points.length,
-            y: sumY / group.points.length
+            y: sumY / group.points.length,
+            z: sumZ / group.points.length
         };
     }
 
@@ -5569,7 +5572,7 @@ function processLocationGroups(locations) {
         }
         for (const group of Object.values(groups)) {
             const g = geomByName[group.name];
-            group.tris = g && Array.isArray(g.tris) && g.tris.length >= 6 ? g.tris : null;
+            group.tris = g && Array.isArray(g.tris) && g.tris.length >= 9 ? g.tris : null;
         }
     }
 
@@ -5579,31 +5582,23 @@ function processLocationGroups(locations) {
     return Object.values(groups);
 }
 
-// Draw a location region from a pre-generated BSP-derived triangle list.
-// tris is a flat Float array: 6 numbers per triangle (x1,y1,x2,y2,x3,y3).
-// Groups with no tris (map JSON absent or loc unmatched) simply don't
-// render — the legacy convex-hull fallback was removed now that mapgen
-// output is the only source of region shapes.
-function drawLocationRegionFromGeometry(ctx, group, worldToCanvasFunc) {
-    drawTriangleListFill(ctx, group.tris, group.color.fill, worldToCanvasFunc);
-}
-
-// Fill a flat triangle list (6 numbers per triangle) with the given style.
-// Shared by loc-group fills and the unnamed backdrop underlay. All triangles
-// are added to a single path and filled once so this stays fast when called
-// every frame with thousands of tris. Uses the non-allocating worldToCanvas
-// variant (shared _tmpPt) — safe because each point's x/y is consumed by
-// ctx.moveTo/lineTo before the next call overwrites the buffer.
+// Fill a flat triangle list (9 numbers per triangle — x,y,z per vertex)
+// with the given style. Shared by loc-group fills and the unnamed backdrop
+// underlay. All triangles are added to a single path and filled once so this
+// stays fast when called every frame with thousands of tris. Uses the
+// non-allocating worldToCanvas variant (shared _tmpPt) — safe because each
+// point's x/y is consumed by ctx.moveTo/lineTo before the next call
+// overwrites the buffer.
 function drawTriangleListFill(ctx, tris, fillStyle, worldToCanvasFunc) {
-    if (!tris || tris.length < 6) return;
+    if (!tris || tris.length < 9) return;
     ctx.fillStyle = fillStyle;
     ctx.beginPath();
-    for (let i = 0; i + 5 < tris.length; i += 6) {
-        let p = worldToCanvasFunc(tris[i],     tris[i + 1]);
+    for (let i = 0; i + 8 < tris.length; i += 9) {
+        let p = worldToCanvasFunc(tris[i],     tris[i + 1], tris[i + 2]);
         ctx.moveTo(p.x, p.y);
-        p = worldToCanvasFunc(tris[i + 2], tris[i + 3]);
+        p = worldToCanvasFunc(tris[i + 3], tris[i + 4], tris[i + 5]);
         ctx.lineTo(p.x, p.y);
-        p = worldToCanvasFunc(tris[i + 4], tris[i + 5]);
+        p = worldToCanvasFunc(tris[i + 6], tris[i + 7], tris[i + 8]);
         ctx.lineTo(p.x, p.y);
         ctx.closePath();
     }
@@ -5612,56 +5607,79 @@ function drawTriangleListFill(ctx, tris, fillStyle, worldToCanvasFunc) {
 
 // Compute boundary edges of a triangle soup: edges that belong to exactly one
 // triangle are on the outline; edges shared by two triangles are interior and
-// cancel. Returns a flat Float array of world-space segment endpoints
-// (x1,y1,x2,y2, ...). Cached on the group for reuse.
+// cancel. Edge identity includes z so two floors stacked at the same XY don't
+// cancel each other's boundaries. Returns a flat Float array of world-space
+// segment endpoints (x1,y1,z1,x2,y2,z2, ...). Also caches, aligned per edge,
+// the outward horizontal normal (2 floats, pointing away from the region
+// interior — derived from the owning triangle's centroid) in
+// group.outlineNormals. Cached on the group for reuse.
 function computeRegionOutline(group) {
     if (group.outline !== undefined) return group.outline;
     const tris = group.tris;
-    if (!tris || tris.length < 6) {
+    if (!tris || tris.length < 9) {
         group.outline = null;
+        group.outlineNormals = null;
         return null;
     }
-    const edgeCount = new Map();
-    const keyFor = (x1, y1, x2, y2) => {
+    const edgeInfo = new Map();
+    const keyFor = (x1, y1, z1, x2, y2, z2) => {
         // Canonical order so (a,b) and (b,a) hash equally.
-        if (x1 < x2 || (x1 === x2 && y1 <= y2)) {
-            return x1 + ',' + y1 + '|' + x2 + ',' + y2;
+        if (x1 < x2 || (x1 === x2 && (y1 < y2 || (y1 === y2 && z1 <= z2)))) {
+            return x1 + ',' + y1 + ',' + z1 + '|' + x2 + ',' + y2 + ',' + z2;
         }
-        return x2 + ',' + y2 + '|' + x1 + ',' + y1;
+        return x2 + ',' + y2 + ',' + z2 + '|' + x1 + ',' + y1 + ',' + z1;
     };
-    for (let i = 0; i + 5 < tris.length; i += 6) {
-        const ax = tris[i],     ay = tris[i + 1];
-        const bx = tris[i + 2], by = tris[i + 3];
-        const cx = tris[i + 4], cy = tris[i + 5];
-        const e1 = keyFor(ax, ay, bx, by);
-        const e2 = keyFor(bx, by, cx, cy);
-        const e3 = keyFor(cx, cy, ax, ay);
-        edgeCount.set(e1, (edgeCount.get(e1) || 0) + 1);
-        edgeCount.set(e2, (edgeCount.get(e2) || 0) + 1);
-        edgeCount.set(e3, (edgeCount.get(e3) || 0) + 1);
+    const bump = (key, tcx, tcy) => {
+        const info = edgeInfo.get(key);
+        if (info) info.count++;
+        else edgeInfo.set(key, { count: 1, tcx, tcy });
+    };
+    for (let i = 0; i + 8 < tris.length; i += 9) {
+        const ax = tris[i],     ay = tris[i + 1], az = tris[i + 2];
+        const bx = tris[i + 3], by = tris[i + 4], bz = tris[i + 5];
+        const cx = tris[i + 6], cy = tris[i + 7], cz = tris[i + 8];
+        // XY centroid of the owning triangle marks the interior side of
+        // each of its edges.
+        const tcx = (ax + bx + cx) / 3;
+        const tcy = (ay + by + cy) / 3;
+        bump(keyFor(ax, ay, az, bx, by, bz), tcx, tcy);
+        bump(keyFor(bx, by, bz, cx, cy, cz), tcx, tcy);
+        bump(keyFor(cx, cy, cz, ax, ay, az), tcx, tcy);
     }
     const outline = [];
-    for (const [key, count] of edgeCount) {
-        if (count !== 1) continue;
+    const normals = [];
+    for (const [key, info] of edgeInfo) {
+        if (info.count !== 1) continue;
         const [p1, p2] = key.split('|');
-        const [x1, y1] = p1.split(',').map(Number);
-        const [x2, y2] = p2.split(',').map(Number);
-        outline.push(x1, y1, x2, y2);
+        const [x1, y1, z1] = p1.split(',').map(Number);
+        const [x2, y2, z2] = p2.split(',').map(Number);
+        outline.push(x1, y1, z1, x2, y2, z2);
+        // Edge perpendicular in XY, signed to point away from the interior.
+        let nx = y2 - y1;
+        let ny = x1 - x2;
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        if (nx * (info.tcx - mx) + ny * (info.tcy - my) > 0) {
+            nx = -nx;
+            ny = -ny;
+        }
+        normals.push(nx, ny);
     }
     group.outline = outline;
+    group.outlineNormals = normals;
     return outline;
 }
 
 // Stroke the outline of a location region as a set of boundary line segments.
 function drawLocationRegionOutline(ctx, group, worldToCanvasFunc, strokeStyle, lineWidth) {
     const outline = computeRegionOutline(group);
-    if (!outline || outline.length < 4) return;
+    if (!outline || outline.length < 6) return;
     ctx.strokeStyle = strokeStyle;
     ctx.lineWidth = lineWidth;
     ctx.beginPath();
-    for (let i = 0; i + 3 < outline.length; i += 4) {
-        const a = worldToCanvasFunc(outline[i],     outline[i + 1]);
-        const b = worldToCanvasFunc(outline[i + 2], outline[i + 3]);
+    for (let i = 0; i + 5 < outline.length; i += 6) {
+        const a = worldToCanvasFunc(outline[i],     outline[i + 1], outline[i + 2]);
+        const b = worldToCanvasFunc(outline[i + 3], outline[i + 4], outline[i + 5]);
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
     }
@@ -5675,22 +5693,146 @@ function fillLocationRegion(ctx, group, fillColor, worldToCanvasFunc) {
     drawTriangleListFill(ctx, group.tris, fillColor, worldToCanvasFunc);
 }
 
-// Compute the set of loc-group names currently occupied by at least one
-// living player at this bucket. Uses the server-resolved 3D-nearest loc
-// (matches ezQuake) via resolvePlayerLoc.
-function computeOccupiedGroupNames(playerData) {
-    const occupied = new Set();
+// scaleRgbaAlpha: multiply the alpha of an 'rgba(r, g, b, a)' string by k,
+// clamped to cap. All map fill/stroke styles are rgba strings, so this is
+// how the focus tiers brighten/fade them without a parallel color table.
+function scaleRgbaAlpha(rgba, k, cap) {
+    return rgba.replace(/rgba\(([^,]+),([^,]+),([^,]+),([^)]+)\)/,
+        (m, r, g, b, a) => {
+            let na = parseFloat(a) * k;
+            if (cap !== undefined && na > cap) na = cap;
+            if (na > 1) na = 1;
+            return `rgba(${r},${g},${b},${na})`;
+        });
+}
+
+// ─── Region focus mode ──────────────────────────────────────────────────────
+//
+// Clicking a loc region (on empty floor, not a player symbol) focuses it:
+// the region and its XY-neighbors render solid and saturated while
+// everything else fades to a faint outline, so a zoomed-in fight area stays
+// readable. Click the same region, empty space, Escape, or Reset view to
+// clear. Focus also becomes the orbit-drag pivot (currentOrbitPivot).
+
+// Two named regions are "neighbors" when their world-XY bounding boxes are
+// within this many units of touching — roughly one corridor width.
+const FOCUS_NEIGHBOR_MARGIN = 160;
+
+// focusTier: null when no focus is active; otherwise which styling tier the
+// named group falls into.
+function focusTier(name) {
+    if (!mapState.focusGroupName) return null;
+    if (name === mapState.focusGroupName) return 'focus';
+    if (mapState.focusNeighbors && mapState.focusNeighbors.has(name)) return 'near';
+    return 'far';
+}
+
+// World-XY bbox of a group's floor triangles, cached on the group (geometry
+// is static per demo).
+function groupWorldBBox(group) {
+    if (group._wbbox) return group._wbbox;
+    const tris = group.tris;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i + 8 < tris.length; i += 9) {
+        for (let v = 0; v < 9; v += 3) {
+            const x = tris[i + v], y = tris[i + v + 1];
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+    }
+    group._wbbox = { minX, maxX, minY, maxY };
+    return group._wbbox;
+}
+
+function setFocusGroup(name) {
+    mapState.focusGroupName = null;
+    mapState.focusNeighbors = null;
+    const focus = name ? mapState.locationGroupByName?.[name] : null;
+    if (focus && focus.tris && focus.tris.length >= 9) {
+        mapState.focusGroupName = name;
+        const fb = groupWorldBBox(focus);
+        const nb = new Set();
+        for (const g of mapState.locationGroups || []) {
+            if (g === focus || !g.tris || g.tris.length < 9) continue;
+            const gb = groupWorldBBox(g);
+            const gapX = Math.max(gb.minX - fb.maxX, fb.minX - gb.maxX);
+            const gapY = Math.max(gb.minY - fb.maxY, fb.minY - gb.maxY);
+            if (Math.max(gapX, gapY) <= FOCUS_NEIGHBOR_MARGIN) nb.add(g.name);
+        }
+        mapState.focusNeighbors = nb;
+    }
+    mapState.renderDirty = true;
+    renderMap(mapState.currentTime);
+}
+
+function pointInTriangle(px, py, a, b, c) {
+    const d1 = (px - b.x) * (a.y - b.y) - (a.x - b.x) * (py - b.y);
+    const d2 = (px - c.x) * (b.y - c.y) - (b.x - c.x) * (py - c.y);
+    const d3 = (px - a.x) * (c.y - a.y) - (c.x - a.x) * (py - a.y);
+    const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+    return !(hasNeg && hasPos);
+}
+
+// pickLocGroupAt: which named loc region is under the canvas point. Tests
+// every projected floor triangle; among hits the one nearest the camera
+// wins, so clicking a spot where two floors stack resolves to the visible
+// (upper, under the current rotation) one. One-off per click — no caching.
+function pickLocGroupAt(cx, cy) {
+    let bestName = null;
+    let bestDepth = -Infinity;
+    for (const group of mapState.locationGroups || []) {
+        const tris = group.tris;
+        if (!tris || tris.length < 9) continue;
+        for (let i = 0; i + 8 < tris.length; i += 9) {
+            const a = worldToCanvasNew(tris[i],     tris[i + 1], tris[i + 2]);
+            const b = worldToCanvasNew(tris[i + 3], tris[i + 4], tris[i + 5]);
+            const c = worldToCanvasNew(tris[i + 6], tris[i + 7], tris[i + 8]);
+            if (!pointInTriangle(cx, cy, a, b, c)) continue;
+            const depth = Math.max(a.depth, b.depth, c.depth);
+            if (depth > bestDepth) {
+                bestDepth = depth;
+                bestName = group.name;
+            }
+        }
+    }
+    return bestName;
+}
+
+// Compute, per loc-group occupied by at least one living player this bucket,
+// the set of team indices present in it. Keyed by normalized loc name. Uses
+// the server-resolved 3D-nearest loc (matches ezQuake) via resolvePlayerLoc;
+// each player's team index comes from the canonical playerSymbols mapping.
+function computeOccupiedGroupTeams(playerData) {
+    const occupied = new Map(); // normalized loc name -> Set<teamIdx>
     if (!playerData) return occupied;
     const locations = mapState.locations;
-    for (const data of Object.values(playerData)) {
+    const symbols = mapState.playerSymbols || {};
+    for (const [name, data] of Object.entries(playerData)) {
         if (!data) continue;
         if (data.d || (data.h !== undefined && data.h <= 0)) continue;
         if (data.x === 0 && data.y === 0) continue;
         const locName = resolvePlayerLoc(data, locations);
         if (!locName) continue;
-        occupied.add(normalizeLocationName(locName));
+        const key = normalizeLocationName(locName);
+        let teams = occupied.get(key);
+        if (!teams) { teams = new Set(); occupied.set(key, teams); }
+        teams.add(symbols[name] ? symbols[name].teamIdx : 0);
     }
     return occupied;
+}
+
+// regionActiveTint: tint for a region by the team(s) currently in it — one
+// team → that team's canonical colour, both teams → white (contested). Drawn
+// over the neutral floor, so colour here always means "a player is here".
+const REGION_TINT_ALPHA = 0.3;
+const REGION_TINT_CONTESTED = `rgba(235, 235, 245, ${REGION_TINT_ALPHA})`;
+function regionActiveTint(teams) {
+    if (!teams || teams.size !== 1) return REGION_TINT_CONTESTED;
+    const teamIdx = teams.values().next().value;
+    return hexToRgba(TEAM_COLORS[teamIdx] || TEAM_COLORS[0], REGION_TINT_ALPHA);
 }
 
 // Highlight loc regions that contain at least one player. Drawn on top of
@@ -5699,13 +5841,24 @@ function computeOccupiedGroupNames(playerData) {
 function drawOccupiedRegionsOverlay(ctx, playerData) {
     const groupsByName = mapState.locationGroupByName;
     if (!groupsByName) return;
-    const occupied = computeOccupiedGroupNames(playerData);
+    const occupied = computeOccupiedGroupTeams(playerData);
     if (occupied.size === 0) return;
 
-    // Brighter outline pass.
-    for (const name of occupied) {
+    // Colour-fill pass: tint each occupied region by the team(s) present so
+    // the active area stands out against the otherwise-neutral floor. The
+    // floor is drawn neutral by default (buildFloorModel),
+    // so a tint only ever appears here, under a player. One translucent path
+    // per region (single fill → no internal triangle seams).
+    for (const [name, teams] of occupied) {
         const group = groupsByName[name];
-        if (!group || !group.tris || group.tris.length < 6) continue;
+        if (!group || !group.tris || group.tris.length < 9) continue;
+        drawTriangleListFill(ctx, group.tris, regionActiveTint(teams), worldToCanvas);
+    }
+
+    // Brighter outline pass.
+    for (const name of occupied.keys()) {
+        const group = groupsByName[name];
+        if (!group || !group.tris || group.tris.length < 9) continue;
         drawLocationRegionOutline(ctx, group, worldToCanvasNew, 'rgba(220, 220, 220, 0.7)', 1);
     }
 
@@ -5714,10 +5867,10 @@ function drawOccupiedRegionsOverlay(ctx, playerData) {
     ctx.font = `bold ${boldPx}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (const name of occupied) {
+    for (const name of occupied.keys()) {
         const group = groupsByName[name];
         if (!group) continue;
-        const pos = worldToCanvasNew(group.centroid.x, group.centroid.y);
+        const pos = worldToCanvasNew(group.centroid.x, group.centroid.y, group.centroid.z);
         // Soft shadow so the label stays legible against any underlying tint.
         ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
         ctx.fillText(group.name, pos.x + 1, pos.y + 1);
@@ -5811,7 +5964,12 @@ function drawRegionControlOverlay(ctx, controlStates) {
         const color = hexToRgba(hex, finalAlpha);
 
         for (const group of groups) {
-            fillLocationRegion(ctx, group, color, worldToCanvasNew);
+            // Region focus: tint outside the focus neighborhood fades with
+            // the base fills so the focused area keeps visual priority.
+            const tint = focusTier(group.name) === 'far'
+                ? scaleRgbaAlpha(color, 0.3)
+                : color;
+            fillLocationRegion(ctx, group, tint, worldToCanvasNew);
         }
     }
 }
@@ -5835,11 +5993,13 @@ let mapState = {
     animationFrameId: null,
     lastRenderTime: 0,
     trailDuration: 10,          // Current trail window in seconds
-    fullTrails: {},             // playerName -> [{x, y, t, teamIdx, tp}] — pre-computed from all buckets
+    fullTrails: {},             // playerName -> [{wx, wy, wz, t, teamIdx, tp}] — pre-computed from all buckets
     trailStartTimes: {},        // playerName -> time when trail tracking started (for extending forward)
     enabledPlayers: {},         // playerName -> boolean — per-player trail toggle
     teams: [],
     playerSymbols: {}, // playerName -> { symbol, team, teamIdx }
+    showViewArrows: false,      // per-player 3D view-direction arrows (opt-in)
+    showVelArrows: false,       // per-player 3D velocity arrows (opt-in)
     initialized: false,
     lastRenderedBucket: null, // Skip redundant redraws
     renderDirty: false,       // Force redraw on track toggle/reset/etc
@@ -5848,8 +6008,13 @@ let mapState = {
     // "Learn map" mode: a static study view that hides players and shows
     // the map's designed entity layout (result.mapEntities) instead.
     learnMode: false,
+    focusGroupName: null,     // normalized loc-group name under region focus, or null
+    focusNeighbors: null,     // Set of group names adjacent to the focused one
+    movers: [],               // result.streams.movers — brush-model pose timelines (v32)
+    submodelMeshes: null,     // { submodelId -> tris } from corpus v4 geom.submodels
+    posStreams: {},           // name -> PositionTrack {t,x,y,z,h,lq} for stream-sourced animation
     mapEntities: [],          // result.mapEntities.entities for the current demo
-    teleportArrows: [],       // precomputed {sx,sy,dx,dy} entrance→exit world-coord pairs
+    teleportArrows: [],       // precomputed {sx,sy,sz,dx,dy,dz} entrance→exit world-coord pairs
     entityFilters: {          // per-category visibility in learn mode
         weapon: true, armor: true, health: true, ammo: true, powerup: true,
         teleporter: true, spawn: false, button: false, door: false
@@ -5912,6 +6077,71 @@ function markMapDirty() {
     mapState.renderDirty = true;
 }
 
+// normalizeMapGeometry: upgrade a fetched geometry JSON to the version-2
+// shape in place. Version 2 (mapgen ≥ schema bump) emits 9 floats per
+// triangle (x,y,z per vertex); version 1 files emitted 6 (XY only). Old
+// files — e.g. a stale browser cache — are expanded by flattening every
+// vertex to the region's median z, which reproduces the v1 look exactly
+// at top-down and gives a usable (if flat-per-region) 3D view.
+// applyMapGeometry: install (or re-install, after an edit / regeneration)
+// a geometry object as the map's floor/wall source. Normalizes legacy
+// versions, splits out the unnamed backdrop, drops every geometry-derived
+// cache, and rebuilds the loc groups + region-control references.
+function applyMapGeometry(geom) {
+    normalizeMapGeometry(geom);
+    // The unnamed backdrop bucket (name === "") is drawn as a neutral
+    // underlay by drawLocationLayer; cache its triangle list separately so
+    // it isn't confused with loc groups keyed by name.
+    const backdrop = geom.locs.find(l => l && l.name === '');
+    geom.backdropTris = backdrop && Array.isArray(backdrop.tris) && backdrop.tris.length >= 9
+        ? backdrop.tris : null;
+    mapState.mapGeometry = geom;
+    // Submodel meshes (corpus v4) keyed by id for the mover renderer.
+    mapState.submodelMeshes = null;
+    if (Array.isArray(geom.submodels)) {
+        const sm = {};
+        for (const s of geom.submodels) {
+            if (s && Number.isInteger(s.id) && Array.isArray(s.tris) && s.tris.length >= 9) {
+                sm[s.id] = s.tris;
+            }
+        }
+        if (Object.keys(sm).length > 0) mapState.submodelMeshes = sm;
+    }
+    // Geometry-derived caches are stale now.
+    mapState._floorZCache = null;
+    mapState._floorModel = null;
+    mapState._floorCanvasKey = null;
+    mapState._moverFaces = null;
+    // Rebuild groups with tris attached, then refresh region->group
+    // references so the control overlay doesn't keep pointing at the
+    // previous (stale-tris) group objects.
+    mapState.locationGroups = processLocationGroups(mapState.locations);
+    if (mapState.rcResult) {
+        applyRegionConfig(); // also calls renderMap
+    } else {
+        markMapDirty();
+        renderMap(mapState.currentTime);
+    }
+}
+
+function normalizeMapGeometry(geom) {
+    if (geom.version >= 2) return;
+    for (const l of geom.locs) {
+        if (!l || !Array.isArray(l.tris)) continue;
+        const t6 = l.tris;
+        const z = l.z || 0;
+        const t9 = new Array((t6.length / 6) * 9);
+        let j = 0;
+        for (let i = 0; i + 5 < t6.length; i += 6) {
+            t9[j++] = t6[i];     t9[j++] = t6[i + 1]; t9[j++] = z;
+            t9[j++] = t6[i + 2]; t9[j++] = t6[i + 3]; t9[j++] = z;
+            t9[j++] = t6[i + 4]; t9[j++] = t6[i + 5]; t9[j++] = z;
+        }
+        l.tris = t9;
+    }
+    geom.version = 2;
+}
+
 function initMapView(result) {
     if (!result.timelineAnalysis) return;
 
@@ -5928,6 +6158,34 @@ function initMapView(result) {
     mapState.locTable = (timeline && timeline.locTable) ? timeline.locTable : [''];
     mapState.locationGroups = null; // Clear cached groups for new demo
     mapState.mapGeometry = null;    // Reset BSP-derived geometry for new demo
+    mapState.focusGroupName = null; // Region focus doesn't survive demo switch
+    mapState.focusNeighbors = null;
+    mapState._floorModel = null;    // floor-model + anchor caches are per-geometry
+    mapState._floorCanvasKey = null;
+    mapState._floorZCache = null;
+
+    // Mover pose timelines (result.streams.movers, schema v32) — animated
+    // lifts/doors/plats. Meshes (mapState.submodelMeshes) arrive with the
+    // async corpus geometry; both are required to draw a mover, so either
+    // being absent is a graceful no-op.
+    mapState.movers = (result.streams && Array.isArray(result.streams.movers))
+        ? result.streams.movers : [];
+    mapState.submodelMeshes = null;
+    mapState._moverFaces = null;
+
+    // Per-player native-rate position tracks (result.streams.players[].pos)
+    // keyed by canonical name. The map animates symbol positions from these
+    // and reads the per-sample floor-height H for the floor-anchor stem
+    // (state badges still come from the bucket view). Keyed by the same
+    // disambiguated name the bucket view uses.
+    mapState.posStreams = {};
+    if (result.streams && Array.isArray(result.streams.players)) {
+        for (const p of result.streams.players) {
+            if (p && p.pos && Array.isArray(p.pos.t) && p.pos.t.length > 0) {
+                mapState.posStreams[p.name] = p.pos;
+            }
+        }
+    }
 
     // Static map-entity corpus (result.mapEntities) for the "learn map" view.
     mapState.mapEntities = (result.mapEntities && Array.isArray(result.mapEntities.entities))
@@ -5942,7 +6200,6 @@ function initMapView(result) {
     if (learnBtn) {
         learnBtn.style.display = mapState.mapEntities.length > 0 ? '' : 'none';
         learnBtn.classList.remove('active');
-        learnBtn.textContent = 'Learn map';
     }
 
     // Fire-and-forget: try to load pre-generated BSP-derived map geometry.
@@ -5950,6 +6207,7 @@ function initMapView(result) {
     // If absent (404 or fetch error), the existing hull path remains as fallback.
     const rawMapName = result.demoInfo && result.demoInfo.map ? result.demoInfo.map : '';
     const mapBasename = rawMapName.toLowerCase().replace(/^maps\//, '').replace(/\.bsp$/, '');
+    mapState.mapBasename = mapBasename;
     if (mapBasename) {
         const tGeom = performance.now();
         fetch(`maps/${mapBasename}.json`)
@@ -5957,23 +6215,7 @@ function initMapView(result) {
             .then(geom => {
                 console.log(`[mvd-timing] map geometry fetch (async): ${(performance.now() - tGeom).toFixed(1)} ms`);
                 if (!geom || !Array.isArray(geom.locs) || geom.locs.length === 0) return;
-                // The unnamed backdrop bucket (name === "") is drawn as a
-                // neutral underlay by drawLocationLayer; cache its triangle
-                // list separately so it isn't confused with loc groups keyed
-                // by name.
-                const backdrop = geom.locs.find(l => l && l.name === '');
-                geom.backdropTris = backdrop && Array.isArray(backdrop.tris) ? backdrop.tris : null;
-                mapState.mapGeometry = geom;
-                // Rebuild groups with tris attached, then refresh region->group
-                // references so the control overlay doesn't keep pointing at
-                // the pre-fetch (tris-less) group objects.
-                mapState.locationGroups = processLocationGroups(mapState.locations);
-                if (mapState.rcResult) {
-                    applyRegionConfig(); // also calls renderMap
-                } else {
-                    markMapDirty();
-                    renderMap(mapState.currentTime);
-                }
+                applyMapGeometry(geom);
             })
             .catch(() => {});
     }
@@ -5987,10 +6229,17 @@ function initMapView(result) {
     // Calculate bounds from locations and player positions
     calculateMapBounds(result);
 
-    // Size canvas and recompute transform. A fresh demo load resets user pan/zoom.
+    // Size canvas and recompute transform. A fresh demo load resets user
+    // pan/zoom and the camera to the default tilted 3D view (floors at
+    // different heights separate at a glance; the 3D toggle drops to top-down).
     _wtc.panX = 0;
     _wtc.panY = 0;
     _wtc.zoomK = 1;
+    _wtc.yaw = MAP_DEFAULT_YAW;
+    _wtc.pitch = MAP_3D_DEFAULT_PITCH;
+    refreshMapCameraTrig();
+    const btn3d = document.getElementById('map-3d-toggle');
+    if (btn3d) btn3d.classList.toggle('active', mapIs3D());
     mapState.followPlayer = null;
     resizeMapCanvas();
 
@@ -6028,6 +6277,7 @@ function initMapView(result) {
         t:      d.time * 0.001,
         wx:     d.origin?.[0] || 0,
         wy:     d.origin?.[1] || 0,
+        wz:     d.origin?.[2] || 0,
         weapon: d.weapon,
     }));
 
@@ -6035,6 +6285,13 @@ function initMapView(result) {
     // scaling in renderMap (players higher up on the map render up to 25%
     // larger than those on the lowest level).
     mapState.zRange = computeMapZRange(mapState.locations);
+
+    // Orbit-camera reference height: tilting pivots about the map's vertical
+    // middle so high and low floors fan out symmetrically around the screen
+    // position they had at top-down. The default is remembered so Reset view
+    // can undo orbit-drag re-centering.
+    _wtc.zMid = (mapState.zRange.lo + mapState.zRange.hi) / 2;
+    _wtc.zMidDefault = _wtc.zMid;
 
     // Populate the Follow-player dropdown with current players.
     rebuildFollowSelect();
@@ -6452,8 +6709,115 @@ function calculateMapBounds(result) {
 // Precomputed transform parameters — call updateWorldToCanvasTransform() when bounds/canvas change.
 // panX/panY/zoomK carry user-applied pan and zoom on top of the fit-to-canvas base. They persist
 // across transform recomputes (e.g. canvas resize, geometry reload) so the user's view survives.
+//
+// yaw/pitch are the 3D orbit camera angles. pitch = π/2 is exact top-down —
+// the projection then degenerates to the classic 2D transform (screen x = x,
+// screen y = y, depth = z), so the default view is identical to the old 2D
+// map. Lowering pitch tilts the camera; yaw spins the map about its center.
+// cx/cy/zMid are the world-space orbit center (XY map center, mid height).
+// sinYaw..cosPitch are cached trig — refreshMapCameraTrig() keeps them in
+// sync whenever yaw/pitch change.
 let _wtc = { scale: 1, offsetX: 0, offsetY: 0, minX: 0, minY: 0, canvasH: 0,
-             panX: 0, panY: 0, zoomK: 1 };
+             panX: 0, panY: 0, zoomK: 1,
+             yaw: 0, pitch: Math.PI / 2,
+             cx: 0, cy: 0, zMid: 0,
+             sinYaw: 0, cosYaw: 1, sinPitch: 1, cosPitch: 0 };
+
+// Camera pitch limits: π/2 is top-down (the 2D view); 0 is a true side
+// elevation (looking along the horizon). Nothing in the render path divides
+// by sinPitch anymore — the zoom anchor works in view space and
+// canvasToWorld guards its inverse — so the full range is allowed.
+const MAP_PITCH_MAX = Math.PI / 2;
+const MAP_PITCH_MIN = 0;
+
+// Yaw lightly snaps to the four cardinal directions when within this margin,
+// so "look straight along x / y" is easy to hit by hand. The orbit drag uses
+// absolute deltas from the drag start, so dragging through a snap point
+// escapes it naturally.
+const MAP_YAW_SNAP = 2 * Math.PI / 180;
+
+// Pitch applied by the "3D" toggle button — tilted enough that floors at
+// different heights separate clearly, while the layout stays recognizable.
+// 55° from top-down is also ~the isometric tilt (true iso ≈ 54.7°).
+const MAP_3D_DEFAULT_PITCH = 55 * Math.PI / 180;
+
+// Yaw for the default view — 45° spins the map onto a corner so it reads as a
+// classical isometric / three-quarter view (angled in both x and y) rather
+// than looking straight down an axis. Clears the ±2° cardinal snap.
+const MAP_DEFAULT_YAW = 45 * Math.PI / 180;
+
+// mapIs3D: true while the camera is rotated off the exact top-down view.
+function mapIs3D() {
+    return _wtc.pitch < MAP_PITCH_MAX - 1e-6 || Math.abs(_wtc.yaw) > 1e-6;
+}
+
+function refreshMapCameraTrig() {
+    _wtc.sinYaw = Math.sin(_wtc.yaw);
+    _wtc.cosYaw = Math.cos(_wtc.yaw);
+    _wtc.sinPitch = Math.sin(_wtc.pitch);
+    _wtc.cosPitch = Math.cos(_wtc.pitch);
+}
+
+// setMapCamera: normalize + snap + clamp the orbit angles, sync the 3D
+// toggle button, and redraw. The single entry point for every rotation
+// source (button, drag).
+function setMapCamera(yaw, pitch) {
+    // Normalize yaw to (-π, π] so the numbers stay sane over long sessions.
+    const TWO_PI = 2 * Math.PI;
+    yaw = ((yaw % TWO_PI) + TWO_PI) % TWO_PI;
+    if (yaw > Math.PI) yaw -= TWO_PI;
+    // Light cardinal snap (0 / ±90° / 180°).
+    const snap = Math.round(yaw / (Math.PI / 2)) * (Math.PI / 2);
+    if (Math.abs(yaw - snap) < MAP_YAW_SNAP) yaw = snap;
+    _wtc.yaw = yaw;
+    _wtc.pitch = Math.min(MAP_PITCH_MAX, Math.max(MAP_PITCH_MIN, pitch));
+    refreshMapCameraTrig();
+    const btn = document.getElementById('map-3d-toggle');
+    if (btn) btn.classList.toggle('active', mapIs3D());
+    mapState.renderDirty = true;
+    renderMap(mapState.currentTime);
+}
+
+// setOrbitCenter: move the orbit pivot to a new world point without any
+// visible jump — the new center is projected under the old and new
+// parameters and the pan difference is folded in, so the view only changes
+// on the *next* rotation, which then pivots about the new point.
+function setOrbitCenter(wx, wy, wz) {
+    const p0 = worldToCanvasNew(wx, wy, wz);
+    _wtc.cx = wx;
+    _wtc.cy = wy;
+    _wtc.zMid = wz;
+    const p1 = worldToCanvasNew(wx, wy, wz);
+    _wtc.panX += p0.x - p1.x;
+    _wtc.panY += p0.y - p1.y;
+}
+
+// currentOrbitPivot: where an orbit drag should pivot. Follow mode pivots on
+// the tracked player; a focused region pivots on its centroid (at its real
+// floor height, so pitch changes don't swing a high floor across the
+// screen); otherwise the world point currently at canvas center — so
+// "pan/zoom to a place, then rotate" orbits where you're looking.
+function currentOrbitPivot() {
+    if (mapState.followPlayer) {
+        // Match the stream-sourced symbol position so the orbit pivots
+        // exactly on the drawn symbol.
+        const sp = streamPosAt(mapState.followPlayer, mapState.currentTime * 1000);
+        if (sp && !(sp.x === 0 && sp.y === 0)) {
+            return { x: sp.x, y: sp.y, z: sp.z || 0 };
+        }
+        const bucket = findBucketAtTime(mapState.currentTime);
+        const fp = bucket && bucket.p ? bucket.p[mapState.followPlayer] : null;
+        if (fp && !(fp.x === 0 && fp.y === 0)) {
+            return { x: fp.x, y: fp.y, z: fp.z || 0 };
+        }
+    }
+    if (mapState.focusGroupName && mapState.locationGroupByName) {
+        const g = mapState.locationGroupByName[mapState.focusGroupName];
+        if (g) return { x: g.centroid.x, y: g.centroid.y, z: g.centroid.z };
+    }
+    const c = canvasToWorld((mapState.canvasCssW || 0) / 2, (mapState.canvasCssH || 0) / 2);
+    return { x: c.x, y: c.y, z: _wtc.zMid };
+}
 
 // Canvas width used for non-fullscreen rendering. Fullscreen reads the container bbox instead.
 const MAP_CANVAS_BASE_WIDTH = 850;
@@ -6507,7 +6871,11 @@ function updateWorldToCanvasTransform() {
     _wtc.minX = minX;
     _wtc.minY = minY;
     _wtc.canvasH = cssH;
-    // panX, panY, zoomK intentionally preserved across recomputes.
+    // Orbit center: the XY map center. zMid is set separately (initMapView)
+    // from the map's loc height range.
+    _wtc.cx = (minX + maxX) / 2;
+    _wtc.cy = (minY + maxY) / 2;
+    // panX, panY, zoomK, yaw, pitch intentionally preserved across recomputes.
 }
 
 function resetMapView() {
@@ -6518,35 +6886,80 @@ function resetMapView() {
         mapState.followPlayer = null;
         syncFollowSelectUI();
     }
-    mapState.renderDirty = true;
-    renderMap(mapState.currentTime);
+    if (mapState.focusGroupName) setFocusGroup(null);
+    // Restore the default orbit pivot (map center / mid height) — orbit
+    // drags may have re-centered it.
+    updateWorldToCanvasTransform();
+    _wtc.zMid = _wtc.zMidDefault || 0;
+    // Back to the default isometric view (also syncs the 3D button and redraws).
+    setMapCamera(MAP_DEFAULT_YAW, MAP_3D_DEFAULT_PITCH);
 }
 
 // Reusable point to avoid GC — only use for immediate consumption, not storage
-const _tmpPt = { x: 0, y: 0 };
+const _tmpPt = { x: 0, y: 0, depth: 0 };
 
-function worldToCanvas(x, y) {
-    const sx = _wtc.scale * _wtc.zoomK;
-    _tmpPt.x = _wtc.offsetX + (x - _wtc.minX) * sx + _wtc.panX;
-    _tmpPt.y = _wtc.canvasH - _wtc.offsetY - (y - _wtc.minY) * sx + _wtc.panY;
-    return _tmpPt;
+// projectWorld: orbit-camera orthographic projection of a world-space point.
+// The point is rotated about the map center by yaw (about the world Z axis),
+// then tilted by pitch, and the result is pushed through the same
+// fit/zoom/pan linear map the 2D view used. At pitch=π/2, yaw=0 this is
+// exactly the old 2D transform (x→x, y→y) and depth degenerates to z, so the
+// pre-existing z-sort semantics carry over unchanged.
+//
+// `depth` is camera closeness — bigger means nearer the viewer — used by the
+// painter's sort for players / items / entities.
+function projectWorld(x, y, z, out) {
+    const w = _wtc;
+    const dx = x - w.cx, dy = y - w.cy, dz = (z || 0) - w.zMid;
+    const xr = dx * w.cosYaw - dy * w.sinYaw;
+    const yr = dx * w.sinYaw + dy * w.cosYaw;
+    const u = w.cx + xr;
+    const v = w.cy + yr * w.sinPitch + dz * w.cosPitch;
+    const sx = w.scale * w.zoomK;
+    out.x = w.offsetX + (u - w.minX) * sx + w.panX;
+    out.y = w.canvasH - w.offsetY - (v - w.minY) * sx + w.panY;
+    out.depth = dz * w.sinPitch - yr * w.cosPitch;
+    return out;
+}
+
+function worldToCanvas(x, y, z) {
+    return projectWorld(x, y, z, _tmpPt);
 }
 
 // Allocating version for cases where result is stored (e.g., tracks, caching)
-function worldToCanvasNew(x, y) {
-    const sx = _wtc.scale * _wtc.zoomK;
+function worldToCanvasNew(x, y, z) {
+    return projectWorld(x, y, z, { x: 0, y: 0, depth: 0 });
+}
+
+// canvasToView: invert only the linear screen part of the projection —
+// canvas pixel to the rotated view-plane coordinate (u, v) that projectWorld
+// feeds into the fit/zoom/pan map. Well-defined at any pitch (no division by
+// sinPitch), which is what makes the zoom anchor below safe all the way down
+// to a horizontal camera.
+function canvasToView(cx, cy) {
+    const w = _wtc;
+    const sx = w.scale * w.zoomK;
     return {
-        x: _wtc.offsetX + (x - _wtc.minX) * sx + _wtc.panX,
-        y: _wtc.canvasH - _wtc.offsetY - (y - _wtc.minY) * sx + _wtc.panY
+        u: w.minX + (cx - w.offsetX - w.panX) / sx,
+        v: w.minY + (w.canvasH - w.offsetY + w.panY - cy) / sx
     };
 }
 
-// Inverse of worldToCanvas — canvas pixel to world coord. Needed for zoom-about-cursor and hit-testing.
-function canvasToWorld(cx, cy) {
-    const sx = _wtc.scale * _wtc.zoomK;
+// Inverse of worldToCanvas — canvas pixel to world coord. Needed for the
+// orbit-pivot pick and hit-testing. A single screen point maps to a world
+// *ray* under the orbit camera, so the inverse is taken on the horizontal
+// plane z = zPlane (default: the orbit center height). At top-down this is
+// the exact 2D inverse regardless of zPlane. Near pitch 0 that plane is
+// edge-on and the true inverse blows up — sinPitch is floored so callers
+// get a finite (if approximate) point instead of NaN.
+function canvasToWorld(cx, cy, zPlane) {
+    const w = _wtc;
+    const { u, v } = canvasToView(cx, cy);
+    const xr = u - w.cx;
+    const dz = (zPlane === undefined ? w.zMid : zPlane) - w.zMid;
+    const yr = (v - w.cy - dz * w.cosPitch) / Math.max(w.sinPitch, 0.05);
     return {
-        x: _wtc.minX + (cx - _wtc.offsetX - _wtc.panX) / sx,
-        y: _wtc.minY + (_wtc.canvasH - _wtc.offsetY + _wtc.panY - cy) / sx
+        x: w.cx + xr * w.cosYaw + yr * w.sinYaw,
+        y: w.cy - xr * w.sinYaw + yr * w.cosYaw
     };
 }
 
@@ -6602,6 +7015,7 @@ function assignPlayerSymbols(result) {
     // player roster is known for this demo.
     buildMapLegend();
     buildTrailPlayersPanel();
+    updateTrailButtonStates(); // reflect the initial selection (None on load)
 }
 
 // Base size (px) of a player symbol at iconScale=1. The letter circle
@@ -6704,6 +7118,7 @@ function buildTrailPlayersPanel() {
             if (cb.checked) {
                 mapState.trailStartTimes[name] = mapState.currentTime;
             }
+            updateTrailButtonStates();
             mapState.renderDirty = true;
             renderMap(mapState.currentTime);
         });
@@ -6945,29 +7360,513 @@ function buildPlayerRegionIcon(player) {
 // worldToCanvas so everything follows user pan / zoom and stays crisp. No
 // bitmap cache — at typical loc counts (~30 regions) this is a handful of
 // batched path fills / strokes per frame, trivially cheap.
+// Focus-tier styling: how a group's base fill / outline / label react to the
+// active focus. No focus → base styles untouched.
+function tierFill(group, tier) {
+    const base = group.color.fill;
+    if (tier === 'focus') return scaleRgbaAlpha(base, 6, 0.5);
+    if (tier === 'near')  return scaleRgbaAlpha(base, 3.5, 0.32);
+    if (tier === 'far')   return scaleRgbaAlpha(base, 0.3);
+    return base;
+}
+
+// ─── Floor-model geometry + shading helpers ─────────────────────────────────
+//
+// The floor model (buildFloorModel) extrudes the floor's outer boundary into
+// box sides and painter-sorts every triangle by projected camera depth into
+// an offscreen canvas keyed by the full camera state, so steady playback just
+// blits — only rotation / pan / zoom / focus changes re-render. The helpers
+// below find that boundary (floorBoundaryEdges / floorBoundaryWalls) and draw
+// the sorted entries (renderSolidEntries); SOLID_LIGHT shades the liquid
+// volumes.
+
+// Fixed light for face shading — high, slightly off-axis so faces pointing
+// different directions separate tonally (used by the liquid volumes).
+const SOLID_LIGHT = (() => {
+    const l = [0.35, 0.25, 0.9];
+    const n = Math.hypot(l[0], l[1], l[2]);
+    return [l[0] / n, l[1] / n, l[2] / n];
+})();
+
+function parseRgbPrefix(rgba) {
+    const m = /rgba?\(([^,]+),([^,]+),([^,]+)/.exec(rgba);
+    return m ? [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])] : [170, 170, 190];
+}
+
+// floorBoundaryEdges returns the floor's outer-boundary edges: edges that
+// belong to exactly one floor triangle across all regions + the backdrop —
+// the floor's true outer perimeter plus its internal step risers. Edges
+// shared by two triangles (loc-region boundaries inside a continuous floor)
+// are interior and excluded, so nothing is extruded inside a flat floor.
+// Each returned edge carries its outward horizontal normal (nx, ny) for
+// backface culling. Quantized edge keys absorb float noise.
+function floorBoundaryEdges(backdropTris, groups) {
+    const edges = new Map();
+    const k = (x, y, z) => Math.round(x * 8) + ',' + Math.round(y * 8) + ',' + Math.round(z * 8);
+    const add = (tris) => {
+        if (!tris || tris.length < 9) return;
+        for (let i = 0; i + 8 < tris.length; i += 9) {
+            for (let e = 0; e < 3; e++) {
+                const o1 = i + e * 3, o2 = i + ((e + 1) % 3) * 3, o3 = i + ((e + 2) % 3) * 3;
+                const ka = k(tris[o1], tris[o1 + 1], tris[o1 + 2]);
+                const kb = k(tris[o2], tris[o2 + 1], tris[o2 + 2]);
+                const key = ka < kb ? ka + '|' + kb : kb + '|' + ka;
+                const info = edges.get(key);
+                if (info) { info.count++; continue; }
+                edges.set(key, {
+                    count: 1,
+                    ax: tris[o1], ay: tris[o1 + 1], az: tris[o1 + 2],
+                    bx: tris[o2], by: tris[o2 + 1], bz: tris[o2 + 2],
+                    ox: tris[o3], oy: tris[o3 + 1], // opposite vertex → outward dir
+                });
+            }
+        }
+    };
+    add(backdropTris);
+    for (const g of groups) add(g.tris);
+    const out = [];
+    for (const info of edges.values()) {
+        if (info.count !== 1) continue; // interior edge → no box side
+        const { ax, ay, az, bx, by, bz, ox, oy } = info;
+        // Horizontal normal ⟂ the edge, flipped to point away from the
+        // triangle's opposite vertex (i.e. out of the floor).
+        let nx = -(by - ay), ny = bx - ax;
+        const mx = (ax + bx) / 2, my = (ay + by) / 2;
+        if (nx * (ox - mx) + ny * (oy - my) > 0) { nx = -nx; ny = -ny; }
+        const nl = Math.hypot(nx, ny) || 1;
+        out.push({ ax, ay, az, bx, by, bz, nx: nx / nl, ny: ny / nl });
+    }
+    return out;
+}
+
+// floorBoundaryWalls extrudes the boundary edges into the side-wall triangles
+// that turn the floor into one solid box FLOOR_SLAB_DEPTH units tall — used by
+// the floor model, which depth-sorts opaque triangles (no per-edge culling).
+function floorBoundaryWalls(backdropTris, groups) {
+    const walls = [];
+    for (const e of floorBoundaryEdges(backdropTris, groups)) {
+        const { ax, ay, az, bx, by, bz } = e;
+        const az2 = az - FLOOR_SLAB_DEPTH, bz2 = bz - FLOOR_SLAB_DEPTH;
+        walls.push(ax, ay, az, bx, by, bz, bx, by, bz2);
+        walls.push(ax, ay, az, bx, by, bz2, ax, ay, az2);
+    }
+    return walls;
+}
+
+// renderSolidEntries: painter-sort by projected centroid depth (cached per
+// camera angle — the order only depends on yaw/pitch) and draw, batching
+// consecutive same-fill triangles into a single path.
+function renderSolidEntries(ctx, se) {
+    const w = _wtc;
+    const camKey = w.yaw + '|' + w.pitch;
+    if (se.sortedFor !== camKey) {
+        for (const e of se.entries) {
+            const dx = e.cx - w.cx, dy = e.cy - w.cy, dz = e.cz - w.zMid;
+            const yr = dx * w.sinYaw + dy * w.cosYaw;
+            e.depth = dz * w.sinPitch - yr * w.cosPitch;
+        }
+        se.entries.sort((a, b) => a.depth - b.depth);
+        se.sortedFor = camKey;
+    }
+    const focused = !!mapState.focusGroupName;
+    let curFill = null;
+    let open = false;
+    // Seal the anti-aliasing seams between adjacent triangles. The painter
+    // sort interleaves triangles, so even one continuous floor's same-colour
+    // tris land in separate sub-paths; canvas anti-aliases each shared edge
+    // against the backdrop, so the triangulation reads as a distracting mesh.
+    // Stroking every batch with its own fill colour at a hairline width covers
+    // those gaps. Genuine 3D edges (floor-top↔slab-side folds, walls) survive
+    // because they're a different colour and so aren't painted over.
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 1;
+    const flush = () => {
+        ctx.fill();
+        ctx.strokeStyle = curFill;
+        ctx.stroke();
+    };
+    for (const e of se.entries) {
+        const fill = (focused && focusTier(e.name) === 'far') ? e.fillFaded : e.fill;
+        if (fill !== curFill) {
+            if (open) flush();
+            ctx.fillStyle = fill;
+            ctx.beginPath();
+            curFill = fill;
+            open = true;
+        }
+        const t = e.tris, i = e.off;
+        let p = worldToCanvas(t[i], t[i + 1], t[i + 2]);
+        ctx.moveTo(p.x, p.y);
+        p = worldToCanvas(t[i + 3], t[i + 4], t[i + 5]);
+        ctx.lineTo(p.x, p.y);
+        p = worldToCanvas(t[i + 6], t[i + 7], t[i + 8]);
+        ctx.lineTo(p.x, p.y);
+        ctx.closePath();
+    }
+    if (open) flush();
+}
+
+// Mover (lift/door/plat/train) rendering. A mover reads as a moving piece of
+// floor: a single flat silhouette (near hull only), no shading, at the same
+// opacity as the floor tops (the old 0.5 alpha left it ghostly next to the
+// near-opaque floor). A touch lighter than the backdrop floor so the moving
+// piece stays legible at rest; when a player is riding it the mover takes the
+// brighter MOVER_FILL_ACTIVE tone so it stands out like an occupied region.
+const MOVER_FILL = 'rgba(96, 107, 140, 0.92)';
+const MOVER_FILL_ACTIVE = 'rgba(150, 170, 215, 0.95)';
+
+// moverPoseAt returns the mover's {x, y, z, vis} at tMs (match-relative
+// milliseconds): the last recorded sample at or before tMs, clamped to the
+// first sample for earlier times. Binary search — tracks can be long for a
+// lift that ran the whole match.
+function moverPoseAt(m, tMs) {
+    const t = m.t;
+    const n = t ? t.length : 0;
+    if (n === 0) return null;
+    let idx;
+    if (tMs <= t[0]) idx = 0;
+    else if (tMs >= t[n - 1]) idx = n - 1;
+    else {
+        let lo = 0, hi = n - 1;
+        idx = 0;
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (t[mid] <= tMs) { idx = mid; lo = mid + 1; }
+            else hi = mid - 1;
+        }
+    }
+    return { x: m.x[idx], y: m.y[idx], z: m.z[idx], vis: m.vis[idx] };
+}
+
+// moverMeshFaces returns a submodel mesh's per-triangle outward-test normals,
+// cached by submodel id (translation preserves normals, so this is pose-
+// independent). Only the normal is needed — the fill is one flat tone — so
+// drawMoverMesh can cull back faces and fill the near hull as a single
+// silhouette.
+function moverMeshFaces(sub) {
+    let cache = mapState._moverFaces;
+    if (!cache) cache = mapState._moverFaces = {};
+    if (cache[sub]) return cache[sub];
+    const tris = mapState.submodelMeshes[sub];
+    const faces = [];
+    for (let i = 0; i + 8 < tris.length; i += 9) {
+        const ux = tris[i + 3] - tris[i],     uy = tris[i + 4] - tris[i + 1], uz = tris[i + 5] - tris[i + 2];
+        const vx = tris[i + 6] - tris[i],     vy = tris[i + 7] - tris[i + 1], vz = tris[i + 8] - tris[i + 2];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        faces.push({ off: i, nx, ny, nz }); // unnormalized: only the sign matters
+    }
+    cache[sub] = faces;
+    return faces;
+}
+
+// moverLocalBBox returns a submodel mesh's local-space XY/Z bounds, cached per
+// submodel id. A pose is a pure translation, so the box is pose-independent;
+// the world footprint is this box shifted by the pose offset.
+function moverLocalBBox(sub) {
+    let cache = mapState._moverBBox;
+    if (!cache) cache = mapState._moverBBox = {};
+    if (cache[sub]) return cache[sub];
+    const mesh = mapState.submodelMeshes[sub];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i + 2 < mesh.length; i += 3) {
+        const x = mesh[i], y = mesh[i + 1], z = mesh[i + 2];
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    cache[sub] = { minX, maxX, minY, maxY, minZ, maxZ };
+    return cache[sub];
+}
+
+// A player counts as "riding" a posed mover when their XY lands within its
+// footprint and their z sits within a player-height window of its top surface.
+const MOVER_RIDE_Z_BELOW = 24; // tolerance under the top (interp / step noise)
+const MOVER_RIDE_Z_ABOVE = 56; // ~player height above the top
+function playerOnMover(pose, sub, players) {
+    const bb = moverLocalBBox(sub);
+    const minX = bb.minX + pose.x, maxX = bb.maxX + pose.x;
+    const minY = bb.minY + pose.y, maxY = bb.maxY + pose.y;
+    const topZ = bb.maxZ + pose.z;
+    for (const p of players) {
+        if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
+        if (p.z < topZ - MOVER_RIDE_Z_BELOW || p.z > topZ + MOVER_RIDE_Z_ABOVE) continue;
+        return true;
+    }
+    return false;
+}
+
+// Living players (x,y,z) at the current frame, for mover-ride tests. Drawn
+// from the frame's playerData, stashed by renderMap before drawLocationLayer.
+function livingPlayersAtFrame() {
+    const pd = mapState._framePlayerData;
+    const out = [];
+    if (!pd) return out;
+    for (const d of Object.values(pd)) {
+        if (!d) continue;
+        if (d.d || (d.h !== undefined && d.h <= 0)) continue;
+        if (d.x === 0 && d.y === 0) continue;
+        out.push(d);
+    }
+    return out;
+}
+
+// drawMovers poses every mover at the current time and draws the visible
+// ones, highlighting any a player is currently riding. No-op unless both the
+// pose streams and the submodel meshes are present (the meshes ride the async
+// corpus v4 fetch).
+function drawMovers(ctx) {
+    const movers = mapState.movers;
+    const meshes = mapState.submodelMeshes;
+    if (!movers || movers.length === 0 || !meshes) return;
+    const tMs = mapState.currentTime * 1000;
+    const players = livingPlayersAtFrame();
+    for (const m of movers) {
+        const mesh = meshes[m.sub];
+        if (!mesh || mesh.length < 9) continue;
+        const pose = moverPoseAt(m, tMs);
+        if (!pose || !pose.vis) continue;
+        const active = players.length > 0 && playerOnMover(pose, m.sub, players);
+        drawMoverMesh(ctx, mesh, m.sub, pose, active);
+    }
+}
+
+// drawMoverMesh draws one posed mover as a single flat translucent silhouette
+// in the floor colour: cull the back faces (the submodel triangulation winds
+// so its normals point *into* the solid, so the near hull is the faces whose
+// normal points away from the camera) and fill the near hull's union once.
+// One fill at one alpha → no per-face double-blend, no painter-sort flicker,
+// and it blends with the floor instead of standing out. worldToCanvas reuses
+// one object, so each projected point is consumed immediately.
+function drawMoverMesh(ctx, mesh, sub, pose, active) {
+    const ox = pose.x, oy = pose.y, oz = pose.z;
+    const w = _wtc;
+    const vx = -w.sinYaw * w.cosPitch, vy = -w.cosYaw * w.cosPitch, vz = w.sinPitch;
+    const faces = moverMeshFaces(sub);
+    ctx.fillStyle = active ? MOVER_FILL_ACTIVE : MOVER_FILL;
+    ctx.beginPath();
+    for (const f of faces) {
+        if (f.nx * vx + f.ny * vy + f.nz * vz >= 0) continue; // back-facing
+        const i = f.off;
+        let p = worldToCanvas(mesh[i] + ox, mesh[i + 1] + oy, mesh[i + 2] + oz);
+        ctx.moveTo(p.x, p.y);
+        p = worldToCanvas(mesh[i + 3] + ox, mesh[i + 4] + oy, mesh[i + 5] + oz);
+        ctx.lineTo(p.x, p.y);
+        p = worldToCanvas(mesh[i + 6] + ox, mesh[i + 7] + oy, mesh[i + 8] + oz);
+        ctx.lineTo(p.x, p.y);
+        ctx.closePath();
+    }
+    ctx.fill();
+}
+
+// Liquid volumes (water/slime/lava) from corpus v4. Rendered as a shaded,
+// depth-sorted translucent solid: each face is Lambert-shaded (so the top
+// surface reads brighter than the descending sides) and painted back to
+// front, so the body reads as a 3D volume with visible depth rather than a
+// flat silhouette. Static geometry — drawn live on top of the floor model.
+const LIQUID_BASE = {
+    water: [64, 128, 255],
+    slime: [80, 200, 80],
+    lava:  [255, 120, 40],
+};
+const LIQUID_ALPHA = 0.15; // per-face; back-to-front stacking deepens it
+
+function drawLiquidVolume(ctx, tris, base) {
+    const w = _wtc;
+    const faces = [];
+    for (let i = 0; i + 8 < tris.length; i += 9) {
+        const ax = tris[i],     ay = tris[i + 1], az = tris[i + 2];
+        const bx = tris[i + 3], by = tris[i + 4], bz = tris[i + 5];
+        const cx = tris[i + 6], cy = tris[i + 7], cz = tris[i + 8];
+        const ux = bx - ax, uy = by - ay, uz = bz - az;
+        const vx = cx - ax, vy = cy - ay, vz = cz - az;
+        let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const nl = Math.hypot(nx, ny, nz) || 1;
+        const shade = 0.5 + 0.5 * Math.abs((nx * SOLID_LIGHT[0] + ny * SOLID_LIGHT[1] + nz * SOLID_LIGHT[2]) / nl);
+        const dcx = (ax + bx + cx) / 3 - w.cx, dcy = (ay + by + cy) / 3 - w.cy, dcz = (az + bz + cz) / 3 - w.zMid;
+        const yr = dcx * w.sinYaw + dcy * w.cosYaw;
+        faces.push({ off: i, shade, depth: dcz * w.sinPitch - yr * w.cosPitch });
+    }
+    faces.sort((a, b) => a.depth - b.depth); // back to front for translucency
+    for (const f of faces) {
+        const q = Math.round(f.shade * 10) / 10;
+        ctx.fillStyle = `rgba(${Math.round(base[0] * q)}, ${Math.round(base[1] * q)}, ${Math.round(base[2] * q)}, ${LIQUID_ALPHA})`;
+        ctx.beginPath();
+        const i = f.off;
+        let p = worldToCanvas(tris[i],     tris[i + 1], tris[i + 2]);
+        ctx.moveTo(p.x, p.y);
+        p = worldToCanvas(tris[i + 3], tris[i + 4], tris[i + 5]);
+        ctx.lineTo(p.x, p.y);
+        p = worldToCanvas(tris[i + 6], tris[i + 7], tris[i + 8]);
+        ctx.lineTo(p.x, p.y);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function drawLiquidFills(ctx) {
+    const liquids = mapState.mapGeometry && mapState.mapGeometry.liquids;
+    if (!Array.isArray(liquids)) return;
+    for (const lq of liquids) {
+        if (!lq || !Array.isArray(lq.tris) || lq.tris.length < 9) continue;
+        drawLiquidVolume(ctx, lq.tris, LIQUID_BASE[lq.kind] || LIQUID_BASE.water);
+    }
+}
+
+// drawCachedWorld: blit the depth-sorted floor model, re-rendering the
+// offscreen canvas only when a projection input changed. The painter sort
+// scatters same-colour triangles, so batching costs many fill() calls — too
+// much to redo every frame, hence the per-camera bitmap cache. cacheField/
+// keyField pick the cache slot. bakeLiquids folds the (static) liquid volumes
+// into the cache; the floor view passes false and draws them live on top.
+function drawCachedWorld(ctx, se, cacheField, keyField, bakeLiquids) {
+    if (!se) return;
+    const canvas = mapState.canvas;
+    const dpr = mapState.dpr || 1;
+    const liquids = mapState.mapGeometry && mapState.mapGeometry.liquids;
+    const key = [
+        _wtc.yaw, _wtc.pitch, _wtc.zoomK, _wtc.panX, _wtc.panY,
+        _wtc.scale, _wtc.offsetX, _wtc.offsetY,
+        _wtc.cx, _wtc.cy, _wtc.zMid,
+        mapState.focusGroupName, canvas.width, canvas.height, dpr,
+        se.entries.length,
+        bakeLiquids && Array.isArray(liquids) ? liquids.length : 0,
+    ].join('|');
+    let cache = mapState[cacheField];
+    if (!cache) cache = mapState[cacheField] = document.createElement('canvas');
+    if (mapState[keyField] !== key) {
+        cache.width = canvas.width;   // also clears
+        cache.height = canvas.height;
+        const cctx = cache.getContext('2d');
+        cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        renderSolidEntries(cctx, se);
+        // Liquids are static geometry, so they bake into the cache too — a
+        // translucent pass on top of the opaque world (large volumes tint
+        // whatever's behind them).
+        if (bakeLiquids) drawLiquidFills(cctx);
+        mapState[keyField] = key;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(cache, 0, 0);
+    ctx.restore();
+}
+
+// Floors are this many units tall. Both views extrude the floor's outer
+// boundary (perimeter + step risers, via floorBoundaryEdges) down by this
+// much into box sides (floorBoundaryWalls), baked into the depth-sorted
+// floor model so the floor reads as one solid slab.
+const FLOOR_SLAB_DEPTH = 10;
+
+// Floor-model tones. Region tops use the loc's own colour; the backdrop
+// (unnamed floor) and the box sides each use one flat tone. No Lambert/normal
+// shading anywhere — every surface is a single flat colour, so from overhead
+// the floor reads dead flat. Near-opaque so a higher floor cleanly covers a
+// lower one (no translucent stacking, which was the apparent "shading").
+const BACKDROP_FLOOR_RGB = [70, 80, 110];
+const FLOOR_BOX_SIDE_RGB = [44, 50, 72]; // darker than the tops → reads as a side
+const FLOOR_TOP_ALPHA = 0.95;
+
+// buildFloorModel builds the per-triangle render list for the one clean view:
+// flat region tops (loc colour) + the backdrop + the 10u box sides, each a
+// single flat tone, with a centroid for the painter sort. Rendered opaque and
+// depth-sorted by renderSolidEntries. Cached per (geometry, groups). Returns null when the map has
+// no triangle geometry at all (callers fall back to the flat translucent
+// fills / loc blobs).
+function buildFloorModel() {
+    const geom = mapState.mapGeometry;
+    const groups = mapState.locationGroups || [];
+    const backdropTris = geom && geom.backdropTris;
+    const haveBackdrop = backdropTris && backdropTris.length >= 9;
+    if (!haveBackdrop && groups.length === 0) return null;
+
+    let m = mapState._floorModel;
+    if (m && m.geom === geom && m.groups === mapState.locationGroups) return m;
+
+    const entries = [];
+    const push = (tris, rgb, name) => {
+        if (!tris || tris.length < 9) return;
+        const fill = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${FLOOR_TOP_ALPHA})`;
+        const fillFaded = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${FLOOR_TOP_ALPHA * 0.18})`;
+        for (let i = 0; i + 8 < tris.length; i += 9) {
+            entries.push({
+                tris, off: i,
+                cx: (tris[i] + tris[i + 3] + tris[i + 6]) / 3,
+                cy: (tris[i + 1] + tris[i + 4] + tris[i + 7]) / 3,
+                cz: (tris[i + 2] + tris[i + 5] + tris[i + 8]) / 3,
+                name, fill, fillFaded, depth: 0,
+            });
+        }
+    };
+
+    if (haveBackdrop) push(backdropTris, BACKDROP_FLOOR_RGB, null);
+    // Region tops default to the neutral backdrop tone. Colouring every loc by
+    // its own hue was mostly visual noise; a region only takes on its loc
+    // colour when a player is in it, via drawOccupiedRegionsOverlay's live
+    // fill pass. The name is still carried so that overlay can find the tris.
+    for (const g of groups) {
+        if (!g.tris || g.tris.length < 9) continue;
+        push(g.tris, BACKDROP_FLOOR_RGB, g.name);
+    }
+    const sides = floorBoundaryWalls(backdropTris, groups);
+    if (sides.length >= 9) push(sides, FLOOR_BOX_SIDE_RGB, null);
+
+    if (entries.length === 0) return null;
+    m = { geom, groups: mapState.locationGroups, entries, sortedFor: null };
+    mapState._floorModel = m;
+    return m;
+}
+
 function drawLocationLayer(ctx) {
     const groups = mapState.locationGroups || [];
     const backdropTris = mapState.mapGeometry && mapState.mapGeometry.backdropTris;
-    if (groups.length === 0 && (!backdropTris || backdropTris.length < 6)) return;
+    if (groups.length === 0 && (!backdropTris || backdropTris.length < 9)) return;
 
-    if (backdropTris && backdropTris.length >= 6) {
-        drawTriangleListFill(ctx, backdropTris, 'rgba(70, 80, 110, 0.35)', worldToCanvas);
-    }
+    const focused = !!mapState.focusGroupName;
+    const floorModel = buildFloorModel();
 
-    for (const group of groups) {
-        if (group.tris && group.tris.length >= 6) {
-            drawLocationRegionFromGeometry(ctx, group, worldToCanvas);
+    if (floorModel) {
+        // One clean view: flat, near-opaque, depth-sorted region tops + 10u box
+        // sides. A higher floor covers a lower one (no translucent stacking),
+        // the sides read as solid thickness, and from overhead it's dead flat.
+        // Cached to an offscreen bitmap (per camera).
+        drawCachedWorld(ctx, floorModel, '_floorCanvas', '_floorCanvasKey', false);
+        // Liquids: translucent volumes above the floor, drawn live.
+        drawLiquidFills(ctx);
+    } else {
+        // No triangle geometry (loc-blob maps): the old flat translucent fills.
+        if (backdropTris && backdropTris.length >= 9) {
+            drawTriangleListFill(ctx, backdropTris,
+                focused ? 'rgba(70, 80, 110, 0.14)' : 'rgba(70, 80, 110, 0.35)',
+                worldToCanvas);
         }
+        for (const group of groups) {
+            if (group.tris && group.tris.length >= 9) {
+                drawTriangleListFill(ctx, group.tris,
+                    tierFill(group, focusTier(group.name)), worldToCanvas);
+            }
+        }
+        drawLiquidFills(ctx);
     }
+
+    // Movers (lifts/doors/plats) posed at the current time — above the region
+    // fills and below the outlines/labels.
+    drawMovers(ctx);
 
     // Thin grey outlines around each traced region — drawn after all fills so
     // they sit on top and stay visible regardless of adjacent region tinting.
     // drawLocationRegionOutline needs the allocating worldToCanvasNew because
     // it holds both endpoints of an edge simultaneously.
     for (const group of groups) {
-        if (group.tris && group.tris.length >= 6) {
-            drawLocationRegionOutline(ctx, group, worldToCanvasNew, 'rgba(180, 180, 180, 0.5)', 1);
-        }
+        if (!group.tris || group.tris.length < 9) continue;
+        const tier = focusTier(group.name);
+        // Idle baseline is kept quiet (faint outline) so the floor reads as one
+        // calm surface; the occupied overlay brightens the active region's
+        // outline on top when a player is in it.
+        let stroke = 'rgba(180, 180, 180, 0.22)';
+        let width = 1;
+        if (tier === 'focus')    { stroke = 'rgba(255, 255, 255, 0.85)'; width = 1.5; }
+        else if (tier === 'far') { stroke = 'rgba(180, 180, 180, 0.1)'; }
+        drawLocationRegionOutline(ctx, group, worldToCanvasNew, stroke, width);
     }
 
     const labelPx = Math.round(12 * mapIconScale());
@@ -6975,8 +7874,11 @@ function drawLocationLayer(ctx) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const group of groups) {
-        const pos = worldToCanvasNew(group.centroid.x, group.centroid.y);
-        ctx.fillStyle = group.color.text;
+        const tier = focusTier(group.name);
+        const pos = worldToCanvasNew(group.centroid.x, group.centroid.y, group.centroid.z);
+        ctx.fillStyle = tier === 'far'
+            ? scaleRgbaAlpha(group.color.text, 0.35)
+            : group.color.text;
         ctx.fillText(group.name, pos.x, pos.y);
     }
 }
@@ -6993,8 +7895,8 @@ function mapIconScale() {
 }
 
 // Pre-compute full trails for all players from high-res bucket data.
-// Stores world-space (wx, wy) positions — drawTracks converts to canvas via
-// worldToCanvas at draw time so trails follow user pan/zoom.
+// Stores world-space (wx, wy, wz) positions — drawTracks converts to canvas
+// via worldToCanvas at draw time so trails follow user pan/zoom/rotation.
 function precomputeFullTrails() {
     mapState.fullTrails = {};
     // Sorted-by-time list of death frames in world space, used by renderMap
@@ -7015,13 +7917,14 @@ function precomputeFullTrails() {
         const cp = view.players[name];
         const symbolInfo = mapState.playerSymbols[name];
         if (!symbolInfo) continue;
-        const xs = cp.x, ys = cp.y, ds = cp.d, sps = cp.sp;
+        const xs = cp.x, ys = cp.y, zs = cp.z, ds = cp.d, sps = cp.sp;
         if (!xs || !ys) continue;
 
         let lastWorld = null;
         for (let rel = 0; rel < cp.n; rel++) {
             if (!cp.alive[rel]) continue;
             const x = xs[rel], y = ys[rel];
+            const z = zs ? zs[rel] : 0;
             if (x === 0 && y === 0) continue;
 
             const i = cp.first + rel;
@@ -7038,7 +7941,7 @@ function precomputeFullTrails() {
             // teamIdx is captured so the X is painted in the dead player's
             // own team color rather than a generic red.
             if (isDeath) {
-                mapState.deathEvents.push({ t, wx: x, wy: y, teamIdx: symbolInfo.teamIdx });
+                mapState.deathEvents.push({ t, wx: x, wy: y, wz: z, teamIdx: symbolInfo.teamIdx });
             }
 
             // Always include death/spawn markers regardless of distance.
@@ -7053,7 +7956,7 @@ function precomputeFullTrails() {
             const isTeleport = !isDeath && !isSpawn && lastWorld && (Math.abs(x - lastWorld.x) > MAX_MOVE_PER_BUCKET || Math.abs(y - lastWorld.y) > MAX_MOVE_PER_BUCKET);
 
             lastWorld = { x, y };
-            track.push({ wx: x, wy: y, t, teamIdx: symbolInfo.teamIdx, tp: isTeleport, death: isDeath, spawn: isSpawn });
+            track.push({ wx: x, wy: y, wz: z, t, teamIdx: symbolInfo.teamIdx, tp: isTeleport, death: isDeath, spawn: isSpawn });
         }
     }
 
@@ -7129,11 +8032,24 @@ function renderMap(time) {
 
     if (!ctx || !canvas) return;
 
-    // Skip redraw if same data bucket and nothing else changed
+    // Skip redraw if same data bucket and nothing else changed — but NOT
+    // during playback: positions come from the native-rate streams, so the
+    // map must repaint every frame to animate at native rate (the old
+    // bucket-gated repaint froze the view between 50 ms buckets, which read
+    // as ~2 fps in slow motion). When paused/idle the skip still elides
+    // redundant redraws.
     const bucket = findBucketAtTime(time);
-    if (bucket === mapState.lastRenderedBucket && !mapState.renderDirty) return;
+    if (bucket === mapState.lastRenderedBucket && !mapState.renderDirty && !mapState.isPlaying) return;
     mapState.lastRenderedBucket = bucket;
     mapState.renderDirty = false;
+
+    // Player positions (and the floor-height fh for the anchor stem) come
+    // from the native-rate streams; state badges stay on the bucket. Built
+    // once here from a non-mutating overlay on the cached bucket.
+    const playerData = bucket ? augmentPlayerData(bucket.p, time * 1000) : null;
+    // Stash for drawMovers (runs inside drawLocationLayer, which has no
+    // playerData of its own) to highlight movers a player is riding.
+    mapState._framePlayerData = playerData;
 
     // Normalize to CSS pixel coordinates. The canvas backing store is sized
     // to cssDims * devicePixelRatio for sharp rendering on HiDPI displays;
@@ -7146,12 +8062,12 @@ function renderMap(time) {
 
     // Follow-player: pin the camera on the tracked player this frame by
     // adjusting panX/panY so their symbol lands at canvas center.
-    if (mapState.followPlayer && bucket && bucket.p) {
-        const fp = bucket.p[mapState.followPlayer];
+    if (mapState.followPlayer && playerData) {
+        const fp = playerData[mapState.followPlayer];
         if (fp && !(fp.x === 0 && fp.y === 0)) {
             _wtc.panX = 0;
             _wtc.panY = 0;
-            const pos = worldToCanvas(fp.x, fp.y);
+            const pos = worldToCanvas(fp.x, fp.y, fp.z);
             _wtc.panX = cssW / 2 - pos.x;
             _wtc.panY = cssH / 2 - pos.y;
         }
@@ -7188,9 +8104,8 @@ function renderMap(time) {
 
     // Highlight regions that currently contain at least one player so the
     // viewer can tell which loc each symbol belongs to without squinting.
-    const occupancyData = bucket ? (bucket.p) : null;
-    if (occupancyData) {
-        drawOccupiedRegionsOverlay(ctx, occupancyData);
+    if (playerData) {
+        drawOccupiedRegionsOverlay(ctx, playerData);
     }
 
     // Draw tracks (per-player visibility controlled by enabledPlayers)
@@ -7201,7 +8116,6 @@ function renderMap(time) {
     // player also draws on top. Items carry a downward sort bias
     // (ITEM_Z_TOP_THRESHOLD) so they lose the tie when a player stands on
     // them — the common case — but win when they sit a real floor above.
-    const playerData = bucket ? bucket.p : null;
     drawItemsAndPlayersZSorted(ctx, time, playerData);
 
     // Recent-death markers — drawn last so the X sits on top of everything
@@ -7214,7 +8128,7 @@ function renderMap(time) {
             const dt = time - e.t;
             if (dt < 0 || dt > DEATH_X_DURATION) continue;
             const alpha = 1 - dt / DEATH_X_DURATION;
-            const pos = worldToCanvasNew(e.wx, e.wy);
+            const pos = worldToCanvasNew(e.wx, e.wy, e.wz);
             drawDeathX(ctx, pos.x, pos.y, e.teamIdx, alpha);
         }
     }
@@ -7228,7 +8142,7 @@ function renderMap(time) {
             const dt = time - e.t;
             if (dt < 0 || dt > DEATH_X_DURATION) continue;
             const alpha = 1 - dt / DEATH_X_DURATION;
-            const pos = worldToCanvasNew(e.wx, e.wy);
+            const pos = worldToCanvasNew(e.wx, e.wy, e.wz);
             drawDropD(ctx, pos.x, pos.y, e.weapon, alpha);
         }
     }
@@ -7345,6 +8259,229 @@ function itemStatus(item, time) {
     return { up: false, secsToRespawn: (respawnAt - timeMs) * 0.001, pending: false };
 }
 
+// ─── Player → floor anchor stems (3D views) ─────────────────────────────────
+//
+// When the camera is tilted, each player symbol gets a thin vertical stem
+// down to the floor surface beneath it, ending in a small ground dot. The
+// stem visually anchors the symbol to its floor (a tilted projection
+// otherwise leaves symbols floating ambiguously between decks), and its
+// length doubles as an air-height cue for jumps and falls.
+
+// A standing player's origin sits this far above the floor (mins.z = -24 in
+// standard Quake 1).
+const PLAYER_ORIGIN_ABOVE_FLOOR = 24;
+// result.NoFloor sentinel in PositionTrack.H — no floor to measure from.
+const MAP_NO_FLOOR = -2147483648;
+
+// streamPosAt returns {x, y, z, h} from a player's native-rate position
+// track at tMs (match-relative ms): the last sample at or before tMs,
+// clamped to the first. h is the PositionTrack.H floor-height (or null when
+// the column is absent / NoFloor). Binary search — tracks are dense.
+function streamPosAt(name, tMs) {
+    const pos = mapState.posStreams && mapState.posStreams[name];
+    if (!pos || !pos.t || pos.t.length === 0) return null;
+    const t = pos.t;
+    const n = t.length;
+    let idx;
+    if (tMs <= t[0]) idx = 0;
+    else if (tMs >= t[n - 1]) idx = n - 1;
+    else {
+        let lo = 0, hi = n - 1;
+        idx = 0;
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (t[mid] <= tMs) { idx = mid; lo = mid + 1; }
+            else hi = mid - 1;
+        }
+    }
+    let h = null;
+    if (pos.h && pos.h.length === n && pos.h[idx] !== MAP_NO_FLOOR) h = pos.h[idx];
+    const out = { x: pos.x[idx], y: pos.y[idx], z: pos.z[idx], h };
+    // View direction (raw angle16) and velocity (u/s) ride the same stream
+    // when present (schema v31–v32); the map's optional arrows read them.
+    if (pos.vya && pos.vya.length === n) {
+        out.vya = pos.vya[idx];
+        out.vp = (pos.vp && pos.vp.length === n) ? pos.vp[idx] : 0;
+    }
+    if (pos.vx && pos.vx.length === n) {
+        out.vx = pos.vx[idx];
+        out.vy = (pos.vy && pos.vy.length === n) ? pos.vy[idx] : 0;
+        out.vz = (pos.vz && pos.vz.length === n) ? pos.vz[idx] : 0;
+    }
+    return out;
+}
+
+// augmentPlayerData overlays stream-sourced position (x/y/z) and the
+// per-sample floor-height (fh) onto the bucket-reconstructed player map,
+// without mutating the cached bucket. State fields (health/armor/weapons)
+// are carried through from the bucket unchanged. Players with no position
+// stream keep their bucket position.
+function augmentPlayerData(bucketPlayers, tMs) {
+    if (!bucketPlayers) return bucketPlayers;
+    const out = {};
+    for (const name in bucketPlayers) {
+        const d = bucketPlayers[name];
+        const sp = streamPosAt(name, tMs);
+        if (sp) {
+            out[name] = Object.assign({}, d, {
+                x: sp.x, y: sp.y, z: sp.z, fh: sp.h,
+                vya: sp.vya, vp: sp.vp, vx: sp.vx, vy: sp.vy, vz: sp.vz,
+            });
+        } else {
+            out[name] = d;
+        }
+    }
+    return out;
+}
+// Slack added when searching for the supporting floor, so interpolation
+// noise on ramps / step edges doesn't make the search miss the surface the
+// player is actually standing on.
+const FLOOR_SNAP_TOLERANCE = 4;
+
+// floorZUnder: highest floor surface at world (x, y) with z <= zMax, or null
+// when no loaded floor triangle covers that point. Scans the named groups +
+// backdrop with a cheap bbox reject; z on the face is interpolated
+// barycentrically so sloped floors anchor correctly. Walls are not floors
+// and are never scanned.
+function floorZUnder(x, y, zMax) {
+    const geom = mapState.mapGeometry;
+    if (!geom) return null;
+    let best = null;
+    const scan = (tris) => {
+        if (!tris) return;
+        for (let i = 0; i + 8 < tris.length; i += 9) {
+            const ax = tris[i],     ay = tris[i + 1];
+            const bx = tris[i + 3], by = tris[i + 4];
+            const cx = tris[i + 6], cy = tris[i + 7];
+            if (x < ax && x < bx && x < cx) continue;
+            if (x > ax && x > bx && x > cx) continue;
+            if (y < ay && y < by && y < cy) continue;
+            if (y > ay && y > by && y > cy) continue;
+            const denom = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+            if (denom === 0) continue;
+            const w1 = ((by - cy) * (x - cx) + (cx - bx) * (y - cy)) / denom;
+            if (w1 < 0 || w1 > 1) continue;
+            const w2 = ((cy - ay) * (x - cx) + (ax - cx) * (y - cy)) / denom;
+            if (w2 < 0 || w1 + w2 > 1) continue;
+            const z = w1 * tris[i + 2] + w2 * tris[i + 5]
+                    + (1 - w1 - w2) * tris[i + 8];
+            if (z <= zMax && (best === null || z > best)) best = z;
+        }
+    };
+    scan(geom.backdropTris);
+    for (const group of mapState.locationGroups || []) scan(group.tris);
+    return best;
+}
+
+// playerFloorZ: memoised floorZUnder per player — a paused timeline or a
+// rotation drag re-renders with unchanged positions, so the triangle scan
+// runs only when the player actually moved.
+function playerFloorZ(name, x, y, z) {
+    let cache = mapState._floorZCache;
+    if (!cache) cache = mapState._floorZCache = new Map();
+    const e = cache.get(name);
+    if (e && e.x === x && e.y === y && e.z === z) return e.floorZ;
+    const floorZ = floorZUnder(x, y, z - PLAYER_ORIGIN_ABOVE_FLOOR + FLOOR_SNAP_TOLERANCE);
+    cache.set(name, { x, y, z, floorZ });
+    return floorZ;
+}
+
+// ─── Per-player 3D arrows: view direction + velocity ────────────────────────
+//
+// Both arrows are true 3D: the shaft runs from the player origin to a
+// world-space tip (projected through the orbit camera), and a small arrowhead
+// is drawn at the projected tip, oriented along the projected shaft. The view
+// arrow is a short fixed-length facing indicator; the velocity arrow's length
+// encodes speed at VEL_UNITS_PER_MAP_UNIT u/s per world unit.
+const ANGLE16_TO_RAD = (360 / 65536) * (Math.PI / 180); // raw angle16 → radians
+const VIEW_ARROW_LEN = 64;            // world units — shows facing clearly
+const VEL_UNITS_PER_MAP_UNIT = 5;     // 5 u/s of speed → 1 world unit of arrow
+const VEL_ARROW_MIN_SPEED = 10;       // u/s below which no velocity arrow is drawn
+const VIEW_ARROW_COLOR = 'rgba(245, 245, 255, 0.92)';
+const ARROWHEAD_PX = 7;               // arrowhead length in screen px
+
+// drawWorldArrow strokes a shaft from world (ox,oy,oz) along world (dx,dy,dz)
+// and caps it with a screen-space arrowhead at the projected tip. Skipped when
+// the arrow projects to nearly a point (pointing at/away from the camera).
+function drawWorldArrow(ctx, ox, oy, oz, dx, dy, dz, color, width) {
+    const a = worldToCanvasNew(ox, oy, oz);
+    const b = worldToCanvasNew(ox + dx, oy + dy, oz + dz);
+    const sx = b.x - a.x, sy = b.y - a.y;
+    const slen = Math.hypot(sx, sy);
+    if (slen < 1) return;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    const ux = sx / slen, uy = sy / slen;
+    const hl = ARROWHEAD_PX, hw = ARROWHEAD_PX * 0.6;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - ux * hl - uy * hw, b.y - uy * hl + ux * hw);
+    ctx.lineTo(b.x - ux * hl + uy * hw, b.y - uy * hl - ux * hw);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// drawPlayerArrows draws the enabled arrows for one player. Velocity uses the
+// team colour (it's that player's motion); view uses a neutral light tone so
+// the two are distinguishable when both are on.
+function drawPlayerArrows(ctx, data, symbolInfo) {
+    const ox = data.x, oy = data.y, oz = data.z;
+    if (mapState.showVelArrows && typeof data.vx === 'number') {
+        const speed = Math.hypot(data.vx, data.vy, data.vz);
+        if (speed > VEL_ARROW_MIN_SPEED) {
+            const s = 1 / VEL_UNITS_PER_MAP_UNIT;
+            const teamHex = TEAM_COLORS[symbolInfo.teamIdx] || TEAM_COLORS[0];
+            drawWorldArrow(ctx, ox, oy, oz, data.vx * s, data.vy * s, data.vz * s,
+                           hexToRgba(teamHex, 0.9), 3.5);
+        }
+    }
+    if (mapState.showViewArrows && typeof data.vya === 'number') {
+        const yaw = data.vya * ANGLE16_TO_RAD;
+        const pitch = (data.vp || 0) * ANGLE16_TO_RAD;
+        const cp = Math.cos(pitch);
+        // Quake forward vector: +pitch looks down, so z = -sin(pitch).
+        drawWorldArrow(ctx, ox, oy, oz,
+                       cp * Math.cos(yaw) * VIEW_ARROW_LEN,
+                       cp * Math.sin(yaw) * VIEW_ARROW_LEN,
+                       -Math.sin(pitch) * VIEW_ARROW_LEN,
+                       VIEW_ARROW_COLOR, 3);
+    }
+}
+
+function drawPlayerFloorStem(ctx, name, data, symbolInfo, pos) {
+    const z = data.z || 0;
+    // Prefer the per-sample computed floor height H (data.fh): the floor
+    // surface is z - 24 - H (H is measured from the bottom of the player's
+    // bounding box, which sits 24 below the origin). H is accurate on lifts
+    // (the floor pass stands players on movers) and makes the stem a direct
+    // visual readout of H. Fall back to scanning the static floor geometry
+    // when H is unavailable (no BSP) or NoFloor (over a void).
+    let bottomZ;
+    if (typeof data.fh === 'number') {
+        bottomZ = z - PLAYER_ORIGIN_ABOVE_FLOOR - data.fh;
+    } else {
+        const floorZ = playerFloorZ(name, data.x, data.y, z);
+        bottomZ = floorZ !== null ? floorZ : z - PLAYER_ORIGIN_ABOVE_FLOOR;
+    }
+    const bot = worldToCanvasNew(data.x, data.y, bottomZ);
+    const teamHex = TEAM_COLORS[symbolInfo.teamIdx] || TEAM_COLORS[0];
+    ctx.strokeStyle = hexToRgba(teamHex, 0.55);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(bot.x, bot.y);
+    ctx.stroke();
+    ctx.fillStyle = hexToRgba(teamHex, 0.7);
+    ctx.beginPath();
+    ctx.arc(bot.x, bot.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+}
+
 // Items are biased this much below their real z when sorting against
 // players, so a player standing at the same floor as an item (same z)
 // draws on top. An item only occludes a player when its z exceeds the
@@ -7360,18 +8497,27 @@ const ITEM_Z_TOP_THRESHOLD = 48;
 function drawItemsAndPlayersZSorted(ctx, time, playerData) {
     const iconScale = mapIconScale();
     const zRange = mapState.zRange || { lo: 0, hi: 0 };
-    const zSpan = zRange.hi - zRange.lo;
+    // Height-based symbol size scaling is a 2D-only cue: once the camera is
+    // tilted, height is directly visible, and size differences would read as
+    // distance instead.
+    const zSpan = mapIs3D() ? 0 : (zRange.hi - zRange.lo);
 
+    // Sort key is projected camera depth (closeness), which degenerates to
+    // plain z at top-down — preserving the old sort exactly — and stays
+    // correct under any rotation. The item bias is applied along the same
+    // axis (z contributes sinPitch to depth) so the "player standing on a
+    // pickup wins the tie" rule keeps working when tilted.
     const drawables = [];
     const items = currentResult?.items?.items;
     if (items && items.length > 0) {
         for (const item of items) {
             const style = ITEM_MARKER_STYLES[item.kind];
             if (!style) continue;
+            const pos = worldToCanvasNew(item.x, item.y, item.z);
             drawables.push({
                 kind: 'i',
-                sortZ: (item.z || 0) - ITEM_Z_TOP_THRESHOLD,
-                item, style
+                sortDepth: pos.depth - ITEM_Z_TOP_THRESHOLD * _wtc.sinPitch,
+                pos, item, style
             });
         }
     }
@@ -7380,20 +8526,22 @@ function drawItemsAndPlayersZSorted(ctx, time, playerData) {
             if (data.x === 0 && data.y === 0) continue;
             const symbolInfo = mapState.playerSymbols[name];
             if (!symbolInfo) continue;
+            const pos = worldToCanvasNew(data.x, data.y, data.z);
             drawables.push({
                 kind: 'p',
-                sortZ: data.z || 0,
-                data, symbolInfo
+                sortDepth: pos.depth,
+                pos, name, data, symbolInfo
             });
         }
     }
     if (drawables.length === 0) return;
 
-    drawables.sort((a, b) => a.sortZ - b.sortZ);
+    drawables.sort((a, b) => a.sortDepth - b.sortDepth);
 
     const itemSize = ITEM_MARKER_SIZE * iconScale;
     const itemHalf = itemSize / 2;
     const itemFontPx = Math.round(10 * iconScale);
+    const tilted = mapIs3D();
 
     ctx.save();
     ctx.textAlign = 'center';
@@ -7402,10 +8550,20 @@ function drawItemsAndPlayersZSorted(ctx, time, playerData) {
     for (const d of drawables) {
         if (d.kind === 'i') {
             drawSingleMapItem(ctx, time, d.item, d.style,
-                              itemSize, itemHalf, itemFontPx);
+                              itemSize, itemHalf, itemFontPx, d.pos);
         } else {
+            // Floor anchor stem under the symbol — tilted views only (at
+            // top-down it projects to a point).
+            if (tilted) {
+                drawPlayerFloorStem(ctx, d.name, d.data, d.symbolInfo, d.pos);
+            }
+            // Optional view/velocity arrows (work at any tilt — xy shows even
+            // top-down). Drawn under the symbol so the letter stays legible.
+            if (mapState.showViewArrows || mapState.showVelArrows) {
+                drawPlayerArrows(ctx, d.data, d.symbolInfo);
+            }
             drawSinglePlayer(ctx, d.data, d.symbolInfo,
-                             iconScale, zRange, zSpan);
+                             iconScale, zRange, zSpan, d.pos);
         }
     }
 
@@ -7413,8 +8571,7 @@ function drawItemsAndPlayersZSorted(ctx, time, playerData) {
     ctx.restore();
 }
 
-function drawSingleMapItem(ctx, time, item, style, size, half, fontPx) {
-    const pos = worldToCanvas(item.x, item.y);
+function drawSingleMapItem(ctx, time, item, style, size, half, fontPx, pos) {
     const up = isItemUp(item, time);
     ctx.globalAlpha = up ? 1.0 : ITEM_DIM_ALPHA;
 
@@ -7438,9 +8595,7 @@ function drawSingleMapItem(ctx, time, item, style, size, half, fontPx) {
     ctx.globalAlpha = 1.0;
 }
 
-function drawSinglePlayer(ctx, data, symbolInfo, iconScale, zRange, zSpan) {
-    const pos = worldToCanvas(data.x, data.y);
-
+function drawSinglePlayer(ctx, data, symbolInfo, iconScale, zRange, zSpan, pos) {
     // Per-player z-based size scale: players near the top of the map
     // (98th percentile z) render 25% larger than those near the bottom
     // (2nd percentile), linearly interpolated. Applied on top of the
@@ -7523,7 +8678,7 @@ function buildTeleportArrows() {
         if (e.type !== 'teleportSrc' || !e.target) continue;
         const dst = dstByName[e.target];
         if (!dst) continue;
-        mapState.teleportArrows.push({ sx: e.x, sy: e.y, dx: dst.x, dy: dst.y });
+        mapState.teleportArrows.push({ sx: e.x, sy: e.y, sz: e.z, dx: dst.x, dy: dst.y, dz: dst.z });
     }
 }
 
@@ -7544,8 +8699,8 @@ function drawMapEntities(ctx) {
         ctx.globalAlpha = 0.55;
         ctx.lineWidth = Math.max(1, 1.5 * iconScale);
         for (const a of mapState.teleportArrows) {
-            const s = worldToCanvasNew(a.sx, a.sy);
-            const d = worldToCanvasNew(a.dx, a.dy);
+            const s = worldToCanvasNew(a.sx, a.sy, a.sz);
+            const d = worldToCanvasNew(a.dx, a.dy, a.dz);
             drawArrow(ctx, s.x, s.y, d.x, d.y, 8 * iconScale);
         }
         ctx.restore();
@@ -7554,18 +8709,20 @@ function drawMapEntities(ctx) {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // Lower decks first so higher floors draw on top.
-    const sorted = entities.slice().sort((a, b) => (a.z || 0) - (b.z || 0));
-    for (const e of sorted) {
+    // Farther-from-camera first so nearer markers draw on top (degenerates
+    // to lower-decks-first at top-down).
+    const sorted = entities
+        .map(e => ({ e, pos: worldToCanvasNew(e.x, e.y, e.z) }))
+        .sort((a, b) => a.pos.depth - b.pos.depth);
+    for (const { e, pos } of sorted) {
         if (!f[entityCategory(e)]) continue;
         const style = e.type === 'item' ? LEARN_ITEM_STYLES[e.kind] : STRUCTURAL_STYLES[e.type];
-        if (style) drawEntityMarker(ctx, e, style, size, half, fontPx);
+        if (style) drawEntityMarker(ctx, e, style, size, half, fontPx, pos);
     }
     ctx.restore();
 }
 
-function drawEntityMarker(ctx, e, style, size, half, fontPx) {
-    const pos = worldToCanvas(e.x, e.y);
+function drawEntityMarker(ctx, e, style, size, half, fontPx, pos) {
     if (style.circle) {
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, half, 0, Math.PI * 2);
@@ -7628,7 +8785,7 @@ function setLearnMode(on) {
         if (entPanel) entPanel.style.display = 'none';
     }
     const btn = document.getElementById('map-learn-toggle');
-    if (btn) { btn.classList.toggle('active', on); btn.textContent = on ? 'Exit learn' : 'Learn map'; }
+    if (btn) btn.classList.toggle('active', on); // highlight only; label stays "Learn map"
     const tableWrap = document.getElementById('map-entities-table-wrap');
     if (tableWrap) tableWrap.style.display = on ? '' : 'none';
     if (on) buildEntityTable();
@@ -7842,7 +8999,7 @@ function drawTracks(ctx, time) {
         const cpts = new Array(endIdx - startIdx + 1);
         for (let i = startIdx; i <= endIdx; i++) {
             const pt = points[i];
-            const c = worldToCanvasNew(pt.wx, pt.wy);
+            const c = worldToCanvasNew(pt.wx, pt.wy, pt.wz);
             cpts[i - startIdx] = { x: c.x, y: c.y, spawn: pt.spawn, death: pt.death, tp: pt.tp };
         }
 
@@ -7968,6 +9125,23 @@ function findBucketAtTime(time) {
     return findHighResBucketAtTime(time);
 }
 
+// updateTrailButtonStates: reflect the current trail selection in the control
+// buttons — All highlighted when every player's trail is on, None when none
+// are, and the "Players" dropdown summary when a custom subset is chosen. Call
+// after any change to mapState.enabledPlayers.
+function updateTrailButtonStates() {
+    const names = Object.keys(mapState.fullTrails || {});
+    const total = names.length;
+    let on = 0;
+    for (const n of names) if (mapState.enabledPlayers[n]) on++;
+    const allBtn = document.getElementById('map-trails-all');
+    const noneBtn = document.getElementById('map-trails-none');
+    const summary = document.querySelector('#map-trails-dropdown > summary');
+    if (allBtn)  allBtn.classList.toggle('active', total > 0 && on === total);
+    if (noneBtn) noneBtn.classList.toggle('active', on === 0);
+    if (summary) summary.classList.toggle('active', on > 0 && on < total);
+}
+
 function setupMapTrailControls() {
     const allBtn = document.getElementById('map-trails-all');
     if (allBtn) {
@@ -7981,6 +9155,7 @@ function setupMapTrailControls() {
             }
             // Sync legend checkboxes
             document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = true; });
+            updateTrailButtonStates();
             mapState.renderDirty = true;
             renderMap(mapState.currentTime);
         });
@@ -7993,6 +9168,7 @@ function setupMapTrailControls() {
                 mapState.enabledPlayers[name] = false;
             }
             document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = false; });
+            updateTrailButtonStates();
             mapState.renderDirty = true;
             renderMap(mapState.currentTime);
         });
@@ -8025,6 +9201,37 @@ function setupMapTrailControls() {
         });
     }
 
+    const btn3d = document.getElementById('map-3d-toggle');
+    if (btn3d) {
+        btn3d.addEventListener('click', () => {
+            // Toggle between top-down (2D, yaw 0) and the default isometric
+            // view (yaw 45° / 55° tilt). Free rotation is available via
+            // right-drag / Ctrl+drag.
+            setMapCamera(mapIs3D() ? 0 : MAP_DEFAULT_YAW,
+                         mapIs3D() ? MAP_PITCH_MAX : MAP_3D_DEFAULT_PITCH);
+        });
+    }
+
+    const viewArrowsBtn = document.getElementById('map-view-arrows');
+    if (viewArrowsBtn) {
+        viewArrowsBtn.addEventListener('click', () => {
+            mapState.showViewArrows = !mapState.showViewArrows;
+            viewArrowsBtn.classList.toggle('active', mapState.showViewArrows);
+            mapState.renderDirty = true;
+            renderMap(mapState.currentTime);
+        });
+    }
+
+    const velArrowsBtn = document.getElementById('map-vel-arrows');
+    if (velArrowsBtn) {
+        velArrowsBtn.addEventListener('click', () => {
+            mapState.showVelArrows = !mapState.showVelArrows;
+            velArrowsBtn.classList.toggle('active', mapState.showVelArrows);
+            mapState.renderDirty = true;
+            renderMap(mapState.currentTime);
+        });
+    }
+
     const resetViewBtn = document.getElementById('map-reset-view');
     if (resetViewBtn) {
         resetViewBtn.addEventListener('click', () => { resetMapView(); });
@@ -8053,14 +9260,24 @@ function setupMapTrailControls() {
     if (!setupMapTrailControls.__fsListenerAttached) {
         document.addEventListener('fullscreenchange', onMapFullscreenChange);
         window.addEventListener('resize', onMapWindowResize);
+        // Escape clears region focus (no-op otherwise, so it doesn't fight
+        // other Escape behaviours like exiting fullscreen).
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && mapState.focusGroupName) {
+                setFocusGroup(null);
+            }
+        });
         setupMapTrailControls.__fsListenerAttached = true;
     }
 }
 
-// installMapInteraction adds pan / zoom / click handlers to the map canvas.
-// Pan: left-drag. Zoom: mouse wheel (centered on cursor). Click (no drag):
-// dispatched through handleMapCanvasClick — used by follow-player to toggle
-// follow on a player symbol. Double-click resets the view.
+// installMapInteraction adds pan / zoom / rotate / click handlers to the map
+// canvas. Pan: left-drag. Rotate (3D orbit): right-drag or Ctrl/Cmd+left-drag
+// — horizontal motion spins the map (yaw), vertical motion tilts it (pitch,
+// clamped between MAP_PITCH_MIN and top-down). Zoom: mouse wheel (centered
+// on cursor). Click (no drag): dispatched through handleMapCanvasClick —
+// used by follow-player to toggle follow on a player symbol. Double-click
+// resets the view (including rotation).
 function installMapInteraction(canvas) {
     if (!canvas || canvas.__mapInteractionInstalled) return;
     canvas.__mapInteractionInstalled = true;
@@ -8068,12 +9285,16 @@ function installMapInteraction(canvas) {
     const CLICK_MAX_MOTION_PX = 5;
     const ZOOM_MIN = 0.5;
     const ZOOM_MAX = 12;
+    const ORBIT_YAW_PER_PX = 0.008;   // rad of yaw per horizontal pixel
+    const ORBIT_PITCH_PER_PX = 0.005; // rad of pitch per vertical pixel
 
     const drag = {
         active: false,
         button: -1,
+        mode: 'pan', // 'pan' | 'orbit'
         startX: 0, startY: 0,
         lastX: 0, lastY: 0,
+        yaw0: 0, pitch0: 0, // camera angles at orbit-drag start
         moved: false,
     };
 
@@ -8089,15 +9310,30 @@ function installMapInteraction(canvas) {
     }
 
     canvas.addEventListener('mousedown', (ev) => {
-        if (ev.button !== 0) return;
+        if (ev.button !== 0 && ev.button !== 2) return;
         const p = canvasPointFromEvent(ev);
         drag.active = true;
         drag.button = ev.button;
+        drag.mode = (ev.button === 2 || ev.ctrlKey || ev.metaKey) ? 'orbit' : 'pan';
         drag.startX = drag.lastX = p.x;
         drag.startY = drag.lastY = p.y;
         drag.moved = false;
+        if (drag.mode === 'orbit') {
+            // Re-center the orbit on what the user is looking at (followed
+            // player > focused region > view center) and capture the start
+            // angles — the drag applies absolute deltas from these so the
+            // cardinal yaw snap can be dragged through.
+            const pv = currentOrbitPivot();
+            setOrbitCenter(pv.x, pv.y, pv.z);
+            drag.yaw0 = _wtc.yaw;
+            drag.pitch0 = _wtc.pitch;
+        }
         ev.preventDefault();
     });
+
+    // Right-drag is the orbit gesture — keep the browser context menu off
+    // the canvas so it doesn't swallow the mouseup.
+    canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
     window.addEventListener('mousemove', (ev) => {
         if (!drag.active) return;
@@ -8112,8 +9348,10 @@ function installMapInteraction(canvas) {
             if (Math.abs(totalDx) > CLICK_MAX_MOTION_PX ||
                 Math.abs(totalDy) > CLICK_MAX_MOTION_PX) {
                 drag.moved = true;
-                // Starting a pan drops follow-mode so the user isn't fighting the camera.
-                if (mapState.followPlayer) {
+                // Starting a pan drops follow-mode so the user isn't fighting
+                // the camera. Orbiting keeps it — rotation composes fine with
+                // the per-frame follow re-center.
+                if (drag.mode === 'pan' && mapState.followPlayer) {
                     mapState.followPlayer = null;
                     syncFollowSelectUI();
                 }
@@ -8121,41 +9359,54 @@ function installMapInteraction(canvas) {
             }
         }
         if (drag.moved) {
-            _wtc.panX += dx;
-            _wtc.panY += dy;
-            mapState.renderDirty = true;
-            renderMap(mapState.currentTime);
+            if (drag.mode === 'orbit') {
+                // Horizontal drag spins, vertical drag tilts (up = tilt
+                // further toward horizontal, down = back toward top-down).
+                // Absolute from the drag-start angles, not incremental, so
+                // the yaw snap in setMapCamera can't capture the drag.
+                setMapCamera(drag.yaw0 + (p.x - drag.startX) * ORBIT_YAW_PER_PX,
+                             drag.pitch0 + (p.y - drag.startY) * ORBIT_PITCH_PER_PX);
+            } else {
+                _wtc.panX += dx;
+                _wtc.panY += dy;
+                mapState.renderDirty = true;
+                renderMap(mapState.currentTime);
+            }
         }
     });
 
     window.addEventListener('mouseup', (ev) => {
         if (!drag.active) return;
-        const wasClick = !drag.moved;
+        const wasClick = !drag.moved && drag.button === 0;
         drag.active = false;
         drag.button = -1;
         canvas.style.cursor = '';
         if (wasClick) {
             const p = canvasPointFromEvent(ev);
-            handleMapCanvasClick(p.x, p.y);
+            handleMapCanvasClick(p.x, p.y, ev);
         }
     });
 
     canvas.addEventListener('wheel', (ev) => {
         ev.preventDefault();
         const p = canvasPointFromEvent(ev);
-        const worldBefore = canvasToWorld(p.x, p.y);
+        // Anchor the zoom in *view space*: the (u, v) under the cursor is
+        // found by inverting only the linear screen map (rotation plays no
+        // part), so this is exact at any pitch — including a fully
+        // horizontal camera, where a world-plane inverse would be singular.
+        const vb = canvasToView(p.x, p.y);
         let newZoom = _wtc.zoomK * Math.exp(-ev.deltaY * 0.0015);
         if (newZoom < ZOOM_MIN) newZoom = ZOOM_MIN;
         if (newZoom > ZOOM_MAX) newZoom = ZOOM_MAX;
         if (newZoom === _wtc.zoomK) return;
         _wtc.zoomK = newZoom;
-        // Adjust pan so the world point under the cursor stays anchored.
+        // Re-solve pan so the same (u, v) lands back under the cursor.
         // Follow-mode intentionally survives zoom — renderMap's follow step
         // will re-center on the tracked player using the new zoom level, so
         // zoom becomes "zoom in on the player" rather than dropping follow.
         const sx = _wtc.scale * _wtc.zoomK;
-        _wtc.panX = p.x - _wtc.offsetX - (worldBefore.x - _wtc.minX) * sx;
-        _wtc.panY = p.y - _wtc.canvasH + _wtc.offsetY + (worldBefore.y - _wtc.minY) * sx;
+        _wtc.panX = p.x - _wtc.offsetX - (vb.u - _wtc.minX) * sx;
+        _wtc.panY = p.y - _wtc.canvasH + _wtc.offsetY + (vb.v - _wtc.minY) * sx;
         mapState.renderDirty = true;
         renderMap(mapState.currentTime);
     }, { passive: false });
@@ -8168,12 +9419,20 @@ function installMapInteraction(canvas) {
     canvas.style.cursor = 'grab';
 }
 
-// Dispatched from installMapInteraction on a true click (no drag). Used for
-// player-symbol hit-testing to toggle follow-player mode.
-function handleMapCanvasClick(cx, cy) {
+// Dispatched from installMapInteraction on a true click (no drag).
+// Player symbols win first (toggle follow), then the click picks a loc
+// region for focus mode — same region or empty space clears it.
+function handleMapCanvasClick(cx, cy, ev) {
     const hit = hitTestPlayerSymbol(cx, cy, mapState.currentTime);
     if (hit) {
         setFollowPlayer(mapState.followPlayer === hit ? null : hit);
+        return;
+    }
+    const region = pickLocGroupAt(cx, cy);
+    if (region && region !== mapState.focusGroupName) {
+        setFocusGroup(region);
+    } else if (mapState.focusGroupName) {
+        setFocusGroup(null);
     }
 }
 
@@ -8190,8 +9449,11 @@ function hitTestPlayerSymbol(cx, cy, time) {
     let best = null;
     let bestD2 = FOLLOW_HIT_RADIUS_PX * FOLLOW_HIT_RADIUS_PX;
     for (const [name, data] of Object.entries(bucket.p)) {
-        if (data.x === 0 && data.y === 0) continue;
-        const pos = worldToCanvas(data.x, data.y);
+        // Hit-test against the stream-sourced position the symbol is drawn at.
+        const sp = streamPosAt(name, time * 1000);
+        const x = sp ? sp.x : data.x, y = sp ? sp.y : data.y, z = sp ? sp.z : data.z;
+        if (x === 0 && y === 0) continue;
+        const pos = worldToCanvas(x, y, z);
         const dx = pos.x - cx;
         const dy = pos.y - cy;
         const d2 = dx * dx + dy * dy;
@@ -8268,7 +9530,7 @@ function onMapFullscreenChange() {
     panel.classList.toggle('map-panel--fullscreen', nowFs);
     mapState.fullscreen = nowFs;
     const btn = document.getElementById('map-fullscreen');
-    if (btn) btn.textContent = nowFs ? 'Exit fullscreen' : 'Fullscreen';
+    if (btn) btn.classList.toggle('active', nowFs); // highlight only; label stays "Fullscreen"
 
     // Relocate the shared timeline (playback buttons + scrubber) into the
     // fullscreen map panel so it stays usable. On exit, put it back.
@@ -9279,7 +10541,7 @@ function animatePlayback() {
     const now = performance.now();
     const elapsed = (now - mapState.lastRenderTime) / 1000;
 
-    // Throttle map redraws to PLAYBACK_FPS_MS (~30 fps).
+    // Throttle map redraws to PLAYBACK_FPS_MS (~60 fps).
     if (elapsed < PLAYBACK_FPS_MS / 1000) return;
 
     mapState.currentTime += elapsed * mapState.playbackSpeed;

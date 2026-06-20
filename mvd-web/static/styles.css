@@ -2604,8 +2604,18 @@ th.sortable.sort-desc::after {
     color: var(--accent-cyan);
 }
 
-/* "Learn map" toggle — highlighted when the static study view is active. */
-.map-track-controls button.map-learn-toggle.active {
+/* Every toggle button in the map controls reads its state the same way:
+   highlighted (filled cyan) while active, plain otherwise. Covers Learn map,
+   View, Vel, 3D, Fullscreen, and the Trails All / None buttons. */
+.map-track-controls button.active {
+    border-color: var(--accent-cyan);
+    color: var(--bg-deep);
+    background: var(--accent-cyan);
+}
+
+/* The Trails "Players" dropdown summary highlights when a custom subset of
+   players is selected (neither All nor None). */
+.map-trails-dropdown > summary.active {
     border-color: var(--accent-cyan);
     color: var(--bg-deep);
     background: var(--accent-cyan);
