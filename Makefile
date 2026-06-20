@@ -40,8 +40,11 @@ build:
 	@cp $(STATIC_DIR)/index.html $(DIST_DIR)/
 	@cp $(STATIC_DIR)/styles.css $(DIST_DIR)/
 	@cp $(STATIC_DIR)/app.js $(DIST_DIR)/
+	@cp $(STATIC_DIR)/map-gl.js $(DIST_DIR)/
 	@cp $(STATIC_DIR)/worker.js $(DIST_DIR)/
+	@cp -r $(STATIC_DIR)/lib $(DIST_DIR)/
 	@cp -r $(STATIC_DIR)/maps $(DIST_DIR)/
+	@if [ -d $(STATIC_DIR)/maps3d ]; then cp -r $(STATIC_DIR)/maps3d $(DIST_DIR)/; fi
 	@echo "Copying loc corpus from $(LOC_DATA)..."
 	@mkdir -p $(DIST_DIR)/locs && cp $(LOC_DATA)/*.loc $(DIST_DIR)/locs/
 	@echo "Copying map-entity corpus from $(MAPENTS_DATA)..."

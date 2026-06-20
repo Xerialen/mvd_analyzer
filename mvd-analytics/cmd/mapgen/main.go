@@ -44,6 +44,7 @@ import (
 func main() {
 	bspDir := flag.String("bsp-dir", "", "directory containing .bsp files (required)")
 	outDir := flag.String("out-dir", "mvd-web/static/maps", "output directory for geometry JSON; empty to skip geometry")
+	mesh3dOut := flag.String("mesh3d-out", "", "output directory for full-map 3D mesh binaries (maps3d); empty to skip")
 	entitiesOut := flag.String("entities-out", "", "output directory for per-map entity JSON (mapents corpus); empty to skip entities")
 	locDir := flag.String("loc-dir", "", "directory of .loc files; empty uses the embedded loc corpus (mvd-analytics/loc/data)")
 	mapFilter := flag.String("map", "", "process only the BSP whose basename (no extension) matches")
@@ -53,8 +54,8 @@ func main() {
 	pruneZTol := flag.Float64("prune-z-tol", 16.0, "usage pruning: max |faceZ - sampleZ| (world units); raise for slope-heavy maps")
 	flag.Parse()
 
-	if *outDir == "" && *entitiesOut == "" {
-		fmt.Fprintln(os.Stderr, "mapgen: nothing to do — set -out-dir and/or -entities-out")
+	if *outDir == "" && *entitiesOut == "" && *mesh3dOut == "" {
+		fmt.Fprintln(os.Stderr, "mapgen: nothing to do — set -out-dir, -mesh3d-out and/or -entities-out")
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -77,7 +78,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, dir := range []string{*outDir, *entitiesOut} {
+	for _, dir := range []string{*outDir, *mesh3dOut, *entitiesOut} {
 		if dir == "" {
 			continue
 		}
@@ -125,7 +126,7 @@ func main() {
 		if usageByMap != nil {
 			usage = usageByMap[loc.NormalizeMapName(name)]
 		}
-		if err := processOne(path, name, *outDir, *entitiesOut, *verbose, usage, params); err != nil {
+		if err := processOne(path, name, *outDir, *mesh3dOut, *entitiesOut, *verbose, usage, params); err != nil {
 			fmt.Fprintf(os.Stderr, "  fail %s: %v\n", name, err)
 			failed++
 			continue
@@ -156,7 +157,7 @@ func findBSPs(root string) ([]string, error) {
 	return out, err
 }
 
-func processOne(path, name, outDir, entitiesOut string, verbose bool, usage *mapgeom.FloorUsage, params mapgeom.Params) error {
+func processOne(path, name, outDir, mesh3dOut, entitiesOut string, verbose bool, usage *mapgeom.FloorUsage, params mapgeom.Params) error {
 	// Loc file is optional: without it, geometry routes every floor face
 	// into the unnamed backdrop bucket and entities fall back to
 	// kind/type names instead of loc names.
@@ -170,6 +171,11 @@ func processOne(path, name, outDir, entitiesOut string, verbose bool, usage *map
 
 	if outDir != "" {
 		if err := emitGeometry(path, name, finder, outDir, verbose, usage, params); err != nil {
+			return err
+		}
+	}
+	if mesh3dOut != "" {
+		if err := emitMesh3D(path, name, mesh3dOut, verbose); err != nil {
 			return err
 		}
 	}
@@ -224,6 +230,33 @@ func emitGeometry(path, name string, finder *loc.Finder, outDir string, verbose 
 			stats.LiquidFaces, stats.LiquidTris, stats.SubModelMeshes, stats.SubModelTris,
 			stats.FacesKept, stats.FacesTotal,
 			stats.FacesUnnamed, stats.FacesCeiling, stats.FacesDropped, stats.DegenerateTris, prune, len(data))
+	}
+	return nil
+}
+
+// emitMesh3D parses the BSP and writes the full worldspawn solid shell as a
+// maps3d/<name>.bin binary blob for the WebGL renderer. Independent of the
+// per-loc floor JSON (-out-dir): a face the floor extractor drops as a wall or
+// ceiling is exactly what the 3D shell needs.
+func emitMesh3D(path, name, mesh3dOut string, verbose bool) error {
+	parsed, err := bsp.Parse(path)
+	if err != nil {
+		return fmt.Errorf("parse bsp: %w", err)
+	}
+	mesh := mapgeom.BuildMesh3D(name, parsed)
+	if len(mesh.Tris) == 0 {
+		return fmt.Errorf("no 3D mesh extracted (faces=%d skipped=%d)", mesh.Faces, mesh.Skipped)
+	}
+	blob := mapgeom.EncodeMesh3D(mesh)
+	outPath := filepath.Join(mesh3dOut, name+".bin")
+	if err := os.WriteFile(outPath, blob, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", outPath, err)
+	}
+	if verbose {
+		fmt.Fprintf(os.Stderr, "  3d   %s: faces=%d tris=%d skipped=%d bounds=[%.0f..%.0f, %.0f..%.0f, %.0f..%.0f] bytes=%d\n",
+			name, mesh.Faces, len(mesh.Tris)/9, mesh.Skipped,
+			mesh.Bounds.MinX, mesh.Bounds.MaxX, mesh.Bounds.MinY, mesh.Bounds.MaxY,
+			mesh.Bounds.MinZ, mesh.Bounds.MaxZ, len(blob))
 	}
 	return nil
 }

@@ -27,8 +27,16 @@ talks to it through a JS shim.
   - `wasm_exec.js` — Go runtime glue, copied from the Go toolchain at
     build time.
   - `maps/` — pre-generated per-map floor polygon JSON (version 2:
-    per-vertex x,y,z — drives the map tab's 3D view). Committed; the
+    per-vertex x,y,z — drives the map's coloured floor plan). Committed; the
     frontend fetches `maps/<basename>.json` at demo load.
+  - `maps3d/` — pre-generated per-map full worldspawn mesh (walls +
+    ceilings) as a compact little-endian binary (`M3D1` header + float32
+    triangle soup; see `mapgeom.EncodeMesh3D`). Drives the WebGL 3D shell;
+    fetched as `maps3d/<basename>.bin` at demo load. A starter set ships
+    (dm2/dm3/e1m2/schloss/phantoma); generate more with
+    `mapgen -mesh3d-out`.
+  - `lib/three/` — vendored Three.js (pinned, ESM) for the WebGL renderer.
+  - `map-gl.js` — the WebGL/Three.js 3D map renderer (`window.MapGL`).
   - `probe.html` — tiny dev page used to probe runtime features.
 
 ## Build and deploy
@@ -293,6 +301,22 @@ visual. The panel updates live during playback via the 200 ms
 full-sync tick in `animatePlayback`.
 
 ## Map-tab 3D view
+
+**Renderer.** The tilted 3D view is drawn with **WebGL/Three.js**
+(`static/map-gl.js`, Three.js vendored under `static/lib/three/`), while
+the flat top-down view stays on the Canvas-2D path in `app.js`. `renderMap`
+routes between them: when `mapIs3D()` is true and the WebGL renderer is
+ready it pushes a per-frame snapshot (`glFrameState`) to `window.MapGL`
+and returns, so the legacy tilted-Canvas pass no longer runs. The two
+renderers share one data source — players, items, deaths, trails,
+occupancy, region-control, movers, liquids, loc floors/labels and
+learn-mode entities all read the same `mapState` / `result.streams`
+fields the 2D path uses, so 3D and 2D agree at any instant. The WebGL
+view loads a full worldspawn shell (walls + ceilings) from
+`static/maps3d/<map>.bin` (see below); maps without a `.bin` fall back to
+the coloured floor plan only. A small set of maps ships pre-generated
+(dm2, dm3, e1m2, schloss, phantoma); regenerate any map with
+`go run ./mvd-analytics/cmd/mapgen -bsp-dir <dir> -mesh3d-out mvd-web/static/maps3d -map <name>`.
 
 The map opens in a default **isometric** view — yaw 45°, tilted 55°
 from top-down (≈ the true isometric angle), so floors at different

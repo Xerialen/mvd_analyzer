@@ -13,6 +13,15 @@
     <script src="https://unpkg.com/layout-base@2.0.1/layout-base.js"></script>
     <script src="https://unpkg.com/cose-base@2.2.0/cose-base.js"></script>
     <script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+    <!-- Three.js (vendored locally under lib/three/, pinned 0.170) for the WebGL 3D map renderer. -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "./lib/three/three.module.js",
+        "three/addons/": "./lib/three/addons/"
+      }
+    }
+    </script>
 </head>
 <body class="no-demo">
     <!-- WASM loading overlay -->
@@ -534,6 +543,8 @@
                     <div class="map-main-content">
                         <div class="map-canvas-container">
                             <canvas id="map-canvas" width="850" height="850"></canvas>
+                            <!-- WebGL surface for the 3D map renderer; stacked over #map-canvas, shown only in 3D mode. -->
+                            <canvas id="map-gl-canvas" width="850" height="850" style="display:none;position:absolute;top:0;left:0;"></canvas>
                             <div id="map-no-data" class="map-no-data" style="display: none;">
                                 <p>No location data available for this map.</p>
                                 <p>Player positions will still be shown.</p>
@@ -902,5 +913,7 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- WebGL 3D map renderer (ES module). Defers until after app.js; exposes window.MapGL. -->
+    <script type="module" src="map-gl.js"></script>
 </body>
 </html>

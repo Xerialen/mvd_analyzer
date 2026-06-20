@@ -1,0 +1,2 @@
+# 3D map mesh blobs are binary — never apply line-ending (CRLF) normalization.
+mvd-web/static/maps3d/*.bin binary
