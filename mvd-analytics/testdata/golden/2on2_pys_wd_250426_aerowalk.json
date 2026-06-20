@@ -19855,7 +19855,6 @@
   },
   "match": {
     "duration": 600040,
-    "endTime": 600040,
     "gameDir": "qw",
     "map": "Aerowalk",
     "players": [
@@ -21991,7 +21990,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10104,

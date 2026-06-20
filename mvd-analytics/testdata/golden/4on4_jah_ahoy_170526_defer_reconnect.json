@@ -40641,7 +40641,6 @@
   },
   "match": {
     "duration": 1200101,
-    "endTime": 1200101,
     "gameDir": "qw",
     "map": "Coup de Fer",
     "players": [
@@ -51527,7 +51526,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10248,

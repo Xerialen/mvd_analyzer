@@ -67,9 +67,18 @@ Scale ms→s by `* 0.001`.
 
 ### 2.2 Query parameters
 
+Parameter **names are case-insensitive**; the canonical (documented)
+spelling is camelCase — `windowMs`, `minDwellMs`, `includeTeam` — but
+`windowms` / `WindowMs` resolve too. Parameter **values** are case-sensitive
+for player names (QW names are case-significant) and case-insensitive for
+weapon / item / kind / loc / layout tokens.
+
 - **`players`, `fields`, `types`** — comma-separated lists; URL-decode
   once. Omit `players` to get all; omit `fields`/`types` to get the
   endpoint's default set.
+- **`weapon`** — comma-separated weapon tokens (`rl,lg,…`) on `/frags`,
+  `/damage`, `/backpacks`, `/weapon-pickups`. A CSV set on every one of
+  them since schema v36 (`/backpacks` previously took a single value).
 - **`reducers`** (`/buckets`) — comma-separated `field=name` pairs, e.g.
   `reducers=h=min,a=last`. Names come from the reducer registry in
   RESULT_SCHEMA.md.
@@ -132,9 +141,10 @@ Non-2xx responses use a stable envelope:
 | HTTP | `code` | Meaning |
 |---|---|---|
 | 400 | `invalid_demo_id` | malformed `{id}` |
-| 400 | `invalid_param` | view-layer rejection (unknown field / bad reducer) |
+| 400 | `invalid_param` | malformed **or rejected** query parameter — bad number, malformed `reducers` pair, unknown `loc`/`layout` token, unknown `fields` code, or unknown reducer name |
 | 400 | `missing_param` | required param absent (e.g. `time` on `/state-at`) |
 | 404 | `demo_not_found` | hub has no row for this gameId |
+| 404 | `map_unavailable` | no entity corpus / geometry for this map (`/v1/maps/{map}/…`) |
 | 422 | `demoinfo_unavailable` | non-KTX server or aborted match |
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
@@ -144,10 +154,20 @@ Non-2xx responses use a stable envelope:
 | 502 | `hub_upstream` | network / 5xx from the hub |
 | 500 | `internal` / `panic` | unexpected |
 
-The `422`s are **expected** for some demos (a non-KTX server has no
-demoinfo). Treat them as "this panel is unavailable for this demo", not
-as a hard failure — `/overview` exposes `hasRegionControl` and `errors`
-so you can hide panels up front.
+(Schema v36 folded the former `view_error` code into `invalid_param`: a
+bad query parameter is one error class regardless of whether it failed
+syntactic parsing or view-layer validation.)
+
+**Available vs unavailable — the `422` rule.** A `422 <section>_unavailable`
+means the demo **structurally lacks the signal** that section needs — a
+non-KTX server has no `demoinfo`/`damage`, a demo without a position track
+has no `loc-graph`, a map without a region layout has no `region-control`.
+These are **expected** for some demos; treat them as "this panel is
+unavailable for this demo", not a hard failure, and use `/overview`
+(`hasRegionControl`, `errors`) to hide panels up front. Endpoints whose data
+is always computable or list-shaped — `/items`, `/backpacks`,
+`/weapon-pickups`, `/chat` — instead return **`200` with an empty body**
+when there's nothing, never `422`.
 
 ### 2.5 Authentication
 
@@ -192,7 +212,7 @@ all endpoints and aren't repeated.
 Warm the cache and resolve the canonical id. Idempotent.
 
 ```jsonc
-{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 20 }
+{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 36 }
 ```
 
 Use `demoId` for subsequent calls to skip the gameId→sha lookup.
@@ -204,7 +224,7 @@ single call to populate a match header and decide which panels to show.
 
 ```jsonc
 {
-  "schemaVersion": 23,
+  "schemaVersion": 36,
   "map": "dm6", "gameDir": "qw",
   "mode": "4on4",            // omitempty
   "duration": 613.4,         // seconds
@@ -314,35 +334,11 @@ KTX-hint-derived item analytics:
 Shapes in
 [RESULT_SCHEMA.md §Items / Backpacks / WeaponPickups](../mvd-analytics/RESULT_SCHEMA.md#itemsresult-items).
 
-### 4.7b `GET /v1/demos/{id}/map-entities`
-
-Params: `types`, `kinds`. The map's **static designed layout** — item
-spawns, player spawnpoints, teleport destinations/sources, buttons —
-with type + location. Per-map (identical for every demo on the map),
-sourced from the BSP entity corpus. Shape: `result.MapEntitiesResult` →
-[RESULT_SCHEMA.md §MapEntitiesResult](../mvd-analytics/RESULT_SCHEMA.md#mapentitiesresult-mapentities).
-For the per-match pickup timeline use `/items` instead.
-
-```jsonc
-// ?types=item,teleportSrc,teleportDst&kinds=weapon
-{ "map": "dm6", "entities": [
-  { "type": "item", "class": "weapon_rocketlauncher", "kind": "rl",
-    "name": "RA", "x": 1216, "y": -64, "z": 24, "loc": "RA" },
-  // brush entity: anchored at bbox centre, carries the trigger volume
-  { "type": "teleportSrc", "class": "trigger_teleport", "name": "GA",
-    "x": 248, "y": -1784, "z": 83, "loc": "GA", "target": "t2",
-    "bounds": { "min": [229,-1807,24], "max": [267,-1761,142] } },
-  { "type": "teleportDst", "class": "info_teleport_destination",
-    "name": "MH", "x": -512, "y": 480, "z": 24, "loc": "MH",
-    "targetName": "t2" }
-] }
-```
-
-`types` ∈ `item,spawn,teleportDst,teleportSrc,button,door`; `kinds` is an
-item category (`armor,mega,health,powerup,weapon,ammo`) or a raw kind.
-Brush entities (`teleportSrc`/`button`/`door`) carry a `bounds` volume;
-link a teleporter's entrance to its exit via `teleportSrc.target` ==
-`teleportDst.targetName`.
+> The map's static designed layout is **per-map data**, served only by
+> `GET /v1/maps/{map}/entities` (§4.16) — it is identical for every demo on
+> a map. The demo-scoped `/v1/demos/{id}/map-entities` was **removed in
+> schema v36**; a caller holding a demo id reads the map name from
+> `/overview` first. For the per-match pickup timeline use `/items`.
 
 ### 4.8 `GET /v1/demos/{id}/events`
 
@@ -477,8 +473,10 @@ residences. Shape: `view.LocTrailsView`.
 
 ### 4.13 `GET /v1/demos/{id}/region-control`
 
-Params: `windowMs`. Per-region control share + per-player attribution,
-re-derived at the requested resolution. Shape:
+Params: `windowMs`, `from`, `to`. Per-region control share + per-player
+attribution, re-derived at the requested resolution; `from`/`to`
+(match-relative seconds, omit for the whole match) clip the computation to
+a sub-window — e.g. "who controlled QUAD between 4:00 and 6:00". Shape:
 `result.RegionControlResult` →
 [RESULT_SCHEMA.md §RegionControlResult](../mvd-analytics/RESULT_SCHEMA.md#regioncontrolresult-regioncontrol).
 `422 region_control_unavailable` when the map has no region layout (check
@@ -503,7 +501,7 @@ indices client-side.
 
 - **`/chat`** (`from`, `to`, `players`, `types`) — chat + teamsay only;
   `[]result.MatchEvent`.
-- **`/healthz`** — `{ "ok": true, "schemaVersion": 20 }`.
+- **`/healthz`** — `{ "ok": true, "schemaVersion": 36 }`.
 - **`/v1/version`** — `{ "hash", "tag", "buildDate" }`.
 
 ### 4.16 Per-map static data — `GET /v1/maps/{map}/…`
@@ -511,10 +509,36 @@ indices client-side.
 Per-map data addressed by map name directly (no demo needed) — handy for
 UIs that have a map name from `/overview` or a match listing.
 
-- **`GET /v1/maps/{map}/entities`** (`types`, `kinds`) — the same static
-  layout as `/demos/{id}/map-entities`, read from the embedded corpus.
-  `{ map, entities: [...] }`. Aliases are resolved (`phantombase` →
-  `phantoma`). `404 map_unavailable` when no corpus exists.
+- **`GET /v1/maps/{map}/entities`** (`types`, `kinds`) — the map's
+  **static designed layout**: item spawns, player spawnpoints, teleport
+  destinations/sources, buttons, with type + location, read from the
+  embedded BSP entity corpus (identical for every demo on the map).
+  Shape: `result.MapEntitiesResult` →
+  [RESULT_SCHEMA.md §MapEntitiesResult](../mvd-analytics/RESULT_SCHEMA.md#mapentitiesresult-mapentities).
+  Aliases are resolved (`phantombase` → `phantoma`). `404 map_unavailable`
+  when no corpus exists. For the per-match pickup timeline use
+  `/demos/{id}/items`.
+
+  ```jsonc
+  // ?types=item,teleportSrc,teleportDst&kinds=weapon
+  { "map": "dm6", "entities": [
+    { "type": "item", "class": "weapon_rocketlauncher", "kind": "rl",
+      "name": "RA", "x": 1216, "y": -64, "z": 24, "loc": "RA" },
+    // brush entity: anchored at bbox centre, carries the trigger volume
+    { "type": "teleportSrc", "class": "trigger_teleport", "name": "GA",
+      "x": 248, "y": -1784, "z": 83, "loc": "GA", "target": "t2",
+      "bounds": { "min": [229,-1807,24], "max": [267,-1761,142] } },
+    { "type": "teleportDst", "class": "info_teleport_destination",
+      "name": "MH", "x": -512, "y": 480, "z": 24, "loc": "MH",
+      "targetName": "t2" }
+  ] }
+  ```
+
+  `types` ∈ `item,spawn,teleportDst,teleportSrc,button,door`; `kinds` is an
+  item category (`armor,mega,health,powerup,weapon,ammo`) or a raw kind.
+  Brush entities (`teleportSrc`/`button`/`door`) carry a `bounds` volume;
+  link a teleporter's entrance to its exit via `teleportSrc.target` ==
+  `teleportDst.targetName`.
 - **`GET /v1/maps/{map}/geometry`** — streams the per-map floor-polygon
   geometry JSON (`mapgeom.MapRegions`: `{ map, version, bounds, locs:[{
   name, z, tris:[…] }], walls?:[…], liquids?:[{ kind, tris:[…] }],
@@ -566,7 +590,7 @@ Common frontend features → the call that backs them.
 - **Loc heatmap / movement graph** → `GET /loc-graph` (aggregate) or
   `/loc-trails` (per-player sequence with dwell).
 - **Draw the map (items, spawns, teleporters as overlays)** → `GET /v1/maps/{map}/entities`
-  (or `/demos/{id}/map-entities`); add `GET /v1/maps/{map}/geometry` for
+  (map name from `/overview`); add `GET /v1/maps/{map}/geometry` for
   floor polygons to render underneath.
 - **Weapon effectiveness** → `GET /demoinfo` (KTX accuracy/damage) or
   `/weapon-pickups` (kills-before-next-death).

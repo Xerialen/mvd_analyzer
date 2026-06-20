@@ -12869,7 +12869,6 @@
   },
   "match": {
     "duration": 600000,
-    "endTime": 600000,
     "gameDir": "qw",
     "map": "The Dark Zone",
     "players": [
@@ -15925,7 +15924,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10090,

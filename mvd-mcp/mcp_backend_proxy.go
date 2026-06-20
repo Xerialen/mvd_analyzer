@@ -303,20 +303,6 @@ func (p *proxyBackend) GetItems(ctx context.Context, in GetItemsInput) (any, err
 	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/items", q)
 }
 
-func (p *proxyBackend) GetMapEntities(ctx context.Context, in GetMapEntitiesInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
-	}
-	q := url.Values{}
-	if len(in.Types) > 0 {
-		q.Set("types", strings.Join(in.Types, ","))
-	}
-	if len(in.Kinds) > 0 {
-		q.Set("kinds", strings.Join(in.Kinds, ","))
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/map-entities", q)
-}
-
 func (p *proxyBackend) GetMapEntitiesByMap(ctx context.Context, in GetMapEntitiesByMapInput) (any, error) {
 	if in.Map == "" {
 		return nil, errors.New("map required")

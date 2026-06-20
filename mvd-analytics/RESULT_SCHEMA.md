@@ -46,10 +46,14 @@ Defined in `result/match.go`.
 | Map | `map` | string | Map basename (e.g., `dm2`, `schloss`). |
 | GameDir | `gameDir` | string | Game directory (`qw`, `fortress`, custom). |
 | Duration | `duration` | int32 | Match length in milliseconds (parser-derived). Read this for "how long was the match". |
-| StartTime | `startTime` | int32 | Match-relative start in ms (always 0 after the time-normalisation post-process). |
-| EndTime | `endTime` | int32 | Match-relative end in ms (equal to Duration in match-relative coords). |
 | Players | `players` | []PlayerStat | Lightweight scoreboard view. |
 | Teams | `teams` | []TeamStat | Team standings (omitted in FFA). |
+
+The `startTime` / `endTime` fields were **removed in schema v36** — after time
+normalisation `startTime` was always 0 and `endTime` always equalled
+`duration`, and both duplicated [`streams.global.matchStart` /
+`matchEnd`](#globalstream). Read `duration` for match length, or
+`streams.global` for the match window.
 
 ### PlayerStat
 
@@ -754,7 +758,7 @@ Every timestamped field in this schema — `PositionTrack.T`,
 `PlayerStream.Spawns/Deaths`, `ChangeI16.T` / `ChangeStr.T`,
 `Interval.Start/End`, `GlobalStream.MatchStart/End/DemoOffset`,
 `GlobalStream.Pauses[].AtMs/DurationMs`,
-`MatchResult.Duration/StartTime/EndTime`,
+`MatchResult.Duration`,
 `TimelineFragEvent.Time`, `PowerupEvent.Time/EndTime/Duration`,
 `FragStreakEvent.Time/EndTime/Duration`, `MatchEvent.Time`,
 `FragEntry.Time`, `BackpackDrop.Time`,
@@ -1242,6 +1246,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v36 | `MatchResult` drops the dead `startTime` / `endTime` fields. After the match-relative time normalization `startTime` was always 0 (already `omitempty`, so absent from JSON) and `endTime` always equalled `duration`; both duplicated `streams.global.matchStart` / `matchEnd`. The `endTime` key disappears from the `match` object — read `duration` for match length, or `streams.global` for the match window. Breaking removal (not additive). |
 | v35 | `streams` gains `movers[]` (`MoverStream`): the pose timeline of every tracked brush-model entity (lift, door, plat, train). Each carries `ent` (entity number), `sub` (the `*N` brush-model index, matching the corpus `SubModelMesh` id), and index-aligned `t`/`x`/`y`/`z`/`vis` columns — the mover sits at `(x,y,z)[i]` at `t[i]` ms and is drawn when `vis[i]`. Origins are `float32` (exact ⅛-unit wire values). The first entry is clamped to `t = 0` carrying the match-start pose so a parked mover (only wire state predates the match) still has one. Additive (`omitempty`); absent when the demo has no movers. The same internal tracks already drive the v27 floor-height pass. |
 | v34 | `timelineAnalysis.locationData` now carries **one `MapLocation` per loc name** — the medoid of that name's `.loc` corpus points — instead of every raw point. The corpus often repeats a name across several nearby points, which drew duplicate map labels; the medoid is the actual point minimizing summed distance to its same-name siblings (never an averaged mid-air centroid). `locGraph` node coordinates (resolved from this list by name) move to the medoid. Same field name and `MapLocation` shape; the list is just shorter. |
 | v33 | `PositionTrack` `x` / `y` / `z`, `vx` / `vy` / `vz`, and `h` change from `int32` to **`float32`** — the pipeline stops truncating the wire-native sub-unit origin (mvd-reader decodes coordinates as float32; the wire carries eighth-unit fixed point, or true floats under the float-coords extension). v32 and earlier rounded each axis to whole units (losing up to ~1 unit) and derived velocity from those rounded positions; velocity is now sub-unit precise, so the old ±1-unit quantization noise is gone. Values are kept at **native float32 in memory**; only the JSON text is rounded — to 3 decimals, applied by `PositionTrack.MarshalJSON` (lossless for eighth-unit coordinates; it just sheds the float division/epsilon tail on derived velocity & height). The `PositionTrack.H` `NoFloor` sentinel changes from `-2147483648` (`math.MinInt32`, which a float32 cannot represent exactly and serializes as `-2147483600`) to **`-1000000000`** (`-1e9`, exact in float32 and float64). The `buckets` x/y/z/vx/vy/vz/hgt columns get the same 3-decimal rounding; the point-in-time `state-at` `pos`/`vel`/`hgt` and the `AirgibEvent` heights are float32 too but emitted at full precision (low volume). Time axes stay `int32` ms; view angles stay `int16` raw `angle16`; loc/liquid columns unchanged. JSON keys unchanged; values now carry fractional digits where the wire delivered sub-unit positions. |

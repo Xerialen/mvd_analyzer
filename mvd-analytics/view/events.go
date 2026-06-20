@@ -372,11 +372,11 @@ func appendIntervalEvents(
 }
 
 // inferMatchEnd is a fallback when r.Streams is absent. Reads
-// Match.EndTime if present and converts to float64 seconds (public
-// view API unit; result schema stores ms).
+// Match.Duration (match-relative coords ⇒ end == duration) and converts
+// to float64 seconds (public view API unit; result schema stores ms).
 func inferMatchEnd(r *result.Result) float64 {
 	if r.Match != nil {
-		return float64(r.Match.EndTime) * 0.001
+		return float64(r.Match.Duration) * 0.001
 	}
 	return 0
 }

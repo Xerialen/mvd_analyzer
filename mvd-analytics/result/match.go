@@ -1,15 +1,15 @@
 package result
 
 // MatchResult contains match summary information. Time fields are
-// integer milliseconds (schema v8).
+// integer milliseconds (schema v8). The match window itself lives in
+// streams.global (matchStart/matchEnd); read Duration for "how long was
+// the match".
 type MatchResult struct {
-	Map       string       `json:"map"`
-	GameDir   string       `json:"gameDir"`
-	Duration  int32        `json:"duration"` // ms
-	StartTime int32        `json:"startTime,omitempty"`
-	EndTime   int32        `json:"endTime,omitempty"`
-	Players   []PlayerStat `json:"players"`
-	Teams     []TeamStat   `json:"teams,omitempty"`
+	Map      string       `json:"map"`
+	GameDir  string       `json:"gameDir"`
+	Duration int32        `json:"duration"` // ms
+	Players  []PlayerStat `json:"players"`
+	Teams    []TeamStat   `json:"teams,omitempty"`
 }
 
 // PlayerStat is a player's final scoreboard line. Frags is the canonical

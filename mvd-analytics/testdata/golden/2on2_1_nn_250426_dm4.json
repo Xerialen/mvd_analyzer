@@ -20320,7 +20320,6 @@
   },
   "match": {
     "duration": 600050,
-    "endTime": 600050,
     "gameDir": "qw",
     "map": "The Bad Place",
     "players": [
@@ -25174,7 +25173,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10160,

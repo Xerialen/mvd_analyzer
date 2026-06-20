@@ -12,10 +12,11 @@ import (
 	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
-// handleMapEntities: GET /v1/demos/{id}/map-entities — the static
-// designed layout of the demo's map (item spawns, spawnpoints, teleport
-// destinations/sources, buttons) with type + location. Sourced from the
-// per-map entity corpus, attached to the Result at analyze time.
+// handleMapEntitiesByMap: GET /v1/maps/{map}/entities — the map's static
+// designed layout (item spawns, spawnpoints, teleport destinations/sources,
+// buttons) addressed by map name directly (no demo needed). Reads the
+// embedded corpus; identical for every demo on the map. Callers holding a
+// demo id get the map name from /overview first.
 //
 // Query params (case-insensitive):
 //
@@ -23,21 +24,6 @@ import (
 //	             teleportSrc, button, door
 //	kinds  csv — restrict to item categories (armor, mega, health,
 //	             powerup, weapon, ammo) or a raw kind token (ra, quad)
-func (s *server) handleMapEntities(w http.ResponseWriter, r *http.Request) {
-	res, _, ok := s.resolveDemo(w, r)
-	if !ok {
-		return
-	}
-	if res.MapEntities == nil {
-		writeJSON(w, http.StatusOK, &result.MapEntitiesResult{Entities: []result.MapEntity{}})
-		return
-	}
-	writeJSON(w, http.StatusOK, filterMapEntities(res.MapEntities, r))
-}
-
-// handleMapEntitiesByMap: GET /v1/maps/{map}/entities — the same static
-// layout addressed by map name directly (no demo needed). Reads the
-// embedded corpus.
 func (s *server) handleMapEntitiesByMap(w http.ResponseWriter, r *http.Request) {
 	base := loc.NormalizeMapName(r.PathValue("map"))
 	me, err := mapents.LoadForMap(base)

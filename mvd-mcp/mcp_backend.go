@@ -18,7 +18,6 @@ type MCPBackend interface {
 	GetChat(ctx context.Context, in GetChatInput) (any, error)
 	GetBackpacks(ctx context.Context, in GetBackpacksInput) (any, error)
 	GetItems(ctx context.Context, in GetItemsInput) (any, error)
-	GetMapEntities(ctx context.Context, in GetMapEntitiesInput) (any, error)
 	GetMapEntitiesByMap(ctx context.Context, in GetMapEntitiesByMapInput) (any, error)
 	GetWeaponPickups(ctx context.Context, in GetWeaponPickupsInput) (any, error)
 	GetBuckets(ctx context.Context, in GetBucketsInput) (any, error)
@@ -174,14 +173,6 @@ type GetItemsInput struct {
 	Items   []string `json:"items,omitempty" jsonschema:"item name or kind token (case-insensitive). A kind matches every instance of a type (YA → ya_1, ya_2; RA; MH; Quad; Pent; Ring; RL; LG; GL; SSG; SNG; NG); a suffixed name matches one instance (ya_1)."`
 	Players []string `json:"players,omitempty" jsonschema:"restrict phases to those taken by these player names (phases with no TakenBy survive)"`
 	Kinds   []string `json:"kinds,omitempty" jsonschema:"item category (case-insensitive): armor, mega, health, powerup, weapon, ammo. A raw kind token (ra, quad, rl, ...) is also accepted."`
-}
-
-// GetMapEntitiesInput filters /v1/demos/{id}/map-entities — the static
-// designed layout of the demo's map.
-type GetMapEntitiesInput struct {
-	DemoID string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Types  []string `json:"types,omitempty" jsonschema:"restrict to entity types (case-insensitive): item, spawn, teleportDst, teleportSrc, button, door"`
-	Kinds  []string `json:"kinds,omitempty" jsonschema:"restrict items by category (armor, mega, health, powerup, weapon, ammo) or a raw kind token (ra, quad, rl, ...)"`
 }
 
 // GetMapEntitiesByMapInput addresses the static layout by map name

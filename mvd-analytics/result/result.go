@@ -396,7 +396,15 @@ package result
 //     the match) still has one. Additive (omitempty); absent when the
 //     demo has no movers. The same internal mover tracks already feed the
 //     v27 floor-height pass.
-const CurrentSchemaVersion = 35
+// v36:
+//   - MatchResult drops the dead StartTime / EndTime fields. After the
+//     match-relative time normalization StartTime was always 0 (already
+//     omitempty, so absent from JSON) and EndTime always equalled
+//     Duration; both duplicated streams.global.matchStart/matchEnd. The
+//     `endTime` key disappears from the `match` object — read Duration for
+//     match length, or streams.global for the match window. Breaking
+//     removal (not additive); the view query API is unaffected.
+const CurrentSchemaVersion = 36
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

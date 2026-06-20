@@ -9522,7 +9522,6 @@
   },
   "match": {
     "duration": 600001,
-    "endTime": 600001,
     "gameDir": "qw",
     "map": "Bravado -",
     "players": [
@@ -10213,7 +10212,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10091,

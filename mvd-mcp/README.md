@@ -51,7 +51,6 @@ vocabulary, and the reducer registry.
 | `getChat` | `mvd-api` `GET /v1/demos/{id}/chat` |
 | `getBackpacks` | `mvd-api` `GET /v1/demos/{id}/backpacks` |
 | `getItems` | `mvd-api` `GET /v1/demos/{id}/items` |
-| `getMapEntities` | `mvd-api` `GET /v1/demos/{id}/map-entities` |
 | `getMapEntitiesByMap` | `mvd-api` `GET /v1/maps/{map}/entities` |
 | `getWeaponPickups` | `mvd-api` `GET /v1/demos/{id}/weapon-pickups` |
 | `getBuckets` | `mvd-api` `GET /v1/demos/{id}/buckets` |

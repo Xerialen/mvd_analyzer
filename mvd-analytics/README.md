@@ -264,24 +264,26 @@ doc is the source of truth for every JSON key and its intent.
 type Result struct {
     SchemaVersion    int
     FilePath         string
-    Match            *MatchResult             // match summary
+    Match            *MatchResult             // match summary + corrected scoreboard
     Frags            *FragResult              // frag tally + individual entries
     Messages         *MessagesResult          // frag + chat stream for timeline
     DemoInfo         *DemoInfoResult          // KTX authoritative stats
-    TimelineAnalysis *TimelineAnalysisResult  // bucketed player state + region control
+    TimelineAnalysis *TimelineAnalysisResult  // event-shaped derived data + loc/region metadata
     Metadata         *MetadataResult          // serverinfo + match settings
     LocGraph         *LocGraphResult          // loc-to-loc movement graph
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
+    Damage           *DamageResult            // per-hit damage log + aggregates (KTX dmgdone stream)
     MapEntities      *MapEntitiesResult       // static map layout from the BSP entity corpus (mapents)
     Backpacks        []BackpackDrop           // RL/LG backpack drops (from KTX //ktx drop hint)
     WeaponPickups    []WeaponPickup           // slot-weapon pickups + kills-before-next-death metric
+    Streams          *Streams                 // canonical event-rate per-player state (v7); view API reads this
     Errors           []string
 }
 ```
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `18`). For "how long was the match"
+`CurrentSchemaVersion` (currently `36`). For "how long was the match"
 read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
 (integer, KTX-authoritative); the legacy top-level `duration` was
 removed in v6.

@@ -84,6 +84,19 @@ func mapStoreError(w http.ResponseWriter, err error) {
 	}
 }
 
+// writeUnavailable maps a view.ErrUnavailable (a section the demo lacks
+// the enabling signal for) to a 422 with the section-specific code/message,
+// and anything else to 500. This is the HTTP face of the R3 rule —
+// object-shaped sections that require a capability return 422 when it's
+// absent; always-computable / list sections return 200 with an empty body.
+func writeUnavailable(w http.ResponseWriter, err error, code, msg string) {
+	if errors.Is(err, view.ErrUnavailable) {
+		writeError(w, http.StatusUnprocessableEntity, code, msg)
+		return
+	}
+	writeError(w, http.StatusInternalServerError, "internal", err.Error())
+}
+
 func setCacheHeaders(w http.ResponseWriter, meta democache.CacheMeta) {
 	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
 	w.Header().Set("X-Schema-Version", fmt.Sprintf("%d", meta.SchemaVersion))
@@ -180,7 +193,8 @@ func (s *server) handleLocGraph(w http.ResponseWriter, r *http.Request) {
 
 // handleFrags: GET /v1/demos/{id}/frags — top-level frag aggregates +
 // the full kill log. Optional filters narrow both views to entries
-// involving the named players / weapon.
+// involving the named players / weapon. Filtering lives in view.Frags so
+// REST, MCP, and WASM share one implementation.
 //
 // Query params:
 //
@@ -192,61 +206,14 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Frags == nil {
-		writeError(w, http.StatusUnprocessableEntity, "frags_unavailable",
-			"this demo has no frag log")
-		return
-	}
 	q := r.URL.Query()
-	playerSet := csvSet(q.Get("players"))
-	weaponSet := csvSet(q.Get("weapon"))
-	if len(playerSet) == 0 && len(weaponSet) == 0 {
-		writeJSON(w, http.StatusOK, res.Frags)
+	out, err := view.Frags(res, view.FragOptions{
+		Players: parseCSV(ciGet(q, "players")),
+		Weapons: parseCSV(ciGet(q, "weapon")),
+	})
+	if err != nil {
+		writeUnavailable(w, err, "frags_unavailable", "this demo has no frag log")
 		return
-	}
-
-	out := &result.FragResult{TotalFrags: res.Frags.TotalFrags}
-
-	if res.Frags.ByPlayer != nil {
-		out.ByPlayer = make(map[string]*result.PlayerFrags, len(res.Frags.ByPlayer))
-		for name, pf := range res.Frags.ByPlayer {
-			if len(playerSet) > 0 && !playerSet[name] {
-				continue
-			}
-			if len(weaponSet) > 0 {
-				filtered := &result.PlayerFrags{
-					Kills:    pf.Kills,
-					Deaths:   pf.Deaths,
-					ByWeapon: map[string]int{},
-				}
-				for wpn, n := range pf.ByWeapon {
-					if weaponSet[wpn] {
-						filtered.ByWeapon[wpn] = n
-					}
-				}
-				out.ByPlayer[name] = filtered
-			} else {
-				out.ByPlayer[name] = pf
-			}
-		}
-	}
-	if res.Frags.ByWeapon != nil {
-		out.ByWeapon = make(map[string]int, len(res.Frags.ByWeapon))
-		for wpn, n := range res.Frags.ByWeapon {
-			if len(weaponSet) > 0 && !weaponSet[wpn] {
-				continue
-			}
-			out.ByWeapon[wpn] = n
-		}
-	}
-	for _, fe := range res.Frags.Frags {
-		if len(weaponSet) > 0 && !weaponSet[fe.Weapon] {
-			continue
-		}
-		if len(playerSet) > 0 && !playerSet[fe.Killer] && !playerSet[fe.Victim] {
-			continue
-		}
-		out.Frags = append(out.Frags, fe)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -267,109 +234,15 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Damage == nil {
-		writeError(w, http.StatusUnprocessableEntity, "damage_unavailable",
+	q := r.URL.Query()
+	out, err := view.Damage(res, view.DamageOptions{
+		Players: parseCSV(ciGet(q, "players")),
+		Weapons: parseCSV(ciGet(q, "weapon")),
+	})
+	if err != nil {
+		writeUnavailable(w, err, "damage_unavailable",
 			"this demo has no damage data (no KTX mvdhidden_dmgdone stream)")
 		return
-	}
-	q := r.URL.Query()
-	playerSet := csvSet(q.Get("players"))
-	weaponSet := csvSet(q.Get("weapon"))
-	if len(playerSet) == 0 && len(weaponSet) == 0 {
-		writeJSON(w, http.StatusOK, res.Damage)
-		return
-	}
-
-	out := &result.DamageResult{TotalDamage: res.Damage.TotalDamage}
-
-	if res.Damage.ByPlayer != nil {
-		out.ByPlayer = make(map[string]*result.PlayerDamage, len(res.Damage.ByPlayer))
-		for name, pd := range res.Damage.ByPlayer {
-			if len(playerSet) > 0 && !playerSet[name] {
-				continue
-			}
-			if len(weaponSet) > 0 {
-				clone := *pd
-				clone.ByWeapon = map[string]int{}
-				for wpn, n := range pd.ByWeapon {
-					if weaponSet[wpn] {
-						clone.ByWeapon[wpn] = n
-					}
-				}
-				out.ByPlayer[name] = &clone
-			} else {
-				out.ByPlayer[name] = pd
-			}
-		}
-	}
-	if res.Damage.ByWeapon != nil {
-		out.ByWeapon = make(map[string]int, len(res.Damage.ByWeapon))
-		for wpn, n := range res.Damage.ByWeapon {
-			if len(weaponSet) > 0 && !weaponSet[wpn] {
-				continue
-			}
-			out.ByWeapon[wpn] = n
-		}
-	}
-	for _, mp := range res.Damage.Matrix {
-		if len(playerSet) > 0 && !playerSet[mp.Attacker] && !playerSet[mp.Victim] {
-			continue
-		}
-		if len(weaponSet) > 0 {
-			pair := result.DamagePair{Attacker: mp.Attacker, Victim: mp.Victim, ByWeapon: map[string]int{}}
-			for wpn, n := range mp.ByWeapon {
-				if weaponSet[wpn] {
-					pair.ByWeapon[wpn] = n
-					pair.Damage += n
-				}
-			}
-			if pair.Damage == 0 {
-				continue
-			}
-			out.Matrix = append(out.Matrix, pair)
-		} else {
-			out.Matrix = append(out.Matrix, mp)
-		}
-	}
-	for _, de := range res.Damage.Events {
-		if len(weaponSet) > 0 && !weaponSet[de.Weapon] {
-			continue
-		}
-		if len(playerSet) > 0 && !playerSet[de.Attacker] && !playerSet[de.Victim] {
-			continue
-		}
-		out.Events = append(out.Events, de)
-	}
-	// Telefrags / stomps carry no weapon; treat their implicit weapon as
-	// "tele" / "stomp" so weapon=tele|stomp retrieves them and any other
-	// weapon= filter excludes them.
-	for _, tf := range res.Damage.Telefrags {
-		if len(weaponSet) > 0 && !weaponSet["tele"] {
-			continue
-		}
-		if len(playerSet) > 0 && !playerSet[tf.Attacker] && !playerSet[tf.Victim] {
-			continue
-		}
-		out.Telefrags = append(out.Telefrags, tf)
-	}
-	for _, st := range res.Damage.Stomps {
-		if len(weaponSet) > 0 && !weaponSet["stomp"] {
-			continue
-		}
-		if len(playerSet) > 0 && !playerSet[st.Attacker] && !playerSet[st.Victim] {
-			continue
-		}
-		out.Stomps = append(out.Stomps, st)
-	}
-	if res.Damage.Scoreboard != nil {
-		sb := &result.DamageReconciliation{ByPlayer: map[string]*result.DamageDelta{}}
-		for name, d := range res.Damage.Scoreboard.ByPlayer {
-			if len(playerSet) > 0 && !playerSet[name] {
-				continue
-			}
-			sb.ByPlayer[name] = d
-		}
-		out.Scoreboard = sb
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -392,48 +265,23 @@ func (s *server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Messages == nil {
-		writeJSON(w, http.StatusOK, []result.MatchEvent{})
-		return
-	}
 	q := r.URL.Query()
-	start, err := parseFloat(q, "from", 0)
+	from, err := parseFloat(q, "from", 0)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
-	end, err := parseFloat(q, "to", 0)
+	to, err := parseFloat(q, "to", 0)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
-	playerSet := csvSet(q.Get("players"))
-	typeSet := csvSet(q.Get("types"))
-	if len(typeSet) == 0 {
-		typeSet = map[string]bool{"chat": true, "teamsay": true}
-	}
-
-	// Query params arrive in float64 seconds; MatchEvent.Time is
-	// int32 ms (schema v8). Convert window once at the entry.
-	startMs := int32(start * 1000)
-	endMs := int32(end * 1000)
-	out := make([]result.MatchEvent, 0, len(res.Messages.Events))
-	for _, ev := range res.Messages.Events {
-		if !typeSet[ev.Type] {
-			continue
-		}
-		if startMs != 0 && ev.Time < startMs {
-			continue
-		}
-		if endMs != 0 && ev.Time > endMs {
-			continue
-		}
-		if len(playerSet) > 0 && !playerSet[ev.Player] {
-			continue
-		}
-		out = append(out, ev)
-	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, view.Chat(res, view.ChatOptions{
+		From:    from,
+		To:      to,
+		Players: parseCSV(ciGet(q, "players")),
+		Types:   parseCSV(ciGet(q, "types")),
+	}))
 }
 
 // handleDemoInfo: GET /v1/demos/{id}/demoinfo — KTX demoinfo blob
@@ -458,31 +306,17 @@ func (s *server) handleDemoInfo(w http.ResponseWriter, r *http.Request) {
 // Query params:
 //
 //	players  csv — restrict to drops by these dropper names
-//	weapon   "rl" or "lg" — restrict to this weapon
+//	weapon   csv — restrict to these weapons ("rl"/"lg"; case-insensitive)
 func (s *server) handleBackpacks(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	if res.Backpacks == nil {
-		writeJSON(w, http.StatusOK, []result.BackpackDrop{})
-		return
-	}
 	q := r.URL.Query()
-	playerSet := csvSet(q.Get("players"))
-	wantWeapon := strings.ToLower(strings.TrimSpace(q.Get("weapon")))
-
-	out := make([]result.BackpackDrop, 0, len(res.Backpacks))
-	for _, b := range res.Backpacks {
-		if len(playerSet) > 0 && !playerSet[b.Player] {
-			continue
-		}
-		if wantWeapon != "" && b.Weapon != wantWeapon {
-			continue
-		}
-		out = append(out, b)
-	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, view.Backpacks(res, view.BackpackOptions{
+		Players: parseCSV(ciGet(q, "players")),
+		Weapons: parseCSV(ciGet(q, "weapon")),
+	}))
 }
 
 // handleItems: GET /v1/demos/{id}/items — per-item pickup/respawn
@@ -510,49 +344,12 @@ func (s *server) handleItems(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Items == nil {
-		writeJSON(w, http.StatusOK, &result.ItemsResult{Items: []result.ItemTimeline{}})
-		return
-	}
 	q := r.URL.Query()
-	itemSet := csvSetLower(q.Get("items"))
-	playerSet := csvSet(q.Get("players"))
-	kindSet := csvSetLower(q.Get("kinds"))
-
-	if len(itemSet) == 0 && len(playerSet) == 0 && len(kindSet) == 0 {
-		writeJSON(w, http.StatusOK, res.Items)
-		return
-	}
-
-	out := &result.ItemsResult{Items: make([]result.ItemTimeline, 0, len(res.Items.Items))}
-	for _, it := range res.Items.Items {
-		if len(itemSet) > 0 && !itemSet[strings.ToLower(it.Name)] && !itemSet[strings.ToLower(it.Kind)] {
-			continue
-		}
-		if len(kindSet) > 0 && !kindSet[it.Category()] && !kindSet[strings.ToLower(it.Kind)] {
-			continue
-		}
-		if len(playerSet) > 0 {
-			kept := it
-			kept.Phases = make([]result.ItemPhase, 0, len(it.Phases))
-			for _, ph := range it.Phases {
-				if ph.TakenBy == "" {
-					kept.Phases = append(kept.Phases, ph)
-					continue
-				}
-				if playerSet[ph.TakenBy] {
-					kept.Phases = append(kept.Phases, ph)
-				}
-			}
-			if len(kept.Phases) == 0 {
-				continue
-			}
-			out.Items = append(out.Items, kept)
-			continue
-		}
-		out.Items = append(out.Items, it)
-	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, view.Items(res, view.ItemOptions{
+		Items:   parseCSV(ciGet(q, "items")),
+		Players: parseCSV(ciGet(q, "players")),
+		Kinds:   parseCSV(ciGet(q, "kinds")),
+	}))
 }
 
 // handleWeaponPickups: GET /v1/demos/{id}/weapon-pickups — slot-weapon
@@ -562,52 +359,19 @@ func (s *server) handleItems(w http.ResponseWriter, r *http.Request) {
 // Query params:
 //
 //	players  csv — restrict to picks by these names
-//	weapon   csv — "rl","lg","gl","ssg","sng","ng" (csv accepted but typically one)
+//	weapon   csv — "rl","lg","gl","ssg","sng","ng" (case-insensitive)
 //	source   "world" | "backpack"
 func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	if len(res.WeaponPickups) == 0 {
-		writeJSON(w, http.StatusOK, []result.WeaponPickup{})
-		return
-	}
 	q := r.URL.Query()
-	playerSet := csvSet(q.Get("players"))
-	weaponSet := csvSet(q.Get("weapon"))
-	wantSource := strings.ToLower(strings.TrimSpace(q.Get("source")))
-
-	out := make([]result.WeaponPickup, 0, len(res.WeaponPickups))
-	for _, wp := range res.WeaponPickups {
-		if len(playerSet) > 0 && !playerSet[wp.Player] {
-			continue
-		}
-		if len(weaponSet) > 0 && !weaponSet[wp.Weapon] {
-			continue
-		}
-		if wantSource != "" && wp.Source != wantSource {
-			continue
-		}
-		out = append(out, wp)
-	}
-	writeJSON(w, http.StatusOK, out)
-}
-
-// csvSet builds a set from a comma-separated query value. Empty
-// string → nil (caller should treat that as "no filter").
-func csvSet(v string) map[string]bool {
-	if v == "" {
-		return nil
-	}
-	out := map[string]bool{}
-	for _, p := range strings.Split(v, ",") {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			out[p] = true
-		}
-	}
-	return out
+	writeJSON(w, http.StatusOK, view.WeaponPickups(res, view.WeaponPickupOptions{
+		Players: parseCSV(ciGet(q, "players")),
+		Weapons: parseCSV(ciGet(q, "weapon")),
+		Source:  ciGet(q, "source"),
+	}))
 }
 
 // csvSetLower is csvSet with each token lowercased — for filters
@@ -648,7 +412,7 @@ func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
-	reducers, err := parseReducers(q.Get("reducers"))
+	reducers, err := parseReducers(ciGet(q, "reducers"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
@@ -667,8 +431,8 @@ func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 		WindowMs:    windowMs,
 		StartTime:   start,
 		EndTime:     end,
-		Players:     parseCSV(q.Get("players")),
-		Fields:      parseCSV(q.Get("fields")),
+		Players:     parseCSV(ciGet(q, "players")),
+		Fields:      parseCSV(ciGet(q, "fields")),
 		Reducers:    reducers,
 		IncludeTeam: parseBool(q, "includeTeam"),
 		LocIndex:    locIndex,
@@ -677,7 +441,7 @@ func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 	if layout == "column" {
 		cb, err := view.BucketsColumnar(res, opts)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "view_error", err.Error())
+			writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 			return
 		}
 		writeJSON(w, http.StatusOK, cb)
@@ -685,7 +449,7 @@ func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 	}
 	bv, err := view.Buckets(res, opts)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "view_error", err.Error())
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, bv)
@@ -715,13 +479,13 @@ func (s *server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	filter := view.EventsFilter{
 		StartTime: start,
 		EndTime:   end,
-		Players:   parseCSV(q.Get("players")),
-		Types:     parseCSV(q.Get("types")),
+		Players:   parseCSV(ciGet(q, "players")),
+		Types:     parseCSV(ciGet(q, "types")),
 		LocIndex:  locIndex,
 	}
 	ev, err := view.Events(res, filter)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "view_error", err.Error())
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, ev)
@@ -751,13 +515,13 @@ func (s *server) handleStreamSlice(w http.ResponseWriter, r *http.Request) {
 	opts := view.StreamSliceOptions{
 		StartTime: start,
 		EndTime:   end,
-		Players:   parseCSV(q.Get("players")),
-		Fields:    parseCSV(q.Get("fields")),
+		Players:   parseCSV(ciGet(q, "players")),
+		Fields:    parseCSV(ciGet(q, "fields")),
 		LocIndex:  locIndex,
 	}
 	sl, err := view.StreamSlice(res, opts)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "view_error", err.Error())
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, sl)
@@ -769,7 +533,7 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	if q.Get("time") == "" {
+	if ciGet(q, "time") == "" {
 		writeError(w, http.StatusBadRequest, "missing_param", "time is required")
 		return
 	}
@@ -785,13 +549,13 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 	}
 	opts := view.StateAtOptions{
 		Time:     t,
-		Players:  parseCSV(q.Get("players")),
-		Fields:   parseCSV(q.Get("fields")),
+		Players:  parseCSV(ciGet(q, "players")),
+		Fields:   parseCSV(ciGet(q, "fields")),
 		LocIndex: locIndex,
 	}
 	sa, err := view.StateAt(res, opts)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "view_error", err.Error())
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, sa)
@@ -824,7 +588,7 @@ func (s *server) handleLocTrails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	opts := view.LocTrailsOptions{
-		Players:    parseCSV(q.Get("players")),
+		Players:    parseCSV(ciGet(q, "players")),
 		MinDwellMs: minDwell,
 		StartTime:  start,
 		EndTime:    end,
@@ -832,7 +596,7 @@ func (s *server) handleLocTrails(w http.ResponseWriter, r *http.Request) {
 	}
 	tr, err := view.LocTrails(res, opts)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "view_error", err.Error())
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, tr)
@@ -869,9 +633,23 @@ func (s *server) handleRegionControl(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
-	rcv, err := view.RegionControl(res, view.RegionControlOptions{WindowMs: windowMs})
+	from, err := parseFloat(q, "from", 0)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "view_error", err.Error())
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+		return
+	}
+	to, err := parseFloat(q, "to", 0)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+		return
+	}
+	rcv, err := view.RegionControl(res, view.RegionControlOptions{
+		WindowMs:  windowMs,
+		StartTime: from,
+		EndTime:   to,
+	})
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, rcv)

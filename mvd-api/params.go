@@ -7,6 +7,24 @@ import (
 	"strings"
 )
 
+// ciGet returns a query value by case-insensitive key. The documented
+// canonical spelling is camelCase (windowMs, minDwellMs, includeTeam), but
+// windowms / WindowMs / etc. resolve too, so consumers never trip on the
+// casing of a parameter name. The exact-case hit is preferred; otherwise
+// the first key that matches case-insensitively wins.
+func ciGet(q url.Values, key string) string {
+	if v := q.Get(key); v != "" {
+		return v
+	}
+	lk := strings.ToLower(key)
+	for k, vs := range q {
+		if len(vs) > 0 && strings.ToLower(k) == lk {
+			return vs[0]
+		}
+	}
+	return ""
+}
+
 // parseCSV splits a comma-separated query parameter, trimming spaces
 // and dropping empty entries.
 func parseCSV(v string) []string {
@@ -26,7 +44,7 @@ func parseCSV(v string) []string {
 
 // parseFloat parses a query-string number. Empty → default.
 func parseFloat(q url.Values, key string, defaultVal float64) (float64, error) {
-	v := q.Get(key)
+	v := ciGet(q, key)
 	if v == "" {
 		return defaultVal, nil
 	}
@@ -39,7 +57,7 @@ func parseFloat(q url.Values, key string, defaultVal float64) (float64, error) {
 
 // parseInt parses a query-string integer. Empty → default.
 func parseInt(q url.Values, key string, defaultVal int) (int, error) {
-	v := q.Get(key)
+	v := ciGet(q, key)
 	if v == "" {
 		return defaultVal, nil
 	}
@@ -52,7 +70,7 @@ func parseInt(q url.Values, key string, defaultVal int) (int, error) {
 
 // parseBool parses 0/1 or true/false. Empty → false.
 func parseBool(q url.Values, key string) bool {
-	switch strings.ToLower(q.Get(key)) {
+	switch strings.ToLower(ciGet(q, key)) {
 	case "1", "true", "yes", "on":
 		return true
 	}
@@ -63,13 +81,13 @@ func parseBool(q url.Values, key string) bool {
 // (resolved loc names, the default); "index" → true (raw LocTable
 // indices, decode via /loc-table). Any other value is an error.
 func parseLocIndex(q url.Values) (bool, error) {
-	switch strings.ToLower(strings.TrimSpace(q.Get("loc"))) {
+	switch strings.ToLower(strings.TrimSpace(ciGet(q, "loc"))) {
 	case "", "name", "names":
 		return false, nil
 	case "index", "indices", "li":
 		return true, nil
 	default:
-		return false, fmt.Errorf("invalid loc=%q (want 'name' or 'index')", q.Get("loc"))
+		return false, fmt.Errorf("invalid loc=%q (want 'name' or 'index')", ciGet(q, "loc"))
 	}
 }
 
@@ -77,13 +95,13 @@ func parseLocIndex(q url.Values) (bool, error) {
 // column-major ColumnarBuckets, the default); "row" → the bucket-major
 // BucketsView. Any other value is an error.
 func parseLayout(q url.Values) (string, error) {
-	switch strings.ToLower(strings.TrimSpace(q.Get("layout"))) {
+	switch strings.ToLower(strings.TrimSpace(ciGet(q, "layout"))) {
 	case "", "column", "columnar":
 		return "column", nil
 	case "row":
 		return "row", nil
 	default:
-		return "", fmt.Errorf("invalid layout=%q (want 'row' or 'column')", q.Get("layout"))
+		return "", fmt.Errorf("invalid layout=%q (want 'row' or 'column')", ciGet(q, "layout"))
 	}
 }
 

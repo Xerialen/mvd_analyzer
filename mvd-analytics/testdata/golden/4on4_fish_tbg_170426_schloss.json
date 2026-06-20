@@ -42323,7 +42323,6 @@
   },
   "match": {
     "duration": 1200017,
-    "endTime": 1200017,
     "gameDir": "qw",
     "map": "Schloss Adler",
     "players": [
@@ -57335,7 +57334,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10092,

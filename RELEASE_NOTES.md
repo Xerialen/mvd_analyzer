@@ -5,6 +5,63 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-06-20
+
+- **API contract cleanup** (schema v36). Consolidates the REST/MCP
+  surface; section-filtering logic moves into the shared
+  `mvd-analytics/view` layer (REST, MCP, and WASM now share one tested
+  implementation — no wire change from that move). The observable contract
+  changes:
+
+  **Breaking**
+  - **`match.startTime` / `match.endTime` removed** from the result. They
+    were always `0` / equal to `duration` and duplicated
+    `streams.global.matchStart` / `matchEnd`. Read **`match.duration`** for
+    match length and **`streams.global`** for the match window. (The
+    `endTime` key disappears from the `match` object; `startTime` was
+    already `omitempty`-absent.) Schema bumps **35 → 36**, so the ETag /
+    `X-Schema-Version` change and cached results re-validate.
+  - **`GET /v1/demos/{id}/map-entities` removed** (and the MCP
+    `getMapEntities` tool). Use **`GET /v1/maps/{map}/entities`** (MCP
+    `getMapEntitiesByMap`) — identical payload; get the map name from
+    `/overview`.
+  - **`view_error` (400) is gone** — every malformed/rejected query now
+    returns **`invalid_param` (400)**, including an unknown `fields` code or
+    reducer name.
+
+  **Additive / non-breaking**
+  - **`/region-control` accepts `from` / `to`** (match-relative seconds) to
+    clip control attribution to a sub-window.
+  - **`weapon` is a comma-separated set on every endpoint** that takes it
+    (`/frags`, `/damage`, `/backpacks`, `/weapon-pickups`); `/backpacks`
+    previously accepted only a single value.
+  - **Query-parameter names are case-insensitive** (canonical spelling
+    stays camelCase: `windowMs`, `minDwellMs`, `includeTeam`).
+  - **Documented "section absent" rule**: capability-gated sections
+    (`demoinfo`, `damage`, `frags`, `loc-graph`, `metadata`,
+    `region-control`) return `422 <section>_unavailable`;
+    always-computable / list sections (`items`, `backpacks`,
+    `weapon-pickups`, `chat`) return `200` with an empty body.
+
+- **3D map view & mover streams** (schema v34–v35,
+  [#91](https://github.com/galfthan/mvd_analyzer/pull/91)). `streams.movers[]`
+  carries the pose timeline of every tracked brush-model entity (lift, door,
+  plat, train); map geometry gains version 4 (per-vertex 3D triangles +
+  optional `walls` / `liquids` / `submodels`), and
+  `timelineAnalysis.locationData` collapses to one medoid anchor point per
+  loc name (v34) so map labels no longer duplicate. Drives the new
+  orbit-camera 3D map tab over a usage-pruned committed corpus.
+
+## 2026-06-14
+
+- **Float32 positions, velocity & height** (schema v33,
+  [#90](https://github.com/galfthan/mvd_analyzer/pull/90)). `pos.x/y/z`,
+  `pos.vx/vy/vz` and `pos.h` change from `int32` to `float32`, so the
+  wire-native sub-unit origin is no longer truncated to whole units and the
+  derived velocity loses its ±1-unit quantization noise. Values stay native
+  float32 in memory; JSON text is rounded to 3 decimals (lossless for
+  eighth-unit coords). The `hgt` no-floor sentinel changes to `-1000000000`.
+
 ## 2026-06-13
 
 - **Player view direction & velocity** (schema v31–v32). Every

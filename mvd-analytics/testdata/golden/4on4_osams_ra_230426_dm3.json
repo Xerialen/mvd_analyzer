@@ -40502,7 +40502,6 @@
   },
   "match": {
     "duration": 1200059,
-    "endTime": 1200059,
     "gameDir": "qw",
     "map": "The Abandoned Base",
     "players": [
@@ -52670,7 +52669,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "streams": {
     "global": {
       "demoOffset": 10326,

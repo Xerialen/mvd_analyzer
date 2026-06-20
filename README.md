@@ -494,10 +494,29 @@ carries no wall-clock source; implausible `0x000B` payloads fall back to
 `streams.global` and exposed via the REST `/overview` `timing` block in
 v23**, alongside `matchStart`/`matchEnd`.)
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `32`).
+Schema v24–v28 enrich the position track with map-geometry-derived
+per-sample columns: height above the floor (`h`, v24 — traced through the
+map's BSP clip hull, later refined to a bounding-box footprint in v26 and
+to stand players on moving brush models in v27) and liquid state (`lq`,
+v28 — dry / water / slime / lava plus submersion level). v25 adds
+`timelineAnalysis.airgibs` — direct airborne rocket hits surfaced for Key
+Moments — and v29–v30 refine its ranking and uncap the list. v31 adds the
+player's view direction (`vp` / `vya`, raw `angle16` pitch/yaw) and splits
+the opt-in view-layer field codes (`view` / `hgt` / `lq`); v32 adds derived
+velocity (`vx` / `vy` / `vz`, units/sec) behind the `vel` code. v33 stores
+position, velocity and height as `float32` (no longer truncated to whole
+units); v34 collapses `locationData` to one anchor point (the medoid) per
+loc name; v35 adds `streams.movers[]` — the pose timeline of every tracked
+brush-model entity (lift, door, plat, train) — so renderers can animate map
+geometry. These additive columns are all `omitempty` and BSP-gated where
+noted. Schema v36 is a breaking removal: `match.startTime` / `match.endTime`
+drop out (they duplicated `streams.global.matchStart` / `matchEnd` —
+`startTime` was always 0 and `endTime` always equalled `duration`).
+
+Every breaking change bumps `CurrentSchemaVersion` (currently `36`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
-The full per-field reference lives in
-[mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
+The full per-field reference and the complete v4–v35 migration table live
+in [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
 
 ### Running the pipeline
 

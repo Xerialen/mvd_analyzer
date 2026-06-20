@@ -58,9 +58,7 @@ func (a *MatchAnalyzer) Finalize(result *Result) error {
 	}
 
 	mr := &MatchResult{
-		Duration:  msTime(matchDuration),
-		StartTime: msTime(a.timing.StartTime),
-		EndTime:   msTime(a.timing.EndTime),
+		Duration: msTime(matchDuration),
 	}
 
 	// Get map name from server data

@@ -115,11 +115,6 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 		}
 	}
 
-	if res.Match != nil {
-		res.Match.StartTime -= matchStartMs
-		res.Match.EndTime -= matchStartMs
-	}
-
 	if res.Items != nil {
 		for i := range res.Items.Items {
 			ph := res.Items.Items[i].Phases
