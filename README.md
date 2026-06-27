@@ -610,6 +610,18 @@ go test -v -run TestDiagnosticParseDemos \
     ./mvd-analytics/diagnostic/                           # opt-in demo corpus
 ```
 
+### CI and review gate
+
+Pull requests run `PR Tests`, which executes `make test` across the workspace.
+The deterministic review-gate executor can squash-merge only open, non-draft
+PRs targeting `main` when all checks pass, `gate: ready` is present,
+`gate: blocked` is absent, and a top-level gate comment binds the decision to
+the current head with `DECISION: PASS`, `LABEL: gate: ready`, and
+`HEAD_SHA: <full sha>`.
+
+New commits reset terminal gate labels back to `gate: reviewing`; draft PRs
+cannot keep `gate: ready`.
+
 ### Golden corpus
 
 `make test` runs `TestGoldenCorpus` (in `mvd-analytics/analyzer/golden_test.go`)

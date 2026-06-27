@@ -1,0 +1,35 @@
+name: Reset Review Gate
+
+# A pushed commit invalidates any previous review-gate decision. New commits
+# clear ready/blocked and set `gate: reviewing`, forcing a fresh reviewer pass
+# before any merge.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: review-gate-reset-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reset gate labels for current head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          gh pr edit "$PR" -R "$REPO" --remove-label "gate: ready" || true
+          gh pr edit "$PR" -R "$REPO" --remove-label "gate: blocked" || true
+          gh pr edit "$PR" -R "$REPO" --add-label "gate: reviewing" || true

@@ -1,0 +1,209 @@
+name: Review Gate Merge
+
+# Deterministic merge executor for the agent review gate. It uses only
+# GITHUB_TOKEN, never an LLM or external API token.
+#
+# It merges a PR only when all hold:
+# - `gate: ready` is present and `gate: blocked` is absent.
+# - A top-level gate verdict comment says `DECISION: PASS`,
+#   `LABEL: gate: ready`, and `HEAD_SHA: <current PR head sha>`.
+# - The PR is open, non-draft, mergeable, and targets `main`.
+# - Every non-gate status check passes, including the required `PR Tests`.
+
+on:
+  pull_request:
+    types: [labeled, reopened]
+  issues:
+    types: [labeled]
+  workflow_run:
+    workflows: ["PR Tests"]
+    types: [completed]
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+  statuses: read
+  actions: read
+
+concurrency:
+  group: review-gate-merge-${{ github.event.pull_request.number || github.event.issue.number || github.event.workflow_run.pull_requests[0].number || github.event.workflow_run.head_sha || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Evaluate review gate and merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR_FROM_LABEL: ${{ github.event.pull_request.number }}
+          ISSUE_FROM_LABEL: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT" = "issues" ]; then
+            is_pr=$(jq -r 'has("issue") and (.issue.pull_request != null)' "$GITHUB_EVENT_PATH")
+            label=$(jq -r '.label.name // ""' "$GITHUB_EVENT_PATH")
+            if [ "$is_pr" != "true" ] || [ "$label" != "gate: ready" ]; then
+              echo "issues:labeled event is not a PR gate-ready label; nothing to do"
+              exit 0
+            fi
+            PRS="$ISSUE_FROM_LABEL"
+          elif [ "$EVENT" = "workflow_run" ]; then
+            PRS=$(jq -r '.workflow_run.pull_requests[]?.number' "$GITHUB_EVENT_PATH" | sort -u)
+            if [ -z "${PRS:-}" ]; then
+              sha=$(jq -r '.workflow_run.head_sha' "$GITHUB_EVENT_PATH")
+              PRS=$(gh pr list -R "$REPO" --state open --json number,headRefOid \
+                    --jq ".[] | select(.headRefOid == \"$sha\") | .number")
+            fi
+          elif [ "$EVENT" = "schedule" ]; then
+            PRS=$(gh pr list -R "$REPO" --state open --label "gate: ready" --json number --jq '.[].number')
+          else
+            label=$(jq -r '.label.name // ""' "$GITHUB_EVENT_PATH")
+            if [ -n "$label" ] && [ "$label" != "gate: ready" ]; then
+              echo "pull_request label is not gate: ready; nothing to do"
+              exit 0
+            fi
+            PRS="$PR_FROM_LABEL"
+          fi
+          [ -n "${PRS:-}" ] || { echo "no PR in event; nothing to do"; exit 0; }
+
+          gate_filter='["Review Gate Merge","Review Gate Labeler","Reset Review Gate","Gate Draft Guard"]'
+
+          eval_and_merge() {
+            local PR="$1"
+
+            local data state draft base mergeable head head_ref short
+            data=$(gh pr view "$PR" -R "$REPO" \
+              --json state,isDraft,baseRefName,mergeable,headRefOid,headRefName,statusCheckRollup,labels)
+
+            state=$(jq -r '.state' <<<"$data")
+            draft=$(jq -r '.isDraft' <<<"$data")
+            base=$(jq -r '.baseRefName' <<<"$data")
+            mergeable=$(jq -r '.mergeable' <<<"$data")
+            head=$(jq -r '.headRefOid' <<<"$data")
+            head_ref=$(jq -r '.headRefName' <<<"$data")
+            short=${head:0:7}
+
+            local has_ready has_blocked
+            has_ready=$(jq -r '[.labels[].name] | index("gate: ready") != null' <<<"$data")
+            has_blocked=$(jq -r '[.labels[].name] | index("gate: blocked") != null' <<<"$data")
+
+            [ "$state" = "OPEN" ]          || { echo "skip #$PR: not open (state=$state)"; return 0; }
+            [ "$draft" = "false" ]         || { echo "skip #$PR: draft"; return 0; }
+            case "$base" in main) ;; *) echo "skip #$PR: base is '$base' (only main auto-merge)"; return 0 ;; esac
+            [ "$has_ready" = "true" ]      || { echo "skip #$PR: no 'gate: ready'"; return 0; }
+            [ "$has_blocked" = "false" ]   || { echo "skip #$PR: 'gate: blocked' present"; return 0; }
+            [ "$mergeable" = "MERGEABLE" ] || { echo "skip #$PR: not mergeable ($mergeable)"; return 0; }
+
+            local comments_json timeline_json latest_ready_for_review_at latest_ready_label_at label_after_ready_for_review ready_for_current_head
+            comments_json=$(gh api --paginate --slurp "repos/$REPO/issues/$PR/comments")
+            timeline_json=$(gh api --paginate --slurp -H "Accept: application/vnd.github+json" "repos/$REPO/issues/$PR/timeline")
+            latest_ready_for_review_at=$(jq -r '
+              [.[][] | select(.event == "ready_for_review") | .created_at]
+              | max // ""
+            ' <<<"$timeline_json")
+            latest_ready_label_at=$(jq -r '
+              [.[][] | select(.event == "labeled") | select((.label.name // "") == "gate: ready") | .created_at]
+              | max // ""
+            ' <<<"$timeline_json")
+            label_after_ready_for_review=$(jq -nr \
+              --arg cutoff "$latest_ready_for_review_at" \
+              --arg label_at "$latest_ready_label_at" '
+              if $cutoff == "" then true
+              elif $label_at == "" then false
+              else ($label_at | fromdateiso8601) > ($cutoff | fromdateiso8601)
+              end
+            ')
+            [ "$label_after_ready_for_review" = "true" ] || {
+              echo "skip #$PR: 'gate: ready' label is not newer than latest ready_for_review transition ($latest_ready_for_review_at)"
+              return 0
+            }
+            ready_for_current_head=$(jq -r --arg head "$head" --arg cutoff "$latest_ready_for_review_at" '
+              [.[][]
+                | (.body // "") as $body
+                | select($body | test("(^|\\n)DECISION: (PASS|READY)(\\n|$)"))
+                | select($body | contains("LABEL: gate: ready"))
+                | select($body | contains("HEAD_SHA: " + $head))
+                | select($cutoff == "" or ((.created_at | fromdateiso8601) > ($cutoff | fromdateiso8601)))]
+              | length
+            ' <<<"$comments_json")
+            [ "${ready_for_current_head:-0}" -ge 1 ] || { echo "skip #$PR: no SHA-bound gate-ready verdict for current head $short"; return 0; }
+
+            local latest_verdict latest_verdict_pass
+            latest_verdict=$(jq -c --arg head "$head" '
+              [.[][]
+                | select((.body // "") | test("(^|\\n)DECISION: "))
+                | select((.body // "") | contains("HEAD_SHA: " + $head))
+                | {created_at, body: (.body // "")}]
+              | sort_by(.created_at) | last // {}
+            ' <<<"$comments_json")
+            latest_verdict_pass=$(jq -r '
+              if ((.body // "")
+                   | (test("(^|\\n)DECISION: (PASS|READY)(\\n|$)")
+                      and contains("LABEL: gate: ready")))
+              then "yes" else "no" end' <<<"$latest_verdict")
+            [ "$latest_verdict_pass" = "yes" ] || { echo "skip #$PR: latest head-bound verdict for $short is not PASS/ready"; return 0; }
+
+            local ready_cooldown=300 now_s label_s ready_age
+            now_s=$(date -u +%s)
+            label_s=$(date -u -d "$latest_ready_label_at" +%s 2>/dev/null || echo 0)
+            ready_age=$(( now_s - label_s ))
+            [ "$label_s" -gt 0 ] || { echo "skip #$PR: no parseable 'gate: ready' label time"; return 0; }
+            if [ "$ready_age" -lt "$ready_cooldown" ]; then
+              case "$EVENT" in
+                pull_request|issues|workflow_run)
+                  if [ "${KBOT_WAITED_COOLDOWN:-0}" != "1" ]; then
+                    sleep_s=$(( ready_cooldown - ready_age + 5 ))
+                    echo "wait #$PR: 'gate: ready' only ${ready_age}s old; sleeping ${sleep_s}s, then re-reading current state"
+                    sleep "$sleep_s"
+                    KBOT_WAITED_COOLDOWN=1 eval_and_merge "$PR"
+                    return 0
+                  fi
+                  ;;
+              esac
+              echo "skip #$PR: 'gate: ready' only ${ready_age}s old; reconciler will retry"
+              return 0
+            fi
+
+            local n_checks n_bad
+            n_checks=$(jq -r --argjson gate "$gate_filter" \
+              '[(.statusCheckRollup // [])[]
+                | select((.workflowName // "") as $w | ($gate | index($w)) == null)]
+               | length' <<<"$data")
+            n_bad=$(jq -r --argjson gate "$gate_filter" \
+              '[(.statusCheckRollup // [])[]
+                | select((.workflowName // "") as $w | ($gate | index($w)) == null)
+                | ((.conclusion // .state // "") | ascii_upcase)
+                | select(. != "SUCCESS" and . != "NEUTRAL" and . != "SKIPPED")]
+               | length' <<<"$data")
+
+            [ "${n_bad:-1}" -eq 0 ] || { echo "skip #$PR: $n_bad check(s) not passing yet"; return 0; }
+
+            local pt_total pt_ok
+            pt_total=$(jq -r '[(.statusCheckRollup // [])[] | select((.workflowName // "") == "PR Tests")] | length' <<<"$data")
+            pt_ok=$(jq -r '[(.statusCheckRollup // [])[] | select((.workflowName // "") == "PR Tests") | select(((.conclusion // .state // "") | ascii_upcase) == "SUCCESS")] | length' <<<"$data")
+            [ "${pt_total:-0}" -ge 1 ]       || { echo "skip #$PR: required 'PR Tests' check absent"; return 0; }
+            [ "${pt_total}" -eq "${pt_ok}" ] || { echo "skip #$PR: 'PR Tests' not all passing ($pt_ok/$pt_total)"; return 0; }
+
+            local del="--delete-branch"
+            case "$head_ref" in main|archive/dev-retired) del="" ;; esac
+
+            echo "merging #$PR @ $short into '$base' ($n_checks check(s) passing, incl. PR Tests $pt_ok/$pt_total; SHA-bound gate verdict present)"
+            gh pr merge "$PR" -R "$REPO" --squash --match-head-commit "$head" $del
+            gh pr comment "$PR" -R "$REPO" \
+              --body "**Merged** by review-gate executor. Gate: open, non-draft, base \`$base\`, mergeable, current-head gate verdict for \`$short\`, $n_checks check(s) passing (incl. \`PR Tests\`), label \`gate: ready\`."
+          }
+
+          for PR in $PRS; do
+            echo "::group::Evaluate PR #$PR"
+            eval_and_merge "$PR" || echo "eval error on #$PR (non-fatal)"
+            echo "::endgroup::"
+          done

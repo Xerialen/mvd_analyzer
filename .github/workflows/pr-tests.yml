@@ -1,0 +1,31 @@
+name: PR Tests
+
+# Deterministic CI floor for the merge gate: run the repository test suite on
+# every PR. The merge executor requires this check to be present and green before
+# it can merge a gate-ready PR.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-tests-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache: true
+          cache-dependency-path: "**/go.sum"
+      - name: Run tests
+        run: make test

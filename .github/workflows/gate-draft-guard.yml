@@ -1,0 +1,59 @@
+name: Gate Draft Guard
+
+# A draft PR must never carry `gate: ready`. Reset Review Gate clears the label
+# on open/reopen/ready_for_review/synchronize, but not on a plain labeled event,
+# so this guard removes it and restores `gate: reviewing` if needed.
+
+on:
+  pull_request:
+    types: [labeled, converted_to_draft]
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: gate-draft-guard-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Strip gate: ready from a draft PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR_FROM_PR: ${{ github.event.pull_request.number }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT" = "issues" ]; then
+            is_pr=$(jq -r 'has("issue") and (.issue.pull_request != null)' "$GITHUB_EVENT_PATH")
+            [ "$is_pr" = "true" ] || { echo "not a PR; nothing to do"; exit 0; }
+            PR="$ISSUE_NUM"
+          else
+            PR="$PR_FROM_PR"
+          fi
+          [ -n "${PR:-}" ] || { echo "no PR in event; nothing to do"; exit 0; }
+
+          data=$(gh pr view "$PR" -R "$REPO" --json isDraft,labels)
+          draft=$(jq -r '.isDraft' <<<"$data")
+          has_ready=$(jq -r '[.labels[].name] | index("gate: ready") != null' <<<"$data")
+
+          if [ "$draft" != "true" ] || [ "$has_ready" != "true" ]; then
+            echo "skip #$PR: draft=$draft has_ready=$has_ready"
+            exit 0
+          fi
+
+          echo "draft #$PR carries 'gate: ready' -> reverting to 'gate: reviewing'"
+          gh api --method DELETE "repos/$REPO/issues/$PR/labels/gate:%20ready" >/dev/null 2>&1 || true
+          gh api --method POST "repos/$REPO/issues/$PR/labels" -f "labels[]=gate: reviewing" >/dev/null 2>&1 || true
+          gh pr comment "$PR" -R "$REPO" \
+            --body "Gate guard: removed \`gate: ready\` from this **draft** PR and restored \`gate: reviewing\`. A draft gets advisory review only; mark it ready for review before it can be gated or merged."
