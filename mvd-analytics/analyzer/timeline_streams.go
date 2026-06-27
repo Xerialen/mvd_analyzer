@@ -53,6 +53,13 @@ func (b *streamBuilder) recordArmor(tMs int32, v int16) {
 	b.armor = append(b.armor, changeI16{t: tMs, v: v})
 }
 
+func (b *streamBuilder) recordActiveWeapon(tMs int32, v int16) {
+	if n := len(b.activeWeapon); n > 0 && b.activeWeapon[n-1].v == v {
+		return
+	}
+	b.activeWeapon = append(b.activeWeapon, changeI16{t: tMs, v: v})
+}
+
 func (b *streamBuilder) recordArmorType(tMs int32, v string) {
 	if n := len(b.armorType); n > 0 && b.armorType[n-1].v == v {
 		return
@@ -190,6 +197,12 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 		ps.Armor = make([]result.ChangeI16, len(b.armor))
 		for i, c := range b.armor {
 			ps.Armor[i] = result.ChangeI16{T: c.t, V: c.v}
+		}
+	}
+	if len(b.activeWeapon) > 0 {
+		ps.ActiveWeapon = make([]result.ChangeI16, len(b.activeWeapon))
+		for i, c := range b.activeWeapon {
+			ps.ActiveWeapon[i] = result.ChangeI16{T: c.t, V: c.v}
 		}
 	}
 	if len(b.armorType) > 0 {
@@ -351,6 +364,7 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 	}
 	appendI16(&b.health, src.health)
 	appendI16(&b.armor, src.armor)
+	appendI16(&b.activeWeapon, src.activeWeapon)
 	appendI16(&b.loc, src.loc)
 	appendI16(&b.shells, src.shells)
 	appendI16(&b.nails, src.nails)
@@ -685,6 +699,7 @@ const (
 // phantom identities (a vacated slot taken by someone who never played).
 func (b *streamBuilder) isEmpty() bool {
 	return len(b.health) == 0 && len(b.armor) == 0 && len(b.armorType) == 0 &&
+		len(b.activeWeapon) == 0 &&
 		len(b.loc) == 0 && len(b.shells) == 0 && len(b.nails) == 0 &&
 		len(b.rockets) == 0 && len(b.cells) == 0 && len(b.posT) == 0 &&
 		len(b.spawns) == 0 && len(b.deaths) == 0 &&

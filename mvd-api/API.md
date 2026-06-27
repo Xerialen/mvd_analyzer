@@ -212,7 +212,7 @@ all endpoints and aren't repeated.
 Warm the cache and resolve the canonical id. Idempotent.
 
 ```jsonc
-{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 36 }
+{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 37 }
 ```
 
 Use `demoId` for subsequent calls to skip the gameId→sha lookup.
@@ -224,7 +224,7 @@ single call to populate a match header and decide which panels to show.
 
 ```jsonc
 {
-  "schemaVersion": 36,
+  "schemaVersion": 37,
   "map": "dm6", "gameDir": "qw",
   "mode": "4on4",            // omitempty
   "duration": 613.4,         // seconds
@@ -501,7 +501,7 @@ indices client-side.
 
 - **`/chat`** (`from`, `to`, `players`, `types`) — chat + teamsay only;
   `[]result.MatchEvent`.
-- **`/healthz`** — `{ "ok": true, "schemaVersion": 36 }`.
+- **`/healthz`** — `{ "ok": true, "schemaVersion": 37 }`.
 - **`/v1/version`** — `{ "hash", "tag", "buildDate" }`.
 
 ### 4.16 Per-map static data — `GET /v1/maps/{map}/…`

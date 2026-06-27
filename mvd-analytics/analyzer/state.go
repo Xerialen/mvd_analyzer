@@ -64,10 +64,11 @@ type playerPosition struct {
 //     finalize.
 //   - Spawns / deaths are timestamps; just append.
 type streamBuilder struct {
-	health    []changeI16
-	armor     []changeI16
-	armorType []changeStr
-	loc       []changeI16
+	health       []changeI16
+	armor        []changeI16
+	armorType    []changeStr
+	loc          []changeI16
+	activeWeapon []changeI16
 
 	rl, lg, gl, ssg, sng intervalState
 	quad, pent, ring     intervalState

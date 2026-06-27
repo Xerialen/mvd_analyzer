@@ -13,11 +13,12 @@ package view
 // AllStandardFields, register the default reducer in DefaultReducers,
 // and document in qwanalytics/RESULT_SCHEMA.md.
 const (
-	FieldHealth    = "h"
-	FieldArmor     = "a"
-	FieldArmorType = "at"
-	FieldLoc       = "li"
-	FieldPosition  = "pos"
+	FieldHealth       = "h"
+	FieldArmor        = "a"
+	FieldArmorType    = "at"
+	FieldLoc          = "li"
+	FieldActiveWeapon = "w"
+	FieldPosition     = "pos"
 	// View / Height / Liquid project the per-sample view-direction,
 	// floor-height, and liquid-state columns of the position track
 	// independently of x/y/z. Opt-in (not in AllStandardFields): a
@@ -73,15 +74,16 @@ func FieldKindFor(code string) (FieldKind, bool) {
 }
 
 var fieldKinds = map[string]FieldKind{
-	FieldHealth:    KindChangeI16,
-	FieldArmor:     KindChangeI16,
-	FieldArmorType: KindChangeStr,
-	FieldLoc:       KindChangeI16,
-	FieldPosition:  KindPosition,
-	FieldView:      KindView,
-	FieldHeight:    KindHeight,
-	FieldLiquid:    KindLiquid,
-	FieldVelocity:  KindVelocity,
+	FieldHealth:       KindChangeI16,
+	FieldArmor:        KindChangeI16,
+	FieldArmorType:    KindChangeStr,
+	FieldLoc:          KindChangeI16,
+	FieldActiveWeapon: KindChangeI16,
+	FieldPosition:     KindPosition,
+	FieldView:         KindView,
+	FieldHeight:       KindHeight,
+	FieldLiquid:       KindLiquid,
+	FieldVelocity:     KindVelocity,
 
 	FieldRL:  KindInterval,
 	FieldLG:  KindInterval,
@@ -110,7 +112,7 @@ var fieldKinds = map[string]FieldKind{
 // query keeps the pre-v31 shape and a consumer only pays for view /
 // height / liquid / velocity when it asks for them by code.
 var AllStandardFields = []string{
-	FieldHealth, FieldArmor, FieldArmorType, FieldLoc, FieldPosition,
+	FieldHealth, FieldArmor, FieldArmorType, FieldLoc, FieldActiveWeapon, FieldPosition,
 	FieldRL, FieldLG, FieldGL, FieldSSG, FieldSNG,
 	FieldQuad, FieldPent, FieldRing,
 	FieldShells, FieldNails, FieldRockets, FieldCells,
@@ -139,15 +141,16 @@ var AllStandardFields = []string{
 // `{"h": "min"}` for stress-moment graphs, `{"li": "dominant"}` for
 // "what loc did the player spend the most time in this window").
 var DefaultReducers = map[string]string{
-	FieldHealth:    "first",
-	FieldArmor:     "first",
-	FieldArmorType: "first",
-	FieldLoc:       "first",
-	FieldPosition:  "first",
-	FieldView:      "first",
-	FieldHeight:    "first",
-	FieldLiquid:    "first",
-	FieldVelocity:  "first",
+	FieldHealth:       "first",
+	FieldArmor:        "first",
+	FieldArmorType:    "first",
+	FieldLoc:          "first",
+	FieldActiveWeapon: "first",
+	FieldPosition:     "first",
+	FieldView:         "first",
+	FieldHeight:       "first",
+	FieldLiquid:       "first",
+	FieldVelocity:     "first",
 
 	FieldRL:  "first",
 	FieldLG:  "first",

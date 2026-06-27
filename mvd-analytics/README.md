@@ -283,7 +283,7 @@ type Result struct {
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `36`). For "how long was the match"
+`CurrentSchemaVersion` (currently `37`). For "how long was the match"
 read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
 (integer, KTX-authoritative); the legacy top-level `duration` was
 removed in v6.

@@ -54,12 +54,12 @@ type TimelineAnalyzer struct {
 	// arrival order. Finalize coalesces contiguous runs into per-pause
 	// segments (TimelineAnalysis.Pauses). Captured unconditionally — pauses
 	// during the countdown matter for the wall-clock mapping too.
-	rawPauses []pauseSample
-	locFinder           *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
-	clipHull            *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
-	visBSP              *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
-	blipThresholdMs     int                        // Per-player loc smoothing threshold, 0 disables
-	regionsOverride     []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
+	rawPauses       []pauseSample
+	locFinder       *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
+	clipHull        *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
+	visBSP          *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
+	blipThresholdMs int                        // Per-player loc smoothing threshold, 0 disables
+	regionsOverride []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
 	// movers is each inline brush-model entity's wire-state timeline
 	// (origin + visibility at demo-relative ms), accumulated from
 	// MoverSpawn/MoverState events — NOT gated on match start, the
@@ -361,6 +361,12 @@ func (a *TimelineAnalyzer) handleStatUpdate(e *events.StatUpdateEvent) error {
 	case events.StatCells:
 		state.ammo.cells = e.Value
 		state.streams.recordCells(msTime(e.Time), int16(e.Value))
+	case events.StatActiveWeapon:
+		// The selected/active weapon id (STAT_ACTIVEWEAPON — the wielded
+		// weapon's IT_ bit). Unlike health/armor there is no sane upper
+		// bound to reject against (IT_AXE = 4096); surface the raw value
+		// and let the consumer map the bit to a weapon.
+		state.streams.recordActiveWeapon(msTime(e.Time), int16(e.Value))
 	}
 	return nil
 }
