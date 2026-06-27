@@ -63,6 +63,12 @@ type PlayerStream struct {
 	ArmorType []ChangeStr `json:"at,omitempty"` // "ga"|"ya"|"ra"|""
 	Loc       []ChangeI16 `json:"li,omitempty"` // index into TimelineAnalysisResult.LocTable
 
+	// Active (selected) weapon as a change stream: the raw STAT_ACTIVEWEAPON
+	// id (the wielded weapon's IT_ bit), dedup'd against last value. Distinct
+	// from the RL/LG/… possession intervals below (which gun the player HOLDS,
+	// not which is currently OUT). Surfaced raw; consumers map the id.
+	ActiveWeapon []ChangeI16 `json:"w,omitempty"`
+
 	// Inventory presence as half-open intervals [Start, End). One entry
 	// per period the field was true. Open intervals at match end are
 	// closed at MatchEnd by the analyser.

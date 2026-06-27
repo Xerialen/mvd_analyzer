@@ -513,7 +513,7 @@ noted. Schema v36 is a breaking removal: `match.startTime` / `match.endTime`
 drop out (they duplicated `streams.global.matchStart` / `matchEnd` —
 `startTime` was always 0 and `endTime` always equalled `duration`).
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `36`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `37`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference and the complete v4–v35 migration table live
 in [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

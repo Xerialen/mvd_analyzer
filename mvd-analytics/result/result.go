@@ -396,6 +396,7 @@ package result
 //     the match) still has one. Additive (omitempty); absent when the
 //     demo has no movers. The same internal mover tracks already feed the
 //     v27 floor-height pass.
+//
 // v36:
 //   - MatchResult drops the dead StartTime / EndTime fields. After the
 //     match-relative time normalization StartTime was always 0 (already
@@ -404,7 +405,16 @@ package result
 //     `endTime` key disappears from the `match` object — read Duration for
 //     match length, or streams.global for the match window. Breaking
 //     removal (not additive); the view query API is unaffected.
-const CurrentSchemaVersion = 36
+//
+// v37:
+//   - PlayerStream gains ActiveWeapon []ChangeI16 (json "w"): the raw
+//     STAT_ACTIVEWEAPON id (the wielded weapon's IT_ bit) as a sparse
+//     change stream dedup'd against last value, mirroring the Armor stat
+//     path. Recorded raw with no upper-bound clamp (IT_AXE = 4096 exceeds
+//     the armor cap). Additive (omitempty); absent when the source carried
+//     no active-weapon stat. Also registered as the `w` view query field
+//     (buckets / state-at / stream-slice).
+const CurrentSchemaVersion = 37
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

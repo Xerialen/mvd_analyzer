@@ -30,9 +30,10 @@ type StateAtView struct {
 // omitempty) make it possible for JSON to omit fields that weren't
 // requested AND fields that have no data yet at Time.
 type PlayerStateAt struct {
-	Health    *int16      `json:"h,omitempty"`
-	Armor     *int16      `json:"a,omitempty"`
-	ArmorType *string     `json:"at,omitempty"`
+	Health       *int16  `json:"h,omitempty"`
+	Armor        *int16  `json:"a,omitempty"`
+	ActiveWeapon *int16  `json:"w,omitempty"`
+	ArmorType    *string `json:"at,omitempty"`
 	// Loc / Li carry the player's location, one or the other depending
 	// on StateAtOptions.LocIndex. Loc (default) is the resolved name
 	// (e.g. "RA"), so consumers don't carry the table; empty string =
@@ -141,6 +142,12 @@ func StateAt(r *result.Result, opts StateAtOptions) (*StateAtView, error) {
 			if idx := indexI16AtOrBefore(p.Armor, tMs); idx >= 0 {
 				v := p.Armor[idx].V
 				ps.Armor = &v
+			}
+		}
+		if requested[FieldActiveWeapon] {
+			if idx := indexI16AtOrBefore(p.ActiveWeapon, tMs); idx >= 0 {
+				v := p.ActiveWeapon[idx].V
+				ps.ActiveWeapon = &v
 			}
 		}
 		if requested[FieldArmorType] {

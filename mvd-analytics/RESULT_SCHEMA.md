@@ -582,6 +582,7 @@ when the demo has no pauses or the server does not embed the block.
 | Team | `team` | string (omitempty) | Team label (post-duel-normalise: per-player synthetic team). |
 | Position | `pos` | *PositionTrack (omitempty) | Native-rate position track: x/y/z plus optional per-sample `li`/`h`/`lq` and (schema v31) view-direction `vp`/`vya` columns. Omitted from default JSON unless `-include positions` (CLI) or equivalent is set; `-include view`/`height`/`liquid` keep the respective extra columns. |
 | Health / Armor | `h` / `a` | []ChangeI16 | Vital change streams. Health caps at 250, Armor at 200; int16 holds the range. |
+| ActiveWeapon | `w` | []ChangeI16 | Active/selected weapon id (raw `STAT_ACTIVEWEAPON`, the wielded weapon's IT_ bit; e.g. `IT_AXE` = 4096). Sparse, dedup'd against last value; surfaced raw (no clamp) so consumers map the id. **Schema v37.** |
 | ArmorType | `at` | []ChangeStr | `"ga"` / `"ya"` / `"ra"` / `""` transitions. |
 | Loc | `li` | []ChangeI16 | Index into `TimelineAnalysisResult.LocTable`. Smoothed by the blip filter. |
 | RL / LG / GL / SSG / SNG | `rl` / `lg` / `gl` / `ssg` / `sng` | []Interval | Half-open `[Start, End)` periods the weapon was held. |
@@ -818,7 +819,7 @@ truth. Integer storage:
 
 ### Append rules (the dedup invariant)
 
-- **Change streams** (Health, Armor, ArmorType, Loc, ammo): every entry
+- **Change streams** (Health, Armor, ActiveWeapon, ArmorType, Loc, ammo): every entry
   is a transition. `appendChange(t, v)` appends only if `v` differs
   from the previous entry's value. Consecutive identical samples are
   dropped.
@@ -859,6 +860,7 @@ aggregation (`min`, `max`, `mean`, `dominant`, etc.).
 |------|-------|-------------|-----------------|
 | `h` | Health | `[]ChangeI16` | `first` |
 | `a` | Armor | `[]ChangeI16` | `first` |
+| `w` | Active weapon | `[]ChangeI16` | `first` |
 | `at` | Armor type | `[]ChangeStr` | `first` |
 | `li` | Loc index | `[]ChangeI16` | `first` |
 | `pos` | Position xyz | `*PositionTrack` | `first` |
@@ -1246,6 +1248,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v37 | `streams.players[].activeWeapon` (`w`, `[]ChangeI16`) added: the raw `STAT_ACTIVEWEAPON` id (the wielded weapon's IT_ bit) as a sparse change stream dedup'd against last value, mirroring the Armor stat path. Recorded raw with **no** upper-bound clamp (unlike Health/Armor, since `IT_AXE` = 4096 exceeds the armor cap). Additive (`omitempty`); absent when the source carried no active-weapon stat. Also registered as the `w` query field (buckets / state-at / stream-slice). |
 | v36 | `MatchResult` drops the dead `startTime` / `endTime` fields. After the match-relative time normalization `startTime` was always 0 (already `omitempty`, so absent from JSON) and `endTime` always equalled `duration`; both duplicated `streams.global.matchStart` / `matchEnd`. The `endTime` key disappears from the `match` object — read `duration` for match length, or `streams.global` for the match window. Breaking removal (not additive). |
 | v35 | `streams` gains `movers[]` (`MoverStream`): the pose timeline of every tracked brush-model entity (lift, door, plat, train). Each carries `ent` (entity number), `sub` (the `*N` brush-model index, matching the corpus `SubModelMesh` id), and index-aligned `t`/`x`/`y`/`z`/`vis` columns — the mover sits at `(x,y,z)[i]` at `t[i]` ms and is drawn when `vis[i]`. Origins are `float32` (exact ⅛-unit wire values). The first entry is clamped to `t = 0` carrying the match-start pose so a parked mover (only wire state predates the match) still has one. Additive (`omitempty`); absent when the demo has no movers. The same internal tracks already drive the v27 floor-height pass. |
 | v34 | `timelineAnalysis.locationData` now carries **one `MapLocation` per loc name** — the medoid of that name's `.loc` corpus points — instead of every raw point. The corpus often repeats a name across several nearby points, which drew duplicate map labels; the medoid is the actual point minimizing summed distance to its same-name siblings (never an averaged mid-air centroid). `locGraph` node coordinates (resolved from this list by name) move to the medoid. Same field name and `MapLocation` shape; the list is just shorter. |
