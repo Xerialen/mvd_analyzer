@@ -60,6 +60,16 @@ grow on its own timeline. Today's concrete shape:
 
 ## Quick start
 
+### Dev container
+
+For a reproducible toolchain (pinned Go, `gh`, `jq`, build deps, Claude Code)
+without installing anything locally, open the repo in a dev-container-aware
+editor — [Zed](https://zed.dev/docs/dev-containers) ("reopen in container"),
+VS Code, or the `devcontainer` CLI. It builds from
+[`.devcontainer/`](.devcontainer/README.md) with no prebuilt image required;
+your git identity and `GH_TOKEN` stay on the host (see that README for the
+environment variables to export).
+
 ### Analyze a demo at the command line
 
 ```bash
@@ -602,6 +612,7 @@ mvd-analyzer/
 
 ## Documentation
 
+- [.devcontainer/README.md](.devcontainer/README.md) — reproducible dev environment (Zed / VS Code / `devcontainer` CLI)
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — feature-level changes as they land on `main`, with dates and schema bumps
 - [mvd-reader/README.md](mvd-reader/README.md) — ingestion layer, how to add a source
 - [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md) — MVD binary format spec with ezQuake references

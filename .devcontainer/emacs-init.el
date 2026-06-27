@@ -1,0 +1,8 @@
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
+(unless (package-installed-p 'go-mode)
+  (package-refresh-contents)
+  (package-install 'go-mode))
+(global-font-lock-mode t)
+(add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
