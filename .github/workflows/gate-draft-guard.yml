@@ -1,8 +1,14 @@
 name: Gate Draft Guard
 
-# A draft PR must never carry `gate: ready`. Reset Review Gate clears the label
-# on open/reopen/ready_for_review/synchronize, but not on a plain labeled event,
-# so this guard removes it and restores `gate: reviewing` if needed.
+# Belt-and-suspenders for the review gate: a DRAFT PR must never carry
+# `gate: ready`. Reset Review Gate clears the label on
+# open/reopen/ready_for_review/synchronize, but NOT on a plain `labeled` event,
+# so if `gate: ready` is applied while a PR is still a draft this guard removes
+# it and restores `gate: reviewing`. It also catches a ready PR being converted
+# back to draft. The merge executor already refuses to merge a draft (and refuses
+# a ready label/verdict older than the latest draft->ready promotion); this keeps
+# the label itself honest in the meantime. NO LLM and NO API tokens; only
+# GITHUB_TOKEN.
 
 on:
   pull_request:
@@ -24,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: "Strip gate: ready from a draft PR"
+      - name: Strip gate:ready from a draft PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -34,6 +40,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          # On an `issues` event, act only when it is really a PR.
           if [ "$EVENT" = "issues" ]; then
             is_pr=$(jq -r 'has("issue") and (.issue.pull_request != null)' "$GITHUB_EVENT_PATH")
             [ "$is_pr" = "true" ] || { echo "not a PR; nothing to do"; exit 0; }
@@ -53,6 +60,7 @@ jobs:
           fi
 
           echo "draft #$PR carries 'gate: ready' -> reverting to 'gate: reviewing'"
+          # REST label ops (avoid the gh GraphQL projects-classic path).
           gh api --method DELETE "repos/$REPO/issues/$PR/labels/gate:%20ready" >/dev/null 2>&1 || true
           gh api --method POST "repos/$REPO/issues/$PR/labels" -f "labels[]=gate: reviewing" >/dev/null 2>&1 || true
           gh pr comment "$PR" -R "$REPO" \

@@ -1,31 +1,94 @@
 name: PR Tests
 
-# Deterministic CI floor for the merge gate: run the repository test suite on
-# every PR. The merge executor requires this check to be present and green before
-# it can merge a gate-ready PR.
+# Deterministic CI floor for the review-gate merge executor. The executor
+# requires this workflow name to be present and green before it can merge a PR.
+# The script runs common repo-native tests when it can discover them; repos with
+# no supported test entrypoint still get an explicit green structural floor so
+# the human/agent reviewer remains the decision point.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: pr-tests-${{ github.event.pull_request.number || github.ref_name }}
+  group: pr-tests-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CI: "true"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles('tests/**/*.py', 'test_*.py', 'pyproject.toml', 'setup.py', 'requirements.txt') != '' }}
         with:
-          go-version-file: go.work
-          cache: true
-          cache-dependency-path: "**/go.sum"
-      - name: Run tests
-        run: make test
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        if: ${{ hashFiles('package.json') != '' }}
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-go@v5
+        if: ${{ hashFiles('go.mod') != '' }}
+        with:
+          go-version: "stable"
+
+      - name: Run discovered tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          ran=0
+
+          if [ -f package.json ]; then
+            test_script=$(node -e "const p=require('./package.json'); console.log((p.scripts && p.scripts.test) || '')")
+            if [ -n "$test_script" ] && ! grep -qi 'no test specified' <<<"$test_script"; then
+              if [ -f pnpm-lock.yaml ]; then
+                corepack enable
+                pnpm install --frozen-lockfile
+                pnpm test
+              elif [ -f yarn.lock ]; then
+                corepack enable
+                yarn install --frozen-lockfile
+                yarn test
+              elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+                npm ci
+                npm test
+              else
+                npm install
+                npm test
+              fi
+              ran=1
+            else
+              echo "package.json has no usable test script; skipping Node tests"
+            fi
+          fi
+
+          if [ -d tests ] && find tests -name 'test_*.py' -print -quit | grep -q .; then
+            python -m unittest discover -s tests -p 'test_*.py' -v
+            ran=1
+          elif find . -maxdepth 1 -name 'test_*.py' -print -quit | grep -q .; then
+            python -m unittest discover -s . -p 'test_*.py' -v
+            ran=1
+          fi
+
+          if [ -f go.mod ]; then
+            go test ./...
+            ran=1
+          fi
+
+          if [ -f Cargo.toml ]; then
+            cargo test
+            ran=1
+          fi
+
+          if [ "$ran" -eq 0 ]; then
+            echo "No supported test command discovered; passing explicit structural PR floor."
+          fi

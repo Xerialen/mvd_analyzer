@@ -1,8 +1,8 @@
 name: Reset Review Gate
 
-# A pushed commit invalidates any previous review-gate decision. New commits
-# clear ready/blocked and set `gate: reviewing`, forcing a fresh reviewer pass
-# before any merge.
+# A pushed commit invalidates any previous review-gate decision.
+# This keeps the label gate from going stale: new commits clear ready/blocked
+# and set `gate: reviewing`, forcing a fresh Reviewer pass before any merge.
 
 on:
   pull_request:
