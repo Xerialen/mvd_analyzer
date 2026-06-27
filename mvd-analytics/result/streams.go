@@ -15,6 +15,15 @@ type Streams struct {
 	// (lifts, doors, plats, trains). Schema v32; omitted when the demo has
 	// no movers.
 	Movers []MoverStream `json:"movers,omitempty"`
+
+	// LOSComputed records whether the (lazy) line-of-sight pass has run, so a
+	// caller can compute it on demand exactly once and not retry on maps that
+	// genuinely have no LOS (no BSP). It is gob-serialized — the API persists
+	// it with the cached Result so a second request reuses the first's work —
+	// but excluded from JSON (`json:"-"`): consumers read presence/absence of
+	// PlayerStream.LOS itself, and the goldens stay agnostic to it. See
+	// analyzer.ComputeLOS.
+	LOSComputed bool `json:"-"`
 }
 
 // MoverStream is one brush-model entity's pose timeline (a lift, door,
@@ -88,6 +97,52 @@ type PlayerStream struct {
 	// comparisons against PositionTrack.T — see PositionTrack comment).
 	Spawns []int32 `json:"sp,omitempty"`
 	Deaths []int32 `json:"d,omitempty"`
+
+	// LOS records when this player (the looker) had a clear line of sight
+	// to each other player, one LosTrack per opponent ever seen (schema
+	// v37). Line of sight is asymmetric — the looker's single eye point vs.
+	// the target's whole body — so A→B lives in A's LOS and B→A lives in
+	// B's, computed independently. Populated only on maps with a
+	// provisioned BSP (same gate as PositionTrack.H/Lq); absent otherwise.
+	// Raw transitions, no smoothing (surface authoritative data).
+	LOS []LosTrack `json:"los,omitempty"`
+
+	// PVS records when each other player was potentially visible to this player
+	// (the looker), reproducing exactly the server's per-client entity cull —
+	// i.e. whether a live mvdsv would have sent that opponent's entity to this
+	// player's client that frame (SV_PlayerVisibleToClient): the looker's fat PVS
+	// (CM_FatPVS of origin+view_ofs) intersected with the opponent's entity leaf
+	// set (its 1-unit-expanded bounding box, non-solid leaves), or always when
+	// the opponent overflows MAX_ENT_LEAFS. The recorded MVD does not carry this
+	// (the demo recorder sets pvs = NULL and stores every entity); it is
+	// reconstructed here from the position tracks. Same LosTrack shape, same lazy
+	// pass (analyzer.ComputeLOS) and BSP gate as LOS, schema v38. This same test
+	// gates the LOS raycast (cast only for potentially-visible pairs), so PVS ⊇
+	// LOS by construction. The gap between them (on the wire, but no clear ray)
+	// is an occlusion-tolerant proximity/awareness signal. Raw transitions, no
+	// smoothing.
+	PVS []LosTrack `json:"pvs,omitempty"`
+}
+
+// LosTrack is one looker's line-of-sight onto a single opponent, as the
+// half-open [Start, End) ms intervals (match-relative) during which the
+// looker had a clear sightline. It hangs off the looker's PlayerStream; Other
+// identifies the seen player.
+//
+// Other is the index into Streams.Players of the opponent (the seen player),
+// not a name — the compact index the viewer resolves back to a name. A looker
+// has at most one LosTrack per opponent; an opponent never seen is omitted.
+//
+// "Clear" means at least one of the 9 rays from the looker's eye
+// (origin + (0,0,22)) to the opponent's 8 bounding-box corners + box midpoint
+// reached the target without crossing CONTENTS_SOLID — worldspawn or any
+// active mover (door/lift/plat) posed in the way (bspvis.RayHitsSolid /
+// RayHitsSolidModel). Computed only while both players are alive. View
+// direction is not considered: this is geometric visibility, not whether the
+// opponent is within the looker's FOV.
+type LosTrack struct {
+	Other int16      `json:"o"`  // index into Streams.Players (the seen player)
+	Iv    []Interval `json:"iv"` // half-open [Start,End) ms the looker saw Other
 }
 
 // GlobalStream carries the match window plus the demo/wall-clock anchor —

@@ -90,6 +90,8 @@ let analyzeResolve = null;
 let analyzeReject = null;
 let recomputeResolve = null;
 let recomputeReject = null;
+let losResolve = null;
+let losReject = null;
 
 // ─── Load-timing instrumentation ────────────────────────────────────────────
 // Structured per-stage timing for the demo load path, printed to the console
@@ -229,6 +231,18 @@ worker.onmessage = (e) => {
             recomputeResolve = null;
             recomputeReject = null;
         }
+    } else if (e.data.type === 'los_result') {
+        if (losResolve) {
+            losResolve(e.data.json);
+            losResolve = null;
+            losReject = null;
+        }
+    } else if (e.data.type === 'los_error') {
+        if (losReject) {
+            losReject(new Error(e.data.message));
+            losResolve = null;
+            losReject = null;
+        }
     }
 };
 
@@ -322,6 +336,18 @@ function recomputeInWorker(overrideJSON) {
         recomputeResolve = resolve;
         recomputeReject = reject;
         worker.postMessage({ type: 'recomputeRegions', overrideJSON });
+    });
+}
+
+// computeLosInWorker asks the worker to run the lazy line-of-sight pass on the
+// already-parsed demo (computeLineOfSight is a Go export on the worker scope).
+// Resolves with the JSON array of per-player {name, los, pvs} tracks (one pass
+// fills both the actual-sightline and potential-visibility metrics).
+function computeLosInWorker() {
+    return new Promise((resolve, reject) => {
+        losResolve = resolve;
+        losReject = reject;
+        worker.postMessage({ type: 'computeLos' });
     });
 }
 
@@ -6000,6 +6026,12 @@ let mapState = {
     playerSymbols: {}, // playerName -> { symbol, team, teamIdx }
     showViewArrows: false,      // per-player 3D view-direction arrows (opt-in)
     showVelArrows: false,       // per-player 3D velocity arrows (opt-in)
+    showLos: false,             // line-of-sight debug lines between players (opt-in)
+    showPvs: false,             // potential-visibility (PVS) lines, thinner than LOS (opt-in)
+    losByPair: {},              // looker name -> { target name -> [{s,e} intervals] } (schema v37)
+    pvsByPair: {},              // looker name -> { target name -> [{s,e} intervals] } (schema v38)
+    losComputed: false,         // lazy LOS/PVS pass has run for this demo (one pass fills both)
+    losPending: false,          // a computeLos worker round-trip is in flight
     initialized: false,
     lastRenderedBucket: null, // Skip redundant redraws
     renderDirty: false,       // Force redraw on track toggle/reset/etc
@@ -6186,6 +6218,14 @@ function initMapView(result) {
             }
         }
     }
+
+    // Line of sight is computed lazily (it is the heaviest position-derived
+    // pass), so it is NOT in the parsed result. The map's LOS overlay requests
+    // it from the worker on first toggle; reset the cache here.
+    mapState.losByPair = {};
+    mapState.pvsByPair = {};
+    mapState.losComputed = false;
+    mapState.losPending = false;
 
     // Static map-entity corpus (result.mapEntities) for the "learn map" view.
     mapState.mapEntities = (result.mapEntities && Array.isArray(result.mapEntities.entities))
@@ -8111,6 +8151,10 @@ function renderMap(time) {
     // Draw tracks (per-player visibility controlled by enabledPlayers)
     drawTracks(ctx, time);
 
+    // Line-of-sight debug overlay (opt-in): connects players who can see each
+    // other at the current time. Drawn under the player symbols.
+    drawLosLines(ctx, time, playerData);
+
     // Z-depth pass for items + players: overlapping players occlude by z
     // (higher deck on top), and an item whose z is clearly higher than a
     // player also draws on top. Items carry a downward sort bias
@@ -8969,6 +9013,125 @@ function trailIndexAtTime(points, time) {
     return low;
 }
 
+// ensureLosComputed runs the lazy line-of-sight pass once via the worker, then
+// builds mapState.losByPair / pvsByPair and re-renders. One pass fills both LOS
+// and PVS (the reply carries los and pvs per player), so the LOS and PVS
+// overlays share this latch. The button shows a pending state while the
+// (potentially multi-second on a 4on4) raycast pass runs in the worker — the
+// main thread stays responsive. On a BSP-less map the reply has no intervals;
+// losComputed still latches so we don't re-ask.
+async function ensureLosComputed(losBtn) {
+    mapState.losPending = true;
+    if (losBtn) losBtn.classList.add('pending');
+    try {
+        const json = await computeLosInWorker();
+        const players = JSON.parse(json);
+        if (players && players.error) throw new Error(players.error);
+        mapState.losByPair = buildVisByPair(players, 'los');
+        mapState.pvsByPair = buildVisByPair(players, 'pvs');
+        mapState.losComputed = true;
+    } catch (err) {
+        console.warn('computeLineOfSight:', err.message);
+        // Leave losComputed false so a later toggle can retry.
+    } finally {
+        mapState.losPending = false;
+        if (losBtn) losBtn.classList.remove('pending');
+        mapState.renderDirty = true;
+        renderMap(mapState.currentTime);
+    }
+}
+
+// buildVisByPair flattens the worker's per-player [{name, los/pvs:[{o,iv}]}]
+// reply into byPair[lookerName][targetName] = [{s,e},…] for the given field
+// ('los' or 'pvs'). The track's o indexes the players array; resolve it to that
+// player's name. Both metrics are asymmetric, so each direction is stored under
+// its own looker.
+function buildVisByPair(players, field) {
+    const byPair = {};
+    if (!Array.isArray(players)) return byPair;
+    const idxToName = players.map(p => p && p.name);
+    for (const p of players) {
+        if (!p || !Array.isArray(p[field])) continue;
+        const byTarget = (byPair[p.name] ||= {});
+        for (const tr of p[field]) {
+            const other = idxToName[tr.o];
+            if (other != null && Array.isArray(tr.iv)) byTarget[other] = tr.iv;
+        }
+    }
+    return byPair;
+}
+
+// losCovers reports whether the half-open [s,e) interval list (ascending,
+// match-relative ms) covers tMs. Linear is fine — a pair has few intervals.
+function losCovers(iv, tMs) {
+    if (!iv) return false;
+    for (let i = 0; i < iv.length; i++) {
+        if (tMs >= iv[i].s && tMs < iv[i].e) return true;
+        if (iv[i].s > tMs) break;
+    }
+    return false;
+}
+
+// Line-of-sight / PVS debug colours. White when both players see each other;
+// the one-way case is coloured by which of the pair (as ordered in the name
+// list) is the sole seer — red = the first, blue = the second. The colours are
+// debug-arbitrary, not team colours. The PVS palette is the same hues at a
+// lower alpha so the (much denser) potential-visibility lines read as a faint
+// backdrop under the solid LOS lines.
+const LOS_STYLE = {
+    width: 3,
+    mutual: 'rgba(255,255,255,0.65)',
+    first: 'rgba(255,80,80,0.65)',
+    second: 'rgba(90,150,255,0.65)',
+};
+const PVS_STYLE = {
+    width: 1.5,
+    mutual: 'rgba(255,255,255,0.35)',
+    first: 'rgba(255,80,80,0.35)',
+    second: 'rgba(90,150,255,0.35)',
+};
+
+// drawVisLines draws a line between every player pair whose byPair intervals
+// currently cover the playhead, styled per `style` (width + mutual/one-way
+// colours). Endpoints sit at eye height (origin + 22) for visual honesty.
+// White = mutual; red/blue = one-way.
+function drawVisLines(ctx, byPair, time, playerData, style) {
+    if (!byPair || !playerData) return;
+    const tMs = time * 1000;
+    const names = Object.keys(playerData);
+    ctx.save();
+    ctx.lineWidth = style.width;
+    for (let i = 0; i < names.length; i++) {
+        const a = names[i], pa = playerData[a];
+        if (!pa || typeof pa.x !== 'number') continue;
+        for (let j = i + 1; j < names.length; j++) {
+            const b = names[j], pb = playerData[b];
+            if (!pb || typeof pb.x !== 'number') continue;
+            const aSeesB = losCovers(byPair[a] && byPair[a][b], tMs);
+            const bSeesA = losCovers(byPair[b] && byPair[b][a], tMs);
+            if (!aSeesB && !bSeesA) continue;
+            const ea = worldToCanvasNew(pa.x, pa.y, pa.z + 22);
+            const eb = worldToCanvasNew(pb.x, pb.y, pb.z + 22);
+            ctx.strokeStyle = (aSeesB && bSeesA) ? style.mutual
+                : aSeesB ? style.first : style.second;
+            ctx.beginPath();
+            ctx.moveTo(ea.x, ea.y);
+            ctx.lineTo(eb.x, eb.y);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+// drawLosLines renders the PVS overlay (thin, faint — potential visibility)
+// underneath the LOS overlay (solid — actual sightline), each gated by its own
+// toggle. PVS first so LOS lines draw on top. No-op unless data is present
+// (BSP-backed maps only).
+function drawLosLines(ctx, time, playerData) {
+    if (mapState.showPvs) drawVisLines(ctx, mapState.pvsByPair, time, playerData, PVS_STYLE);
+    if (mapState.showLos) drawVisLines(ctx, mapState.losByPair, time, playerData, LOS_STYLE);
+}
+
 function drawTracks(ctx, time) {
     const trailDuration = mapState.trailDuration;
 
@@ -9229,6 +9392,34 @@ function setupMapTrailControls() {
             velArrowsBtn.classList.toggle('active', mapState.showVelArrows);
             mapState.renderDirty = true;
             renderMap(mapState.currentTime);
+        });
+    }
+
+    const losBtn = document.getElementById('map-los');
+    if (losBtn) {
+        losBtn.addEventListener('click', () => {
+            mapState.showLos = !mapState.showLos;
+            losBtn.classList.toggle('active', mapState.showLos);
+            mapState.renderDirty = true;
+            renderMap(mapState.currentTime);
+            // Compute LOS lazily the first time it is switched on.
+            if (mapState.showLos && !mapState.losComputed && !mapState.losPending) {
+                ensureLosComputed(losBtn);
+            }
+        });
+    }
+
+    const pvsBtn = document.getElementById('map-pvs');
+    if (pvsBtn) {
+        pvsBtn.addEventListener('click', () => {
+            mapState.showPvs = !mapState.showPvs;
+            pvsBtn.classList.toggle('active', mapState.showPvs);
+            mapState.renderDirty = true;
+            renderMap(mapState.currentTime);
+            // PVS rides on the same lazy pass as LOS; compute on first need.
+            if (mapState.showPvs && !mapState.losComputed && !mapState.losPending) {
+                ensureLosComputed(pvsBtn);
+            }
         });
     }
 

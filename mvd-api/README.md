@@ -66,6 +66,7 @@ Send `If-None-Match` to get a cheap 304.
 | GET | `/v1/demos/{id}/events` | `from`, `to`, `players`, `types`, `loc` | `view.EventsView` |
 | GET | `/v1/demos/{id}/stream-slice` | `from`, `to`, `players`, `fields`, `loc` | `view.StreamSliceView` |
 | GET | `/v1/demos/{id}/state-at` | `time` (required), `players`, `fields`, `loc` | `view.StateAtView` |
+| GET | `/v1/demos/{id}/los` | — | `{ "players": [{ "name", "los":[{ "o", "iv":[{ "s","e" }] }] }] }` — line of sight, **computed lazily on first request** (BSP-backed maps only) |
 | GET | `/v1/demos/{id}/loc-trails` | `from`, `to`, `players`, `minDwellMs`, `loc` | `view.LocTrailsView` |
 | GET | `/v1/demos/{id}/loc-table` | — | `{ "locTable": []string }` (decoder for `loc=index`; index 0 = "" no-loc) |
 | GET | `/v1/demos/{id}/region-control` | `windowMs` | `result.RegionControlResult` |

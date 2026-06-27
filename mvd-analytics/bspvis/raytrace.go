@@ -81,3 +81,75 @@ func (b *BSP) segHitsSolid(nodeIdx int32, p1, p2 [3]float32) bool {
 	}
 	return b.segHitsSolid(n.Children[far], mid, p2)
 }
+
+// RayHitsSolidModel reports whether the segment a->c (world coords) crosses
+// a CONTENTS_SOLID leaf of brush submodel modelIdx posed at world origin —
+// the test for "is a sightline blocked by this door / lift / plat / train at
+// its current pose". It is RayHitsSolid for an inline brush model instead of
+// worldspawn (Models[0]).
+//
+// modelIdx is the BSP models-lump index (the "*N" the entity carries as its
+// model; MoverStream.SubModel holds exactly this N). The trace runs in the
+// model's local frame — endpoints minus origin — because an inline model's
+// planes are compiled around a zero origin and the entity origin is the
+// translation it has been moved by (mirrors mapclip.Hull.FloorBelowAt and the
+// engine's SV_ClipMoveToEntity, which transforms the trace into the model's
+// frame). origin is the mover's current world origin (zero for a brush at
+// rest).
+//
+// HeadNodes[0] (the visibility / point hull) is the correct geometry: a
+// sightline is a zero-width ray, so the point hull is what the engine's
+// traceline consults against bmodels — not the player-box-inflated clip hull.
+// A cheap posed-AABB reject returns false early when the segment can't reach
+// the model. Out-of-range modelIdx never blocks. Liquid leaves don't block,
+// only CONTENTS_SOLID; a segment that starts inside the posed solid returns
+// true (same start-solid convention as RayHitsSolid).
+func (b *BSP) RayHitsSolidModel(modelIdx int32, origin, a, c [3]float32) bool {
+	if modelIdx < 0 || int(modelIdx) >= len(b.Models) {
+		return false
+	}
+	m := &b.Models[modelIdx]
+	mins := [3]float32{m.Mins.X + origin[0], m.Mins.Y + origin[1], m.Mins.Z + origin[2]}
+	maxs := [3]float32{m.Maxs.X + origin[0], m.Maxs.Y + origin[1], m.Maxs.Z + origin[2]}
+	if !segmentHitsAABB(a, c, mins, maxs) {
+		return false
+	}
+	la := [3]float32{a[0] - origin[0], a[1] - origin[1], a[2] - origin[2]}
+	lc := [3]float32{c[0] - origin[0], c[1] - origin[1], c[2] - origin[2]}
+	return b.segHitsSolid(m.HeadNodes[0], la, lc)
+}
+
+// segmentHitsAABB reports whether segment p0->p1 intersects the axis-aligned
+// box [min,max] (slab method; endpoints inside count as a hit). Used only as
+// a broadphase reject before the exact hull trace, so the box is padded a
+// touch outward to keep a grazing ray from being false-rejected.
+func segmentHitsAABB(p0, p1, min, max [3]float32) bool {
+	const pad = 1.0
+	tmin, tmax := float32(0), float32(1)
+	for i := 0; i < 3; i++ {
+		lo, hi := min[i]-pad, max[i]+pad
+		d := p1[i] - p0[i]
+		if d > -1e-6 && d < 1e-6 {
+			// Segment runs parallel to this slab; reject when it lies outside.
+			if p0[i] < lo || p0[i] > hi {
+				return false
+			}
+			continue
+		}
+		inv := 1 / d
+		t1, t2 := (lo-p0[i])*inv, (hi-p0[i])*inv
+		if t1 > t2 {
+			t1, t2 = t2, t1
+		}
+		if t1 > tmin {
+			tmin = t1
+		}
+		if t2 < tmax {
+			tmax = t2
+		}
+		if tmin > tmax {
+			return false
+		}
+	}
+	return true
+}

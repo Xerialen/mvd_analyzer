@@ -404,7 +404,35 @@ package result
 //     `endTime` key disappears from the `match` object — read Duration for
 //     match length, or streams.global for the match window. Breaking
 //     removal (not additive); the view query API is unaffected.
-const CurrentSchemaVersion = 36
+//
+// v37:
+//   - PlayerStream gains LOS []LosTrack: per-opponent line-of-sight as
+//     half-open [Start,End) ms intervals during which the looker had a clear
+//     sightline (origin+(0,0,22) eye → any of the opponent's 8 bbox corners +
+//     midpoint), blocked by worldspawn solids or any active mover posed in
+//     the way. Asymmetric (A→B in A's stream, B→A in B's); Other indexes
+//     Streams.Players. Computed against the visibility BSP, so present only on
+//     maps with a provisioned BSP (same gate as PositionTrack.H/Lq). Additive
+//     (omitempty); absent on BSP-less maps. View direction is not considered.
+//     Computed lazily (analyzer.ComputeLOS) — NOT during the default parse,
+//     since it is the heaviest position-derived pass — and so absent unless a
+//     consumer requested it (web LOS overlay, qw-analyze -include los,
+//     mvd-api /los). The Streams.LOSComputed guard (gob-only, json:"-") makes
+//     it idempotent.
+//
+// v38:
+//   - PlayerStream gains PVS []LosTrack alongside LOS: per-opponent
+//     potentially-visible-set intervals reproducing the server's per-client
+//     entity cull (mvdsv SV_PlayerVisibleToClient) — the looker's fat PVS
+//     (CM_FatPVS of origin+view_ofs) ∩ the opponent's entity leaf set (expanded
+//     box, non-solid), or always when it overflows MAX_ENT_LEAFS. I.e. whether a
+//     live server would have sent that opponent to the client (the recorded MVD
+//     itself stores every entity, pvs = NULL). Same LosTrack shape, same lazy
+//     pass (analyzer.ComputeLOS), BSP gate and Streams.LOSComputed guard as LOS.
+//     This test also gates the LOS raycast, so PVS ⊇ LOS by construction: the
+//     gap is the occlusion-tolerant "on the wire but no clear ray" signal.
+//     Additive (omitempty); absent on BSP-less maps and on the default parse.
+const CurrentSchemaVersion = 38
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

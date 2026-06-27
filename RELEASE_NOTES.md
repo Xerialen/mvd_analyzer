@@ -5,6 +5,35 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-06-27
+
+- **Line-of-sight & potential-visibility metrics** (schema v37–v38,
+  [#94](https://github.com/galfthan/mvd_analyzer/pull/94)). Two new
+  per-opponent visibility tracks on `PlayerStream`, both computed lazily
+  on first request (the heaviest position-derived pass, BSP-gated — only
+  on maps with a provisioned BSP; absent from the default parse):
+  - **`PlayerStream.LOS`** (v37) — geometric **line of sight**: intervals
+    during which a player has a clear ray to an opponent (eye point at
+    `origin + (0,0,22)`, nine rays against the BSP clip hull and moving
+    movers, the opponent's bounding-box corners + centre). Directional, so
+    asymmetric one-way sightlines are preserved; gated to live players
+    (alive from match start, not the first recorded spawn).
+  - **`PlayerStream.PVS`** (v38) — server-reproduced **potential
+    visibility**: whether a live mvdsv would have sent that opponent's
+    entity to this player's client at that frame, made wire-exact against
+    `SV_PlayerVisibleToClient` (fat PVS of `origin + view_ofs` vs. the
+    target's entity-leaf set, with the `MAX_ENT_LEAFS` overflow gate).
+    PVS ⊇ LOS by construction; the **PVS-minus-LOS gap** is an
+    occlusion-tolerant proximity/awareness signal, not a sightline.
+
+  Surfaced three ways: the REST/MCP **`/v1/demos/{id}/los`** endpoint
+  (returns both `los` and `pvs`), the CLI, and the **web map overlay** —
+  two per-player toggles (**LOS**, **PVS**) that draw inter-player lines
+  on the 3D map tab (PVS as thin faint lines beneath the thicker LOS
+  lines), both filled by one lazy pass and cached client-side. Both
+  metrics are `omitempty`/absent on non-BSP maps, so the schema bump is
+  additive for existing consumers.
+
 ## 2026-06-20
 
 - **API contract cleanup** (schema v36). Consolidates the REST/MCP

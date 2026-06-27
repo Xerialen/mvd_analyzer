@@ -381,6 +381,25 @@ speed (5 u/s per world unit) in the player's team colour, hidden below
 10 u/s. Both project the shaft through the orbit camera with a screen-space
 arrowhead at the projected tip, so they tilt correctly with the view.
 
+**LOS / PVS overlays** — two optional per-player toggles, **LOS** and
+**PVS**, draw inter-player visibility lines on the map (`drawLosLines` →
+`drawVisLines`). **LOS** is geometric line of sight: a line between two
+players who currently have a clear sightline (origin-to-origin ray
+against the map's BSP clip hull and any moving movers); it is
+directional, so a one-way sightline shows on the looker's side only.
+**PVS** is the server-reproduced potential-visibility set — whether a
+live mvdsv would have sent that opponent's entity to this player's client
+that frame (wire-exact against `SV_PlayerVisibleToClient`), regardless of
+occlusion. PVS ⊇ LOS by construction, so PVS draws first as thinner,
+fainter lines (`PVS_STYLE`) under the thicker LOS lines (`LOS_STYLE`),
+and the PVS-minus-LOS gap reads as occlusion-tolerant proximity. Both
+toggles ride **one** lazy compute pass over the already-parsed demo
+(`ensureLosComputed` → the `computeLineOfSight` worker export; the
+`mapState.losComputed` latch fills `losByPair` and `pvsByPair` together
+on first need), so the first toggle-on incurs the heaviest
+position-derived pass and later toggles are instant. BSP-gated — the
+toggles are inert on maps without a provisioned BSP.
+
 The floor model renders into an offscreen canvas keyed by the full camera
 state (`drawCachedWorld`); steady playback just blits it (~1 ms), only
 rotation/pan/zoom/focus changes re-render. The painter sort scatters

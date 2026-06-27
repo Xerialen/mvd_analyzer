@@ -310,6 +310,37 @@ func recomputeRegionControl(this js.Value, args []js.Value) interface{} {
 	return string(b)
 }
 
+// computeLineOfSight is the JS-callable lazy line-of-sight hook. LOS is not
+// computed during analyze() — it is the heaviest position-derived pass and has
+// no other consumer — so the map overlay requests it on first toggle.
+// analyzer.ComputeLOS is idempotent (Streams.LOSComputed), so repeat calls are
+// cheap. Returns the per-player visibility tracks (name + los/pvs, each
+// [{o,iv}]) aligned with streams.players: los is the clear-raycast sightline,
+// pvs the potentially-visible-set superset. An empty los/pvs on every player
+// means the map has no BSP.
+func computeLineOfSight(this js.Value, args []js.Value) interface{} {
+	if lastResult == nil || lastResult.Streams == nil {
+		return errorJSON("no demo analyzed yet")
+	}
+	analyzer.ComputeLOS(lastResult)
+	players := lastResult.Streams.Players
+	out := make([]struct {
+		Name string            `json:"name"`
+		LOS  []result.LosTrack `json:"los,omitempty"`
+		PVS  []result.LosTrack `json:"pvs,omitempty"`
+	}, len(players))
+	for i := range players {
+		out[i].Name = players[i].Name
+		out[i].LOS = players[i].LOS
+		out[i].PVS = players[i].PVS
+	}
+	b, err := json.Marshal(out)
+	if err != nil {
+		return errorJSON(err.Error())
+	}
+	return string(b)
+}
+
 func errorJSON(msg string) string {
 	b, _ := json.Marshal(map[string]string{"error": msg})
 	return string(b)
@@ -325,6 +356,7 @@ var (
 func main() {
 	js.Global().Set("analyzeMVD", js.FuncOf(analyze))
 	js.Global().Set("recomputeRegionControl", js.FuncOf(recomputeRegionControl))
+	js.Global().Set("computeLineOfSight", js.FuncOf(computeLineOfSight))
 	js.Global().Set("getDefaultBuckets", js.FuncOf(getDefaultBuckets))
 	js.Global().Set("getBuckets", js.FuncOf(getBuckets))
 	js.Global().Set("getEvents", js.FuncOf(getEvents))

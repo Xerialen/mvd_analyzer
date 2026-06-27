@@ -512,8 +512,19 @@ geometry. These additive columns are all `omitempty` and BSP-gated where
 noted. Schema v36 is a breaking removal: `match.startTime` / `match.endTime`
 drop out (they duplicated `streams.global.matchStart` / `matchEnd` —
 `startTime` was always 0 and `endTime` always equalled `duration`).
+Schema v37–v38 add two per-opponent visibility tracks to `PlayerStream`,
+both computed lazily and BSP-gated (absent from the default parse and on
+maps without a provisioned BSP, so additive for existing consumers):
+`LOS` (v37) — geometric **line of sight**, the intervals a player has a
+clear ray to an opponent (eye point, nine rays against the BSP clip hull
+and moving movers, bbox corners; directional, so asymmetric sightlines
+survive) — and `PVS` (v38) — server-reproduced **potential visibility**,
+wire-exact against mvdsv's `SV_PlayerVisibleToClient`. PVS ⊇ LOS by
+construction; the PVS-minus-LOS gap is an occlusion-tolerant
+proximity/awareness signal. Both are surfaced through the REST/MCP
+`/los` endpoint, the CLI, and the web map overlay.
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `36`).
+Every breaking change bumps `CurrentSchemaVersion` (currently `38`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
 The full per-field reference and the complete v4–v35 migration table live
 in [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).

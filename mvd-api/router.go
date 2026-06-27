@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"net/http"
+	"sync"
 )
 
 // server bundles the per-request dependencies.
@@ -10,6 +11,12 @@ type server struct {
 	store   demoStore
 	logger  *slog.Logger
 	mapsDir string // directory of per-map geometry JSON; "" disables /geometry
+
+	// losMu serializes the lazy line-of-sight pass so concurrent /los
+	// requests don't race on the shared cached Result (ComputeLOS mutates
+	// Streams.Players[].LOS in place and is idempotent, so only the first
+	// holder under the lock does the work).
+	losMu sync.Mutex
 }
 
 // newRouter returns an http.Handler with every endpoint registered.
@@ -36,6 +43,7 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string) http.Handle
 	mux.HandleFunc("GET /v1/demos/{id}/events", s.handleEvents)
 	mux.HandleFunc("GET /v1/demos/{id}/stream-slice", s.handleStreamSlice)
 	mux.HandleFunc("GET /v1/demos/{id}/state-at", s.handleStateAt)
+	mux.HandleFunc("GET /v1/demos/{id}/los", s.handleLOS)
 	mux.HandleFunc("GET /v1/demos/{id}/loc-trails", s.handleLocTrails)
 	mux.HandleFunc("GET /v1/demos/{id}/loc-table", s.handleLocTable)
 	mux.HandleFunc("GET /v1/demos/{id}/region-control", s.handleRegionControl)

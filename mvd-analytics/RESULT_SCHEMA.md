@@ -62,9 +62,9 @@ normalisation `startTime` was always 0 and `endTime` always equalled
 | Name | `name` | string | Display name. |
 | Team | `team` | string | Team name. |
 | Frags | `frags` | int | Canonical QW net score (from the `svc_updatefrags` scoreboard). |
-| Kills | `kills` | int | Gross kills, frag-log-corrected (v19). Supersedes KTX demoinfo `stats.kills` (which over-counts pentagram-deflect telefrags); `0` when the demo had no frag log. |
-| Deaths | `deaths` | int | Deaths, frag-log-corrected (v19). `0` when the demo had no frag log. |
-| Suicides | `suicides` | int | Self-inflicted deaths, frag-log-corrected (v19). Counts every `IsSuicide` frag entry (incl. fall / lava / squish / drown), which KTX demoinfo `stats.suicides` undercounts — world-dealt deaths bump the world entity's counter, not the victim's (`ktx/src/client.c:5132`). `0` when the demo had no frag log. |
+| Kills | `kills` | int | Gross kills, frag-log-corrected. Supersedes KTX demoinfo `stats.kills` (which over-counts pentagram-deflect telefrags); `0` when the demo had no frag log. |
+| Deaths | `deaths` | int | Deaths, frag-log-corrected. `0` when the demo had no frag log. |
+| Suicides | `suicides` | int | Self-inflicted deaths, frag-log-corrected. Counts every `IsSuicide` frag entry (incl. fall / lava / squish / drown), which KTX demoinfo `stats.suicides` undercounts — world-dealt deaths bump the world entity's counter, not the victim's (`ktx/src/client.c:5132`). `0` when the demo had no frag log. |
 
 `MatchResult` is the non-KTX-fallback view: it works on any MVD source.
 `Frags`/`Kills`/`Deaths` are the **corrected scoreboard** — net frags from
@@ -89,7 +89,7 @@ Defined in `result/frag.go`.
 |---|---|---|
 | TotalFrags | `totalFrags` | int |
 | Frags | `frags` | []FragEntry |
-| ByWeapon | `byWeapon` | map[string]int — **enemy kills only** (v15; suicides/teamkills excluded) |
+| ByWeapon | `byWeapon` | map[string]int — **enemy kills only** (suicides/teamkills excluded) |
 | ByPlayer | `byPlayer` | map[string]*PlayerFrags |
 
 ### FragEntry
@@ -103,14 +103,14 @@ Defined in `result/frag.go`.
 | IsSuicide | `isSuicide` | bool (omitempty) |
 | IsTeamKill | `isTeamKill` | bool (omitempty) |
 
-At schema v17, a self-kill carries the **weapon/cause that produced it**
+A self-kill carries the **weapon/cause that produced it**
 (`rl`/`gl`/`lg` for weapon self-detonations, env labels for lava/fall/etc.)
 with `isSuicide` set; only the `/kill` console command (KTX "X suicides",
 −2 frags) keeps weapon `suicide`. So a real `/kill` is distinguishable
 from a weapon self-detonation, and recovered teamkills never carry a stale
 `isSuicide` (killer ≠ victim).
 
-Includes **teamkills** recovered at schema v16, both kinds whose obituary
+Includes **teamkills** recovered from both kinds whose obituary
 names only one party. *Killer-named* ("X loses another friend") fill in
 the victim by matching the coincident authoritative `DeathEvent` on the
 killer's team. *Victim-named* ("X was telefragged by his teammate") fill
@@ -126,7 +126,7 @@ unambiguous; a few may stay unattributed (readable from
 |---|---|---|
 | Kills | `kills` | int |
 | Deaths | `deaths` | int |
-| TeamKills | `teamkills` | int (omitempty) — KTX "tk"; killer-named teamkills only (v14) |
+| TeamKills | `teamkills` | int (omitempty) — KTX "tk"; killer-named teamkills only |
 | ByWeapon | `byWeapon` | map[string]int |
 
 ## DamageResult (`damage`)
@@ -311,7 +311,7 @@ size, any reducer set; see [Streams](#streams-streams) and
 
 The match window and the wall-clock anchor (`matchStart`/`matchEnd`,
 `demoOffset`, `demoStartUnixMs`, `demoStartAccuracyMs`, `pauses`) live in
-[`streams.global`](#globalstream) as of schema v23 — they describe how to
+[`streams.global`](#globalstream) — they describe how to
 read the streams' times, so they sit next to them.
 
 | Field | JSON key | Type |
@@ -322,7 +322,7 @@ read the streams' times, so they sit next to them.
 | PowerupEvents | `powerupEvents` | []PowerupEvent |
 | FragStreaks | `fragStreaks` | []FragStreakEvent |
 | Airgibs | `airgibs` | []AirgibEvent (top airborne rocket hits) |
-| LocationData | `locationData` | []MapLocation — one anchor point per loc name (the medoid of that name's `.loc` points; since v31) |
+| LocationData | `locationData` | []MapLocation — one anchor point per loc name (the medoid of that name's `.loc` points) |
 | LocTable | `locTable` | []string (interned loc names; index 0 = ""). `Streams.Players[].Loc[].V` indexes into this. |
 | PlayerUserIDs | `playerUserIDs` | map[string]int (name → Hub viewer UserID) |
 | RegionControl | `regionControl` | *RegionControlResult |
@@ -387,7 +387,7 @@ victimUserID, height, heightAboveAttacker, loc, damage, lethal }`. One
 record per direct
 enemy rocket hit landed on an airborne victim (an "airgib"). `height` is
 the victim's feet above the floor at the hit (`PositionTrack.H` units);
-`heightAboveAttacker` (schema v29) is the victim's origin minus the
+`heightAboveAttacker` is the victim's origin minus the
 shooter's at the hit — the vertical gap the rocket climbed, negative
 when the victim was below the shooter, `0`/absent when the shooter had
 no position sample near the hit (a genuine dead-level hit also reads
@@ -397,12 +397,12 @@ matching rocket frag near the hit — a highlight heuristic, see below).
 `attackerUserID` is the one to track for the Hub viewer link (shooter
 perspective).
 
-Derived by a post-processor (schema v25) from `Damage.Events` (the
+Derived by a post-processor from `Damage.Events` (the
 per-hit log), the streams' `PositionTrack.H` column, the frag log, and
 the loc table. A hit qualifies when `weapon == "rl"` and it is a **direct
 hit** (`isSplash` false), the attacker is an enemy (not self / teammate /
 world), and the victim's height at the hit is ≥ 96 units (≈ two player
-models). Every qualifying hit is emitted (uncapped since schema v30 —
+models). Every qualifying hit is emitted (uncapped —
 the ≥ 96 threshold already bounds the list), ordered by `height`
 descending; the web
 view re-sorts client-side. **Empty when the map has no clip hull** (no
@@ -417,7 +417,7 @@ killing-blow flag.
 `{ x, y, z, name }`. Used by `LocationData` (one anchor point per loc
 name — see below) and `ControlRegion.Points` (rendering anchors).
 
-Since schema v31 `LocationData` holds one `MapLocation` per loc name
+`LocationData` holds one `MapLocation` per loc name
 instead of every raw `.loc` corpus point. The point chosen is the
 **medoid** of that name's corpus points — the actual point minimizing
 summed 3D distance to its same-name siblings, never an averaged mid-air
@@ -525,12 +525,12 @@ state, loc trails) are computed on demand from this storage by the
 |---|---|---|
 | Players | `players` | []PlayerStream |
 | Global | `global` | GlobalStream |
-| Movers | `movers` | []MoverStream (brush-model lifts/doors/plats/trains; since v32, `omitempty`) |
+| Movers | `movers` | []MoverStream (brush-model lifts/doors/plats/trains; `omitempty`) |
 
 ### GlobalStream
 
 The match window plus the demo/wall-clock anchor (moved here from
-`timelineAnalysis` at schema v23).
+`timelineAnalysis`).
 
 | Field | JSON key | Type | Notes |
 |---|---|---|---|
@@ -580,7 +580,7 @@ when the demo has no pauses or the server does not embed the block.
 |---|---|---|---|
 | Name | `name` | string | Canonical player name (D12: collisions in same match get a `#slotIndex` suffix). |
 | Team | `team` | string (omitempty) | Team label (post-duel-normalise: per-player synthetic team). |
-| Position | `pos` | *PositionTrack (omitempty) | Native-rate position track: x/y/z plus optional per-sample `li`/`h`/`lq` and (schema v31) view-direction `vp`/`vya` columns. Omitted from default JSON unless `-include positions` (CLI) or equivalent is set; `-include view`/`height`/`liquid` keep the respective extra columns. |
+| Position | `pos` | *PositionTrack (omitempty) | Native-rate position track: x/y/z plus optional per-sample `li`/`h`/`lq` and view-direction `vp`/`vya` columns. Omitted from default JSON unless `-include positions` (CLI) or equivalent is set; `-include view`/`height`/`liquid` keep the respective extra columns. |
 | Health / Armor | `h` / `a` | []ChangeI16 | Vital change streams. Health caps at 250, Armor at 200; int16 holds the range. |
 | ArmorType | `at` | []ChangeStr | `"ga"` / `"ya"` / `"ra"` / `""` transitions. |
 | Loc | `li` | []ChangeI16 | Index into `TimelineAnalysisResult.LocTable`. Smoothed by the blip filter. |
@@ -588,8 +588,13 @@ when the demo has no pauses or the server does not embed the block.
 | Quad / Pent / Ring | `q` / `pe` / `r` | []Interval | Same shape as weapons. |
 | Shells / Nails / Rockets / Cells | `sh` / `nl` / `rk` / `cl` | []ChangeI16 | Ammo change streams. |
 | Spawns / Deaths | `sp` / `d` | []int32 | Discrete event timestamps in milliseconds. |
+| LOS | `los` | []LosTrack (omitempty) | Per-opponent line-of-sight intervals. BSP-backed maps only, and **computed lazily** — absent from the default parse; populated on demand (web LOS overlay, `qw-analyze -include los`, mvd-api `/los`). |
+| PVS | `pvs` | []LosTrack (omitempty) | Per-opponent potentially-visible-set intervals: the PVS cull the LOS raycast gates on, recorded before the rays narrow it. Lossless superset of `los` (PVS ⊇ LOS). Same shape, gate, and lazy pass as `los`. |
 
 ### ChangeI16 / ChangeStr / Interval
+
+The shared building blocks the `PlayerStream` fields above are made of — each
+field is a list of one of these.
 
 ```
 ChangeI16 = { "t": int32, "v": int16 }
@@ -597,8 +602,76 @@ ChangeStr = { "t": int32, "v": string }
 Interval  = { "s": int32, "e": int32 }   // half-open [s, e)
 ```
 
+`ChangeI16` / `ChangeStr` are entries in a **change stream**: a sparse series
+that records one `{t, v}` only when the value *changes*; a reader carries the
+last value forward until the next entry (so `h: [{t:0,v:100},{t:10000,v:50}]`
+means health is 100 from `t=0` and 50 from `t=10000`). Health/Armor/Loc/ammo
+use these. An `Interval` is a half-open `[s, e)` period during which something
+was *true* (start included, end excluded) — weapons-held, powerups, and
+`LosTrack.iv` use these.
+
 `t` / `s` / `e` are **integer milliseconds** since the stream's time
 origin (see PositionTrack for the unit rationale).
+
+### LosTrack (`streams.players[].los[]`)
+
+One entry per opponent this player (the **looker**) ever had a clear line of
+sight to, as half-open `[s, e)` ms `Interval`s.
+
+```
+LosTrack = { "o": int16, "iv": [Interval...] }   // o = index into streams.players (the seen player)
+```
+
+LOS is **computed lazily**, not during the default parse — it is the heaviest
+position-derived pass and has no in-pipeline consumer. `analyzer.ComputeLOS`
+populates it on demand (the web map's LOS overlay, `qw-analyze -include los`,
+the mvd-api `GET /v1/demos/{id}/los` endpoint), idempotently. So a default
+Result never carries `los`; it appears only in responses that requested it.
+
+Line of sight is **asymmetric** — the looker's single eye point
+(`origin + (0,0,22)`) versus the opponent's whole body — so `A→B` lives in
+A's `los` and `B→A` in B's, computed independently. An interval is open while
+at least one of the 9 rays from the looker's eye to the opponent's 8
+bounding-box corners + box midpoint reaches the target without crossing
+`CONTENTS_SOLID`: worldspawn geometry **or** any active mover (door / lift /
+plat / train) posed in the way at that time. Computed only while both players
+are alive, against the map's visibility BSP — present only on maps with a
+provisioned BSP (same gate as `PositionTrack.h`/`lq`), absent otherwise. View
+direction is not considered: this is geometric visibility, not FOV. Raw
+transitions, no smoothing.
+
+### PVS (`streams.players[].pvs[]`)
+
+Same `LosTrack` shape as `los`, populated by the same lazy `analyzer.ComputeLOS`
+pass under the same BSP gate, but recording **potential** visibility — and
+specifically reproducing what a live **mvdsv** server would have sent. `pvs` is
+on for opponent `O` at looker `L` exactly when the server's per-client entity
+cull (`SV_PlayerVisibleToClient`) would have transmitted `O`'s entity to `L`'s
+client that frame:
+
+- **viewer side** — `L`'s **fat PVS**: `CM_FatPVS(origin+view_ofs)`, the OR of
+  the PVS rows of every non-solid leaf within **8 units** of the eye
+  (`view_ofs.z = 22`).
+- **target side** — `O`'s **entity leaf set**: the non-solid leaves its bounding
+  box touches, where the box is the player hull (`±16` xy, `−24/+32` z) **expanded
+  1 unit** on every side (`SV_LinkEdict`). If that box touches more than
+  `MAX_ENT_LEAFS` (16) leaves the server marks it always-sent — `pvs` is then on
+  unconditionally.
+- **test** — on iff any target leaf is set in the viewer's fat PVS.
+
+This is *the wire*: the recorded MVD itself does **not** carry it — the demo
+recorder is a fake client with `pvs = NULL` and stores every entity
+(`SV_WriteEntitiesToClient`), so the per-client cull is reconstructed here from
+the position tracks. (The one unavoidable approximation: we only have `origin`,
+so `view_ofs.z` is taken as the standing `22`, exact for living players.)
+
+**PVS ⊇ LOS by construction**: this wire PVS also gates the LOS raycast (LOS is
+cast only for potentially-visible pairs), so every `los` interval lies inside a
+`pvs` interval for the same opponent; because the PVS is a conservative superset
+of true reachability the gate loses no real sightline. The gap between them — on
+the wire but no clear ray — is an occlusion-tolerant proximity/awareness signal.
+Like `los`, it is per-ordered-pair (`o` indexes `streams.players`), computed only
+while both players are alive, raw transitions with no smoothing.
 
 ### PositionTrack
 
@@ -646,19 +719,19 @@ smoothed by the blip filter. Same length as `t`. Absent when no `.loc`
 corpus is loaded for the map. (Distinct from `PlayerStream.Loc`, which
 is the *sparse* change-stream view of the same data.)
 
-`h` (when present, schema v24) is the **player's height above the floor
+`h` (when present) is the **player's height above the floor
 beneath them** at each sample — how far the feet are above the highest
 solid surface at or below the player, from straight-down traces through
 the map's player clip hulls (parsed from the map's BSP `CLIPNODES` at
-analyze time; see `mvd-analytics/mapclip`). Same length as `t`. **Since
-schema v26** it is measured over the player's bounding-box footprint,
+analyze time; see `mvd-analytics/mapclip`). Same length as `t`. It is
+measured over the player's bounding-box footprint,
 not just the origin column: the highest floor under a 3×3 grid of
 columns sampled ±8 around the origin wins (an effective ~48-wide
 footprint on the already-±16-box-inflated hull), so a player skimming a
 ledge / well rim — origin momentarily over the pit while the box overhangs
 the rim — reads the **near** floor, not the distant one far below (this is
 what removed bogus high airgibs at spots like anwalked RA's well rim).
-**Since schema v27** the trace scene also includes every moving
+The trace scene also includes every moving
 brush-model entity (lift, door, train) posed at its demo-streamed origin
 for the sample's time, so a player riding the dm2 RA lift stands on the
 lift, not the shaft floor beneath it. It
@@ -668,20 +741,20 @@ a consumer flags those directly with no coordinate arithmetic — test
 `|h|` small rather than `== 0`, since slopes and the trace epsilon leave
 a unit or two of slack. (The absolute floor surface, if needed, is
 `z[i] - 24 - h[i]` — the player origin rides 24 units above the floor.)
-**Since schema v28** liquids participate: a sample in liquid (`lq`
+Liquids participate: a sample in liquid (`lq`
 level ≥ 1) reads `h = 0` by definition — the liquid surface is the
 support, so swimmers don't read as airborne over the pool bottom — and
 a dry sample airborne above water/slime/lava measures down to the
 **liquid surface** when it is the highest support beneath the player.
-The sentinel `-1000000000` (`result.NoFloor`, schema v33; was
-`-2147483648` while `h` was `int32`) marks a sample with **no floor to
+The sentinel `-1000000000` (`result.NoFloor`; was `-2147483648` while
+`h` was `int32`) marks a sample with **no floor to
 measure from** — over a void / bottomless pit, an embedded origin, or
 the zero origin. Absent entirely when no BSP is
 provisioned for the map (same best-effort BSP source as the
 visibility-aware loc filter), so floor height and PVS-veto loc
 attribution light up together.
 
-`lq` (when present, schema v28) is the **per-sample liquid state**,
+`lq` (when present) is the **per-sample liquid state**,
 computed by mirroring the engine's `PM_CategorizePosition` waterlevel
 probes (feet z−23, waist z+4, eyes z+22) against the map's render BSP:
 `0` = dry, otherwise `(type << 2) | level` with level 1–3
@@ -694,7 +767,7 @@ deviation from the engine predicate: `CONTENTS_SKY` does **not** count
 as liquid — the physics treats sky like water for drag, but a
 void-faller reported as swimming would mislead consumers.)
 
-`vp` / `vya` (when present, schema v31) are the **player's view
+`vp` / `vya` (when present) are the **player's view
 direction** — pitch and yaw — at each sample, stored as the **raw
 `angle16` state** (the exact 2-byte values, kept losslessly after
 `svc_playerinfo` delta carry-forward; see MVD_FORMAT.md "View-angle
@@ -707,14 +780,14 @@ decoded pitch/yaw in radians,
 populated whenever the track is (the angles ride the same
 `svc_playerinfo` samples as x/y/z, so unlike `h`/`lq` they need no BSP).
 
-`vx` / `vy` / `vz` (when present, schema v32) are the player's
+`vx` / `vy` / `vz` (when present) are the player's
 **velocity** in Quake units/sec at each sample — **derived**, not a wire
 field, from the position columns by a central-difference estimator
 (second-order accurate). The estimator does not differentiate across a
 respawn teleport, a map-teleporter relocation, or an abnormal time gap
 (death / pause / reconnect): such a step reads ~0 rather than a
-tens-of-thousands-ups spike, and an isolated sample reads 0. **Since
-schema v33** the source `x`/`y`/`z` are float32 (no longer rounded to
+tens-of-thousands-ups spike, and an isolated sample reads 0. The source
+`x`/`y`/`z` are float32 (no longer rounded to
 whole units), so the derivative is sub-unit precise — the ±1-unit
 position quantization that used to add a few tens of ups of noise is
 gone. Like positions, velocity is native float32 in memory and the JSON
@@ -724,7 +797,7 @@ smooth client-side only if a softer curve is wanted. Speed is `hypot(vx,vy,vz)`;
 horizontal speed (the usual movement metric) is `hypot(vx,vy)`. Same
 length as `t`; populated whenever the track is (no BSP needed).
 
-### MoverStream (`streams.movers[]`, schema v35)
+### MoverStream (`streams.movers[]`)
 
 The pose timeline of one brush-model entity — a lift, door, plat or
 train. Columnar like PositionTrack; indices align across `t`/`x`/`y`/`z`/`vis`.
@@ -1246,6 +1319,8 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v38 | `PlayerStream` gains `pvs[]` (`LosTrack`): per-opponent potentially-visible-set intervals, populated alongside `los[]` by the same lazy `analyzer.ComputeLOS` pass under the same BSP gate. Reproduces the mvdsv per-client entity cull (`SV_PlayerVisibleToClient`): the looker's fat PVS (`CM_FatPVS` of `origin+view_ofs`) ∩ the opponent's entity leaf set (1-unit-expanded box, non-solid leaves), or always when it overflows `MAX_ENT_LEAFS` — i.e. whether a live server would have sent that opponent to the client (the recorded MVD stores every entity, `pvs = NULL`). This test also gates the LOS raycast, so **PVS ⊇ LOS** by construction. The gap (potentially visible, no clear ray) is an occlusion-tolerant proximity/awareness signal. Same `o`/`iv` shape, asymmetry, alive-gating; additive (`omitempty`); absent on BSP-less maps and on the default parse. Exposed by the same consumers as `los` (web overlay, `qw-analyze -include los`, mvd-api `/los`). |
+| v37 | `PlayerStream` gains `los[]` (`LosTrack`): per-opponent line-of-sight as half-open `[s,e)` ms intervals during which the looker had a clear sightline (eye `origin+(0,0,22)` → any of the opponent's 8 bbox corners + midpoint), blocked by worldspawn solids or any active mover posed in the way. Asymmetric (`A→B` in A's stream, `B→A` in B's); `o` indexes `streams.players`. **Computed lazily** (`analyzer.ComputeLOS`) — absent from the default parse; populated on demand by the web LOS overlay, `qw-analyze -include los`, and mvd-api `/los`. Against the visibility BSP, so only on maps with a provisioned BSP (same gate as `pos.h`/`lq`). Additive (`omitempty`). View direction is not considered. |
 | v36 | `MatchResult` drops the dead `startTime` / `endTime` fields. After the match-relative time normalization `startTime` was always 0 (already `omitempty`, so absent from JSON) and `endTime` always equalled `duration`; both duplicated `streams.global.matchStart` / `matchEnd`. The `endTime` key disappears from the `match` object — read `duration` for match length, or `streams.global` for the match window. Breaking removal (not additive). |
 | v35 | `streams` gains `movers[]` (`MoverStream`): the pose timeline of every tracked brush-model entity (lift, door, plat, train). Each carries `ent` (entity number), `sub` (the `*N` brush-model index, matching the corpus `SubModelMesh` id), and index-aligned `t`/`x`/`y`/`z`/`vis` columns — the mover sits at `(x,y,z)[i]` at `t[i]` ms and is drawn when `vis[i]`. Origins are `float32` (exact ⅛-unit wire values). The first entry is clamped to `t = 0` carrying the match-start pose so a parked mover (only wire state predates the match) still has one. Additive (`omitempty`); absent when the demo has no movers. The same internal tracks already drive the v27 floor-height pass. |
 | v34 | `timelineAnalysis.locationData` now carries **one `MapLocation` per loc name** — the medoid of that name's `.loc` corpus points — instead of every raw point. The corpus often repeats a name across several nearby points, which drew duplicate map labels; the medoid is the actual point minimizing summed distance to its same-name siblings (never an averaged mid-air centroid). `locGraph` node coordinates (resolved from this list by name) move to the medoid. Same field name and `MapLocation` shape; the list is just shorter. |

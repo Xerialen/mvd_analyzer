@@ -16,6 +16,7 @@ The docs that matter, in priority order:
 | Doc | Scope |
 |---|---|
 | [`README.md`](README.md) | Top-level: architecture, event list, result schema shape, repo layout, known limitations |
+| [`RELEASE_NOTES.md`](RELEASE_NOTES.md) | Feature-level changelog, newest first, keyed by schema version + merge date. Add an entry for every user-visible change / schema bump. |
 | [`mvd-reader/README.md`](mvd-reader/README.md) | Layer 1: event table + derivation notes, Source implementation guide |
 | [`mvd-analytics/README.md`](mvd-analytics/README.md) | Layer 2: registered analyzers, Result schema, how to add an analyzer, MH / items semantics |
 | [`mvd-analytics/RESULT_SCHEMA.md`](mvd-analytics/RESULT_SCHEMA.md) | **Authoritative** field-level reference for the Result JSON + view shapes, field vocabulary, reducer registry, time units. The single source of truth for response *shapes*. |
@@ -32,7 +33,8 @@ The docs that matter, in priority order:
    limitations list if consumers can see the change.
 
 **When you change the schema**, bump `CurrentSchemaVersion` in
-`mvd-analytics/result/result.go` and mention the bump in the commit message.
+`mvd-analytics/result/result.go`, mention the bump in the commit message,
+and add a `RELEASE_NOTES.md` entry describing the change.
 
 **When you delete or move files**, fix every README / doc cross-reference
 that pointed at them. `grep -r` before committing.

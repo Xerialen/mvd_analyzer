@@ -283,7 +283,7 @@ type Result struct {
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `36`). For "how long was the match"
+`CurrentSchemaVersion` (currently `38`). For "how long was the match"
 read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
 (integer, KTX-authoritative); the legacy top-level `duration` was
 removed in v6.
@@ -699,6 +699,82 @@ independently — `pos` is strictly x/y/z, and `view` / `hgt` / `lq` /
 `vel` are opt-in field codes. The CLI mirrors this:
 `-include positions,view,height,liquid,velocity` each keep their column
 set in the full-result JSON (default strips the whole heavy track).
+
+## Line of sight (`PlayerStream.LOS`) and potential visibility (`PlayerStream.PVS`)
+
+`analyzer.ComputeLOS(res)` (`analyzer/los.go`, schema v38) records, per ordered
+player pair, the half-open `[s,e)` ms intervals during which one player (the
+**looker**) had a clear geometric sightline to another, stored on the looker's
+`PlayerStream.LOS` as one `LosTrack` per opponent. The same pass also fills
+`PlayerStream.PVS` (same `LosTrack` shape) with **potential** visibility — see
+below.
+
+**It is computed lazily — NOT during the default parse.** LOS is the heaviest
+position-derived pass (N² pairs × samples × rays) and has no in-pipeline
+consumer, so the registry does not run it; callers invoke `ComputeLOS` on
+demand. It is idempotent (the first call sets `Streams.LOSComputed`, which the
+mvd-api persists in its gob cache so a demo's LOS is computed at most once).
+The three consumers:
+
+- **Web map overlay** — the **LOS** button calls the WASM `computeLineOfSight()`
+  export (via the worker) on first toggle and caches the result client-side.
+- **CLI** — `qw-analyze -include los` computes and emits it.
+- **REST API** — `GET /v1/demos/{id}/los` computes it on the cached Result on
+  first request.
+
+`ComputeLOS` must be called on a Result whose times are already match-relative
+(true of any Result the default pipeline hands out), so positions, spawns/deaths
+and the mover pose timeline share one epoch and the intervals need no further
+normalization.
+
+A sightline is clear when **any** of the 9 rays from the looker's eye
+(`origin + (0,0,22)`) to the opponent's 8 bounding-box corners + box midpoint
+reaches the target without crossing `CONTENTS_SOLID` — worldspawn geometry
+(`bspvis.RayHitsSolid`) **or** any active mover (door / lift / plat / train)
+posed in the way (`bspvis.RayHitsSolidModel` against the brush submodel
+`Models[sub]` at its streamed origin). It is **asymmetric** (the looker is a
+single eye point, the target a whole body), so `A→B` and `B→A` are computed and
+stored independently. View direction is not considered — this is geometric
+visibility, not FOV. Computed only while both players are alive, and only on
+maps with a provisioned BSP (same gate as `H`/`Lq`); absent otherwise.
+
+Cost scales with pairs × duration: each looker-sample tests every opponent, so
+a 4on4 (8 players → 56 ordered pairs) over a full 20-minute match is the heavy
+case. The work is bounded by gating the raycast on the **PVS test** (stage one
+below): only pairs that pass — ~1/4–1/2 of alive pairs — cast the 9 rays. With an
+any-clear-ray early-out (midpoint first) this runs in ~2–4 s for a full 20-minute
+4on4. It is still lazy so the cost is paid only when a consumer asks, at most
+once per demo. The web map view's **LOS** button draws a line between players who
+currently have sight (white = mutual, red/blue = one-way).
+
+**Potential visibility (`PlayerStream.PVS`).** The gate above is itself the PVS
+metric, recorded on `PlayerStream.PVS` (one `LosTrack` per opponent, identical
+shape and gating to `LOS`). It reproduces **exactly the server's per-client
+entity cull** — i.e. whether a live mvdsv would have sent opponent `O` to looker
+`L`'s client that frame (`SV_PlayerVisibleToClient`):
+
+- **viewer** — `L`'s **fat PVS**: `CM_FatPVS(origin+view_ofs)`, the OR of the PVS
+  rows of every non-solid leaf within 8 units of the eye (`view_ofs.z = 22`).
+- **target** — `O`'s **entity leaf set**: the non-solid leaves its bounding box
+  touches, the player hull expanded 1 unit per side (`SV_LinkEdict`); >16 leaves
+  (`MAX_ENT_LEAFS`) → server always sends → `pvs` on unconditionally.
+- on iff any target leaf is in the viewer's fat PVS.
+
+The recorded MVD itself does **not** carry this — the demo recorder is a fake
+client with `pvs = NULL` and stores every entity — so it is reconstructed here
+from the position tracks. (Only approximation: we have `origin` but not
+`view_ofs`, taken as the standing `22`, exact for living players. The
+implementation maps `CM_FatPVS`/`CM_FindTouchedLeafs`/`SV_PlayerVisibleToClient`
+onto `bspvis.BoxLeafs`/`LeafPVS`/`PVSContains` — see `los.go`
+`fatPVS`/`buildEntityLeaves`/`entityPotentiallyVisible`.)
+
+This passes ~25–55 % of alive pairs (dm3 25 %, dm4 52 %, aerowalk higher — a
+genuinely open map). **PVS ⊇ LOS by construction**: the LOS raycast runs only for
+pairs the PVS gate passed, and since the wire PVS is a conservative superset of
+reachability the gate loses no real sightline. The gap between `pvs` and `los` —
+on the wire but no clear ray — is an occlusion-tolerant proximity/awareness
+signal. PVS rides along on every `LOS` consumer (web overlay, `qw-analyze
+-include los`, mvd-api `/los`), absent on BSP-less maps and on the default parse.
 
 ## Velocity (`PositionTrack.VX` / `VY` / `VZ`)
 

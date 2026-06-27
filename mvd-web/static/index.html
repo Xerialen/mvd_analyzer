@@ -596,6 +596,8 @@
                         <select id="map-follow" class="map-trail-select"></select>
                         <button id="map-view-arrows" title="Per-player arrows showing where each player is looking">View</button>
                         <button id="map-vel-arrows" title="Per-player arrows showing each player's velocity (length ∝ speed)">Vel</button>
+                        <button id="map-los" title="Line-of-sight: lines between players who can see each other (white = mutual, red/blue = one-way). BSP-backed maps only.">LOS</button>
+                        <button id="map-pvs" title="Potential visibility (PVS): thin lines between players the server would have sent to each other on the wire (mvdsv per-client entity cull — fat PVS vs the opponent's box leaves). Superset of LOS; the gap (in PVS but not LOS) means same vis region without a direct sightline. BSP-backed maps only.">PVS</button>
                         <button id="map-3d-toggle" title="Tilt the map into 3D — right-drag (or Ctrl+drag) to rotate freely">3D</button>
                         <button id="map-reset-view" title="Reset pan / zoom / rotation">Reset view</button>
                         <button id="map-fullscreen" title="Toggle fullscreen">Fullscreen</button>

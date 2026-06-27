@@ -236,5 +236,23 @@ onmessage = function(e) {
         } catch (err) {
             postMessage({ type: 'recompute_error', message: err.message || String(err) });
         }
+    } else if (e.data.type === 'computeLos') {
+        // Line of sight is computed lazily on this worker (same reason as
+        // recomputeRegions — computeLineOfSight is a Go export on the worker
+        // scope). The map overlay asks for it on first toggle; the heavy
+        // raycast pass runs here so the main thread stays responsive.
+        if (!wasmReady) {
+            postMessage({ type: 'los_error', message: 'WASM not loaded yet' });
+            return;
+        }
+        try {
+            const tLos = performance.now();
+            const jsonStr = computeLineOfSight();
+            const losMs = performance.now() - tLos;
+            console.log(`[mvd-timing] computeLineOfSight ${losMs.toFixed(1)} ms`);
+            postMessage({ type: 'los_result', json: jsonStr });
+        } catch (err) {
+            postMessage({ type: 'los_error', message: err.message || String(err) });
+        }
     }
 };

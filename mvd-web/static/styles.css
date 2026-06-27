@@ -2613,6 +2613,13 @@ th.sortable.sort-desc::after {
     background: var(--accent-cyan);
 }
 
+/* LOS computes lazily on first toggle; show a wait cue while the worker runs
+   the (potentially multi-second) raycast pass. */
+.map-track-controls button.pending {
+    opacity: 0.6;
+    cursor: progress;
+}
+
 /* The Trails "Players" dropdown summary highlights when a custom subset of
    players is selected (neither All nor None). */
 .map-trails-dropdown > summary.active {

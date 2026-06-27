@@ -38,6 +38,15 @@ type TracksResult struct {
 // in NewDefaultRegistry, so ExtractTracks has no production callers
 // today. When the analyzer is revived, this implementation is the
 // production-ready entry point.
+//
+// KNOWN GAP when revived: the loop below starts alive=false and opens a
+// life only on a spawn, but KTX demos do NOT record the match-start spawn
+// (the first recorded spawn is the first *respawn*, after the first death),
+// so each player's opening life (match start → first death) is currently
+// dropped. Treat the player as alive from match start (open an initial life
+// at the first position sample when no spawn precedes the first death), the
+// way view.playerActiveInWindow and analyzer.losAliveAt do. See the LOS
+// liveness fix for the same root cause.
 func ExtractTracks(result *Result) *TracksResult {
 	if result == nil || result.TimelineAnalysis == nil || result.Streams == nil {
 		return nil

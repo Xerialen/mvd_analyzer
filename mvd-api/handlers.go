@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-api/internal/democache"
+	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
 )
@@ -559,6 +560,43 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sa)
+}
+
+// handleLOS: GET /v1/demos/{id}/los — per-player line-of-sight intervals.
+//
+// Line of sight is the heaviest position-derived pass and has no other
+// consumer, so it is computed lazily: the first request for a demo triggers
+// the raycast pass and caches it on the in-memory Result (ComputeLOS is
+// idempotent via Streams.LOSComputed), so later requests are free. The on-disk
+// gob stays lean — LOS is never baked into it. Returns 200 with a players
+// array; los is omitted for a player with no sightlines and empty for every
+// player on a map with no provisioned BSP.
+func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
+	res, _, ok := s.resolveDemo(w, r)
+	if !ok {
+		return
+	}
+	s.losMu.Lock()
+	analyzer.ComputeLOS(res)
+	s.losMu.Unlock()
+
+	type losPlayer struct {
+		Name string            `json:"name"`
+		LOS  []result.LosTrack `json:"los,omitempty"`
+		PVS  []result.LosTrack `json:"pvs,omitempty"`
+	}
+	out := struct {
+		Players []losPlayer `json:"players"`
+	}{}
+	if res.Streams != nil {
+		out.Players = make([]losPlayer, len(res.Streams.Players))
+		for i := range res.Streams.Players {
+			out.Players[i].Name = res.Streams.Players[i].Name
+			out.Players[i].LOS = res.Streams.Players[i].LOS
+			out.Players[i].PVS = res.Streams.Players[i].PVS
+		}
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *server) handleLocTrails(w http.ResponseWriter, r *http.Request) {

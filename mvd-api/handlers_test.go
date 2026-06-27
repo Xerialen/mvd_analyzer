@@ -234,6 +234,30 @@ func TestLoad(t *testing.T) {
 	}
 }
 
+func TestLOS(t *testing.T) {
+	store := storeWithStub()
+	srv := newTestServer(t, store)
+	defer srv.Close()
+	// The stub has no DemoInfo/BSP, so LOS computes to empty — but the
+	// endpoint must still be wired, return 200, echo the players, and mark
+	// the pass computed so a second request is a no-op.
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/los", 200)
+	players, ok := resp["players"].([]any)
+	if !ok || len(players) == 0 {
+		t.Fatalf("expected players array, got %v", resp["players"])
+	}
+	p0 := players[0].(map[string]any)
+	if p0["name"] != "bps" {
+		t.Errorf("players[0].name = %v, want bps", p0["name"])
+	}
+	if _, has := p0["los"]; has {
+		t.Errorf("expected no los on a BSP-less stub, got %v", p0["los"])
+	}
+	if !store.byID["gameId:42"].Streams.LOSComputed {
+		t.Errorf("LOSComputed should latch after the first /los request")
+	}
+}
+
 func TestOverview(t *testing.T) {
 	srv := newTestServer(t, storeWithStub())
 	defer srv.Close()
