@@ -132,7 +132,8 @@ jobs:
 
             [ "$state" = "OPEN" ]          || { echo "skip #$PR: not open (state=$state)"; return 0; }
             [ "$draft" = "false" ]         || { echo "skip #$PR: draft"; return 0; }
-            case "$base" in main|dev) ;; *) echo "skip #$PR: base is '$base' (only main/dev auto-merge)"; return 0 ;; esac
+            default_branch="${DEFAULT_BRANCH:-main}"
+            [ "$base" = "$default_branch" ] || { echo "skip #$PR: base is '$base' (only '$default_branch' auto-merge)"; return 0; }
             [ "$has_ready" = "true" ]      || { echo "skip #$PR: no 'gate: ready'"; return 0; }
             [ "$has_blocked" = "false" ]   || { echo "skip #$PR: 'gate: blocked' present"; return 0; }
             [ "$mergeable" = "MERGEABLE" ] || { echo "skip #$PR: not mergeable ($mergeable)"; return 0; }
