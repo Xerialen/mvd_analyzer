@@ -966,7 +966,7 @@ view.BucketsColumnar(r, view.BucketsOptions{WindowMs: 50, IncludeTeam: true})
 //        first, n,                       // active span [first, first+n)
 //        alive: [0/1 …],                 // liveness per bucket in the span
 //        validFrom: { field: idx },      // sparse; field valid from idx (omitted when == first)
-//        h|a|li|sh|nl|rk|cl: [int16 …],  // dense, carry-forward
+//        h|a|w|li|sh|nl|rk|cl: [int16 …],  // dense, carry-forward
 //        x|y|z: [float32 …],             // position split
 //        vx|vy|vz: [float32 …],          // velocity split; hgt: [float32 …]
 //        at: [string …],
@@ -983,6 +983,9 @@ never has it; values carry forward through dead buckets (the `alive`
 mask, not the arrays, marks liveness — row-major omits dead players, so
 treat `alive[i]==0` as "absent"); loc is always the raw `li` index
 (`LocIndex` does not apply). Team arrays span the full `count` grid.
+The field code `w` is context-dependent: per-player `players.*.w` is the
+active-weapon id (carry-forward `int16`, raw `STAT_ACTIVEWEAPON`), while the
+team aggregate `teams.*.w` is the count of players holding RL or LG.
 
 There is no per-life table: it would be a bucket-resolution approximation
 that undercounts a death+respawn falling in one window. A same-window

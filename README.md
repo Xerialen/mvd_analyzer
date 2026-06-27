@@ -515,7 +515,7 @@ drop out (they duplicated `streams.global.matchStart` / `matchEnd` —
 
 Every breaking change bumps `CurrentSchemaVersion` (currently `37`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
-The full per-field reference and the complete v4–v35 migration table live
+The full per-field reference and the complete v4–v37 migration table live
 in [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
 
 ### Running the pipeline
