@@ -408,12 +408,13 @@ per-weapon, given/taken, and the EWep victim-weapon buckets — from the
 KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
 shots (per-shot weapon-fire stream — who fired what at exactly what ms,
 from `svc_sound` fire sounds + LG cell-ammo — with same-frame hitscan→damage
-links, entity-tracked rocket/grenade→impact links, and a KTX-accuracy
-cross-check),
+links, entity-tracked rocket/grenade→impact links, per-victim
+enemy/team/self classification, and a KTX-accuracy cross-check),
 aim (per-player aim analysis derived from shots + streams + damage —
 normalized crosshair-error samples for hitscan, LG ramp-onto-target, rocket
-direct/splash, and LG reach/whiff; exact target attribution in duels, a
-labeled nearest-crosshair heuristic in team games),
+direct/splash, LG reach/whiff, and enemy/team/self hit-counter slices;
+exact target attribution in duels, a labeled nearest-crosshair heuristic
+in team games),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
 `//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
@@ -835,15 +836,18 @@ diff -r /tmp/before /tmp/after
    crosshair error is computed against the player it attributes each shot
    to. A **hit** attributes to its server-confirmed victim (exact; nearest
    by crosshair error when a pellet fire hit several — can be a teammate on
-   team damage). A **miss** has no confirmed target: in a **duel** the one
-   enemy is exact (`mode: "duel"`); in a **team game** it is a heuristic —
-   the live enemy nearest the crosshair at the fire time (`mode: "team"`),
-   so a missed shot tracking one opponent while another crosses closer to
-   the crosshair can be mis-attributed. Misses are only attributed to an
-   enemy whose position track brackets the fire time and who is alive at
-   it. The rocket "direct hit" count is likewise a heuristic (non-splash
-   damage events ≈ direct contacts). These are labeled in the data so
-   consumers can disambiguate.
+   team damage, flagged per sample since v45). A **miss** has no confirmed
+   target: in a **duel** the one enemy is exact (`mode: "duel"`); in a
+   **team game** it is a heuristic — the live enemy nearest the crosshair
+   at the fire time (`mode: "team"`), so a missed shot tracking one
+   opponent while another crosses closer to the crosshair can be
+   mis-attributed. Misses are only attributed to an enemy whose position
+   track brackets the fire time and who is alive at it. The rocket
+   "direct hit" count is likewise a heuristic (non-splash damage events ≈
+   direct contacts). These are labeled in the data so consumers can
+   disambiguate. Hit counts include team and self hits (server parity) —
+   the v45 `victimKinds` / per-bucket splits let consumers separate them
+   (a rocket jump is a self hit, not an enemy hit).
 
 ## Reference sources
 

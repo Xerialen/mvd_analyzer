@@ -2355,6 +2355,342 @@
             1193143,
             1193671
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "ocoini",
             "DobeZz",
@@ -3033,6 +3369,13 @@
         "team": "'tbg",
         "weapons": [
           {
+            "enemy": {
+              "full": 71,
+              "hits": 175,
+              "miss": 124,
+              "partial": 104,
+              "pelletHits": 701
+            },
             "full": 72,
             "hits": 176,
             "miss": 123,
@@ -3040,6 +3383,12 @@
             "pelletHits": 707,
             "pellets": 1794,
             "shots": 299,
+            "team": {
+              "full": 1,
+              "hits": 1,
+              "miss": 298,
+              "pelletHits": 6
+            },
             "weapon": "sg"
           },
           {
@@ -3053,8 +3402,17 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 102
+            },
             "hits": 105,
+            "self": {
+              "hits": 17
+            },
             "shots": 172,
+            "team": {
+              "hits": 11
+            },
             "weapon": "rl"
           },
           {
@@ -5738,6 +6096,387 @@
             1193617,
             1194605
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             ".N3ophyt3.",
             "nexus",
@@ -6506,6 +7245,13 @@
         "team": "'\u003e\u003c\u003e",
         "weapons": [
           {
+            "enemy": {
+              "full": 55,
+              "hits": 167,
+              "miss": 207,
+              "partial": 112,
+              "pelletHits": 664
+            },
             "full": 58,
             "hits": 171,
             "miss": 203,
@@ -6513,6 +7259,13 @@
             "pelletHits": 684,
             "pellets": 2244,
             "shots": 374,
+            "team": {
+              "full": 3,
+              "hits": 5,
+              "miss": 369,
+              "partial": 2,
+              "pelletHits": 20
+            },
             "weapon": "sg"
           },
           {
@@ -6526,12 +7279,27 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 35
+            },
             "hits": 36,
+            "self": {
+              "hits": 3
+            },
             "shots": 75,
+            "team": {
+              "hits": 3
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {
+              "hits": 2
+            },
             "hits": 3,
+            "self": {
+              "hits": 2
+            },
             "shots": 20,
             "weapon": "gl"
           },
@@ -8980,6 +9748,354 @@
             1186584,
             1187088
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "biggz",
             "paniagua",
@@ -9682,6 +10798,13 @@
         "team": "'\u003e\u003c\u003e",
         "weapons": [
           {
+            "enemy": {
+              "full": 70,
+              "hits": 161,
+              "miss": 158,
+              "partial": 91,
+              "pelletHits": 676
+            },
             "full": 71,
             "hits": 162,
             "miss": 157,
@@ -9689,6 +10812,13 @@
             "pelletHits": 693,
             "pellets": 1914,
             "shots": 319,
+            "team": {
+              "full": 1,
+              "hits": 5,
+              "miss": 314,
+              "partial": 4,
+              "pelletHits": 17
+            },
             "weapon": "sg"
           },
           {
@@ -9702,13 +10832,31 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 55
+            },
             "hits": 61,
+            "self": {
+              "hits": 14
+            },
             "shots": 121,
+            "team": {
+              "hits": 7
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {
+              "hits": 6
+            },
             "hits": 7,
+            "self": {
+              "hits": 3
+            },
             "shots": 23,
+            "team": {
+              "hits": 1
+            },
             "weapon": "gl"
           },
           {
@@ -13374,6 +14522,528 @@
             1189266,
             1192353
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "gore",
             "gore",
@@ -14424,6 +16094,13 @@
         "team": "'tbg",
         "weapons": [
           {
+            "enemy": {
+              "full": 112,
+              "hits": 265,
+              "miss": 219,
+              "partial": 153,
+              "pelletHits": 1113
+            },
             "full": 115,
             "hits": 270,
             "miss": 214,
@@ -14431,6 +16108,13 @@
             "pelletHits": 1135,
             "pellets": 2904,
             "shots": 484,
+            "team": {
+              "full": 3,
+              "hits": 5,
+              "miss": 479,
+              "partial": 2,
+              "pelletHits": 22
+            },
             "weapon": "sg"
           },
           {
@@ -14444,12 +16128,27 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 80
+            },
             "hits": 84,
+            "self": {
+              "hits": 3
+            },
             "shots": 138,
+            "team": {
+              "hits": 8
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {
+              "hits": 2
+            },
             "hits": 2,
+            "self": {
+              "hits": 1
+            },
             "shots": 8,
             "weapon": "gl"
           },
@@ -17857,6 +19556,491 @@
             1184547,
             1185988
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "biggz",
             "biggz",
@@ -18833,6 +21017,13 @@
         "team": "'\u003e\u003c\u003e",
         "weapons": [
           {
+            "enemy": {
+              "full": 83,
+              "hits": 169,
+              "miss": 292,
+              "partial": 86,
+              "pelletHits": 715
+            },
             "full": 88,
             "hits": 175,
             "miss": 286,
@@ -18840,6 +21031,13 @@
             "pelletHits": 753,
             "pellets": 2766,
             "shots": 461,
+            "team": {
+              "full": 4,
+              "hits": 10,
+              "miss": 451,
+              "partial": 6,
+              "pelletHits": 38
+            },
             "weapon": "sg"
           },
           {
@@ -18853,8 +21051,17 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 47
+            },
             "hits": 49,
+            "self": {
+              "hits": 8
+            },
             "shots": 82,
+            "team": {
+              "hits": 4
+            },
             "weapon": "rl"
           },
           {
@@ -20705,6 +22912,268 @@
             1198418,
             1199690
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "anni",
             "anni",
@@ -21235,6 +23704,13 @@
         "team": "'tbg",
         "weapons": [
           {
+            "enemy": {
+              "full": 48,
+              "hits": 105,
+              "miss": 100,
+              "partial": 57,
+              "pelletHits": 450
+            },
             "full": 51,
             "hits": 107,
             "miss": 98,
@@ -21242,9 +23718,23 @@
             "pelletHits": 468,
             "pellets": 1230,
             "shots": 205,
+            "team": {
+              "full": 1,
+              "hits": 4,
+              "miss": 201,
+              "partial": 3,
+              "pelletHits": 18
+            },
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "full": 8,
+              "hits": 43,
+              "miss": 12,
+              "partial": 35,
+              "pelletHits": 293
+            },
             "full": 8,
             "hits": 43,
             "miss": 12,
@@ -21252,11 +23742,26 @@
             "pelletHits": 305,
             "pellets": 770,
             "shots": 55,
+            "team": {
+              "hits": 2,
+              "miss": 53,
+              "partial": 2,
+              "pelletHits": 12
+            },
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 99
+            },
             "hits": 105,
+            "self": {
+              "hits": 15
+            },
             "shots": 193,
+            "team": {
+              "hits": 14
+            },
             "weapon": "rl"
           },
           {
@@ -25097,6 +27602,553 @@
             1192009,
             1198475
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             ".N3ophyt3.",
             ".N3ophyt3.",
@@ -26197,6 +29249,13 @@
         "team": "'\u003e\u003c\u003e",
         "weapons": [
           {
+            "enemy": {
+              "full": 104,
+              "hits": 231,
+              "miss": 276,
+              "partial": 127,
+              "pelletHits": 1021
+            },
             "full": 107,
             "hits": 236,
             "miss": 271,
@@ -26204,6 +29263,13 @@
             "pelletHits": 1044,
             "pellets": 3042,
             "shots": 507,
+            "team": {
+              "full": 3,
+              "hits": 6,
+              "miss": 501,
+              "partial": 3,
+              "pelletHits": 23
+            },
             "weapon": "sg"
           },
           {
@@ -26217,12 +29283,27 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 46
+            },
             "hits": 47,
+            "self": {
+              "hits": 7
+            },
             "shots": 80,
+            "team": {
+              "hits": 1
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {
+              "hits": 4
+            },
             "hits": 5,
+            "self": {
+              "hits": 3
+            },
             "shots": 21,
             "weapon": "gl"
           },
@@ -28461,6 +31542,324 @@
             1190737,
             1191454
           ],
+          "team": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "ocoini",
             "ocoini",
@@ -29103,6 +32502,13 @@
         "team": "'tbg",
         "weapons": [
           {
+            "enemy": {
+              "full": 59,
+              "hits": 119,
+              "miss": 161,
+              "partial": 60,
+              "pelletHits": 537
+            },
             "full": 60,
             "hits": 120,
             "miss": 160,
@@ -29110,6 +32516,12 @@
             "pelletHits": 541,
             "pellets": 1680,
             "shots": 280,
+            "team": {
+              "hits": 3,
+              "miss": 277,
+              "partial": 3,
+              "pelletHits": 4
+            },
             "weapon": "sg"
           },
           {
@@ -29123,13 +32535,31 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 72
+            },
             "hits": 76,
+            "self": {
+              "hits": 14
+            },
             "shots": 129,
+            "team": {
+              "hits": 7
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {
+              "hits": 7
+            },
             "hits": 11,
+            "self": {
+              "hits": 5
+            },
             "shots": 31,
+            "team": {
+              "hits": 2
+            },
             "weapon": "gl"
           },
           {
@@ -86481,19 +89911,22 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 44,
+  "schemaVersion": 45,
   "shots": {
     "byPlayer": [
       {
         "byWeapon": [
           {
             "accuracy": 0.5886287625418061,
+            "enemyHits": 175,
             "hits": 176,
             "shots": 299,
+            "teamHits": 1,
             "weapon": "sg"
           },
           {
             "accuracy": 0.8285714285714286,
+            "enemyHits": 29,
             "hits": 29,
             "shots": 35,
             "weapon": "ssg"
@@ -86504,14 +89937,18 @@
           },
           {
             "accuracy": 0.1875,
+            "enemyHits": 3,
             "hits": 3,
             "shots": 16,
             "weapon": "gl"
           },
           {
             "accuracy": 0.6104651162790697,
+            "enemyHits": 102,
             "hits": 105,
+            "selfHits": 17,
             "shots": 172,
+            "teamHits": 11,
             "weapon": "rl"
           }
         ],
@@ -86523,12 +89960,15 @@
         "byWeapon": [
           {
             "accuracy": 0.4572192513368984,
+            "enemyHits": 167,
             "hits": 171,
             "shots": 374,
+            "teamHits": 5,
             "weapon": "sg"
           },
           {
             "accuracy": 0.4,
+            "enemyHits": 2,
             "hits": 2,
             "shots": 5,
             "weapon": "ssg"
@@ -86539,14 +89979,19 @@
           },
           {
             "accuracy": 0.15,
+            "enemyHits": 2,
             "hits": 3,
+            "selfHits": 2,
             "shots": 20,
             "weapon": "gl"
           },
           {
             "accuracy": 0.48,
+            "enemyHits": 35,
             "hits": 36,
+            "selfHits": 3,
             "shots": 75,
+            "teamHits": 3,
             "weapon": "rl"
           }
         ],
@@ -86558,12 +90003,15 @@
         "byWeapon": [
           {
             "accuracy": 0.5078369905956113,
+            "enemyHits": 161,
             "hits": 162,
             "shots": 319,
+            "teamHits": 5,
             "weapon": "sg"
           },
           {
             "accuracy": 0.48148148148148145,
+            "enemyHits": 13,
             "hits": 13,
             "shots": 27,
             "weapon": "ssg"
@@ -86574,14 +90022,20 @@
           },
           {
             "accuracy": 0.30434782608695654,
+            "enemyHits": 6,
             "hits": 7,
+            "selfHits": 3,
             "shots": 23,
+            "teamHits": 1,
             "weapon": "gl"
           },
           {
             "accuracy": 0.5041322314049587,
+            "enemyHits": 55,
             "hits": 61,
+            "selfHits": 14,
             "shots": 121,
+            "teamHits": 7,
             "weapon": "rl"
           }
         ],
@@ -86593,12 +90047,15 @@
         "byWeapon": [
           {
             "accuracy": 0.5578512396694215,
+            "enemyHits": 265,
             "hits": 270,
             "shots": 484,
+            "teamHits": 5,
             "weapon": "sg"
           },
           {
             "accuracy": 0.75,
+            "enemyHits": 27,
             "hits": 27,
             "shots": 36,
             "weapon": "ssg"
@@ -86609,14 +90066,19 @@
           },
           {
             "accuracy": 0.25,
+            "enemyHits": 2,
             "hits": 2,
+            "selfHits": 1,
             "shots": 8,
             "weapon": "gl"
           },
           {
             "accuracy": 0.6086956521739131,
+            "enemyHits": 80,
             "hits": 84,
+            "selfHits": 3,
             "shots": 138,
+            "teamHits": 8,
             "weapon": "rl"
           }
         ],
@@ -86628,12 +90090,15 @@
         "byWeapon": [
           {
             "accuracy": 0.3796095444685466,
+            "enemyHits": 169,
             "hits": 175,
             "shots": 461,
+            "teamHits": 10,
             "weapon": "sg"
           },
           {
             "accuracy": 0.6363636363636364,
+            "enemyHits": 14,
             "hits": 14,
             "shots": 22,
             "weapon": "ssg"
@@ -86648,8 +90113,11 @@
           },
           {
             "accuracy": 0.5975609756097561,
+            "enemyHits": 47,
             "hits": 49,
+            "selfHits": 8,
             "shots": 82,
+            "teamHits": 4,
             "weapon": "rl"
           }
         ],
@@ -86661,14 +90129,18 @@
         "byWeapon": [
           {
             "accuracy": 0.5219512195121951,
+            "enemyHits": 105,
             "hits": 107,
             "shots": 205,
+            "teamHits": 4,
             "weapon": "sg"
           },
           {
             "accuracy": 0.7818181818181819,
+            "enemyHits": 43,
             "hits": 43,
             "shots": 55,
+            "teamHits": 2,
             "weapon": "ssg"
           },
           {
@@ -86677,8 +90149,11 @@
           },
           {
             "accuracy": 0.5440414507772021,
+            "enemyHits": 99,
             "hits": 105,
+            "selfHits": 15,
             "shots": 193,
+            "teamHits": 14,
             "weapon": "rl"
           }
         ],
@@ -86690,12 +90165,15 @@
         "byWeapon": [
           {
             "accuracy": 0.46548323471400394,
+            "enemyHits": 231,
             "hits": 236,
             "shots": 507,
+            "teamHits": 6,
             "weapon": "sg"
           },
           {
             "accuracy": 0.6578947368421053,
+            "enemyHits": 25,
             "hits": 25,
             "shots": 38,
             "weapon": "ssg"
@@ -86706,14 +90184,19 @@
           },
           {
             "accuracy": 0.23809523809523808,
+            "enemyHits": 4,
             "hits": 5,
+            "selfHits": 3,
             "shots": 21,
             "weapon": "gl"
           },
           {
             "accuracy": 0.5875,
+            "enemyHits": 46,
             "hits": 47,
+            "selfHits": 7,
             "shots": 80,
+            "teamHits": 1,
             "weapon": "rl"
           }
         ],
@@ -86725,12 +90208,15 @@
         "byWeapon": [
           {
             "accuracy": 0.42857142857142855,
+            "enemyHits": 119,
             "hits": 120,
             "shots": 280,
+            "teamHits": 3,
             "weapon": "sg"
           },
           {
             "accuracy": 0.75,
+            "enemyHits": 27,
             "hits": 27,
             "shots": 36,
             "weapon": "ssg"
@@ -86745,14 +90231,20 @@
           },
           {
             "accuracy": 0.3548387096774194,
+            "enemyHits": 7,
             "hits": 11,
+            "selfHits": 5,
             "shots": 31,
+            "teamHits": 2,
             "weapon": "gl"
           },
           {
             "accuracy": 0.5891472868217055,
+            "enemyHits": 72,
             "hits": 76,
+            "selfHits": 14,
             "shots": 129,
+            "teamHits": 7,
             "weapon": "rl"
           }
         ],
@@ -87299,6 +90791,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 8930,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -87414,6 +90910,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 9741,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -87678,6 +91178,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 11837,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -87831,6 +91335,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 13498,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -87936,6 +91443,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 16326,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "biggz",
           "ocoini"
@@ -88507,6 +92018,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 30345,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "anni"
         ],
@@ -88574,6 +92088,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 30956,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "anni"
         ],
@@ -88603,6 +92120,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 31058,
+        "victimKinds": [
+          "enemy",
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "anni",
@@ -88733,6 +92255,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 33533,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -88997,6 +92523,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 39674,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "nexus"
@@ -89143,6 +92673,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 43858,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "biggz"
         ],
@@ -89222,6 +92755,11 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 45206,
+        "victimKinds": [
+          "enemy",
+          "self",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "ocoini",
@@ -89368,6 +92906,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 47193,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -89478,6 +93020,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 50721,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "biggz"
@@ -89988,6 +93534,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 61739,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "nexus"
@@ -90011,6 +93561,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 61908,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           ".N3ophyt3."
@@ -90095,6 +93649,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 63256,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           ".N3ophyt3.",
           "gore"
@@ -90904,6 +94462,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 83468,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "nexus"
@@ -91052,6 +94614,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 86584,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -91312,6 +94878,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 91832,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "anni",
           "biggz"
@@ -91324,6 +94894,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 91858,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -91730,6 +95303,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 108013,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -92032,6 +95608,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 119318,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "anni",
           ".N3ophyt3."
@@ -92070,6 +95650,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 119883,
+        "victimKinds": [
+          "enemy",
+          "enemy",
+          "team"
+        ],
         "victims": [
           "ocoini",
           "anni",
@@ -92235,6 +95820,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 122935,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "nexus"
@@ -92331,6 +95920,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 124713,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "gore"
         ],
@@ -92451,6 +96043,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 126273,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -92865,6 +96460,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 133862,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -93188,6 +96787,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 138753,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "DobeZz"
@@ -93962,6 +97565,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 161472,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -94031,6 +97637,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 162280,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -94042,6 +97651,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 162519,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -94262,6 +97874,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 168823,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "nexus"
         ],
@@ -94327,6 +97942,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 170593,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "biggz",
           "DobeZz"
@@ -94368,6 +97987,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 172147,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "nexus"
@@ -94380,6 +98003,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 172316,
+        "victimKinds": [
+          "team",
+          "self"
+        ],
         "victims": [
           "nexus",
           "paniagua"
@@ -94508,6 +98135,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 180147,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3."
@@ -94920,6 +98551,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 191975,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "gore"
@@ -95138,6 +98773,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 200247,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3."
@@ -95519,6 +99158,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 217835,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           ".N3ophyt3.",
           "anni"
@@ -95574,6 +99217,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 219150,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "DobeZz",
           "biggz"
@@ -95647,6 +99294,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 221786,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -96103,6 +99754,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 239259,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "biggz"
         ],
@@ -96135,6 +99789,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 240095,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -96165,6 +99823,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 240498,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "gore"
         ],
@@ -96176,6 +99837,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 240708,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "anni",
           "paniagua"
@@ -96195,6 +99860,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 240905,
+        "victimKinds": [
+          "team",
+          "team"
+        ],
         "victims": [
           "nexus",
           ".N3ophyt3."
@@ -96228,6 +99897,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 241818,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -96265,6 +99938,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 243874,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -96673,6 +100349,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 250990,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "ocoini",
           "biggz"
@@ -96714,6 +100394,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 253704,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "nexus"
@@ -98037,6 +101721,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 273341,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -98421,6 +102109,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 289416,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "DobeZz"
@@ -98509,6 +102201,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 292402,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "paniagua"
@@ -98542,6 +102238,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 293209,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "paniagua"
@@ -98738,6 +102438,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 296000,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -98919,6 +102623,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 299657,
+        "victimKinds": [
+          "enemy",
+          "team",
+          "enemy"
+        ],
         "victims": [
           "gore",
           "paniagua",
@@ -98992,6 +102701,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 301007,
+        "victimKinds": [
+          "enemy",
+          "team",
+          "team"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3.",
@@ -99117,6 +102831,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 304795,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "nexus"
@@ -99316,6 +103034,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 310801,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -99448,6 +103170,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 312600,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "anni"
         ],
@@ -100228,6 +103953,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 335983,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "anni",
           "biggz"
@@ -101053,6 +104782,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 357470,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           ".N3ophyt3."
@@ -101090,6 +104823,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 358277,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           ".N3ophyt3."
@@ -101188,6 +104925,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 360269,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "ocoini",
           "paniagua"
@@ -102023,6 +105764,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 381602,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "nexus"
         ],
@@ -102920,6 +106664,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 404142,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -102993,6 +106741,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 405389,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "nexus",
           "ocoini"
@@ -103154,6 +106906,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 407018,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -103808,6 +107563,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 427269,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "nexus",
           "anni"
@@ -104089,6 +107848,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 437941,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "paniagua"
@@ -104144,6 +107907,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 439967,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           ".N3ophyt3."
@@ -104496,6 +108263,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 455986,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "ocoini",
           "paniagua"
@@ -104826,6 +108597,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 471753,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "biggz"
@@ -104997,6 +108772,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 477152,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           ".N3ophyt3."
         ],
@@ -105239,6 +109017,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 482825,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "DobeZz",
           ".N3ophyt3."
@@ -105312,6 +109094,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 483935,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -105364,6 +109150,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 484518,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -105750,6 +109539,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 493088,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "anni"
         ],
@@ -106250,6 +110042,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 505224,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "nexus",
           "ocoini"
@@ -106309,6 +110105,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 507241,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -106850,6 +110649,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 519596,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "biggz",
           "DobeZz"
@@ -106941,6 +110744,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 522020,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           ".N3ophyt3."
         ],
@@ -107058,6 +110864,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 525262,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "anni",
           "biggz"
@@ -107147,6 +110957,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 526150,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "ocoini",
           "biggz"
@@ -107274,6 +111088,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 528324,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           ".N3ophyt3."
@@ -107467,6 +111285,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 535608,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "ocoini"
@@ -107486,6 +111308,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 536413,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "ocoini"
@@ -107755,6 +111581,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 542803,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "paniagua"
@@ -107767,6 +111597,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 542803,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "paniagua",
           "anni"
@@ -107801,6 +111635,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 543423,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "paniagua",
           "DobeZz"
@@ -108587,6 +112425,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 563024,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -108668,6 +112509,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 565170,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -109122,6 +112967,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 575688,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -109183,6 +113031,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 577713,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "DobeZz",
           "nexus"
@@ -109650,6 +113502,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 601302,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "DobeZz",
           "biggz"
@@ -109701,6 +113557,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 601660,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "biggz"
         ],
@@ -109775,6 +113634,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 602311,
+        "victimKinds": [
+          "enemy",
+          "team",
+          "self"
+        ],
         "victims": [
           "gore",
           "biggz",
@@ -109852,6 +113716,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 603297,
+        "victimKinds": [
+          "team",
+          "enemy",
+          "team"
+        ],
         "victims": [
           "biggz",
           "gore",
@@ -109919,6 +113788,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 604285,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "nexus",
           "DobeZz"
@@ -110032,6 +113905,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 608731,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "paniagua",
           "DobeZz"
@@ -110093,6 +113970,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 616219,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -110122,6 +114002,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 617016,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -110378,6 +114261,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 625375,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -110526,6 +114412,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 627544,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -110544,6 +114433,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 627757,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "gore"
         ],
@@ -110646,6 +114538,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 631075,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           ".N3ophyt3."
         ],
@@ -110768,6 +114663,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 632362,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "nexus"
@@ -111014,6 +114913,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 644343,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "biggz"
@@ -111117,6 +115020,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 649901,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -111128,6 +115034,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 649932,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           ".N3ophyt3."
@@ -111819,6 +115729,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 667867,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "nexus"
@@ -111864,6 +115778,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 668218,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "nexus"
         ],
@@ -111929,6 +115846,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 669505,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3."
@@ -112189,6 +116110,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 675998,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3."
@@ -112270,6 +116195,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 677763,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -112311,6 +116240,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 678738,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "gore",
           "biggz"
@@ -112412,6 +116345,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 682348,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "paniagua"
@@ -112587,6 +116524,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 688452,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "anni",
           "biggz"
@@ -112784,6 +116725,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 691322,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3."
@@ -112843,6 +116788,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 692784,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "gore"
         ],
@@ -113279,6 +117227,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 702128,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "anni"
@@ -113377,6 +117329,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 705478,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "biggz"
         ],
@@ -113830,6 +117785,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 714179,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "ocoini",
           ".N3ophyt3."
@@ -114327,6 +118286,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 724032,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           ".N3ophyt3."
@@ -114753,6 +118716,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 733283,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           ".N3ophyt3."
@@ -114934,6 +118901,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 736578,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "biggz"
         ],
@@ -115506,6 +119476,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 748505,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "anni",
           ".N3ophyt3."
@@ -115576,6 +119550,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 752102,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           ".N3ophyt3.",
           "gore"
@@ -115673,6 +119651,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 764427,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -115941,6 +119923,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 776235,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -116281,6 +120266,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 787360,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -116464,6 +120452,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 793818,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           "biggz"
@@ -116530,6 +120522,11 @@
         "source": "sound",
         "team": "'tbg",
         "time": 797830,
+        "victimKinds": [
+          "enemy",
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "ocoini",
@@ -117939,6 +121936,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 832417,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "biggz"
         ],
@@ -118385,6 +122385,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 846628,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -118430,6 +122434,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 847431,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "anni"
         ],
@@ -118770,6 +122777,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 861231,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           ".N3ophyt3."
@@ -118836,6 +122847,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 866606,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "paniagua",
           "DobeZz"
@@ -119160,6 +123175,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 871906,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -119566,6 +123584,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 886854,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           ".N3ophyt3."
         ],
@@ -119602,6 +123623,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 888558,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "gore"
         ],
@@ -119656,6 +123680,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 890372,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "biggz"
         ],
@@ -119945,6 +123972,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 900049,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "nexus"
@@ -120004,6 +124035,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 901122,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "paniagua"
         ],
@@ -120037,6 +124071,11 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 901508,
+        "victimKinds": [
+          "team",
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           "nexus",
@@ -120086,6 +124125,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 902922,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -120105,6 +124148,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 903434,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           ".N3ophyt3."
@@ -120980,6 +125027,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 938351,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -121056,6 +125107,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 939150,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -121157,6 +125212,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 941768,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "DobeZz",
           "biggz"
@@ -121266,6 +125325,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 944111,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -121744,6 +125807,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 969306,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -121835,6 +125902,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 973789,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "anni"
@@ -122630,6 +126701,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 987113,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "anni",
           ".N3ophyt3."
@@ -123138,6 +127213,11 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 993049,
+        "victimKinds": [
+          "team",
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "nexus",
@@ -123332,6 +127412,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 994565,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -123534,6 +127618,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1000111,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -124279,6 +128367,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1025266,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "gore",
           "paniagua"
@@ -124761,6 +128853,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1031010,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -124823,6 +128919,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1032204,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "paniagua",
           "ocoini"
@@ -125062,6 +129162,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1039318,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -125167,6 +129270,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1041434,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -125494,6 +129600,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1049723,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -125715,6 +129824,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1055905,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "DobeZz",
           ".N3ophyt3."
@@ -125791,6 +129904,11 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1057585,
+        "victimKinds": [
+          "enemy",
+          "team",
+          "self"
+        ],
         "victims": [
           ".N3ophyt3.",
           "anni",
@@ -126968,6 +131086,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1088676,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           ".N3ophyt3.",
           "anni"
@@ -126987,6 +131109,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1089084,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -127234,6 +131360,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1106665,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "nexus"
         ],
@@ -127245,6 +131374,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1107132,
+        "victimKinds": [
+          "team",
+          "self"
+        ],
         "victims": [
           "gore",
           "anni"
@@ -127332,6 +131465,11 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1109421,
+        "victimKinds": [
+          "team",
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "nexus",
@@ -127472,6 +131610,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1111395,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "anni"
@@ -127680,6 +131822,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1117050,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           ".N3ophyt3.",
           "ocoini"
@@ -127916,6 +132062,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1121733,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           ".N3ophyt3."
         ],
@@ -128200,6 +132349,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1128395,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "DobeZz"
         ],
@@ -128222,6 +132374,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1128786,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -128481,6 +132637,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1138266,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "ocoini"
         ],
@@ -128774,6 +132933,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1151168,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "DobeZz",
           "nexus"
@@ -129481,6 +133644,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1173001,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "nexus"
         ],
@@ -129510,6 +133676,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1173451,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "anni"
@@ -129536,6 +133706,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1173888,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "nexus",
           "anni"
@@ -129580,6 +133754,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1175279,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           ".N3ophyt3.",
           "anni"
@@ -129709,6 +133887,10 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1176454,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "ocoini",
           "paniagua"
@@ -130452,6 +134634,9 @@
         "source": "sound",
         "team": "'tbg",
         "time": 1184925,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "nexus"
         ],
@@ -131142,6 +135327,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1192631,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "ocoini",
           "nexus"
@@ -131235,6 +135424,9 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1195474,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "gore"
         ],
@@ -131349,6 +135541,10 @@
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
         "time": 1199822,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "biggz",
           "gore"

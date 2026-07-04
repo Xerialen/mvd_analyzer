@@ -902,6 +902,12 @@ table tbody tr:hover {
     flex-wrap: wrap;
 }
 
+/* The player picker lives inside the Crosshair placement panel (it only
+   drives the per-player plots); give the in-panel strip its own spacing. */
+#aim-heatmap-panel .aim-controls {
+    margin-bottom: 10px;
+}
+
 .aim-controls-label {
     color: #888;
     font-size: 0.85rem;
@@ -963,8 +969,18 @@ table tbody tr:hover {
     color: var(--accent-cyan);
 }
 
+/* LG and SG sit side by side where the pane is wide enough (each column is
+   ~570px of canvas + hists) and wrap to a stack on narrow panes. */
+.aim-heatmap-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 32px;
+    align-items: flex-start;
+}
+
 .aim-heatmap-block {
     margin-top: 14px;
+    min-width: 0;
 }
 
 /* Smoothed crosshair-density image; intrinsic size set by drawAimDensity.

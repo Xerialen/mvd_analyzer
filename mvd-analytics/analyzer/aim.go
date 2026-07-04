@@ -115,7 +115,7 @@ func aimPost(res *Result, co *CoreOutputs) {
 				continue
 			}
 			dmgByPlayer[d.Attacker] = append(dmgByPlayer[d.Attacker],
-				&dmgRec{t: d.Time, weapon: d.Weapon, dmg: d.Damage, splash: d.IsSplash})
+				&dmgRec{t: d.Time, weapon: d.Weapon, dmg: d.Damage, splash: d.IsSplash, team: d.IsTeam})
 		}
 	}
 
@@ -131,13 +131,54 @@ func aimPost(res *Result, co *CoreOutputs) {
 }
 
 // dmgRec is one damage event by the player (for sizing pellet hits and direct
-// contacts); used marks it consumed by a same-frame hitscan fire.
+// contacts); used marks it consumed by a same-frame hitscan fire. team splits
+// the pellet/direct counters by victim class (self damage is excluded at
+// collection, so enemy is simply !team).
 type dmgRec struct {
 	t      int32
 	weapon string
 	dmg    int
 	splash bool
+	team   bool
 	used   bool
+}
+
+// aimSplitAgg accumulates one weapon's per-victim-class counter slices while
+// the top-level WeaponAim counters are built; attached at emission only when
+// a team or self hit makes them differ from the top-level counters.
+type aimSplitAgg struct {
+	enemy, team, self WeaponAimSplit
+}
+
+// shotKindOf returns the victim class of name on sh ("enemy"/"team"/"self").
+// A nil VictimKinds means every victim is an enemy — the wire omits the
+// all-enemy case (see result.Shot).
+func shotKindOf(sh *Shot, name string) string {
+	if sh.VictimKinds == nil {
+		return "enemy"
+	}
+	for i, v := range sh.Victims {
+		if v == name && i < len(sh.VictimKinds) {
+			return sh.VictimKinds[i]
+		}
+	}
+	return "enemy"
+}
+
+// shotHasKind reports whether any of sh's victims is of the given class.
+func shotHasKind(sh *Shot, kind string) bool {
+	if len(sh.Victims) == 0 {
+		return false
+	}
+	if sh.VictimKinds == nil {
+		return kind == "enemy"
+	}
+	for _, k := range sh.VictimKinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
 }
 
 func computePlayerAim(player string, shots []Shot, tracks map[string]*result.PositionTrack, teamOf map[string]string, dmg []*dmgRec, streams *Streams, aliveAt func(string, int32) bool) *PlayerAim {
@@ -168,6 +209,8 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 
 	// ── Crosshair (hitscan) error to the attributed target ──
 	cs := &CrosshairSamples{}
+	var csTeam []bool
+	csAnyTeam := false
 	for _, sh := range shots {
 		if !aimHitscan[sh.Weapon] || !trackCovers(shooterTrack, sh.Time) {
 			continue
@@ -186,8 +229,10 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		var tgt string
 		var e aimErr
 		var found bool
+		fromVictims := false
 		if len(sh.Victims) > 0 {
 			tgt, e, found = aimAttribute(ss, sh.Time, sh.Victims, tracks, nil)
+			fromVictims = found
 		}
 		if !found {
 			tgt, e, found = aimAttribute(ss, sh.Time, enemies, tracks, aliveAt)
@@ -204,13 +249,23 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		cs.Dist = append(cs.Dist, float32(e.dist))
 		cs.Hit = append(cs.Hit, sh.Hit)
 		cs.Target = append(cs.Target, tgt)
+		// The victim class is only knowable for a confirmed victim; the
+		// miss/fallback heuristic attributes to enemies by construction.
+		isTeam := fromVictims && shotKindOf(&sh, tgt) == "team"
+		csTeam = append(csTeam, isTeam)
+		csAnyTeam = csAnyTeam || isTeam
 	}
 	if len(cs.T) > 0 {
+		if csAnyTeam {
+			cs.Team = csTeam
+		}
 		pa.Crosshair = cs
 	}
 
 	// ── LG ramp onto target ──
 	ramp := &LGRampSamples{}
+	var rampTeam []bool
+	rampAnyTeam := false
 	var shaftStart, prev int32
 	started := false
 	for _, sh := range shots {
@@ -223,9 +278,17 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		}
 		ramp.Since = append(ramp.Since, sh.Time-shaftStart)
 		ramp.Hit = append(ramp.Hit, sh.Hit)
+		// A fire that connected but hit no enemy is a teammate-only hit —
+		// flagged so consumers can score the ramp per victim class.
+		teamOnly := sh.Hit && !shotHasKind(&sh, "enemy") && shotHasKind(&sh, "team")
+		rampTeam = append(rampTeam, teamOnly)
+		rampAnyTeam = rampAnyTeam || teamOnly
 		prev = sh.Time
 	}
 	if len(ramp.Since) > 0 {
+		if rampAnyTeam {
+			ramp.Team = rampTeam
+		}
 		pa.LGRamp = ramp
 	}
 
@@ -239,70 +302,124 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		}
 		return wagg[w]
 	}
+	// Per-weapon victim-class slices, accumulated alongside the top-level
+	// counters and attached at emission only when they differ from them.
+	splits := make(map[string]*aimSplitAgg)
+	getS := func(w string) *aimSplitAgg {
+		if splits[w] == nil {
+			splits[w] = &aimSplitAgg{}
+		}
+		return splits[w]
+	}
 	for _, sh := range shots {
 		wa := getW(sh.Weapon)
 		wa.Shots++
 		if sh.Hit {
 			wa.Hits++
+			sp := getS(sh.Weapon)
+			if shotHasKind(&sh, "enemy") {
+				sp.enemy.Hits++
+			}
+			if shotHasKind(&sh, "team") {
+				sp.team.Hits++
+			}
+			if shotHasKind(&sh, "self") {
+				sp.self.Hits++
+			}
 		}
 	}
 
 	// SG/SSG: size pellet hits from same-frame damage (Σ/4) and split each
-	// fire into full / partial / whiff.
+	// fire into full / partial / whiff — overall and per victim class (the
+	// per-fire damage sum splits exactly by dmgRec.team, except when the
+	// perFire clamp triggers, e.g. quad-multiplied damage, where the
+	// enemy/team allocation within that fire is approximate).
 	for wn, perFire := range aimPellets {
 		wa := wagg[wn]
 		if wa == nil {
 			continue
 		}
 		wa.Pellets = wa.Shots * perFire
+		sp := getS(wn)
+		classify := func(ph int, full, partial, miss *int) {
+			switch {
+			case ph <= 0:
+				(*miss)++
+			case ph >= perFire:
+				(*full)++
+			default:
+				(*partial)++
+			}
+		}
 		for _, sh := range shots {
 			if sh.Weapon != wn {
 				continue
 			}
-			sum := 0
+			sum, sumTeam := 0, 0
 			for _, d := range dmg {
 				if d.used || d.weapon != wn || absInt32(d.t-sh.Time) > hitscanLinkWindowMs {
 					continue
 				}
 				d.used = true
 				sum += d.dmg
+				if d.team {
+					sumTeam += d.dmg
+				}
 			}
 			ph := sum / aimPelletDamage
 			if ph > perFire {
 				ph = perFire
 			}
-			wa.PelletHits += ph
-			switch {
-			case ph <= 0:
-				wa.Miss++
-			case ph >= perFire:
-				wa.Full++
-			default:
-				wa.Partial++
+			phTeam := sumTeam / aimPelletDamage
+			if phTeam > ph {
+				phTeam = ph
 			}
+			phEnemy := ph - phTeam
+			wa.PelletHits += ph
+			sp.enemy.PelletHits += phEnemy
+			sp.team.PelletHits += phTeam
+			classify(ph, &wa.Full, &wa.Partial, &wa.Miss)
+			classify(phEnemy, &sp.enemy.Full, &sp.enemy.Partial, &sp.enemy.Miss)
+			classify(phTeam, &sp.team.Full, &sp.team.Partial, &sp.team.Miss)
 		}
 	}
 
 	// RL/GL: direct (non-splash contacts) vs splash-only vs missed. Only when
-	// projectile linking ran, else Hit is unreliable.
+	// projectile linking ran, else Hit is unreliable. Direct splits by victim
+	// class from the damage records (self direct is protocol-impossible — a
+	// missile ignores its owner for collision — so self hits are splash-only).
 	if streams.Projectiles != nil {
 		for _, wn := range []string{"rl", "gl"} {
 			wa := wagg[wn]
 			if wa == nil {
 				continue
 			}
-			direct := 0
+			directE, directT := 0, 0
 			for _, d := range dmg {
 				if d.weapon == wn && !d.splash {
-					direct++
+					if d.team {
+						directT++
+					} else {
+						directE++
+					}
 				}
 			}
+			direct := directE + directT
 			if direct > wa.Hits {
 				direct = wa.Hits
 			}
 			wa.Direct = direct
 			wa.Splash = wa.Hits - direct
 			wa.Missed = wa.Shots - wa.Hits
+			sp := getS(wn)
+			if directE > sp.enemy.Hits {
+				directE = sp.enemy.Hits
+			}
+			if directT > sp.team.Hits {
+				directT = sp.team.Hits
+			}
+			sp.enemy.Direct = directE
+			sp.team.Direct = directT
 		}
 	}
 
@@ -353,7 +470,22 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 
 	sort.SliceStable(worder, func(i, j int) bool { return aimWeaponRank(worder[i]) < aimWeaponRank(worder[j]) })
 	for _, w := range worder {
-		pa.Weapons = append(pa.Weapons, *wagg[w])
+		wa := wagg[w]
+		// Attach the victim-class slices only when they differ from the
+		// top-level counters (≥1 team or self hit): Team/Self iff their
+		// bucket connected, Enemy alongside so consumers never mix a split
+		// with an unsplit fallback.
+		if sp := splits[w]; sp != nil && (sp.team.Hits > 0 || sp.self.Hits > 0) {
+			enemy, team, self := sp.enemy, sp.team, sp.self
+			wa.Enemy = &enemy
+			if team.Hits > 0 {
+				wa.Team = &team
+			}
+			if self.Hits > 0 {
+				wa.Self = &self
+			}
+		}
+		pa.Weapons = append(pa.Weapons, *wa)
 	}
 
 	// A player with no computable block adds nothing.

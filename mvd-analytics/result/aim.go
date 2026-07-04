@@ -45,7 +45,10 @@ type PlayerAim struct {
 // attributed target. All slices share one index. DYaw/DPitch are signed
 // degrees (right/up positive); NYaw/NPitch are those divided by the target's
 // angular half-width/half-height at Dist. Dist is the eye→target-center
-// distance in Quake units.
+// distance in Quake units. Team flags samples whose attributed target is a
+// teammate (a hit's confirmed victim — misses attribute to enemies only);
+// nil when no sample is team-attributed. Self targets cannot occur here:
+// the samples are hitscan-only and a hitscan trace cannot hit its shooter.
 type CrosshairSamples struct {
 	T      []int32   `json:"t"`
 	Weapon []string  `json:"w"`
@@ -56,14 +59,18 @@ type CrosshairSamples struct {
 	Dist   []float32 `json:"dist"`
 	Hit    []bool    `json:"hit"`
 	Target []string  `json:"tgt"`
+	Team   []bool    `json:"team,omitempty"`
 }
 
 // LGRampSamples is the columnar per-LG-fire "ramp onto target" series. Since
 // is milliseconds since the start of the shaft the fire belongs to (fires
-// less than the shaft-gap apart are one shaft). Hit shares the index.
+// less than the shaft-gap apart are one shaft). Hit shares the index. Team
+// flags fires that connected but hit no enemy (teammate-only victims); nil
+// when none.
 type LGRampSamples struct {
 	Since []int32 `json:"since"`
 	Hit   []bool  `json:"hit"`
+	Team  []bool  `json:"team,omitempty"`
 }
 
 // WeaponAim is one weapon's effectiveness for a player. Shots (fires) and Hits
@@ -86,6 +93,18 @@ type WeaponAim struct {
 	Shots  int    `json:"shots"`
 	Hits   int    `json:"hits"`
 
+	// Enemy/Team/Self slice the hit counters by victim class (see
+	// Shot.VictimKinds); a multi-victim fire counts in every bucket it has a
+	// victim in. Emission: Team/Self appear iff the weapon had ≥1 team-/self-
+	// victim hit; Enemy appears iff Team or Self does (i.e. iff it differs
+	// from the top-level counters — consumers fall back to those otherwise).
+	// Shots/Pellets and the LG miss classes are not split: misses have no
+	// victim (the miss heuristic targets enemies by construction). Per bucket,
+	// splash = hits − direct and missed = shots − hits.
+	Enemy *WeaponAimSplit `json:"enemy,omitempty"`
+	Team  *WeaponAimSplit `json:"team,omitempty"`
+	Self  *WeaponAimSplit `json:"self,omitempty"`
+
 	Pellets    int `json:"pellets,omitempty"`
 	PelletHits int `json:"pelletHits,omitempty"`
 	Full       int `json:"full,omitempty"`
@@ -100,4 +119,21 @@ type WeaponAim struct {
 	Blocked    int `json:"blocked,omitempty"`
 	OutOfRange int `json:"outOfRange,omitempty"`
 	Unresolved int `json:"unresolved,omitempty"`
+}
+
+// WeaponAimSplit is one victim-class slice (enemy / team / self) of a
+// weapon's hit counters — same semantics as the WeaponAim fields of the same
+// names, restricted to that bucket's victims. The SG/SSG per-fire split
+// (Full/Partial/Miss) and PelletHits are exact per fire except when the
+// per-fire pellet clamp triggers (e.g. quad-multiplied damage), where the
+// enemy/team allocation within that fire is approximate. Self hits are
+// always splash (a missile cannot collide with its owner), so a Self split
+// never sets Direct and never has pellet counters (hitscan cannot self-hit).
+type WeaponAimSplit struct {
+	Hits       int `json:"hits,omitempty"`
+	PelletHits int `json:"pelletHits,omitempty"`
+	Full       int `json:"full,omitempty"`
+	Partial    int `json:"partial,omitempty"`
+	Miss       int `json:"miss,omitempty"`
+	Direct     int `json:"direct,omitempty"`
 }

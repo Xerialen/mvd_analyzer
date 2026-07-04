@@ -256,6 +256,119 @@ func TestAimPostDuelKillingBlowKept(t *testing.T) {
 	}
 }
 
+// A team-victim hit flags its crosshair sample and slices the per-weapon
+// counters: the Team split carries the team hit/pellets, the Enemy split is
+// emitted alongside (all-zero here — every hit was friendly fire) so the
+// consumer's enemy view never falls back to the unsplit counters. A second,
+// all-enemy player gets no Team column and no splits at all.
+func TestAimPostTeamHitSplits(t *testing.T) {
+	res := &result.Result{
+		Shots: &result.ShotsResult{
+			Shots: []result.Shot{
+				// A shotguns teammate C: 12 damage = 3 of 6 pellets.
+				{Time: 1000, Player: "A", Team: "red", Weapon: "sg", Hit: true,
+					Victims: []string{"C"}, VictimKinds: []string{"team"}},
+				// B shotguns enemy A: the common all-enemy case (kinds omitted).
+				{Time: 2000, Player: "B", Team: "blue", Weapon: "sg", Hit: true,
+					Victims: []string{"A"}},
+			},
+			ByPlayer: []result.PlayerShots{
+				{Player: "A", Team: "red"},
+				{Player: "B", Team: "blue"},
+				{Player: "C", Team: "red"},
+			},
+		},
+		Damage: &result.DamageResult{
+			Events: []result.DamageEntry{
+				{Time: 1000, Attacker: "A", Victim: "C", Weapon: "sg", Damage: 12, IsTeam: true},
+				{Time: 2000, Attacker: "B", Victim: "A", Weapon: "sg", Damage: 24},
+			},
+		},
+		Streams: &result.Streams{
+			Players: []result.PlayerStream{
+				aimTrack("A", 0, 0, 0, 3000),
+				aimTrack("B", 1000, 0, 0, 3000),
+				aimTrack("C", 1000, 300, 0, 3000),
+			},
+		},
+	}
+	aimPost(res, nil)
+	if res.Aim == nil || len(res.Aim.Players) != 2 {
+		t.Fatalf("expected 2 aim players, got %+v", res.Aim)
+	}
+	pa, pb := res.Aim.Players[0], res.Aim.Players[1]
+
+	// A: the sample targets teammate C and is Team-flagged.
+	if pa.Crosshair == nil || len(pa.Crosshair.T) != 1 || pa.Crosshair.Target[0] != "C" {
+		t.Fatalf("A crosshair = %+v, want 1 sample targeting C", pa.Crosshair)
+	}
+	if len(pa.Crosshair.Team) != 1 || !pa.Crosshair.Team[0] {
+		t.Errorf("A crosshair Team = %v, want [true]", pa.Crosshair.Team)
+	}
+	sg := findWeaponAim(pa, "sg")
+	if sg == nil || sg.Hits != 1 || sg.PelletHits != 3 {
+		t.Fatalf("A sg = %+v, want hits1 pelletHits3", sg)
+	}
+	if sg.Team == nil || sg.Team.Hits != 1 || sg.Team.PelletHits != 3 || sg.Team.Partial != 1 {
+		t.Errorf("A sg Team split = %+v, want hits1 pelletHits3 partial1", sg.Team)
+	}
+	if sg.Enemy == nil || sg.Enemy.Hits != 0 || sg.Enemy.PelletHits != 0 || sg.Enemy.Miss != 1 {
+		t.Errorf("A sg Enemy split = %+v, want emitted all-zero hits with miss1", sg.Enemy)
+	}
+	if sg.Self != nil {
+		t.Errorf("A sg Self split = %+v, want nil (hitscan cannot self-hit)", sg.Self)
+	}
+
+	// B: all-enemy — no Team column, no splits (consumers fall back to the
+	// top-level counters).
+	if pb.Crosshair == nil || pb.Crosshair.Team != nil {
+		t.Fatalf("B crosshair = %+v, want samples with nil Team", pb.Crosshair)
+	}
+	bsg := findWeaponAim(pb, "sg")
+	if bsg == nil || bsg.Hits != 1 || bsg.Enemy != nil || bsg.Team != nil || bsg.Self != nil {
+		t.Errorf("B sg = %+v, want hits1 with no splits", bsg)
+	}
+}
+
+// A connected LG fire whose only victims are teammates is Team-flagged on the
+// ramp (consumers score enemy ramp hit% as hit && !team); an enemy hit in the
+// same shaft stays unflagged.
+func TestAimPostRampTeamFlag(t *testing.T) {
+	res := &result.Result{
+		Shots: &result.ShotsResult{
+			Shots: []result.Shot{
+				{Time: 1000, Player: "A", Team: "red", Weapon: "lg", Hit: true,
+					Victims: []string{"C"}, VictimKinds: []string{"team"}},
+				{Time: 1050, Player: "A", Team: "red", Weapon: "lg", Hit: true,
+					Victims: []string{"B"}},
+			},
+			ByPlayer: []result.PlayerShots{
+				{Player: "A", Team: "red"},
+				{Player: "B", Team: "blue"},
+				{Player: "C", Team: "red"},
+			},
+		},
+		Streams: &result.Streams{
+			Players: []result.PlayerStream{
+				aimTrack("A", 0, 0, 0, 3000),
+				aimTrack("B", 1000, 0, 0, 3000),
+				aimTrack("C", 1000, 300, 0, 3000),
+			},
+		},
+	}
+	aimPost(res, nil)
+	if res.Aim == nil || len(res.Aim.Players) != 1 {
+		t.Fatalf("expected 1 aim player, got %+v", res.Aim)
+	}
+	ramp := res.Aim.Players[0].LGRamp
+	if ramp == nil || len(ramp.Since) != 2 {
+		t.Fatalf("lgRamp = %+v, want 2 fires", ramp)
+	}
+	if len(ramp.Team) != 2 || !ramp.Team[0] || ramp.Team[1] {
+		t.Errorf("lgRamp Team = %v, want [true false]", ramp.Team)
+	}
+}
+
 // A miss whose beam ends far from any enemy is "blocked", not a near miss.
 func TestAimPostReachBlocked(t *testing.T) {
 	res := &result.Result{

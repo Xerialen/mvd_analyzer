@@ -10765,11 +10765,19 @@ const AIM_YAW_W = 0.25; // marginal-histogram yaw bin width
 let aimPlayer = null;
 let aimPlayersList = [];
 
+// Victim-class filter for the whole tab: 'all' | 'enemy' | 'team' | 'self'.
+// 'all' is the default — it preserves the server-parity numbers (KTX counts
+// team and self hits too).
+let aimVictimFilter = 'all';
+
 // initAimStatsView runs once per demo: build the player chip selector + the
-// (player-independent) weapon tables, then render the per-player panels.
+// victim filter + the (player-independent) weapon tables, then render the
+// per-player panels.
 function initAimStatsView(result) {
     aimPlayer = null;
+    aimVictimFilter = 'all';
     buildAimChips(result);
+    buildAimVictimToggle(result);
     renderAimWeaponTables(result);
     renderAimStats();
 }
@@ -10810,6 +10818,29 @@ function buildAimChips(result) {
     }
 }
 
+// buildAimVictimToggle wires the Enemy/Team/Self/All filter buttons (static
+// in the HTML) and hides the Team option in duels — there are no teammates,
+// while Enemy vs All still differ via RL/GL self-splash.
+function buildAimVictimToggle(result) {
+    const box = document.getElementById('aim-victim-toggle');
+    if (!box) return;
+    const players = (result && result.aim && result.aim.players) || [];
+    const duel = players.length > 0 && players.every(p => p.mode === 'duel');
+    const teamBtn = box.querySelector('.aim-chip[data-kind="team"]');
+    if (teamBtn) teamBtn.style.display = duel ? 'none' : '';
+    if (duel && aimVictimFilter === 'team') aimVictimFilter = 'all';
+    if (!box._aimWired) {
+        box.querySelectorAll('.aim-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                aimVictimFilter = btn.dataset.kind;
+                renderAimWeaponTables(currentResult);
+                renderAimStats();
+            });
+        });
+        box._aimWired = true;
+    }
+}
+
 function renderAimStats() {
     const result = currentResult;
     const aim = result && result.aim;
@@ -10830,6 +10861,8 @@ function renderAimStats() {
     const pa = aim.players.find(p => p.player === aimPlayer);
     const box = document.getElementById('aim-player-chips');
     if (box) box.querySelectorAll('.aim-chip').forEach(b => b.classList.toggle('active', b.dataset.player === aimPlayer));
+    const vt = document.getElementById('aim-victim-toggle');
+    if (vt) vt.querySelectorAll('.aim-chip').forEach(b => b.classList.toggle('active', b.dataset.kind === aimVictimFilter));
 
     renderAimMode(pa);
     renderAimHeatmap(pa);
@@ -10889,9 +10922,33 @@ const AIM_TABLE_COLS = {
 };
 const AIM_WEAPON_ORDER = ['lg', 'sg', 'ssg', 'rl', 'gl'];
 
+// aimWeaponView projects a WeaponAim onto the active victim filter so the
+// AIM_COL cell functions stay bucket-agnostic. The analyzer emits the enemy
+// split only when it differs from the top-level counters, so its absence
+// means enemy == all; team/self splits are absent when that bucket never
+// connected (zeros). Shots (and pellets fired) are filter-independent —
+// per-bucket splash/missed derive from them (splash = hits − direct,
+// missed = shots − hits). LG near/blocked/far ride through unchanged:
+// misses have no victim, so they don't move with the filter.
+function aimWeaponView(w) {
+    if (!w || aimVictimFilter === 'all') return w;
+    if (aimVictimFilter === 'enemy' && !w.enemy) return w;
+    const s = (aimVictimFilter === 'enemy' ? w.enemy
+        : aimVictimFilter === 'team' ? w.team : w.self) || {};
+    const hits = s.hits || 0, direct = s.direct || 0;
+    return {
+        ...w, hits, direct,
+        pelletHits: s.pelletHits || 0,
+        full: s.full || 0, partial: s.partial || 0, miss: s.miss || 0,
+        splash: Math.max(0, hits - direct),
+        missed: (w.shots || 0) - hits,
+    };
+}
+
 // renderAimWeaponTables builds one table per weapon, rows = players (all who
 // fired anything; "-" where they didn't fire this weapon), team-coloured like
-// the Summary tab. Player-independent.
+// the Summary tab. Player-independent (re-rendered when the victim filter
+// changes).
 function renderAimWeaponTables(result) {
     const container = document.getElementById('aim-weapon-tables');
     if (!container) return;
@@ -10904,7 +10961,7 @@ function renderAimWeaponTables(result) {
         const cols = (AIM_TABLE_COLS[wn] || []).map(k => AIM_COL[k]);
         const rows = players.map(pa => ({
             player: pa.player, team: pa.team,
-            w: (pa.weapons || []).find(x => x.weapon === wn) || null,
+            w: aimWeaponView((pa.weapons || []).find(x => x.weapon === wn) || null),
         }));
         if (!rows.some(r => r.w)) continue; // weapon nobody fired → no table
         rows.sort((a, b) => (b.w ? b.w.shots : -1) - (a.w ? a.w.shots : -1));
@@ -10941,15 +10998,42 @@ function renderAimHeatmap(pa) {
     renderAimHeatmapWeapon(pa, 'sg', 'aim-heatmap-sg');
 }
 
+// aimSampleInFilter applies the victim filter to one crosshair sample. Only
+// hits can be team-attributed (misses attribute to enemies by construction),
+// and hitscan samples can never be self-hits — so 'self' matches nothing.
+function aimSampleInFilter(c, i) {
+    switch (aimVictimFilter) {
+        case 'enemy': return !(c.team && c.team[i]);
+        case 'team': return !!(c.team && c.team[i]);
+        case 'self': return false;
+        default: return true;
+    }
+}
+
+function aimNodataText(weapon) {
+    const W = weapon.toUpperCase();
+    switch (aimVictimFilter) {
+        case 'enemy': return `No ${W} samples on enemies for this player.`;
+        case 'team': return `No ${W} samples on teammates for this player.`;
+        case 'self': return 'Self-hits are RL/GL splash only — no hitscan samples.';
+        default: return `No ${W} fired by this player.`;
+    }
+}
+
 function renderAimHeatmapWeapon(pa, weapon, prefix) {
     const nodata = document.getElementById(`${prefix}-nodata`);
     const canvas = document.getElementById(`${prefix}-canvas`);
     const c = pa.crosshair;
     const idx = [];
     if (c && c.t) {
-        for (let i = 0; i < c.t.length; i++) if (c.w[i] === weapon) idx.push(i);
+        for (let i = 0; i < c.t.length; i++) {
+            if (c.w[i] === weapon && aimSampleInFilter(c, i)) idx.push(i);
+        }
     }
-    if (nodata) nodata.style.display = idx.length ? 'none' : '';
+    if (nodata) {
+        nodata.style.display = idx.length ? 'none' : '';
+        if (!idx.length) nodata.textContent = aimNodataText(weapon);
+    }
     if (canvas) canvas.style.display = idx.length ? '' : 'none';
     renderAimHistRow(prefix, c, idx, weapon === 'lg' ? pa.lgRamp : null);
     if (!idx.length || !canvas) return;
@@ -11234,11 +11318,21 @@ const AIM_RAMP_BIN = 100; // ms
 const AIM_RAMP_BINS = 12; // 0-1100 ms, then 1100+
 
 function buildAimRampHist(ramp) {
+    // Score each fire under the victim filter: ramp.team flags fires that
+    // connected but hit no enemy (teammate-only), so enemy = hit && !team,
+    // team = hit && team. The denominator stays all LG fires — the ramp is
+    // hit% of fires, whatever they hit.
+    const rampHitAt = i => {
+        const t = !!(ramp.team && ramp.team[i]);
+        if (aimVictimFilter === 'enemy') return ramp.hit[i] && !t;
+        if (aimVictimFilter === 'team') return ramp.hit[i] && t;
+        return ramp.hit[i];
+    };
     const bins = Array.from({ length: AIM_RAMP_BINS }, () => ({ shots: 0, hits: 0 }));
     for (let i = 0; i < ramp.since.length; i++) {
         const b = bins[Math.min(AIM_RAMP_BINS - 1, Math.floor(ramp.since[i] / AIM_RAMP_BIN))];
         b.shots++;
-        if (ramp.hit[i]) b.hits++;
+        if (rampHitAt(i)) b.hits++;
     }
     const pctOf = b => (b.shots ? b.hits / b.shots * 100 : 0);
     const yMax = Math.max(10, Math.ceil(Math.max(...bins.map(pctOf)) / 10) * 10);

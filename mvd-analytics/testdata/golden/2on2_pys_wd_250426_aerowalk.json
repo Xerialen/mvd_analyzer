@@ -1683,6 +1683,246 @@
             595386,
             595491
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "wd.char",
             "wd.char",
@@ -2590,6 +2830,219 @@
             0,
             107,
             212
+          ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
           ]
         },
         "mode": "team",
@@ -2597,8 +3050,14 @@
         "team": "pys",
         "weapons": [
           {
+            "enemy": {
+              "hits": 58
+            },
             "hits": 60,
             "shots": 211,
+            "team": {
+              "hits": 2
+            },
             "weapon": "lg"
           },
           {
@@ -2612,13 +3071,26 @@
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 86
+            },
             "hits": 99,
+            "self": {
+              "hits": 21
+            },
             "shots": 226,
+            "team": {
+              "hits": 8
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {},
             "hits": 1,
             "shots": 10,
+            "team": {
+              "hits": 1
+            },
             "weapon": "gl"
           },
           {
@@ -5809,13 +6281,31 @@
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 54
+            },
             "hits": 60,
+            "self": {
+              "hits": 12
+            },
             "shots": 152,
+            "team": {
+              "hits": 5
+            },
             "weapon": "rl"
           },
           {
+            "enemy": {
+              "hits": 3
+            },
             "hits": 4,
+            "self": {
+              "hits": 1
+            },
             "shots": 15,
+            "team": {
+              "hits": 1
+            },
             "weapon": "gl"
           }
         ]
@@ -10024,8 +10514,17 @@
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 83
+            },
             "hits": 99,
+            "self": {
+              "hits": 34
+            },
             "shots": 207,
+            "team": {
+              "hits": 8
+            },
             "weapon": "rl"
           },
           {
@@ -11717,6 +12216,246 @@
             572725,
             581686
           ],
+          "team": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
           "tgt": [
             "wd.cao",
             "wd.char",
@@ -12470,6 +13209,13 @@
             "weapon": "lg"
           },
           {
+            "enemy": {
+              "full": 6,
+              "hits": 12,
+              "miss": 98,
+              "partial": 6,
+              "pelletHits": 54
+            },
             "full": 7,
             "hits": 13,
             "miss": 97,
@@ -12477,11 +13223,26 @@
             "pelletHits": 60,
             "pellets": 660,
             "shots": 110,
+            "team": {
+              "full": 1,
+              "hits": 1,
+              "miss": 109,
+              "pelletHits": 6
+            },
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 62
+            },
             "hits": 63,
+            "self": {
+              "hits": 2
+            },
             "shots": 163,
+            "team": {
+              "hits": 2
+            },
             "weapon": "rl"
           },
           {
@@ -34489,13 +35250,14 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 44,
+  "schemaVersion": 45,
   "shots": {
     "byPlayer": [
       {
         "byWeapon": [
           {
             "accuracy": 0.4444444444444444,
+            "enemyHits": 12,
             "hits": 12,
             "shots": 27,
             "weapon": "sg"
@@ -34508,18 +35270,24 @@
             "accuracy": 0.1,
             "hits": 1,
             "shots": 10,
+            "teamHits": 1,
             "weapon": "gl"
           },
           {
             "accuracy": 0.43805309734513276,
+            "enemyHits": 86,
             "hits": 99,
+            "selfHits": 21,
             "shots": 226,
+            "teamHits": 8,
             "weapon": "rl"
           },
           {
             "accuracy": 0.2843601895734597,
+            "enemyHits": 58,
             "hits": 60,
             "shots": 211,
+            "teamHits": 2,
             "weapon": "lg"
           }
         ],
@@ -34531,24 +35299,32 @@
         "byWeapon": [
           {
             "accuracy": 0.21686746987951808,
+            "enemyHits": 18,
             "hits": 18,
             "shots": 83,
             "weapon": "sg"
           },
           {
             "accuracy": 0.26666666666666666,
+            "enemyHits": 3,
             "hits": 4,
+            "selfHits": 1,
             "shots": 15,
+            "teamHits": 1,
             "weapon": "gl"
           },
           {
             "accuracy": 0.39473684210526316,
+            "enemyHits": 54,
             "hits": 60,
+            "selfHits": 12,
             "shots": 152,
+            "teamHits": 5,
             "weapon": "rl"
           },
           {
             "accuracy": 0.2626728110599078,
+            "enemyHits": 57,
             "hits": 57,
             "shots": 217,
             "weapon": "lg"
@@ -34562,6 +35338,7 @@
         "byWeapon": [
           {
             "accuracy": 0.02857142857142857,
+            "enemyHits": 1,
             "hits": 1,
             "shots": 35,
             "weapon": "sg"
@@ -34572,12 +35349,16 @@
           },
           {
             "accuracy": 0.4782608695652174,
+            "enemyHits": 83,
             "hits": 99,
+            "selfHits": 34,
             "shots": 207,
+            "teamHits": 8,
             "weapon": "rl"
           },
           {
             "accuracy": 0.34472934472934474,
+            "enemyHits": 121,
             "hits": 121,
             "shots": 351,
             "weapon": "lg"
@@ -34591,8 +35372,10 @@
         "byWeapon": [
           {
             "accuracy": 0.11818181818181818,
+            "enemyHits": 12,
             "hits": 13,
             "shots": 110,
+            "teamHits": 1,
             "weapon": "sg"
           },
           {
@@ -34601,18 +35384,23 @@
           },
           {
             "accuracy": 0.058823529411764705,
+            "enemyHits": 1,
             "hits": 1,
             "shots": 17,
             "weapon": "gl"
           },
           {
             "accuracy": 0.38650306748466257,
+            "enemyHits": 62,
             "hits": 63,
+            "selfHits": 2,
             "shots": 163,
+            "teamHits": 2,
             "weapon": "rl"
           },
           {
             "accuracy": 0.1484375,
+            "enemyHits": 19,
             "hits": 19,
             "shots": 128,
             "weapon": "lg"
@@ -34796,6 +35584,10 @@
         "source": "sound",
         "team": "wd",
         "time": 2806,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -34819,6 +35611,10 @@
         "source": "sound",
         "team": "wd",
         "time": 3727,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -34838,6 +35634,10 @@
         "source": "sound",
         "team": "wd",
         "time": 4533,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -35173,6 +35973,9 @@
         "source": "sound",
         "team": "wd",
         "time": 12923,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -35255,6 +36058,9 @@
         "source": "sound",
         "team": "pys",
         "time": 16596,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -35406,6 +36212,10 @@
         "source": "sound",
         "team": "pys",
         "time": 26464,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "wd.dilbert"
@@ -35717,6 +36527,9 @@
         "source": "sound",
         "team": "wd",
         "time": 31921,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -35753,6 +36566,10 @@
         "source": "sound",
         "team": "pys",
         "time": 34845,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -35772,6 +36589,10 @@
         "source": "sound",
         "team": "pys",
         "time": 35690,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -35798,6 +36619,9 @@
         "source": "sound",
         "team": "pys",
         "time": 36595,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -35809,6 +36633,10 @@
         "source": "sound",
         "team": "pys",
         "time": 37403,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -36104,6 +36932,9 @@
         "source": "sound",
         "team": "pys",
         "time": 47428,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -36126,6 +36957,9 @@
         "source": "sound",
         "team": "wd",
         "time": 48736,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -36500,6 +37334,10 @@
         "source": "sound",
         "team": "wd",
         "time": 57733,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.cao"
@@ -36547,6 +37385,10 @@
         "source": "sound",
         "team": "pys",
         "time": 60944,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -36581,6 +37423,10 @@
         "source": "sound",
         "team": "wd",
         "time": 61591,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "wd.cao",
           "wd.dilbert"
@@ -36764,6 +37610,9 @@
         "source": "sound",
         "team": "wd",
         "time": 70076,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -36817,6 +37666,10 @@
         "source": "sound",
         "team": "wd",
         "time": 72853,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -36876,6 +37729,9 @@
         "source": "sound",
         "team": "pys",
         "time": 76832,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -36929,6 +37785,10 @@
         "source": "sound",
         "team": "wd",
         "time": 78433,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -37047,6 +37907,11 @@
         "source": "sound",
         "team": "wd",
         "time": 81257,
+        "victimKinds": [
+          "enemy",
+          "team",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.cao",
@@ -37152,6 +38017,9 @@
         "source": "sound",
         "team": "pys",
         "time": 87056,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -37170,6 +38038,10 @@
         "source": "sound",
         "team": "pys",
         "time": 88247,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.cao",
           "psy*overon"
@@ -37211,6 +38083,10 @@
         "source": "sound",
         "team": "wd",
         "time": 88913,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -37223,6 +38099,10 @@
         "source": "sound",
         "team": "pys",
         "time": 89089,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.cao",
           "psy*overon"
@@ -37485,6 +38365,9 @@
         "source": "sound",
         "team": "wd",
         "time": 101882,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -37641,6 +38524,10 @@
         "source": "sound",
         "team": "wd",
         "time": 110600,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -37817,6 +38704,9 @@
         "source": "sound",
         "team": "pys",
         "time": 112432,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -38351,6 +39241,10 @@
         "source": "sound",
         "team": "pys",
         "time": 128637,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -38473,6 +39367,9 @@
         "source": "sound",
         "team": "wd",
         "time": 131401,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -39304,6 +40201,9 @@
         "source": "sound",
         "team": "wd",
         "time": 149487,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -39808,6 +40708,9 @@
         "source": "sound",
         "team": "wd",
         "time": 175142,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -39869,6 +40772,10 @@
         "source": "sound",
         "team": "wd",
         "time": 177702,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.cao"
@@ -40243,6 +41150,10 @@
         "source": "sound",
         "team": "wd",
         "time": 193818,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -40487,6 +41398,10 @@
         "source": "sound",
         "team": "wd",
         "time": 204546,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -40765,6 +41680,10 @@
         "source": "sound",
         "team": "wd",
         "time": 211182,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -41149,6 +42068,10 @@
         "source": "sound",
         "team": "wd",
         "time": 225961,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -41179,6 +42102,9 @@
         "source": "sound",
         "team": "wd",
         "time": 229702,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -41197,6 +42123,9 @@
         "source": "sound",
         "team": "wd",
         "time": 231117,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -41276,6 +42205,10 @@
         "source": "sound",
         "team": "pys",
         "time": 234818,
+        "victimKinds": [
+          "team",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "psy*overon"
@@ -41477,6 +42410,9 @@
         "source": "sound",
         "team": "wd",
         "time": 240178,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -41534,6 +42470,10 @@
         "source": "sound",
         "team": "wd",
         "time": 243233,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -41588,6 +42528,10 @@
         "source": "sound",
         "team": "wd",
         "time": 244156,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -41685,6 +42629,9 @@
         "source": "sound",
         "team": "pys",
         "time": 252192,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -41696,6 +42643,10 @@
         "source": "sound",
         "team": "wd",
         "time": 253025,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -41708,6 +42659,9 @@
         "source": "sound",
         "team": "pys",
         "time": 253109,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -41726,6 +42680,10 @@
         "source": "sound",
         "team": "wd",
         "time": 254753,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -41745,6 +42703,10 @@
         "source": "sound",
         "team": "pys",
         "time": 255256,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -41856,6 +42818,10 @@
         "source": "sound",
         "team": "wd",
         "time": 257702,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -41868,6 +42834,10 @@
         "source": "sound",
         "team": "wd",
         "time": 257719,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -42281,6 +43251,10 @@
         "source": "sound",
         "team": "wd",
         "time": 273828,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -42293,6 +43267,10 @@
         "source": "sound",
         "team": "wd",
         "time": 275182,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -42497,6 +43475,11 @@
         "source": "sound",
         "team": "pys",
         "time": 283542,
+        "victimKinds": [
+          "enemy",
+          "team",
+          "self"
+        ],
         "victims": [
           "wd.cao",
           "wd.dilbert",
@@ -42532,6 +43515,10 @@
         "source": "sound",
         "team": "wd",
         "time": 285181,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -42587,6 +43574,11 @@
         "source": "sound",
         "team": "pys",
         "time": 287165,
+        "victimKinds": [
+          "enemy",
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "wd.cao",
@@ -42931,6 +43923,9 @@
         "source": "sound",
         "team": "pys",
         "time": 301281,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -44459,6 +45454,10 @@
         "source": "sound",
         "team": "wd",
         "time": 346451,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -44559,6 +45558,10 @@
         "source": "sound",
         "team": "wd",
         "time": 349895,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -44614,6 +45617,10 @@
         "source": "sound",
         "team": "pys",
         "time": 352762,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.cao",
           "psy*overon"
@@ -45017,6 +46024,10 @@
         "source": "sound",
         "team": "wd",
         "time": 364089,
+        "victimKinds": [
+          "team",
+          "enemy"
+        ],
         "victims": [
           "wd.cao",
           "wd.dilbert"
@@ -45297,6 +46308,9 @@
         "source": "sound",
         "team": "wd",
         "time": 375659,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -45351,6 +46365,10 @@
         "source": "sound",
         "team": "wd",
         "time": 379077,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -45994,6 +47012,10 @@
         "source": "sound",
         "team": "wd",
         "time": 395996,
+        "victimKinds": [
+          "enemy",
+          "team"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -46006,6 +47028,10 @@
         "source": "sound",
         "team": "wd",
         "time": 396095,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -46488,6 +47514,9 @@
         "source": "sound",
         "team": "wd",
         "time": 414492,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -46584,6 +47613,9 @@
         "source": "sound",
         "team": "wd",
         "time": 419101,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -46655,6 +47687,10 @@
         "source": "sound",
         "team": "pys",
         "time": 420069,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.cao",
           "psy*overon"
@@ -46871,6 +47907,9 @@
         "source": "sound",
         "team": "pys",
         "time": 426823,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -46889,6 +47928,9 @@
         "source": "sound",
         "team": "wd",
         "time": 427483,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -47444,6 +48486,10 @@
         "source": "sound",
         "team": "wd",
         "time": 448447,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.cao"
@@ -47675,6 +48721,10 @@
         "source": "sound",
         "team": "wd",
         "time": 455129,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -48034,6 +49084,10 @@
         "source": "sound",
         "team": "pys",
         "time": 465584,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -48145,6 +49199,10 @@
         "source": "sound",
         "team": "pys",
         "time": 468142,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -48213,6 +49271,9 @@
         "source": "sound",
         "team": "pys",
         "time": 474028,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -48231,6 +49292,9 @@
         "source": "sound",
         "team": "pys",
         "time": 475563,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -48249,6 +49313,9 @@
         "source": "sound",
         "team": "wd",
         "time": 476142,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -48428,6 +49495,10 @@
         "source": "sound",
         "team": "wd",
         "time": 486959,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -48728,6 +49799,9 @@
         "source": "sound",
         "team": "wd",
         "time": 495726,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -49062,6 +50136,9 @@
         "source": "beam",
         "team": "pys",
         "time": 507029,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -49109,6 +50186,9 @@
         "source": "beam",
         "team": "pys",
         "time": 507233,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -49229,6 +50309,10 @@
         "source": "sound",
         "team": "wd",
         "time": 509447,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.cao"
@@ -49312,6 +50396,10 @@
         "source": "sound",
         "team": "pys",
         "time": 511581,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.char",
           "psy*overon"
@@ -49455,6 +50543,10 @@
         "source": "sound",
         "team": "pys",
         "time": 519076,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.cao",
           "wd.dilbert"
@@ -49728,6 +50820,10 @@
         "source": "sound",
         "team": "wd",
         "time": 528764,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.cao"
@@ -49833,6 +50929,10 @@
         "source": "sound",
         "team": "wd",
         "time": 531827,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "psy*overon",
           "wd.char"
@@ -50081,6 +51181,9 @@
         "source": "sound",
         "team": "wd",
         "time": 551932,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -50181,6 +51284,9 @@
         "source": "sound",
         "team": "pys",
         "time": 553608,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "psy*overon"
         ],
@@ -50249,6 +51355,9 @@
         "source": "sound",
         "team": "wd",
         "time": 560308,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -50310,6 +51419,10 @@
         "source": "sound",
         "team": "wd",
         "time": 561459,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "wd.dilbert",
           "wd.char"
@@ -50397,6 +51510,9 @@
         "source": "sound",
         "team": "pys",
         "time": 565478,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -50440,6 +51556,9 @@
         "source": "sound",
         "team": "pys",
         "time": 568608,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.dilbert"
         ],
@@ -50583,6 +51702,9 @@
         "source": "sound",
         "team": "wd",
         "time": 574776,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -50650,6 +51772,9 @@
         "source": "sound",
         "team": "wd",
         "time": 577015,
+        "victimKinds": [
+          "team"
+        ],
         "victims": [
           "wd.cao"
         ],
@@ -50668,6 +51793,9 @@
         "source": "sound",
         "team": "wd",
         "time": 578010,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],
@@ -51143,6 +52271,9 @@
         "source": "sound",
         "team": "wd",
         "time": 599915,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "wd.char"
         ],

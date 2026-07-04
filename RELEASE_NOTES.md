@@ -7,6 +7,32 @@ detail.
 
 ## 2026-07-04
 
+- **Shots/aim: enemy / team / self victim classification + Aim Stats
+  Victims cycle** (schema v45). Every linked victim is now classified
+  relative to the shooter — `enemy`, `team` (same non-empty team, not
+  self) or `self` (own wire slot: rl/gl self-splash, i.e. rocket jumps) —
+  mirroring the damage layer's `isSelf`/`isTeam` semantics, per victim
+  per fire (one rocket can splash an enemy, a teammate and the shooter at
+  once and counts in every bucket it has a victim in). `Shot` gains
+  `victimKinds`, `WeaponShots` gains `enemyHits`/`teamHits`/`selfHits`,
+  the aim crosshair/ramp samples gain a `team` column, and `WeaponAim`
+  gains `enemy`/`team`/`self` counter slices (`WeaponAimSplit`: hits,
+  pellet splits, direct — see RESULT_SCHEMA.md for the emission rules).
+  All additive; `hits`/`accuracy` stay all-victims for KTX scoreboard
+  parity. The Aim Stats tab gains a **Victims** filter
+  (All / Enemy / Team / Self) that slices the weapon tables, the
+  crosshair heatmaps + marginals and the LG ramp; **All** (default)
+  preserves the previous numbers, and **Enemy** is the first view where
+  rocket jumps no longer inflate RL hit % (they were always counted as
+  hits — now visible under Self). Duels hide the Team option (no
+  teammates); Self shows tables only (hitscan cannot self-hit, so there
+  are no self crosshair samples). The MCP `getAim` tool and `/aim` +
+  `/shots` endpoints carry the new fields automatically. Tab layout
+  reworked alongside: the Victims strip sits at the top of the tab, the
+  LG and SG crosshair blocks sit side by side where the pane is wide
+  enough (stacking on narrow panes), and the player picker moved into
+  the Crosshair placement panel — the only place it applies.
+
 - **Aim: hits attribute to the confirmed victim** (schema v44). The v43
   liveness gate excluded the victim of a killing blow from attribution —
   the kill lands in the same frame the victim dies, so `losAliveAt` read

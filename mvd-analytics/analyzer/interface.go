@@ -217,6 +217,7 @@ type (
 	CrosshairSamples       = result.CrosshairSamples
 	LGRampSamples          = result.LGRampSamples
 	WeaponAim              = result.WeaponAim
+	WeaponAimSplit         = result.WeaponAimSplit
 	MapEntitiesResult      = result.MapEntitiesResult
 	MapEntity              = result.MapEntity
 	Bounds                 = result.Bounds

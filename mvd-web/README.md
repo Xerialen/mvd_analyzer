@@ -74,9 +74,11 @@ viewport (no width cap). Sidebar order is `Search`, `Summary`,
 `Pickups`, `Aim Stats`.
 
 The **Aim Stats** tab (experimental) is a thin renderer over the Go-computed
-`result.aim` block: a per-player picker drives an accuracy table (counts plus
+`result.aim` block: all-players accuracy tables (counts plus
 share-of-fires % columns, so players with different shot volumes compare
-directly), a smoothed crosshair-density image (hitscan; a Gaussian-smoothed
+directly) and — driven by a per-player picker inside the Crosshair placement
+panel, the only place it applies — a smoothed crosshair-density image
+(hitscan; a Gaussian-smoothed
 2-D histogram on canvas with a colorbar, hull box marked; radius 1 ≈ the
 hitbox edge, so it's range-comparable) split into LG and SG, per-axis
 **yaw / pitch marginal histograms** stacked under each image (zero-centered
@@ -89,6 +91,13 @@ in `mvd-analytics/analyzer/aim.go`; the tab only bins and paints. Target
 attribution: hits use the server-confirmed victim (exact in duels and team
 games alike); misses are exact in duels and a labeled nearest-crosshair
 heuristic in team games, only among enemies alive at the fire time.
+A **Victims** filter (All / Enemy / Team / Self) slices every panel by who
+the shots hit — the tables read the Go-computed per-bucket counter slices
+(`WeaponAim.enemy/team/self`), the heatmaps/marginals filter samples by the
+per-sample `team` flag, and the LG ramp rescores its bars; **All** (the
+default) matches the server's authoritative numbers (KTX counts team and
+self hits too). Duels hide the Team option; Self (rl/gl self-splash —
+rocket jumps) has no crosshair samples, tables only.
 The **Key Moments** tab has three tables: powerup runs, longest frag
 streaks, and a full-width **Airborne Rocket Gibs** table — enemy rocket
 hits on airborne victims (`timelineAnalysis.airgibs`), sortable by any

@@ -16,6 +16,7 @@ func newTestShotsAnalyzer() (*ShotsAnalyzer, *Context) {
 		3: {Name: "shooter", Team: "red"},
 		0: {Name: "victimA", Team: "blue"},
 		1: {Name: "victimB", Team: "blue"},
+		2: {Name: "mate", Team: "red"},
 	}}
 	return a, ctx
 }
@@ -357,6 +358,84 @@ func TestShots_NailLinkingGatedOff(t *testing.T) {
 				t.Errorf("sng accuracy reported despite nails off: %+v", w)
 			}
 		}
+	}
+}
+
+// TestShots_VictimKindClassification classifies each linked victim relative
+// to the shooter (enemy / team / self, mirroring the damage layer), omits the
+// kinds on the wire for the common all-enemy case, and counts a multi-victim
+// fire in every aggregate bucket it has a victim in.
+func TestShots_VictimKindClassification(t *testing.T) {
+	a, _ := newTestShotsAnalyzer()
+
+	// 1. SG hit on an enemy: all-enemy kinds are encoded as absence.
+	_ = a.OnEvent(weaponSound(4, "weapons/guncock.wav", 1000))
+	_ = a.OnEvent(&events.DamageEvent{Attacker: 3, Victim: 0, DeathType: mvd.DtSG, Damage: 12, Time: 1.0})
+
+	// 2. SG hit on a teammate (slot 2, same team as the shooter).
+	_ = a.OnEvent(weaponSound(4, "weapons/guncock.wav", 2000))
+	_ = a.OnEvent(&events.DamageEvent{Attacker: 3, Victim: 2, DeathType: mvd.DtSG, Damage: 8, Time: 2.0})
+
+	// 3. RL self-splash (rocket jump): victim slot == attacker slot.
+	_ = a.OnEvent(weaponSound(4, "weapons/sgun1.wav", 3000))
+	_ = a.OnEvent(projSpawn(50, "rl", [3]float32{0, 0, 0}, 3000))
+	_ = a.OnEvent(projDespawn(50, "rl", 3100))
+	_ = a.OnEvent(rlDamage(3, 3, 3100))
+
+	// 4. One rocket splashing an enemy AND a teammate: kinds stay aligned
+	//    with victims, and the fire lands in both aggregate buckets.
+	_ = a.OnEvent(weaponSound(4, "weapons/sgun1.wav", 4000))
+	_ = a.OnEvent(projSpawn(51, "rl", [3]float32{0, 0, 0}, 4000))
+	_ = a.OnEvent(projDespawn(51, "rl", 4500))
+	_ = a.OnEvent(rlDamage(3, 0, 4500))
+	_ = a.OnEvent(rlDamage(3, 2, 4500))
+
+	r := &Result{}
+	_ = a.Finalize(r)
+
+	byTime := map[int32]*Shot{}
+	for i := range r.Shots.Shots {
+		byTime[r.Shots.Shots[i].Time] = &r.Shots.Shots[i]
+	}
+	if s := byTime[1000]; s == nil || !s.Hit || s.VictimKinds != nil {
+		t.Errorf("enemy sg shot = %+v, want hit with kinds omitted (all-enemy)", s)
+	}
+	if s := byTime[2000]; s == nil || !s.Hit || len(s.VictimKinds) != 1 || s.VictimKinds[0] != "team" {
+		t.Errorf("team sg shot = %+v, want kinds [team]", s)
+	}
+	if s := byTime[3000]; s == nil || !s.Hit || len(s.VictimKinds) != 1 || s.VictimKinds[0] != "self" {
+		t.Errorf("self rl shot = %+v, want kinds [self]", s)
+	}
+	if s := byTime[4000]; s == nil || !s.Hit || len(s.Victims) != 2 || len(s.VictimKinds) != 2 {
+		t.Fatalf("multi-victim rl shot = %+v, want 2 victims with kinds", s)
+	} else {
+		wantKind := map[string]string{"victimA": "enemy", "mate": "team"}
+		for i, v := range s.Victims {
+			if s.VictimKinds[i] != wantKind[v] {
+				t.Errorf("victim %q kind = %q, want %q", v, s.VictimKinds[i], wantKind[v])
+			}
+		}
+	}
+
+	var sg, rl *WeaponShots
+	for _, p := range r.Shots.ByPlayer {
+		if p.Player != "shooter" {
+			continue
+		}
+		for i := range p.ByWeapon {
+			switch p.ByWeapon[i].Weapon {
+			case "sg":
+				sg = &p.ByWeapon[i]
+			case "rl":
+				rl = &p.ByWeapon[i]
+			}
+		}
+	}
+	if sg == nil || sg.Hits != 2 || sg.EnemyHits != 1 || sg.TeamHits != 1 || sg.SelfHits != 0 {
+		t.Errorf("sg agg = %+v, want hits2 enemy1 team1 self0", sg)
+	}
+	if rl == nil || rl.Hits != 2 || rl.EnemyHits != 1 || rl.TeamHits != 1 || rl.SelfHits != 1 {
+		t.Errorf("rl agg = %+v, want hits2 enemy1 team1 self1 (buckets overlap)", rl)
 	}
 }
 

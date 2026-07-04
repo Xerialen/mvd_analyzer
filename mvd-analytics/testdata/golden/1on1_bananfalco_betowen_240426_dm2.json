@@ -261,7 +261,13 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 57
+            },
             "hits": 62,
+            "self": {
+              "hits": 16
+            },
             "shots": 168,
             "weapon": "rl"
           },
@@ -560,7 +566,13 @@
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 48
+            },
             "hits": 54,
+            "self": {
+              "hits": 13
+            },
             "shots": 159,
             "weapon": "rl"
           },
@@ -10269,19 +10281,21 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 44,
+  "schemaVersion": 45,
   "shots": {
     "byPlayer": [
       {
         "byWeapon": [
           {
             "accuracy": 0.3684210526315789,
+            "enemyHits": 7,
             "hits": 7,
             "shots": 19,
             "weapon": "sg"
           },
           {
             "accuracy": 0.16666666666666666,
+            "enemyHits": 1,
             "hits": 1,
             "shots": 6,
             "weapon": "ssg"
@@ -10292,7 +10306,9 @@
           },
           {
             "accuracy": 0.36904761904761907,
+            "enemyHits": 57,
             "hits": 62,
+            "selfHits": 16,
             "shots": 168,
             "weapon": "rl"
           }
@@ -10305,6 +10321,7 @@
         "byWeapon": [
           {
             "accuracy": 0.32142857142857145,
+            "enemyHits": 9,
             "hits": 9,
             "shots": 28,
             "weapon": "sg"
@@ -10315,13 +10332,16 @@
           },
           {
             "accuracy": 0.1111111111111111,
+            "enemyHits": 3,
             "hits": 3,
             "shots": 27,
             "weapon": "gl"
           },
           {
             "accuracy": 0.33962264150943394,
+            "enemyHits": 48,
             "hits": 54,
+            "selfHits": 13,
             "shots": 159,
             "weapon": "rl"
           }
@@ -10458,6 +10478,10 @@
         "source": "sound",
         "team": "coop",
         "time": 23922,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -10470,6 +10494,10 @@
         "source": "sound",
         "team": "red",
         "time": 24000,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -10585,6 +10613,10 @@
         "source": "sound",
         "team": "coop",
         "time": 39013,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -10633,6 +10665,9 @@
         "source": "sound",
         "team": "coop",
         "time": 49493,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "banan falco"
         ],
@@ -10683,6 +10718,9 @@
         "source": "sound",
         "team": "coop",
         "time": 52468,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "banan falco"
         ],
@@ -10828,6 +10866,10 @@
         "source": "sound",
         "team": "coop",
         "time": 80078,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -10858,6 +10900,10 @@
         "source": "sound",
         "team": "coop",
         "time": 80895,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -11055,6 +11101,9 @@
         "source": "sound",
         "team": "coop",
         "time": 113531,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "banan falco"
         ],
@@ -11272,6 +11321,10 @@
         "source": "sound",
         "team": "coop",
         "time": 133324,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -11603,6 +11656,9 @@
         "source": "sound",
         "team": "red",
         "time": 188751,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "betowen"
         ],
@@ -11685,6 +11741,9 @@
         "source": "sound",
         "team": "red",
         "time": 199193,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "betowen"
         ],
@@ -11769,6 +11828,9 @@
         "source": "sound",
         "team": "red",
         "time": 206985,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "betowen"
         ],
@@ -11801,6 +11863,9 @@
         "source": "sound",
         "team": "red",
         "time": 227426,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "betowen"
         ],
@@ -11865,6 +11930,10 @@
         "source": "sound",
         "team": "coop",
         "time": 244581,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -11962,6 +12031,9 @@
         "source": "sound",
         "team": "coop",
         "time": 263127,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "banan falco"
         ],
@@ -12238,6 +12310,10 @@
         "source": "sound",
         "team": "coop",
         "time": 336632,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -12250,6 +12326,10 @@
         "source": "sound",
         "team": "red",
         "time": 336671,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "banan falco",
           "betowen"
@@ -12287,6 +12367,10 @@
         "source": "sound",
         "team": "red",
         "time": 338308,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -12748,6 +12832,10 @@
         "source": "sound",
         "team": "red",
         "time": 411709,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -12760,6 +12848,10 @@
         "source": "sound",
         "team": "coop",
         "time": 411748,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -12894,6 +12986,10 @@
         "source": "sound",
         "team": "red",
         "time": 429684,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -13357,6 +13453,9 @@
         "source": "sound",
         "team": "coop",
         "time": 516436,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "banan falco"
         ],
@@ -13418,6 +13517,10 @@
         "source": "sound",
         "team": "coop",
         "time": 526461,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -13499,6 +13602,10 @@
         "source": "sound",
         "team": "coop",
         "time": 541163,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -13555,6 +13662,10 @@
         "source": "sound",
         "team": "red",
         "time": 543344,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -13625,6 +13736,9 @@
         "source": "sound",
         "team": "red",
         "time": 556850,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "betowen"
         ],
@@ -13781,6 +13895,10 @@
         "source": "sound",
         "team": "red",
         "time": 592220,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "betowen",
           "banan falco"
@@ -13814,6 +13932,9 @@
         "source": "sound",
         "team": "red",
         "time": 593850,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "betowen"
         ],
@@ -13843,6 +13964,10 @@
         "source": "sound",
         "team": "coop",
         "time": 595363,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "betowen",
           "banan falco"

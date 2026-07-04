@@ -3407,7 +3407,13 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 54
+            },
             "hits": 55,
+            "self": {
+              "hits": 14
+            },
             "shots": 119,
             "weapon": "rl"
           }
@@ -4274,7 +4280,13 @@
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 54
+            },
             "hits": 56,
+            "self": {
+              "hits": 9
+            },
             "shots": 121,
             "weapon": "rl"
           },
@@ -12838,31 +12850,36 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 44,
+  "schemaVersion": 45,
   "shots": {
     "byPlayer": [
       {
         "byWeapon": [
           {
             "accuracy": 0.6,
+            "enemyHits": 3,
             "hits": 3,
             "shots": 5,
             "weapon": "sg"
           },
           {
             "accuracy": 1,
+            "enemyHits": 1,
             "hits": 1,
             "shots": 1,
             "weapon": "ssg"
           },
           {
             "accuracy": 0.46218487394957986,
+            "enemyHits": 54,
             "hits": 55,
+            "selfHits": 14,
             "shots": 119,
             "weapon": "rl"
           },
           {
             "accuracy": 0.29906542056074764,
+            "enemyHits": 96,
             "hits": 96,
             "shots": 321,
             "weapon": "lg"
@@ -12876,6 +12893,7 @@
         "byWeapon": [
           {
             "accuracy": 0.3333333333333333,
+            "enemyHits": 3,
             "hits": 3,
             "shots": 9,
             "weapon": "sg"
@@ -12886,12 +12904,15 @@
           },
           {
             "accuracy": 0.4628099173553719,
+            "enemyHits": 54,
             "hits": 56,
+            "selfHits": 9,
             "shots": 121,
             "weapon": "rl"
           },
           {
             "accuracy": 0.2714285714285714,
+            "enemyHits": 19,
             "hits": 19,
             "shots": 70,
             "weapon": "lg"
@@ -12973,6 +12994,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 3042,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "42",
           "AHemlocksLie"
@@ -13032,6 +13057,9 @@
         "source": "sound",
         "team": "'tro",
         "time": 8302,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "AHemlocksLie"
         ],
@@ -13804,6 +13832,10 @@
         "source": "sound",
         "team": "red",
         "time": 68561,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -13939,6 +13971,10 @@
         "source": "sound",
         "team": "red",
         "time": 96843,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -14235,6 +14271,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 125765,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "42",
           "AHemlocksLie"
@@ -14442,6 +14482,9 @@
         "source": "sound",
         "team": "red",
         "time": 164481,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "42"
         ],
@@ -14870,6 +14913,10 @@
         "source": "sound",
         "team": "red",
         "time": 216026,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -14954,6 +15001,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 242509,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -14966,6 +15017,10 @@
         "source": "sound",
         "team": "red",
         "time": 243287,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -15750,6 +15805,10 @@
         "source": "sound",
         "team": "red",
         "time": 308061,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -15834,6 +15893,10 @@
         "source": "sound",
         "team": "red",
         "time": 315321,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -15864,6 +15927,10 @@
         "source": "sound",
         "team": "red",
         "time": 324684,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -16164,6 +16231,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 365281,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -16685,6 +16756,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 403008,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "42",
           "AHemlocksLie"
@@ -17036,6 +17111,10 @@
         "source": "sound",
         "team": "red",
         "time": 426527,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -17120,6 +17199,10 @@
         "source": "sound",
         "team": "red",
         "time": 441527,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -17286,6 +17369,9 @@
         "source": "sound",
         "team": "'tro",
         "time": 453852,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "AHemlocksLie"
         ],
@@ -17431,6 +17517,10 @@
         "source": "sound",
         "team": "red",
         "time": 483347,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -17443,6 +17533,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 483917,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -17880,6 +17974,10 @@
         "source": "sound",
         "team": "'tro",
         "time": 512655,
+        "victimKinds": [
+          "self",
+          "enemy"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -18153,6 +18251,10 @@
         "source": "sound",
         "team": "red",
         "time": 543580,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -18176,6 +18278,10 @@
         "source": "sound",
         "team": "red",
         "time": 544382,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"
@@ -18241,6 +18347,10 @@
         "source": "sound",
         "team": "red",
         "time": 581070,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "AHemlocksLie",
           "42"

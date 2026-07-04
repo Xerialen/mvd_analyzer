@@ -1044,7 +1044,13 @@
             "weapon": "sg"
           },
           {
+            "enemy": {
+              "hits": 61
+            },
             "hits": 65,
+            "self": {
+              "hits": 11
+            },
             "shots": 257,
             "weapon": "rl"
           },
@@ -6356,7 +6362,13 @@
             "weapon": "ssg"
           },
           {
+            "enemy": {
+              "hits": 65
+            },
             "hits": 77,
+            "self": {
+              "hits": 21
+            },
             "shots": 249,
             "weapon": "rl"
           },
@@ -16582,31 +16594,36 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 44,
+  "schemaVersion": 45,
   "shots": {
     "byPlayer": [
       {
         "byWeapon": [
           {
             "accuracy": 0.3333333333333333,
+            "enemyHits": 16,
             "hits": 16,
             "shots": 48,
             "weapon": "sg"
           },
           {
             "accuracy": 0.05,
+            "enemyHits": 1,
             "hits": 1,
             "shots": 20,
             "weapon": "gl"
           },
           {
             "accuracy": 0.2529182879377432,
+            "enemyHits": 61,
             "hits": 65,
+            "selfHits": 11,
             "shots": 257,
             "weapon": "rl"
           },
           {
             "accuracy": 0.2631578947368421,
+            "enemyHits": 15,
             "hits": 15,
             "shots": 57,
             "weapon": "lg"
@@ -16620,12 +16637,14 @@
         "byWeapon": [
           {
             "accuracy": 0.09090909090909091,
+            "enemyHits": 3,
             "hits": 3,
             "shots": 33,
             "weapon": "sg"
           },
           {
             "accuracy": 0.6,
+            "enemyHits": 3,
             "hits": 3,
             "shots": 5,
             "weapon": "ssg"
@@ -16636,12 +16655,15 @@
           },
           {
             "accuracy": 0.3092369477911647,
+            "enemyHits": 65,
             "hits": 77,
+            "selfHits": 21,
             "shots": 249,
             "weapon": "rl"
           },
           {
             "accuracy": 0.30994152046783624,
+            "enemyHits": 159,
             "hits": 159,
             "shots": 513,
             "weapon": "lg"
@@ -16768,6 +16790,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 6433,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -16779,6 +16804,10 @@
         "source": "sound",
         "team": "red",
         "time": 7624,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -17009,6 +17038,9 @@
         "source": "sound",
         "team": "red",
         "time": 22221,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "mj"
         ],
@@ -17659,6 +17691,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 59630,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -18015,6 +18051,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 79513,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -18070,6 +18109,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 87721,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -19518,6 +19561,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 180244,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -20301,6 +20347,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 244038,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -20347,6 +20397,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 246610,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -21608,6 +21662,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 336371,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -21618,6 +21675,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 337172,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -21635,6 +21695,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 337982,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -22147,6 +22210,10 @@
         "source": "sound",
         "team": "red",
         "time": 372471,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -22158,6 +22225,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 372861,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -22252,6 +22323,10 @@
         "source": "sound",
         "team": "red",
         "time": 382022,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -23245,6 +23320,9 @@
         "source": "sound",
         "team": "red",
         "time": 441434,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "mj"
         ],
@@ -23333,6 +23411,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 446114,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -23458,6 +23539,10 @@
         "source": "sound",
         "team": "red",
         "time": 453331,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -23476,6 +23561,10 @@
         "source": "sound",
         "team": "red",
         "time": 454136,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -23487,6 +23576,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 454231,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -23694,6 +23787,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 470955,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -23900,6 +23996,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 488852,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -24359,6 +24459,9 @@
         "source": "sound",
         "team": "red",
         "time": 518593,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "mj"
         ],
@@ -24376,6 +24479,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 522372,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -24508,6 +24614,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 532766,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -24755,6 +24864,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 556170,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -24766,6 +24878,10 @@
         "source": "sound",
         "team": "red",
         "time": 556794,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -25037,6 +25153,9 @@
         "player": "speedball",
         "source": "sound",
         "time": 568192,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "speedball"
         ],
@@ -25324,6 +25443,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 574139,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -25370,6 +25493,10 @@
         "player": "speedball",
         "source": "sound",
         "time": 580439,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "mj",
           "speedball"
@@ -25382,6 +25509,10 @@
         "source": "sound",
         "team": "red",
         "time": 580612,
+        "victimKinds": [
+          "enemy",
+          "self"
+        ],
         "victims": [
           "speedball",
           "mj"
@@ -25490,6 +25621,9 @@
         "source": "sound",
         "team": "red",
         "time": 591326,
+        "victimKinds": [
+          "self"
+        ],
         "victims": [
           "mj"
         ],

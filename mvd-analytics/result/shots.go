@@ -36,15 +36,22 @@ type ShotsResult struct {
 // Warmup is true for fires outside the match (prewar / warmup / post-match) —
 // the stream keeps them, but the ByPlayer aggregates and match-time consumers
 // (e.g. the aim analysis) exclude them. Match-time fires omit the field.
+// VictimKinds classifies each Victims entry — "enemy", "team" (same non-empty
+// team as the shooter, not self) or "self" (victim slot == attacker slot, an
+// rl/gl self-splash such as a rocket jump) — mirroring the Damage layer's
+// IsSelf/IsTeam semantics. Omitted when every victim is an enemy (the common
+// case); when present it is parallel to Victims. Warmup fires classify with
+// warmup-time teams.
 type Shot struct {
-	Time    int32    `json:"time"`
-	Player  string   `json:"player"`
-	Team    string   `json:"team,omitempty"`
-	Weapon  string   `json:"weapon"`
-	Source  string   `json:"source"`
-	Hit     bool     `json:"hit,omitempty"`
-	Victims []string `json:"victims,omitempty"`
-	Warmup  bool     `json:"warmup,omitempty"` // fired outside the match (prewar/warmup/post)
+	Time        int32    `json:"time"`
+	Player      string   `json:"player"`
+	Team        string   `json:"team,omitempty"`
+	Weapon      string   `json:"weapon"`
+	Source      string   `json:"source"`
+	Hit         bool     `json:"hit,omitempty"`
+	Victims     []string `json:"victims,omitempty"`
+	VictimKinds []string `json:"victimKinds,omitempty"`
+	Warmup      bool     `json:"warmup,omitempty"` // fired outside the match (prewar/warmup/post)
 }
 
 // PlayerShots is one player's match-time fire counts per weapon.
@@ -56,13 +63,22 @@ type PlayerShots struct {
 }
 
 // WeaponShots is a per-weapon count. Hits/Accuracy are populated only for
-// hitscan weapons (sg/ssg/lg) and only when a damage stream was present;
-// Accuracy is Hits/Shots in [0,1].
+// linkable weapons (hitscan sg/ssg/lg + projectile rl/gl) and only when a
+// damage stream was present; Accuracy is Hits/Shots in [0,1] over ALL
+// victims (KTX scoreboard parity — team and self hits included).
+//
+// EnemyHits/TeamHits/SelfHits split Hits by victim class (see
+// Shot.VictimKinds). A multi-victim fire counts in every bucket it has a
+// victim in, so the buckets overlap and none is derivable from the others;
+// each is emitted whenever nonzero. Per-bucket accuracy is bucketHits/Shots.
 type WeaponShots struct {
-	Weapon   string  `json:"weapon"`
-	Shots    int     `json:"shots"`
-	Hits     int     `json:"hits,omitempty"`
-	Accuracy float64 `json:"accuracy,omitempty"`
+	Weapon    string  `json:"weapon"`
+	Shots     int     `json:"shots"`
+	Hits      int     `json:"hits,omitempty"`
+	Accuracy  float64 `json:"accuracy,omitempty"`
+	EnemyHits int     `json:"enemyHits,omitempty"` // fires with ≥1 enemy victim
+	TeamHits  int     `json:"teamHits,omitempty"`  // fires with ≥1 teammate victim
+	SelfHits  int     `json:"selfHits,omitempty"`  // fires with ≥1 self victim (rl/gl splash)
 }
 
 // ShotsReconciliation compares detected shot counts to the KTX end-of-match

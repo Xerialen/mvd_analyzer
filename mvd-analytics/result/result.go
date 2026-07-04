@@ -483,7 +483,17 @@ package result
 //     target in team games, and duels dropped their killing-blow samples
 //     entirely. No field changes; hit samples' tgt/dyaw/dpitch/nyaw/npitch/
 //     dist shift, and duels gain one sample per hitscan kill.
-const CurrentSchemaVersion = 44
+//
+// v45:
+//   - Victim-class classification on the shots/aim pipeline, mirroring the
+//     Damage layer's IsSelf/IsTeam semantics. Shot gains VictimKinds
+//     (parallel to Victims: "enemy"/"team"/"self", omitted when all-enemy);
+//     WeaponShots gains EnemyHits/TeamHits/SelfHits (overlapping buckets —
+//     a multi-victim fire counts in each bucket it has a victim in);
+//     CrosshairSamples and LGRampSamples gain a Team column; WeaponAim gains
+//     Enemy/Team/Self *WeaponAimSplit hit-counter slices. All additive
+//     (omitempty) — Hits/Accuracy stay all-victims for KTX parity.
+const CurrentSchemaVersion = 45
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

@@ -302,6 +302,12 @@ KTX damage stream:
 
 `hit` counts damage to ≥1 player (including self/team splash for rl/gl);
 `victims` lists them. No damage stream (non-KTX) → `hit` never set.
+`victimKinds` classifies each victim relative to the shooter, mirroring the
+damage layer's `isSelf`/`isTeam` semantics: `self` = same wire slot (rl/gl
+self-splash — a rocket jump is a `hit` with the shooter as its own victim),
+`team` = same non-empty team and not self, else `enemy`. It is omitted when
+every victim is an enemy (the common case); when present it is parallel to
+`victims`. Warmup fires classify with warmup-time teams.
 
 | Field | JSON key | Type | Notes |
 |---|---|---|---|
@@ -312,6 +318,7 @@ KTX damage stream:
 | Source | `source` | string | `sound` \| `beam` (LG). |
 | Hit | `hit` | bool (omitempty) | Hitscan fire that connected (≥1 victim same frame). |
 | Victims | `victims` | []string (omitempty) | Hitscan victims hit by this fire. |
+| VictimKinds | `victimKinds` | []string (omitempty) | Per-victim class, parallel to `victims`: `enemy` \| `team` \| `self`. Omitted when all-enemy. |
 | Warmup | `warmup` | bool (omitempty) | Fired outside the match (prewar / warmup / post-match). The stream keeps it; `ByPlayer` and the aim analysis exclude it. |
 
 ### PlayerShots / WeaponShots
@@ -321,6 +328,11 @@ only for linkable weapons (hitscan `sg`/`ssg`/`lg` + projectile `rl`/`gl`)
 and only when a damage stream was present;
 `Accuracy` is `Hits/Shots` (fraction of fires that connected) — note this is
 *shots-that-landed*, a different metric from KTX `acc.hits` (pellet hits).
+`Hits`/`Accuracy` count **all** victims (team and self hits included — KTX
+scoreboard parity); `enemyHits`/`teamHits`/`selfHits` split `hits` by victim
+class (see `Shot.victimKinds`). A multi-victim fire counts in every bucket
+it has a victim in, so the buckets overlap and none is derivable from the
+others; per-bucket accuracy is `bucketHits / shots`.
 
 | Field (PlayerShots) | JSON key | Type |
 |---|---|---|
@@ -335,6 +347,9 @@ and only when a damage stream was present;
 | Shots | `shots` | int |
 | Hits | `hits` | int (omitempty, hitscan) |
 | Accuracy | `accuracy` | float (omitempty, hitscan) |
+| EnemyHits | `enemyHits` | int (omitempty) — fires with ≥1 enemy victim |
+| TeamHits | `teamHits` | int (omitempty) — fires with ≥1 teammate victim |
+| SelfHits | `selfHits` | int (omitempty) — fires with ≥1 self victim (rl/gl splash) |
 
 ### ShotsReconciliation / ShotsDelta
 
@@ -383,7 +398,10 @@ it** (dead players keep streaming position samples — the death-anim body —
 so a corpse would otherwise remain a candidate; same liveness rule as LOS).
 `Mode` is `"duel"` (one enemy → exact) or `"team"` (hits exact via the
 victim; misses a nearest-crosshair-enemy heuristic). Rocket "direct" is a
-non-splash-damage heuristic.
+non-splash-damage heuristic. The victim class is surfaced rather than
+filtered: samples carry a `team` flag, and `WeaponAim` carries
+enemy/team/self counter slices (see WeaponAimSplit), so consumers can view
+any victim class without re-deriving it.
 
 | Field | JSON key | Type |
 |---|---|---|
@@ -423,6 +441,7 @@ outside.)
 | Dist | `dist` | []float32 (qu) |
 | Hit | `hit` | []bool |
 | Target | `tgt` | []string — the confirmed victim for hits (can be a teammate on team damage); the attributed live enemy for misses |
+| Team | `team` | []bool (omitempty) — the attributed target is a teammate. Only hits can be team-attributed (misses target enemies by construction) and hitscan cannot self-hit, so this is the full victim-class signal for samples. Omitted when no sample is team-attributed. |
 
 ### LGRampSamples
 
@@ -433,6 +452,7 @@ the fire belongs to (fires < 150 ms apart are one shaft).
 |---|---|---|
 | Since | `since` | []int32 (ms since shaft start) |
 | Hit | `hit` | []bool |
+| Team | `team` | []bool (omitempty) — the fire connected but hit no enemy (teammate-only victims). Score enemy ramp hit% as `hit && !team`. Omitted when no fire is team-only. |
 
 ### WeaponAim
 
@@ -446,6 +466,9 @@ stats; `Direct` matches the server's RL/GL direct-hit count.
 | Weapon | `weapon` | string (lg/sg/ssg/rl/gl) |
 | Shots | `shots` | int — fires |
 | Hits | `hits` | int — fires that connected |
+| Enemy | `enemy` | *WeaponAimSplit (omitempty) — the enemy-victim slice of the hit counters |
+| Team | `team` | *WeaponAimSplit (omitempty) — the teammate-victim slice |
+| Self | `self` | *WeaponAimSplit (omitempty) — the self-victim slice (rl/gl splash) |
 | Pellets | `pellets` | int (sg/ssg) — pellets fired (shots × 6/14) |
 | PelletHits | `pelletHits` | int (sg/ssg) — pellets that hit (Σ damage / 4) |
 | Full | `full` | int (sg/ssg) — fires where all pellets hit |
@@ -464,6 +487,30 @@ For LG, `Hits + NearMiss + Blocked + OutOfRange + Unresolved == Shots`.
 The pellet stats need the KTX damage stream; the RL/GL direct/splash split
 needs projectile linking (`Streams.Projectiles`); the LG near/blocked split
 needs `Streams.Beams`. Absent inputs simply leave those fields zero.
+
+### WeaponAimSplit
+
+One victim-class slice (enemy / team / self) of a weapon's hit counters —
+same semantics as the `WeaponAim` fields of the same names, restricted to
+that bucket's victims (`hits`, `pelletHits`, `full`, `partial`, `miss`,
+`direct`; all int, omitempty). A multi-victim fire counts in every bucket it
+has a victim in.
+
+**Emission rules** (consumers must match them): `team`/`self` appear iff the
+weapon had ≥1 team-/self-victim hit; `enemy` appears iff `team` or `self`
+does — i.e. iff it differs from the top-level counters, so consumers use
+`w.enemy || w` for the enemy view and `w.team / w.self || zeros` for the
+others. An all-zero `enemy` split is legitimate (every hit was FF/self).
+Not split: `shots`, `pellets` and the LG miss classes
+(`nearMiss`/`blocked`/`outOfRange`/`unresolved`) — misses have no victim
+(the miss heuristic targets enemies by construction). Derivable per bucket:
+`splash = hits − direct`, `missed = shots − hits`.
+
+The SG/SSG per-fire split is exact per fire except when the per-fire pellet
+clamp triggers (e.g. quad-multiplied damage), where the enemy/team
+allocation within that fire is approximate. Self hits are always splash (a
+missile cannot collide with its owner), so a `self` split never sets
+`direct` and never has pellet counters (hitscan cannot self-hit).
 
 ## MessagesResult (`messages`)
 
@@ -1572,6 +1619,11 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v45 | Victim-class classification on the shots/aim pipeline, mirroring the damage layer's `isSelf`/`isTeam` semantics. `Shot` gains `victimKinds` (parallel to `victims`: `enemy`/`team`/`self`, omitted when all-enemy); `WeaponShots` gains `enemyHits`/`teamHits`/`selfHits` (overlapping buckets — a multi-victim fire counts in each bucket it has a victim in); `CrosshairSamples` and `LGRampSamples` gain a `team` column; `WeaponAim` gains `enemy`/`team`/`self` `WeaponAimSplit` hit-counter slices (emitted only when they differ from the top-level counters — see WeaponAimSplit). All additive (`omitempty`); `hits`/`accuracy` stay all-victims for KTX parity. |
+| v44 | Aim crosshair samples of **hit** shots attribute to the server-confirmed victim (nearest by crosshair error when a pellet fire hit several), bypassing the v43 liveness gate and the enemy filter — the killing blow lands in the frame the victim dies, so the gate read the victim as dead and handed the sample to the nearest *other* live enemy. No field changes; hit samples' `tgt`/error columns shift, and duels gain one sample per hitscan kill. |
+| v43 | Aim target attribution gates candidates on being **alive at fire time** (spawn/death streams) — dead players keep streaming position samples (the death-anim body), so a corpse could win nearest-crosshair attribution. No field changes; crosshair sample counts/targets shift on team demos. |
+| v42 | `Shot` gains `warmup`: true for fires outside the match (prewar/warmup/post-match). The stream keeps them; `byPlayer` and the aim analysis exclude them. Additive (`omitempty`). |
+| v41 | New top-level `Aim` (`aim`): per-player aim analysis derived as a post-process from `Shots` + `Streams` + `Damage` + LG beams — normalized crosshair-error samples (hitscan), LG ramp-onto-target, rocket direct/splash, LG reach/whiff. Additive (`omitempty`). |
 | v40 | `Streams` gains opt-in spatial weapon-fire streams for the map view: `streams.projectiles` (`ProjectileStreams` — every rocket/grenade flight as a spawn→despawn segment + times), `streams.beams` (`BeamStreams` — every LG `TE_LIGHTNING2` bolt as a muzzle→impact segment + time), and `streams.nails` (`ProjectileStreams` — ng/sng spike flights; a separate `-include nails` request that also enables ng/sng → damage linking). All columnar, built only when requested (`qw-analyze -include projectiles,beams,nails`; the WASM map build builds projectiles/beams) so the default output and golden corpus stay lean. Additive (`omitempty`); absent from the default parse. |
 | v39 | New top-level `Shots` (`shots`): a per-shot weapon-fire stream — who fired what, at what match-relative ms — derived from `svc_sound` `CHAN_WEAPON` fire sounds (SG/SSG/RL/GL/NG/SNG; the sound carries the firing entity) and `TE_LIGHTNING2` beams for LG (one beam per fire tick, carrying the firing entity — exact, beating ammo deltas). Hitscan fires (sg/ssg/lg) link to their same-frame `mvdhidden_dmgdone` damage; rocket/grenade fires (rl/gl) link via entity flight tracking (the projectile entity brackets `spawn → despawn`, so a fire matches its launch frame by muzzle and its impact damage by attacker + despawn frame — disambiguating overlapping flights). Sets `hit`/`victims`, adds `byPlayer` match-time per-weapon counts + accuracy, and a `reconciliation` cross-check whose `streamAttacks` matches KTX `acc.attacks` exactly across the corpus (rl/gl connect-counts match KTX `real` hits to within one). Additive (`omitempty`); present whenever any fire is detected, including non-KTX demos (no damage stream → no links). |
 | v38 | `PlayerStream` gains `pvs[]` (`LosTrack`): per-opponent potentially-visible-set intervals, populated alongside `los[]` by the same lazy `analyzer.ComputeLOS` pass under the same BSP gate. Reproduces the mvdsv per-client entity cull (`SV_PlayerVisibleToClient`): the looker's fat PVS (`CM_FatPVS` of `origin+view_ofs`) ∩ the opponent's entity leaf set (1-unit-expanded box, non-solid leaves), or always when it overflows `MAX_ENT_LEAFS` — i.e. whether a live server would have sent that opponent to the client (the recorded MVD stores every entity, `pvs = NULL`). This test also gates the LOS raycast, so **PVS ⊇ LOS** by construction. The gap (potentially visible, no clear ray) is an occlusion-tolerant proximity/awareness signal. Same `o`/`iv` shape, asymmetry, alive-gating; additive (`omitempty`); absent on BSP-less maps and on the default parse. Exposed by the same consumers as `los` (web overlay, `qw-analyze -include los`, mvd-api `/los`). |

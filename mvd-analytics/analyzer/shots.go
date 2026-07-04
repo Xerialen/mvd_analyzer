@@ -64,11 +64,12 @@ type rawShot struct {
 	hitscan    bool
 	shooterPos [3]float32
 
-	name    string
-	team    string
-	hit     bool
-	victims []string
-	linked  bool // a projectile has already claimed this fire
+	name        string
+	team        string
+	hit         bool
+	victims     []string
+	victimKinds []string // parallel to victims: "enemy" | "team" | "self"
+	linked      bool     // a projectile has already claimed this fire
 }
 
 // rawShotDmg is a DamageEvent (hitscan sg/ssg/lg, or projectile rl/gl) kept
@@ -290,8 +291,8 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		if s.name == "" || !s.hitscan {
 			continue
 		}
-		if v := a.linkHitscan(dmgBySlot[s.slot], s.weapon, s.tMs); len(v) > 0 {
-			s.hit, s.victims = true, v
+		if v, k := a.linkHitscan(dmgBySlot[s.slot], s); len(v) > 0 {
+			s.hit, s.victims, s.victimKinds = true, v, k
 		}
 	}
 
@@ -313,7 +314,8 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		out.Shots = append(out.Shots, Shot{
 			Time: s.tMs, Player: s.name, Team: s.team,
 			Weapon: s.weapon, Source: s.source, Hit: s.hit, Victims: s.victims,
-			Warmup: !s.inMatch,
+			VictimKinds: emitKinds(s.victimKinds),
+			Warmup:      !s.inMatch,
 		})
 		if !s.inMatch {
 			continue
@@ -332,6 +334,26 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		wa.shots++
 		if s.hit {
 			wa.hits++
+			var hasEnemy, hasTeam, hasSelf bool
+			for _, k := range s.victimKinds {
+				switch k {
+				case "self":
+					hasSelf = true
+				case "team":
+					hasTeam = true
+				default:
+					hasEnemy = true
+				}
+			}
+			if hasEnemy {
+				wa.enemyHits++
+			}
+			if hasTeam {
+				wa.teamHits++
+			}
+			if hasSelf {
+				wa.selfHits++
+			}
 		}
 	}
 
@@ -418,20 +440,21 @@ func (a *ShotsAnalyzer) linkProjectiles(flights []rawProjectile, dmgBySlot map[i
 			continue
 		}
 		best.linked = true
-		var victims []string
+		var victims, kinds []string
 		seen := make(map[string]bool)
 		for _, d := range dmgBySlot[best.slot] {
 			if d.used || d.weapon != best.weapon || absInt32(d.tMs-p.despawnTMs) > projImpactWindowMs {
 				continue
 			}
 			d.used = true
-			if vn := a.resolveAt(d.victim, d.tMs).Name; vn != "" && !seen[vn] {
-				seen[vn] = true
-				victims = append(victims, vn)
+			if id := a.resolveAt(d.victim, d.tMs); id.Name != "" && !seen[id.Name] {
+				seen[id.Name] = true
+				victims = append(victims, id.Name)
+				kinds = append(kinds, victimKindOf(best.slot, best.team, d.victim, id.Team))
 			}
 		}
 		if len(victims) > 0 {
-			best.hit, best.victims = true, victims
+			best.hit, best.victims, best.victimKinds = true, victims, kinds
 		}
 	}
 }
@@ -466,25 +489,52 @@ func flightMatchesFire(kind, w string) bool {
 }
 
 // linkHitscan returns the names of players damaged by this hitscan fire —
-// same attacker slot, same weapon, within the same server frame. Each
-// matched damage record is consumed so a later shot cannot reclaim it.
-func (a *ShotsAnalyzer) linkHitscan(dmgs []*rawShotDmg, weapon string, tMs int32) []string {
-	var victims []string
+// same attacker slot, same weapon, within the same server frame — and each
+// victim's class relative to the shooter (parallel slices). Each matched
+// damage record is consumed so a later shot cannot reclaim it.
+func (a *ShotsAnalyzer) linkHitscan(dmgs []*rawShotDmg, s *rawShot) (victims, kinds []string) {
 	seen := make(map[string]bool)
 	for _, d := range dmgs {
-		if d.used || d.weapon != weapon {
+		if d.used || d.weapon != s.weapon {
 			continue
 		}
-		if absInt32(d.tMs-tMs) > hitscanLinkWindowMs {
+		if absInt32(d.tMs-s.tMs) > hitscanLinkWindowMs {
 			continue
 		}
 		d.used = true
-		if vn := a.resolveAt(d.victim, d.tMs).Name; vn != "" && !seen[vn] {
-			seen[vn] = true
-			victims = append(victims, vn)
+		if id := a.resolveAt(d.victim, d.tMs); id.Name != "" && !seen[id.Name] {
+			seen[id.Name] = true
+			victims = append(victims, id.Name)
+			kinds = append(kinds, victimKindOf(s.slot, s.team, d.victim, id.Team))
 		}
 	}
-	return victims
+	return victims, kinds
+}
+
+// victimKindOf classifies a damage victim relative to the shooter, mirroring
+// the damage layer's isSelf/isTeam semantics (damage.go): "self" when the
+// victim is the shooter's own wire slot, "team" when both teams are non-empty
+// and equal, else "enemy".
+func victimKindOf(shooterSlot int, shooterTeam string, victimSlot int, victimTeam string) string {
+	switch {
+	case victimSlot == shooterSlot:
+		return "self"
+	case shooterTeam != "" && victimTeam != "" && shooterTeam == victimTeam:
+		return "team"
+	default:
+		return "enemy"
+	}
+}
+
+// emitKinds returns kinds only when it carries information: every victim
+// being an enemy is the common case and is encoded as absence on the wire.
+func emitKinds(kinds []string) []string {
+	for _, k := range kinds {
+		if k != "enemy" {
+			return kinds
+		}
+	}
+	return nil
 }
 
 // buildByPlayer flattens the match-time aggregates into the result shape,
@@ -506,6 +556,7 @@ func (a *ShotsAnalyzer) buildByPlayer(aggByName map[string]*shotAgg, order []str
 			if a.hadDmg && a.canLink(w) {
 				ws.Hits = wa.hits
 				ws.Accuracy = float64(wa.hits) / float64(wa.shots)
+				ws.EnemyHits, ws.TeamHits, ws.SelfHits = wa.enemyHits, wa.teamHits, wa.selfHits
 			}
 			ps.Total += wa.shots
 			ps.ByWeapon = append(ps.ByWeapon, ws)
@@ -585,8 +636,11 @@ type shotAgg struct {
 }
 
 type weaponAgg struct {
-	shots int
-	hits  int
+	shots     int
+	hits      int
+	enemyHits int
+	teamHits  int
+	selfHits  int
 }
 
 // weaponOrder is the stable output order for per-weapon aggregates and
