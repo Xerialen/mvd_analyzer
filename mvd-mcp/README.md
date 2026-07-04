@@ -47,6 +47,7 @@ vocabulary, and the reducer registry.
 | `getMetadata` | `mvd-api` `GET /v1/demos/{id}/metadata` |
 | `getFrags` | `mvd-api` `GET /v1/demos/{id}/frags` |
 | `getDamage` | `mvd-api` `GET /v1/demos/{id}/damage` |
+| `getAim` | `mvd-api` `GET /v1/demos/{id}/aim` |
 | `getLocGraph` | `mvd-api` `GET /v1/demos/{id}/loc-graph` |
 | `getChat` | `mvd-api` `GET /v1/demos/{id}/chat` |
 | `getBackpacks` | `mvd-api` `GET /v1/demos/{id}/backpacks` |
@@ -58,6 +59,7 @@ vocabulary, and the reducer registry.
 | `getStreamSlice` | `mvd-api` `GET /v1/demos/{id}/stream-slice` |
 | `getStateAt` | `mvd-api` `GET /v1/demos/{id}/state-at` |
 | `getLocTrails` | `mvd-api` `GET /v1/demos/{id}/loc-trails` |
+| `getLocTable` | `mvd-api` `GET /v1/demos/{id}/loc-table` |
 | `getRegionControl` | `mvd-api` `GET /v1/demos/{id}/region-control` |
 
 `demoId` is the string returned by `loadDemo` (`sha:HEX`) or any
@@ -185,6 +187,26 @@ enemyVsRl + enemyVsBoth`) is damage dealt to enemies *holding* RL/LG,
 keyed on the **victim's** inventory. Amounts are **unbound** (include
 overkill; a telefrag reports 9999), so totals run higher than the KTX
 scoreboard — see `scoreboard` for the cross-check.
+
+#### `getAim({demoId})`
+
+Per-player aim analysis. Start with `players[].weapons` (per-weapon
+shots/hits, SG/SSG pellet stats + full/partial/miss fires, RL/GL
+direct/splash/missed, the LG near/blocked/out-of-range miss split); the
+columnar `crosshair` (per-hitscan-fire angular error, normalized so ±1 =
+the hitbox edge, with hit + attributed target) and `lgRamp` (per-LG-cell
+hit vs ms since the shaft opened) blocks are large — reach for them only
+when per-shot detail is needed.
+
+| Param | Type | Description |
+|---|---|---|
+| `demoId` | `string` (required) | — |
+
+Output: `result.AimResult` — see
+[RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).
+`mode` flags attribution quality per player: `duel` (exact, one enemy) or
+`team` (nearest-crosshair-enemy heuristic). The first call on a demo may be
+slow — the API builds the projectile/beam streams on first request.
 
 #### `getLocGraph({demoId})`
 

@@ -706,6 +706,8 @@ function setupTabs() {
                     renderChatMessages();
                 } else if (tabName === 'loc-graph') {
                     renderLocGraph();
+                } else if (tabName === 'aimstats') {
+                    renderAimStats();
                 }
             };
             renderForTab();
@@ -1127,6 +1129,9 @@ function displayResults(result) {
 
     // Loc Graph
     timeRender('initLocGraphView', () => initLocGraphView(result));
+
+    // Aim Stats (experimental) — builds the player picker and renders result.aim.
+    timeRender('initAimStatsView', () => initAimStatsView(result));
 
     // Make all static tables sortable
     document.querySelectorAll('.stats-table').forEach(makeSortable);
@@ -6219,6 +6224,13 @@ function initMapView(result) {
         }
     }
 
+    // Spatial weapon-fire streams (schema v40): rocket/grenade flights
+    // (projectiles) and LG bolts (beams), as parallel columns. Present only
+    // when the analysis built them (WASM map build); absent → graceful no-op.
+    mapState.projectiles = (result.streams && result.streams.projectiles) || null;
+    mapState.beams = (result.streams && result.streams.beams) || null;
+    mapState.nails = (result.streams && result.streams.nails) || null;
+
     // Line of sight is computed lazily (it is the heaviest position-derived
     // pass), so it is NOT in the parsed result. The map's LOS overlay requests
     // it from the worker on first toggle; reset the cache here.
@@ -7670,6 +7682,66 @@ function drawMovers(ctx) {
     }
 }
 
+// Colours for the weapon-fire overlays.
+const PROJECTILE_COLORS = { rl: '#ff7733', gl: '#66cc44' };
+const NAIL_COLOR = '#ffe066';
+const BEAM_COLOR = 'rgba(150, 200, 255, 0.85)';
+// A beam flashes for this half-window (ms) around its instant.
+const BEAM_FLASH_MS = 60;
+
+// drawFlightDots draws each flight (rocket/grenade/nail) live at the current
+// time as a dot interpolated along its spawn→despawn segment (linear — exact
+// for the straight-flying rocket, approximate for grenades/nails). Columns are
+// the parallel arrays of a ProjectileStreams (schema v40).
+function drawFlightDots(ctx, pr, radius, colorOf) {
+    if (!pr || !Array.isArray(pr.s) || pr.s.length === 0) return;
+    const tMs = mapState.currentTime * 1000;
+    ctx.save();
+    for (let i = 0; i < pr.s.length; i++) {
+        const t0 = pr.s[i], t1 = pr.e[i];
+        if (tMs < t0 || tMs > t1) continue;
+        const f = t1 > t0 ? (tMs - t0) / (t1 - t0) : 0;
+        const x = pr.sx[i] + (pr.ex[i] - pr.sx[i]) * f;
+        const y = pr.sy[i] + (pr.ey[i] - pr.sy[i]) * f;
+        const z = pr.sz[i] + (pr.ez[i] - pr.sz[i]) * f;
+        const p = worldToCanvas(x, y, z);
+        ctx.fillStyle = colorOf(pr.w[i]);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// drawProjectiles draws rocket/grenade flights (and nails when present —
+// nails are opt-in, so usually absent) at the current playback time.
+function drawProjectiles(ctx) {
+    drawFlightDots(ctx, mapState.projectiles, 3, (w) => PROJECTILE_COLORS[w] || '#ffffff');
+    drawFlightDots(ctx, mapState.nails, 1.5, () => NAIL_COLOR);
+}
+
+// drawBeams draws each LG bolt active near the current time as a short-lived
+// line from muzzle to impact. Columns are parallel arrays in mapState.beams.
+function drawBeams(ctx) {
+    const bm = mapState.beams;
+    if (!bm || !Array.isArray(bm.t) || bm.t.length === 0) return;
+    const tMs = mapState.currentTime * 1000;
+    ctx.save();
+    ctx.strokeStyle = BEAM_COLOR;
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < bm.t.length; i++) {
+        if (Math.abs(bm.t[i] - tMs) > BEAM_FLASH_MS) continue;
+        const a = worldToCanvas(bm.sx[i], bm.sy[i], bm.sz[i]);
+        const ax = a.x, ay = a.y;
+        const b = worldToCanvas(bm.ex[i], bm.ey[i], bm.ez[i]);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
 // drawMoverMesh draws one posed mover as a single flat translucent silhouette
 // in the floor colour: cull the back faces (the submodel triangulation winds
 // so its normals point *into* the solid, so the near hull is the faces whose
@@ -7891,6 +7963,12 @@ function drawLocationLayer(ctx) {
     // Movers (lifts/doors/plats) posed at the current time — above the region
     // fills and below the outlines/labels.
     drawMovers(ctx);
+
+    // Weapon-fire overlays at the current time: rocket/grenade flights as
+    // moving dots, LG bolts as brief beams. No-op unless the spatial streams
+    // were built (WASM map build).
+    drawProjectiles(ctx);
+    drawBeams(ctx);
 
     // Thin grey outlines around each traced region — drawn after all fills so
     // they sit on top and stay visible regardless of adjacent region tinting.
@@ -10656,12 +10734,560 @@ function renderHeatmapTable(tableId, theadRowId, tbodyId, data, firstColLabel) {
             const style = rgb ? ` style="background: rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]}); color: ${contrastInk(rgb)}"` : '';
             const title = data.cellTitle ? data.cellTitle(columns[ci], row, ci) : '';
             const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-            tds.push(`<td class="${cls.join(' ')}"${style} data-sort-value="${cell.p}"${titleAttr}>${Math.round(cell.p)}%</td>`);
+            // Cells default to "<p>%"; pass data.cellText to show another unit
+            // (e.g. a raw count) while keeping cell.p as the sort key.
+            const text = data.cellText ? data.cellText(cell) : `${Math.round(cell.p)}%`;
+            tds.push(`<td class="${cls.join(' ')}"${style} data-sort-value="${cell.p}"${titleAttr}>${text}</td>`);
         });
         return tds.join('');
     });
 
     makeSortable(table);
+}
+
+// ─── Aim Stats Tab (experimental) ─────────────────────────────────────────
+//
+// Thin renderer over result.aim, which is computed in Go
+// (mvd-analytics/analyzer/aim.go): per-player columnar crosshair-error samples
+// (hitscan), LG ramp, rocket direct/splash, and LG reach. This layer only bins
+// + paints — all geometry, target attribution and classification live in the
+// analytics layer so every client (CLI / API / web) shares one truth.
+
+// Crosshair extents (normalized so 1.0 = hull edge), shared by the density
+// image and the marginal histograms. Yaw is wider because horizontal aim is
+// the story.
+const AIM_YAW_HALF = 6.0;
+const AIM_PITCH_HALF = 4.0;
+const AIM_YAW_W = 0.25; // marginal-histogram yaw bin width
+
+// Selected player for the per-player panels (heatmap + ramp). The weapon
+// tables are all-players and don't depend on it.
+let aimPlayer = null;
+let aimPlayersList = [];
+
+// initAimStatsView runs once per demo: build the player chip selector + the
+// (player-independent) weapon tables, then render the per-player panels.
+function initAimStatsView(result) {
+    aimPlayer = null;
+    buildAimChips(result);
+    renderAimWeaponTables(result);
+    renderAimStats();
+}
+
+// buildAimChips renders a team-coloured chip per player. Click selects; Left/
+// Right arrow keys (with the strip focused) step prev/next for quick A/B
+// comparison.
+function buildAimChips(result) {
+    const box = document.getElementById('aim-player-chips');
+    if (!box) return;
+    box.innerHTML = '';
+    const players = (result && result.aim && result.aim.players) || [];
+    aimPlayersList = players.map(p => p.player);
+    if (!aimPlayersList.includes(aimPlayer)) aimPlayer = aimPlayersList[0] || null;
+    const teamOrder = getTeamOrder([]);
+    players.forEach(p => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'aim-chip';
+        btn.dataset.player = p.player;
+        btn.textContent = p.player;
+        const ti = teamOrder.indexOf(p.team || '');
+        if (ti >= 0 && ti < TEAM_COLORS.length) btn.style.borderBottomColor = TEAM_COLORS[ti];
+        btn.addEventListener('click', () => { aimPlayer = p.player; renderAimStats(); box.focus(); });
+        box.appendChild(btn);
+    });
+    if (!box._aimWired) {
+        box.addEventListener('keydown', e => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            e.preventDefault();
+            if (!aimPlayersList.length) return;
+            let i = aimPlayersList.indexOf(aimPlayer);
+            i = (i + (e.key === 'ArrowRight' ? 1 : -1) + aimPlayersList.length) % aimPlayersList.length;
+            aimPlayer = aimPlayersList[i];
+            renderAimStats();
+        });
+        box._aimWired = true;
+    }
+}
+
+function renderAimStats() {
+    const result = currentResult;
+    const aim = result && result.aim;
+    const hasData = !!(aim && aim.players && aim.players.length);
+
+    const tab = document.getElementById('tab-aimstats');
+    const es = tab ? tab.querySelector('.empty-state') : null;
+    if (es) es.style.display = result ? 'none' : '';
+    const empty = document.getElementById('aim-empty');
+    if (empty) empty.style.display = (result && !hasData) ? '' : 'none';
+    ['aim-controls', 'aim-accuracy-panel', 'aim-heatmap-panel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = hasData ? '' : 'none';
+    });
+    if (!hasData) return;
+
+    if (!aim.players.some(p => p.player === aimPlayer)) aimPlayer = aim.players[0].player;
+    const pa = aim.players.find(p => p.player === aimPlayer);
+    const box = document.getElementById('aim-player-chips');
+    if (box) box.querySelectorAll('.aim-chip').forEach(b => b.classList.toggle('active', b.dataset.player === aimPlayer));
+
+    renderAimMode(pa);
+    renderAimHeatmap(pa);
+}
+
+function renderAimMode(pa) {
+    const el = document.getElementById('aim-mode');
+    if (!el) return;
+    el.textContent = pa.mode === 'duel'
+        ? 'Target attribution: duel (exact — one enemy)'
+        : 'Target attribution: team game (nearest-crosshair-enemy heuristic)';
+}
+
+// Column descriptors: {h: header, t: tooltip, cell: (WeaponAim) -> html}. The
+// Player column is prepended automatically (with the team-coloured stripe).
+// Every count column has a share-of-fires % twin: counts depend on how much a
+// player fired, so the percentages are what compare across players. hit% keeps
+// the accuracy colour classes; the miss-type shares stay plain (high ≠ good
+// is weapon-dependent).
+const pctCell = p => `<span class="${getAccuracyClass(p)}">${p.toFixed(0)}%</span>`;
+const pctPlain = p => `${p.toFixed(0)}%`;
+const shotShare = (n, w) => pctPlain(w.shots ? (n || 0) / w.shots * 100 : 0);
+const AIM_COL = {
+    shots: { h: 'Shots', t: 'Trigger pulls', cell: w => w.shots },
+    hits: { h: 'Hits', t: 'Fires that connected', cell: w => w.hits },
+    hitPct: { h: 'Hit %', t: 'Share of fires that connected', cell: w => pctCell(w.shots ? w.hits / w.shots * 100 : 0) },
+    fired: { h: 'Pellets Fired', t: 'Pellets fired (6 SG / 14 SSG per shot)', cell: w => w.pellets || 0 },
+    pHit: { h: 'Pellets Hit', t: 'Pellets that hit (matches the server)', cell: w => w.pelletHits || 0 },
+    pAcc: { h: 'Pellet %', t: 'Per-pellet accuracy', cell: w => pctCell(w.pellets ? (w.pelletHits || 0) / w.pellets * 100 : 0) },
+    full: { h: 'Full', t: 'Fires where every pellet hit', cell: w => w.full || 0 },
+    partial: { h: 'Partial', t: 'Fires where some but not all pellets hit', cell: w => w.partial || 0 },
+    miss: { h: 'Miss', t: 'Fires where no pellet hit', cell: w => w.miss || 0 },
+    fullPct: { h: 'Full %', t: 'Share of fires where every pellet hit', cell: w => shotShare(w.full, w) },
+    partialPct: { h: 'Partial %', t: 'Share of fires where some but not all pellets hit', cell: w => shotShare(w.partial, w) },
+    missPct: { h: 'Miss %', t: 'Share of fires where no pellet hit', cell: w => shotShare(w.miss, w) },
+    direct: { h: 'Direct', t: 'Direct contacts (matches the server)', cell: w => w.direct || 0 },
+    splash: { h: 'Splash', t: 'Hits from splash only', cell: w => w.splash || 0 },
+    missed: { h: 'Missed', t: 'Fires that hit nothing', cell: w => w.missed || 0 },
+    directPct: { h: 'Direct %', t: 'Share of fires that hit directly', cell: w => shotShare(w.direct, w) },
+    splashPct: { h: 'Splash %', t: 'Share of fires that hit via splash only', cell: w => shotShare(w.splash, w) },
+    missedPct: { h: 'Missed %', t: 'Share of fires that hit nothing', cell: w => shotShare(w.missed, w) },
+    near: { h: 'Near', t: 'Miss — beam ended near the enemy hull (aim error)', cell: w => w.nearMiss || 0 },
+    blocked: { h: 'Blocked', t: 'Miss — beam stopped on an object in the way', cell: w => w.blocked || 0 },
+    far: { h: 'Far', t: 'Miss — beam reached its full ~600u length (out of range)', cell: w => w.outOfRange || 0 },
+    nearPct: { h: 'Near %', t: 'Share of fires that missed near the enemy hull', cell: w => shotShare(w.nearMiss, w) },
+    blockedPct: { h: 'Blocked %', t: 'Share of fires stopped by an object in the way', cell: w => shotShare(w.blocked, w) },
+    farPct: { h: 'Far %', t: 'Share of fires that ran out of beam range', cell: w => shotShare(w.outOfRange, w) },
+};
+// Per-weapon column order: counts first, then the share-of-fires block.
+// SG/SSG lead with the pellet stats.
+const AIM_TABLE_COLS = {
+    lg: ['shots', 'hits', 'near', 'blocked', 'far', 'hitPct', 'nearPct', 'blockedPct', 'farPct'],
+    sg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
+    ssg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
+    rl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
+    gl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
+};
+const AIM_WEAPON_ORDER = ['lg', 'sg', 'ssg', 'rl', 'gl'];
+
+// renderAimWeaponTables builds one table per weapon, rows = players (all who
+// fired anything; "-" where they didn't fire this weapon), team-coloured like
+// the Summary tab. Player-independent.
+function renderAimWeaponTables(result) {
+    const container = document.getElementById('aim-weapon-tables');
+    if (!container) return;
+    container.innerHTML = '';
+    const players = (result && result.aim && result.aim.players) || [];
+    if (!players.length) return;
+    const teamOrder = getTeamOrder([]); // canonical frag-sorted order (= Summary)
+
+    for (const wn of AIM_WEAPON_ORDER) {
+        const cols = (AIM_TABLE_COLS[wn] || []).map(k => AIM_COL[k]);
+        const rows = players.map(pa => ({
+            player: pa.player, team: pa.team,
+            w: (pa.weapons || []).find(x => x.weapon === wn) || null,
+        }));
+        if (!rows.some(r => r.w)) continue; // weapon nobody fired → no table
+        rows.sort((a, b) => (b.w ? b.w.shots : -1) - (a.w ? a.w.shots : -1));
+
+        const head = '<th>Player</th>' +
+            cols.map(c => `<th title="${escapeHtml(c.t)}">${escapeHtml(c.h)}</th>`).join('');
+        const naCells = '<td class="aim-na">-</td>'.repeat(cols.length);
+        let body = '';
+        rows.forEach(r => {
+            const ti = teamOrder.indexOf(r.team || '');
+            const color = (ti >= 0 && ti < TEAM_COLORS.length) ? TEAM_COLORS[ti] : '';
+            const stripe = color ? ` style="border-left: 3px solid ${color}"` : '';
+            const tds = `<td>${escapeHtml(r.player)}</td>` +
+                (r.w ? cols.map(c => `<td>${c.cell(r.w)}</td>`).join('') : naCells);
+            body += `<tr${stripe}>${tds}</tr>`;
+        });
+
+        const block = document.createElement('div');
+        block.className = 'aim-weapon-block';
+        block.innerHTML = `<h4>${escapeHtml(getWeaponName(wn))}</h4>` +
+            `<table class="stats-table aim-weapon-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+        container.appendChild(block);
+        makeSortable(block.querySelector('table'));
+    }
+}
+
+// renderAimHeatmap draws one crosshair-placement density image per weapon
+// (LG, SG): a Gaussian-smoothed 2-D histogram of the normalized samples,
+// rendered on canvas with the shared viridis ramp plus a colorbar — the
+// MATLAB imagesc look. Split by weapon because SG/SSG pellet spread smears
+// its cloud far wider than LG, and mixing them hides each.
+function renderAimHeatmap(pa) {
+    renderAimHeatmapWeapon(pa, 'lg', 'aim-heatmap-lg');
+    renderAimHeatmapWeapon(pa, 'sg', 'aim-heatmap-sg');
+}
+
+function renderAimHeatmapWeapon(pa, weapon, prefix) {
+    const nodata = document.getElementById(`${prefix}-nodata`);
+    const canvas = document.getElementById(`${prefix}-canvas`);
+    const c = pa.crosshair;
+    const idx = [];
+    if (c && c.t) {
+        for (let i = 0; i < c.t.length; i++) if (c.w[i] === weapon) idx.push(i);
+    }
+    if (nodata) nodata.style.display = idx.length ? 'none' : '';
+    if (canvas) canvas.style.display = idx.length ? '' : 'none';
+    renderAimHistRow(prefix, c, idx, weapon === 'lg' ? pa.lgRamp : null);
+    if (!idx.length || !canvas) return;
+    drawAimDensity(canvas, c, idx);
+}
+
+// Density-image parameters. The fine grid is what gets smoothed and painted;
+// the hover grid is coarser so the read-out counts are meaningful.
+const AIM_IMG_CELL = 0.125;  // fine-grid bin, hull-normalized units
+const AIM_IMG_SIGMA = 1.4;   // gaussian σ, in fine cells
+const AIM_IMG_SCALE = 5;     // display px per fine cell
+const AIM_HOVER_BIN = 0.5;   // hover read-out bin, hull-normalized units
+
+function aimClampIndex(v, n) { return Math.max(0, Math.min(n - 1, v)); }
+
+// Zero density keeps the surface colour and the lowest densities fade into
+// the ramp — matching the table heatmaps, where empty cells keep the page
+// background and only real values get the shared viridis heatColorRGB.
+const AIM_IMG_FADE = 0.04; // density fraction over which the ramp fades in
+
+function aimSurfaceRGB(canvas) {
+    const m = (getComputedStyle(canvas).backgroundColor || '')
+        .match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    return m ? [+m[1], +m[2], +m[3]] : [26, 26, 46]; // --bg-deep fallback
+}
+
+function aimDensityRGB(t, bg) {
+    const rgb = heatColorRGB(t);
+    const a = Math.min(1, t / AIM_IMG_FADE);
+    for (let i = 0; i < 3; i++) rgb[i] = Math.round(bg[i] + (rgb[i] - bg[i]) * a);
+    return rgb;
+}
+
+function drawAimDensity(canvas, c, idx) {
+    const nx = Math.round(2 * AIM_YAW_HALF / AIM_IMG_CELL);
+    const ny = Math.round(2 * AIM_PITCH_HALF / AIM_IMG_CELL);
+    const hx = Math.round(2 * AIM_YAW_HALF / AIM_HOVER_BIN);
+    const hy = Math.round(2 * AIM_PITCH_HALF / AIM_HOVER_BIN);
+    const grid = new Float32Array(nx * ny);
+    const hShots = new Uint32Array(hx * hy), hHits = new Uint32Array(hx * hy);
+    // x is the enemy's offset relative to the crosshair, so enemy-right reads
+    // on the right (= −dYaw, since +dYaw is enemy-left in Quake); y is dPitch,
+    // top = up (row 0 = highest pitch). Samples beyond the extents are dropped
+    // rather than clamped: a clamp pile-up paints a bright rim on the smoothed
+    // image. The marginal histograms keep clamp edge bins, so the rare
+    // outliers stay visible there.
+    for (const i of idx) {
+        const x = -c.nyaw[i], y = c.npitch[i];
+        if (Math.abs(x) > AIM_YAW_HALF || Math.abs(y) > AIM_PITCH_HALF) continue;
+        const xi = aimClampIndex(Math.floor((x + AIM_YAW_HALF) / AIM_IMG_CELL), nx);
+        const yi = aimClampIndex(Math.floor((AIM_PITCH_HALF - y) / AIM_IMG_CELL), ny);
+        grid[yi * nx + xi]++;
+        const hxi = aimClampIndex(Math.floor((x + AIM_YAW_HALF) / AIM_HOVER_BIN), hx);
+        const hyi = aimClampIndex(Math.floor((AIM_PITCH_HALF - y) / AIM_HOVER_BIN), hy);
+        hShots[hyi * hx + hxi]++;
+        if (c.hit[i]) hHits[hyi * hx + hxi]++;
+    }
+
+    // Separable gaussian blur, kernel normalized to sum 1 so values keep the
+    // shots-per-cell unit (edge cells replicate — they are clamp catch-alls).
+    const r = Math.ceil(3 * AIM_IMG_SIGMA);
+    const kern = new Float32Array(2 * r + 1);
+    let ksum = 0;
+    for (let i = -r; i <= r; i++) {
+        kern[i + r] = Math.exp(-(i * i) / (2 * AIM_IMG_SIGMA * AIM_IMG_SIGMA));
+        ksum += kern[i + r];
+    }
+    for (let i = 0; i < kern.length; i++) kern[i] /= ksum;
+    const tmp = new Float32Array(nx * ny);
+    for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
+        let s = 0;
+        for (let d = -r; d <= r; d++) s += kern[d + r] * grid[y * nx + aimClampIndex(x + d, nx)];
+        tmp[y * nx + x] = s;
+    }
+    const sm = new Float32Array(nx * ny);
+    let max = 0;
+    for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
+        let s = 0;
+        for (let d = -r; d <= r; d++) s += kern[d + r] * tmp[aimClampIndex(y + d, ny) * nx + x];
+        sm[y * nx + x] = s;
+        if (s > max) max = s;
+    }
+
+    // Paint the fine grid at 1px/cell offscreen, then upscale with bilinear
+    // smoothing onto the display canvas — the imagesc-with-interp look.
+    const img = document.createElement('canvas');
+    img.width = nx;
+    img.height = ny;
+    const ictx = img.getContext('2d');
+    const idata = ictx.createImageData(nx, ny);
+    const bg = aimSurfaceRGB(canvas);
+    for (let p = 0; p < nx * ny; p++) {
+        const rgb = aimDensityRGB(max ? sm[p] / max : 0, bg);
+        idata.data[4 * p] = rgb[0];
+        idata.data[4 * p + 1] = rgb[1];
+        idata.data[4 * p + 2] = rgb[2];
+        idata.data[4 * p + 3] = 255;
+    }
+    ictx.putImageData(idata, 0, 0);
+
+    const ML = 34, MT = 8, MB = 20, GAP = 10, CB = 14, MR = 40;
+    const PW = nx * AIM_IMG_SCALE, PH = ny * AIM_IMG_SCALE;
+    const W = ML + PW + GAP + CB + MR, H = MT + PH + MB;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(img, ML, MT, PW, PH);
+
+    const px = x => ML + (x + AIM_YAW_HALF) / (2 * AIM_YAW_HALF) * PW;
+    const py = y => MT + (AIM_PITCH_HALF - y) / (2 * AIM_PITCH_HALF) * PH;
+    const crisp = v => Math.round(v) + 0.5;
+
+    // Dead-center cross + the |n| ≤ 1 hull box.
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(crisp(px(0)), MT);
+    ctx.lineTo(crisp(px(0)), MT + PH);
+    ctx.moveTo(ML, crisp(py(0)));
+    ctx.lineTo(ML + PW, crisp(py(0)));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.strokeRect(crisp(px(-1)), crisp(py(1)), px(1) - px(-1), py(-1) - py(1));
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeRect(crisp(ML), crisp(MT), PW, PH);
+
+    // Axis ticks at whole hull-widths.
+    ctx.fillStyle = '#8892a6';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let x = -AIM_YAW_HALF; x <= AIM_YAW_HALF; x++) {
+        ctx.fillRect(crisp(px(x)) - 0.5, MT + PH, 1, 3);
+        ctx.fillText(String(x), px(x), MT + PH + 5);
+    }
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let y = Math.ceil(-AIM_PITCH_HALF); y <= AIM_PITCH_HALF; y++) {
+        ctx.fillRect(ML - 3, crisp(py(y)) - 0.5, 3, 1);
+        ctx.fillText(String(y), ML - 6, py(y));
+    }
+
+    // Colorbar: 0 → max shots per fine cell (smoothed), same ramp including
+    // the fade-to-surface bottom so bar and image agree exactly.
+    const bx = ML + PW + GAP;
+    for (let i = 0; i < PH; i++) {
+        const rgb = aimDensityRGB(1 - i / (PH - 1), bg);
+        ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx.fillRect(bx, MT + i, CB, 1);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeRect(crisp(bx), crisp(MT), CB, PH);
+    const fmtBar = v => (v >= 10 ? String(Math.round(v)) : v.toFixed(1));
+    ctx.fillStyle = '#8892a6';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fmtBar(max), bx + CB + 4, MT + 4);
+    ctx.fillText(fmtBar(max / 2), bx + CB + 4, MT + PH / 2);
+    ctx.fillText('0', bx + CB + 4, MT + PH - 3);
+
+    // Hover read-out: shot/hit counts in the coarse bin under the cursor.
+    canvas._aimHover = { hShots, hHits, hx, hy, ML, MT, PW, PH };
+    if (!canvas._aimWired) {
+        canvas.addEventListener('mousemove', e => {
+            const d = canvas._aimHover;
+            if (!d) return;
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+            if (mx < d.ML || mx >= d.ML + d.PW || my < d.MT || my >= d.MT + d.PH) {
+                canvas.title = '';
+                return;
+            }
+            const xi = aimClampIndex(Math.floor((mx - d.ML) / d.PW * d.hx), d.hx);
+            const yi = aimClampIndex(Math.floor((my - d.MT) / d.PH * d.hy), d.hy);
+            const s = d.hShots[yi * d.hx + xi], h = d.hHits[yi * d.hx + xi];
+            const fmt = v => (v > 0 ? '+' : '') + v.toFixed(1);
+            const xlo = -AIM_YAW_HALF + xi * AIM_HOVER_BIN;
+            const yhi = AIM_PITCH_HALF - yi * AIM_HOVER_BIN;
+            const range = `Δyaw ${fmt(xlo)}…${fmt(xlo + AIM_HOVER_BIN)}, Δpitch ${fmt(yhi - AIM_HOVER_BIN)}…${fmt(yhi)}`;
+            canvas.title = s
+                ? `${range}: ${s} shot${s === 1 ? '' : 's'}, ${h} hit (${Math.round(h / s * 100)}%)`
+                : `${range}: no shots`;
+        });
+        canvas._aimWired = true;
+    }
+}
+
+// Marginal histograms under each crosshair image: the same normalized samples
+// projected onto one axis at a time. Yaw plots −nyaw so enemy-right reads
+// right (matching the image's x flip); pitch plots npitch ascending so
+// enemy-above reads right. Out-of-range samples clamp into the edge bins
+// (unlike the image, which drops them — a 1-D strip has room for catch-all
+// bins without smearing), and an odd bin count centers the middle bin on
+// zero (dead center).
+const AIM_HIST_PITCH_W = 0.25;
+
+function renderAimHistRow(prefix, c, idx, ramp) {
+    const row = document.getElementById(`${prefix}-hists`);
+    if (!row) return;
+    row.style.display = idx.length ? '' : 'none';
+    row.innerHTML = '';
+    if (!idx.length) return;
+    row.appendChild(buildAimHist('Yaw', 'enemy left ← → right', '×hull half-width',
+        AIM_YAW_HALF, AIM_YAW_W, i => -c.nyaw[i], c, idx));
+    row.appendChild(buildAimHist('Pitch', 'enemy below ← → above', '×hull half-height',
+        AIM_PITCH_HALF, AIM_HIST_PITCH_W, i => c.npitch[i], c, idx));
+    if (ramp && ramp.since && ramp.since.length) row.appendChild(buildAimRampHist(ramp));
+}
+
+function buildAimHist(name, dirNote, unit, half, w, val, c, idx) {
+    // Bin i is centered on (i − mid)·w: the middle bin straddles zero and the
+    // outermost bin centers sit exactly at ±half (edges overhang by w/2).
+    const mid = Math.round(half / w);
+    const nb = 2 * mid + 1;
+    const span = nb * w;
+    const binOf = v => Math.max(0, Math.min(nb - 1, mid + Math.round(v / w)));
+    const bins = Array.from({ length: nb }, () => ({ shots: 0, hits: 0 }));
+    let max = 0;
+    for (const i of idx) {
+        const b = bins[binOf(val(i))];
+        b.shots++;
+        if (c.hit[i]) b.hits++;
+        if (b.shots > max) max = b.shots;
+    }
+
+    const box = document.createElement('div');
+    box.className = 'aim-hist';
+    const title = document.createElement('div');
+    title.className = 'aim-hist-title';
+    title.innerHTML = `${name} <span class="aim-sel-note">${dirNote}</span>`;
+    box.appendChild(title);
+
+    const plot = document.createElement('div');
+    plot.className = 'aim-hist-plot';
+    const band = document.createElement('div');
+    band.className = 'aim-hist-band';
+    band.style.left = `${((span / 2 - 1) / span) * 100}%`;
+    band.style.width = `${(2 / span) * 100}%`;
+    plot.appendChild(band);
+    const zero = document.createElement('div');
+    zero.className = 'aim-hist-zero';
+    plot.appendChild(zero);
+
+    bins.forEach((b, bi) => {
+        const col = document.createElement('div');
+        col.className = 'aim-hist-col';
+        const lo = (bi - mid) * w - w / 2;
+        col.title = `${lo.toFixed(2)} … ${(lo + w).toFixed(2)} ${unit}: ` +
+            `${b.shots} shot${b.shots === 1 ? '' : 's'}` +
+            (b.shots ? `, ${b.hits} hit (${Math.round(b.hits / b.shots * 100)}%)` : '');
+        const fill = document.createElement('div');
+        fill.className = 'aim-hist-fill';
+        fill.style.height = `${max ? (b.shots / max) * 100 : 0}%`;
+        if (b.shots > 0) fill.style.minHeight = '2px';
+        col.appendChild(fill);
+        plot.appendChild(col);
+    });
+    box.appendChild(plot);
+
+    const axis = document.createElement('div');
+    axis.className = 'aim-hist-axis';
+    axis.innerHTML = `<span>−${half}</span><span>0</span><span>+${half} ${unit}</span>`;
+    box.appendChild(axis);
+    return box;
+}
+
+// The LG ramp (result.aim lgRamp, computed in Go: time since the shaft
+// opened per fire, fires < 150 ms apart grouped into one shaft — one fire ==
+// one 100 ms LG cell, so the bins align with the cell cadence) shown as a
+// third histogram under the LG image, same style as the marginals: bars =
+// the bin's hit-rate on a dynamic y scale (max bin hit % rounded up to the
+// next 10%, labelled in a small gutter), hover for the counts. A bin with
+// fires but no hits keeps a 2px stub so it reads as 0%, not as no data.
+// The last bin collects longer shafts.
+const AIM_RAMP_BIN = 100; // ms
+const AIM_RAMP_BINS = 12; // 0-1100 ms, then 1100+
+
+function buildAimRampHist(ramp) {
+    const bins = Array.from({ length: AIM_RAMP_BINS }, () => ({ shots: 0, hits: 0 }));
+    for (let i = 0; i < ramp.since.length; i++) {
+        const b = bins[Math.min(AIM_RAMP_BINS - 1, Math.floor(ramp.since[i] / AIM_RAMP_BIN))];
+        b.shots++;
+        if (ramp.hit[i]) b.hits++;
+    }
+    const pctOf = b => (b.shots ? b.hits / b.shots * 100 : 0);
+    const yMax = Math.max(10, Math.ceil(Math.max(...bins.map(pctOf)) / 10) * 10);
+    const maxShots = Math.max(...bins.map(b => b.shots));
+
+    const box = document.createElement('div');
+    box.className = 'aim-hist';
+    const title = document.createElement('div');
+    title.className = 'aim-hist-title';
+    title.innerHTML = 'Ramp <span class="aim-sel-note">hit % by time since the shaft opened; fires &lt; 150 ms apart are one shaft; faint = few fires</span>';
+    box.appendChild(title);
+
+    const plot = document.createElement('div');
+    plot.className = 'aim-hist-plot';
+    bins.forEach((b, bi) => {
+        const col = document.createElement('div');
+        col.className = 'aim-hist-col';
+        const lo = bi * AIM_RAMP_BIN;
+        const range = bi === AIM_RAMP_BINS - 1 ? `${lo}+ ms` : `${lo}…${lo + AIM_RAMP_BIN} ms`;
+        const pct = pctOf(b);
+        col.title = `${range}: ${b.shots} shot${b.shots === 1 ? '' : 's'}` +
+            (b.shots ? `, ${b.hits} hit (${Math.round(pct)}%)` : '');
+        const fill = document.createElement('div');
+        fill.className = 'aim-hist-fill';
+        fill.style.height = `${pct / yMax * 100}%`;
+        // A tall bar from a handful of fires is weak evidence: fade bars by
+        // sample size (sqrt keeps the steeply-decaying tail readable, the
+        // floor keeps every non-empty bin visible). Exact counts on hover.
+        fill.style.opacity = (0.25 + 0.75 * Math.sqrt(b.shots / maxShots)).toFixed(2);
+        if (b.shots > 0) fill.style.minHeight = '2px';
+        col.appendChild(fill);
+        plot.appendChild(col);
+    });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'aim-hist-ywrap';
+    const yaxis = document.createElement('div');
+    yaxis.className = 'aim-hist-yaxis';
+    yaxis.innerHTML = `<span>${yMax}%</span><span>0</span>`;
+    wrap.appendChild(yaxis);
+    wrap.appendChild(plot);
+    box.appendChild(wrap);
+
+    const axis = document.createElement('div');
+    axis.className = 'aim-hist-axis aim-hist-axis-inset';
+    axis.innerHTML = `<span>0</span><span>${AIM_RAMP_BINS * AIM_RAMP_BIN / 2}</span>` +
+        `<span>${(AIM_RAMP_BINS - 1) * AIM_RAMP_BIN}+ ms</span>`;
+    box.appendChild(axis);
+    return box;
 }
 
 // ─── Playback Engine ──────────────────────────────────────────────────────

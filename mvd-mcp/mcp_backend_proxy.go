@@ -245,6 +245,13 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/damage", q)
 }
 
+func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) {
+	if in.DemoID == "" {
+		return nil, errors.New("demoId required")
+	}
+	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/aim", nil)
+}
+
 func (p *proxyBackend) GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error) {
 	if in.DemoID == "" {
 		return nil, errors.New("demoId required")

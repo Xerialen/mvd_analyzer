@@ -27,6 +27,16 @@ type Context struct {
 	Players     [events.MaxClients]*events.PlayerInfo
 	FragsBySlot map[int]int     // Final frag count per slot
 	DemoInfo    *DemoInfoResult // Parsed demoinfo (set during finalization, used by ResolveSlotDemoInfo)
+
+	// ShotStreams opts the shots analyzer into building the spatial
+	// weapon-fire streams (Streams.Projectiles / Streams.Beams). Off by
+	// default (lean output); set from Registry.BuildShotStreams.
+	ShotStreams bool
+
+	// Nails opts the shots analyzer into nail (ng/sng) tracking and linking.
+	// Off by default; set from Registry.BuildNails. Requires the parser's
+	// nail decode to be enabled (the registry wires both together).
+	Nails bool
 }
 
 // SlotDemoInfo holds the resolved demoinfo player for a slot.
@@ -194,6 +204,19 @@ type (
 	DamagePair             = result.DamagePair
 	DamageReconciliation   = result.DamageReconciliation
 	DamageDelta            = result.DamageDelta
+	ShotsResult            = result.ShotsResult
+	Shot                   = result.Shot
+	PlayerShots            = result.PlayerShots
+	WeaponShots            = result.WeaponShots
+	ShotsReconciliation    = result.ShotsReconciliation
+	ShotsDelta             = result.ShotsDelta
+	ProjectileStreams      = result.ProjectileStreams
+	BeamStreams            = result.BeamStreams
+	AimResult              = result.AimResult
+	PlayerAim              = result.PlayerAim
+	CrosshairSamples       = result.CrosshairSamples
+	LGRampSamples          = result.LGRampSamples
+	WeaponAim              = result.WeaponAim
 	MapEntitiesResult      = result.MapEntitiesResult
 	MapEntity              = result.MapEntity
 	Bounds                 = result.Bounds

@@ -9,16 +9,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mvd-analyzer/mvd-api/internal/democache"
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
+	"github.com/mvd-analyzer/mvd-api/internal/democache"
 )
 
 // demoStore is the subset of *democache.Cache the handlers depend on.
 // Tests inject a fake.
 type demoStore interface {
 	GetResult(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
+	// EnsureShotStreams returns the Result with the opt-in spatial weapon-fire
+	// streams built (projectiles + beams; plus nails when nails is true),
+	// re-parsing the cached MVD bytes on first request. Callers serialize via
+	// streamsMu.
+	EnsureShotStreams(ctx context.Context, id democache.DemoID, nails bool) (*result.Result, democache.CacheMeta, error)
 }
 
 // httpError carries the wire-format error body.
@@ -246,6 +251,46 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// handleShots: GET /v1/demos/{id}/shots — the per-fire weapon stream
+// (result.Shots): every detected fire with time/player/weapon/source, hit +
+// victims where linkable, per-player match-time aggregates, and the KTX
+// reconciliation cross-check. Served from the stream-enriched parse (like
+// /aim, built on first request) so rl/gl fires carry their projectile-linked
+// hits. Pass nails=1 to include ng/sng fires (opt-in — high volume).
+func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
+	res, ok := s.resolveShotStreams(w, r, parseBool(r.URL.Query(), "nails"))
+	if !ok {
+		return
+	}
+	if res.Shots == nil {
+		writeError(w, http.StatusUnprocessableEntity, "shots_unavailable",
+			"this demo has no shot data (no weapon fires decoded)")
+		return
+	}
+	writeJSON(w, http.StatusOK, res.Shots)
+}
+
+// handleAim: GET /v1/demos/{id}/aim — per-player aim analysis (result.Aim):
+// per-weapon effectiveness (shots/hits, SG/SSG pellet stats, RL/GL
+// direct/splash, the LG near/blocked/out-of-range whiff split), columnar
+// crosshair-error samples (hitscan), and the LG ramp series.
+//
+// Served from the stream-enriched parse (EnsureShotStreams — built on first
+// request like the /streams/* endpoints, then cached) so the projectile/
+// beam-derived weapon blocks are always present.
+func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
+	res, ok := s.resolveShotStreams(w, r, false)
+	if !ok {
+		return
+	}
+	if res.Aim == nil {
+		writeError(w, http.StatusUnprocessableEntity, "aim_unavailable",
+			"this demo has no aim data (needs shots + position/view streams)")
+		return
+	}
+	writeJSON(w, http.StatusOK, res.Aim)
 }
 
 // handleChat: GET /v1/demos/{id}/chat — chat-only slice of
@@ -599,6 +644,79 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
+// resolveShotStreams mirrors resolveDemo but routes through EnsureShotStreams
+// (under streamsMu) so the requested spatial weapon-fire streams are built —
+// a one-time re-parse of the cached MVD bytes, since they are opt-in and not
+// in the lean default Result.
+func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request, nails bool) (*result.Result, bool) {
+	id, err := democache.ParseDemoID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
+		return nil, false
+	}
+	s.streamsMu.Lock()
+	res, meta, err := s.store.EnsureShotStreams(r.Context(), id, nails)
+	s.streamsMu.Unlock()
+	if err != nil {
+		mapStoreError(w, err)
+		return nil, false
+	}
+	setCacheHeaders(w, meta)
+	etag := fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion)
+	if match := r.Header.Get("If-None-Match"); match != "" && strings.Contains(match, etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return nil, false
+	}
+	return res, true
+}
+
+// handleProjectiles serves the rocket/grenade flight stream (opt-in; built on
+// first request). Body is {"projectiles": ...}, null when the demo has none.
+func (s *server) handleProjectiles(w http.ResponseWriter, r *http.Request) {
+	res, ok := s.resolveShotStreams(w, r, false)
+	if !ok {
+		return
+	}
+	var pr *result.ProjectileStreams
+	if res.Streams != nil {
+		pr = res.Streams.Projectiles
+	}
+	writeJSON(w, http.StatusOK, struct {
+		Projectiles *result.ProjectileStreams `json:"projectiles"`
+	}{pr})
+}
+
+// handleBeams serves the LG bolt stream (opt-in; built on first request).
+func (s *server) handleBeams(w http.ResponseWriter, r *http.Request) {
+	res, ok := s.resolveShotStreams(w, r, false)
+	if !ok {
+		return
+	}
+	var bm *result.BeamStreams
+	if res.Streams != nil {
+		bm = res.Streams.Beams
+	}
+	writeJSON(w, http.StatusOK, struct {
+		Beams *result.BeamStreams `json:"beams"`
+	}{bm})
+}
+
+// handleNails serves the ng/sng nail-flight stream (opt-in, highest volume;
+// built on first request, separate from projectiles/beams).
+func (s *server) handleNails(w http.ResponseWriter, r *http.Request) {
+	res, ok := s.resolveShotStreams(w, r, true)
+	if !ok {
+		return
+	}
+	var nl *result.ProjectileStreams
+	if res.Streams != nil {
+		nl = res.Streams.Nails
+	}
+	writeJSON(w, http.StatusOK, struct {
+		Nails *result.ProjectileStreams `json:"nails"`
+	}{nl})
+}
+
 func (s *server) handleLocTrails(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
@@ -691,6 +809,28 @@ func (s *server) handleRegionControl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, rcv)
+}
+
+// handleAirgibs: GET /v1/demos/{id}/airgibs — the Key Moments airgib list
+// (timelineAnalysis.airgibs): every DIRECT enemy rocket hit on an airborne
+// victim above the height threshold, sorted by height descending. Height
+// needs the map's clip hull, so the list is empty (not an error) when the
+// map's BSP was not provisioned at parse time.
+func (s *server) handleAirgibs(w http.ResponseWriter, r *http.Request) {
+	res, _, ok := s.resolveDemo(w, r)
+	if !ok {
+		return
+	}
+	if res.TimelineAnalysis == nil {
+		writeError(w, http.StatusUnprocessableEntity, "airgibs_unavailable",
+			"this demo has no timeline analysis")
+		return
+	}
+	airgibs := res.TimelineAnalysis.Airgibs
+	if airgibs == nil {
+		airgibs = []result.AirgibEvent{}
+	}
+	writeJSON(w, http.StatusOK, airgibs)
 }
 
 // recoverMiddleware turns a panic into a 500 + slog error line so a

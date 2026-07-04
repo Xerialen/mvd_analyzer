@@ -396,6 +396,7 @@ package result
 //     the match) still has one. Additive (omitempty); absent when the
 //     demo has no movers. The same internal mover tracks already feed the
 //     v27 floor-height pass.
+//
 // v36:
 //   - MatchResult drops the dead StartTime / EndTime fields. After the
 //     match-relative time normalization StartTime was always 0 (already
@@ -432,7 +433,46 @@ package result
 //     This test also gates the LOS raycast, so PVS ⊇ LOS by construction: the
 //     gap is the occlusion-tolerant "on the wire but no clear ray" signal.
 //     Additive (omitempty); absent on BSP-less maps and on the default parse.
-const CurrentSchemaVersion = 38
+//
+// v39:
+//   - New top-level Shots *ShotsResult: a per-shot weapon-fire stream
+//     (who fired what, at exactly what match-relative ms) derived from
+//     svc_sound CHAN_WEAPON fire sounds (SG/SSG/RL/GL/NG/SNG) and LG cell
+//     decrements, with same-frame hitscan→damage linking (sg/ssg/lg) and a
+//     diagnostic reconciliation against KTX acc.attacks. Additive
+//     (omitempty); the stream is present whenever any fire is detected,
+//     even on non-KTX servers (no damage stream → no hit links).
+//
+// v40:
+//   - Streams gains two opt-in spatial weapon-fire streams for the map view:
+//     Streams.Projectiles (every tracked rocket/grenade flight as
+//     spawn→despawn segments + times) and Streams.Beams (every LG
+//     TE_LIGHTNING2 bolt as a muzzle→impact segment + time). Both are built
+//     only when requested (qw-analyze -include projectiles,beams; the WASM
+//     map build) so the default output and goldens stay lean. Additive
+//     (omitempty); absent from the default parse.
+//
+// v41:
+//   - New top-level Aim (*AimResult): per-player aim analysis derived as a
+//     post-process from Shots + Streams (interpolated position/view at fire
+//     time) + Damage + the LG beam stream — normalized crosshair-error
+//     samples (hitscan), LG ramp-onto-target, rocket direct/splash, LG
+//     reach/whiff. Additive (omitempty); the crosshair/ramp blocks compute
+//     by default, the rocket/reach blocks only when their streams were built.
+//
+// v42:
+//   - Shot gains Warmup: true for fires outside the match (prewar / warmup /
+//     post-match). The shot stream still keeps them; ByPlayer and the aim
+//     analysis exclude them. Additive (omitempty).
+//
+// v43:
+//   - Aim target attribution gates candidates on being alive at fire time
+//     (losAliveAt over the spawn/death streams). Dead players keep streaming
+//     position samples (the death-anim body), so a corpse could previously
+//     win nearest-crosshair attribution in team games. No field changes;
+//     crosshair sample counts/targets shift on team demos, and a duel fire
+//     while the lone enemy is dead no longer emits a sample.
+const CurrentSchemaVersion = 43
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -454,6 +494,8 @@ type Result struct {
 	LocGraph         *LocGraphResult         `json:"locGraph,omitempty"`
 	Items            *ItemsResult            `json:"items,omitempty"`
 	Damage           *DamageResult           `json:"damage,omitempty"`
+	Shots            *ShotsResult            `json:"shots,omitempty"`
+	Aim              *AimResult              `json:"aim,omitempty"`
 	MapEntities      *MapEntitiesResult      `json:"mapEntities,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`

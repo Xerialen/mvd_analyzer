@@ -107,6 +107,41 @@ type MoverStateEvent struct {
 func (e *MoverStateEvent) EventType() EventType { return EventMoverState }
 func (e *MoverStateEvent) EventTime() float64   { return e.Time }
 
+// ProjectileSpawnEvent fires the first frame a slow-projectile entity —
+// a rocket (`progs/missile.mdl`) or grenade (`progs/grenade.mdl`) — is
+// observed on the wire. The wire carries no owner field, so attribution
+// is left to the analyzer: the projectile spawns at the firer's muzzle the
+// same frame as their RL/GL fire sound, and its entity number brackets the
+// flight (spawn → despawn) so a specific shot links to a specific impact.
+// Origin is the spawn position (the muzzle).
+type ProjectileSpawnEvent struct {
+	EntNum int
+	Kind   string // "rl" (rocket) | "gl" (grenade)
+	Origin [3]float32
+	Time   float64
+	TimeMs int32
+}
+
+func (e *ProjectileSpawnEvent) EventType() EventType { return EventProjectileSpawn }
+func (e *ProjectileSpawnEvent) EventTime() float64   { return e.Time }
+
+// ProjectileDespawnEvent fires when a tracked projectile entity leaves the
+// wire — removed on impact (T_MissileTouch → explosion + radius damage) or
+// on timeout. Origin is the last observed position before removal. The
+// despawn frame co-locates with the projectile's `TE_EXPLOSION` and, when
+// it hit a player, its `mvdhidden_dmgdone` damage, so the analyzer links
+// the launching shot to that damage by attacker + this time.
+type ProjectileDespawnEvent struct {
+	EntNum int
+	Kind   string
+	Origin [3]float32
+	Time   float64
+	TimeMs int32
+}
+
+func (e *ProjectileDespawnEvent) EventType() EventType { return EventProjectileDespawn }
+func (e *ProjectileDespawnEvent) EventTime() float64   { return e.Time }
+
 // modelPathToKind maps standard Quake 1 item model paths to the compact
 // kind strings we surface in the Result schema. Unrecognised paths
 // (player models, projectiles, gibs, etc.) return "" so the analyzer
@@ -119,28 +154,28 @@ func (e *MoverStateEvent) EventTime() float64   { return e.Time }
 // Sources cross-referenced: ktx/src/items.c setmodel() calls for each
 // item class, plus Quake 1 progs (id Software originals).
 var modelPathToKind = map[string]string{
-	"maps/b_bh10.bsp":      "h15",
-	"maps/b_bh25.bsp":      "h25",
-	"maps/b_bh100.bsp":     "mh",
-	"progs/g_shot.mdl":     "ssg",
-	"progs/g_nail.mdl":     "ng",
-	"progs/g_nail2.mdl":    "sng",
-	"progs/g_rock.mdl":     "gl",
-	"progs/g_rock2.mdl":    "rl",
-	"progs/g_light.mdl":    "lg",
-	"maps/b_shell0.bsp":    "shells",
-	"maps/b_shell1.bsp":    "shells",
-	"maps/b_nail0.bsp":     "nails",
-	"maps/b_nail1.bsp":     "nails",
-	"maps/b_rock0.bsp":     "rockets",
-	"maps/b_rock1.bsp":     "rockets",
-	"maps/b_batt0.bsp":     "cells",
-	"maps/b_batt1.bsp":     "cells",
-	"progs/quaddama.mdl":   "quad",
-	"progs/invulner.mdl":   "pent",
-	"progs/invisibl.mdl":   "ring",
-	"progs/suit.mdl":       "suit",
-	"progs/backpack.mdl":   "backpack",
+	"maps/b_bh10.bsp":    "h15",
+	"maps/b_bh25.bsp":    "h25",
+	"maps/b_bh100.bsp":   "mh",
+	"progs/g_shot.mdl":   "ssg",
+	"progs/g_nail.mdl":   "ng",
+	"progs/g_nail2.mdl":  "sng",
+	"progs/g_rock.mdl":   "gl",
+	"progs/g_rock2.mdl":  "rl",
+	"progs/g_light.mdl":  "lg",
+	"maps/b_shell0.bsp":  "shells",
+	"maps/b_shell1.bsp":  "shells",
+	"maps/b_nail0.bsp":   "nails",
+	"maps/b_nail1.bsp":   "nails",
+	"maps/b_rock0.bsp":   "rockets",
+	"maps/b_rock1.bsp":   "rockets",
+	"maps/b_batt0.bsp":   "cells",
+	"maps/b_batt1.bsp":   "cells",
+	"progs/quaddama.mdl": "quad",
+	"progs/invulner.mdl": "pent",
+	"progs/invisibl.mdl": "ring",
+	"progs/suit.mdl":     "suit",
+	"progs/backpack.mdl": "backpack",
 }
 
 // classifyItem returns the compact kind string for an entity based on
@@ -160,6 +195,41 @@ func classifyItem(modelPath string, skin int) string {
 		return ""
 	}
 	return modelPathToKind[strings.ToLower(modelPath)]
+}
+
+// projectilePathToKind maps the slow-projectile model paths we track to
+// their weapon kind. Nails (`progs/spike.mdl` / `progs/s_spike.mdl`) ride
+// the separate svc_nails stream, not packet entities, so they are not here.
+// Sources: ktx/src/weapons.c setmodel() — W_FireRocket → missile.mdl,
+// W_FireGrenade → grenade.mdl.
+var projectilePathToKind = map[string]string{
+	"progs/missile.mdl": "rl",
+	"progs/grenade.mdl": "gl",
+}
+
+// classifyProjectile returns the weapon kind for a projectile model path,
+// or "" when the path is not a tracked projectile.
+func classifyProjectile(modelPath string) string {
+	return projectilePathToKind[strings.ToLower(modelPath)]
+}
+
+// nailModels are the spike models nailguns fire. On servers with sv_nailhack
+// (common) nails travel as ordinary packet entities with these models rather
+// than the compact svc_nails stream, so the projectile tracker can bracket
+// them like rockets. They are tagged "nail" (weapon-agnostic): svc_nails is
+// untyped and the spike-vs-super-spike model split is unreliable, so ng/sng is
+// resolved downstream from the DtNG/DtSNG damage type, not the model.
+var nailModels = map[string]bool{
+	"progs/spike.mdl":   true,
+	"progs/s_spike.mdl": true,
+}
+
+// classifyNail returns "nail" for a spike model path, else "".
+func classifyNail(modelPath string) string {
+	if nailModels[strings.ToLower(modelPath)] {
+		return "nail"
+	}
+	return ""
 }
 
 // classifyMover reports whether modelPath names an inline brush
@@ -651,6 +721,56 @@ func (p *Parser) diffEntityTransitions(newFrame, oldFrame map[int]*EntityState, 
 		o := oldFrame[ent]
 		p.diffItemEntity(ent, s, o, time)
 		p.diffMoverEntity(ent, s, o, time, timeMs)
+		p.diffProjectileEntity(ent, s, o, time, timeMs)
+	}
+}
+
+// diffProjectileEntity emits ProjectileSpawnEvent the first frame a rocket
+// or grenade entity is observed and ProjectileDespawnEvent when it leaves
+// the wire (impact / timeout). Unlike items and movers — whose entity
+// numbers are stable — projectile entnums are recycled, so the per-ent
+// classification is cleared on despawn and re-derived on the next spawn.
+func (p *Parser) diffProjectileEntity(ent int, s, o *EntityState, time float64, timeMs int32) {
+	if p.spawnedProjectiles == nil {
+		p.spawnedProjectiles = make(map[int]string)
+	}
+	curKind := ""
+	if s != nil && s.Present && s.ModelIndex != 0 {
+		path := p.resolveModel(s.ModelIndex)
+		curKind = classifyProjectile(path)
+		if curKind == "" && p.decodeNails {
+			// sv_nailhack servers send spikes as packet entities; track them
+			// only when nail tracking is enabled (they are high volume).
+			curKind = classifyNail(path)
+		}
+	}
+	tracked, isTracked := p.spawnedProjectiles[ent]
+
+	if !isTracked {
+		if curKind == "" {
+			return
+		}
+		p.spawnedProjectiles[ent] = curKind
+		_ = p.emit(&ProjectileSpawnEvent{EntNum: ent, Kind: curKind, Origin: s.Origin, Time: time, TimeMs: timeMs})
+		return
+	}
+
+	if curKind == tracked {
+		return // still in flight
+	}
+
+	// Gone, or the entnum was reused for a different model: despawn the old
+	// projectile (last known origin), then spawn the new one if it is itself
+	// a projectile.
+	origin := [3]float32{}
+	if o != nil {
+		origin = o.Origin
+	}
+	delete(p.spawnedProjectiles, ent)
+	_ = p.emit(&ProjectileDespawnEvent{EntNum: ent, Kind: tracked, Origin: origin, Time: time, TimeMs: timeMs})
+	if curKind != "" {
+		p.spawnedProjectiles[ent] = curKind
+		_ = p.emit(&ProjectileSpawnEvent{EntNum: ent, Kind: curKind, Origin: s.Origin, Time: time, TimeMs: timeMs})
 	}
 }
 

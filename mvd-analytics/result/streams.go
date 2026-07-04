@@ -16,6 +16,19 @@ type Streams struct {
 	// no movers.
 	Movers []MoverStream `json:"movers,omitempty"`
 
+	// Projectiles and Beams are the spatial weapon-fire streams for the map
+	// view (schema v40): every tracked rocket/grenade flight and every LG
+	// bolt. They are opt-in — built only when the shot-stream flag is set
+	// (qw-analyze -include projectiles,beams; the WASM map build) — so the
+	// default output and golden corpus stay lean. Omitted when not built.
+	Projectiles *ProjectileStreams `json:"projectiles,omitempty"`
+	Beams       *BeamStreams       `json:"beams,omitempty"`
+	// Nails is the nail-flight stream (ng/sng spikes), same columnar shape as
+	// Projectiles with Weapon == "nail". Doubly opt-in: built only when nail
+	// tracking is on AND shot streams are requested, since nails are far
+	// higher volume than rockets/grenades.
+	Nails *ProjectileStreams `json:"nails,omitempty"`
+
 	// LOSComputed records whether the (lazy) line-of-sight pass has run, so a
 	// caller can compute it on demand exactly once and not retry on maps that
 	// genuinely have no LOS (no BSP). It is gob-serialized — the API persists
@@ -24,6 +37,46 @@ type Streams struct {
 	// PlayerStream.LOS itself, and the goldens stay agnostic to it. See
 	// analyzer.ComputeLOS.
 	LOSComputed bool `json:"-"`
+
+	// ShotStreamsComputed / NailsComputed latch the opt-in spatial weapon-fire
+	// streams the same way LOSComputed latches LOS: the API builds them on
+	// demand (a re-parse, since unlike LOS they cannot be recomputed from the
+	// lean cached Result) and sets the flag so later requests reuse the work.
+	// JSON-excluded — clients read presence/absence of the streams themselves.
+	ShotStreamsComputed bool `json:"-"`
+	NailsComputed       bool `json:"-"`
+}
+
+// ProjectileStreams is every tracked rocket/grenade flight as parallel
+// columns (one entry per flight). Flight i renders as a dot moving from
+// (Sx,Sy,Sz)[i] at Spawn[i] to (Ex,Ey,Ez)[i] at End[i], match-relative ms —
+// linear, which is exact for rockets and an approximation for bouncing
+// grenades. Weapon[i] is "rl" or "gl". Built only when shot streams are
+// requested (see Streams.Projectiles).
+type ProjectileStreams struct {
+	Weapon []string  `json:"w"`
+	Spawn  []int32   `json:"s"`
+	End    []int32   `json:"e"`
+	Sx     []float32 `json:"sx"`
+	Sy     []float32 `json:"sy"`
+	Sz     []float32 `json:"sz"`
+	Ex     []float32 `json:"ex"`
+	Ey     []float32 `json:"ey"`
+	Ez     []float32 `json:"ez"`
+}
+
+// BeamStreams is every Lightning Gun bolt (TE_LIGHTNING2) as parallel
+// columns. Beam i is the segment (Sx,Sy,Sz)[i] → (Ex,Ey,Ez)[i] flashed at
+// T[i] match-relative ms (Sx is the muzzle, Ex the trace endpoint). Built
+// only when shot streams are requested (see Streams.Beams).
+type BeamStreams struct {
+	T  []int32   `json:"t"`
+	Sx []float32 `json:"sx"`
+	Sy []float32 `json:"sy"`
+	Sz []float32 `json:"sz"`
+	Ex []float32 `json:"ex"`
+	Ey []float32 `json:"ey"`
+	Ez []float32 `json:"ez"`
 }
 
 // MoverStream is one brush-model entity's pose timeline (a lift, door,

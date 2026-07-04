@@ -567,6 +567,106 @@ func parseModelList(r *BufferReader) string {
 
 ---
 
+## svc_soundlist (46) - Sound Precache List
+
+Mirrors `svc_modellist` exactly, but for sound paths. Index 0 is the
+reserved null sound, so a `svc_sound` `sound_num` of N indexes the Nth
+precached path. The parser keeps this table (`p.soundList`) so it can
+resolve a fired sound back to its path (e.g. `"weapons/rocket1i.wav"`).
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_soundlist (46)
+1       1     start_index (usually 0)
+?       var   sound_1 (string, e.g., "weapons/sgun1.wav")
+...
+?       var   sound_N (string)
+?       1     empty string (0x00 terminator)
+?       1     next_index (for continuation, usually 0)
+```
+
+## svc_sound (6) - Start Sound
+
+Plays a sound on an entity's channel. The **entity number is packed into
+the channel word**, so the message tells us *who* made the sound, not just
+where — this is what makes weapon-fire sounds a truthful per-shot signal
+(the firing player is `ent - 1`).
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_sound (6)
+1       2     channel (short)         <- bit field, see below
+[1]     [1]   volume        (only if channel & 0x8000 / SND_VOLUME)
+[1]     [1]   attenuation   (only if channel & 0x4000 / SND_ATTENUATION)
+1       1     sound_num               <- index into svc_soundlist
+6/12    var   origin (3 coords, short or float)
+```
+
+Channel-word decode (ezquake `cl_parse.c`): `ent = (channel >> 3) & 1023;
+channel &= 7`. The 3-bit channel index is the Quake `CHAN_*` value —
+`CHAN_WEAPON` (1) carries every weapon fire (ktx `weapons.c`).
+
+**Weapon-fire sounds.** KTX fires each weapon with a distinct precached
+wav, so the resolved `Name` identifies the weapon. The Quake sound
+filenames are historically mismatched with the weapons that play them —
+note especially that the **rocket launcher** fires `sgun1.wav` and the
+**nailgun** fires `rocket1i.wav`:
+
+| Sound path | Weapon | KTX fire function |
+|---|---|---|
+| `weapons/guncock.wav` | sg | `W_FireShotgun` |
+| `weapons/shotgn2.wav` | ssg | `W_FireSuperShotgun` |
+| `weapons/sgun1.wav` | **rl** | `W_FireRocket` |
+| `weapons/grenade.wav` | gl | `W_FireGrenade` |
+| `weapons/rocket1i.wav` | **ng** | `W_FireSpikes` |
+| `weapons/spike2.wav` | sng | `W_FireSuperSpikes` |
+| `weapons/coilgun.wav` | sg (instagib) | instagib rail |
+
+The lightning gun has **no** per-shot fire sound (`lstart.wav` plays once
+per burst on `CHAN_AUTO`; `lhit.wav` is throttled hit feedback), so LG fire
+is counted from its lightning beam instead (see `svc_temp_entity` below).
+The grenade *bounce* (`bounce.wav`), ricochets (`ric*`), spike tinks
+(`tink1`) and axe sounds are not fires.
+
+---
+
+## svc_temp_entity (23) - Temporary Entity
+
+A one-shot visual effect (explosion, gunshot puff, blood, lightning beam).
+The byte layout depends on the type:
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_temp_entity (23)
+1       1     te_type
+
+// Point effects (TE_SPIKE/SUPERSPIKE/EXPLOSION/TAREXPLOSION/...):
+2       6/12  3 coords (origin)
+// TE_GUNSHOT (2), TE_BLOOD (12): 1-byte count, then 3 coords
+// Lightning beams (TE_LIGHTNING1=5 / 2=6 / 3=9):
+2       2     entity (short)        <- the entity drawing the beam
+4       6/12  3 coords (start)
+?       6/12  3 coords (end)
+```
+
+The parser decodes the **lightning beams** into `BeamEvent` (firing entity +
+start/end) and consumes every other type for its known length; an unknown
+type bails rather than guessing a length and drifting the cursor.
+
+**Player Lightning Gun.** `TE_LIGHTNING2` is the bolt KTX writes once per LG
+fire tick (`ktx/src/weapons.c` `W_FireLightning`), carrying the firing
+entity, the muzzle (`start`) and the hitscan trace endpoint (`end`). Because
+it is emitted in the same function that increments the accuracy counter — and
+LG *discharge* (firing in water) returns before that point and writes no beam
+— the beam count equals KTX `acc.attacks` exactly. The `shots` analyzer uses
+it as the authoritative per-shot LG signal (`Ent-1` is the shooter).
+`TE_LIGHTNING1/3` are non-player bolts and are not counted as LG fire.
+
+---
+
 ## svc_playerinfo (42) - Player State Update
 
 This is the core message type for player positions in MVD. The format differs between MVD and standard QWD.
@@ -2349,7 +2449,31 @@ Resolve `modelindex` → path via the `svc_modellist` table. Index 0 is reserved
 3. On `svc_packetentities` (full) / `svc_deltapacketentities` (delta): maintain a rolling `currentEntities` map. Full packets replace it; deltas copy from previous and apply per-entity updates. `U_REMOVE` deletes; other flags update fields.
 4. Diff new frame vs previous frame per tracked item — emit `ItemStateEvent{EntNum, Kind, Taken: bool, Time}` on every visibility flip (present + modelindex > 0 → absent, or vice versa).
 
-Baselines seed the "initial" state so items at match start are already "up". Non-item entities (players, projectiles, lights) pass through the classifier as empty kind and are silently filtered — except inline brush-model entities, which feed the mover events below.
+Baselines seed the "initial" state so items at match start are already "up". Non-item entities (players, lights) pass through the item classifier as empty kind and are silently filtered — except inline brush-model entities (which feed the mover events below) and slow projectiles (which feed the projectile events below).
+
+### Projectile tracking via entity state
+
+Rockets and grenades are dynamic entities — `spawn()` + `setmodel()` in the QuakeC fire functions (`ktx/src/weapons.c` `W_FireRocket` → `progs/missile.mdl`, `W_FireGrenade` → `progs/grenade.mdl`), transmitted through the same `svc_packetentities` stream as items. Because MVD recording ignores PVS, every projectile appears for its whole flight, so its entity number **brackets the flight**: first sighting → `ProjectileSpawnEvent` (kind + muzzle origin), removal on impact/timeout → `ProjectileDespawnEvent` (last origin). The wire carries no owner field, so attribution is the analyzer's job — the projectile spawns at the firer's muzzle the same frame as their RL/GL fire sound, and the despawn frame co-locates with the explosion and `mvdhidden_dmgdone` damage, so a specific fire links to a specific impact (see `shots` analyzer).
+
+Unlike item/mover entnums (stable for the match), projectile entnums are **recycled**, so the per-ent classification is cleared on despawn and re-derived on the next spawn.
+
+**Nails.** Where nails travel depends on the server. Most modern servers run `sv_nailhack` (mvdsv `SV_AddNailUpdate` bails when it is set), which sends spikes (`progs/spike.mdl` / `progs/s_spike.mdl`) as ordinary packet entities — so the projectile tracker brackets them like rockets, tagged `"nail"` (weapon-agnostic; ng vs sng is resolved from the `DtNG`/`DtSNG` damage type, not the model). Without `sv_nailhack` the server uses the compact `svc_nails` / `svc_nails2` stream instead (see below). Either way, nail tracking is **opt-in** (`Parser.SetDecodeNails`) because of the volume; the default parse ignores nails.
+
+### svc_nails (43) / svc_nails2 (54) — Nail projectiles
+
+The compact spike stream (mvdsv `SV_EmitNailUpdate`, ezquake `CL_ParseProjectiles`). One message carries the full live nail set for the frame. `svc_nails2` is the MVD-recording variant: it prefixes each nail with a 1-byte id (the entity colormap, recycled `& 255`) that is stable while the nail lives, so a consumer can bracket each nail's flight across frames.
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_nails (43) | svc_nails2 (54)
+1       1     count
+// per nail:
+[1]     [1]   id          (svc_nails2 only)
+?       6     bits[0..5]  — packed origin (12/12/12) + angles (4/8)
+```
+
+Origin unpack (whole-unit precision): `x = ((bits[0] + ((bits[1] & 15) << 8)) << 1) - 4096`, `y = (((bits[1] >> 4) + (bits[2] << 4)) << 1) - 4096`, `z = ((bits[3] + ((bits[4] & 15) << 8)) << 1) - 4096`. The parser decodes these into `NailsFrameEvent` only when `SetDecodeNails` is enabled; otherwise it consumes the payload (`count × 6` or `× 7` bytes) without emitting.
 
 **Inline brush-model entities (movers).** An entity whose model path is `"*N"` references submodel N of the map BSP itself (the `dmodel_t` array) rather than a separate model file: func_plat, func_door, func_train, func_button, func_wall, func_illusionary. Their geometry is compiled in world coordinates; the entity origin is a *translation offset* from that compiled position (a door at rest has origin `0 0 0`), which is exactly how the client poses their collision hulls for prediction (`CL_SetSolidEntities`, ezquake `cl_ents.c` — `VectorCopy(state->origin, physent.origin)` and trace in model-local space). Trigger volumes are also `"*N"` submodels in the BSP but never appear in the entity stream: Quake progs `InitTrigger` (`subs.qc`) clears `modelindex`/`model` after `setmodel`, and mvdsv only writes entities with a non-zero modelindex and model string (`sv_ents.c:790`). MVD packets have no PVS filtering, so every visible mover is in every frame; delta compression means its origin is re-sent only when it changes. The parser synthesises:
 

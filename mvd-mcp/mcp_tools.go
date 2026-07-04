@@ -74,6 +74,14 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
+		Name:        "getAim",
+		Description: "Per-player aim analysis. Start with players[].weapons — per-weapon shots/hits plus SG/SSG pellet stats (pellets, pelletHits, full/partial/miss fires), RL/GL direct/splash/missed, and the LG miss split (nearMiss = aim error just off the hull, blocked = an object in the way, outOfRange = beam ran its full ~600u). Each player also carries two large columnar blocks: crosshair (per-hitscan-fire angular error, both signed degrees and normalized so ±1 = the hitbox edge, with hit flag + attributed target) and lgRamp (per-LG-cell hit vs ms since the shaft opened). Prefer the weapons aggregates unless per-shot detail is needed. mode notes attribution quality: 'duel' (exact, one enemy) or 'team' (nearest-crosshair-enemy heuristic); only enemies alive at fire time are candidates. First call on a demo may be slow (builds the projectile/beam streams). Response shape: see mvd-api /v1/demos/{id}/aim.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetAimInput) (*mcp.CallToolResult, any, error) {
+		out, err := b.GetAim(ctx, in)
+		return toolResult(out, err)
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
 		Name:        "getLocGraph",
 		Description: "Per-map adjacency graph of named locations: which locs are reachable from which, with edge weights derived from per-player loc-to-loc transitions. Useful for movement-pattern reasoning ('what's adjacent to RA?').",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetLocGraphInput) (*mcp.CallToolResult, any, error) {

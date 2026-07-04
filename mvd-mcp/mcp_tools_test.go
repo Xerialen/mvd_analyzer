@@ -69,6 +69,9 @@ func (f *fakeBackend) GetFrags(_ context.Context, _ GetFragsInput) (any, error) 
 func (f *fakeBackend) GetDamage(_ context.Context, _ GetDamageInput) (any, error) {
 	return map[string]any{"totalDamage": 50000, "byWeapon": map[string]any{"rl": 30000}}, nil
 }
+func (f *fakeBackend) GetAim(_ context.Context, _ GetAimInput) (any, error) {
+	return map[string]any{"players": []any{map[string]any{"player": "gore", "mode": "team"}}}, nil
+}
 func (f *fakeBackend) GetLocGraph(_ context.Context, _ GetLocGraphInput) (any, error) {
 	return map[string]any{"locs": []any{}, "edges": []any{}}, nil
 }
@@ -156,7 +159,7 @@ func TestMCP_ListTools(t *testing.T) {
 	want := []string{
 		"searchGames", "loadDemo",
 		"getOverview", "getDemoInfo", "getMetadata", "getFrags", "getDamage",
-		"getLocGraph", "getChat",
+		"getAim", "getLocGraph", "getChat",
 		"getBackpacks", "getItems", "getMapEntitiesByMap", "getWeaponPickups",
 		"getBuckets", "getEvents", "getStreamSlice", "getStateAt",
 		"getLocTrails", "getLocTable", "getRegionControl",

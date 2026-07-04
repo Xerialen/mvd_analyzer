@@ -7,6 +7,21 @@ detail.
 
 ## 2026-07-04
 
+- **API: `/shots` endpoint + complete `/aim`; MCP: `getAim`** (no schema
+  change). New `GET /v1/demos/{id}/shots` serves the per-fire weapon stream
+  (`result.Shots`: linked hits/victims, per-player aggregates, KTX
+  reconciliation; `nails=1` opts into ng/sng fires). `/aim` and `/shots` are
+  served from the stream-enriched parse (`EnsureShotStreams` re-parses on
+  first request, then caches — the rebuilt `Shots`/`Aim` blocks are grafted
+  onto the cached result), so the stream-derived aim blocks (RL/GL
+  direct/splash, the LG near/blocked/out-of-range split) are now always
+  present over the API instead of silently absent. New
+  `GET /v1/demos/{id}/airgibs` serves the Key Moments airgib list
+  (`timelineAnalysis.airgibs` — the last Result block with no endpoint);
+  empty, not an error, on maps without a provisioned BSP. The MCP server
+  adds a `getAim` tool (aim stats only — the raw per-fire stream stays
+  API/JSON-only by design).
+
 - **Wider BSP corpus + phantom map-alias fix.** `scripts/fetch-bsps.sh`
   now provisions the most-played 1on1/2on2 community maps from a
   hub.quakeworld.nu sample (ztndm3, metron, toxicity, dad2, catalyst,
@@ -21,7 +36,129 @@ detail.
   mapents, mapbsp, and the `/v1/maps/{map}` endpoint. Only the dominant
   `phantombase` BSP is fetched; the low-play predecessors are not.
 
+## 2026-07-03
+
+- **Aim: alive-gated attribution + density image, marginal histograms,
+  share-of-fires columns** (schema v43).
+  Crosshair-error target attribution now skips enemies who are dead at the
+  fire time (same liveness rule as line of sight, `losAliveAt` over the
+  spawn/death streams). Dead players keep streaming position samples — the
+  death-anim body — so a corpse sitting near the crosshair could previously
+  win nearest-crosshair attribution in team games and log a guaranteed-miss
+  sample; a duel fire while the lone enemy is dead now emits no sample at
+  all (the per-weapon fire counts still include it). No field changes —
+  sample counts and targets shift on team demos. The web Aim Stats tab
+  replaces the crosshair grid with a **smoothed density image** per weapon
+  (LG and SG): a Gaussian-smoothed 2-D histogram on canvas (the shared
+  viridis ramp anchored to the page background at zero, like the table
+  heatmaps; no external deps) with hull box + dead-center overlays, axis
+  ticks and a colorbar in shots per bin; hover reads exact shot/hit counts.
+  Under each image, two **marginal histograms**: the same normalized
+  samples projected onto one axis at a time — yaw (enemy left ↔ right) and
+  pitch (enemy below ↔ above) — zero-centered bins, with the |n| ≤ 1
+  on-hull band shaded and a dead-center rule. Image and histograms share
+  the same extents (yaw ±6, pitch ±4); samples outside them are dropped
+  from the image (a clamp pile-up would paint a bright rim) but stay
+  visible in the histograms' clamp edge bins. The LG ramp panel is folded
+  into the LG block as a third histogram in the same style (hit % by time
+  since the shaft opened, hover for per-bin counts; `lgRamp` in the
+  schema is unchanged), and the histograms stack vertically. All binning
+  stays client-side. The per-weapon accuracy
+  tables add **share-of-fires % columns** next to every count (LG
+  near/blocked/far, RL/GL direct/splash/missed, SG/SSG full/partial/miss)
+  so players with different shot volumes compare directly.
+
+## 2026-06-28
+
+- **Aim analytics** (schema v41–v42). A new top-level `aim` block: per-player aim
+  metrics derived as a post-processor from `shots` + `streams`
+  (position/view interpolated at fire time) + `damage` + LG `beams`. Columnar
+  per-shot **crosshair-error samples** for hitscan (sg/ssg/lg) — both signed
+  degrees off the enemy and a version normalized by the target's angular size
+  (range-comparable; radius 1 ≈ the hitbox edge); an **LG ramp-onto-target**
+  series (ms since shaft start + hit); **rocket direct/splash** counts; and an
+  **LG reach/whiff** classification (near miss vs blocked vs unresolved).
+  Target attribution is exact in duels (`mode: "duel"`) and a labeled
+  nearest-crosshair-enemy heuristic in team games (`mode: "team"`). Computed
+  by default for every client (CLI / API / web) — the crosshair + ramp blocks
+  always; the rocket + reach blocks when the projectile/beam streams were
+  built (the WASM map build, `qw-analyze -include projectiles,beams`). The web
+  UI adds an experimental **Aim Stats** tab that renders the block: a rich
+  per-weapon table (SG/SSG pellets hit/fired + full/partial/whiff fires, RL/GL
+  direct/splash/missed, LG near-aim/blocked whiffs — the pellet and direct
+  figures match the server's authoritative stats), a hitscan
+  crosshair-placement heatmap (shot density, normalized so ±1 = the hull edge),
+  and an LG ramp chart. Also adds a reusable
+  `result.PositionTrack.SampleAt` interpolating
+  sampler (position + shortest-arc view angle + velocity) other position-
+  derived analytics can adopt. The web table is one table per weapon with
+  players on the rows (team-coloured like the Summary tab), and the heatmap is
+  split into LG and SG. Shots gained `warmup` (v42) — fires outside the match;
+  the aim analysis is match-time and excludes them, matching `shots.byPlayer`.
+
 ## 2026-06-27
+
+- **Weapon-fire map overlay** (schema v40). Two opt-in spatial streams under
+  `streams` for the 3D map view: `projectiles` (every tracked rocket/grenade
+  flight as a spawn→despawn segment + times) and `beams` (every LG
+  `TE_LIGHTNING2` bolt as a muzzle→impact segment + time), both columnar.
+  They are **off by default** — sizeable in a team game (thousands of beams)
+  — and built only on request: `qw-analyze -include projectiles,beams`, and
+  the WASM map build (where the result stays in browser memory, so no extra
+  download). The map renders rockets/grenades as moving dots and LG bolts as
+  brief beams at the playback cursor (`drawProjectiles` / `drawBeams`). The
+  REST API serves them as three independent, build-on-demand endpoints —
+  `GET /v1/demos/{id}/streams/{projectiles|beams|nails}` — re-parsing the
+  cached demo on the first request and latching the result (like `/los`).
+
+- **Nail (ng/sng) tracking** (schema v40, opt-in). A separate, highest-volume
+  request (`qw-analyze -include nails`) that decodes nails — spike packet
+  entities on `sv_nailhack` servers (the common case), or the `svc_nails` /
+  `svc_nails2` stream otherwise — brackets each nail's flight, links ng/sng
+  fires to their nail damage (`hit`/`victims`, approximate: per-fire linking
+  credits one of SNG's two nails), and emits a `streams.nails` map overlay.
+  Off everywhere by default — including the web map — so nails are never
+  downloaded unless explicitly requested. Per-player nail hit counts track
+  KTX's within a small margin across the corpus.
+
+- **Per-shot weapon-fire stream** (schema v39). New top-level `shots`
+  result: who fired what weapon, at exactly what match-relative ms — the
+  foundation for accuracy metrics (including over short intervals) and for
+  external analysis correlating crosshair/aim movement with when shots were
+  taken (join a shot's `time` against `streams.players[].pos` view
+  angles/velocity).
+  - **Detection.** SG/SSG/RL/GL/NG/SNG fires come from `svc_sound` on the
+    shooter's `CHAN_WEAPON` — the sound carries the firing entity, so
+    attribution is exact and works on **any** QW server (not just KTX), and
+    the distinct fire wavs disambiguate RL vs GL where ammo deltas cannot.
+    (The Quake sound filenames are historically mismatched: the rocket
+    launcher fires `sgun1.wav`, the nailgun fires `rocket1i.wav`.) LG has no
+    per-shot fire sound, so it is counted from its `TE_LIGHTNING2` beam —
+    emitted once per fire tick and carrying the firing entity directly
+    (`source:"beam"`). One beam == one LG attack == one cell, so LG counts
+    match KTX `acc.attacks` exactly. The beam decode also surfaces the
+    muzzle→impact geometry as `BeamEvent` (for map rendering).
+  - **Truthful cross-linking.** Instantaneous hitscan fires (sg/ssg/lg) are
+    linked to the damage they caused in the **same server frame** via the
+    KTX `mvdhidden_dmgdone` stream (`hit`/`victims`). Rocket/grenade fires
+    (rl/gl) are linked by **entity flight tracking**: the projectile entity
+    brackets the flight (`spawn → despawn`), so a fire is matched to its
+    launch frame (by muzzle) and its impact damage to the shooter's
+    same-weapon damage at the despawn frame — which disambiguates *which*
+    fire caused *which* impact when several rockets are in flight (a naive
+    "next damage" link cannot). Across the corpus, rl/gl connect-counts
+    match KTX's authoritative `real` hit counts to within one. Nail fires
+    (ng/sng) ride a separate stream and stay unlinked for now.
+  - New parser events `ProjectileSpawnEvent` / `ProjectileDespawnEvent`
+    track rocket (`progs/missile.mdl`) and grenade (`progs/grenade.mdl`)
+    entities by their recycled entity number.
+  - **Validation built in.** A `reconciliation` block cross-checks detected
+    counts against KTX's authoritative `acc.attacks`; across the golden
+    corpus the converted `streamAttacks` matches KTX exactly (a 4on4 game
+    reconciles 42/42 player×weapon rows), with LG occasionally off by a
+    single cell at a death/discharge boundary.
+  - New parser events: `svc_sound` is decoded into `SoundEvent` and
+    `svc_soundlist` is captured to resolve fired sounds to weapons.
 
 - **Line-of-sight & potential-visibility metrics** (schema v37–v38,
   [#94](https://github.com/galfthan/mvd_analyzer/pull/94)). Two new

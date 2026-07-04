@@ -30,12 +30,12 @@ that downstream consumers render, summarise, or feed to an agent.
   run. `NewDefaultRegistry()` wires up the production analysers split
   into two phases: **core** (`demoinfo`, `identity`, `frag` — the
   producers that fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
-  `messages`, `timeline`, `items`, `damage`, `backpacks`, `weapon_pickups`)
-  finalise after, with `CoreOutputs` already populated. Six default
+  `messages`, `timeline`, `items`, `damage`, `shots`, `backpacks`, `weapon_pickups`)
+  finalise after, with `CoreOutputs` already populated. Seven default
   result post-processors run last (victim-named teamkill recovery, time
-  normalisation, duel team rewrite, scoreboard kills/deaths/suicides
-  correction, locgraph synthesis, region-control classification) — see
-  `postprocess.go`
+  normalisation, duel team rewrite, **aim analysis**, scoreboard
+  kills/deaths/suicides correction, locgraph synthesis, region-control
+  classification) — see `postprocess.go` and `aim.go`
   and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
   `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
@@ -155,7 +155,7 @@ it.
 | Slice | Default analysers | Why |
 |---|---|---|
 | **Core** | [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
-| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. |
+| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. `shots` derives a per-shot weapon-fire stream from `svc_sound` fire sounds (+ LG cell-ammo), links hitscan fires to same-frame damage, and reconciles counts against `co.DemoInfo` accuracy. |
 | **Post-processors** | `recoverTelefragTeamkills`, `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (telefrag recovery runs before time normalisation so positions/frag-events/obituaries share the demo-relative clock; `scoreboardStatsPost` copies the frag-log-corrected kills/deaths/suicides onto `match.players`, joining on the final display name after teamkill recovery; time normalisation must run before locgraph). |
 | **Shelved** | [`tracks`](analyzer/tracks.md) | Code present, not registered. Awaiting a mvd-web consumer. |
 
@@ -273,6 +273,8 @@ type Result struct {
     LocGraph         *LocGraphResult          // loc-to-loc movement graph
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
     Damage           *DamageResult            // per-hit damage log + aggregates (KTX dmgdone stream)
+    Shots            *ShotsResult             // per-shot weapon-fire stream (sound + LG ammo) + hitscan→damage links
+    Aim              *AimResult               // per-player aim analysis (crosshair error, LG ramp, rocket direct/splash, LG reach)
     MapEntities      *MapEntitiesResult       // static map layout from the BSP entity corpus (mapents)
     Backpacks        []BackpackDrop           // RL/LG backpack drops (from KTX //ktx drop hint)
     WeaponPickups    []WeaponPickup           // slot-weapon pickups + kills-before-next-death metric

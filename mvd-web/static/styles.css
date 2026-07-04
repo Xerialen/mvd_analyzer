@@ -894,6 +894,227 @@ table tbody tr:hover {
     color: var(--accent-cyan);
 }
 
+/* Aim Stats tab (experimental) */
+.aim-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.aim-controls-label {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.aim-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    outline: none;
+}
+
+.aim-chips:focus-within,
+.aim-chips:focus {
+    box-shadow: 0 0 0 2px var(--accent-cyan-dim);
+    border-radius: 6px;
+}
+
+.aim-chip {
+    padding: 3px 10px;
+    background: var(--bg-panel);
+    color: var(--fg-default);
+    border: 1px solid transparent;
+    border-bottom: 2px solid #666;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.aim-chip:hover {
+    border-color: var(--accent-cyan-dim);
+}
+
+.aim-chip.active {
+    background: var(--accent-cyan-dim);
+    color: #06121a;
+    font-weight: 600;
+}
+
+.aim-mode {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.aim-desc {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    max-width: 72ch;
+}
+
+/* One stats table per weapon, players on the rows (team-coloured stripe). */
+.aim-weapon-block {
+    margin-bottom: 18px;
+}
+
+.aim-weapon-block h4 {
+    margin: 0 0 6px;
+    color: var(--accent-cyan);
+}
+
+.aim-heatmap-block {
+    margin-top: 14px;
+}
+
+/* Smoothed crosshair-density image; intrinsic size set by drawAimDensity.
+   The background doubles as the image's zero-density colour (read back by
+   aimSurfaceRGB) — bg-deep so empty regions match the table heatmaps. */
+.aim-density {
+    display: block;
+    background: var(--bg-deep);
+    border-radius: 4px;
+    max-width: 100%;
+}
+
+.aim-heatmap-block h4 {
+    margin: 0 0 6px;
+    color: var(--accent-cyan);
+}
+
+.aim-weapon-table th {
+    font-size: 0.8rem;
+}
+
+.aim-sel-note {
+    color: #888;
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+/* In-flow "no data" note (unlike .map-no-data, which is absolutely centred
+   over the map canvas and would float mid-panel without scrolling). */
+.aim-nodata {
+    color: #888;
+    font-size: 0.9rem;
+    padding: 6px 2px;
+}
+
+/* Histograms under each crosshair image, stacked vertically: one column per
+   bin, the shaded band marks |n| ≤ 1 (on the hull), the rule marks dead
+   center. */
+.aim-hist-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.aim-hist {
+    width: 100%;
+    max-width: 580px;
+}
+
+.aim-hist-title {
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.aim-hist-plot {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 84px;
+    background: var(--bg-panel);
+    border-radius: 4px;
+    padding-top: 2px;
+}
+
+.aim-hist-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+}
+
+.aim-hist-zero {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.22);
+    pointer-events: none;
+}
+
+.aim-hist-col {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.aim-hist-col:hover .aim-hist-fill {
+    background: var(--accent-cyan);
+}
+
+.aim-hist-fill {
+    width: 100%;
+    background: var(--accent-cyan-dim);
+    border-radius: 1px 1px 0 0;
+}
+
+/* Ramp histogram: y-axis gutter for its dynamic hit-% scale; the x axis
+   below gets a matching inset so its labels stay under the plot. */
+.aim-hist-ywrap {
+    display: flex;
+    gap: 6px;
+}
+
+.aim-hist-ywrap .aim-hist-plot {
+    flex: 1;
+}
+
+.aim-hist-yaxis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 34px;
+    color: #666;
+    font-size: 0.72rem;
+    text-align: right;
+    padding: 2px 0;
+}
+
+.aim-hist-axis-inset {
+    margin-left: 40px; /* y-axis gutter width + gap */
+}
+
+.aim-hist-axis {
+    display: flex;
+    color: #666;
+    font-size: 0.72rem;
+    margin-top: 2px;
+}
+
+/* Equal thirds so the middle "0" sits at the true center regardless of how
+   wide the unit suffix on the right label is. */
+.aim-hist-axis span {
+    flex: 1;
+    text-align: center;
+}
+
+.aim-hist-axis span:first-child { text-align: left; }
+.aim-hist-axis span:last-child { text-align: right; }
+
+.aim-na {
+    color: #555;
+    text-align: center;
+}
+
 /* Timeline Styles */
 .timeline-container {
     max-height: 600px;

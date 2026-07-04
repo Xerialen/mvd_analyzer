@@ -48,8 +48,11 @@ func analyze(this js.Value, args []js.Value) interface{} {
 	}
 	defer reader.Close()
 
-	// Run analysis pipeline
+	// Run analysis pipeline. The map view renders rocket/grenade flights and
+	// LG beams, so build the spatial shot streams here — the result stays in
+	// browser memory (no extra download), unlike the CLI/API which gate them.
 	registry := analyzer.NewDefaultRegistry()
+	registry.BuildShotStreams = true
 	res, err := registry.AnalyzeReader(reader, filename)
 	if err != nil {
 		return errorJSON(err.Error())

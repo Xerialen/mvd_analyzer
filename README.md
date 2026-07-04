@@ -359,6 +359,13 @@ Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `ItemPickupPrintEvent`, `BackpackPickupPrintEvent`,
 `DemoStartTimestampEvent` (mvdhidden `0x000B` wall-clock anchor),
 `PausedDurationEvent` (mvdhidden `0x000A` per-frame pause duration),
+`SoundEvent` (`svc_sound` — emitting entity + channel + resolved sound
+path; weapon-fire sounds drive the shots analyzer),
+`ProjectileSpawnEvent` / `ProjectileDespawnEvent` (rocket/grenade entity
+flight brackets — the shots analyzer links RL/GL fires to their impacts),
+`BeamEvent` (`svc_temp_entity` lightning beams — `TE_LIGHTNING2` is the
+per-tick LG fire signal),
+`NailsFrameEvent` (`svc_nails` spike snapshots — opt-in, off by default),
 `MoverSpawnEvent` / `MoverStateEvent` (inline brush-model entities —
 lifts, doors, trains — identity plus per-frame origin while moving).
 Domain types carried by events — `ServerData`, `PlayerInfo`,
@@ -399,6 +406,14 @@ items (per-item pickup / respawn timeline — works on any MVD source),
 damage (per-hit damage log + aggregates — attacker→victim matrix,
 per-weapon, given/taken, and the EWep victim-weapon buckets — from the
 KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
+shots (per-shot weapon-fire stream — who fired what at exactly what ms,
+from `svc_sound` fire sounds + LG cell-ammo — with same-frame hitscan→damage
+links, entity-tracked rocket/grenade→impact links, and a KTX-accuracy
+cross-check),
+aim (per-player aim analysis derived from shots + streams + damage —
+normalized crosshair-error samples for hitscan, LG ramp-onto-target, rocket
+direct/splash, and LG reach/whiff; exact target attribution in duels, a
+labeled nearest-crosshair heuristic in team games),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
 `//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
@@ -693,8 +708,15 @@ diff -r /tmp/before /tmp/after
 ## Known limitations
 
 1. **Weapon switching scripts**: QW players use scripts that switch weapons
-   faster than MVD stat updates, causing RL/GL shot undercounting in
-   MVD-based tracking. KTX demoinfo stats (when available) are authoritative.
+   faster than MVD stat updates, so any *ammo-delta*-based inference of
+   RL/GL usage undercounts. The `shots` analyzer sidesteps this by keying on
+   the `svc_sound` weapon-fire sound (which carries the firing entity), not
+   ammo — its per-weapon counts match KTX `acc.attacks` exactly across the
+   corpus, including RL/GL. The one weapon still counted from ammo is LG
+   (it has no per-shot fire sound), which can slip by a single cell at a
+   death/discharge boundary. KTX demoinfo stats (when available) remain the
+   authoritative reference, and `shots.reconciliation` cross-checks against
+   them.
 
 2. **Auth name override**: When players authenticate via mvdsv,
    `sv_forcenick` can set the userinfo name to the login. The analyzer
@@ -808,6 +830,17 @@ diff -r /tmp/before /tmp/after
    height (h) are **`float32`** — the wire-native sub-unit origin, no
    longer truncated to whole units (which also sharpens the velocity);
    the `h` no-floor sentinel is now `-1000000000`.
+
+9. **Aim target attribution (schema v41)**: the `aim` block's crosshair
+   error is computed against the enemy it attributes each shot to. In a
+   **duel** this is exact (one enemy → `mode: "duel"`). In a **team game**
+   it is a heuristic: each shot is attributed to the enemy nearest the
+   crosshair at the fire time (`mode: "team"`), so a shot tracking one
+   opponent while another crosses closer to the crosshair can be mis-
+   attributed. Shots are only attributed to an enemy whose position track
+   brackets the fire time. The rocket "direct hit" count is likewise a
+   heuristic (non-splash damage events ≈ direct contacts). These are
+   labeled in the data so consumers can disambiguate.
 
 ## Reference sources
 
