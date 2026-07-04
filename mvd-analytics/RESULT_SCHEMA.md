@@ -373,11 +373,16 @@ the hull maps to the unit square (see CrosshairSamples).
 re-derived. The crosshair samples are **hitscan-only** (sg/ssg/lg — rockets
 are led); note SG/SSG have pellet spread, so the web heatmap splits **LG and
 SG into separate grids** (the pellet cloud would smear the precise hitscan).
-A shot is attributed only to an enemy whose position track brackets the fire
-time **and who is alive at it** (dead players keep streaming position
-samples — the death-anim body — so a corpse would otherwise remain a
-candidate; same liveness rule as LOS). `Mode` is `"duel"` (one enemy → exact)
-or `"team"` (nearest-crosshair-enemy heuristic). Rocket "direct" is a
+A **hit** is attributed to its server-confirmed victim (nearest by crosshair
+error when a pellet fire hit several), with no liveness gate — the killing
+blow lands in the same frame the victim dies, so the liveness rule would
+read the victim as already dead at the fire time — and no enemy filter (a
+team-damage hit is a confirmed target too). A **miss** is attributed only to
+an enemy whose position track brackets the fire time **and who is alive at
+it** (dead players keep streaming position samples — the death-anim body —
+so a corpse would otherwise remain a candidate; same liveness rule as LOS).
+`Mode` is `"duel"` (one enemy → exact) or `"team"` (hits exact via the
+victim; misses a nearest-crosshair-enemy heuristic). Rocket "direct" is a
 non-splash-damage heuristic.
 
 | Field | JSON key | Type |
@@ -417,7 +422,7 @@ outside.)
 | NPitch | `npitch` | []float32 (normalized) |
 | Dist | `dist` | []float32 (qu) |
 | Hit | `hit` | []bool |
-| Target | `tgt` | []string (attributed enemy) |
+| Target | `tgt` | []string — the confirmed victim for hits (can be a teammate on team damage); the attributed live enemy for misses |
 
 ### LGRampSamples
 

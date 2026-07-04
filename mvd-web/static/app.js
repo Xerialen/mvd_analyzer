@@ -10839,8 +10839,8 @@ function renderAimMode(pa) {
     const el = document.getElementById('aim-mode');
     if (!el) return;
     el.textContent = pa.mode === 'duel'
-        ? 'Target attribution: duel (exact — one enemy)'
-        : 'Target attribution: team game (nearest-crosshair-enemy heuristic)';
+        ? 'Target attribution: duel (exact — one enemy; hits use the confirmed victim)'
+        : 'Target attribution: team game (hits → confirmed victim; misses → nearest-crosshair-enemy heuristic)';
 }
 
 // Column descriptors: {h: header, t: tooltip, cell: (WeaponAim) -> html}. The

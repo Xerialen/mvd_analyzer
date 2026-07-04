@@ -85,9 +85,10 @@ image drops, and the on-hull |n| ≤ 1 band is shaded), an LG shaft-time
 (ramp) histogram in the same style under the LG image (bars = hit % per
 100 ms cell on a dynamic labelled scale, bar opacity = sample size), a
 rocket direct/splash panel, and an LG-whiffs split. All geometry/attribution lives
-in `mvd-analytics/analyzer/aim.go`; the tab only bins and paints. Target attribution is exact in duels and a labeled
-nearest-crosshair heuristic in team games, in both cases only among enemies
-alive at the fire time.
+in `mvd-analytics/analyzer/aim.go`; the tab only bins and paints. Target
+attribution: hits use the server-confirmed victim (exact in duels and team
+games alike); misses are exact in duels and a labeled nearest-crosshair
+heuristic in team games, only among enemies alive at the fire time.
 The **Key Moments** tab has three tables: powerup runs, longest frag
 streaks, and a full-width **Airborne Rocket Gibs** table — enemy rocket
 hits on airborne victims (`timelineAnalysis.airgibs`), sortable by any

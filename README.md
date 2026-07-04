@@ -831,16 +831,19 @@ diff -r /tmp/before /tmp/after
    longer truncated to whole units (which also sharpens the velocity);
    the `h` no-floor sentinel is now `-1000000000`.
 
-9. **Aim target attribution (schema v41)**: the `aim` block's crosshair
-   error is computed against the enemy it attributes each shot to. In a
-   **duel** this is exact (one enemy → `mode: "duel"`). In a **team game**
-   it is a heuristic: each shot is attributed to the enemy nearest the
-   crosshair at the fire time (`mode: "team"`), so a shot tracking one
-   opponent while another crosses closer to the crosshair can be mis-
-   attributed. Shots are only attributed to an enemy whose position track
-   brackets the fire time. The rocket "direct hit" count is likewise a
-   heuristic (non-splash damage events ≈ direct contacts). These are
-   labeled in the data so consumers can disambiguate.
+9. **Aim target attribution (schema v41, refined v44)**: the `aim` block's
+   crosshair error is computed against the player it attributes each shot
+   to. A **hit** attributes to its server-confirmed victim (exact; nearest
+   by crosshair error when a pellet fire hit several — can be a teammate on
+   team damage). A **miss** has no confirmed target: in a **duel** the one
+   enemy is exact (`mode: "duel"`); in a **team game** it is a heuristic —
+   the live enemy nearest the crosshair at the fire time (`mode: "team"`),
+   so a missed shot tracking one opponent while another crosses closer to
+   the crosshair can be mis-attributed. Misses are only attributed to an
+   enemy whose position track brackets the fire time and who is alive at
+   it. The rocket "direct hit" count is likewise a heuristic (non-splash
+   damage events ≈ direct contacts). These are labeled in the data so
+   consumers can disambiguate.
 
 ## Reference sources
 

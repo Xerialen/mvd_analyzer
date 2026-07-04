@@ -7,6 +7,24 @@ detail.
 
 ## 2026-07-04
 
+- **Aim: hits attribute to the confirmed victim** (schema v44). The v43
+  liveness gate excluded the victim of a killing blow from attribution —
+  the kill lands in the same frame the victim dies, so `losAliveAt` read
+  the victim as already dead at the fire time. In team games the sample
+  went to the nearest *other* live enemy, producing impossible
+  "hits" tens of hull-widths off target (the big far-edge bars with
+  nonzero hit counts in the Aim Stats marginal histograms — verified on
+  hub demo 223930: 78 of 79 LG edge-bin hits were killing blows, the 79th
+  a team-damage hit, while the beams ended inside the actual victim's
+  hull); duels dropped their killing-blow samples entirely. Crosshair
+  samples of hit shots now attribute to the server-confirmed victim
+  (nearest by crosshair error when a pellet fire hit several), with no
+  liveness gate and no enemy filter (team damage is a confirmed target —
+  `tgt` can then name a teammate); misses keep the live-enemy
+  nearest-crosshair heuristic. Duels gain one crosshair sample per
+  hitscan kill; the web attribution note now spells out the hit/miss
+  split.
+
 - **API: `/shots` endpoint + complete `/aim`; MCP: `getAim`** (no schema
   change). New `GET /v1/demos/{id}/shots` serves the per-fire weapon stream
   (`result.Shots`: linked hits/victims, per-player aggregates, KTX

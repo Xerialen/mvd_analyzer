@@ -472,7 +472,18 @@ package result
 //     win nearest-crosshair attribution in team games. No field changes;
 //     crosshair sample counts/targets shift on team demos, and a duel fire
 //     while the lone enemy is dead no longer emits a sample.
-const CurrentSchemaVersion = 43
+//
+// v44:
+//   - Aim crosshair samples of hit shots attribute to the server-confirmed
+//     victim (nearest by crosshair error when a pellet fire hit several),
+//     bypassing the v43 liveness gate and the enemy filter. The killing blow
+//     lands in the same frame the victim dies, so the liveness gate read the
+//     victim as already dead at the fire time and attributed the shot to the
+//     nearest *other* live enemy — hits appeared tens of hull-widths off
+//     target in team games, and duels dropped their killing-blow samples
+//     entirely. No field changes; hit samples' tgt/dyaw/dpitch/nyaw/npitch/
+//     dist shift, and duels gain one sample per hitscan kill.
+const CurrentSchemaVersion = 44
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

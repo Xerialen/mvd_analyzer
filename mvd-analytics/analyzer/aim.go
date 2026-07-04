@@ -16,12 +16,16 @@ import (
 // interpolation.
 //
 // Truthfulness: hit/miss is Shot.Hit (never re-derived); the crosshair-error
-// heatmap is hitscan-only; a shot is attributed only to an enemy whose track
-// brackets the fire time AND who is alive at it (dead players keep streaming
-// position samples — the death-anim body — so a corpse would otherwise stay a
-// candidate; same liveness rule as LOS, losAliveAt); team-game attribution is
-// a labeled nearest-crosshair heuristic; rocket "direct" is a
-// non-splash-damage heuristic.
+// heatmap is hitscan-only; a hit is attributed to its server-confirmed victim
+// (nearest by crosshair error when a pellet fire hit several), bypassing the
+// liveness gate — a killing blow lands in the same frame the victim dies, so
+// losAliveAt reads the victim as already dead at the fire time — and the
+// enemy filter — a team-damage hit is a confirmed target too; a miss is
+// attributed only to an enemy whose track brackets the fire time AND who is
+// alive at it (dead players keep streaming position samples — the death-anim
+// body — so a corpse would otherwise stay a candidate; same liveness rule as
+// LOS, losAliveAt); team-game miss attribution is a labeled nearest-crosshair
+// heuristic; rocket "direct" is a non-splash-damage heuristic.
 const (
 	aimShaftGapMs     = 150  // LG fires more than this apart start a new shaft
 	aimReachNearUnits = 48.0 // beam endpoint within this of an enemy hull = near miss
@@ -172,7 +176,22 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		if !ok || !ss.HasView {
 			continue
 		}
-		tgt, e, found := aimAttribute(ss, sh.Time, enemies, tracks, aliveAt)
+		// A hit names its own target: the server-confirmed victims are
+		// authoritative, so the error is measured to the victim nearest the
+		// crosshair — with no liveness gate (a killing blow lands in the
+		// same frame the victim dies, so aliveAt reads the victim as already
+		// dead at the fire time) and no enemy filter (a team-damage hit is a
+		// confirmed target too). Misses have no confirmed target and keep
+		// the nearest-crosshair heuristic over live enemies.
+		var tgt string
+		var e aimErr
+		var found bool
+		if len(sh.Victims) > 0 {
+			tgt, e, found = aimAttribute(ss, sh.Time, sh.Victims, tracks, nil)
+		}
+		if !found {
+			tgt, e, found = aimAttribute(ss, sh.Time, enemies, tracks, aliveAt)
+		}
 		if !found || e.dist <= 0 {
 			continue
 		}
@@ -369,15 +388,16 @@ type aimErr struct {
 	dist         float64
 }
 
-// aimAttribute picks the enemy whose hull is nearest the crosshair at the fire
-// time (the single enemy in a duel), among those whose track brackets the fire
-// time and who are alive at it, and returns the error to it. "Nearest" uses
-// the normalized error, so it is range-aware.
-func aimAttribute(ss result.TrackSample, t int32, enemies []string, tracks map[string]*result.PositionTrack, aliveAt func(string, int32) bool) (tgt string, out aimErr, ok bool) {
+// aimAttribute picks the candidate whose hull is nearest the crosshair at the
+// fire time, among those whose track brackets the fire time and — when aliveAt
+// is non-nil — who are alive at it (nil for a hit's confirmed victims: the
+// damage proves they were shootable at the fire time), and returns the error
+// to it. "Nearest" uses the normalized error, so it is range-aware.
+func aimAttribute(ss result.TrackSample, t int32, candidates []string, tracks map[string]*result.PositionTrack, aliveAt func(string, int32) bool) (tgt string, out aimErr, ok bool) {
 	bestMag := math.MaxFloat64
-	for _, e := range enemies {
+	for _, e := range candidates {
 		et := tracks[e]
-		if !trackCovers(et, t) || !aliveAt(e, t) {
+		if !trackCovers(et, t) || (aliveAt != nil && !aliveAt(e, t)) {
 			continue
 		}
 		es, ok2 := et.SampleAt(t)

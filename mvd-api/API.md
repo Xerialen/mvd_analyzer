@@ -324,8 +324,9 @@ direct/splash/missed, the LG near/blocked/out-of-range whiff split), columnar
 version normalized by the target's angular size, so radius 1 ≈ the hitbox
 edge, with hit flag + attributed target), and the `lgRamp` series (per-LG-cell
 hit vs ms since the shaft opened). `mode` is `"duel"` (exact target) or
-`"team"` (nearest-crosshair-enemy heuristic); either way only enemies alive
-at the fire time are attribution candidates. Shape: `result.AimResult` →
+`"team"`; hits attribute to the server-confirmed victim, misses to the
+nearest-crosshair enemy alive at the fire time (a heuristic in team games).
+Shape: `result.AimResult` →
 [RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).
 
 **Availability:** served from the stream-enriched parse (like the
