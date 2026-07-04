@@ -2236,11 +2236,21 @@ function computePickupsState(result) {
         }
     }
 
+    // Whether the demo carries KTX's own pickup counters (weapons[].pickups
+    // / items[].took). When present they are authoritative and the verify
+    // cells display them; old / non-KTX demos fall back to the
+    // analytics-derived counts.
+    const hasKtxWeaponCounters = players.some(p =>
+        p.weapons && Object.values(p.weapons).some(w => w && w.pickups));
+    const hasKtxItemCounters = players.some(p =>
+        p.items && Object.keys(p.items).length > 0);
+
     return {
         result, players, teamOrder, playerByName,
         weaponEntsByKind, itemEntsByKind,
         entityCountsByPlayer, entityCountsByTeam,
         weaponPickups: result.weaponPickups || [],
+        hasKtxWeaponCounters, hasKtxItemCounters,
     };
 }
 
@@ -2401,14 +2411,19 @@ function weaponCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
                 ? ((pk['taken'] || 0) - (pk['spawn-taken'] || 0))
                 : ((pk['total-taken'] || 0) - (pk['spawn-total-taken'] || 0));
         }
-        return makeVerifyCell(ana, primary, null);
+        return makeVerifyCell(ana, primary, null, state.hasKtxWeaponCounters);
     }
     // weap-verify (Σ for hasPack, or single combined cell otherwise).
     let ana;
     if (pickupsMode === 'first') {
-        // first-per-life from weaponPickups (any source for hasPack; world-only entries otherwise).
+        // first-per-life from weaponPickups. hasPack verifies against KTX
+        // `taken` (any source); non-pack weapons verify against
+        // `spawn-taken` (world items only), so unknown-source records
+        // (weapon-stay synthesis that couldn't tie the grant to a pad)
+        // must not inflate the count.
         ana = state.weaponPickups.filter(w =>
-            w.weapon === spec.kind && matches(w) && !w.hadBefore).length;
+            w.weapon === spec.kind && matches(w) && !w.hadBefore
+            && (spec.hasPack || w.source === 'world')).length;
     } else {
         ana = 0;
         const list = state.weaponEntsByKind.get(spec.kind) || [];
@@ -2428,7 +2443,7 @@ function weaponCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
         }
         detail = pickupsSumDetail(detail, pickupsWeaponDetail(p, spec.ktxName));
     }
-    return makeVerifyCell(ana, primary, detail);
+    return makeVerifyCell(ana, primary, detail, state.hasKtxWeaponCounters);
 }
 
 function itemCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
@@ -2443,7 +2458,7 @@ function itemCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
     for (const ent of col.entNums) ana += (entMap.get(ent) || 0);
     let primary = 0;
     for (const p of scopedPlayers) primary += (p.items?.[spec.ktxName]?.took || 0);
-    return makeVerifyCell(ana, primary, null);
+    return makeVerifyCell(ana, primary, null, state.hasKtxItemCounters);
 }
 
 function makeTh(html) {
@@ -2458,33 +2473,37 @@ function makeTd(html) {
     return td;
 }
 
-// makeVerifyCell renders the analyser count silently when it matches
-// KTX (cell looks like a regular count) and red+✗ when it disagrees.
-// Tooltip is always present so the per-counter breakdown is one hover
-// away even on matched cells.
-function makeVerifyCell(ana, ktxPrimary, detail) {
+// makeVerifyCell renders the KTX-authoritative counter as the cell
+// value when the demo carries one — KTX counted every touch server-side,
+// while the analytics reconstruction is known-imperfect in weapon-stay
+// modes (see mvd-analytics/analyzer/weapon_pickups.md), so a divergence
+// is expected, not an error, and gets no warning styling. The tooltip
+// acknowledges the analytics-derived count (still the right source for
+// timestamped / per-entity questions). Demos without KTX counters
+// (old / non-KTX servers) fall back to the analytics count, trusted
+// with its imperfections.
+function makeVerifyCell(ana, ktxPrimary, detail, hasKtx) {
     const td = document.createElement('td');
+    const shown = hasKtx ? ktxPrimary : ana;
     if (ana === 0 && ktxPrimary === 0 && (!detail || Object.values(detail).every(v => v === 0))) {
         td.innerHTML = '<span class="muted">·</span>';
         return td;
     }
-    if (ana === ktxPrimary) {
-        td.textContent = String(ana);
-    } else {
-        td.className = 'pickups-verify-bad';
-        const diff = ana - ktxPrimary;
-        const sign = diff > 0 ? `+${diff}` : `${diff}`;
-        td.innerHTML = `${ana}<span class="pickups-verify-mark"> ✗ ktx ${ktxPrimary} (${sign})</span>`;
-    }
-    if (detail) {
-        const lines = [`analyzer: ${ana}`];
-        for (const [field, val] of Object.entries(detail)) {
-            lines.push(`ktx ${field}: ${val}`);
+    td.textContent = String(shown);
+    const lines = [];
+    if (hasKtx) {
+        if (detail) {
+            for (const [field, val] of Object.entries(detail)) {
+                lines.push(`ktx ${field}: ${val}`);
+            }
+        } else {
+            lines.push(`ktx: ${ktxPrimary}`);
         }
-        td.title = lines.join('\n');
+        lines.push(`analytics: ${ana}`);
     } else {
-        td.title = `analyzer: ${ana}\nktx: ${ktxPrimary}`;
+        lines.push(`analytics: ${ana}`, 'no KTX pickup counters in this demo');
     }
+    td.title = lines.join('\n');
     return td;
 }
 

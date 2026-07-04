@@ -20971,7 +20971,315 @@
         "name": "gl",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 1610,
+            "takenAt": 1610,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 1610,
+            "respawnAt": 17546,
+            "takenAt": 17546,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 17546,
+            "respawnAt": 26674,
+            "takenAt": 26674,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 26674,
+            "respawnAt": 27675,
+            "takenAt": 27675,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 27675,
+            "respawnAt": 36218,
+            "takenAt": 36218,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 36218,
+            "respawnAt": 57182,
+            "takenAt": 57182,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 57182,
+            "respawnAt": 66257,
+            "takenAt": 66257,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 66257,
+            "respawnAt": 78031,
+            "takenAt": 78031,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 78031,
+            "respawnAt": 86296,
+            "takenAt": 86296,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 86296,
+            "respawnAt": 96724,
+            "takenAt": 96724,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 96724,
+            "respawnAt": 130991,
+            "takenAt": 130991,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 130991,
+            "respawnAt": 137170,
+            "takenAt": 137170,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 137170,
+            "respawnAt": 147445,
+            "takenAt": 147445,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 147445,
+            "respawnAt": 157551,
+            "takenAt": 157551,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 157551,
+            "respawnAt": 179197,
+            "takenAt": 179197,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 179197,
+            "respawnAt": 189386,
+            "takenAt": 189386,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 189386,
+            "respawnAt": 193365,
+            "takenAt": 193365,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 193365,
+            "respawnAt": 201961,
+            "takenAt": 201961,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 201961,
+            "respawnAt": 227363,
+            "takenAt": 227363,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 227363,
+            "respawnAt": 264426,
+            "takenAt": 264426,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 264426,
+            "respawnAt": 264984,
+            "takenAt": 264984,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 264984,
+            "respawnAt": 290320,
+            "takenAt": 290320,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 290320,
+            "respawnAt": 294555,
+            "takenAt": 294555,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 294555,
+            "respawnAt": 312025,
+            "takenAt": 312025,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 312025,
+            "respawnAt": 318466,
+            "takenAt": 318466,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 318466,
+            "respawnAt": 327251,
+            "takenAt": 327251,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 327251,
+            "respawnAt": 337732,
+            "takenAt": 337732,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 337732,
+            "respawnAt": 345511,
+            "takenAt": 345511,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 345511,
+            "respawnAt": 355277,
+            "takenAt": 355277,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 355277,
+            "respawnAt": 371028,
+            "takenAt": 371028,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 371028,
+            "respawnAt": 374162,
+            "takenAt": 374162,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 374162,
+            "respawnAt": 405700,
+            "takenAt": 405700,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 405700,
+            "respawnAt": 442935,
+            "takenAt": 442935,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 442935,
+            "respawnAt": 468621,
+            "takenAt": 468621,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 468621,
+            "respawnAt": 510903,
+            "takenAt": 510903,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 510903,
+            "respawnAt": 513186,
+            "takenAt": 513186,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 513186,
+            "respawnAt": 519341,
+            "takenAt": 519341,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 519341,
+            "respawnAt": 529707,
+            "takenAt": 529707,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 529707,
+            "respawnAt": 534483,
+            "takenAt": 534483,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 534483,
+            "respawnAt": 545884,
+            "takenAt": 545884,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 545884,
+            "respawnAt": 574804,
+            "takenAt": 574804,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 574804,
+            "respawnAt": 588636,
+            "takenAt": 588636,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 588636,
+            "respawnAt": 589441,
+            "takenAt": 589441,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 589441,
+            "respawnAt": 599608,
+            "takenAt": 599608,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 599608
           }
         ],
         "x": 1224,
@@ -22192,7 +22500,203 @@
         "name": "lg",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 9324,
+            "takenAt": 9324,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 9324,
+            "respawnAt": 10506,
+            "takenAt": 10506,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 10506,
+            "respawnAt": 23012,
+            "takenAt": 23012,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 23012,
+            "respawnAt": 50027,
+            "takenAt": 50027,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 50027,
+            "respawnAt": 78778,
+            "takenAt": 78778,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 78778,
+            "respawnAt": 90034,
+            "takenAt": 90034,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 90034,
+            "respawnAt": 148506,
+            "takenAt": 148506,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 148506,
+            "respawnAt": 153207,
+            "takenAt": 153207,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 153207,
+            "respawnAt": 160356,
+            "takenAt": 160356,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 160356,
+            "respawnAt": 173731,
+            "takenAt": 173731,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 173731,
+            "respawnAt": 188860,
+            "takenAt": 188860,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 188860,
+            "respawnAt": 207755,
+            "takenAt": 207755,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 207755,
+            "respawnAt": 248115,
+            "takenAt": 248115,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 248115,
+            "respawnAt": 253827,
+            "takenAt": 253827,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 253827,
+            "respawnAt": 310398,
+            "takenAt": 310398,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 310398,
+            "respawnAt": 310722,
+            "takenAt": 310722,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 310722,
+            "respawnAt": 324161,
+            "takenAt": 324161,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 324161,
+            "respawnAt": 353444,
+            "takenAt": 353444,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 353444,
+            "respawnAt": 374196,
+            "takenAt": 374196,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 374196,
+            "respawnAt": 390329,
+            "takenAt": 390329,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 390329,
+            "respawnAt": 425779,
+            "takenAt": 425779,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 425779,
+            "respawnAt": 475270,
+            "takenAt": 475270,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 475270,
+            "respawnAt": 491424,
+            "takenAt": 491424,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 491424,
+            "respawnAt": 523055,
+            "takenAt": 523055,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 523055,
+            "respawnAt": 537990,
+            "takenAt": 537990,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 537990,
+            "respawnAt": 543887,
+            "takenAt": 543887,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 543887,
+            "respawnAt": 560939,
+            "takenAt": 560939,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 560939,
+            "respawnAt": 580895,
+            "takenAt": 580895,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 580895
           }
         ],
         "x": 760,
@@ -22546,7 +23050,140 @@
         "name": "ng",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 10533,
+            "takenAt": 10533,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 10533,
+            "respawnAt": 26960,
+            "takenAt": 26960,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 26960,
+            "respawnAt": 51377,
+            "takenAt": 51377,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 51377,
+            "respawnAt": 71063,
+            "takenAt": 71063,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 71063,
+            "respawnAt": 76892,
+            "takenAt": 76892,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 76892,
+            "respawnAt": 161470,
+            "takenAt": 161470,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 161470,
+            "respawnAt": 190035,
+            "takenAt": 190035,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 190035,
+            "respawnAt": 205843,
+            "takenAt": 205843,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 205843,
+            "respawnAt": 267373,
+            "takenAt": 267373,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 267373,
+            "respawnAt": 269036,
+            "takenAt": 269036,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 269036,
+            "respawnAt": 302460,
+            "takenAt": 302460,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 302460,
+            "respawnAt": 321180,
+            "takenAt": 321180,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 321180,
+            "respawnAt": 328304,
+            "takenAt": 328304,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 328304,
+            "respawnAt": 386571,
+            "takenAt": 386571,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 386571,
+            "respawnAt": 414689,
+            "takenAt": 414689,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 414689,
+            "respawnAt": 421777,
+            "takenAt": 421777,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 421777,
+            "respawnAt": 486642,
+            "takenAt": 486642,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 486642,
+            "respawnAt": 569613,
+            "takenAt": 569613,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 569613,
+            "respawnAt": 582492,
+            "takenAt": 582492,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 582492
           }
         ],
         "x": 1224,
@@ -22799,7 +23436,413 @@
         "name": "rl_1",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 2079,
+            "takenAt": 2079,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 2079,
+            "respawnAt": 4702,
+            "takenAt": 4702,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 4702,
+            "respawnAt": 10142,
+            "takenAt": 10142,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 10142,
+            "respawnAt": 15922,
+            "takenAt": 15922,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 15922,
+            "respawnAt": 16740,
+            "takenAt": 16740,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 16740,
+            "respawnAt": 30197,
+            "takenAt": 30197,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 30197,
+            "respawnAt": 31841,
+            "takenAt": 31841,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 31841,
+            "respawnAt": 57182,
+            "takenAt": 57182,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 57182,
+            "respawnAt": 66244,
+            "takenAt": 66244,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 66244,
+            "respawnAt": 103562,
+            "takenAt": 103562,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 103562,
+            "respawnAt": 113788,
+            "takenAt": 113788,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 113788,
+            "respawnAt": 121550,
+            "takenAt": 121550,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 121550,
+            "respawnAt": 129560,
+            "takenAt": 129560,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 129560,
+            "respawnAt": 133900,
+            "takenAt": 133900,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 133900,
+            "respawnAt": 168885,
+            "takenAt": 168885,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 168885,
+            "respawnAt": 179211,
+            "takenAt": 179211,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 179211,
+            "respawnAt": 183403,
+            "takenAt": 183403,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 183403,
+            "respawnAt": 185742,
+            "takenAt": 185742,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 185742,
+            "respawnAt": 194801,
+            "takenAt": 194801,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 194801,
+            "respawnAt": 204177,
+            "takenAt": 204177,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 204177,
+            "respawnAt": 218325,
+            "takenAt": 218325,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 218325,
+            "respawnAt": 241932,
+            "takenAt": 241932,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 241932,
+            "respawnAt": 249829,
+            "takenAt": 249829,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 249829,
+            "respawnAt": 271254,
+            "takenAt": 271254,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 271254,
+            "respawnAt": 276516,
+            "takenAt": 276516,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 276516,
+            "respawnAt": 282411,
+            "takenAt": 282411,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 282411,
+            "respawnAt": 286500,
+            "takenAt": 286500,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 286500,
+            "respawnAt": 288904,
+            "takenAt": 288904,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 288904,
+            "respawnAt": 296740,
+            "takenAt": 296740,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 296740,
+            "respawnAt": 328836,
+            "takenAt": 328836,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 328836,
+            "respawnAt": 344847,
+            "takenAt": 344847,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 344847,
+            "respawnAt": 358042,
+            "takenAt": 358042,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 358042,
+            "respawnAt": 365716,
+            "takenAt": 365716,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 365716,
+            "respawnAt": 375160,
+            "takenAt": 375160,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 375160,
+            "respawnAt": 382091,
+            "takenAt": 382091,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 382091,
+            "respawnAt": 399965,
+            "takenAt": 399965,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 399965,
+            "respawnAt": 402806,
+            "takenAt": 402806,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 402806,
+            "respawnAt": 412766,
+            "takenAt": 412766,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 412766,
+            "respawnAt": 418920,
+            "takenAt": 418920,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 418920,
+            "respawnAt": 422507,
+            "takenAt": 422507,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 422507,
+            "respawnAt": 429196,
+            "takenAt": 429196,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 429196,
+            "respawnAt": 464932,
+            "takenAt": 464932,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 464932,
+            "respawnAt": 477370,
+            "takenAt": 477370,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 477370,
+            "respawnAt": 479296,
+            "takenAt": 479296,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 479296,
+            "respawnAt": 497943,
+            "takenAt": 497943,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 497943,
+            "respawnAt": 500956,
+            "takenAt": 500956,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 500956,
+            "respawnAt": 504641,
+            "takenAt": 504641,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 504641,
+            "respawnAt": 507095,
+            "takenAt": 507095,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 507095,
+            "respawnAt": 513072,
+            "takenAt": 513072,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 513072,
+            "respawnAt": 516874,
+            "takenAt": 516874,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 516874,
+            "respawnAt": 521838,
+            "takenAt": 521838,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 521838,
+            "respawnAt": 530536,
+            "takenAt": 530536,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 530536,
+            "respawnAt": 548638,
+            "takenAt": 548638,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 548638,
+            "respawnAt": 567614,
+            "takenAt": 567614,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 567614,
+            "respawnAt": 576521,
+            "takenAt": 576521,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 576521,
+            "respawnAt": 578506,
+            "takenAt": 578506,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 578506,
+            "respawnAt": 586053,
+            "takenAt": 586053,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 586053,
+            "respawnAt": 592063,
+            "takenAt": 592063,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 592063
           }
         ],
         "x": 200,
@@ -22813,7 +23856,168 @@
         "name": "rl_2",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 1887,
+            "takenAt": 1887,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 1887,
+            "respawnAt": 3805,
+            "takenAt": 3805,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 3805,
+            "respawnAt": 19764,
+            "takenAt": 19764,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 19764,
+            "respawnAt": 38768,
+            "takenAt": 38768,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 38768,
+            "respawnAt": 48308,
+            "takenAt": 48308,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 48308,
+            "respawnAt": 59610,
+            "takenAt": 59610,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 59610,
+            "respawnAt": 68467,
+            "takenAt": 68467,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 68467,
+            "respawnAt": 133188,
+            "takenAt": 133188,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 133188,
+            "respawnAt": 160080,
+            "takenAt": 160080,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 160080,
+            "respawnAt": 214007,
+            "takenAt": 214007,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 214007,
+            "respawnAt": 292837,
+            "takenAt": 292837,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 292837,
+            "respawnAt": 293779,
+            "takenAt": 293779,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 293779,
+            "respawnAt": 297306,
+            "takenAt": 297306,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 297306,
+            "respawnAt": 303903,
+            "takenAt": 303903,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 303903,
+            "respawnAt": 314954,
+            "takenAt": 314954,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 314954,
+            "respawnAt": 331681,
+            "takenAt": 331681,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 331681,
+            "respawnAt": 362872,
+            "takenAt": 362872,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 362872,
+            "respawnAt": 365682,
+            "takenAt": 365682,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 365682,
+            "respawnAt": 396390,
+            "takenAt": 396390,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 396390,
+            "respawnAt": 473773,
+            "takenAt": 473773,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 473773,
+            "respawnAt": 476539,
+            "takenAt": 476539,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 476539,
+            "respawnAt": 491826,
+            "takenAt": 491826,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 491826,
+            "respawnAt": 548510,
+            "takenAt": 548510,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 548510
           }
         ],
         "x": 1512,
@@ -23167,7 +24371,77 @@
         "name": "sng",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 41858,
+            "takenAt": 41858,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 41858,
+            "respawnAt": 49273,
+            "takenAt": 49273,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 49273,
+            "respawnAt": 125734,
+            "takenAt": 125734,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 125734,
+            "respawnAt": 187535,
+            "takenAt": 187535,
+            "takenBy": "rusti",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 187535,
+            "respawnAt": 258829,
+            "takenAt": 258829,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 258829,
+            "respawnAt": 436141,
+            "takenAt": 436141,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 436141,
+            "respawnAt": 456813,
+            "takenAt": 456813,
+            "takenBy": "SS",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 456813,
+            "respawnAt": 461830,
+            "takenAt": 461830,
+            "takenBy": "kippo",
+            "team": "pora"
+          },
+          {
+            "availableFrom": 461830,
+            "respawnAt": 487733,
+            "takenAt": 487733,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 487733,
+            "respawnAt": 517757,
+            "takenAt": 517757,
+            "takenBy": "gLAd",
+            "team": "nAnI"
+          },
+          {
+            "availableFrom": 517757
           }
         ],
         "x": 424,
@@ -28893,7 +30167,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 45,
+  "schemaVersion": 46,
   "shots": {
     "byPlayer": [
       {
@@ -128260,6 +129534,61 @@
   },
   "weaponPickups": [
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 7368,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 1610,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 7273,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 1887,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 6523,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 2079,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 7368,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 3805,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 14856,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 4702,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 178,
       "dropTime": 7368,
       "dropper": "SS",
@@ -128272,6 +129601,17 @@
       "team": "pora",
       "time": 8783,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 14856,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 9324,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 93,
@@ -128288,6 +129628,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 15050,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 10142,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 44530,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 10506,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 14856,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 10533,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 6523,
       "dropper": "gLAd",
@@ -128299,6 +129672,50 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 10753,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 44530,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 15922,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 26752,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 16740,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 29362,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 17546,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 29362,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 19764,
       "weapon": "rl"
     },
     {
@@ -128316,6 +129733,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 26752,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 23012,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 26752,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 26674,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 29362,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 26960,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 26752,
       "dropper": "SS",
@@ -128330,6 +129780,50 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 54530,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 27675,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 45606,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 30197,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 34142,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 31841,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 61891,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 36218,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 94,
       "dropTime": 29362,
       "dropper": "kippo",
@@ -128342,6 +129836,28 @@
       "team": "nAnI",
       "time": 37634,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 61891,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 38768,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 44530,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 41858,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 96,
@@ -128386,6 +129902,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 54905,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 48308,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 114567,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 49273,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 61891,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 50027,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 61891,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 51377,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 54530,
       "dropper": "rusti",
@@ -128400,6 +129960,39 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 61332,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 57182,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 101878,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 57182,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 61332,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 59610,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 93,
       "dropTime": 54905,
       "dropper": "SS",
@@ -128411,6 +130004,39 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 64059,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 117524,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 66244,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111964,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 66257,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111964,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 68467,
       "weapon": "rl"
     },
     {
@@ -128442,6 +130068,94 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 114567,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 71063,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 117524,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 76892,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 101878,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 78031,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 117524,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 78778,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 117524,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 86296,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 101878,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 90034,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 114567,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 96724,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 118749,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 103562,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 101878,
       "dropper": "rusti",
@@ -128454,6 +130168,17 @@
       "team": "nAnI",
       "time": 104510,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 174874,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 113788,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 91,
@@ -128526,6 +130251,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 132121,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 121550,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 241109,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 125734,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 134757,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 129560,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 93,
       "dropTime": 118825,
       "dropper": "gLAd",
@@ -128538,6 +130296,50 @@
       "team": "nAnI",
       "time": 129576,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 241109,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 130991,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 241109,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 133188,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 180003,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 133900,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 141759,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 137170,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 91,
@@ -128554,6 +130356,83 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 155161,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 147445,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 180003,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 148506,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 155161,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 153207,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 174874,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 157551,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 163895,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 160080,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 241109,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 160356,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 241109,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 161470,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 93,
       "dropTime": 163895,
       "dropper": "kippo",
@@ -128568,6 +130447,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 176574,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 168885,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 176574,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 173731,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 174874,
       "dropper": "SS",
@@ -128579,6 +130480,28 @@
       "source": "backpack",
       "team": "pora",
       "time": 177868,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 182821,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 179197,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 211813,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 179211,
       "weapon": "rl"
     },
     {
@@ -128596,6 +130519,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 201311,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 183403,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 182821,
       "dropper": "kippo",
@@ -128607,6 +130541,149 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 184872,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 186763,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 185742,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 201311,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 187535,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 211813,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 188860,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 210494,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 189386,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 211813,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 190035,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 201311,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 193365,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 210494,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 194801,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 211813,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 201961,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 280244,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 204177,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 210494,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 205843,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 280244,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 207755,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 240219,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 214007,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 268073,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 218325,
       "weapon": "rl"
     },
     {
@@ -128624,6 +130701,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 268073,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 227363,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 240219,
       "dropper": "SS",
@@ -128635,6 +130723,17 @@
       "source": "backpack",
       "team": "pora",
       "time": 241882,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 247290,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 241932,
       "weapon": "rl"
     },
     {
@@ -128652,6 +130751,94 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 7,
+      "nextDeathTime": 363592,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 248115,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 285903,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 249829,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 285903,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 253827,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 285903,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 258829,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 363592,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 264426,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 285903,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 264984,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 268073,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 267373,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 285903,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 269036,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 268073,
       "dropper": "kippo",
@@ -128666,6 +130853,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 271644,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 271254,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 93,
       "dropTime": 271644,
       "dropper": "kippo",
@@ -128677,6 +130875,17 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 272254,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 280378,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 276516,
       "weapon": "rl"
     },
     {
@@ -128708,6 +130917,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 285903,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 282411,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 291125,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 286500,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 292112,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 288904,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 295045,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 290320,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 285903,
       "dropper": "SS",
@@ -128719,6 +130972,17 @@
       "source": "backpack",
       "team": "pora",
       "time": 290624,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 295045,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 292837,
       "weapon": "rl"
     },
     {
@@ -128736,6 +131000,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 301864,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 293779,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 292112,
       "dropper": "kippo",
@@ -128748,6 +131023,50 @@
       "team": "nAnI",
       "time": 294346,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 329231,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 294555,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 312057,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 296740,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 329231,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 297306,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 312057,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 302460,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 94,
@@ -128764,6 +131083,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 308532,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 303903,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 312057,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 310398,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 329231,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 310722,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 313914,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 312025,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 312057,
       "dropper": "SS",
@@ -128775,6 +131138,17 @@
       "source": "backpack",
       "team": "pora",
       "time": 313006,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 6,
+      "nextDeathTime": 424881,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 314954,
       "weapon": "rl"
     },
     {
@@ -128792,6 +131166,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 325668,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 318466,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 363592,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 321180,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 325668,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 324161,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 325668,
       "dropper": "rusti",
@@ -128804,6 +131211,50 @@
       "team": "nAnI",
       "time": 325668,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 424881,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 327251,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 329231,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 328304,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 342327,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 328836,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 337594,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 331681,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 37,
@@ -128820,6 +131271,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 342327,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 337732,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 337594,
       "dropper": "kippo",
@@ -128831,6 +131293,61 @@
       "source": "backpack",
       "team": "pora",
       "time": 340068,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 358638,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 344847,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 362872,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 345511,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 362872,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 353444,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 358638,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 355277,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 362872,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 358042,
       "weapon": "rl"
     },
     {
@@ -128848,6 +131365,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 363592,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 362872,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 94,
       "dropTime": 362872,
       "dropper": "rusti",
@@ -128862,6 +131390,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 367134,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 365682,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 420729,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 365716,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 96,
       "dropTime": 363592,
       "dropper": "gLAd",
@@ -128873,6 +131423,61 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 369209,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 372482,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 371028,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 420729,
+      "player": "gLAd",
+      "source": "unknown",
+      "team": "nAnI",
+      "time": 373692,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 375468,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 374162,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 420729,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 374196,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 393623,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 375160,
       "weapon": "rl"
     },
     {
@@ -128890,6 +131495,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 397207,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 382091,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 397207,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 386571,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 397207,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 390329,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 93,
       "dropTime": 393623,
       "dropper": "rusti",
@@ -128901,6 +131539,17 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 393623,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 397170,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 396390,
       "weapon": "rl"
     },
     {
@@ -128932,6 +131581,39 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 406558,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 399965,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 416080,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 402806,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 406558,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 405700,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 406558,
       "dropper": "rusti",
@@ -128944,6 +131626,28 @@
       "team": "nAnI",
       "time": 407168,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 498398,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 412766,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 416080,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 414689,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 93,
@@ -128960,6 +131664,72 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 469128,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 418920,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 469128,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 421777,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 459090,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 422507,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 459090,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 425779,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 469128,
+      "player": "kippo",
+      "source": "unknown",
+      "team": "pora",
+      "time": 429078,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 473725,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 429196,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 420729,
       "dropper": "gLAd",
@@ -128972,6 +131742,39 @@
       "team": "pora",
       "time": 430832,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 459090,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 436141,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 498398,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 442935,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 473725,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 456813,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 91,
@@ -128988,6 +131791,50 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 469128,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 461830,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 466202,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 464932,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 502981,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 468621,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 504148,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 473773,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 473725,
       "dropper": "SS",
@@ -128999,6 +131846,39 @@
       "source": "backpack",
       "team": "pora",
       "time": 474166,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 502981,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 475270,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 477776,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 476539,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 502981,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 477370,
       "weapon": "rl"
     },
     {
@@ -129016,6 +131896,61 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 489112,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 479296,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 504148,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 486642,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 502981,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 487733,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 504148,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 491424,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 495252,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 491826,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 91,
       "dropTime": 495252,
       "dropper": "SS",
@@ -129027,6 +131962,50 @@
       "source": "backpack",
       "team": "pora",
       "time": 496943,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 505865,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 497943,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 513277,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 500956,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 511108,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 504641,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 529366,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 507095,
       "weapon": "rl"
     },
     {
@@ -129042,6 +132021,17 @@
       "team": "pora",
       "time": 507553,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 514812,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 510903,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 94,
@@ -129072,6 +132062,27 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 513072,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 529366,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 513186,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 513277,
       "dropper": "rusti",
@@ -129083,6 +132094,82 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 514017,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 574212,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 516874,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 517757,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 529289,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 519341,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 529289,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 521838,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 529366,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 523055,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 574212,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 529707,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 545898,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 530536,
       "weapon": "rl"
     },
     {
@@ -129099,6 +132186,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 541537,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 534483,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 529289,
       "dropper": "SS",
@@ -129110,6 +132208,17 @@
       "team": "nAnI",
       "time": 534758,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 541537,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 537990,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 92,
@@ -129126,6 +132235,50 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 574212,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 543887,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 570015,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 545884,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 570015,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 548510,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 563897,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 548638,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 545898,
       "dropper": "SS",
@@ -129138,6 +132291,16 @@
       "team": "pora",
       "time": 549754,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 560939,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 93,
@@ -129154,6 +132317,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 574015,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 567614,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 574015,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 569613,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 92,
       "dropTime": 570015,
       "dropper": "kippo",
@@ -129168,6 +132353,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 576445,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 574804,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 93,
       "dropTime": 574212,
       "dropper": "rusti",
@@ -129178,6 +132374,39 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 576042,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 577714,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 576521,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 585818,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 578506,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 585818,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 580895,
       "weapon": "lg"
     },
     {
@@ -129194,6 +132423,27 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 585818,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 582492,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "rusti",
+      "source": "world",
+      "team": "pora",
+      "time": 586053,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 96,
       "dropTime": 585818,
       "dropper": "kippo",
@@ -129204,6 +132454,37 @@
       "source": "backpack",
       "team": "nAnI",
       "time": 588482,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 589025,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 588636,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "SS",
+      "source": "world",
+      "team": "nAnI",
+      "time": 589441,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "kippo",
+      "source": "world",
+      "team": "pora",
+      "time": 592063,
       "weapon": "rl"
     },
     {
@@ -129218,6 +132499,16 @@
       "team": "nAnI",
       "time": 596870,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "gLAd",
+      "source": "world",
+      "team": "nAnI",
+      "time": 599608,
+      "weapon": "gl"
     }
   ]
 }

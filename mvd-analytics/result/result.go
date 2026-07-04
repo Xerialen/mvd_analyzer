@@ -493,7 +493,35 @@ package result
 //     CrosshairSamples and LGRampSamples gain a Team column; WeaponAim gains
 //     Enemy/Team/Self *WeaponAimSplit hit-counter slices. All additive
 //     (omitempty) — Hits/Accuracy stay all-victims for KTX parity.
-const CurrentSchemaVersion = 45
+//
+// v46:
+//   - Weapon-stay recovery (serverinfo deathmatch 2/3/5, or coop — the
+//     standard duel/2on2 dmm3 included): KTX never emits `//ktx took` for
+//     weapons in those modes and the weapon entity never leaves the wire,
+//     so world weapon pickups were previously absent entirely. They are now
+//     synthesized from STAT_ITEMS weapon-bit 0→1 transitions. WeaponPickup
+//     gains Inferred (marks synthesized entries) and the Source vocabulary
+//     gains "unknown" (a flip with no weapon pad in touch range — typically
+//     a non-RL/LG backpack grant, which has no hint in any mode).
+//   - ItemTimeline weapon phases in weapon-stay demos use a zero-length
+//     unavailability convention: TakenAt == RespawnAt, with the next phase
+//     opening at the same instant (the weapon never left the map).
+//   - Duel team normalization now also rewrites Items phase teams,
+//     WeaponPickups Team/DropperTeam, Backpacks Team, Shots stream/ByPlayer
+//     teams (and transitively Aim teams), and Airgibs attacker/victim teams
+//     — previously these kept the raw pre-normalization team strings in 1v1
+//     demos, so team-keyed pickup aggregation bucketed under stale labels.
+//     It also reclassifies Shot.VictimKinds "team" → "enemy" (folding the
+//     WeaponShots TeamHits bucket into EnemyHits): victimKindOf compares
+//     raw team strings, so a duel where both players share a colour team
+//     classified every opponent hit as "team". Aim's enemy/team splits
+//     follow via aimPost ordering.
+//   - Item pickup attribution: the Layer-4 distance corroborator samples
+//     positions from the per-frame history at the touch instant and all
+//     proximity consumers share a measured 128 u touch gate (was a 256 u
+//     stale-sample bound) — a handful of beyond-gate distance attributions
+//     become honestly unattributed phases.
+const CurrentSchemaVersion = 46
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

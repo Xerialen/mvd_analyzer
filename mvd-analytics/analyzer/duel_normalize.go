@@ -215,6 +215,103 @@ func normalizeDuelTeams(result *Result) {
 			}
 		}
 	}
+
+	// Rewrite pickup-data team labels. ItemAnalyzer / WeaponPickups /
+	// Backpacks finalize before this post-processor runs and stamp the
+	// raw userinfo team on every record, so without this pass the
+	// frontend Pickups tab buckets duel pickups under stale colour
+	// strings that no longer match any player's (rewritten) team.
+	if result.Items != nil {
+		for i := range result.Items.Items {
+			it := &result.Items.Items[i]
+			for j := range it.Phases {
+				ph := &it.Phases[j]
+				if ph.TakenBy == "" {
+					continue
+				}
+				if t, ok := nameToTeam[ph.TakenBy]; ok {
+					ph.Team = t
+				}
+			}
+		}
+	}
+	for i := range result.WeaponPickups {
+		wp := &result.WeaponPickups[i]
+		if t, ok := nameToTeam[wp.Player]; ok {
+			wp.Team = t
+		}
+		if wp.Dropper != "" {
+			if t, ok := nameToTeam[wp.Dropper]; ok {
+				wp.DropperTeam = t
+			}
+		}
+	}
+	for i := range result.Backpacks {
+		bp := &result.Backpacks[i]
+		if t, ok := nameToTeam[bp.Player]; ok {
+			bp.Team = t
+		}
+	}
+
+	// Rewrite shot-stream team labels. aimPost runs after this
+	// post-processor and derives its per-player teams from Shots, so
+	// fixing the stream here also fixes Aim.Players[].Team.
+	if result.Shots != nil {
+		for i := range result.Shots.Shots {
+			s := &result.Shots.Shots[i]
+			if t, ok := nameToTeam[s.Player]; ok {
+				s.Team = t
+			}
+		}
+		for i := range result.Shots.ByPlayer {
+			p := &result.Shots.ByPlayer[i]
+			if t, ok := nameToTeam[p.Player]; ok {
+				p.Team = t
+			}
+		}
+
+		// Correct victim classification. victimKindOf compares the raw
+		// userinfo team strings at analyzer time, so a duel where both
+		// players happen to share a non-empty colour team classifies
+		// every hit on the opponent as "team". In a 1v1 any non-self
+		// victim is by definition an enemy — flip those, restoring the
+		// all-enemy-omitted wire convention (emitKinds) where the flip
+		// leaves no informative kind. aimPost reads VictimKinds after
+		// this pass, so the Aim enemy/team splits follow.
+		for i := range result.Shots.Shots {
+			s := &result.Shots.Shots[i]
+			if s.VictimKinds == nil {
+				continue
+			}
+			informative := false
+			for j, k := range s.VictimKinds {
+				if k == "team" {
+					s.VictimKinds[j] = "enemy"
+				}
+				if s.VictimKinds[j] != "enemy" {
+					informative = true
+				}
+			}
+			if !informative {
+				s.VictimKinds = nil
+			}
+		}
+		// The per-weapon hit buckets count fires, not victims, but a
+		// duel has exactly one opponent pair and victimKindOf is
+		// deterministic per pair — so per shooter either every
+		// opponent hit landed in TeamHits (shared colour team) or
+		// every one landed in EnemyHits, never both. Folding TeamHits
+		// into EnemyHits is therefore exact, not an approximation.
+		for i := range result.Shots.ByPlayer {
+			bw := result.Shots.ByPlayer[i].ByWeapon
+			for j := range bw {
+				if bw[j].TeamHits > 0 {
+					bw[j].EnemyHits += bw[j].TeamHits
+					bw[j].TeamHits = 0
+				}
+			}
+		}
+	}
 }
 
 // isDuelResult returns true when the match is a 1v1, using the number

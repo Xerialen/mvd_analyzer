@@ -2540,15 +2540,6 @@ th.sortable.sort-desc::after {
     letter-spacing: 0.05em;
     margin-left: 4px;
 }
-.pickups-verify-bad {
-    color: #ff8080;
-    background: rgba(255, 60, 60, 0.10);
-}
-.pickups-verify-bad .pickups-verify-mark {
-    color: #ff5050;
-    font-size: 0.8rem;
-    margin-left: 4px;
-}
 .pickups-table .muted {
     color: #555;
 }

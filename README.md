@@ -751,11 +751,16 @@ diff -r /tmp/before /tmp/after
 
 5. **Weapon pickups from backpacks (SSG/SNG/GL/NG)**: KTX emits the
    `//ktx bp` backpack-pickup hint only for RL and LG packs, so
-   `result.WeaponPickups` captures world (spawn) grabs of every weapon
-   but misses super-shotgun / super-nailgun / nailgun / grenade-launcher
-   taken off a dropped pack. Per-weapon totals reconcile with KTX
-   `weapons.<w>.pickups.spawn-taken` but fall short of `total-taken` by
-   the backpack grabs (systemic; RL/LG reconcile fully). See
+   super-shotgun / super-nailgun / nailgun / grenade-launcher grabs off
+   a dropped pack have no authoritative wire signal. In non-weapon-stay
+   modes (dmm1/dmm4) they are simply missing: per-weapon totals
+   reconcile with KTX `weapons.<w>.pickups.spawn-taken` but fall short
+   of `total-taken` by the backpack grabs (systemic; RL/LG reconcile
+   fully). In weapon-stay modes (deathmatch 2/3/5, coop — dmm3
+   duels/2on2 included), where world weapon pickups are synthesized
+   from STAT_ITEMS flips, these pack grabs *do* surface — as
+   `source: "unknown"` entries, since a bit flip away from any weapon
+   pad can't be tied to a specific pack. See
    [mvd-analytics/README.md](mvd-analytics/README.md#weapon-pickups).
 
 6. **Damage is unbound (overkill)**: `result.Damage` is reconstructed

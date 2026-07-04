@@ -40327,7 +40327,77 @@
         "name": "gl",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 92017,
+            "takenAt": 92017,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 92017,
+            "respawnAt": 130526,
+            "takenAt": 130526,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 130526,
+            "respawnAt": 140643,
+            "takenAt": 140643,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 140643,
+            "respawnAt": 150688,
+            "takenAt": 150688,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 150688,
+            "respawnAt": 179794,
+            "takenAt": 179794,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 179794,
+            "respawnAt": 270315,
+            "takenAt": 270315,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 270315,
+            "respawnAt": 304664,
+            "takenAt": 304664,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 304664,
+            "respawnAt": 396351,
+            "takenAt": 396351,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 396351,
+            "respawnAt": 455520,
+            "takenAt": 455520,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 455520,
+            "respawnAt": 509140,
+            "takenAt": 509140,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 509140
           }
         ],
         "x": 112,
@@ -41308,7 +41378,644 @@
         "name": "lg",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 1432,
+            "takenAt": 1432,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 1432,
+            "respawnAt": 1859,
+            "takenAt": 1859,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 1859,
+            "respawnAt": 11000,
+            "takenAt": 11000,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 11000,
+            "respawnAt": 16761,
+            "takenAt": 16761,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 16761,
+            "respawnAt": 23736,
+            "takenAt": 23736,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 23736,
+            "respawnAt": 60413,
+            "takenAt": 60413,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 60413,
+            "respawnAt": 63906,
+            "takenAt": 63906,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 63906,
+            "respawnAt": 65442,
+            "takenAt": 65442,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 65442,
+            "respawnAt": 78458,
+            "takenAt": 78458,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 78458,
+            "respawnAt": 90697,
+            "takenAt": 90697,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 90697,
+            "respawnAt": 96497,
+            "takenAt": 96497,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 96497,
+            "respawnAt": 98341,
+            "takenAt": 98341,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 98341,
+            "respawnAt": 100963,
+            "takenAt": 100963,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 100963,
+            "respawnAt": 107847,
+            "takenAt": 107847,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 107847,
+            "respawnAt": 115159,
+            "takenAt": 115159,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 115159,
+            "respawnAt": 119970,
+            "takenAt": 119970,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 119970,
+            "respawnAt": 120968,
+            "takenAt": 120968,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 120968,
+            "respawnAt": 135106,
+            "takenAt": 135106,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 135106,
+            "respawnAt": 150688,
+            "takenAt": 150688,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 150688,
+            "respawnAt": 156458,
+            "takenAt": 156458,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 156458,
+            "respawnAt": 164754,
+            "takenAt": 164754,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 164754,
+            "respawnAt": 165561,
+            "takenAt": 165561,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 165561,
+            "respawnAt": 167508,
+            "takenAt": 167508,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 167508,
+            "respawnAt": 170157,
+            "takenAt": 170157,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 170157,
+            "respawnAt": 170277,
+            "takenAt": 170277,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 170277,
+            "respawnAt": 170985,
+            "takenAt": 170985,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 170985,
+            "respawnAt": 174591,
+            "takenAt": 174591,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 174591,
+            "respawnAt": 177812,
+            "takenAt": 177812,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 177812,
+            "respawnAt": 179656,
+            "takenAt": 179656,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 179656,
+            "respawnAt": 186002,
+            "takenAt": 186002,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 186002,
+            "respawnAt": 188184,
+            "takenAt": 188184,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 188184,
+            "respawnAt": 193188,
+            "takenAt": 193188,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 193188,
+            "respawnAt": 193328,
+            "takenAt": 193328,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 193328,
+            "respawnAt": 211664,
+            "takenAt": 211664,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 211664,
+            "respawnAt": 215066,
+            "takenAt": 215066,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 215066,
+            "respawnAt": 221470,
+            "takenAt": 221470,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 221470,
+            "respawnAt": 222484,
+            "takenAt": 222484,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 222484,
+            "respawnAt": 226743,
+            "takenAt": 226743,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 226743,
+            "respawnAt": 234990,
+            "takenAt": 234990,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 234990,
+            "respawnAt": 255430,
+            "takenAt": 255430,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 255430,
+            "respawnAt": 260651,
+            "takenAt": 260651,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 260651,
+            "respawnAt": 266041,
+            "takenAt": 266041,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 266041,
+            "respawnAt": 271612,
+            "takenAt": 271612,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 271612,
+            "respawnAt": 272392,
+            "takenAt": 272392,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 272392,
+            "respawnAt": 287873,
+            "takenAt": 287873,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 287873,
+            "respawnAt": 291817,
+            "takenAt": 291817,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 291817,
+            "respawnAt": 295695,
+            "takenAt": 295695,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 295695,
+            "respawnAt": 303195,
+            "takenAt": 303195,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 303195,
+            "respawnAt": 313235,
+            "takenAt": 313235,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 313235,
+            "respawnAt": 319016,
+            "takenAt": 319016,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 319016,
+            "respawnAt": 322222,
+            "takenAt": 322222,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 322222,
+            "respawnAt": 326596,
+            "takenAt": 326596,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 326596,
+            "respawnAt": 334106,
+            "takenAt": 334106,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 334106,
+            "respawnAt": 347260,
+            "takenAt": 347260,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 347260,
+            "respawnAt": 356499,
+            "takenAt": 356499,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 356499,
+            "respawnAt": 359476,
+            "takenAt": 359476,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 359476,
+            "respawnAt": 366418,
+            "takenAt": 366418,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 366418,
+            "respawnAt": 371986,
+            "takenAt": 371986,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 371986,
+            "respawnAt": 375347,
+            "takenAt": 375347,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 375347,
+            "respawnAt": 384882,
+            "takenAt": 384882,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 384882,
+            "respawnAt": 386951,
+            "takenAt": 386951,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 386951,
+            "respawnAt": 403884,
+            "takenAt": 403884,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 403884,
+            "respawnAt": 405808,
+            "takenAt": 405808,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 405808,
+            "respawnAt": 409739,
+            "takenAt": 409739,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 409739,
+            "respawnAt": 413765,
+            "takenAt": 413765,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 413765,
+            "respawnAt": 416626,
+            "takenAt": 416626,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 416626,
+            "respawnAt": 426616,
+            "takenAt": 426616,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 426616,
+            "respawnAt": 430348,
+            "takenAt": 430348,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 430348,
+            "respawnAt": 431271,
+            "takenAt": 431271,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 431271,
+            "respawnAt": 445455,
+            "takenAt": 445455,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 445455,
+            "respawnAt": 451262,
+            "takenAt": 451262,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 451262,
+            "respawnAt": 452127,
+            "takenAt": 452127,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 452127,
+            "respawnAt": 469568,
+            "takenAt": 469568,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 469568,
+            "respawnAt": 472780,
+            "takenAt": 472780,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 472780,
+            "respawnAt": 479429,
+            "takenAt": 479429,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 479429,
+            "respawnAt": 481405,
+            "takenAt": 481405,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 481405,
+            "respawnAt": 484611,
+            "takenAt": 484611,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 484611,
+            "respawnAt": 504610,
+            "takenAt": 504610,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 504610,
+            "respawnAt": 506970,
+            "takenAt": 506970,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 506970,
+            "respawnAt": 510755,
+            "takenAt": 510755,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 510755,
+            "respawnAt": 514035,
+            "takenAt": 514035,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 514035,
+            "respawnAt": 521081,
+            "takenAt": 521081,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 521081,
+            "respawnAt": 532860,
+            "takenAt": 532860,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 532860,
+            "respawnAt": 537526,
+            "takenAt": 537526,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 537526,
+            "respawnAt": 544472,
+            "takenAt": 544472,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 544472,
+            "respawnAt": 548530,
+            "takenAt": 548530,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 548530,
+            "respawnAt": 555221,
+            "takenAt": 555221,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 555221,
+            "respawnAt": 564054,
+            "takenAt": 564054,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 564054,
+            "respawnAt": 580091,
+            "takenAt": 580091,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 580091,
+            "respawnAt": 592558,
+            "takenAt": 592558,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 592558,
+            "respawnAt": 598159,
+            "takenAt": 598159,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 598159
           }
         ],
         "x": 528,
@@ -41858,7 +42565,371 @@
         "name": "ng",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 7312,
+            "takenAt": 7312,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 7312,
+            "respawnAt": 21132,
+            "takenAt": 21132,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 21132,
+            "respawnAt": 47707,
+            "takenAt": 47707,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 47707,
+            "respawnAt": 50039,
+            "takenAt": 50039,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 50039,
+            "respawnAt": 53471,
+            "takenAt": 53471,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 53471,
+            "respawnAt": 54912,
+            "takenAt": 54912,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 54912,
+            "respawnAt": 67691,
+            "takenAt": 67691,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 67691,
+            "respawnAt": 96526,
+            "takenAt": 96526,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 96526,
+            "respawnAt": 106484,
+            "takenAt": 106484,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 106484,
+            "respawnAt": 108184,
+            "takenAt": 108184,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 108184,
+            "respawnAt": 120326,
+            "takenAt": 120326,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 120326,
+            "respawnAt": 130873,
+            "takenAt": 130873,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 130873,
+            "respawnAt": 134390,
+            "takenAt": 134390,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 134390,
+            "respawnAt": 148300,
+            "takenAt": 148300,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 148300,
+            "respawnAt": 152275,
+            "takenAt": 152275,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 152275,
+            "respawnAt": 157287,
+            "takenAt": 157287,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 157287,
+            "respawnAt": 164936,
+            "takenAt": 164936,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 164936,
+            "respawnAt": 171639,
+            "takenAt": 171639,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 171639,
+            "respawnAt": 202378,
+            "takenAt": 202378,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 202378,
+            "respawnAt": 217964,
+            "takenAt": 217964,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 217964,
+            "respawnAt": 220509,
+            "takenAt": 220509,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 220509,
+            "respawnAt": 231625,
+            "takenAt": 231625,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 231625,
+            "respawnAt": 250755,
+            "takenAt": 250755,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 250755,
+            "respawnAt": 268729,
+            "takenAt": 268729,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 268729,
+            "respawnAt": 274768,
+            "takenAt": 274768,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 274768,
+            "respawnAt": 285820,
+            "takenAt": 285820,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 285820,
+            "respawnAt": 305949,
+            "takenAt": 305949,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 305949,
+            "respawnAt": 327680,
+            "takenAt": 327680,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 327680,
+            "respawnAt": 332598,
+            "takenAt": 332598,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 332598,
+            "respawnAt": 335301,
+            "takenAt": 335301,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 335301,
+            "respawnAt": 353964,
+            "takenAt": 353964,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 353964,
+            "respawnAt": 361279,
+            "takenAt": 361279,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 361279,
+            "respawnAt": 365416,
+            "takenAt": 365416,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 365416,
+            "respawnAt": 376532,
+            "takenAt": 376532,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 376532,
+            "respawnAt": 382223,
+            "takenAt": 382223,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 382223,
+            "respawnAt": 400917,
+            "takenAt": 400917,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 400917,
+            "respawnAt": 405553,
+            "takenAt": 405553,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 405553,
+            "respawnAt": 441717,
+            "takenAt": 441717,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 441717,
+            "respawnAt": 461873,
+            "takenAt": 461873,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 461873,
+            "respawnAt": 472837,
+            "takenAt": 472837,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 472837,
+            "respawnAt": 492085,
+            "takenAt": 492085,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 492085,
+            "respawnAt": 501832,
+            "takenAt": 501832,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 501832,
+            "respawnAt": 508454,
+            "takenAt": 508454,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 508454,
+            "respawnAt": 530797,
+            "takenAt": 530797,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 530797,
+            "respawnAt": 539585,
+            "takenAt": 539585,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 539585,
+            "respawnAt": 551924,
+            "takenAt": 551924,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 551924,
+            "respawnAt": 560462,
+            "takenAt": 560462,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 560462,
+            "respawnAt": 572739,
+            "takenAt": 572739,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 572739,
+            "respawnAt": 585457,
+            "takenAt": 585457,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 585457,
+            "respawnAt": 590889,
+            "takenAt": 590889,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 590889,
+            "respawnAt": 595041,
+            "takenAt": 595041,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 595041,
+            "respawnAt": 598220,
+            "takenAt": 598220,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 598220
           }
         ],
         "x": 352,
@@ -42086,7 +43157,315 @@
         "name": "rl_1",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 1886,
+            "takenAt": 1886,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 1886,
+            "respawnAt": 11469,
+            "takenAt": 11469,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 11469,
+            "respawnAt": 17920,
+            "takenAt": 17920,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 17920,
+            "respawnAt": 39598,
+            "takenAt": 39598,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 39598,
+            "respawnAt": 73354,
+            "takenAt": 73354,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 73354,
+            "respawnAt": 85802,
+            "takenAt": 85802,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 85802,
+            "respawnAt": 88650,
+            "takenAt": 88650,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 88650,
+            "respawnAt": 102184,
+            "takenAt": 102184,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 102184,
+            "respawnAt": 112106,
+            "takenAt": 112106,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 112106,
+            "respawnAt": 126481,
+            "takenAt": 126481,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 126481,
+            "respawnAt": 138403,
+            "takenAt": 138403,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 138403,
+            "respawnAt": 155354,
+            "takenAt": 155354,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 155354,
+            "respawnAt": 182936,
+            "takenAt": 182936,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 182936,
+            "respawnAt": 197071,
+            "takenAt": 197071,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 197071,
+            "respawnAt": 205872,
+            "takenAt": 205872,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 205872,
+            "respawnAt": 215429,
+            "takenAt": 215429,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 215429,
+            "respawnAt": 225155,
+            "takenAt": 225155,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 225155,
+            "respawnAt": 229999,
+            "takenAt": 229999,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 229999,
+            "respawnAt": 244003,
+            "takenAt": 244003,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 244003,
+            "respawnAt": 266444,
+            "takenAt": 266444,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 266444,
+            "respawnAt": 283487,
+            "takenAt": 283487,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 283487,
+            "respawnAt": 292678,
+            "takenAt": 292678,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 292678,
+            "respawnAt": 316169,
+            "takenAt": 316169,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 316169,
+            "respawnAt": 328529,
+            "takenAt": 328529,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 328529,
+            "respawnAt": 336469,
+            "takenAt": 336469,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 336469,
+            "respawnAt": 346949,
+            "takenAt": 346949,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 346949,
+            "respawnAt": 351534,
+            "takenAt": 351534,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 351534,
+            "respawnAt": 374891,
+            "takenAt": 374891,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 374891,
+            "respawnAt": 387129,
+            "takenAt": 387129,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 387129,
+            "respawnAt": 409696,
+            "takenAt": 409696,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 409696,
+            "respawnAt": 424663,
+            "takenAt": 424663,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 424663,
+            "respawnAt": 437491,
+            "takenAt": 437491,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 437491,
+            "respawnAt": 444860,
+            "takenAt": 444860,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 444860,
+            "respawnAt": 488522,
+            "takenAt": 488522,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 488522,
+            "respawnAt": 498131,
+            "takenAt": 498131,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 498131,
+            "respawnAt": 501624,
+            "takenAt": 501624,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 501624,
+            "respawnAt": 511041,
+            "takenAt": 511041,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 511041,
+            "respawnAt": 517561,
+            "takenAt": 517561,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 517561,
+            "respawnAt": 519132,
+            "takenAt": 519132,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 519132,
+            "respawnAt": 543236,
+            "takenAt": 543236,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 543236,
+            "respawnAt": 550839,
+            "takenAt": 550839,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 550839,
+            "respawnAt": 567016,
+            "takenAt": 567016,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 567016,
+            "respawnAt": 581857,
+            "takenAt": 581857,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 581857,
+            "respawnAt": 585817,
+            "takenAt": 585817,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 585817
           }
         ],
         "x": 80,
@@ -42100,7 +43479,434 @@
         "name": "rl_2",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 7055,
+            "takenAt": 7055,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 7055,
+            "respawnAt": 20865,
+            "takenAt": 20865,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 20865,
+            "respawnAt": 30899,
+            "takenAt": 30899,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 30899,
+            "respawnAt": 49761,
+            "takenAt": 49761,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 49761,
+            "respawnAt": 51250,
+            "takenAt": 51250,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 51250,
+            "respawnAt": 53182,
+            "takenAt": 53182,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 53182,
+            "respawnAt": 65286,
+            "takenAt": 65286,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 65286,
+            "respawnAt": 73012,
+            "takenAt": 73012,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 73012,
+            "respawnAt": 96245,
+            "takenAt": 96245,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 96245,
+            "respawnAt": 106194,
+            "takenAt": 106194,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 106194,
+            "respawnAt": 107586,
+            "takenAt": 107586,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 107586,
+            "respawnAt": 120001,
+            "takenAt": 120001,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 120001,
+            "respawnAt": 134079,
+            "takenAt": 134079,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 134079,
+            "respawnAt": 147554,
+            "takenAt": 147554,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 147554,
+            "respawnAt": 151977,
+            "takenAt": 151977,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 151977,
+            "respawnAt": 156235,
+            "takenAt": 156235,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 156235,
+            "respawnAt": 160076,
+            "takenAt": 160076,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 160076,
+            "respawnAt": 164042,
+            "takenAt": 164042,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 164042,
+            "respawnAt": 171331,
+            "takenAt": 171331,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 171331,
+            "respawnAt": 199180,
+            "takenAt": 199180,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 199180,
+            "respawnAt": 200003,
+            "takenAt": 200003,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 200003,
+            "respawnAt": 202081,
+            "takenAt": 202081,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 202081,
+            "respawnAt": 216560,
+            "takenAt": 216560,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 216560,
+            "respawnAt": 224696,
+            "takenAt": 224696,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 224696,
+            "respawnAt": 237498,
+            "takenAt": 237498,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 237498,
+            "respawnAt": 246185,
+            "takenAt": 246185,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 246185,
+            "respawnAt": 250469,
+            "takenAt": 250469,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 250469,
+            "respawnAt": 262131,
+            "takenAt": 262131,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 262131,
+            "respawnAt": 268444,
+            "takenAt": 268444,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 268444,
+            "respawnAt": 274483,
+            "takenAt": 274483,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 274483,
+            "respawnAt": 288886,
+            "takenAt": 288886,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 288886,
+            "respawnAt": 299002,
+            "takenAt": 299002,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 299002,
+            "respawnAt": 324027,
+            "takenAt": 324027,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 324027,
+            "respawnAt": 331411,
+            "takenAt": 331411,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 331411,
+            "respawnAt": 331898,
+            "takenAt": 331898,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 331898,
+            "respawnAt": 352820,
+            "takenAt": 352820,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 352820,
+            "respawnAt": 360984,
+            "takenAt": 360984,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 360984,
+            "respawnAt": 365139,
+            "takenAt": 365139,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 365139,
+            "respawnAt": 368729,
+            "takenAt": 368729,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 368729,
+            "respawnAt": 376210,
+            "takenAt": 376210,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 376210,
+            "respawnAt": 381922,
+            "takenAt": 381922,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 381922,
+            "respawnAt": 389781,
+            "takenAt": 389781,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 389781,
+            "respawnAt": 400650,
+            "takenAt": 400650,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 400650,
+            "respawnAt": 405263,
+            "takenAt": 405263,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 405263,
+            "respawnAt": 419442,
+            "takenAt": 419442,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 419442,
+            "respawnAt": 437338,
+            "takenAt": 437338,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 437338,
+            "respawnAt": 460509,
+            "takenAt": 460509,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 460509,
+            "respawnAt": 471977,
+            "takenAt": 471977,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 471977,
+            "respawnAt": 484153,
+            "takenAt": 484153,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 484153,
+            "respawnAt": 500107,
+            "takenAt": 500107,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 500107,
+            "respawnAt": 508178,
+            "takenAt": 508178,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 508178,
+            "respawnAt": 530523,
+            "takenAt": 530523,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 530523,
+            "respawnAt": 539294,
+            "takenAt": 539294,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 539294,
+            "respawnAt": 551657,
+            "takenAt": 551657,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 551657,
+            "respawnAt": 553068,
+            "takenAt": 553068,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 553068,
+            "respawnAt": 560159,
+            "takenAt": 560159,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 560159,
+            "respawnAt": 568047,
+            "takenAt": 568047,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 568047,
+            "respawnAt": 585194,
+            "takenAt": 585194,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 585194,
+            "respawnAt": 590584,
+            "takenAt": 590584,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 590584,
+            "respawnAt": 594730,
+            "takenAt": 594730,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 594730,
+            "respawnAt": 597921,
+            "takenAt": 597921,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 597921
           }
         ],
         "x": 768,
@@ -42860,9 +44666,7 @@
           {
             "availableFrom": 383635,
             "respawnAt": 419609,
-            "takenAt": 389609,
-            "takenBy": "squeeze",
-            "team": "1"
+            "takenAt": 389609
           },
           {
             "availableFrom": 404596,
@@ -42925,7 +44729,49 @@
         "name": "sng",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 2727,
+            "takenAt": 2727,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 2727,
+            "respawnAt": 92208,
+            "takenAt": 92208,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 92208,
+            "respawnAt": 103859,
+            "takenAt": 103859,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 103859,
+            "respawnAt": 175832,
+            "takenAt": 175832,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 175832,
+            "respawnAt": 216444,
+            "takenAt": 216444,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 216444,
+            "respawnAt": 446730,
+            "takenAt": 446730,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 446730
           }
         ],
         "x": 200,
@@ -42939,7 +44785,182 @@
         "name": "ssg",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 7388,
+            "takenAt": 7388,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 7388,
+            "respawnAt": 21791,
+            "takenAt": 21791,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 21791,
+            "respawnAt": 40072,
+            "takenAt": 40072,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 40072,
+            "respawnAt": 58622,
+            "takenAt": 58622,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 58622,
+            "respawnAt": 100963,
+            "takenAt": 100963,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 100963,
+            "respawnAt": 101877,
+            "takenAt": 101877,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 101877,
+            "respawnAt": 133626,
+            "takenAt": 133626,
+            "takenBy": "stepcop",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 133626,
+            "respawnAt": 148286,
+            "takenAt": 148286,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 148286,
+            "respawnAt": 168728,
+            "takenAt": 168728,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 168728,
+            "respawnAt": 175235,
+            "takenAt": 175235,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 175235,
+            "respawnAt": 184430,
+            "takenAt": 184430,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 184430,
+            "respawnAt": 244902,
+            "takenAt": 244902,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 244902,
+            "respawnAt": 279430,
+            "takenAt": 279430,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 279430,
+            "respawnAt": 361483,
+            "takenAt": 361483,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 361483,
+            "respawnAt": 370098,
+            "takenAt": 370098,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 370098,
+            "respawnAt": 412093,
+            "takenAt": 412093,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 412093,
+            "respawnAt": 420570,
+            "takenAt": 420570,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 420570,
+            "respawnAt": 440665,
+            "takenAt": 440665,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 440665,
+            "respawnAt": 461858,
+            "takenAt": 461858,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 461858,
+            "respawnAt": 479935,
+            "takenAt": 479935,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 479935,
+            "respawnAt": 531302,
+            "takenAt": 531302,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 531302,
+            "respawnAt": 535822,
+            "takenAt": 535822,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 535822,
+            "respawnAt": 541078,
+            "takenAt": 541078,
+            "takenBy": "Milton",
+            "team": "1"
+          },
+          {
+            "availableFrom": 541078,
+            "respawnAt": 574535,
+            "takenAt": 574535,
+            "takenBy": "squeeze",
+            "team": "1"
+          },
+          {
+            "availableFrom": 574535,
+            "respawnAt": 581626,
+            "takenAt": 581626,
+            "takenBy": "shazam",
+            "team": "n n"
+          },
+          {
+            "availableFrom": 581626
           }
         ],
         "x": 328,
@@ -51433,7 +53454,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 45,
+  "schemaVersion": 46,
   "shots": {
     "byPlayer": [
       {
@@ -99091,6 +101112,50 @@
   },
   "weaponPickups": [
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 7,
+      "nextDeathTime": 64250,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 1432,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 5234,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 1859,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 10603,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 1886,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 64250,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 2727,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 5234,
       "dropper": "squeeze",
@@ -99103,6 +101168,61 @@
       "team": "n n",
       "time": 6883,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 64250,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 7055,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 64250,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 7312,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 15167,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 7388,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 15167,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 11000,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 12416,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 11469,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 37,
@@ -99161,6 +101281,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 42927,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 16761,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 19809,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 17920,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 12416,
       "dropper": "shazam",
@@ -99175,6 +101317,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 25639,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 20865,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 25639,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 21132,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 94,
       "dropTime": 19809,
       "dropper": "squeeze",
@@ -99187,6 +101351,28 @@
       "team": "n n",
       "time": 21234,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 79678,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 21791,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 5,
+      "nextDeathTime": 79678,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 23736,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 97,
@@ -99217,6 +101403,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 35414,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 30899,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 96,
       "dropTime": 35414,
       "dropper": "stepcop",
@@ -99229,6 +101426,28 @@
       "team": "1",
       "time": 36735,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 46371,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 39598,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 42927,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 40072,
+      "weapon": "ssg"
     },
     {
       "backpackEnt": 94,
@@ -99259,6 +101478,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 79678,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 47707,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 42927,
       "dropper": "shazam",
@@ -99270,6 +101500,39 @@
       "source": "backpack",
       "team": "1",
       "time": 48202,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 51234,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 49761,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 51234,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 50039,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 69108,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 51250,
       "weapon": "rl"
     },
     {
@@ -99287,6 +101550,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 56496,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 53182,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 56496,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 53471,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 69108,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 54912,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 56496,
       "dropper": "shazam",
@@ -99299,6 +101595,72 @@
       "team": "1",
       "time": 57140,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 60730,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 58622,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 60730,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 60413,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 69108,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 63906,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 90189,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 65286,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 84182,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 65442,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 90189,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 67691,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 98,
@@ -99315,6 +101677,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 84182,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 73012,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 75055,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 73354,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 75055,
       "dropper": "stepcop",
@@ -99327,6 +101711,17 @@
       "team": "1",
       "time": 75955,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 95806,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 78458,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 95,
@@ -99357,6 +101752,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 88403,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 85802,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 98849,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 88650,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 88403,
       "dropper": "shazam",
@@ -99385,6 +101802,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 94431,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 90697,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 95806,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 92017,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 94431,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 92208,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 98,
       "dropTime": 94431,
       "dropper": "shazam",
@@ -99397,6 +101847,171 @@
       "team": "1",
       "time": 95014,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 119029,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 96245,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 99889,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 96497,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 119029,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 96526,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 99889,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 98341,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 119029,
+      "player": "Milton",
+      "source": "unknown",
+      "team": "1",
+      "time": 98884,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 110734,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 100963,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 119029,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 100963,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 105769,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 101877,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 104085,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 102184,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 119029,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 103859,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 106884,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 106194,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 106884,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 106484,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 116588,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 107586,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 110734,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 107847,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 116588,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 108184,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 97,
@@ -99455,6 +102070,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 117390,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 112106,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 117045,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 115159,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 110734,
       "dropper": "squeeze",
@@ -99483,6 +102120,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 123679,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 119970,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 125417,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 120001,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 125417,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 120326,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 145715,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 120968,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 161,
       "dropTime": 117390,
       "dropper": "shazam",
@@ -99494,6 +102175,17 @@
       "source": "backpack",
       "team": "n n",
       "time": 121890,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 132743,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 126481,
       "weapon": "rl"
     },
     {
@@ -99525,6 +102217,72 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 132756,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 130526,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 132743,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 130873,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 147066,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 133626,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 146353,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 134079,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 146353,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 134390,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 147066,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 135106,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 132743,
       "dropper": "squeeze",
@@ -99553,6 +102311,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 139876,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 138403,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 147066,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 140643,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 96,
       "dropTime": 145715,
       "dropper": "shazam",
@@ -99565,6 +102345,83 @@
       "team": "1",
       "time": 146600,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 153315,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 147554,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 159496,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 148286,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 153315,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 148300,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 159496,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 150688,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 151002,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 150688,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 158404,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 151977,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 158404,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 152275,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 95,
@@ -99609,6 +102466,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 165886,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 155354,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 167803,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 156235,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 158404,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 156458,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 167803,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 157287,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 159496,
       "dropper": "squeeze",
@@ -99623,6 +102524,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 166781,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 160076,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 99,
       "dropTime": 158404,
       "dropper": "Milton",
@@ -99635,6 +102547,50 @@
       "team": "1",
       "time": 161138,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 5,
+      "nextDeathTime": 173092,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 164042,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 167803,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 164754,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 173092,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 164936,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 166781,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 165561,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 99,
@@ -99655,13 +102611,13 @@
       "dropTime": 166781,
       "dropper": "squeeze",
       "dropperTeam": "1",
-      "hadBefore": true,
+      "hadBefore": false,
       "kills": 0,
       "nextDeathTime": 168596,
       "player": "shazam",
       "source": "backpack",
       "team": "n n",
-      "time": 167936,
+      "time": 167508,
       "weapon": "lg"
     },
     {
@@ -99679,6 +102635,83 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 189391,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 168728,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 170277,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 170157,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 173666,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 170277,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 189391,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 170985,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 189194,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 171331,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 189194,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 171639,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 182871,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 174591,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 173092,
       "dropper": "Milton",
@@ -99691,6 +102724,39 @@
       "team": "n n",
       "time": 174639,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 180837,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 175235,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 189391,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 175832,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 180837,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 177812,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 161,
@@ -99707,6 +102773,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 189194,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 179656,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 180837,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 179794,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 180837,
       "dropper": "shazam",
@@ -99718,6 +102806,50 @@
       "source": "backpack",
       "team": "1",
       "time": 181261,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 192071,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 182936,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 200096,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 184430,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 200096,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 186002,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 192071,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 188184,
       "weapon": "lg"
     },
     {
@@ -99747,6 +102879,28 @@
       "team": "1",
       "time": 191874,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 202581,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 193188,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 194107,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 193328,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 94,
@@ -99791,6 +102945,61 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 212210,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 197071,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 9,
+      "nextDeathTime": 263651,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 199180,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 200096,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 200003,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 208481,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 202081,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 208481,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 202378,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 202581,
       "dropper": "squeeze",
@@ -99803,6 +103012,17 @@
       "team": "n n",
       "time": 203937,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 211845,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 205872,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 95,
@@ -99819,6 +103039,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 216360,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 211664,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 96,
       "dropTime": 211845,
       "dropper": "squeeze",
@@ -99830,6 +103061,50 @@
       "source": "backpack",
       "team": "n n",
       "time": 214097,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 223099,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 215066,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 216360,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 215429,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 223099,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 216444,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 223458,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 216560,
       "weapon": "rl"
     },
     {
@@ -99847,6 +103122,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 223458,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 217964,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 162,
       "dropTime": 217754,
       "dropper": "Milton",
@@ -99859,6 +103145,39 @@
       "team": "n n",
       "time": 218224,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 263651,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 220509,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 223976,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 221470,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 223458,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 222484,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 99,
@@ -99875,6 +103194,61 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 232243,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 224696,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 260889,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 225155,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 227365,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 226743,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 235886,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 229999,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 235886,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 231625,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 161,
       "dropTime": 232243,
       "dropper": "squeeze",
@@ -99886,6 +103260,28 @@
       "source": "backpack",
       "team": "n n",
       "time": 233513,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 260889,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 234990,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 238649,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 237498,
       "weapon": "rl"
     },
     {
@@ -99917,6 +103313,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 245055,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 244003,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 94,
       "dropTime": 227365,
       "dropper": "Milton",
@@ -99929,6 +103336,50 @@
       "team": "n n",
       "time": 244742,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 245990,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 244902,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 251556,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 246185,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 251436,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 250469,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 251436,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 250755,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 95,
@@ -99945,6 +103396,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 256456,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 255430,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 260964,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 260651,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 99,
       "dropTime": 260964,
       "dropper": "squeeze",
@@ -99957,6 +103430,17 @@
       "team": "1",
       "time": 261159,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 310729,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 262131,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 98,
@@ -99987,6 +103471,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 266547,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 266041,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 276179,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 266444,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 98,
       "dropTime": 263651,
       "dropper": "stepcop",
@@ -100001,6 +103507,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 269873,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 268444,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 269873,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 268729,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 162,
       "dropTime": 251436,
       "dropper": "squeeze",
@@ -100013,6 +103541,17 @@
       "team": "n n",
       "time": 269194,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 310729,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 270315,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 99,
@@ -100033,13 +103572,24 @@
       "dropTime": 266547,
       "dropper": "shazam",
       "dropperTeam": "n n",
-      "hadBefore": true,
-      "kills": 0,
+      "hadBefore": false,
+      "kills": 2,
       "nextDeathTime": 284736,
       "player": "Milton",
       "source": "backpack",
       "team": "1",
-      "time": 272027,
+      "time": 271612,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 272547,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 272392,
       "weapon": "lg"
     },
     {
@@ -100057,6 +103607,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 290580,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 274483,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 290580,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 274768,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 290580,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 279430,
+      "weapon": "ssg"
+    },
+    {
       "backpackEnt": 97,
       "dropTime": 276179,
       "dropper": "stepcop",
@@ -100068,6 +103651,17 @@
       "source": "backpack",
       "team": "1",
       "time": 279886,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 287036,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 283487,
       "weapon": "rl"
     },
     {
@@ -100083,6 +103677,72 @@
       "team": "n n",
       "time": 285791,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 310729,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 285820,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 290580,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 287873,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 306821,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 288886,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 294473,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 291817,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 310448,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 292678,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 306821,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 295695,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 95,
@@ -100113,6 +103773,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 328423,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 299002,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 310448,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 303195,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 310448,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 304664,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 328423,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 305949,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 306821,
       "dropper": "stepcop",
@@ -100125,6 +103829,28 @@
       "team": "n n",
       "time": 310258,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 323924,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 313235,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 318040,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 316169,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 161,
@@ -100141,6 +103867,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 328423,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 319016,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 310729,
       "dropper": "squeeze",
@@ -100153,6 +103890,28 @@
       "team": "n n",
       "time": 319613,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 323002,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 322222,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 411591,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 324027,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 99,
@@ -100169,6 +103928,72 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 332167,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 326596,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 411591,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 327680,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 329389,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 328529,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 337288,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 331411,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 356027,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 331898,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 356027,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 332598,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 163,
       "dropTime": 332167,
       "dropper": "shazam",
@@ -100183,6 +104008,39 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 11,
+      "nextDeathTime": 411591,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 334106,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 337288,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 335301,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 344292,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 336469,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 326181,
       "dropper": "stepcop",
@@ -100194,6 +104052,28 @@
       "source": "backpack",
       "team": "1",
       "time": 340193,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 350879,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 346949,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 349145,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 347260,
       "weapon": "lg"
     },
     {
@@ -100225,6 +104105,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 352664,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 351534,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 353547,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 352820,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 353547,
       "dropper": "shazam",
@@ -100237,6 +104139,17 @@
       "team": "n n",
       "time": 353574,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 355732,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 353964,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 95,
@@ -100257,13 +104170,24 @@
       "dropTime": 356027,
       "dropper": "Milton",
       "dropperTeam": "1",
-      "hadBefore": true,
+      "hadBefore": false,
       "kills": 0,
       "nextDeathTime": 359872,
       "player": "shazam",
       "source": "backpack",
       "team": "n n",
-      "time": 356884,
+      "time": 356499,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 366651,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 359476,
       "weapon": "lg"
     },
     {
@@ -100279,6 +104203,39 @@
       "team": "1",
       "time": 360885,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 362741,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 360984,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 362741,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 361279,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 363267,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 361483,
+      "weapon": "ssg"
     },
     {
       "backpackEnt": 95,
@@ -100306,6 +104263,50 @@
       "source": "backpack",
       "team": "1",
       "time": 362971,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 368528,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 365139,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 368528,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 365416,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 372068,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 366418,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 384494,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 368729,
       "weapon": "rl"
     },
     {
@@ -100337,6 +104338,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 374860,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 370098,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 374860,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 371986,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 372068,
       "dropper": "stepcop",
@@ -100351,6 +104374,50 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 377831,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 374891,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 384494,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 375347,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 401327,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 376210,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 401327,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 376532,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 374860,
       "dropper": "shazam",
@@ -100363,6 +104430,28 @@
       "team": "1",
       "time": 379254,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 383703,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 381922,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 383703,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 382223,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 37,
@@ -100393,6 +104482,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 401327,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 384882,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 398650,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 386951,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 388665,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 387129,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 383703,
       "dropper": "stepcop",
@@ -100405,6 +104527,28 @@
       "team": "n n",
       "time": 388694,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 398291,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 389781,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 398650,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 396351,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 94,
@@ -100421,6 +104565,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 403288,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 400650,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 403288,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 400917,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 162,
       "dropTime": 401327,
       "dropper": "shazam",
@@ -100435,6 +104601,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 407122,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 403884,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 164,
       "dropTime": 398650,
       "dropper": "stepcop",
@@ -100447,6 +104624,39 @@
       "team": "1",
       "time": 404389,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 406579,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 405263,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 406579,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 405553,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 410548,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 405808,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 94,
@@ -100475,6 +104685,28 @@
       "team": "n n",
       "time": 407360,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 5,
+      "nextDeathTime": 443102,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 409696,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 415989,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 409739,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 168,
@@ -100519,6 +104751,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 416964,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 412093,
+      "weapon": "ssg"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 411591,
       "dropper": "squeeze",
@@ -100530,6 +104773,28 @@
       "source": "backpack",
       "team": "n n",
       "time": 413431,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 416964,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 413765,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 424094,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 416626,
       "weapon": "lg"
     },
     {
@@ -100547,6 +104812,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 425094,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 419442,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 422115,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 420570,
+      "weapon": "ssg"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 415989,
       "dropper": "stepcop",
@@ -100558,6 +104845,28 @@
       "source": "backpack",
       "team": "1",
       "time": 421728,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 429378,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 424663,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 459849,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 426616,
       "weapon": "lg"
     },
     {
@@ -100589,6 +104898,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 459849,
+      "player": "squeeze",
+      "source": "unknown",
+      "team": "1",
+      "time": 430166,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 430388,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 430348,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 431624,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 431271,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 431624,
       "dropper": "shazam",
@@ -100601,6 +104943,50 @@
       "team": "1",
       "time": 432322,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 6,
+      "nextDeathTime": 501624,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 437338,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 439694,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 437491,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 442444,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 440665,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 501624,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 441717,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 166,
@@ -100631,18 +105017,84 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 470390,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 444860,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 98,
       "dropTime": 443102,
       "dropper": "Milton",
       "dropperTeam": "1",
-      "hadBefore": true,
+      "hadBefore": false,
       "kills": 0,
       "nextDeathTime": 451119,
       "player": "Milton",
       "source": "backpack",
       "team": "1",
-      "time": 445470,
+      "time": 445455,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 451119,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 446730,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 501624,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 451262,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 470390,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 452127,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 501624,
+      "player": "stepcop",
+      "source": "unknown",
+      "team": "n n",
+      "time": 452197,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 470390,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 455520,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 97,
@@ -100659,6 +105111,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 478459,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 460509,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 37,
       "dropTime": 459849,
       "dropper": "squeeze",
@@ -100671,6 +105134,83 @@
       "team": "n n",
       "time": 460847,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 464340,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 461858,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 478459,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 461873,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 470390,
+      "player": "shazam",
+      "source": "unknown",
+      "team": "n n",
+      "time": 465435,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 470892,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 469568,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 480397,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 471977,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 482483,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 472780,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 480397,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 472837,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 96,
@@ -100701,6 +105241,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 480397,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 479429,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 485834,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 479935,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 485834,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 481405,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 94,
       "dropTime": 478459,
       "dropper": "Milton",
@@ -100729,6 +105302,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 496229,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 484153,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 499591,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 484611,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 98,
       "dropTime": 483194,
       "dropper": "squeeze",
@@ -100741,6 +105336,83 @@
       "team": "1",
       "time": 486099,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 499591,
+      "player": "shazam",
+      "source": "unknown",
+      "team": "n n",
+      "time": 486922,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 499591,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 488522,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 496229,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 492085,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 499003,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 498131,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 508363,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 500107,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 503041,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 501624,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 508363,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 501832,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 98,
@@ -100771,6 +105443,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 538328,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 504610,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 94,
       "dropTime": 499591,
       "dropper": "shazam",
@@ -100797,6 +105480,83 @@
       "team": "n n",
       "time": 506347,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 508822,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 506970,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 532013,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 508178,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 532013,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 508454,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 538328,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 509140,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 514899,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 510755,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 512016,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 511041,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 517533,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 514035,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 98,
@@ -100827,6 +105587,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 527029,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 517561,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 161,
       "dropTime": 517533,
       "dropper": "stepcop",
@@ -100838,6 +105609,28 @@
       "source": "backpack",
       "team": "1",
       "time": 518353,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 522696,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 519132,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 532013,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 521081,
       "weapon": "lg"
     },
     {
@@ -100869,6 +105662,94 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 552195,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 530523,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 552195,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 530797,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 538328,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 531302,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 539946,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 532860,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 547042,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 535822,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 547042,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 537526,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 540363,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 539294,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 540363,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 539585,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 95,
       "dropTime": 540363,
       "dropper": "squeeze",
@@ -100880,6 +105761,28 @@
       "source": "backpack",
       "team": "n n",
       "time": 540922,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 552195,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 541078,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 557041,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 543236,
       "weapon": "rl"
     },
     {
@@ -100897,6 +105800,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 547530,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 544472,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 552195,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 548530,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 99,
       "dropTime": 538328,
       "dropper": "squeeze",
@@ -100909,6 +105834,17 @@
       "team": "n n",
       "time": 549899,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 551462,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 550839,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 165,
@@ -100925,6 +105861,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 7,
+      "nextDeathTime": 580078,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 551657,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 580078,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 551924,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 164,
       "dropTime": 552195,
       "dropper": "Milton",
@@ -100936,6 +105894,17 @@
       "source": "backpack",
       "team": "n n",
       "time": 552805,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 563584,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 553068,
       "weapon": "rl"
     },
     {
@@ -100953,6 +105922,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 563162,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 555221,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 162,
       "dropTime": 557041,
       "dropper": "squeeze",
@@ -100964,6 +105944,39 @@
       "source": "backpack",
       "team": "n n",
       "time": 557844,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 561862,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 560159,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 561862,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 560462,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 564319,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 564054,
       "weapon": "lg"
     },
     {
@@ -100995,6 +106008,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 568653,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 567016,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 580078,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 568047,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 168,
       "dropTime": 563584,
       "dropper": "Milton",
@@ -101009,6 +106044,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 580078,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 572739,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 98,
       "dropTime": 561862,
       "dropper": "squeeze",
@@ -101021,6 +106067,27 @@
       "team": "1",
       "time": 573540,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 577273,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 574535,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 5,
+      "player": "squeeze",
+      "source": "world",
+      "team": "1",
+      "time": 580091,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 165,
@@ -101049,6 +106116,38 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 583730,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 581626,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 581857,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 590259,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 585194,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 99,
       "dropTime": 568653,
       "dropper": "squeeze",
@@ -101062,6 +106161,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 590259,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 585457,
+      "weapon": "ng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 589780,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 585817,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 594220,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 590584,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 594220,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 590889,
+      "weapon": "ng"
+    },
+    {
       "backpackEnt": 165,
       "dropTime": 590259,
       "dropper": "stepcop",
@@ -101073,6 +106216,50 @@
       "team": "1",
       "time": 591751,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 593249,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 592558,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 593249,
+      "player": "stepcop",
+      "source": "unknown",
+      "team": "n n",
+      "time": 592834,
+      "weapon": "ssg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 598103,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 594730,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 598103,
+      "player": "stepcop",
+      "source": "world",
+      "team": "n n",
+      "time": 595041,
+      "weapon": "ng"
     },
     {
       "backpackEnt": 163,
@@ -101089,6 +106276,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 598973,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 597921,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 169,
       "dropTime": 589780,
       "dropper": "shazam",
@@ -101101,6 +106299,27 @@
       "team": "n n",
       "time": 597950,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "Milton",
+      "source": "world",
+      "team": "1",
+      "time": 598159,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 598973,
+      "player": "shazam",
+      "source": "world",
+      "team": "n n",
+      "time": 598220,
+      "weapon": "ng"
     }
   ]
 }

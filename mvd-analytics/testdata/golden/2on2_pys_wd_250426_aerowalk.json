@@ -25972,7 +25972,273 @@
         "name": "gl",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 6492,
+            "takenAt": 6492,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 6492,
+            "respawnAt": 26409,
+            "takenAt": 26409,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 26409,
+            "respawnAt": 47748,
+            "takenAt": 47748,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 47748,
+            "respawnAt": 51117,
+            "takenAt": 51117,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 51117,
+            "respawnAt": 59720,
+            "takenAt": 59720,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 59720,
+            "respawnAt": 61468,
+            "takenAt": 61468,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 61468,
+            "respawnAt": 70920,
+            "takenAt": 70920,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 70920,
+            "respawnAt": 108056,
+            "takenAt": 108056,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 108056,
+            "respawnAt": 128288,
+            "takenAt": 128288,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 128288,
+            "respawnAt": 128922,
+            "takenAt": 128922,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 128922,
+            "respawnAt": 143533,
+            "takenAt": 143533,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 143533,
+            "respawnAt": 160114,
+            "takenAt": 160114,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 160114,
+            "respawnAt": 163115,
+            "takenAt": 163115,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 163115,
+            "respawnAt": 186971,
+            "takenAt": 186971,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 186971,
+            "respawnAt": 240688,
+            "takenAt": 240688,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 240688,
+            "respawnAt": 244156,
+            "takenAt": 244156,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 244156,
+            "respawnAt": 267882,
+            "takenAt": 267882,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 267882,
+            "respawnAt": 292895,
+            "takenAt": 292895,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 292895,
+            "respawnAt": 299219,
+            "takenAt": 299219,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 299219,
+            "respawnAt": 303491,
+            "takenAt": 303491,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 303491,
+            "respawnAt": 305638,
+            "takenAt": 305638,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 305638,
+            "respawnAt": 311492,
+            "takenAt": 311492,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 311492,
+            "respawnAt": 314034,
+            "takenAt": 314034,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 314034,
+            "respawnAt": 336375,
+            "takenAt": 336375,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 336375,
+            "respawnAt": 342324,
+            "takenAt": 342324,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 342324,
+            "respawnAt": 366714,
+            "takenAt": 366714,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 366714,
+            "respawnAt": 425766,
+            "takenAt": 425766,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 425766,
+            "respawnAt": 448257,
+            "takenAt": 448257,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 448257,
+            "respawnAt": 458844,
+            "takenAt": 458844,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 458844,
+            "respawnAt": 468414,
+            "takenAt": 468414,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 468414,
+            "respawnAt": 475279,
+            "takenAt": 475279,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 475279,
+            "respawnAt": 491453,
+            "takenAt": 491453,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 491453,
+            "respawnAt": 498530,
+            "takenAt": 498530,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 498530,
+            "respawnAt": 537737,
+            "takenAt": 537737,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 537737,
+            "respawnAt": 543827,
+            "takenAt": 543827,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 543827,
+            "respawnAt": 552633,
+            "takenAt": 552633,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 552633,
+            "respawnAt": 554842,
+            "takenAt": 554842,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 554842,
+            "respawnAt": 581829,
+            "takenAt": 581829,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 581829
           }
         ],
         "x": -688,
@@ -26980,7 +27246,427 @@
         "name": "lg",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 2061,
+            "takenAt": 2061,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 2061,
+            "respawnAt": 18190,
+            "takenAt": 18190,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 18190,
+            "respawnAt": 18598,
+            "takenAt": 18598,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 18598,
+            "respawnAt": 22378,
+            "takenAt": 22378,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 22378,
+            "respawnAt": 26008,
+            "takenAt": 26008,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 26008,
+            "respawnAt": 38021,
+            "takenAt": 38021,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 38021,
+            "respawnAt": 49996,
+            "takenAt": 49996,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 49996,
+            "respawnAt": 77849,
+            "takenAt": 77849,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 77849,
+            "respawnAt": 88485,
+            "takenAt": 88485,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 88485,
+            "respawnAt": 88505,
+            "takenAt": 88505,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 88505,
+            "respawnAt": 93836,
+            "takenAt": 93836,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 93836,
+            "respawnAt": 95949,
+            "takenAt": 95949,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 95949,
+            "respawnAt": 104325,
+            "takenAt": 104325,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 104325,
+            "respawnAt": 118739,
+            "takenAt": 118739,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 118739,
+            "respawnAt": 130816,
+            "takenAt": 130816,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 130816,
+            "respawnAt": 134039,
+            "takenAt": 134039,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 134039,
+            "respawnAt": 139765,
+            "takenAt": 139765,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 139765,
+            "respawnAt": 147428,
+            "takenAt": 147428,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 147428,
+            "respawnAt": 155007,
+            "takenAt": 155007,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 155007,
+            "respawnAt": 166520,
+            "takenAt": 166520,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 166520,
+            "respawnAt": 197700,
+            "takenAt": 197700,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 197700,
+            "respawnAt": 203033,
+            "takenAt": 203033,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 203033,
+            "respawnAt": 207818,
+            "takenAt": 207818,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 207818,
+            "respawnAt": 215453,
+            "takenAt": 215453,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 215453,
+            "respawnAt": 234019,
+            "takenAt": 234019,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 234019,
+            "respawnAt": 246698,
+            "takenAt": 246698,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 246698,
+            "respawnAt": 254057,
+            "takenAt": 254057,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 254057,
+            "respawnAt": 261274,
+            "takenAt": 261274,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 261274,
+            "respawnAt": 272979,
+            "takenAt": 272979,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 272979,
+            "respawnAt": 278531,
+            "takenAt": 278531,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 278531,
+            "respawnAt": 287783,
+            "takenAt": 287783,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 287783,
+            "respawnAt": 294893,
+            "takenAt": 294893,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 294893,
+            "respawnAt": 325973,
+            "takenAt": 325973,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 325973,
+            "respawnAt": 329803,
+            "takenAt": 329803,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 329803,
+            "respawnAt": 342715,
+            "takenAt": 342715,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 342715,
+            "respawnAt": 351034,
+            "takenAt": 351034,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 351034,
+            "respawnAt": 356139,
+            "takenAt": 356139,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 356139,
+            "respawnAt": 382115,
+            "takenAt": 382115,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 382115,
+            "respawnAt": 383659,
+            "takenAt": 383659,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 383659,
+            "respawnAt": 384919,
+            "takenAt": 384919,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 384919,
+            "respawnAt": 389401,
+            "takenAt": 389401,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 389401,
+            "respawnAt": 406945,
+            "takenAt": 406945,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 406945,
+            "respawnAt": 430283,
+            "takenAt": 430283,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 430283,
+            "respawnAt": 434181,
+            "takenAt": 434181,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 434181,
+            "respawnAt": 438557,
+            "takenAt": 438557,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 438557,
+            "respawnAt": 454291,
+            "takenAt": 454291,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 454291,
+            "respawnAt": 469870,
+            "takenAt": 469870,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 469870,
+            "respawnAt": 481811,
+            "takenAt": 481811,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 481811,
+            "respawnAt": 502947,
+            "takenAt": 502947,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 502947,
+            "respawnAt": 514023,
+            "takenAt": 514023,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 514023,
+            "respawnAt": 515401,
+            "takenAt": 515401,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 515401,
+            "respawnAt": 528296,
+            "takenAt": 528296,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 528296,
+            "respawnAt": 530258,
+            "takenAt": 530258,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 530258,
+            "respawnAt": 547608,
+            "takenAt": 547608,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 547608,
+            "respawnAt": 557777,
+            "takenAt": 557777,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 557777,
+            "respawnAt": 558475,
+            "takenAt": 558475,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 558475,
+            "respawnAt": 566284,
+            "takenAt": 566284,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 566284,
+            "respawnAt": 567303,
+            "takenAt": 567303,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 567303,
+            "respawnAt": 585307,
+            "takenAt": 585307,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 585307,
+            "respawnAt": 595839,
+            "takenAt": 595839,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 595839
           }
         ],
         "x": 128,
@@ -27781,9 +28467,7 @@
           {
             "availableFrom": 144569,
             "respawnAt": 184349,
-            "takenAt": 154349,
-            "takenBy": "psy*overon",
-            "team": "pys"
+            "takenAt": 154349
           },
           {
             "availableFrom": 169338,
@@ -27803,9 +28487,7 @@
           {
             "availableFrom": 250802,
             "respawnAt": 308303,
-            "takenAt": 278303,
-            "takenBy": "wd.dilbert",
-            "team": "pys"
+            "takenAt": 278303
           },
           {
             "availableFrom": 293285,
@@ -27825,9 +28507,7 @@
           {
             "availableFrom": 362466,
             "respawnAt": 413569,
-            "takenAt": 383569,
-            "takenBy": "wd.cao",
-            "team": "wd"
+            "takenAt": 383569
           },
           {
             "availableFrom": 398571,
@@ -27847,9 +28527,7 @@
           {
             "availableFrom": 483205,
             "respawnAt": 515076,
-            "takenAt": 485076,
-            "takenBy": "psy*overon",
-            "team": "pys"
+            "takenAt": 485076
           },
           {
             "availableFrom": 500063,
@@ -27861,9 +28539,7 @@
           {
             "availableFrom": 515076,
             "respawnAt": 559686,
-            "takenAt": 529686,
-            "takenBy": "wd.dilbert",
-            "team": "pys"
+            "takenAt": 529686
           },
           {
             "availableFrom": 544684,
@@ -28149,7 +28825,385 @@
         "name": "rl_1",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 868,
+            "takenAt": 868,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 868,
+            "respawnAt": 3650,
+            "takenAt": 3650,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 3650,
+            "respawnAt": 14794,
+            "takenAt": 14794,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 14794,
+            "respawnAt": 16152,
+            "takenAt": 16152,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 16152,
+            "respawnAt": 39131,
+            "takenAt": 39131,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 39131,
+            "respawnAt": 43164,
+            "takenAt": 43164,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 43164,
+            "respawnAt": 44482,
+            "takenAt": 44482,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 44482,
+            "respawnAt": 51467,
+            "takenAt": 51467,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 51467,
+            "respawnAt": 70830,
+            "takenAt": 70830,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 70830,
+            "respawnAt": 75875,
+            "takenAt": 75875,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 75875,
+            "respawnAt": 96340,
+            "takenAt": 96340,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 96340,
+            "respawnAt": 122000,
+            "takenAt": 122000,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 122000,
+            "respawnAt": 125313,
+            "takenAt": 125313,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 125313,
+            "respawnAt": 133517,
+            "takenAt": 133517,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 133517,
+            "respawnAt": 171208,
+            "takenAt": 171208,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 171208,
+            "respawnAt": 186778,
+            "takenAt": 186778,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 186778,
+            "respawnAt": 190689,
+            "takenAt": 190689,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 190689,
+            "respawnAt": 192361,
+            "takenAt": 192361,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 192361,
+            "respawnAt": 194985,
+            "takenAt": 194985,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 194985,
+            "respawnAt": 220122,
+            "takenAt": 220122,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 220122,
+            "respawnAt": 228688,
+            "takenAt": 228688,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 228688,
+            "respawnAt": 246797,
+            "takenAt": 246797,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 246797,
+            "respawnAt": 254887,
+            "takenAt": 254887,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 254887,
+            "respawnAt": 268459,
+            "takenAt": 268459,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 268459,
+            "respawnAt": 271934,
+            "takenAt": 271934,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 271934,
+            "respawnAt": 278745,
+            "takenAt": 278745,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 278745,
+            "respawnAt": 283611,
+            "takenAt": 283611,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 283611,
+            "respawnAt": 307983,
+            "takenAt": 307983,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 307983,
+            "respawnAt": 322675,
+            "takenAt": 322675,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 322675,
+            "respawnAt": 344235,
+            "takenAt": 344235,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 344235,
+            "respawnAt": 351557,
+            "takenAt": 351557,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 351557,
+            "respawnAt": 352703,
+            "takenAt": 352703,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 352703,
+            "respawnAt": 356049,
+            "takenAt": 356049,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 356049,
+            "respawnAt": 361199,
+            "takenAt": 361199,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 361199,
+            "respawnAt": 366199,
+            "takenAt": 366199,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 366199,
+            "respawnAt": 368951,
+            "takenAt": 368951,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 368951,
+            "respawnAt": 380887,
+            "takenAt": 380887,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 380887,
+            "respawnAt": 394453,
+            "takenAt": 394453,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 394453,
+            "respawnAt": 406077,
+            "takenAt": 406077,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 406077,
+            "respawnAt": 438169,
+            "takenAt": 438169,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 438169,
+            "respawnAt": 442726,
+            "takenAt": 442726,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 442726,
+            "respawnAt": 450159,
+            "takenAt": 450159,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 450159,
+            "respawnAt": 458804,
+            "takenAt": 458804,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 458804,
+            "respawnAt": 467835,
+            "takenAt": 467835,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 467835,
+            "respawnAt": 471128,
+            "takenAt": 471128,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 471128,
+            "respawnAt": 478816,
+            "takenAt": 478816,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 478816,
+            "respawnAt": 491946,
+            "takenAt": 491946,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 491946,
+            "respawnAt": 492219,
+            "takenAt": 492219,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 492219,
+            "respawnAt": 507301,
+            "takenAt": 507301,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 507301,
+            "respawnAt": 510738,
+            "takenAt": 510738,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 510738,
+            "respawnAt": 522167,
+            "takenAt": 522167,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 522167,
+            "respawnAt": 530063,
+            "takenAt": 530063,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 530063,
+            "respawnAt": 561539,
+            "takenAt": 561539,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 561539,
+            "respawnAt": 570608,
+            "takenAt": 570608,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 570608
           }
         ],
         "x": -688,
@@ -28163,7 +29217,623 @@
         "name": "rl_2",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 4477,
+            "takenAt": 4477,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 4477,
+            "respawnAt": 8415,
+            "takenAt": 8415,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 8415,
+            "respawnAt": 16869,
+            "takenAt": 16869,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 16869,
+            "respawnAt": 18086,
+            "takenAt": 18086,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 18086,
+            "respawnAt": 22910,
+            "takenAt": 22910,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 22910,
+            "respawnAt": 31843,
+            "takenAt": 31843,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 31843,
+            "respawnAt": 32372,
+            "takenAt": 32372,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 32372,
+            "respawnAt": 34934,
+            "takenAt": 34934,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 34934,
+            "respawnAt": 45103,
+            "takenAt": 45103,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 45103,
+            "respawnAt": 54684,
+            "takenAt": 54684,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 54684,
+            "respawnAt": 58193,
+            "takenAt": 58193,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 58193,
+            "respawnAt": 59479,
+            "takenAt": 59479,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 59479,
+            "respawnAt": 67025,
+            "takenAt": 67025,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 67025,
+            "respawnAt": 83858,
+            "takenAt": 83858,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 83858,
+            "respawnAt": 85374,
+            "takenAt": 85374,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 85374,
+            "respawnAt": 86188,
+            "takenAt": 86188,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 86188,
+            "respawnAt": 90473,
+            "takenAt": 90473,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 90473,
+            "respawnAt": 93689,
+            "takenAt": 93689,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 93689,
+            "respawnAt": 100972,
+            "takenAt": 100972,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 100972,
+            "respawnAt": 102415,
+            "takenAt": 102415,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 102415,
+            "respawnAt": 117976,
+            "takenAt": 117976,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 117976,
+            "respawnAt": 128623,
+            "takenAt": 128623,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 128623,
+            "respawnAt": 131097,
+            "takenAt": 131097,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 131097,
+            "respawnAt": 151466,
+            "takenAt": 151466,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 151466,
+            "respawnAt": 152260,
+            "takenAt": 152260,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 152260,
+            "respawnAt": 164348,
+            "takenAt": 164348,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 164348,
+            "respawnAt": 181645,
+            "takenAt": 181645,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 181645,
+            "respawnAt": 181674,
+            "takenAt": 181674,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 181674,
+            "respawnAt": 186881,
+            "takenAt": 186881,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 186881,
+            "respawnAt": 189361,
+            "takenAt": 189361,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 189361,
+            "respawnAt": 194985,
+            "takenAt": 194985,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 194985,
+            "respawnAt": 204013,
+            "takenAt": 204013,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 204013,
+            "respawnAt": 210713,
+            "takenAt": 210713,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 210713,
+            "respawnAt": 215997,
+            "takenAt": 215997,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 215997,
+            "respawnAt": 230322,
+            "takenAt": 230322,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 230322,
+            "respawnAt": 246698,
+            "takenAt": 246698,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 246698,
+            "respawnAt": 249129,
+            "takenAt": 249129,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 249129,
+            "respawnAt": 251598,
+            "takenAt": 251598,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 251598,
+            "respawnAt": 260754,
+            "takenAt": 260754,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 260754,
+            "respawnAt": 265349,
+            "takenAt": 265349,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 265349,
+            "respawnAt": 275685,
+            "takenAt": 275685,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 275685,
+            "respawnAt": 288234,
+            "takenAt": 288234,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 288234,
+            "respawnAt": 291662,
+            "takenAt": 291662,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 291662,
+            "respawnAt": 301359,
+            "takenAt": 301359,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 301359,
+            "respawnAt": 303701,
+            "takenAt": 303701,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 303701,
+            "respawnAt": 316086,
+            "takenAt": 316086,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 316086,
+            "respawnAt": 317554,
+            "takenAt": 317554,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 317554,
+            "respawnAt": 319705,
+            "takenAt": 319705,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 319705,
+            "respawnAt": 327895,
+            "takenAt": 327895,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 327895,
+            "respawnAt": 334090,
+            "takenAt": 334090,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 334090,
+            "respawnAt": 338401,
+            "takenAt": 338401,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 338401,
+            "respawnAt": 350220,
+            "takenAt": 350220,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 350220,
+            "respawnAt": 372939,
+            "takenAt": 372939,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 372939,
+            "respawnAt": 375895,
+            "takenAt": 375895,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 375895,
+            "respawnAt": 386689,
+            "takenAt": 386689,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 386689,
+            "respawnAt": 389552,
+            "takenAt": 389552,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 389552,
+            "respawnAt": 399974,
+            "takenAt": 399974,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 399974,
+            "respawnAt": 400631,
+            "takenAt": 400631,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 400631,
+            "respawnAt": 405863,
+            "takenAt": 405863,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 405863,
+            "respawnAt": 411719,
+            "takenAt": 411719,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 411719,
+            "respawnAt": 417049,
+            "takenAt": 417049,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 417049,
+            "respawnAt": 432700,
+            "takenAt": 432700,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 432700,
+            "respawnAt": 434155,
+            "takenAt": 434155,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 434155,
+            "respawnAt": 446596,
+            "takenAt": 446596,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 446596,
+            "respawnAt": 448633,
+            "takenAt": 448633,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 448633,
+            "respawnAt": 452428,
+            "takenAt": 452428,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 452428,
+            "respawnAt": 456635,
+            "takenAt": 456635,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 456635,
+            "respawnAt": 466519,
+            "takenAt": 466519,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 466519,
+            "respawnAt": 482416,
+            "takenAt": 482416,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 482416,
+            "respawnAt": 486087,
+            "takenAt": 486087,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 486087,
+            "respawnAt": 489003,
+            "takenAt": 489003,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 489003,
+            "respawnAt": 497713,
+            "takenAt": 497713,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 497713,
+            "respawnAt": 508451,
+            "takenAt": 508451,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 508451,
+            "respawnAt": 516206,
+            "takenAt": 516206,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 516206,
+            "respawnAt": 525217,
+            "takenAt": 525217,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 525217,
+            "respawnAt": 532180,
+            "takenAt": 532180,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 532180,
+            "respawnAt": 536531,
+            "takenAt": 536531,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 536531,
+            "respawnAt": 544915,
+            "takenAt": 544915,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 544915,
+            "respawnAt": 547322,
+            "takenAt": 547322,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 547322,
+            "respawnAt": 550459,
+            "takenAt": 550459,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 550459,
+            "respawnAt": 555531,
+            "takenAt": 555531,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 555531,
+            "respawnAt": 557101,
+            "takenAt": 557101,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 557101,
+            "respawnAt": 565063,
+            "takenAt": 565063,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 565063,
+            "respawnAt": 566205,
+            "takenAt": 566205,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 566205,
+            "respawnAt": 574296,
+            "takenAt": 574296,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 574296,
+            "respawnAt": 576530,
+            "takenAt": 576530,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 576530,
+            "respawnAt": 582396,
+            "takenAt": 582396,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 582396,
+            "respawnAt": 587087,
+            "takenAt": 587087,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 587087
           }
         ],
         "x": -272,
@@ -28798,7 +30468,322 @@
         "name": "sng_1",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 6414,
+            "takenAt": 6414,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 6414,
+            "respawnAt": 11923,
+            "takenAt": 11923,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 11923,
+            "respawnAt": 51570,
+            "takenAt": 51570,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 51570,
+            "respawnAt": 53541,
+            "takenAt": 53541,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 53541,
+            "respawnAt": 54585,
+            "takenAt": 54585,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 54585,
+            "respawnAt": 66858,
+            "takenAt": 66858,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 66858,
+            "respawnAt": 85217,
+            "takenAt": 85217,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 85217,
+            "respawnAt": 104953,
+            "takenAt": 104953,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 104953,
+            "respawnAt": 105887,
+            "takenAt": 105887,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 105887,
+            "respawnAt": 123182,
+            "takenAt": 123182,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 123182,
+            "respawnAt": 156142,
+            "takenAt": 156142,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 156142,
+            "respawnAt": 156921,
+            "takenAt": 156921,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 156921,
+            "respawnAt": 157908,
+            "takenAt": 157908,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 157908,
+            "respawnAt": 170464,
+            "takenAt": 170464,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 170464,
+            "respawnAt": 188558,
+            "takenAt": 188558,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 188558,
+            "respawnAt": 197026,
+            "takenAt": 197026,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 197026,
+            "respawnAt": 232439,
+            "takenAt": 232439,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 232439,
+            "respawnAt": 255945,
+            "takenAt": 255945,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 255945,
+            "respawnAt": 268299,
+            "takenAt": 268299,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 268299,
+            "respawnAt": 277274,
+            "takenAt": 277274,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 277274,
+            "respawnAt": 284095,
+            "takenAt": 284095,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 284095,
+            "respawnAt": 292671,
+            "takenAt": 292671,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 292671,
+            "respawnAt": 295727,
+            "takenAt": 295727,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 295727,
+            "respawnAt": 309210,
+            "takenAt": 309210,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 309210,
+            "respawnAt": 338999,
+            "takenAt": 338999,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 338999,
+            "respawnAt": 367401,
+            "takenAt": 367401,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 367401,
+            "respawnAt": 370151,
+            "takenAt": 370151,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 370151,
+            "respawnAt": 376395,
+            "takenAt": 376395,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 376395,
+            "respawnAt": 380280,
+            "takenAt": 380280,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 380280,
+            "respawnAt": 394377,
+            "takenAt": 394377,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 394377,
+            "respawnAt": 421740,
+            "takenAt": 421740,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 421740,
+            "respawnAt": 429972,
+            "takenAt": 429972,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 429972,
+            "respawnAt": 442479,
+            "takenAt": 442479,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 442479,
+            "respawnAt": 446011,
+            "takenAt": 446011,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 446011,
+            "respawnAt": 449869,
+            "takenAt": 449869,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 449869,
+            "respawnAt": 469092,
+            "takenAt": 469092,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 469092,
+            "respawnAt": 473726,
+            "takenAt": 473726,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 473726,
+            "respawnAt": 500847,
+            "takenAt": 500847,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 500847,
+            "respawnAt": 511550,
+            "takenAt": 511550,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 511550,
+            "respawnAt": 524061,
+            "takenAt": 524061,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 524061,
+            "respawnAt": 528827,
+            "takenAt": 528827,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 528827,
+            "respawnAt": 539400,
+            "takenAt": 539400,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 539400,
+            "respawnAt": 543919,
+            "takenAt": 543919,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 543919,
+            "respawnAt": 562725,
+            "takenAt": 562725,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 562725,
+            "respawnAt": 587465,
+            "takenAt": 587465,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 587465
           }
         ],
         "x": -656,
@@ -28812,7 +30797,98 @@
         "name": "sng_2",
         "phases": [
           {
-            "availableFrom": 0
+            "availableFrom": 0,
+            "respawnAt": 28466,
+            "takenAt": 28466,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 28466,
+            "respawnAt": 224876,
+            "takenAt": 224876,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 224876,
+            "respawnAt": 238462,
+            "takenAt": 238462,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 238462,
+            "respawnAt": 264546,
+            "takenAt": 264546,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 264546,
+            "respawnAt": 325262,
+            "takenAt": 325262,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 325262,
+            "respawnAt": 329311,
+            "takenAt": 329311,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 329311,
+            "respawnAt": 398183,
+            "takenAt": 398183,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 398183,
+            "respawnAt": 402739,
+            "takenAt": 402739,
+            "takenBy": "wd.char",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 402739,
+            "respawnAt": 454156,
+            "takenAt": 454156,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 454156,
+            "respawnAt": 464778,
+            "takenAt": 464778,
+            "takenBy": "wd.cao",
+            "team": "wd"
+          },
+          {
+            "availableFrom": 464778,
+            "respawnAt": 472453,
+            "takenAt": 472453,
+            "takenBy": "wd.dilbert",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 472453,
+            "respawnAt": 487679,
+            "takenAt": 487679,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 487679,
+            "respawnAt": 570068,
+            "takenAt": 570068,
+            "takenBy": "psy*overon",
+            "team": "pys"
+          },
+          {
+            "availableFrom": 570068
           }
         ],
         "x": -192,
@@ -35250,7 +37326,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 45,
+  "schemaVersion": 46,
   "shots": {
     "byPlayer": [
       {
@@ -80549,6 +82625,72 @@
   },
   "weaponPickups": [
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 19870,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 868,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 13248,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 2061,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 7508,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 3650,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 13248,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 4477,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 7508,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 6414,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 19870,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 6492,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 7508,
       "dropper": "psy*overon",
@@ -80560,6 +82702,17 @@
       "source": "backpack",
       "team": "wd",
       "time": 7556,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 9672,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 8415,
       "weapon": "rl"
     },
     {
@@ -80577,17 +82730,105 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 19870,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 11923,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 13248,
       "dropper": "wd.cao",
       "dropperTeam": "wd",
-      "hadBefore": true,
-      "kills": 0,
+      "hadBefore": false,
+      "kills": 2,
       "nextDeathTime": 19492,
       "player": "wd.cao",
       "source": "backpack",
       "team": "wd",
-      "time": 15287,
+      "time": 14794,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 16216,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 16152,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 42585,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 16869,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 24780,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 18086,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 19492,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 18190,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 19870,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 18598,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 31348,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 22378,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 39333,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 22910,
       "weapon": "rl"
     },
     {
@@ -80605,6 +82846,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 39333,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 26008,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 24780,
       "dropper": "wd.dilbert",
@@ -80617,6 +82869,28 @@
       "team": "pys",
       "time": 26323,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 42585,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 26409,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 31348,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 28466,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 142,
@@ -80633,6 +82907,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 33285,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 31843,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 35708,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 32372,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 46929,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 34934,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 46929,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 38021,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 31348,
       "dropper": "wd.char",
@@ -80644,6 +82962,17 @@
       "source": "backpack",
       "team": "pys",
       "time": 38840,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 41468,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 39131,
       "weapon": "rl"
     },
     {
@@ -80665,13 +82994,35 @@
       "dropTime": 42585,
       "dropper": "psy*overon",
       "dropperTeam": "pys",
-      "hadBefore": true,
-      "kills": 0,
+      "hadBefore": false,
+      "kills": 1,
       "nextDeathTime": 44663,
       "player": "wd.cao",
       "source": "backpack",
       "team": "wd",
-      "time": 43584,
+      "time": 43164,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 44593,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 44482,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 56632,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 45103,
       "weapon": "rl"
     },
     {
@@ -80731,6 +83082,28 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 50274,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 47748,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 57748,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 49996,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 152,
       "dropTime": 46929,
       "dropper": "wd.dilbert",
@@ -80745,6 +83118,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 55973,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 51117,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 52904,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 51467,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 56632,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 51570,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 157,
       "dropTime": 52904,
       "dropper": "wd.cao",
@@ -80756,6 +83162,39 @@
       "source": "backpack",
       "team": "pys",
       "time": 52988,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 57748,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 53541,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 55973,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 54585,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 57778,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 54684,
       "weapon": "rl"
     },
     {
@@ -80801,6 +83240,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 61845,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 58193,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 61830,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 59479,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 68131,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 59720,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 65154,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 61468,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 157,
       "dropTime": 61830,
       "dropper": "psy*overon",
@@ -80843,6 +83326,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 74092,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 66858,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 81547,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 67025,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 160,
       "dropTime": 57778,
       "dropper": "wd.cao",
@@ -80857,6 +83362,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 125842,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 70830,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 71669,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 70920,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 154,
       "dropTime": 74092,
       "dropper": "wd.char",
@@ -80869,6 +83396,28 @@
       "team": "pys",
       "time": 74374,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 84155,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 75875,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 79530,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 77849,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 146,
@@ -80899,6 +83448,72 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 95115,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 83858,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 125842,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 85217,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 124882,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 85374,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 89142,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 86188,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 89142,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 88485,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 125842,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 88505,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 150,
       "dropTime": 89142,
       "dropper": "wd.cao",
@@ -80911,6 +83526,39 @@
       "team": "pys",
       "time": 89325,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 90505,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 90473,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 97745,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 93689,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 95115,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 93836,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 143,
@@ -80927,6 +83575,39 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 97745,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 95949,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 99301,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 96340,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111337,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 100972,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 97745,
       "dropper": "wd.cao",
@@ -80939,6 +83620,39 @@
       "team": "wd",
       "time": 101627,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111561,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 102415,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111337,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 104325,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 124882,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 104953,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 161,
@@ -80955,6 +83669,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111561,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 105887,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 111561,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 108056,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 143,
       "dropTime": 111561,
       "dropper": "wd.cao",
@@ -80967,6 +83703,28 @@
       "team": "pys",
       "time": 112050,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 120273,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 117976,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 123531,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 118739,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 152,
@@ -80983,6 +83741,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 129674,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 122000,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 129674,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 123182,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 143,
       "dropTime": 123531,
       "dropper": "wd.dilbert",
@@ -80994,6 +83774,17 @@
       "source": "backpack",
       "team": "pys",
       "time": 124572,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 129479,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 125313,
       "weapon": "rl"
     },
     {
@@ -81011,6 +83802,39 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 129674,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 128288,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 153494,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 128623,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 129479,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 128922,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 111337,
       "dropper": "wd.dilbert",
@@ -81025,6 +83849,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 153494,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 130816,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 138232,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 131097,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 152,
       "dropTime": 129674,
       "dropper": "wd.cao",
@@ -81036,6 +83882,28 @@
       "source": "backpack",
       "team": "pys",
       "time": 132698,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 190855,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 133517,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 138232,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 134039,
       "weapon": "lg"
     },
     {
@@ -81067,6 +83935,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 190855,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 139765,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 169556,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 143533,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 144,
       "dropTime": 142598,
       "dropper": "psy*overon",
@@ -81078,6 +83968,17 @@
       "source": "backpack",
       "team": "pys",
       "time": 143714,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 149649,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 147428,
       "weapon": "lg"
     },
     {
@@ -81095,6 +83996,116 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 185840,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 151466,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 169556,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 152260,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 185840,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 155007,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 169556,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 156142,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 190855,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 156921,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 178066,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 157908,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 178066,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 160114,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 185840,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 163115,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 178066,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 164348,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 178066,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 166520,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 144,
       "dropTime": 153494,
       "dropper": "wd.char",
@@ -81106,6 +84117,28 @@
       "source": "backpack",
       "team": "pys",
       "time": 168882,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 185840,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 170464,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 177806,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 171208,
       "weapon": "rl"
     },
     {
@@ -81141,14 +84174,69 @@
       "dropTime": 181806,
       "dropper": "wd.char",
       "dropperTeam": "wd",
-      "hadBefore": true,
-      "kills": 0,
+      "hadBefore": false,
+      "kills": 1,
       "nextDeathTime": 187688,
       "player": "wd.dilbert",
       "source": "backpack",
       "team": "pys",
-      "time": 181823,
+      "time": 181645,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 181806,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 181674,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 190855,
+      "player": "wd.cao",
+      "source": "unknown",
+      "team": "wd",
+      "time": 182935,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 211883,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 186778,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 188986,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 186881,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 187688,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 186971,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 144,
@@ -81176,6 +84264,39 @@
       "source": "backpack",
       "team": "wd",
       "time": 187896,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 211883,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 188558,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 190689,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 189361,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 193883,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 190689,
       "weapon": "rl"
     },
     {
@@ -81221,6 +84342,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 203046,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 192361,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 153,
       "dropTime": 177806,
       "dropper": "wd.dilbert",
@@ -81249,6 +84381,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 218461,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 194985,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 198282,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 194985,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 218461,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 197026,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 203046,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 197700,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 159,
       "dropTime": 178066,
       "dropper": "wd.char",
@@ -81260,6 +84436,28 @@
       "source": "backpack",
       "team": "pys",
       "time": 198882,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 236026,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 203033,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 204565,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 204013,
       "weapon": "rl"
     },
     {
@@ -81291,6 +84489,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 211883,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 207818,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 198282,
       "dropper": "psy*overon",
@@ -81305,6 +84514,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 225993,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 210713,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 211883,
       "dropper": "wd.char",
@@ -81316,6 +84536,28 @@
       "source": "backpack",
       "team": "pys",
       "time": 213043,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 225993,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 215453,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 216154,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 215997,
       "weapon": "rl"
     },
     {
@@ -81361,6 +84603,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 224907,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 220122,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 225993,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 224876,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 224907,
       "dropper": "wd.cao",
@@ -81375,6 +84639,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 240545,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 228688,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 233439,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 230322,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 240545,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 232439,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 225993,
       "dropper": "wd.dilbert",
@@ -81386,6 +84683,17 @@
       "source": "backpack",
       "team": "pys",
       "time": 232557,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 249913,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 234019,
       "weapon": "lg"
     },
     {
@@ -81403,6 +84711,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 243281,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 238462,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 236026,
       "dropper": "psy*overon",
@@ -81415,6 +84734,17 @@
       "team": "pys",
       "time": 239350,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 249913,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 240688,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 150,
@@ -81459,6 +84789,61 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 244282,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 244156,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 257887,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 246698,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 263649,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 246698,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 253126,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 246797,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 263649,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 249129,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 249913,
       "dropper": "wd.char",
@@ -81473,6 +84858,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 258830,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 251598,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 257887,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 254057,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 255303,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 254887,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 258830,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 255945,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 257887,
       "dropper": "wd.cao",
@@ -81485,6 +84914,39 @@
       "team": "pys",
       "time": 258442,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 263649,
+      "player": "wd.dilbert",
+      "source": "unknown",
+      "team": "pys",
+      "time": 260385,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 267324,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 260754,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 262892,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 261274,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 150,
@@ -81515,6 +84977,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 273870,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 264546,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 144,
       "dropTime": 263649,
       "dropper": "wd.dilbert",
@@ -81529,6 +85002,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 271996,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 265349,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 153,
       "dropTime": 255303,
       "dropper": "psy*overon",
@@ -81540,6 +85024,39 @@
       "source": "backpack",
       "team": "wd",
       "time": 267649,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 273870,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 267882,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 275324,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 268299,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 277389,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 268459,
       "weapon": "rl"
     },
     {
@@ -81557,6 +85074,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 273870,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 271934,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 271996,
       "dropper": "wd.dilbert",
@@ -81569,6 +85097,17 @@
       "team": "wd",
       "time": 272711,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 277389,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 272979,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 155,
@@ -81599,6 +85138,50 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 285209,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 275685,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 288297,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 277274,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 285209,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 278531,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 287207,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 278745,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 143,
       "dropTime": 277389,
       "dropper": "wd.cao",
@@ -81613,6 +85196,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 284347,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 283611,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 285209,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 284095,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 284347,
       "dropper": "wd.cao",
@@ -81624,6 +85229,28 @@
       "source": "backpack",
       "team": "pys",
       "time": 284361,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 298009,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 287783,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 309534,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 288234,
       "weapon": "rl"
     },
     {
@@ -81669,6 +85296,138 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 317866,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 291662,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 293178,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 292671,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 298009,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 292895,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 317866,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 294893,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 309534,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 295727,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 306294,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 299219,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 302055,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 301359,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 309534,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 303491,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 311581,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 303701,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 317866,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 305638,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 312794,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 307983,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 312794,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 309210,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 293178,
       "dropper": "wd.cao",
@@ -81697,6 +85456,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 311581,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 311492,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 312794,
       "dropper": "wd.cao",
@@ -81711,6 +85481,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 323635,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 314034,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 144,
       "dropTime": 311581,
       "dropper": "wd.dilbert",
@@ -81722,6 +85503,28 @@
       "source": "backpack",
       "team": "pys",
       "time": 315892,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 323698,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 316086,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 320960,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 317554,
       "weapon": "rl"
     },
     {
@@ -81739,6 +85542,83 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 332933,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 319705,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 338855,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 322675,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 332933,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 325262,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 343103,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 325973,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 328441,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 327895,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 343103,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 329311,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 338855,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 329803,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 332933,
       "dropper": "psy*overon",
@@ -81750,6 +85630,17 @@
       "source": "backpack",
       "team": "wd",
       "time": 333575,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 344793,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 334090,
       "weapon": "rl"
     },
     {
@@ -81767,6 +85658,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 344793,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 336375,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 155,
       "dropTime": 323698,
       "dropper": "wd.char",
@@ -81778,6 +85680,17 @@
       "source": "backpack",
       "team": "wd",
       "time": 336523,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 340675,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 338401,
       "weapon": "rl"
     },
     {
@@ -81793,6 +85706,61 @@
       "team": "wd",
       "time": 338793,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 344793,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 338999,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 351215,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 342324,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 346511,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 342715,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 371293,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 344235,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 371293,
+      "player": "wd.char",
+      "source": "unknown",
+      "team": "wd",
+      "time": 345327,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 159,
@@ -81835,6 +85803,50 @@
       "team": "pys",
       "time": 349119,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 354311,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 350220,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 371293,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 351034,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 352891,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 351557,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 364303,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 352703,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 150,
@@ -81907,6 +85919,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 357341,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 356049,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 364303,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 356139,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 367297,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 361199,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 346511,
       "dropper": "psy*overon",
@@ -81919,6 +85964,61 @@
       "team": "pys",
       "time": 361939,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 370599,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 366199,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 367297,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 366714,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 370599,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 367401,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 383525,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 368951,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 383525,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 370151,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 144,
@@ -81949,6 +86049,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 396713,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 372939,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 364303,
       "dropper": "wd.cao",
@@ -81961,6 +86072,28 @@
       "team": "wd",
       "time": 375328,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 382615,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 375895,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 377776,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 376395,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 149,
@@ -81991,17 +86124,83 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 396713,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 380280,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 385168,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 380887,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 383525,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 382115,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 383525,
       "dropper": "psy*overon",
       "dropperTeam": "pys",
-      "hadBefore": true,
-      "kills": 0,
+      "hadBefore": false,
+      "kills": 2,
       "nextDeathTime": 396713,
       "player": "wd.char",
       "source": "backpack",
       "team": "wd",
-      "time": 384071,
+      "time": 383659,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 385168,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 384919,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 407987,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 386689,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 407987,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 389401,
       "weapon": "lg"
     },
     {
@@ -82019,6 +86218,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 391362,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 389552,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 391362,
       "dropper": "wd.dilbert",
@@ -82030,6 +86240,28 @@
       "source": "backpack",
       "team": "wd",
       "time": 392377,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 396713,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 394377,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 396183,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 394453,
       "weapon": "rl"
     },
     {
@@ -82047,6 +86279,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 404459,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 398183,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 436031,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 399974,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 401531,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 400631,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 396713,
       "dropper": "wd.char",
@@ -82061,6 +86326,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 436031,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 402739,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 401531,
       "dropper": "wd.dilbert",
@@ -82072,6 +86348,28 @@
       "source": "backpack",
       "team": "wd",
       "time": 402753,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 427791,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 405863,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 431220,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 406077,
       "weapon": "rl"
     },
     {
@@ -82089,6 +86387,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 436031,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 406945,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 407987,
       "dropper": "wd.cao",
@@ -82101,6 +86410,17 @@
       "team": "pys",
       "time": 409065,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 413792,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 411719,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 146,
@@ -82117,6 +86437,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 417208,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 417049,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 427791,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 421740,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 367297,
       "dropper": "psy*overon",
@@ -82129,6 +86471,39 @@
       "team": "pys",
       "time": 425719,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 431493,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 425766,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 431220,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 429972,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 445023,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 430283,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 142,
@@ -82159,6 +86534,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 445023,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 432700,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 455587,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 434155,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 457489,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 434181,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 144,
       "dropTime": 436031,
       "dropper": "wd.char",
@@ -82171,6 +86579,94 @@
       "team": "pys",
       "time": 437759,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 457489,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 438169,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 445567,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 438557,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 445023,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 442479,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 445567,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 442726,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 455587,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 446011,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 448492,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 446596,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 455587,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 448257,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 450725,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 448633,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 146,
@@ -82187,6 +86683,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 450725,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 449869,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 451636,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 450159,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 468187,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 452428,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 149,
       "dropTime": 450725,
       "dropper": "wd.char",
@@ -82199,6 +86728,28 @@
       "team": "pys",
       "time": 453868,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 457489,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 454156,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 455187,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 454291,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 151,
@@ -82243,6 +86794,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 465986,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 456635,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 457489,
       "dropper": "wd.cao",
@@ -82255,6 +86817,28 @@
       "team": "pys",
       "time": 457743,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 464894,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 458804,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 461847,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 458844,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 143,
@@ -82282,6 +86866,94 @@
       "source": "backpack",
       "team": "wd",
       "time": 460507,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 464894,
+      "player": "wd.cao",
+      "source": "unknown",
+      "team": "wd",
+      "time": 462645,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 464894,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 464778,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "nextDeathTime": 509492,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 466519,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 484175,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 467835,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 479477,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 468414,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 484175,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 469092,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 509492,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 469870,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 477279,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 471128,
       "weapon": "rl"
     },
     {
@@ -82313,6 +86985,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 479477,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 472453,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 477279,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 473726,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 484175,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 475279,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 146,
       "dropTime": 477279,
       "dropper": "wd.char",
@@ -82327,6 +87032,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 3,
+      "nextDeathTime": 543154,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 478816,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 162,
       "dropTime": 468187,
       "dropper": "wd.char",
@@ -82338,6 +87054,28 @@
       "source": "backpack",
       "team": "wd",
       "time": 479622,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 484175,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 481811,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 484453,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 482416,
       "weapon": "rl"
     },
     {
@@ -82369,6 +87107,61 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 487324,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 486087,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 489139,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 487679,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 490239,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 489003,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 509492,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 491453,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 510388,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 491946,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 143,
       "dropTime": 490239,
       "dropper": "wd.dilbert",
@@ -82381,6 +87174,28 @@
       "team": "wd",
       "time": 492123,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 496175,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 492219,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 510388,
+      "player": "wd.dilbert",
+      "source": "unknown",
+      "team": "pys",
+      "time": 495076,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 150,
@@ -82397,6 +87212,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 499071,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 497713,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 510388,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 498530,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 543154,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 500847,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 499071,
       "dropper": "psy*overon",
@@ -82408,6 +87256,28 @@
       "source": "backpack",
       "team": "wd",
       "time": 501349,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 507315,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 502947,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 507315,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 507301,
       "weapon": "rl"
     },
     {
@@ -82423,6 +87293,39 @@
       "team": "pys",
       "time": 507464,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 509477,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 508451,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 521717,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 510738,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 521717,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 511550,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 146,
@@ -82453,6 +87356,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 514440,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 514023,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 143,
       "dropTime": 510388,
       "dropper": "wd.dilbert",
@@ -82471,14 +87385,25 @@
       "dropTime": 514440,
       "dropper": "wd.dilbert",
       "dropperTeam": "pys",
-      "hadBefore": true,
+      "hadBefore": false,
       "kills": 0,
       "nextDeathTime": 519076,
       "player": "wd.cao",
       "source": "backpack",
       "team": "wd",
-      "time": 515596,
+      "time": 515401,
       "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 519076,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 516206,
+      "weapon": "rl"
     },
     {
       "backpackEnt": 159,
@@ -82509,6 +87434,61 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 528841,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 522167,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 528841,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 524061,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 545603,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 525217,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 528841,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 528296,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 531959,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 528827,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 151,
       "dropTime": 528841,
       "dropper": "wd.dilbert",
@@ -82520,6 +87500,39 @@
       "source": "backpack",
       "team": "wd",
       "time": 529747,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 531959,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 530063,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 545603,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 530258,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 534621,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 532180,
       "weapon": "rl"
     },
     {
@@ -82551,6 +87564,17 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 553790,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 536531,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 150,
       "dropTime": 534621,
       "dropper": "wd.dilbert",
@@ -82563,6 +87587,17 @@
       "team": "wd",
       "time": 537204,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 543154,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 537737,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 153,
@@ -82579,6 +87614,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 548842,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 539400,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 548842,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 543827,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 545603,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 543919,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 144,
       "dropTime": 479477,
       "dropper": "wd.dilbert",
@@ -82590,6 +87658,17 @@
       "source": "backpack",
       "team": "pys",
       "time": 544465,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 552276,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 544915,
       "weapon": "rl"
     },
     {
@@ -82621,6 +87700,28 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 553591,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 547322,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "nextDeathTime": 553790,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 547608,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 548842,
       "dropper": "wd.dilbert",
@@ -82633,6 +87734,28 @@
       "team": "wd",
       "time": 549419,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 555939,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 550459,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 553790,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 552633,
+      "weapon": "gl"
     },
     {
       "backpackEnt": 149,
@@ -82663,6 +87786,17 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 555939,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 554842,
+      "weapon": "gl"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 553591,
       "dropper": "wd.cao",
@@ -82677,6 +87811,37 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 4,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 555531,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 560459,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 557101,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 557777,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 150,
       "dropTime": 555939,
       "dropper": "wd.dilbert",
@@ -82688,6 +87853,38 @@
       "team": "wd",
       "time": 557984,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 562423,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 558475,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 562423,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 561539,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 562725,
+      "weapon": "sng"
     },
     {
       "backpackEnt": 153,
@@ -82717,6 +87914,49 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 572024,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 565063,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 567111,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 566205,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 2,
+      "player": "wd.char",
+      "source": "world",
+      "team": "wd",
+      "time": 566284,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 572024,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 567303,
+      "weapon": "lg"
+    },
+    {
       "backpackEnt": 150,
       "dropTime": 567111,
       "dropper": "wd.dilbert",
@@ -82728,6 +87968,49 @@
       "source": "backpack",
       "team": "wd",
       "time": 569811,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 570068,
+      "weapon": "sng"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 571799,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 570608,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 576790,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 574296,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 1,
+      "nextDeathTime": 580608,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 576530,
       "weapon": "rl"
     },
     {
@@ -82759,6 +88042,27 @@
       "weapon": "lg"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "psy*overon",
+      "source": "world",
+      "team": "pys",
+      "time": 581829,
+      "weapon": "gl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 593793,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 582396,
+      "weapon": "rl"
+    },
+    {
       "backpackEnt": 157,
       "dropTime": 580608,
       "dropper": "wd.dilbert",
@@ -82773,6 +88077,39 @@
       "weapon": "rl"
     },
     {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 593793,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 585307,
+      "weapon": "lg"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 587147,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 587087,
+      "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "nextDeathTime": 593793,
+      "player": "wd.dilbert",
+      "source": "world",
+      "team": "pys",
+      "time": 587465,
+      "weapon": "sng"
+    },
+    {
       "backpackEnt": 142,
       "dropTime": 584915,
       "dropper": "wd.cao",
@@ -82785,6 +88122,16 @@
       "team": "pys",
       "time": 591955,
       "weapon": "rl"
+    },
+    {
+      "hadBefore": false,
+      "inferred": true,
+      "kills": 0,
+      "player": "wd.cao",
+      "source": "world",
+      "team": "wd",
+      "time": 595839,
+      "weapon": "lg"
     },
     {
       "backpackEnt": 144,

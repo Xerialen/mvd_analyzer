@@ -438,6 +438,14 @@ filtered by the `messagelevel` cvar):
   ktx/src/items.c:2471), paired with the earlier
   `BackpackDropHintEvent` to attribute weapon and dropper. Only RL
   and LG packs emit the hint; other pack classes are absent here.
+- **Weapon-stay recovery** (serverinfo `deathmatch` 2/3/5 or `coop` —
+  dmm3 duels/2on2 included) — KTX never emits `//ktx took` for
+  weapons in those modes, so world pickups are synthesized from
+  STAT_ITEMS weapon-bit 0→1 transitions and marked `Inferred`.
+  Proximity to a same-kind weapon spawn during the stat-lag window
+  classifies the entry `"world"`; a flip with no pad in range gets
+  `source: "unknown"` (almost always a non-RL/LG backpack grant).
+  See [analyzer/weapon_pickups.md](analyzer/weapon_pickups.md#weapon-stay-synthesis).
 
 `HadBefore` reads the picker's STAT_ITEMS bit at pickup time. The
 analyzer shadows STAT_ITEMS live; the server sends the STAT_ITEMS

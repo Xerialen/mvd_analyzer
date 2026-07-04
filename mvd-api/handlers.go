@@ -406,7 +406,7 @@ func (s *server) handleItems(w http.ResponseWriter, r *http.Request) {
 //
 //	players  csv — restrict to picks by these names
 //	weapon   csv — "rl","lg","gl","ssg","sng","ng" (case-insensitive)
-//	source   "world" | "backpack"
+//	source   "world" | "backpack" | "unknown"
 func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {

@@ -374,7 +374,10 @@ KTX-hint-derived item analytics:
   timeline. `result.ItemsResult`.
 - **`/weapon-pickups`** (`players`, `weapon`, `source`) — slot-weapon
   acquisitions with kills-before-next-death; joins to backpacks via
-  `backpackEnt`. `[]result.WeaponPickup`.
+  `backpackEnt`. `[]result.WeaponPickup`. `source` is
+  `world`/`backpack`/`unknown` (schema v46: weapon-stay demos carry
+  synthesized `inferred` entries; `unknown` = a grant with no weapon
+  pad in touch range, typically a non-RL/LG pack).
 
 Shapes in
 [RESULT_SCHEMA.md §Items / Backpacks / WeaponPickups](../mvd-analytics/RESULT_SCHEMA.md#itemsresult-items).

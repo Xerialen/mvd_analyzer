@@ -7,6 +7,62 @@ detail.
 
 ## 2026-07-04
 
+- **Weapon-stay pickup recovery (schema v46).** In weapon-stay modes
+  (serverinfo `deathmatch` 2/3/5 or `coop` — dmm3, the standard
+  duel/2on2 mode, included) KTX never emits `//ktx took` for weapons
+  and the weapon entity never leaves the wire, so `result.weaponPickups`
+  contained **zero world weapon pickups** on those demos and weapon
+  `items` timelines never closed a phase. Both analyzers now synthesize
+  the pickups from STAT_ITEMS weapon-bit 0→1 transitions: weapon_pickups
+  records kind-level entries (`inferred: true`; `source: "world"` when
+  the picker was in touch range of a matching pad during the stat-lag
+  window, else the new `"unknown"` — typically a non-RL/LG backpack
+  grant), and items.go closes the matched entity's phase as a
+  zero-length unavailability (`takenAt == respawnAt`; the weapon never
+  left the map). Spawn-loadout bursts and `//ktx bp` grants are
+  deduplicated. Verified against KTX's own per-player counters
+  (`TookWeaponHandler` increments before the weapon-stay early return,
+  so `demoInfo.players[].weapons[].pickups.*` were always correct).
+
+- **Pickups tab: KTX counters are the displayed numbers.** The
+  weapon/item verify cells now show the KTX-authoritative counter as
+  the cell value and acknowledge the analytics-derived count in the
+  tooltip, instead of showing the analytics count and flagging
+  divergence red. Rationale: in weapon-stay demos the analytics
+  reconstruction is known-imperfect (wire-invisible grab-then-die
+  coalescing, pad-vs-pack ambiguity), so a small divergence is
+  expected, not an error — while the analytics stream stays the right
+  source for timestamped/per-entity questions (the per-entity `@ loc`
+  columns are unchanged). Demos without KTX pickup counters (old /
+  non-KTX servers) fall back to the analytics counts, trusted as-is.
+
+- **Duel team normalization now covers pickup/shot data (v46).** In 1v1
+  demos `normalizeDuelTeams` rewrites every player's team to their own
+  name, but `items` phase teams, `weaponPickups` team/dropperTeam,
+  `backpacks` team, `shots` stream/byPlayer teams (feeding `aim` teams),
+  and `airgibs` attacker/victim teams kept the raw pre-normalization
+  strings — so the Pickups tab's per-team aggregation bucketed duel
+  pickups under stale colour labels and showed zero rows. All are now
+  rewritten in the duel pass (airgibs sources teams from the normalized
+  player streams). The pass also reclassifies `shots[].victimKinds`
+  `"team"` → `"enemy"` and folds the per-weapon `teamHits` bucket into
+  `enemyHits` (v45's `victimKindOf` compares raw team strings, so a duel
+  where both players share a colour team classified every opponent hit
+  as team damage; in a 1v1 any non-self victim is an enemy — exact, since
+  the single opponent pair classifies uniformly). Aim's enemy/team splits
+  inherit the correction via `aimPost` ordering. The web Pickups tab's
+  per-team tables also join the existing duel-mode hide
+  (`team-aggregate-table`), matching the other per-team stats tables.
+
+- **Pickup attribution: touch-instant sampling + measured 128 u gate
+  (v46).** The Layer-4 distance corroborator now samples each player's
+  position from the per-frame history at the entity-removal instant
+  (which is the touch frame) instead of a latest-only sample up to
+  250 ms stale, and all proximity consumers (corroborator, insta-regrab
+  picker, weapon-stay classifiers) share one 128 u touch gate — genuine
+  touches measure 54-104 u across the corpus, non-touch same-room grabs
+  ≥150 u. A handful of beyond-gate guesses become honestly unattributed.
+
 - **Shots/aim: enemy / team / self victim classification + Aim Stats
   Victims cycle** (schema v45). Every linked victim is now classified
   relative to the shooter — `enemy`, `team` (same non-empty team, not

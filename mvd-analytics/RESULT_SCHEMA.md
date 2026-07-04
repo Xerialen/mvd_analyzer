@@ -1514,6 +1514,15 @@ full item layout and pickup timeline, just without picker names.
 `{ name, kind, entNum, x, y, z, loc, phases: []ItemPhase }`.
 `ItemPhase` is `{ availableFrom, takenAt, takenBy, team, respawnAt }`.
 
+**Weapon-stay convention** (schema v46; serverinfo `deathmatch` 2/3/5
+or `coop` — dmm3 duels/2on2 included): touched weapons never leave the
+world in those modes, so weapon pickups are synthesized from
+STAT_ITEMS bit flips and recorded as a **zero-length unavailability**:
+`takenAt == respawnAt`, with the next phase's `availableFrom` at the
+same instant. A consumer asking "is this item up at time T" always
+gets "up" for such weapons; the closed phases still carry
+`takenBy`/`team` for pickup counting.
+
 For the map's **designed** static layout (all spawns + teleporters /
 spawnpoints / buttons, independent of what happened this match), see
 [MapEntitiesResult](#mapentitiesresult-mapentities).
@@ -1570,11 +1579,21 @@ Defined in `result/backpacks.go`. Each `BackpackDrop` is
 ## WeaponPickups (`weaponPickups`)
 
 Defined in `result/weapon_pickups.go`. Each entry is a slot-weapon
-acquisition: `{ time, player, team, weapon, source ("world"|"backpack"),
-hadBefore, kills, nextDeathTime, backpackEnt, dropper, dropperTeam,
-dropTime }`. `kills` is the kills-before-next-death effectiveness
-metric (only non-zero on first acquisition in a life — redundant grabs
-stay listed as zero-kill entries so denial labelling still works).
+acquisition: `{ time, player, team, weapon,
+source ("world"|"backpack"|"unknown"), hadBefore, inferred, kills,
+nextDeathTime, backpackEnt, dropper, dropperTeam, dropTime }`. `kills`
+is the kills-before-next-death effectiveness metric (only non-zero on
+first acquisition in a life — redundant grabs stay listed as zero-kill
+entries so denial labelling still works).
+
+**Weapon-stay demos** (schema v46; serverinfo `deathmatch` 2/3/5 or
+`coop`): KTX never emits `//ktx took` for weapons there, so entries
+are synthesized from STAT_ITEMS weapon-bit 0→1 transitions and marked
+`inferred: true`. `source` is `"world"` when the picker passed within
+touch range of a matching weapon spawn during the stat-lag window,
+else `"unknown"` — typically a non-RL/LG backpack grant, which has no
+hint in any mode. Synthesized entries always have `hadBefore: false`
+(the bit was observed flipping 0→1).
 
 ## Cross-references / join keys
 
