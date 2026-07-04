@@ -53,9 +53,11 @@ var locSeparatorSuffixes = []string{
 
 // mapAliases maps variant map basenames onto a canonical loc-file basename.
 // Used by callers that want to resolve a demo's map name to the loc file.
-var mapAliases = map[string]string{
-	"phantombase": "phantoma",
-}
+// Intentionally empty: every map resolves to its own corpus. In
+// particular the phantom version family (phantom / phantoma / phantombase)
+// is kept separate — they are distinct map versions with their own loc,
+// entity and geometry data, not aliases of one another.
+var mapAliases = map[string]string{}
 
 // NormalizeMapName extracts the lowercased base name (no path or extension)
 // from a map identifier and applies known aliases. The resulting string is

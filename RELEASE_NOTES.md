@@ -5,6 +5,22 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-04
+
+- **Wider BSP corpus + phantom map-alias fix.** `scripts/fetch-bsps.sh`
+  now provisions the most-played 1on1/2on2 community maps from a
+  hub.quakeworld.nu sample (ztndm3, metron, toxicity, dad2, catalyst,
+  nova, pocket, katt, shifter, spinev2, zeal), so loc attribution,
+  map geometry and the BSP-gated visibility metrics light up on them.
+  Removed the `phantombase → phantoma` map alias in
+  `mvd-analytics/loc/loader.go`: the phantom family (`phantom` /
+  `phantoma` / `phantombase`) are distinct map versions and now each
+  resolve to their own loc/entity/geometry data. Previously the alias
+  routed the ~1000-game `phantombase` corpus through the 23-game
+  `phantoma` data; this touched every `NormalizeMapName` consumer — loc,
+  mapents, mapbsp, and the `/v1/maps/{map}` endpoint. Only the dominant
+  `phantombase` BSP is fetched; the low-play predecessors are not.
+
 ## 2026-06-27
 
 - **Line-of-sight & potential-visibility metrics** (schema v37–v38,

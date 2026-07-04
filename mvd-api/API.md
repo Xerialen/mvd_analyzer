@@ -558,9 +558,8 @@ UIs that have a map name from `/overview` or a match listing.
   embedded BSP entity corpus (identical for every demo on the map).
   Shape: `result.MapEntitiesResult` →
   [RESULT_SCHEMA.md §MapEntitiesResult](../mvd-analytics/RESULT_SCHEMA.md#mapentitiesresult-mapentities).
-  Aliases are resolved (`phantombase` → `phantoma`). `404 map_unavailable`
-  when no corpus exists. For the per-match pickup timeline use
-  `/demos/{id}/items`.
+  `404 map_unavailable` when no corpus exists. For the per-match pickup
+  timeline use `/demos/{id}/items`.
 
   ```jsonc
   // ?types=item,teleportSrc,teleportDst&kinds=weapon
