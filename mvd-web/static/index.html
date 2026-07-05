@@ -4,15 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MVD Analyzer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Rajdhani + Inter, vendored from Google Fonts (see vendor/README.md). -->
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
     <link rel="stylesheet" href="styles.css">
-    <!-- Cytoscape.js for the Loc Graph tab. Core only; fcose layout is loaded on-demand. -->
-    <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
-    <script src="https://unpkg.com/layout-base@2.0.1/layout-base.js"></script>
-    <script src="https://unpkg.com/cose-base@2.2.0/cose-base.js"></script>
-    <script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+    <!-- Cytoscape.js for the Loc Graph tab, vendored (no runtime CDN). Load
+         order matters: cytoscape first, then the fcose dependency chain
+         (layout-base -> cose-base -> cytoscape-fcose, each reads the
+         previous one's window global). See vendor/README.md. -->
+    <script src="vendor/cytoscape-3.30.2.min.js"></script>
+    <script src="vendor/layout-base-2.0.1.js"></script>
+    <script src="vendor/cose-base-2.2.0.js"></script>
+    <script src="vendor/cytoscape-fcose-2.2.0.js"></script>
 </head>
 <body class="no-demo">
     <!-- WASM loading overlay -->

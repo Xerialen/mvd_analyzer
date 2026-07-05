@@ -41,6 +41,7 @@ build:
 	@cp $(STATIC_DIR)/styles.css $(DIST_DIR)/
 	@cp $(STATIC_DIR)/app.js $(DIST_DIR)/
 	@cp $(STATIC_DIR)/worker.js $(DIST_DIR)/
+	@cp -r $(STATIC_DIR)/vendor $(DIST_DIR)/
 	@cp -r $(STATIC_DIR)/maps $(DIST_DIR)/
 	@echo "Copying loc corpus from $(LOC_DATA)..."
 	@mkdir -p $(DIST_DIR)/locs && cp $(LOC_DATA)/*.loc $(DIST_DIR)/locs/
