@@ -34862,9 +34862,24 @@
     ],
     "deathEvents": [
       {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 7641
+      },
+      {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 35533
+      },
+      {
         "player": "mj",
         "team": "mj",
         "time": 41740
+      },
+      {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 45494
       },
       {
         "player": "mj",
@@ -34970,6 +34985,11 @@
         "player": "mj",
         "team": "mj",
         "time": 246629
+      },
+      {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 261292
       },
       {
         "player": "mj",
@@ -35087,6 +35107,16 @@
         "time": 454270
       },
       {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 461920
+      },
+      {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 476527
+      },
+      {
         "player": "mj",
         "team": "mj",
         "time": 490154
@@ -35145,6 +35175,11 @@
         "player": "mj",
         "team": "mj",
         "time": 574205
+      },
+      {
+        "player": "speedball",
+        "team": "speedball",
+        "time": 574235
       },
       {
         "player": "mj",
@@ -35605,6 +35640,16 @@
         "playerUserID": 70,
         "team": "mj",
         "time": 455166
+      },
+      {
+        "duration": 41740,
+        "endTime": 41740,
+        "ewep": "lg",
+        "frags": 2,
+        "playerName": "mj",
+        "playerUserID": 70,
+        "team": "mj",
+        "time": 0
       },
       {
         "duration": 7961,

@@ -596,7 +596,10 @@ Bucketed data is served as `view.BucketsView` (row) or
 `{ time, player, team, delta }`. Score-delta channel (`+1` enemy kill,
 `-1` suicide / teamkill, `+2` for the rare gib double-frag KTX edge).
 Reconstruct the killer ↔ victim relationship from `FragResult.Frags[]`
-or `MessagesResult.Events[type=frag]` by matching `time`.
+or `MessagesResult.Events[type=frag]` by matching `time`. `team` is
+best-effort: `""` when the player's team never resolves (e.g. an empty
+userinfo/demoinfo team); in 1v1 results the duel normalization rewrites
+it to the player's own name.
 
 ### TimelineDeathEvent
 
@@ -608,7 +611,8 @@ scoreboard deaths and KTX efficiency `frags / (frags + deaths)`
 (`ktx/src/statsTables.c` `calculateEfficiency`). Unlike `frags.frags`,
 this does not drop teamkill victims whose obituary names only the
 attacker. Pairs with `killEvents` for the Timeline tab's per-player
-+/- (cumulative kills − deaths) drill-down.
++/- (cumulative kills − deaths) drill-down. `team` is best-effort like
+`fragEvents`.
 
 ### TimelineKillEvent
 
@@ -619,11 +623,11 @@ teamkills excluded). A player's cumulative `killEvents` reconciles
 exactly with `frags.byPlayer[].kills` and thus the kills-based
 efficiency `kills / (kills + deaths)`. Parallel to `deathEvents`; the
 Timeline per-player drill-down plots `killEvents − deathEvents` as a
-windowed +/- area. `team` is best-effort via the name table and — unlike
-`deathEvents` — is **not** gated to non-empty: `byPlayer.kills` isn't
-either, so gating would silently drop a player's whole kill curve in POV
-demos with an incomplete name↔team join (the consumer groups by player
-name and ignores `team`).
+windowed +/- area. `team` is best-effort via the name table and — like
+`fragEvents` / `deathEvents` — is **not** gated to non-empty:
+`byPlayer.kills` isn't either, so gating would silently drop a player's
+whole kill curve in POV demos with an incomplete name↔team join (the
+consumer groups by player name and ignores `team`).
 
 ### PowerupEvent
 
@@ -635,8 +639,11 @@ intentional: that channel is lean by design).
 ### FragStreakEvent
 
 `{ time, endTime, playerName, playerUserID, team, frags, duration,
-ewep }`. `ewep` = effective weapon = the weapon that scored the most
-kills during the streak.
+ewep }`. One record per spawn-to-death life with ≥ 1 enemy kill, top 10
+by frag count. A player already alive at match start has that first
+life's spawn synthesized at match start (the real spawn happened during
+warmup), so an opening run reads `time: 0`. `ewep` = effective weapon =
+the weapon that scored the most kills during the streak.
 
 ### AirgibEvent
 

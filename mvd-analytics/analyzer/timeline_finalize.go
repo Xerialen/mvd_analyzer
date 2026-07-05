@@ -76,11 +76,20 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// Resolve each frag to the identity that held the slot *at frag time*
 	// (resolveAt) so a player's pre-reconnect frags don't get relabelled
 	// with whoever later took their slot.
+	//
+	// Gate on a resolvable *name*, not team — same rationale as
+	// killEvents below. A duel player with an empty userinfo/demoinfo
+	// team (gameId 224758: iddQd) resolves to team "" for the whole
+	// match; team-gating silently dropped every one of their events, and
+	// the duel post-processor could only paper over FragEvents by
+	// re-synthesising them from obituaries. Team stays best-effort: ""
+	// when unresolvable, rewritten to the player's name by
+	// normalizeDuelTeams in 1v1s.
 	fragEvents := make([]TimelineFragEvent, 0, len(a.rawFrags))
 	for _, raw := range a.rawFrags {
 		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
 
-		if team != "" {
+		if playerName != "" {
 			fragEvents = append(fragEvents, TimelineFragEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
@@ -92,13 +101,13 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 
 	// Convert raw deaths to per-player death events for the frags/deaths
 	// drill-down. Same authoritative protocol DeathEvent source and same
-	// at-death-time identity resolution / team-gating as fragEvents, so a
+	// at-death-time identity resolution / name-gating as fragEvents, so a
 	// player's death count here matches their scoreboard deaths (and thus
 	// KTX efficiency = frags/(frags+deaths)).
 	deathEvents := make([]TimelineDeathEvent, 0, len(a.rawDeaths))
 	for _, raw := range a.rawDeaths {
 		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
-		if team != "" {
+		if playerName != "" {
 			deathEvents = append(deathEvents, TimelineDeathEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
@@ -115,7 +124,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// reconciles with byPlayer.kills and the kills-based efficiency.
 	// FragEntry.Time is already int32 ms.
 	//
-	// Unlike fragEvents/deathEvents we do NOT gate on a resolvable team:
+	// Like fragEvents/deathEvents we do NOT gate on a resolvable team:
 	// byPlayer.kills doesn't either, so gating here would silently drop a
 	// player's whole kill curve in POV demos where the name↔team join is
 	// incomplete (the consumer groups by player name and ignores team).

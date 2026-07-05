@@ -249366,6 +249366,16 @@
         "time": 935701
       },
       {
+        "duration": 135721,
+        "endTime": 135721,
+        "ewep": "rl",
+        "frags": 13,
+        "playerName": "marksuzu",
+        "playerUserID": 8,
+        "team": "oSaMs",
+        "time": 0
+      },
+      {
         "duration": 145726,
         "endTime": 899278,
         "ewep": "rl",
@@ -249434,16 +249444,6 @@
         "playerUserID": 10,
         "team": ".ra.",
         "time": 737645
-      },
-      {
-        "duration": 220913,
-        "endTime": 787732,
-        "ewep": "rl",
-        "frags": 9,
-        "playerName": "lakso",
-        "playerUserID": 11,
-        "team": "oSaMs",
-        "time": 566819
       }
     ],
     "killEvents": [

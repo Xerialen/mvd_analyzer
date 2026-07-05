@@ -261273,6 +261273,16 @@
         "time": 808449
       },
       {
+        "duration": 134958,
+        "endTime": 134958,
+        "ewep": "rl",
+        "frags": 10,
+        "playerName": "sailorman",
+        "playerUserID": 4,
+        "team": "ahoy",
+        "time": 0
+      },
+      {
         "duration": 80997,
         "endTime": 1068197,
         "ewep": "rl",
@@ -261311,16 +261321,6 @@
         "playerUserID": 5,
         "team": "ahoy",
         "time": 121850
-      },
-      {
-        "duration": 122875,
-        "endTime": 730773,
-        "ewep": "rl",
-        "frags": 7,
-        "playerName": "rusti",
-        "playerUserID": 13,
-        "team": "jah",
-        "time": 607898
       }
     ],
     "killEvents": [

@@ -99466,6 +99466,16 @@
         "time": 408054
       },
       {
+        "duration": 64250,
+        "endTime": 64250,
+        "ewep": "lg",
+        "frags": 11,
+        "playerName": "Milton",
+        "playerUserID": 11,
+        "team": "1",
+        "time": 0
+      },
+      {
         "duration": 64445,
         "endTime": 501624,
         "ewep": "rl",
@@ -99524,16 +99534,6 @@
         "playerUserID": 14,
         "team": "1",
         "time": 578223
-      },
-      {
-        "duration": 48743,
-        "endTime": 310729,
-        "ewep": "lg",
-        "frags": 6,
-        "playerName": "squeeze",
-        "playerUserID": 14,
-        "team": "1",
-        "time": 261986
       }
     ],
     "killEvents": [
