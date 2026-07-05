@@ -83,36 +83,20 @@ func (p *Parser) parseServerData(r *mvd.BufferReader, time float64) error {
 	}
 	sd.LevelName = levelName
 
-	// Read movement variables (10 floats)
-	gravity, _ := r.ReadFloat32()
-	sd.Gravity = gravity
-
-	stopSpeed, _ := r.ReadFloat32()
-	sd.StopSpeed = stopSpeed
-
-	maxSpeed, _ := r.ReadFloat32()
-	sd.MaxSpeed = maxSpeed
-
-	specMaxSpeed, _ := r.ReadFloat32()
-	sd.SpectatorMaxSpeed = specMaxSpeed
-
-	accelerate, _ := r.ReadFloat32()
-	sd.Accelerate = accelerate
-
-	airAccel, _ := r.ReadFloat32()
-	sd.AirAccelerate = airAccel
-
-	waterAccel, _ := r.ReadFloat32()
-	sd.WaterAccelerate = waterAccel
-
-	friction, _ := r.ReadFloat32()
-	sd.Friction = friction
-
-	waterFriction, _ := r.ReadFloat32()
-	sd.WaterFriction = waterFriction
-
-	entGravity, _ := r.ReadFloat32()
-	sd.EntGravity = entGravity
+	// Read movement variables (10 floats). Propagate the first read error
+	// rather than silently zeroing the physics — a truncated serverdata that
+	// left e.g. MaxSpeed=0 would feed downstream analysis bogus values.
+	for _, mv := range []*float32{
+		&sd.Gravity, &sd.StopSpeed, &sd.MaxSpeed, &sd.SpectatorMaxSpeed,
+		&sd.Accelerate, &sd.AirAccelerate, &sd.WaterAccelerate, &sd.Friction,
+		&sd.WaterFriction, &sd.EntGravity,
+	} {
+		v, err := r.ReadFloat32()
+		if err != nil {
+			return err
+		}
+		*mv = v
+	}
 
 	p.serverData = sd
 

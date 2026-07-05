@@ -2,10 +2,18 @@
 package parser
 
 import (
+	"errors"
 	"io"
 
 	"github.com/mvd-analyzer/mvd-reader/mvd"
 )
+
+// errUnknownSvc is returned by skipCommand when the command byte is not in
+// its size table at all (a genuinely unknown svc). It is distinct from a
+// truncated-read error inside a known command's skip path so the caller can
+// warn "unknown_svc" for the former and "parse_error" (naming the command)
+// for the latter — the two were previously conflated as io.EOF.
+var errUnknownSvc = errors.New("unknown svc command")
 
 // Event represents a parsed game event
 type Event interface {
@@ -344,9 +352,23 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 			}
 
 		case mvd.SvcDisconnect:
-			message, _ := r.ReadString()
+			message, err := r.ReadString()
+			if err != nil {
+				p.warn(msg.Time, "parse_error", "svc_disconnect: %v", err)
+				return nil
+			}
 			if message == "EndOfDemo" {
-				return mvd.ErrEndOfDemo
+				// The standard MVD termination mvdsv writes when it closes
+				// the demo (sv_demo.c:974-977). It is the clean end of the
+				// stream, so surface it as io.EOF — the value the
+				// events.Source contract promises at a clean end. ParseOne
+				// passes this through unchanged (it only remaps the
+				// decoder-level ErrEndOfDemo). A disconnect carrying any
+				// OTHER text is a non-standard or inter-map disconnect
+				// (ezquake keeps parsing a multi-map MVD past it,
+				// cl_parse.c:3673-3685) and is NOT a clean end — fall
+				// through and keep decoding subsequent commands.
+				return io.EOF
 			}
 
 		case mvd.SvcIntermission:
@@ -449,8 +471,13 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 
 		default:
 			if err := skipCommand(r, cmd, p.floatCoords, p.fteExtensions); err != nil {
-				p.warn(msg.Time, "unknown_svc", "%s (cmd %d), %d bytes remaining in payload abandoned",
-					SvcName(cmd), cmd, r.Remaining())
+				if errors.Is(err, errUnknownSvc) {
+					p.warn(msg.Time, "unknown_svc", "%s (cmd %d), %d bytes remaining in payload abandoned",
+						SvcName(cmd), cmd, r.Remaining())
+				} else {
+					p.warn(msg.Time, "parse_error", "%s (cmd %d): %v, %d bytes remaining in payload abandoned",
+						SvcName(cmd), cmd, err, r.Remaining())
+				}
 				return nil
 			}
 		}
@@ -593,7 +620,9 @@ func (p *Parser) parseHiddenDamage(r *mvd.BufferReader, time float64, dataLen in
 
 	// Skip any extra bytes in this block
 	if dataLen > 8 {
-		r.Skip(dataLen - 8)
+		if err := r.Skip(dataLen - 8); err != nil {
+			return err
+		}
 	}
 
 	// Extract splash damage flag (bit 15)
@@ -845,8 +874,10 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 	case mvd.SvcFTEModelListShort:
 		return skipModelList(r) // same format as regular model list
 	default:
-		// Unknown command - can't determine size
-		return io.EOF
+		// Command not in the size table — we can't determine its length, so
+		// the rest of the payload is unrecoverable. Signal that distinctly
+		// from a truncated read inside a known command's skip.
+		return errUnknownSvc
 	}
 }
 
@@ -857,12 +888,18 @@ func skipSound(r *mvd.BufferReader, floatCoords bool) error {
 		return err
 	}
 	if channel&0x8000 != 0 {
-		r.Skip(1) // volume
+		if err := r.Skip(1); err != nil { // volume
+			return err
+		}
 	}
 	if channel&0x4000 != 0 {
-		r.Skip(1) // attenuation
+		if err := r.Skip(1); err != nil { // attenuation
+			return err
+		}
 	}
-	r.Skip(1) // sound_num
+	if err := r.Skip(1); err != nil { // sound_num
+		return err
+	}
 	if floatCoords {
 		return r.Skip(12) // 3 floats
 	}
@@ -871,14 +908,22 @@ func skipSound(r *mvd.BufferReader, floatCoords bool) error {
 
 func skipSpawnBaseline(r *mvd.BufferReader, floatCoords bool) error {
 	// model(1) + frame(1) + colormap(1) + skin(1) + 3*(coord + angle)
-	r.Skip(4) // model, frame, colormap, skin
+	if err := r.Skip(4); err != nil { // model, frame, colormap, skin
+		return err
+	}
 	for i := 0; i < 3; i++ {
 		if floatCoords {
-			r.Skip(4) // float coord
+			if err := r.Skip(4); err != nil { // float coord
+				return err
+			}
 		} else {
-			r.Skip(2) // short coord
+			if err := r.Skip(2); err != nil { // short coord
+				return err
+			}
 		}
-		r.Skip(1) // angle byte
+		if err := r.Skip(1); err != nil { // angle byte
+			return err
+		}
 	}
 	return nil
 }
@@ -941,7 +986,9 @@ func skipDownload(r *mvd.BufferReader) error {
 	if err != nil {
 		return err
 	}
-	r.Skip(1) // percent
+	if err := r.Skip(1); err != nil { // percent
+		return err
+	}
 	if size > 0 {
 		return r.Skip(int(size))
 	}
@@ -1047,7 +1094,9 @@ func skipPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint32) er
 }
 
 func skipDeltaPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint32) error {
-	r.Skip(1) // from sequence number
+	if err := r.Skip(1); err != nil { // from sequence number
+		return err
+	}
 	return skipPacketEntities(r, floatCoords, fteExt)
 }
 

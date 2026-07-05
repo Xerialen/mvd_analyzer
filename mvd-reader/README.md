@@ -192,6 +192,18 @@ See `source/mvd/source.go` for a worked example: it registers a handler on
 the parser that appends events to an internal queue, then `Next()` drains
 the queue and pumps `parser.ParseOne()` when the queue runs dry.
 
+**End-of-stream contract.** `Next()` returns `io.EOF` at a *clean* end of
+stream. For an MVD that means either the byte stream simply runs out or the
+server's standard termination — `svc_disconnect "EndOfDemo"` — is reached;
+both map to `io.EOF`. Any other error means the stream was truncated or
+corrupt, and it is surfaced only *after* every event the final failing
+`ParseOne` had already queued has been drained, so a consumer still sees the
+tail of a broken demo before the error. A well-behaved consumer therefore
+treats `io.EOF` as success and any other error as a partial/failed parse
+(the analytics registry records the latter into `result.errors`). A
+`svc_disconnect` carrying any text other than `"EndOfDemo"` is treated as a
+non-standard / inter-map disconnect and parsing continues past it.
+
 ## Pure parser access (no Source wrapper)
 
 For tools that need to drive the parser directly — the diagnostic harness

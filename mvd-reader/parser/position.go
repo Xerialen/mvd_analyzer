@@ -158,35 +158,51 @@ func skipPlayerInfoRemainder(r *mvd.BufferReader, floatCoords bool) error {
 	if err != nil {
 		return err
 	}
-	r.Skip(1) // frame
+	if err := r.Skip(1); err != nil { // frame
+		return err
+	}
 
 	// Origin components
 	for i := 0; i < 3; i++ {
 		if flags&(mvd.DFOrigin<<i) != 0 {
 			if floatCoords {
-				r.Skip(4)
+				if err := r.Skip(4); err != nil {
+					return err
+				}
 			} else {
-				r.Skip(2)
+				if err := r.Skip(2); err != nil {
+					return err
+				}
 			}
 		}
 	}
 	// Angle components
 	for i := 0; i < 3; i++ {
 		if flags&(mvd.DFAngles<<i) != 0 {
-			r.Skip(2) // angle16
+			if err := r.Skip(2); err != nil { // angle16
+				return err
+			}
 		}
 	}
 	if flags&mvd.DFModel != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	if flags&mvd.DFSkinNum != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	if flags&mvd.DFEffects != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	if flags&mvd.DFWeaponFrame != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	return nil
 }

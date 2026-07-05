@@ -34,6 +34,7 @@ type Source struct {
 	queue   []events.Event
 	head    int
 	done    bool
+	pendErr error // non-EOF ParseOne error, surfaced after its queued events drain
 }
 
 // Open opens an MVD file by path. Handles gzip-compressed `.mvd.gz`
@@ -75,10 +76,14 @@ func newSource(r io.Reader, closer io.Closer) *Source {
 	return src
 }
 
-// Next pulls the next event from the stream. Returns io.EOF when the
-// underlying decoder reports end-of-demo.
+// Next pulls the next event from the stream. Returns io.EOF at a clean
+// end of demo (the svc_disconnect "EndOfDemo" termination as well as a
+// stream that simply runs out). A non-EOF error means the demo was
+// truncated or corrupt; it is surfaced only AFTER the events the final
+// ParseOne already queued have been drained, so a consumer still sees the
+// tail of a broken demo before the error.
 func (s *Source) Next() (events.Event, error) {
-	for s.head >= len(s.queue) && !s.done {
+	for s.head >= len(s.queue) && !s.done && s.pendErr == nil {
 		// Buffer drained; reset the read cursor and the slice length so
 		// the next ParseOne's append calls reuse the existing backing
 		// array instead of allocating a fresh one.
@@ -87,18 +92,28 @@ func (s *Source) Next() (events.Event, error) {
 		if err := s.parser.ParseOne(); err != nil {
 			if err == io.EOF {
 				s.done = true
-				break
+			} else {
+				// Stash rather than return: the message that failed may
+				// have emitted valid events before the break, and those
+				// were already appended to the queue above.
+				s.pendErr = err
 			}
-			return nil, err
+			break
 		}
 	}
-	if s.head >= len(s.queue) {
-		return nil, io.EOF
+	if s.head < len(s.queue) {
+		e := s.queue[s.head]
+		s.queue[s.head] = nil // drop the reference so the event can be GC'd
+		s.head++
+		return e, nil
 	}
-	e := s.queue[s.head]
-	s.queue[s.head] = nil // drop the reference so the event can be GC'd
-	s.head++
-	return e, nil
+	if s.pendErr != nil {
+		err := s.pendErr
+		s.pendErr = nil
+		s.done = true // subsequent calls report a clean end
+		return nil, err
+	}
+	return nil, io.EOF
 }
 
 // Close releases any resources held by the source (file handles, gzip

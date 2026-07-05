@@ -22,7 +22,11 @@ import (
 
 // Source is a pull-style iterator over events from a QuakeWorld data
 // source. Next returns the next decoded event, or io.EOF at a clean end
-// of stream. A non-EOF error is fatal for the stream; callers should
+// of stream (for an MVD that is either the stream running out or the
+// standard svc_disconnect "EndOfDemo" termination). A non-EOF error is
+// fatal for the stream, but it is surfaced only after the events the
+// failing read had already produced have been returned, so a consumer
+// sees the tail of a truncated stream before the error. Callers should
 // still call Close to release any underlying resources.
 type Source interface {
 	Next() (Event, error)

@@ -197,13 +197,20 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	record("init", initStart)
 
 	eventStart := time.Now()
+	var streamErr error
 	for {
 		event, err := source.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			// Log and stop; partial results still usable downstream.
+			// A clean end of demo arrives as io.EOF (reader F2); any other
+			// error means the event stream was truncated mid-demo (a decode
+			// failure, a corrupt or cut-off file). Partial results are still
+			// usable, so stop the pass but record the abort into
+			// Result.Errors below so a consumer can distinguish a truncated
+			// parse from a clean one.
+			streamErr = err
 			break
 		}
 
@@ -235,6 +242,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	result := &Result{
 		SchemaVersion: resultpkg.CurrentSchemaVersion,
 		FilePath:      filename,
+	}
+	if streamErr != nil {
+		result.Errors = append(result.Errors, "event stream aborted: "+streamErr.Error())
 	}
 
 	co := &CoreOutputs{}

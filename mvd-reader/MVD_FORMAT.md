@@ -2949,6 +2949,12 @@ Offset  Size  Field
 7       var   "EndOfDemo" (null-terminated string)
 ```
 
+Only a `svc_disconnect` whose text is exactly `"EndOfDemo"` is the clean end
+marker (mvdsv writes it at `sv_demo.c:974-977`); the reader maps it to
+`io.EOF`. A `svc_disconnect` carrying any *other* text is a non-standard or
+inter-map disconnect — ezquake keeps parsing a multi-map MVD past it
+(`cl_parse.c:3673-3685`), and so does this reader.
+
 ---
 
 ## Parsing Algorithm

@@ -56,8 +56,18 @@ func (e *ItemSpawnEvent) EventTime() float64   { return e.Time }
 
 // ItemStateEvent fires on every visibility transition of a tracked item
 // entity. Taken=true means the item became invisible (picked up);
-// Taken=false means it reappeared (respawned or a fresh baseline
-// replaced a taken entity).
+// Taken=false means it reappeared (respawned).
+//
+// A re-baseline of an already-taken item does NOT emit an event: it
+// silently reseeds the current-frame state (registerBaseline), so the
+// next frame diff sees no transition. This is safe because mvdsv only
+// writes svc_spawnbaseline in the initial gamestate flush
+// (SV_MVD_SendInitialGamestate, mvdsv/src/sv_demo.c:1418-1453) — every
+// baseline lands at t=0, before any pickup, so an item is never
+// re-baselined mid-game in a single-map MVD. (Verified: zero re-baselines
+// across the golden corpus.) A future multi-map / QTV source that crosses
+// a gamestate boundary would need the reset handled the way the mover
+// branch does — see the resent-baseline case in registerBaseline.
 type ItemStateEvent struct {
 	EntNum int
 	Kind   string
@@ -505,7 +515,9 @@ func (p *Parser) parsePacketEntities(r *mvd.BufferReader, delta, floatCoords boo
 		newFrame[entNum] = state
 	}
 
-	p.diffEntityTransitions(newFrame, p.currentEntities, p.lastEntityPacketTime, p.lastEntityPacketTimeMs)
+	if err := p.diffEntityTransitions(newFrame, p.currentEntities, p.lastEntityPacketTime, p.lastEntityPacketTimeMs); err != nil {
+		return err
+	}
 	p.currentEntities = newFrame
 	return nil
 }
@@ -698,7 +710,7 @@ func (p *Parser) readDelta(r *mvd.BufferReader, word uint32, from *EntityState, 
 // Also emits ItemSpawnEvent / MoverSpawnEvent for entities that hadn't
 // been classified yet (e.g. baseline arrived before the model list)
 // when we can now resolve the kind.
-func (p *Parser) diffEntityTransitions(newFrame, oldFrame map[int]*EntityState, time float64, timeMs int32) {
+func (p *Parser) diffEntityTransitions(newFrame, oldFrame map[int]*EntityState, time float64, timeMs int32) error {
 	// Union of keys from old + new (tracked entities only). Sort the
 	// entity numbers before emitting so that downstream stateful
 	// consumers (e.g. items.go's layered attribution) see same-frame
@@ -719,10 +731,17 @@ func (p *Parser) diffEntityTransitions(newFrame, oldFrame map[int]*EntityState, 
 	for _, ent := range ents {
 		s := newFrame[ent]
 		o := oldFrame[ent]
-		p.diffItemEntity(ent, s, o, time)
-		p.diffMoverEntity(ent, s, o, time, timeMs)
-		p.diffProjectileEntity(ent, s, o, time, timeMs)
+		if err := p.diffItemEntity(ent, s, o, time); err != nil {
+			return err
+		}
+		if err := p.diffMoverEntity(ent, s, o, time, timeMs); err != nil {
+			return err
+		}
+		if err := p.diffProjectileEntity(ent, s, o, time, timeMs); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // diffProjectileEntity emits ProjectileSpawnEvent the first frame a rocket
@@ -730,7 +749,7 @@ func (p *Parser) diffEntityTransitions(newFrame, oldFrame map[int]*EntityState, 
 // the wire (impact / timeout). Unlike items and movers — whose entity
 // numbers are stable — projectile entnums are recycled, so the per-ent
 // classification is cleared on despawn and re-derived on the next spawn.
-func (p *Parser) diffProjectileEntity(ent int, s, o *EntityState, time float64, timeMs int32) {
+func (p *Parser) diffProjectileEntity(ent int, s, o *EntityState, time float64, timeMs int32) error {
 	if p.spawnedProjectiles == nil {
 		p.spawnedProjectiles = make(map[int]string)
 	}
@@ -748,15 +767,14 @@ func (p *Parser) diffProjectileEntity(ent int, s, o *EntityState, time float64, 
 
 	if !isTracked {
 		if curKind == "" {
-			return
+			return nil
 		}
 		p.spawnedProjectiles[ent] = curKind
-		_ = p.emit(&ProjectileSpawnEvent{EntNum: ent, Kind: curKind, Origin: s.Origin, Time: time, TimeMs: timeMs})
-		return
+		return p.emit(&ProjectileSpawnEvent{EntNum: ent, Kind: curKind, Origin: s.Origin, Time: time, TimeMs: timeMs})
 	}
 
 	if curKind == tracked {
-		return // still in flight
+		return nil // still in flight
 	}
 
 	// Gone, or the entnum was reused for a different model: despawn the old
@@ -767,18 +785,21 @@ func (p *Parser) diffProjectileEntity(ent int, s, o *EntityState, time float64, 
 		origin = o.Origin
 	}
 	delete(p.spawnedProjectiles, ent)
-	_ = p.emit(&ProjectileDespawnEvent{EntNum: ent, Kind: tracked, Origin: origin, Time: time, TimeMs: timeMs})
+	if err := p.emit(&ProjectileDespawnEvent{EntNum: ent, Kind: tracked, Origin: origin, Time: time, TimeMs: timeMs}); err != nil {
+		return err
+	}
 	if curKind != "" {
 		p.spawnedProjectiles[ent] = curKind
-		_ = p.emit(&ProjectileSpawnEvent{EntNum: ent, Kind: curKind, Origin: s.Origin, Time: time, TimeMs: timeMs})
+		return p.emit(&ProjectileSpawnEvent{EntNum: ent, Kind: curKind, Origin: s.Origin, Time: time, TimeMs: timeMs})
 	}
+	return nil
 }
 
 // diffItemEntity emits the item spawn / state events for one entity of
 // a frame diff. Resolve current kind preferring whatever state exists
 // now, so baselines that landed before the model list still get an
 // ItemSpawnEvent once we can name the model.
-func (p *Parser) diffItemEntity(ent int, s, o *EntityState, time float64) {
+func (p *Parser) diffItemEntity(ent int, s, o *EntityState, time float64) error {
 	kind := p.spawnedItems[ent]
 	if kind == "" {
 		src := s
@@ -794,26 +815,28 @@ func (p *Parser) diffItemEntity(ent int, s, o *EntityState, time float64) {
 					if b := p.baselines[ent]; b != nil {
 						origin = b.Origin
 					}
-					_ = p.emit(&ItemSpawnEvent{
+					if err := p.emit(&ItemSpawnEvent{
 						EntNum: ent,
 						Kind:   kind,
 						Origin: origin,
 						Time:   time,
-					})
+					}); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
 	if kind == "" {
-		return
+		return nil
 	}
 
 	oldVisible := o != nil && o.Present && o.ModelIndex != 0
 	newVisible := s != nil && s.Present && s.ModelIndex != 0
 	if oldVisible == newVisible {
-		return
+		return nil
 	}
-	_ = p.emit(&ItemStateEvent{
+	return p.emit(&ItemStateEvent{
 		EntNum: ent,
 		Kind:   kind,
 		Taken:  !newVisible,
@@ -826,7 +849,7 @@ func (p *Parser) diffItemEntity(ent int, s, o *EntityState, time float64) {
 // changes — a travelling lift re-sends its origin every frame it
 // moves, and the analyzer's pose timeline is exactly those changes
 // (hold-last between them, see MoverStateEvent).
-func (p *Parser) diffMoverEntity(ent int, s, o *EntityState, time float64, timeMs int32) {
+func (p *Parser) diffMoverEntity(ent int, s, o *EntityState, time float64, timeMs int32) error {
 	if _, seenMover := p.spawnedMovers[ent]; !seenMover {
 		// Late classification: a mover whose baseline arrived before
 		// the model list gets its spawn here, same as items.
@@ -835,33 +858,35 @@ func (p *Parser) diffMoverEntity(ent int, s, o *EntityState, time float64, timeM
 			src = o
 		}
 		if src == nil {
-			return
+			return nil
 		}
 		path := p.resolveModel(src.ModelIndex)
 		sub, ok := classifyMover(path)
 		if !ok {
-			return
+			return nil
 		}
 		p.spawnedMovers[ent] = sub
 		origin := src.Origin
 		if b := p.baselines[ent]; b != nil {
 			origin = b.Origin
 		}
-		_ = p.emit(&MoverSpawnEvent{
+		if err := p.emit(&MoverSpawnEvent{
 			EntNum:   ent,
 			Model:    path,
 			SubModel: sub,
 			Origin:   origin,
 			Time:     time,
 			TimeMs:   timeMs,
-		})
+		}); err != nil {
+			return err
+		}
 	}
 
 	oldVisible := o != nil && o.Present && o.ModelIndex != 0
 	newVisible := s != nil && s.Present && s.ModelIndex != 0
 	moved := oldVisible && newVisible && s.Origin != o.Origin
 	if oldVisible == newVisible && !moved {
-		return
+		return nil
 	}
 	origin := [3]float32{}
 	if newVisible {
@@ -869,7 +894,7 @@ func (p *Parser) diffMoverEntity(ent int, s, o *EntityState, time float64, timeM
 	} else if o != nil {
 		origin = o.Origin
 	}
-	_ = p.emit(&MoverStateEvent{
+	return p.emit(&MoverStateEvent{
 		EntNum:  ent,
 		Origin:  origin,
 		Visible: newVisible,

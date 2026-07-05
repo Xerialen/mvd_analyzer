@@ -493,7 +493,11 @@ func regionControlPost(res *Result, _ *CoreOutputs) {
 		return
 	}
 	rc, err := view.RegionControl(res, view.RegionControlOptions{})
-	if err != nil || rc == nil {
+	if err != nil {
+		res.Errors = append(res.Errors, "region control: "+err.Error())
+		return
+	}
+	if rc == nil {
 		return
 	}
 	// Finalize wrote Regions + tentative TeamA/TeamB (computed pre-

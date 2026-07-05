@@ -7,6 +7,25 @@ detail.
 
 ## 2026-07-05
 
+- **Clean end-of-demo, and truncated demos become visible (no schema
+  change).** The standard MVD termination — `svc_disconnect
+  "EndOfDemo"` — now surfaces through `events.Source.Next` as `io.EOF`
+  (the value the Source contract always promised) instead of a hard
+  error the analytics registry silently swallowed; any tail events in
+  that final message are drained before EOF. A *non*-EOF `Next` error
+  (a truncated or corrupt stream) now records `"event stream aborted:
+  …"` into `result.errors`, and a failed region-control pass records
+  `"region control: …"` there too, so a partial parse is
+  distinguishable from a clean one. Previously-ignored read/skip errors
+  inside the parser (sound/baseline/download skips, serverdata movevars,
+  entity-diff emits) now propagate instead of silently misaligning the
+  decode cursor, and a truncated known command is reported as
+  `parse_error` naming the command rather than `unknown_svc`. No value
+  changes on well-formed demos — the golden corpus is byte-identical
+  (its `EndOfDemo` message carries no tail events); the new `errors`
+  entries appear only on broken demos, so the schema version is
+  unchanged (v48).
+
 - **Timeline, scoreboard and duel-detection correctness fixes (schema
   v48).** Five bugs in already-emitted values, no field-shape change:
   - **Kill events were on the wrong clock and mislabeled in duels.**
