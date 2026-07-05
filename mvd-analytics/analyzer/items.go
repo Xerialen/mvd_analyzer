@@ -21,15 +21,15 @@ import (
 // effectively random rather than nearest-wins.
 //
 // Signal layers in priority order:
-//   1. ItemPickupHintEvent (`//ktx took`) keyed by entNum.
-//   2. ItemPickupPrintEvent ("You got the X" / "You receive N health"),
-//      authoritative when present but absent for any player whose
-//      client config has msg >= 1.
-//   3. Per-slot stat deltas, computed by diffing StatUpdateEvents
-//      against a per-slot snapshot. Universal fallback.
-//   4. Distance corroborator: positions sampled from the per-frame
-//      history at the touch instant, gated by touchGateSq; restricted
-//      to L3 candidates if L3 was ambiguous.
+//  1. ItemPickupHintEvent (`//ktx took`) keyed by entNum.
+//  2. ItemPickupPrintEvent ("You got the X" / "You receive N health"),
+//     authoritative when present but absent for any player whose
+//     client config has msg >= 1.
+//  3. Per-slot stat deltas, computed by diffing StatUpdateEvents
+//     against a per-slot snapshot. Universal fallback.
+//  4. Distance corroborator: positions sampled from the per-frame
+//     history at the touch instant, gated by touchGateSq; restricted
+//     to L3 candidates if L3 was ambiguous.
 //
 // A pickup with no in-radius candidate and no other evidence gets
 // TakenBy="" and source="none" rather than a forced guess.
@@ -38,13 +38,13 @@ import (
 // CoreOutputs.SlotName, so the demoinfo-resolved display name is used
 // rather than the eager userinfo name (mirrors WeaponPickupsAnalyzer).
 type ItemAnalyzer struct {
-	ctx       *Context
-	co        *CoreOutputs
-	items     map[int]*itemEntity // entNum -> tracked item
+	ctx           *Context
+	co            *CoreOutputs
+	items         map[int]*itemEntity // entNum -> tracked item
 	playerPosHist map[int][]posSample // slot -> recent position samples
-	mapName   string
-	locFinder *locvis.Finder
-	timing    MatchTimingDetector
+	mapName       string
+	locFinder     *locvis.Finder
+	timing        MatchTimingDetector
 
 	// Per-slot stat snapshots used to produce delta-based evidence.
 	// Each field has an "initialized" flag so the first update for a
@@ -120,12 +120,12 @@ type phaseAttribution struct {
 }
 
 type playerStatSnapshot struct {
-	healthSet, armorSet                          bool
-	shellsSet, nailsSet, rocketsSet, cellsSet    bool
-	itemsSet                                      bool
-	health, armor                                 int
-	shells, nails, rockets, cells                 int
-	items                                         int
+	healthSet, armorSet                       bool
+	shellsSet, nailsSet, rocketsSet, cellsSet bool
+	itemsSet                                  bool
+	health, armor                             int
+	shells, nails, rockets, cells             int
+	items                                     int
 }
 
 type pendingPrint struct {
@@ -530,8 +530,8 @@ func (a *ItemAnalyzer) processSyntheticRespawns(currentT float64) {
 // a sanity guard against false positives.
 func (a *ItemAnalyzer) findSyntheticPicker(kind string, origin [3]float32, predicted float64) (int, bool) {
 	type cand struct {
-		slot     int
-		evIdx    int
+		slot  int
+		evIdx int
 	}
 	var candidates []cand
 	for _, slot := range sortedKeys(a.pendingStatEvidence) {

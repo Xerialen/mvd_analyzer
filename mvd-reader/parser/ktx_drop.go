@@ -15,9 +15,9 @@ import (
 // The hint is always paired with a backpack entity spawn at the same
 // origin; downstream consumers correlate by BackpackEnt.
 type BackpackDropHintEvent struct {
-	BackpackEnt int     // server edict number of the spawned backpack
-	ItemFlags   int     // 32 = IT_ROCKET_LAUNCHER, 64 = IT_LIGHTNING
-	PlayerEnt   int     // dropper's edict (player_slot + 1)
+	BackpackEnt int // server edict number of the spawned backpack
+	ItemFlags   int // 32 = IT_ROCKET_LAUNCHER, 64 = IT_LIGHTNING
+	PlayerEnt   int // dropper's edict (player_slot + 1)
 	Time        float64
 }
 

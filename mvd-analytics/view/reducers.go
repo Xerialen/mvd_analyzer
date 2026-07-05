@@ -188,9 +188,9 @@ func (DominantReducer) Apply(samples []Sample) any {
 		counts[s.V]++
 	}
 	var (
-		best     any
-		bestN    int
-		bestIdx  int
+		best    any
+		bestN   int
+		bestIdx int
 	)
 	for idx := len(samples) - 1; idx >= 0; idx-- {
 		v := samples[idx].V

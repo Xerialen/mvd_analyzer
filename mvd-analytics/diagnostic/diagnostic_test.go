@@ -10,8 +10,8 @@ import (
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-reader/mvd"
-	"github.com/mvd-analyzer/mvd-reader/parser"
 	"github.com/mvd-analyzer/mvd-reader/mvdfile"
+	"github.com/mvd-analyzer/mvd-reader/parser"
 )
 
 // TestDiagnosticParseDemos runs every demo in testdata/ through the parser in

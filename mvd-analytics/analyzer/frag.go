@@ -410,12 +410,12 @@ func (a *FragAnalyzer) checkSuicide(msg string, time float64) *FragEntry {
 		{" fell to her death", "fall"},
 
 		// Environmental deaths (from KTX client.c)
-		{" was spiked", "world"},       // nails from world
-		{" was zapped", "world"},       // laser
-		{" ate a lavaball", "world"},   // fireball
-		{" blew up", "world"},          // explosive box
-		{" was squished", "squish"},    // squish
-		{" tried to leave", "world"},   // changelevel
+		{" was spiked", "world"},     // nails from world
+		{" was zapped", "world"},     // laser
+		{" ate a lavaball", "world"}, // fireball
+		{" blew up", "world"},        // explosive box
+		{" was squished", "squish"},  // squish
+		{" tried to leave", "world"}, // changelevel
 		// NOTE: " died" pattern removed - too generic, matches KTX stats messages
 
 		// Legacy patterns
@@ -467,9 +467,9 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		{" was telefragged by ", "tele"},
 
 		// Lightning Gun (from KTX client.c dtLG_BEAM, dtLG_DIS)
-		{" accepts ", "lg"},                     // "accepts X's shaft"
+		{" accepts ", "lg"},                      // "accepts X's shaft"
 		{" gets a natural disaster from ", "lg"}, // quad gib
-		{" drains ", "lg"},                      // "drains X's batteries" (discharge kill)
+		{" drains ", "lg"},                       // "drains X's batteries" (discharge kill)
 
 		// Rocket Launcher (from KTX client.c dtRL)
 		{" rides ", "rl"},             // "rides X's rocket"
@@ -491,7 +491,7 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		{" was ventilated by ", "sng"},
 
 		// Shotgun (from KTX client.c dtSG)
-		{" chewed on ", "sg"},           // "chewed on X's boomstick"
+		{" chewed on ", "sg"},            // "chewed on X's boomstick"
 		{" was lead poisoned by ", "sg"}, // gib
 		{" was instagibbed by ", "sg"},   // instagib mode
 
@@ -506,7 +506,7 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		{" was railed by ", "rail"},
 
 		// Stomp kills (from KTX client.c dtSTOMP)
-		{" softens ", "stomp"},     // "X softens Y's fall"
+		{" softens ", "stomp"}, // "X softens Y's fall"
 		{" tried to catch ", "stomp"},
 		{" was literally stomped into particles by ", "stomp"}, // instagib
 		{" was jumped by ", "stomp"},
@@ -518,11 +518,11 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		// disambiguation happens via obituaryWeapons / extractKillerName,
 		// except for " was blown to chunks by " which is shared between
 		// rl ("'s rocket") and gl ("'s grenade") and is fixed up below.
-		{" was disembowled by ", "sg"},     // [sic] CRMod misspelling; suffix "'s shotgun"
-		{" eats 2 scoops of ", "ssg"},      // suffix "'s lead shot"
-		{" is shish-kebabed by ", "rl"},    // suffix "'s rocket"
-		{" was blown to chunks by ", "rl"}, // suffix "'s rocket" — fixed up to gl when suffix is "'s grenade"
-		{" gets intimate with ", "gl"},     // suffix "'s grenade"
+		{" was disembowled by ", "sg"},             // [sic] CRMod misspelling; suffix "'s shotgun"
+		{" eats 2 scoops of ", "ssg"},              // suffix "'s lead shot"
+		{" is shish-kebabed by ", "rl"},            // suffix "'s rocket"
+		{" was blown to chunks by ", "rl"},         // suffix "'s rocket" — fixed up to gl when suffix is "'s grenade"
+		{" gets intimate with ", "gl"},             // suffix "'s grenade"
 		{" gets a warm fuzzy feeling from ", "lg"}, // no weapon suffix; rest is just the killer name
 
 		// Generic patterns

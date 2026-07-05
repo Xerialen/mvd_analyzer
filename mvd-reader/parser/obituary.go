@@ -150,11 +150,11 @@ var killObituaries = []ObituaryPattern{
 	// the fragfile table). For each, the victim is the prefix before
 	// Marker; the suffix that disambiguates the weapon is handled in
 	// the analyzer's frag.go (parser-side only needs the victim).
-	{Marker: " was disembowled by ", Weapon: "sg"},        // CRMod misspelling [sic]; suffix "'s shotgun"
-	{Marker: " eats 2 scoops of ", Weapon: "ssg"},         // suffix "'s lead shot"
-	{Marker: " is shish-kebabed by ", Weapon: "rl"},       // suffix "'s rocket"
-	{Marker: " was blown to chunks by ", Weapon: "rl"},    // suffix "'s rocket" or "'s grenade" (disambiguate in analyzer)
-	{Marker: " gets intimate with ", Weapon: "gl"},        // suffix "'s grenade"
+	{Marker: " was disembowled by ", Weapon: "sg"},             // CRMod misspelling [sic]; suffix "'s shotgun"
+	{Marker: " eats 2 scoops of ", Weapon: "ssg"},              // suffix "'s lead shot"
+	{Marker: " is shish-kebabed by ", Weapon: "rl"},            // suffix "'s rocket"
+	{Marker: " was blown to chunks by ", Weapon: "rl"},         // suffix "'s rocket" or "'s grenade" (disambiguate in analyzer)
+	{Marker: " gets intimate with ", Weapon: "gl"},             // suffix "'s grenade"
 	{Marker: " gets a warm fuzzy feeling from ", Weapon: "lg"}, // no suffix
 }
 

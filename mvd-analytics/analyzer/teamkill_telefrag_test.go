@@ -49,10 +49,10 @@ func TestPositionAt(t *testing.T) {
 		Z: []float32{12, 22, 32, 99},
 	}
 	tests := []struct {
-		name       string
-		q          int32
-		wantOK     bool
-		wantX      float32
+		name   string
+		q      int32
+		wantOK bool
+		wantX  float32
 	}{
 		{"exact sample", 1050, true, 20},
 		{"nearest below within window", 1060, true, 20},

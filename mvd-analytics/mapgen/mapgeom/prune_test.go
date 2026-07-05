@@ -3,8 +3,8 @@ package mapgeom
 import (
 	"testing"
 
-	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
 	"github.com/mvd-analyzer/mvd-analytics/loc"
+	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
 )
 
 // buildSingleFloorBSP is one floor quad (0..64, 0..64) at z=0.

@@ -40,11 +40,14 @@ var updateGolden = flag.Bool("update-golden", false, "regenerate golden files in
 //
 // gameId  → hub.quakeworld.nu game ID; resolved via hubfetch.
 // label   → stable filename slug for the cache + golden file. Choose
-//           something descriptive (e.g. "duel_dm6_2024-01") so a
-//           regression diff makes sense without cross-referencing the ID.
+//
+//	something descriptive (e.g. "duel_dm6_2024-01") so a
+//	regression diff makes sense without cross-referencing the ID.
+//
 // mode    → free-text human label ("1on1", "2on2", "4on4", …) — not
-//           checked, just there so a reader of corpus.json can see
-//           coverage at a glance.
+//
+//	checked, just there so a reader of corpus.json can see
+//	coverage at a glance.
 type corpusEntry struct {
 	GameID int    `json:"gameId"`
 	Label  string `json:"label"`

@@ -10,13 +10,13 @@ import (
 // directive. KTX emits it on every competitive pickup (ktx/src/items.c):
 //
 //   - line 355:  Megahealth — RespawnSec is 0 because the 20 s timer
-//                is delayed until rot completes; a matching
-//                `//ktx timer` directive fires when rot finishes.
+//     is delayed until rot completes; a matching
+//     `//ktx timer` directive fires when rot finishes.
 //   - line 541:  Armor (GA / YA / RA) — RespawnSec = 20.
 //   - line 1048: Weapons (RL / LG / GL / SSG / SNG / NG) — RespawnSec
-//                = weapon_time (typically 30, mode-dependent).
+//     = weapon_time (typically 30, mode-dependent).
 //   - lines 2074, 2083: Powerups (Quad / Pent / Ring) — RespawnSec
-//                varies by mode (60 / 180 / 240 / 300).
+//     varies by mode (60 / 180 / 240 / 300).
 //
 // Small healths (15 / 25) do NOT emit this hint — they're not
 // respawning items in the KTX scheme. Backpacks use a separate

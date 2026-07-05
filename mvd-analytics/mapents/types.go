@@ -62,7 +62,7 @@ type MapEntity struct {
 	Target     string  `json:"target,omitempty"`     // teleportSrc → destination targetname
 	TargetName string  `json:"targetName,omitempty"` // teleportDst → its own targetname
 	Spawnflags int     `json:"spawnflags,omitempty"`
-	Bounds     *Bounds `json:"bounds,omitempty"`     // brush entities (teleportSrc/button/door): trigger volume
+	Bounds     *Bounds `json:"bounds,omitempty"` // brush entities (teleportSrc/button/door): trigger volume
 }
 
 // Bounds is an axis-aligned bounding box in world coordinates, carried

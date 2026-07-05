@@ -102,9 +102,9 @@ func TestFinder_Threshold(t *testing.T) {
 	large := make([]Location, pencilThreshold+50)
 	for i := range large {
 		large[i] = Location{
-			X: (r.Float32() - 0.5) * 6000,
-			Y: (r.Float32() - 0.5) * 6000,
-			Z: 0,
+			X:    (r.Float32() - 0.5) * 6000,
+			Y:    (r.Float32() - 0.5) * 6000,
+			Z:    0,
 			Name: "n",
 		}
 	}

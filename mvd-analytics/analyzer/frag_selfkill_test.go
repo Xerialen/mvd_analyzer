@@ -14,13 +14,13 @@ func TestFragSelfKillWeaponLabels(t *testing.T) {
 		msg    string
 		weapon string
 	}{
-		{"nexus suicides", "suicide"},                  // the /kill console command
-		{"nexus discovers blast radius", "rl"},          // RL self-splash
-		{"nexus becomes bored with life", "rl"},         // RL self (other random msg)
-		{"nexus tries to put the pin back in", "gl"},    // GL self-detonation
-		{"nexus electrocutes himself", "lg"},            // LG self-discharge
-		{"nexus discharges into the lava", "lg"},        // LG discharge
-		{"nexus fell to his death", "fall"},             // environmental
+		{"nexus suicides", "suicide"},                        // the /kill console command
+		{"nexus discovers blast radius", "rl"},               // RL self-splash
+		{"nexus becomes bored with life", "rl"},              // RL self (other random msg)
+		{"nexus tries to put the pin back in", "gl"},         // GL self-detonation
+		{"nexus electrocutes himself", "lg"},                 // LG self-discharge
+		{"nexus discharges into the lava", "lg"},             // LG discharge
+		{"nexus fell to his death", "fall"},                  // environmental
 		{"nexus somehow becomes bored with life", "suicide"}, // unknown-cause catch-all
 	}
 	for _, tc := range cases {

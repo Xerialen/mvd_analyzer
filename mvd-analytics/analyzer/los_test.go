@@ -16,7 +16,7 @@ func zFloorBSP() *bspvis.BSP {
 	return &bspvis.BSP{
 		Version: "v29",
 		Planes:  []bspvis.Plane{{Normal: bspvis.Vec3{Z: 1}, Dist: 0, Type: 2}}, // Type 2 = Z axis (BoxLeafs fast path)
-		Nodes:   []bspvis.Node{{PlaneID: 0, Children: [2]int32{-2, -1}}}, // front(z>=0) empty, back solid
+		Nodes:   []bspvis.Node{{PlaneID: 0, Children: [2]int32{-2, -1}}},       // front(z>=0) empty, back solid
 		Leaves: []bspvis.Leaf{
 			{Contents: bspvis.ContentsSolid},
 			{Contents: bspvis.ContentsEmpty},
@@ -36,7 +36,7 @@ func zCeilingBSP() *bspvis.BSP {
 	return &bspvis.BSP{
 		Version: "v29",
 		Planes:  []bspvis.Plane{{Normal: bspvis.Vec3{Z: 1}, Dist: 0, Type: 2}}, // Type 2 = Z axis (BoxLeafs fast path)
-		Nodes:   []bspvis.Node{{PlaneID: 0, Children: [2]int32{-1, -2}}}, // front(z>0) solid, back empty
+		Nodes:   []bspvis.Node{{PlaneID: 0, Children: [2]int32{-1, -2}}},       // front(z>0) solid, back empty
 		Leaves: []bspvis.Leaf{
 			{Contents: bspvis.ContentsSolid},
 			{Contents: bspvis.ContentsEmpty},

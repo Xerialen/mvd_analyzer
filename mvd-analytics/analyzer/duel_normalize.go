@@ -353,4 +353,3 @@ func mergeFragEventsByTime(a, b []TimelineFragEvent) []TimelineFragEvent {
 	out = append(out, b[j:]...)
 	return out
 }
-

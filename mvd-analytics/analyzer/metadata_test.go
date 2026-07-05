@@ -10,12 +10,12 @@ func TestParseFullserverinfo(t *testing.T) {
 		`fullserverinfo "\maxfps\77\timelimit\10\teamplay\2\hostname\la.quake.world:28504 NAQW\*version\MVDSV 1.20-dev\ktxver\1.45"`)
 
 	cases := map[string]string{
-		"maxfps":   "77",
+		"maxfps":    "77",
 		"timelimit": "10",
-		"teamplay": "2",
-		"hostname": "la.quake.world:28504 NAQW",
-		"*version": "MVDSV 1.20-dev",
-		"ktxver":   "1.45",
+		"teamplay":  "2",
+		"hostname":  "la.quake.world:28504 NAQW",
+		"*version":  "MVDSV 1.20-dev",
+		"ktxver":    "1.45",
 	}
 	for k, want := range cases {
 		got := a.serverInfo[k]
@@ -178,14 +178,14 @@ func TestParseCountdownCenterprint_NilOnEmpty(t *testing.T) {
 
 func TestSpawnmodelToK(t *testing.T) {
 	cases := map[string]int{
-		"QW":   0,
-		"KTS":  1,
-		"KT":   2,
-		"KTX":  3,
-		"KT2":  4,
-		"kt2":  4,  // case-insensitive
-		"???":  -1,
-		"":     -1,
+		"QW":  0,
+		"KTS": 1,
+		"KT":  2,
+		"KTX": 3,
+		"KT2": 4,
+		"kt2": 4, // case-insensitive
+		"???": -1,
+		"":    -1,
 	}
 	for in, want := range cases {
 		if got := spawnmodelToK(in); got != want {
@@ -196,10 +196,10 @@ func TestSpawnmodelToK(t *testing.T) {
 
 func TestCollapseSpaces(t *testing.T) {
 	cases := map[string]string{
-		"D u e l":   "D u e l",   // single spaces stay
-		"T  e  a  m": "T e a m",  // double spaces collapse
+		"D u e l":          "D u e l", // single spaces stay
+		"T  e  a  m":       "T e a m", // double spaces collapse
 		"  hello  world  ": "hello world",
-		"":          "",
+		"":                 "",
 	}
 	for in, want := range cases {
 		if got := collapseSpaces(in); got != want {

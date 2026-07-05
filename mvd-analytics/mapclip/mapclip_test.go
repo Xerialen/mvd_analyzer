@@ -123,7 +123,7 @@ func rimWellHull(t *testing.T) *Hull {
 		},
 		Models: []bsp.Model{{Mins: bsp.Vec3{Z: -500}, HeadNodes: [4]int32{0, 0, 0, 0}}},
 		ClipNodes: []bsp.ClipNode{
-			{PlaneNum: 0, Children: [2]int32{1, 2}},                       // 0: X>=0 → well, X<0 → rim
+			{PlaneNum: 0, Children: [2]int32{1, 2}},                         // 0: X>=0 → well, X<0 → rim
 			{PlaneNum: 1, Children: [2]int32{contentsEmpty, contentsSolid}}, // 1: well
 			{PlaneNum: 2, Children: [2]int32{contentsEmpty, contentsSolid}}, // 2: rim
 		},

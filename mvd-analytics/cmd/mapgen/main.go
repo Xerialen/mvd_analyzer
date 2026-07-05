@@ -33,10 +33,10 @@ import (
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
+	"github.com/mvd-analyzer/mvd-analytics/loc"
 	"github.com/mvd-analyzer/mvd-analytics/mapbsp"
 	"github.com/mvd-analyzer/mvd-analytics/mapclip"
 	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
-	"github.com/mvd-analyzer/mvd-analytics/loc"
 	"github.com/mvd-analyzer/mvd-analytics/mapgen/mapgeom"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 )
@@ -306,4 +306,3 @@ func findDemos(root string) []string {
 	sort.Strings(out)
 	return out
 }
-
