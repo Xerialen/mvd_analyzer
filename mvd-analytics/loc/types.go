@@ -23,7 +23,7 @@ func (f *Finder) MapName() string {
 
 // NewFinder constructs a Finder from an explicit name and location list.
 // Intended for tests and for tooling that has already parsed its own
-// loc data (e.g. cmd/mapgen); normal callers should use LoadForMap.
+// loc data; normal callers should use LoadForMap.
 func NewFinder(mapName string, locations []Location) *Finder {
 	return &Finder{mapName: mapName, locations: locations}
 }

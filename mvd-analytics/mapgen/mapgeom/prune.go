@@ -56,9 +56,6 @@ func (u *FloorUsage) AddPoint(x, y, z float32) {
 // Points is the number of distinct (deduplicated) floor-contact points.
 func (u *FloorUsage) Points() int { return len(u.seen) }
 
-// Demos is the number of demos that contributed (see AddDemo).
-func (u *FloorUsage) Demos() int { return u.demos }
-
 func (u *FloorUsage) q(v float32) int32 {
 	return int32(math.Floor(float64(v / u.cell)))
 }

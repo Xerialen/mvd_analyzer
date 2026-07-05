@@ -38,9 +38,10 @@ func (e *BeamEvent) EventTime() float64   { return e.Time }
 // parseTempEntity decodes a svc_temp_entity payload. Lightning beams are
 // surfaced as BeamEvent; every other (point-effect) type is consumed for
 // its known byte length. Returns the TE type so the caller can name an
-// unknown type in a diagnostic. Wire layout per type — see the table on
-// skipTempEntity; an unknown type returns io.EOF since its length can't be
-// guessed without drifting the parser.
+// unknown type in a diagnostic. Wire layout per type is handled in the
+// switch below (ref: ezquake cl_tent.c::CL_ParseTEnt); an unknown type
+// returns io.EOF since its length can't be guessed without drifting the
+// parser.
 func (p *Parser) parseTempEntity(r *mvd.BufferReader, time float64, timeMs int32, floatCoords bool) (byte, error) {
 	teType, err := r.ReadByte()
 	if err != nil {

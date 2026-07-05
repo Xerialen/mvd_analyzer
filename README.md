@@ -368,8 +368,8 @@ per-tick LG fire signal),
 `NailsFrameEvent` (`svc_nails` spike snapshots — opt-in, off by default),
 `MoverSpawnEvent` / `MoverStateEvent` (inline brush-model entities —
 lifts, doors, trains — identity plus per-frame origin while moving).
-Domain types carried by events — `ServerData`, `PlayerInfo`,
-`PlayerState`, `Stats` — are source-agnostic.
+Domain types carried by events — `ServerData`, `PlayerInfo` — are
+source-agnostic.
 
 `DeathEvent` / `SpawnEvent` are derived events the parser synthesises
 from `StatHealth` edges so analytics never has to reconstruct

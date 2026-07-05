@@ -2716,13 +2716,6 @@ function getWeaponName(code) {
     return names[code] || code;
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // Escape a single character for HTML
 function escapeHtmlChar(char) {
     switch (char) {
@@ -2817,14 +2810,12 @@ function formatQuakeMessage(text) {
 
 // Timeline Analysis State
 let timelineState = {
-    buckets: [],
     bucketView: null,      // column-major ColumnarBuckets (50ms) from getDefaultBuckets
     highResDuration: 0.05, // High-res bucket interval
     events: [],
     duration: 0,
     matchStartTime: 0,
     teams: [],
-    overviewBucketSize: 5, // Aggregate to 5-second buckets for overview
     segment: null, // { start, end } or null for full match - selected time segment
     dragging: false, // Is user dragging to select a segment on overview?
     dragStartTime: 0 // Time at drag start
@@ -3105,8 +3096,6 @@ function displayTimelineAnalysis(result) {
     // Update legend team names
     if (teams.length >= 2) {
         const setTextIfExists = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        setTextIfExists('legend-team-a', teams[0] + ' ↑');
-        setTextIfExists('legend-team-b', teams[1] + ' ↓');
         setTextIfExists('team-a-chat-title', `${teams[0]} Chat`);
         setTextIfExists('team-b-chat-title', `${teams[1]} Chat`);
         setTextIfExists('legend-health-team-a', teams[0] + ' ↑');
@@ -6399,9 +6388,6 @@ function initMapView(result) {
     // Populate the Follow-player dropdown with current players.
     rebuildFollowSelect();
 
-    // Build powerup event list
-    buildMapPowerupList(result);
-
     // Build item list panel (armors, weapons, MH, powerups with live
     // up/down status — present for KTX demos, auto-hidden otherwise).
     renderItemsPanel();
@@ -6409,12 +6395,10 @@ function initMapView(result) {
     // Reset trail checkboxes
     document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = false; });
 
-    // Render at the current playhead. On first load resetUIToCleanState has
-    // set currentTime to 0; on the deferred re-init (applyDeferredBuckets) it
-    // holds the user's scrub position or a ?t= deep link, which must survive —
-    // so currentTime is deliberately NOT reset to 0 here.
-    const slider = document.getElementById('map-timeline-slider');
-    if (slider) slider.value = mapState.currentTime;
+    // On first load resetUIToCleanState has set currentTime to 0; on the
+    // deferred re-init (applyDeferredBuckets) it holds the user's scrub
+    // position or a ?t= deep link, which must survive — so currentTime is
+    // deliberately NOT reset to 0 here.
 
     // Initialize region control data
     initRegionControl(result);
@@ -10453,12 +10437,6 @@ function edgeTooltipHtml(edge) {
 ${rows}`;
 }
 
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-}
-
 // Kept as a thin compatibility shim: the tab-switch handler and old callers
 // invoke renderLocGraph(); route them to the new refresh path.
 function renderLocGraph() {
@@ -11565,43 +11543,5 @@ function animatePlayback() {
         updateMapLegend();
         updateRegionStatus();
         updateItemsPanelStatus(mapState.currentTime);
-    }
-}
-
-function buildMapPowerupList(result) {
-    const list = document.getElementById('map-powerup-events');
-    if (!list) return;
-
-    list.innerHTML = '';
-
-    // Prefer timelineState.powerupEvents (already converted ms→s at intake
-    // in displayTimelineAnalysis). Fall back to the raw schema field with
-    // its own conversion so the panel still renders if displayResults runs
-    // displayMap before displayTimelineAnalysis on some path.
-    const events = timelineState.powerupEvents && timelineState.powerupEvents.length
-        ? timelineState.powerupEvents
-        : (result.timelineAnalysis?.powerupEvents || []).map(ev => ({
-              ...ev,
-              time: ev.time * 0.001,
-          }));
-
-    if (events.length === 0) {
-        list.innerHTML = '<li style="color: #666; font-style: italic;">No powerup events</li>';
-        return;
-    }
-
-    for (const event of events) {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span class="time-cell">${formatDuration(event.time)}</span>
-            <span class="powerup-cell ${event.powerupType}">${getPowerupDisplay(event.powerupType)}</span>
-            <span>${escapeHtml(event.playerName || 'Unknown')}</span>
-        `;
-        li.addEventListener('click', () => {
-            setCurrentTime(event.time);
-            markMapDirty();
-            renderMap(mapState.currentTime);
-        });
-        list.appendChild(li);
     }
 }

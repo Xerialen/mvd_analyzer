@@ -216,7 +216,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// short-residence wall-bleed via the blip filter, and emit the
 	// resulting sparse Loc change stream into each player's stream
 	// builder. Returns the ordered locTable we'll ship in Result.
-	locTable, locIndex := a.resolveLocsAndFilterBlips()
+	locTable := a.resolveLocsAndFilterBlips()
 
 	// Trace each player's height above the floor beneath them at every
 	// native-rate position sample (schema v24). Runs per-slot before the
@@ -232,7 +232,6 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	if len(locTable) <= 1 {
 		locTable = nil
 	}
-	_ = locIndex // used by the regions builder below if regions are configured
 
 	// Build name -> UserID mapping for Hub viewer links. Key by the
 	// reconnect-unified identity active on each slot session, and skip

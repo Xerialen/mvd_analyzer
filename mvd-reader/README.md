@@ -8,9 +8,8 @@ analytics can consume without caring about the on-the-wire format.
 
 - `events/` — the **public API**. Defines the `Source` iterator interface,
   every concrete `Event` type, and the source-agnostic domain types carried
-  on those events (`ServerData`, `PlayerInfo`, `PlayerState`, `Stats`,
-  `Vec3`, `Angle3`). Import this package and nothing else if you're writing
-  downstream analytics.
+  on those events (`ServerData`, `PlayerInfo`). Import this package and
+  nothing else if you're writing downstream analytics.
 - `mvd/` — MVD wire-format decoder: message headers, svc_* command opcodes,
   FTE and MVD protocol extensions, hidden-message framing.
 - `parser/` — message → event translation. Takes `mvd.DemoMessage`s and
@@ -52,38 +51,38 @@ for {
 
 The concrete event list, in stable order:
 
-| Kind | Type | Purpose |
-|---|---|---|
-| `KindServerData` | `ServerDataEvent` | Connection-time server data block |
-| `KindUserInfo` | `UserInfoEvent` | Player slot userinfo bind / rebind |
-| `KindPrint` | `PrintEvent` | Text messages (chat, obituaries, system) |
-| `KindStatUpdate` | `StatUpdateEvent` | Per-player stat delta (health, armor, weapons, ...) |
-| `KindFragUpdate` | `FragUpdateEvent` | Frag count changes (server-authoritative) |
-| `KindPlayerInfo` | `PlayerPositionEvent` | Per-player position / angle sample |
-| `KindDamage` | `DamageEvent` | Damage dealt (from KTX hidden messages) |
-| `KindDemoInfo` | `DemoInfoEvent` | KTX `*demoinfo` JSON dump |
-| `KindIntermission` | `IntermissionEvent` | Scoreboard-camera takeover (match ended) |
-| `KindStuffText` | `StuffTextEvent` | Server-pushed console command |
-| `KindCenterPrint` | `CenterPrintEvent` | HUD center text (match settings countdown) |
-| `KindServerInfo` | `ServerInfoEvent` | Mid-game serverinfo key/value update |
-| `KindDeath` | `DeathEvent` | Player died — deduplicated across `StatHealth` edges, the `DF_DEAD` playerinfo bit, and obituary corroboration |
-| `KindSpawn` | `SpawnEvent` | Player spawned — deduplicated across `StatHealth` edges and the `DF_DEAD` playerinfo bit clearing |
-| `KindItemSpawn` | `ItemSpawnEvent` | Item entity observed — baseline known (kind, position) |
-| `KindItemState` | `ItemStateEvent` | Item became taken or respawned — from entity modelindex transitions |
-| `KindBackpackDropHint` | `BackpackDropHintEvent` | KTX `//ktx drop` stuffcmd: `(BackpackEnt, ItemFlags, PlayerEnt)` for RL/LG drops only |
-| `KindItemPickupHint` | `ItemPickupHintEvent` | KTX `//ktx took` stuffcmd: `(ItemEnt, RespawnSec, PlayerEnt)` — authoritative pickup attribution for every MH / armor / weapon / powerup touch |
-| `KindBackpackPickupHint` | `BackpackPickupHintEvent` | KTX `//ktx bp` stuffcmd: `(BackpackEnt, PlayerEnt)` — symmetric to `//ktx drop`, fires only for RL/LG packs |
-| `KindItemPickupPrint` | `ItemPickupPrintEvent` | Per-client `svc_print` "You got the X" / "You receive N health" — covers ammo boxes and H15/H25 that `//ktx took` misses. **Subject to per-client `msg` cvar filter; frequently absent in competitive demos.** |
-| `KindBackpackPickupPrint` | `BackpackPickupPrintEvent` | Per-client `svc_print` "You get " backpack opener — covers all backpack classes, including the SSG/NG/GL packs that `//ktx bp` skips. Same server-side-filter caveat as `ItemPickupPrintEvent`. |
-| `KindDemoStartTimestamp` | `DemoStartTimestampEvent` | mvdhidden `0x000B`: wall-clock (Unix epoch ms, ULEB128) at demo open — anchor for syncing the demo to real time |
-| `KindPausedDuration` | `PausedDurationEvent` | mvdhidden `0x000A`: real wall-clock ms for one paused idle frame. One per frame while paused (clock frozen); sum a run for the pause length. Note the non-standard, length-header-less framing — see [MVD_FORMAT.md](MVD_FORMAT.md#hidden-message-types) |
-| `KindMoverSpawn` | `MoverSpawnEvent` | Inline brush-model ("*N") entity observed — lift/door/train identity: entnum, BSP submodel index, baseline origin |
-| `KindMoverState` | `MoverStateEvent` | Mover wire-state change — origin moved (per frame while travelling) or visibility flipped. Hold-last between events is the exact pose |
-| `KindSound` | `SoundEvent` | `svc_sound` — a sound started on an entity's channel: emitting entity (`Ent`), channel (`CHAN_WEAPON`=1 for weapon fire), resolved precache `Name`, and origin. Weapon-fire sounds are the truthful per-shot signal consumed by the `shots` analyzer |
-| `KindProjectileSpawn` | `ProjectileSpawnEvent` | A rocket (`progs/missile.mdl`) or grenade (`progs/grenade.mdl`) entity first observed — kind + muzzle origin. The entnum brackets the flight; the `shots` analyzer attributes it to the same-frame RL/GL fire |
-| `KindProjectileDespawn` | `ProjectileDespawnEvent` | A tracked projectile left the wire (impact / timeout) — last origin. Co-locates with the explosion + `mvdhidden_dmgdone` damage, so the launching shot links to that impact |
-| `KindBeam` | `BeamEvent` | `svc_temp_entity` lightning beam (`TE_LIGHTNING1/2/3`) — firing entity + start/end coords. `TE_LIGHTNING2` is the player LG bolt (one per fire tick), the authoritative per-shot LG signal for the `shots` analyzer |
-| `KindNails` | `NailsFrameEvent` | `svc_nails` / `svc_nails2` — the full live nail set for one frame (ids + origins). Emitted only when nail decoding is enabled (`Parser.SetDecodeNails`); high volume, off by default. Note most modern servers (`sv_nailhack`) send nails as packet entities (spike models) instead, so this fires only on non-nailhack servers |
+| Type | Purpose |
+|---|---|
+| `ServerDataEvent` | Connection-time server data block |
+| `UserInfoEvent` | Player slot userinfo bind / rebind |
+| `PrintEvent` | Text messages (chat, obituaries, system) |
+| `StatUpdateEvent` | Per-player stat delta (health, armor, weapons, ...) |
+| `FragUpdateEvent` | Frag count changes (server-authoritative) |
+| `PlayerPositionEvent` | Per-player position / angle sample |
+| `DamageEvent` | Damage dealt (from KTX hidden messages) |
+| `DemoInfoEvent` | KTX `*demoinfo` JSON dump |
+| `IntermissionEvent` | Scoreboard-camera takeover (match ended) |
+| `StuffTextEvent` | Server-pushed console command |
+| `CenterPrintEvent` | HUD center text (match settings countdown) |
+| `ServerInfoEvent` | Mid-game serverinfo key/value update |
+| `DeathEvent` | Player died — deduplicated across `StatHealth` edges, the `DF_DEAD` playerinfo bit, and obituary corroboration |
+| `SpawnEvent` | Player spawned — deduplicated across `StatHealth` edges and the `DF_DEAD` playerinfo bit clearing |
+| `ItemSpawnEvent` | Item entity observed — baseline known (kind, position) |
+| `ItemStateEvent` | Item became taken or respawned — from entity modelindex transitions |
+| `BackpackDropHintEvent` | KTX `//ktx drop` stuffcmd: `(BackpackEnt, ItemFlags, PlayerEnt)` for RL/LG drops only |
+| `ItemPickupHintEvent` | KTX `//ktx took` stuffcmd: `(ItemEnt, RespawnSec, PlayerEnt)` — authoritative pickup attribution for every MH / armor / weapon / powerup touch |
+| `BackpackPickupHintEvent` | KTX `//ktx bp` stuffcmd: `(BackpackEnt, PlayerEnt)` — symmetric to `//ktx drop`, fires only for RL/LG packs |
+| `ItemPickupPrintEvent` | Per-client `svc_print` "You got the X" / "You receive N health" — covers ammo boxes and H15/H25 that `//ktx took` misses. **Subject to per-client `msg` cvar filter; frequently absent in competitive demos.** |
+| `BackpackPickupPrintEvent` | Per-client `svc_print` "You get " backpack opener — covers all backpack classes, including the SSG/NG/GL packs that `//ktx bp` skips. Same server-side-filter caveat as `ItemPickupPrintEvent`. |
+| `DemoStartTimestampEvent` | mvdhidden `0x000B`: wall-clock (Unix epoch ms, ULEB128) at demo open — anchor for syncing the demo to real time |
+| `PausedDurationEvent` | mvdhidden `0x000A`: real wall-clock ms for one paused idle frame. One per frame while paused (clock frozen); sum a run for the pause length. Note the non-standard, length-header-less framing — see [MVD_FORMAT.md](MVD_FORMAT.md#hidden-message-types) |
+| `MoverSpawnEvent` | Inline brush-model ("*N") entity observed — lift/door/train identity: entnum, BSP submodel index, baseline origin |
+| `MoverStateEvent` | Mover wire-state change — origin moved (per frame while travelling) or visibility flipped. Hold-last between events is the exact pose |
+| `SoundEvent` | `svc_sound` — a sound started on an entity's channel: emitting entity (`Ent`), channel (`CHAN_WEAPON`=1 for weapon fire), resolved precache `Name`, and origin. Weapon-fire sounds are the truthful per-shot signal consumed by the `shots` analyzer |
+| `ProjectileSpawnEvent` | A rocket (`progs/missile.mdl`) or grenade (`progs/grenade.mdl`) entity first observed — kind + muzzle origin. The entnum brackets the flight; the `shots` analyzer attributes it to the same-frame RL/GL fire |
+| `ProjectileDespawnEvent` | A tracked projectile left the wire (impact / timeout) — last origin. Co-locates with the explosion + `mvdhidden_dmgdone` damage, so the launching shot links to that impact |
+| `BeamEvent` | `svc_temp_entity` lightning beam (`TE_LIGHTNING1/2/3`) — firing entity + start/end coords. `TE_LIGHTNING2` is the player LG bolt (one per fire tick), the authoritative per-shot LG signal for the `shots` analyzer |
+| `NailsFrameEvent` | `svc_nails` / `svc_nails2` — the full live nail set for one frame (ids + origins). Emitted only when nail decoding is enabled (`Parser.SetDecodeNails`); high volume, off by default. Note most modern servers (`sv_nailhack`) send nails as packet entities (spike models) instead, so this fires only on non-nailhack servers |
 
 `DeathEvent` and `SpawnEvent` are derived events the parser synthesises
 from up to three sources sharing one per-player dead-state cursor, so a

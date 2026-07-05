@@ -3243,60 +3243,6 @@ th.sortable.sort-desc::after {
     text-align: center;
 }
 
-.map-powerup-list {
-    background: #16213e;
-    border-radius: 8px;
-    padding: 15px;
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.map-powerup-list h4 {
-    color: var(--accent-cyan);
-    margin-bottom: 10px;
-    font-size: 0.95rem;
-}
-
-.map-powerup-list ul {
-    list-style: none;
-    overflow-y: auto;
-    flex: 1;
-}
-
-.map-powerup-list li {
-    display: flex;
-    gap: 10px;
-    padding: 6px 8px;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    border-bottom: 1px solid var(--bg-panel);
-    transition: background 0.2s;
-}
-
-.map-powerup-list li:hover {
-    background: rgba(0, 217, 255, 0.1);
-}
-
-.map-powerup-list li:last-child {
-    border-bottom: none;
-}
-
-.map-powerup-list .time-cell {
-    min-width: 50px;
-}
-
-/* Player team colors for map */
-.player-red {
-    color: var(--team-a);
-}
-
-.player-blue {
-    color: var(--team-b);
-}
-
 @media (max-width: 900px) {
     .map-main-content {
         flex-direction: column;
@@ -3307,8 +3253,7 @@ th.sortable.sort-desc::after {
         flex-direction: row;
     }
 
-    .map-legend,
-    .map-powerup-list {
+    .map-legend {
         flex: 1;
     }
 }

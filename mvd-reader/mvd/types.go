@@ -215,22 +215,6 @@ type DemoMessage struct {
 	Time float64
 }
 
-// PlayerState represents the state of a player at a point in time
-type PlayerState struct {
-	PlayerNum   int
-	Flags       uint16
-	Frame       uint8
-	Origin      Vec3
-	Angles      Angle3
-	ModelIndex  int
-	SkinNum     int
-	Effects     uint8
-	WeaponFrame uint8
-	IsDead      bool
-	IsGib       bool
-	Time        float64
-}
-
 // PlayerInfo represents player metadata
 type PlayerInfo struct {
 	Slot        int
@@ -267,33 +251,6 @@ type ServerData struct {
 	Friction          float32
 	WaterFriction     float32
 	EntGravity        float32
-}
-
-// PrintMessage represents a print event
-type PrintMessage struct {
-	Level   int
-	Message string
-	Time    float64
-}
-
-// FragEvent represents a frag (kill) detected from print messages
-type FragEvent struct {
-	Killer     string
-	Victim     string
-	WeaponCode string
-	Time       float64
-	IsSuicide  bool
-	IsTeamKill bool
-}
-
-// DamageEvent represents damage dealt (from hidden messages)
-type DamageEvent struct {
-	Attacker  int
-	Victim    int
-	Damage    int
-	DeathType int // Weapon/death type that caused the damage
-	IsSplash  bool
-	Time      float64
 }
 
 // Death types (from KTX deathtype.h)
@@ -403,17 +360,4 @@ type Stats struct {
 	Cells        int
 	ActiveWeapon int
 	Items        int
-}
-
-// Demo represents a parsed MVD demo
-type Demo struct {
-	ServerData    *ServerData
-	Players       [MaxClients]*PlayerInfo
-	PlayerStates  []PlayerState
-	PrintMessages []PrintMessage
-	FragEvents    []FragEvent
-	DamageEvents  []DamageEvent
-	Duration      float64
-	Models        []string
-	Sounds        []string
 }

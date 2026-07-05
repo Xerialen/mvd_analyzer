@@ -37,43 +37,6 @@ type Source interface {
 // a type switch on Event to dispatch on the specific event kind.
 type Event = parser.Event
 
-// Kind enumerates the concrete event types carried on the Source.
-type Kind = parser.EventType
-
-// Kind values — match 1:1 with the concrete event types below.
-const (
-	KindServerData          = parser.EventServerData
-	KindUserInfo            = parser.EventUserInfo
-	KindPrint               = parser.EventPrint
-	KindStatUpdate          = parser.EventStatUpdate
-	KindFragUpdate          = parser.EventFragUpdate
-	KindPlayerInfo          = parser.EventPlayerInfo
-	KindDamage              = parser.EventDamage
-	KindDemoInfo            = parser.EventDemoInfo
-	KindIntermission        = parser.EventIntermission
-	KindStuffText           = parser.EventStuffText
-	KindCenterPrint         = parser.EventCenterPrint
-	KindServerInfo          = parser.EventServerInfo
-	KindDeath               = parser.EventDeath
-	KindSpawn               = parser.EventSpawn
-	KindItemSpawn           = parser.EventItemSpawn
-	KindItemState           = parser.EventItemState
-	KindBackpackDropHint    = parser.EventBackpackDropHint
-	KindItemPickupHint      = parser.EventItemPickupHint
-	KindBackpackPickupHint  = parser.EventBackpackPickupHint
-	KindItemPickupPrint     = parser.EventItemPickupPrint
-	KindBackpackPickupPrint = parser.EventBackpackPickupPrint
-	KindDemoStartTimestamp  = parser.EventDemoStartTimestamp
-	KindPausedDuration      = parser.EventPausedDuration
-	KindMoverSpawn          = parser.EventMoverSpawn
-	KindMoverState          = parser.EventMoverState
-	KindSound               = parser.EventSound
-	KindProjectileSpawn     = parser.EventProjectileSpawn
-	KindProjectileDespawn   = parser.EventProjectileDespawn
-	KindBeam                = parser.EventBeam
-	KindNails               = parser.EventNails
-)
-
 // Concrete event types emitted on the Source.
 type (
 	ServerDataEvent          = parser.ServerDataEvent
@@ -107,20 +70,13 @@ type (
 	BeamEvent                = parser.BeamEvent
 	NailsFrameEvent          = parser.NailsFrameEvent
 	Nail                     = parser.Nail
-	EntityState              = parser.EntityState
 )
 
 // Domain types carried by events — not MVD-specific, shared across all
 // QuakeWorld data sources.
 type (
-	ServerData   = mvd.ServerData
-	PlayerInfo   = mvd.PlayerInfo
-	PlayerState  = mvd.PlayerState
-	Stats        = mvd.Stats
-	PrintMessage = mvd.PrintMessage
-	FragEvent    = mvd.FragEvent
-	Vec3         = mvd.Vec3
-	Angle3       = mvd.Angle3
+	ServerData = mvd.ServerData
+	PlayerInfo = mvd.PlayerInfo
 )
 
 // Commonly-used constants re-exported.

@@ -762,8 +762,6 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		return nil
 	case mvd.SvcBad:
 		return nil
-	case mvd.SvcSound:
-		return skipSound(r, floatCoords)
 	case mvd.SvcSetAngle:
 		return r.Skip(3) // 3 angles (bytes)
 	case mvd.SvcLightStyle:
@@ -781,18 +779,9 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		return r.Skip(5) // player + float
 	case mvd.SvcSetPause:
 		return r.Skip(1)
-	case mvd.SvcSpawnBaseline:
-		// svc_spawnbaseline has a 2-byte entity number prefix before the baseline body.
-		// Ref: ezquake cl_parse.c case svc_spawnbaseline — MSG_ReadShort() + CL_ParseBaseline().
-		if err := r.Skip(2); err != nil {
-			return err
-		}
-		return skipSpawnBaseline(r, floatCoords)
 	case mvd.SvcSpawnStatic:
 		// svc_spawnstatic has no prefix — CL_ParseStatic calls CL_ParseBaseline directly.
 		return skipSpawnStatic(r, floatCoords)
-	case mvd.SvcTempEntity:
-		return skipTempEntity(r, floatCoords)
 	case mvd.SvcKilledMonster:
 		return nil
 	case mvd.SvcFoundSecret:
@@ -818,36 +807,12 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		return r.Skip(2)
 	case mvd.SvcDownload:
 		return skipDownload(r)
-	case mvd.SvcPlayerInfo:
-		return skipPlayerInfo(r, floatCoords)
-	case mvd.SvcNails, mvd.SvcNails2:
-		return skipNails(r, cmd == mvd.SvcNails2)
 	case mvd.SvcChokeCount:
 		return r.Skip(1)
-	case mvd.SvcModelList:
-		return skipModelList(r)
-	case mvd.SvcSoundList:
-		return skipSoundList(r)
-	case mvd.SvcPacketEntities:
-		return skipPacketEntities(r, floatCoords, fteExt)
-	case mvd.SvcDeltaPacketEntities:
-		return skipDeltaPacketEntities(r, floatCoords, fteExt)
 	case mvd.SvcMaxSpeed:
 		return r.Skip(4) // float
 	case mvd.SvcEntGravity:
 		return r.Skip(4) // float
-	case mvd.SvcSetInfo:
-		// Handled in parseNetworkMessage main switch; this fallback is unused.
-		_, err := r.ReadByte()
-		if err != nil {
-			return err
-		}
-		_, err = r.ReadString()
-		if err != nil {
-			return err
-		}
-		_, err = r.ReadString()
-		return err
 	case mvd.SvcUpdatePL:
 		return r.Skip(2) // player + pl byte
 	case mvd.SvcSpawnStaticSound:
@@ -857,13 +822,6 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 			return r.Skip(15) // 3*4 + 3
 		}
 		return r.Skip(9) // 3*2 + 3
-	case mvd.SvcFTESpawnBaseline2:
-		// Extended baseline: 2-byte flag word + entity delta
-		w, err := r.ReadUint16()
-		if err != nil {
-			return err
-		}
-		return skipEntityDelta(r, w, floatCoords, fteExt)
 	case mvd.SvcFTESpawnStatic2:
 		// Extended static: 2-byte flag word + entity delta
 		w, err := r.ReadUint16()
@@ -871,8 +829,6 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 			return err
 		}
 		return skipEntityDelta(r, w, floatCoords, fteExt)
-	case mvd.SvcFTEModelListShort:
-		return skipModelList(r) // same format as regular model list
 	default:
 		// Command not in the size table — we can't determine its length, so
 		// the rest of the payload is unrecoverable. Signal that distinctly
@@ -882,30 +838,6 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 }
 
 // Skip functions for complex commands
-func skipSound(r *mvd.BufferReader, floatCoords bool) error {
-	channel, err := r.ReadUint16()
-	if err != nil {
-		return err
-	}
-	if channel&0x8000 != 0 {
-		if err := r.Skip(1); err != nil { // volume
-			return err
-		}
-	}
-	if channel&0x4000 != 0 {
-		if err := r.Skip(1); err != nil { // attenuation
-			return err
-		}
-	}
-	if err := r.Skip(1); err != nil { // sound_num
-		return err
-	}
-	if floatCoords {
-		return r.Skip(12) // 3 floats
-	}
-	return r.Skip(6) // 3 shorts
-}
-
 func skipSpawnBaseline(r *mvd.BufferReader, floatCoords bool) error {
 	// model(1) + frame(1) + colormap(1) + skin(1) + 3*(coord + angle)
 	if err := r.Skip(4); err != nil { // model, frame, colormap, skin
@@ -932,55 +864,6 @@ func skipSpawnStatic(r *mvd.BufferReader, floatCoords bool) error {
 	return skipSpawnBaseline(r, floatCoords)
 }
 
-// skipTempEntity skips a svc_temp_entity payload. The byte layout depends on
-// the temp-entity type and whether the protocol negotiated float coordinates.
-//
-// Reference: ezquake `cl_tent.c::CL_ParseTEnt` and mvdsv `cl_parse.c`. The QW
-// wire formats are:
-//
-//	TE_SPIKE/SUPERSPIKE/EXPLOSION/TAREXPLOSION/WIZSPIKE/KNIGHTSPIKE/
-//	  LAVASPLASH/TELEPORT/LIGHTNINGBLOOD: 3 coords             (6 / 12 bytes)
-//	TE_GUNSHOT, TE_BLOOD:                 byte count + 3 coords (7 / 13 bytes)
-//	TE_LIGHTNING1/2/3 (beams):            short ent + 6 coords  (14 / 26 bytes)
-//
-// The previous implementation lumped TE_GUNSHOT into the plain-coord group,
-// dropped TE_BLOOD into the default 6-byte branch, mis-sized beams as 16 bytes,
-// and treated TE_LIGHTNINGBLOOD as a beam. Each of those was a 1-2 byte drift
-// per occurrence; in a busy frame the accumulated drift would walk the parser
-// straight into a byte that happened to look like svc_updatestatlong, at which
-// point downstream code saw armor=172620004 and the team-average graph
-// autoscaled to garbage.
-//
-// Unknown TE types deliberately bail (io.EOF) rather than guessing a length —
-// silent drift is much worse than dropping the rest of the message.
-//
-// skipTempEntity is the skip-only fallback retained on skipCommand's path;
-// the live parser routes svc_temp_entity through parseTempEntity (which also
-// surfaces lightning beams as BeamEvent) — see tempentity.go.
-func skipTempEntity(r *mvd.BufferReader, floatCoords bool) error {
-	teType, err := r.ReadByte()
-	if err != nil {
-		return err
-	}
-	coordSize := 2
-	if floatCoords {
-		coordSize = 4
-	}
-	switch teType {
-	case 0, 1, 3, 4, 7, 8, 10, 11, 13:
-		// 3 coords
-		return r.Skip(3 * coordSize)
-	case 2, 12:
-		// byte count + 3 coords
-		return r.Skip(1 + 3*coordSize)
-	case 5, 6, 9:
-		// beam: short entity + 3 coords (start) + 3 coords (end)
-		return r.Skip(2 + 6*coordSize)
-	default:
-		return io.EOF
-	}
-}
-
 func skipDownload(r *mvd.BufferReader) error {
 	size, err := r.ReadInt16()
 	if err != nil {
@@ -993,111 +876,6 @@ func skipDownload(r *mvd.BufferReader) error {
 		return r.Skip(int(size))
 	}
 	return nil
-}
-
-func skipPlayerInfo(r *mvd.BufferReader, floatCoords bool) error {
-	_, err := r.ReadByte() // player num
-	if err != nil {
-		return err
-	}
-	flags, err := r.ReadUint16()
-	if err != nil {
-		return err
-	}
-	r.Skip(1) // frame
-
-	// Origin components
-	for i := 0; i < 3; i++ {
-		if flags&(mvd.DFOrigin<<i) != 0 {
-			if floatCoords {
-				r.Skip(4)
-			} else {
-				r.Skip(2)
-			}
-		}
-	}
-	// Angle components
-	for i := 0; i < 3; i++ {
-		if flags&(mvd.DFAngles<<i) != 0 {
-			r.Skip(2) // angle16
-		}
-	}
-	if flags&mvd.DFModel != 0 {
-		r.Skip(1)
-	}
-	if flags&mvd.DFSkinNum != 0 {
-		r.Skip(1)
-	}
-	if flags&mvd.DFEffects != 0 {
-		r.Skip(1)
-	}
-	if flags&mvd.DFWeaponFrame != 0 {
-		r.Skip(1)
-	}
-	return nil
-}
-
-func skipNails(r *mvd.BufferReader, isNails2 bool) error {
-	count, err := r.ReadByte()
-	if err != nil {
-		return err
-	}
-	bytesPerNail := 6
-	if isNails2 {
-		bytesPerNail = 7
-	}
-	return r.Skip(int(count) * bytesPerNail)
-}
-
-func skipModelList(r *mvd.BufferReader) error {
-	r.Skip(1) // start index
-	for {
-		s, err := r.ReadString()
-		if err != nil {
-			return err
-		}
-		if s == "" {
-			break
-		}
-	}
-	return r.Skip(1) // next index
-}
-
-func skipSoundList(r *mvd.BufferReader) error {
-	r.Skip(1) // start index
-	for {
-		s, err := r.ReadString()
-		if err != nil {
-			return err
-		}
-		if s == "" {
-			break
-		}
-	}
-	return r.Skip(1) // next index
-}
-
-func skipPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint32) error {
-	for {
-		word, err := r.ReadUint16()
-		if err != nil {
-			return err
-		}
-		if word == 0 {
-			break // end marker
-		}
-		if err := skipEntityDelta(r, word, floatCoords, fteExt); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func skipDeltaPacketEntities(r *mvd.BufferReader, floatCoords bool, fteExt uint32) error {
-	if err := r.Skip(1); err != nil { // from sequence number
-		return err
-	}
-	return skipPacketEntities(r, floatCoords, fteExt)
 }
 
 // Entity update flag bits (from protocol.h)

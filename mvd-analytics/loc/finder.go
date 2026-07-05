@@ -68,22 +68,3 @@ func (f *Finder) pencilIndex() *pencilIndex {
 func (f *Finder) Locations() []Location {
 	return f.locations
 }
-
-// FindLocationsInRadius returns all locations within the given radius of the point.
-func (f *Finder) FindLocationsInRadius(x, y, z, radius float32) []Location {
-	if len(f.locations) == 0 {
-		return nil
-	}
-	radiusSq := radius * radius
-	var result []Location
-	for _, loc := range f.locations {
-		dx := x - loc.X
-		dy := y - loc.Y
-		dz := z - loc.Z
-		distSq := dx*dx + dy*dy + dz*dz
-		if distSq <= radiusSq {
-			result = append(result, loc)
-		}
-	}
-	return result
-}

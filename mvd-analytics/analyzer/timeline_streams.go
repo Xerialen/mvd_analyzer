@@ -710,13 +710,12 @@ func (b *streamBuilder) isEmpty() bool {
 // directly on the native-rate position samples so the parse-time
 // bucket data structure is no longer needed.
 //
-// Returns the loc-name → index map for any callers that need to
-// resolve external loc references (e.g. the regions builder).
-func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() (locTable []string, locIndex map[string]int) {
-	locTable = []string{""}
-	locIndex = map[string]int{"": 0}
+// Returns the ordered loc table (index → name) to ship in Result.
+func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() []string {
+	locTable := []string{""}
+	locIndex := map[string]int{"": 0}
 	if a.locFinder == nil {
-		return locTable, locIndex
+		return locTable
 	}
 	thresholdMs := int32(a.blipThresholdMs)
 
@@ -791,7 +790,7 @@ func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() (locTable []string, locIn
 			state.streams.recordLoc(b.posT[i], b.posLi[i])
 		}
 	}
-	return locTable, locIndex
+	return locTable
 }
 
 // resolveFloorHeights populates each player's PositionTrack.H column —
