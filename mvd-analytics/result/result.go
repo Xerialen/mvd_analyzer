@@ -537,7 +537,32 @@ package result
 //     all remaining whiffs land in the lg `miss` bucket (field shared
 //     with the SG/SSG per-pellet Miss). LG invariant becomes
 //     Hits + Blocked + Miss + OutOfRange + Unresolved == Shots.
-const CurrentSchemaVersion = 47
+//
+// v48: correctness fixes to already-emitted values (no field shape change).
+//   - timelineAnalysis.killEvents are now on the match-relative clock and
+//     carry duel team labels, exactly like the sibling deathEvents/
+//     fragEvents streams (both post-processors previously skipped them):
+//     each kill was ~demoOffset ms late and, in 1v1s, tagged with a raw
+//     colour team instead of the player name.
+//   - Chat lines can no longer start or end the match: the match-timing
+//     detector ignores PRINT_CHAT (level 3), so a pre-match "go!" or a
+//     mid-match "gg game over" say no longer flips the match window (which
+//     would shift matchStart/matchEnd and freeze/warp every stream).
+//   - The CRMod "eats 2 scoops of" super-shotgun obituary is reachable
+//     again: those kills were mislabeled `gl` with a phantom "2 scoops of X"
+//     killer; now `ssg` with the real killer name.
+//   - match.players/match.teams no longer drop players who finished on
+//     exactly 0 frags (surface-authoritative-data); and isDuelResult trusts
+//     demoInfo.players as authoritative, so a 2on2 in which two players end
+//     on 0 frags is no longer misclassified as a duel and team-renamed.
+//     Paired reader fix so spectators don't leak in instead: the full
+//     userinfo parser now reads the server-set `*spectator` star key
+//     (mvdsv strips the bare `spectator` key before broadcast) and resets
+//     the flag on every full update, ezquake-style.
+//   - Powerup interval end times use the same effective match end as the
+//     weapon intervals on demos cut before intermission (were the per-player
+//     last sample vs the global max).
+const CurrentSchemaVersion = 48
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

@@ -77397,6 +77397,14 @@
         "name": "[nW].Veggie",
         "suicides": 1,
         "team": "ahoy"
+      },
+      {
+        "deaths": 73,
+        "frags": 0,
+        "kills": 42,
+        "name": "Doomie",
+        "suicides": 4,
+        "team": "BhB"
       }
     ],
     "teams": [
@@ -92496,7 +92504,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 47,
+  "schemaVersion": 48,
   "shots": {
     "byPlayer": [
       {
@@ -428105,2242 +428113,2242 @@
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 14319
+        "time": 3867
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 14909
+        "time": 4457
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 25160
+        "time": 14708
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 25784
+        "time": 15332
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 34076
+        "time": 23624
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 38226
+        "time": 27774
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 41416
+        "time": 30964
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 44444
+        "time": 33992
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 45301
+        "time": 34849
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 50394
+        "time": 39942
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 52701
+        "time": 42249
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 53787
+        "time": 43335
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 56391
+        "time": 45939
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 63536
+        "time": 53084
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 63678
+        "time": 53226
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 65263
+        "time": 54811
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 70319
+        "time": 59867
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 71275
+        "time": 60823
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 71275
+        "time": 60823
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 72873
+        "time": 62421
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 78391
+        "time": 67939
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 78677
+        "time": 68225
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 80884
+        "time": 70432
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 82521
+        "time": 72069
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 84001
+        "time": 73549
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 85352
+        "time": 74900
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 87767
+        "time": 77315
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 88611
+        "time": 78159
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 91195
+        "time": 80743
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 92771
+        "time": 82319
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 95023
+        "time": 84571
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 98867
+        "time": 88415
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 102507
+        "time": 92055
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 102679
+        "time": 92227
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 103822
+        "time": 93370
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 109350
+        "time": 98898
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 111700
+        "time": 101248
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 124478
+        "time": 114026
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 125400
+        "time": 114948
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 126608
+        "time": 116156
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 128374
+        "time": 117922
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 134010
+        "time": 123558
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 138581
+        "time": 128129
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 143715
+        "time": 133263
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 146826
+        "time": 136374
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 147613
+        "time": 137161
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 147613
+        "time": 137161
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 149436
+        "time": 138984
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 151785
+        "time": 141333
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 152504
+        "time": 142052
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 155402
+        "time": 144950
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 156865
+        "time": 146413
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 161111
+        "time": 150659
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 171123
+        "time": 160671
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 171331
+        "time": 160879
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 172500
+        "time": 162048
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 173168
+        "time": 162716
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 174881
+        "time": 164429
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 176634
+        "time": 166182
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 179226
+        "time": 168774
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 180343
+        "time": 169891
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 180689
+        "time": 170237
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 181694
+        "time": 171242
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 183221
+        "time": 172769
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 183361
+        "time": 172909
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 189797
+        "time": 179345
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 191999
+        "time": 181547
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 195450
+        "time": 184998
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 196709
+        "time": 186257
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 201233
+        "time": 190781
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 205081
+        "time": 194629
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 211348
+        "time": 200896
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 212443
+        "time": 201991
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 213868
+        "time": 203416
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 218941
+        "time": 208489
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 234460
+        "time": 224008
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 236034
+        "time": 225582
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 238537
+        "time": 228085
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 242270
+        "time": 231818
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 243098
+        "time": 232646
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 244158
+        "time": 233706
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 246520
+        "time": 236068
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 254290
+        "time": 243838
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 257172
+        "time": 246720
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 258063
+        "time": 247611
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 262880
+        "time": 252428
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 263671
+        "time": 253219
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 267151
+        "time": 256699
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 279017
+        "time": 268565
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 279191
+        "time": 268739
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 281855
+        "time": 271403
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 283852
+        "time": 273400
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 284839
+        "time": 274387
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 288468
+        "time": 278016
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 290946
+        "time": 280494
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 292608
+        "time": 282156
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 293332
+        "time": 282880
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 295510
+        "time": 285058
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 295579
+        "time": 285127
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 295857
+        "time": 285405
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 298834
+        "time": 288382
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 300536
+        "time": 290084
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 301782
+        "time": 291330
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 304242
+        "time": 293790
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 305587
+        "time": 295135
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 308487
+        "time": 298035
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 311668
+        "time": 301216
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 312984
+        "time": 302532
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 313988
+        "time": 303536
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 314647
+        "time": 304195
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 317861
+        "time": 307409
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 323602
+        "time": 313150
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 325887
+        "time": 315435
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 327446
+        "time": 316994
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 329770
+        "time": 319318
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 335730
+        "time": 325278
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 336770
+        "time": 326318
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 337048
+        "time": 326596
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 339324
+        "time": 328872
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 345255
+        "time": 334803
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 349903
+        "time": 339451
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 353817
+        "time": 343365
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 357976
+        "time": 347524
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 358495
+        "time": 348043
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 358700
+        "time": 348248
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 360918
+        "time": 350466
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 368025
+        "time": 357573
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 370062
+        "time": 359610
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 370130
+        "time": 359678
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 371126
+        "time": 360674
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 374308
+        "time": 363856
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 374659
+        "time": 364207
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 379731
+        "time": 369279
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 384126
+        "time": 373674
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 385426
+        "time": 374974
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 388454
+        "time": 378002
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 391829
+        "time": 381377
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 395907
+        "time": 385455
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 396333
+        "time": 385881
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 396516
+        "time": 386064
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 402847
+        "time": 392395
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 408891
+        "time": 398439
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 410905
+        "time": 400453
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 411917
+        "time": 401465
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 412735
+        "time": 402283
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 416747
+        "time": 406295
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 418825
+        "time": 408373
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 419423
+        "time": 408971
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 422412
+        "time": 411960
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 429513
+        "time": 419061
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 431409
+        "time": 420957
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 435246
+        "time": 424794
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 435673
+        "time": 425221
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 436206
+        "time": 425754
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 438409
+        "time": 427957
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 443602
+        "time": 433150
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 445375
+        "time": 434923
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 447291
+        "time": 436839
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 451497
+        "time": 441045
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 452523
+        "time": 442071
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 454400
+        "time": 443948
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 456536
+        "time": 446084
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 457954
+        "time": 447502
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 458238
+        "time": 447786
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 460225
+        "time": 449773
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 461672
+        "time": 451220
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 463195
+        "time": 452743
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 466146
+        "time": 455694
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 466723
+        "time": 456271
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 469185
+        "time": 458733
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 479173
+        "time": 468721
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 485314
+        "time": 474862
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 487358
+        "time": 476906
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 487937
+        "time": 477485
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 488349
+        "time": 477897
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 490930
+        "time": 480478
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 493654
+        "time": 483202
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 494760
+        "time": 484308
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 496586
+        "time": 486134
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 498261
+        "time": 487809
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 510048
+        "time": 499596
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 510290
+        "time": 499838
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 511343
+        "time": 500891
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 514271
+        "time": 503819
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 517654
+        "time": 507202
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 518515
+        "time": 508063
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 520531
+        "time": 510079
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 524343
+        "time": 513891
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 525523
+        "time": 515071
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 527666
+        "time": 517214
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 532582
+        "time": 522130
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 535113
+        "time": 524661
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 535598
+        "time": 525146
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 536361
+        "time": 525909
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 539319
+        "time": 528867
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 541338
+        "time": 530886
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 542620
+        "time": 532168
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 544597
+        "time": 534145
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 549230
+        "time": 538778
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 551020
+        "time": 540568
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 552100
+        "time": 541648
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 552512
+        "time": 542060
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 554827
+        "time": 544375
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 555516
+        "time": 545064
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 556276
+        "time": 545824
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 558107
+        "time": 547655
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 560071
+        "time": 549619
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 561159
+        "time": 550707
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 565695
+        "time": 555243
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 566522
+        "time": 556070
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 567903
+        "time": 557451
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 568801
+        "time": 558349
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 570694
+        "time": 560242
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 572266
+        "time": 561814
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 574454
+        "time": 564002
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 575109
+        "time": 564657
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 576442
+        "time": 565990
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 578940
+        "time": 568488
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 580206
+        "time": 569754
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 587496
+        "time": 577044
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 587566
+        "time": 577114
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 588024
+        "time": 577572
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 593160
+        "time": 582708
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 605268
+        "time": 594816
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 606126
+        "time": 595674
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 609549
+        "time": 599097
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 610302
+        "time": 599850
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 614453
+        "time": 604001
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 616652
+        "time": 606200
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 618379
+        "time": 607927
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 621911
+        "time": 611459
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 623426
+        "time": 612974
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 626534
+        "time": 616082
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 629923
+        "time": 619471
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 635214
+        "time": 624762
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 635283
+        "time": 624831
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 643175
+        "time": 632723
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 648550
+        "time": 638098
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 649782
+        "time": 639330
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 651875
+        "time": 641423
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 653698
+        "time": 643246
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 657499
+        "time": 647047
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 658362
+        "time": 647910
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 658534
+        "time": 648082
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 662816
+        "time": 652364
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 663619
+        "time": 653167
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 664868
+        "time": 654416
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 665632
+        "time": 655180
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 668176
+        "time": 657724
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 674382
+        "time": 663930
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 679850
+        "time": 669398
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 680575
+        "time": 670123
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 682586
+        "time": 672134
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 682931
+        "time": 672479
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 686806
+        "time": 676354
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 686873
+        "time": 676421
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 691234
+        "time": 680782
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 692411
+        "time": 681959
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 694182
+        "time": 683730
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 694286
+        "time": 683834
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 697486
+        "time": 687034
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 699726
+        "time": 689274
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 699761
+        "time": 689309
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 702080
+        "time": 691628
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 702566
+        "time": 692114
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 707162
+        "time": 696710
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 708785
+        "time": 698333
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 712448
+        "time": 701996
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 713895
+        "time": 703443
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 714474
+        "time": 704022
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 715475
+        "time": 705023
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 718284
+        "time": 707832
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 719253
+        "time": 708801
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 722652
+        "time": 712200
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 730414
+        "time": 719962
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 733584
+        "time": 723132
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 734687
+        "time": 724235
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 736501
+        "time": 726049
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 739321
+        "time": 728869
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 742471
+        "time": 732019
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 745393
+        "time": 734941
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 751332
+        "time": 740880
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 756502
+        "time": 746050
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 758697
+        "time": 748245
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 758769
+        "time": 748317
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 763944
+        "time": 753492
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 769931
+        "time": 759479
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 770682
+        "time": 760230
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 772605
+        "time": 762153
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 773422
+        "time": 762970
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 774539
+        "time": 764087
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 778546
+        "time": 768094
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 781564
+        "time": 771112
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 781915
+        "time": 771463
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 783827
+        "time": 773375
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 785346
+        "time": 774894
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 788780
+        "time": 778328
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 789901
+        "time": 779449
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 793436
+        "time": 782984
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 793869
+        "time": 783417
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 796173
+        "time": 785721
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 798684
+        "time": 788232
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 799498
+        "time": 789046
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 800433
+        "time": 789981
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 806219
+        "time": 795767
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 808497
+        "time": 798045
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 811419
+        "time": 800967
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 815062
+        "time": 804610
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 819764
+        "time": 809312
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 819976
+        "time": 809524
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 821581
+        "time": 811129
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 828091
+        "time": 817639
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 830580
+        "time": 820128
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 830718
+        "time": 820266
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 831896
+        "time": 821444
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 833590
+        "time": 823138
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 837201
+        "time": 826749
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 838453
+        "time": 828001
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 840052
+        "time": 829600
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 840608
+        "time": 830156
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 842141
+        "time": 831689
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 843390
+        "time": 832938
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 843772
+        "time": 833320
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 844429
+        "time": 833977
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 845086
+        "time": 834634
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 850155
+        "time": 839703
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 851012
+        "time": 840560
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 855627
+        "time": 845175
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 858673
+        "time": 848221
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 859540
+        "time": 849088
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 862211
+        "time": 851759
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 866075
+        "time": 855623
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 866698
+        "time": 856246
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 869132
+        "time": 858680
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 872243
+        "time": 861791
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 874293
+        "time": 863841
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 877050
+        "time": 866598
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 879613
+        "time": 869161
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 886366
+        "time": 875914
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 887851
+        "time": 877399
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 895247
+        "time": 884795
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 895316
+        "time": 884864
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 899765
+        "time": 889313
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 900677
+        "time": 890225
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 901312
+        "time": 890860
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 903319
+        "time": 892867
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 905765
+        "time": 895313
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 909305
+        "time": 898853
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 912529
+        "time": 902077
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 915338
+        "time": 904886
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 919009
+        "time": 908557
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 923190
+        "time": 912738
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 924570
+        "time": 914118
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 924986
+        "time": 914534
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 935086
+        "time": 924634
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 936610
+        "time": 926158
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 947824
+        "time": 937372
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 948654
+        "time": 938202
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 951214
+        "time": 940762
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 952668
+        "time": 942216
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 963469
+        "time": 953017
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 966647
+        "time": 956195
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 967792
+        "time": 957340
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 968415
+        "time": 957963
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 971713
+        "time": 961261
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 971853
+        "time": 961401
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 973865
+        "time": 963413
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 976909
+        "time": 966457
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 978159
+        "time": 967707
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 978747
+        "time": 968295
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 981582
+        "time": 971130
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 983315
+        "time": 972863
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 985254
+        "time": 974802
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 986396
+        "time": 975944
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 988123
+        "time": 977671
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 991968
+        "time": 981516
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 994953
+        "time": 984501
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 998447
+        "time": 987995
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1000589
+        "time": 990137
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1004550
+        "time": 994098
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 1016371
+        "time": 1005919
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1018695
+        "time": 1008243
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1020881
+        "time": 1010429
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 1021816
+        "time": 1011364
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 1023058
+        "time": 1012606
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1025795
+        "time": 1015343
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1027145
+        "time": 1016693
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1031219
+        "time": 1020767
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1033816
+        "time": 1023364
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1033989
+        "time": 1023537
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1039477
+        "time": 1029025
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1041056
+        "time": 1030604
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1042581
+        "time": 1032129
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1043655
+        "time": 1033203
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1047330
+        "time": 1036878
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1049265
+        "time": 1038813
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1050787
+        "time": 1040335
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1050857
+        "time": 1040405
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1053039
+        "time": 1042587
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1057151
+        "time": 1046699
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1057220
+        "time": 1046768
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1064497
+        "time": 1054045
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1075953
+        "time": 1065501
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1076855
+        "time": 1066403
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1086161
+        "time": 1075709
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1092633
+        "time": 1082181
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1106092
+        "time": 1095640
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1107164
+        "time": 1096712
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1109832
+        "time": 1099380
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1111148
+        "time": 1100696
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1115226
+        "time": 1104774
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1118722
+        "time": 1108270
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 1123779
+        "time": 1113327
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1135388
+        "time": 1124936
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1136919
+        "time": 1126467
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 1144717
+        "time": 1134265
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1147141
+        "time": 1136689
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1148354
+        "time": 1137902
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1150462
+        "time": 1140010
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1152366
+        "time": 1141914
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 1153335
+        "time": 1142883
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1153717
+        "time": 1143265
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 1157420
+        "time": 1146968
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1160088
+        "time": 1149636
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 1160643
+        "time": 1150191
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1162171
+        "time": 1151719
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1163867
+        "time": 1153415
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1165288
+        "time": 1154836
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1165703
+        "time": 1155251
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1166223
+        "time": 1155771
       },
       {
         "player": "rghst",
         "team": "BhB",
-        "time": 1172650
+        "time": 1162198
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 1179445
+        "time": 1168993
       },
       {
         "player": "KreatoR",
         "team": "BhB",
-        "time": 1181988
+        "time": 1171536
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1182740
+        "time": 1172288
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1185947
+        "time": 1175495
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1187773
+        "time": 1177321
       },
       {
         "player": "sailorman",
         "team": "ahoy",
-        "time": 1192460
+        "time": 1182008
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1193849
+        "time": 1183397
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1196929
+        "time": 1186477
       },
       {
         "player": "Doomie",
         "team": "BhB",
-        "time": 1197518
+        "time": 1187066
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1198900
+        "time": 1188448
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1198900
+        "time": 1188448
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1201605
+        "time": 1191153
       },
       {
         "player": "ocoini",
         "team": "ahoy",
-        "time": 1204385
+        "time": 1193933
       },
       {
         "player": "ThundeR",
         "team": "BhB",
-        "time": 1204456
+        "time": 1194004
       },
       {
         "player": "[nW].Veggie",
         "team": "ahoy",
-        "time": 1207937
+        "time": 1197485
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1207937
+        "time": 1197485
       },
       {
         "player": "nexus",
         "team": "ahoy",
-        "time": 1210205
+        "time": 1199753
       }
     ],
     "locTable": [

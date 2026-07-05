@@ -7,7 +7,11 @@ import "sort"
 // interval becomes one PowerupEvent. Replaces v6's per-bucket scan;
 // the streamBuilder already records open / close transitions exactly
 // at the events that flipped them, so this is just a translation.
-func (a *TimelineAnalyzer) detectPowerupEvents() []PowerupEvent {
+//
+// matchEndMs is the single effective match end computed once in Finalize
+// and shared with buildStreamsResult's stream finalize, so a still-open
+// powerup run closes at the same instant as the weapon intervals (F13).
+func (a *TimelineAnalyzer) detectPowerupEvents(matchEndMs int32) []PowerupEvent {
 	if len(a.playerState) == 0 {
 		return nil
 	}
@@ -17,16 +21,8 @@ func (a *TimelineAnalyzer) detectPowerupEvents() []PowerupEvent {
 		if state == nil {
 			continue
 		}
-		// Close any still-open intervals at the timing detector's end
-		// time (or the latest position sample) so finalize doesn't
-		// drop ongoing powerup runs. All time arithmetic is int32 ms;
-		// EndTime is float64 seconds and is converted at the boundary.
-		var matchEndMs int32
-		if a.timing.EndTime > 0 {
-			matchEndMs = msTime(a.timing.EndTime)
-		} else if len(state.streams.posT) > 0 {
-			matchEndMs = state.streams.posT[len(state.streams.posT)-1]
-		}
+		// Close any still-open intervals at the shared match end so finalize
+		// doesn't drop ongoing powerup runs.
 		state.streams.quad.closeAtMatchEnd(matchEndMs)
 		state.streams.pent.closeAtMatchEnd(matchEndMs)
 		state.streams.ring.closeAtMatchEnd(matchEndMs)

@@ -50,6 +50,15 @@ var matchEndPatterns = []string{
 // OnPrint feeds a print event into the detector. Idempotent: a second
 // matching start (or end) print is ignored.
 func (d *MatchTimingDetector) OnPrint(e *events.PrintEvent) {
+	// Only broadcast prints (bprint) start or end a match. KTX emits every
+	// match-boundary line at PRINT_MEDIUM/PRINT_HIGH (level <= 2); PRINT_CHAT
+	// (level 3) is player say/say_team, which must never flip Started/Ended
+	// — otherwise a pre-match "go go go!" or a mid-match "gg game over" chat
+	// line would start recording warmup or freeze every stream for the rest
+	// of the demo. (ktx/include/g_consts.h: PRINT_MEDIUM=1 death, PRINT_CHAT=3.)
+	if e.Level == events.PrintChat {
+		return
+	}
 	msg := strings.ToLower(e.Message)
 	if !d.Started {
 		for _, p := range matchStartPatterns {

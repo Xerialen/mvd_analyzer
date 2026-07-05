@@ -303,7 +303,10 @@ func (a *MessagesAnalyzer) parseObituarySimple(msg string, time float64) *MatchE
 		{" rides ", "rl"},
 		{" was brutalized by ", "rl"},
 		{" was smeared by ", "rl"},
-		// Grenade Launcher
+		// Grenade Launcher. The CRMod SSG "eats 2 scoops of" must precede the
+		// generic " eats " so the more specific pattern is reachable (mirrors
+		// frag.go's checkKill ordering; full parser unification is Phase 5/A2).
+		{" eats 2 scoops of ", "ssg"},
 		{" eats ", "gl"},
 		// Nailgun
 		{" was body pierced by ", "ng"},

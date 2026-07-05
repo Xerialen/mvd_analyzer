@@ -103,11 +103,16 @@ func (a *MatchAnalyzer) Finalize(result *Result) error {
 			stat.Frags = frags
 		}
 
-		// Skip players with 0 frags (likely joined briefly but didn't play)
-		if stat.Frags == 0 {
-			continue
-		}
-
+		// A player who legitimately finishes on 0 frags (kills cancelled by
+		// suicides, a short but real appearance) is still a participant — the
+		// surface-authoritative-data policy says report them rather than guess
+		// they "didn't play". True spectators are excluded above by the
+		// Spectator/empty-team gates (final parser state). Known limitation:
+		// those gates are end-of-demo state, so a participant who goes
+		// spectator after the match (sub-out, post-game spec) is dropped here
+		// even though demoinfo lists them; recovering them needs the
+		// demoinfo-authoritative participant merge (see duel_normalize's
+		// Match.Players rebuild for the duel-mode version).
 		mr.Players = append(mr.Players, stat)
 
 		// Aggregate team frags

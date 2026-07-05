@@ -949,7 +949,7 @@ The userinfo string is backslash-delimited key-value pairs:
 | `topcolor` | Top color (0-13) | `"4"` |
 | `bottomcolor` | Bottom color (0-13) | `"4"` |
 | `skin` | Skin name | `"base"` |
-| `spectator` | "1" if spectator | `"1"` |
+| `*spectator` | "1" if spectator. Server-set star key: mvdsv strips the client's `spectator` key and re-adds it as `*spectator` before broadcast (`sv_main.c` `SV_UserinfoChanged`/connection path), so MVD userinfo strings only carry the star spelling. Absent key = not a spectator — a full `svc_updateuserinfo` must clear a previously set flag (ezquake `CL_ProcessUserInfo`, `cl_parse.c`). | `"1"` |
 | `*client` | Client software | `"ezQuake 3.6"` |
 
 ### Parsing Userinfo

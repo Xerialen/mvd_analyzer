@@ -105,9 +105,13 @@ func (a *FragAnalyzer) OnEvent(event events.Event) error {
 // here — see the DeathEvent case in OnEvent for why deaths come from the
 // protocol signal instead.
 func (a *FragAnalyzer) handleObituaryPrint(e *events.PrintEvent) {
-	// Obituary messages are typically at level 1 (PRINT_MEDIUM) in MVD
-	// But we'll check levels 1, 2, and 3 to be safe
-	if e.Level > 3 {
+	// KTX emits every obituary at PRINT_MEDIUM (level 1) — the whole
+	// ClientObituary broadcast region does (ktx/src/client.c:5100–5720, all
+	// G_bprint(PRINT_MEDIUM, ...); ktx/include/g_consts.h documents
+	// PRINT_MEDIUM=1 as "death messages"). Accept levels 0–2 (bprint range)
+	// but reject PRINT_CHAT (level 3): a say/say_team line containing an
+	// obituary verb like " rides " must not inject a phantom frag.
+	if e.Level > 2 {
 		return
 	}
 
@@ -477,6 +481,12 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		{" was smeared by ", "rl"},    // quad gib variant
 		// NOTE: " was gibbed by " handled specially below (grenade vs rocket)
 
+		// CRMod SSG ("X eats 2 scoops of Y's lead shot") must precede the
+		// generic GL " eats " below: strings.Index would otherwise hit the
+		// shorter " eats " first, mislabel the kill "gl", and leave
+		// extractKillerName to return the phantom "2 scoops of Y" name.
+		{" eats 2 scoops of ", "ssg"}, // suffix "'s lead shot"
+
 		// Grenade Launcher (from KTX client.c dtGL)
 		{" eats ", "gl"}, // "eats X's pineapple"
 
@@ -519,7 +529,6 @@ func (a *FragAnalyzer) checkKill(msg string, time float64) *FragEntry {
 		// except for " was blown to chunks by " which is shared between
 		// rl ("'s rocket") and gl ("'s grenade") and is fixed up below.
 		{" was disembowled by ", "sg"},             // [sic] CRMod misspelling; suffix "'s shotgun"
-		{" eats 2 scoops of ", "ssg"},              // suffix "'s lead shot"
 		{" is shish-kebabed by ", "rl"},            // suffix "'s rocket"
 		{" was blown to chunks by ", "rl"},         // suffix "'s rocket" — fixed up to gl when suffix is "'s grenade"
 		{" gets intimate with ", "gl"},             // suffix "'s grenade"

@@ -7,6 +7,51 @@ detail.
 
 ## 2026-07-05
 
+- **Timeline, scoreboard and duel-detection correctness fixes (schema
+  v48).** Five bugs in already-emitted values, no field-shape change:
+  - **Kill events were on the wrong clock and mislabeled in duels.**
+    `timelineAnalysis.killEvents` shipped demo-relative (each kill
+    ~`demoOffset`, typically ~10 s, later than the matching
+    `deathEvents`) and, in 1v1s, tagged with a raw colour team like
+    `"red"` instead of the player name — the two post-processors that
+    rebase time and rewrite duel teams both skipped it. The Timeline
+    per-player drill-down plots `killEvents − deathEvents` on one axis,
+    so every kill drew displaced and duel team colours were wrong. Now
+    `killEvents` is match-relative and duel-team-labelled exactly like
+    its sibling streams. A new structural invariant test over the golden
+    corpus enforces this for *every* timeline event stream, so a future
+    field that forgets a post-processor fails loudly instead of shipping
+    wrong.
+  - **A chat line could start or end the match.** Match-start/-end
+    detection scanned every print for substrings like "go!" / "game
+    over", including player chat: a pre-match "go go go!" started
+    recording warmup, a mid-match "gg game over" froze every stat and
+    stream for the rest of the demo. Chat prints (level 3) are now
+    ignored for match timing; only broadcast prints move the match
+    window. The obituary parser likewise rejects chat-level prints, so a
+    say containing " rides " can't inject a phantom frag.
+  - **CRMod super-shotgun kills were mislabeled.** "X eats 2 scoops of
+    Y's lead shot" was matched by the generic grenade " eats " pattern
+    first, so the kill came out as weapon `gl` with a phantom killer
+    "2 scoops of Y". It is now correctly `ssg` with killer Y.
+  - **0-frag players no longer vanish; team games aren't mistaken for
+    duels.** A player who legitimately finished on exactly 0 frags was
+    dropped from `match.players`/`match.teams`. That is fixed
+    (surface-authoritative-data), and duel detection now trusts
+    `demoInfo.players` as authoritative — so a 2on2 in which two players
+    end on 0 frags is no longer misread as a 1v1 and team-renamed.
+    To keep actual spectators from leaking in once the 0-frag filter is
+    gone, the reader now parses the server-set `*spectator` userinfo
+    star key (mvdsv strips the client's bare `spectator` key before
+    broadcast, so the old bare-key check never matched in MVDs) and
+    recomputes the flag on every full userinfo update the way ezquake
+    does, so a slot reused after a spectator disconnects doesn't
+    inherit a stale flag.
+  - **Consistent powerup interval end times.** On a demo cut before
+    intermission, quad/pent/ring runs were closed at each player's last
+    position sample while weapon intervals closed at the global last
+    sample; both now use one shared effective match end.
+
 - **Crosshair placement plots in true Quake units.** The Aim Stats
   density images and yaw/pitch marginals plotted hull-normalized error
   (each axis divided by the target's angular half-extent), so one x

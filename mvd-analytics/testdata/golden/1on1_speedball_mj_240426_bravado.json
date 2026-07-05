@@ -17531,7 +17531,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 47,
+  "schemaVersion": 48,
   "shots": {
     "byPlayer": [
       {
@@ -35685,328 +35685,328 @@
     "killEvents": [
       {
         "player": "mj",
-        "team": "red",
-        "time": 17732
+        "team": "mj",
+        "time": 7641
       },
       {
         "player": "mj",
-        "team": "red",
-        "time": 45624
+        "team": "mj",
+        "time": 35533
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 51831
+        "team": "speedball",
+        "time": 41740
       },
       {
         "player": "mj",
-        "team": "red",
-        "time": 55585
+        "team": "mj",
+        "time": 45494
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 60663
+        "team": "speedball",
+        "time": 50572
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 75591
+        "team": "speedball",
+        "time": 65500
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 78222
+        "team": "speedball",
+        "time": 68131
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 88118
+        "team": "speedball",
+        "time": 78027
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 91781
+        "team": "speedball",
+        "time": 81690
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 97833
+        "team": "speedball",
+        "time": 87742
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 100682
+        "team": "speedball",
+        "time": 90591
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 109222
+        "team": "speedball",
+        "time": 99131
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 115093
+        "team": "speedball",
+        "time": 105002
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 123976
+        "team": "speedball",
+        "time": 113885
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 175821
+        "team": "speedball",
+        "time": 165730
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 189003
+        "team": "speedball",
+        "time": 178912
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 191763
+        "team": "speedball",
+        "time": 181672
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 205134
+        "team": "speedball",
+        "time": 195043
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 209270
+        "team": "speedball",
+        "time": 199179
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 213498
+        "team": "speedball",
+        "time": 203407
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 221966
+        "team": "speedball",
+        "time": 211875
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 231070
+        "team": "speedball",
+        "time": 220979
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 241648
+        "team": "speedball",
+        "time": 231557
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 255876
+        "team": "speedball",
+        "time": 245785
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 256720
+        "team": "speedball",
+        "time": 246629
       },
       {
         "player": "mj",
-        "team": "red",
-        "time": 271383
+        "team": "mj",
+        "time": 261292
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 290071
+        "team": "speedball",
+        "time": 279980
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 301612
+        "team": "speedball",
+        "time": 291521
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 307910
+        "team": "speedball",
+        "time": 297819
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 313929
+        "team": "speedball",
+        "time": 303838
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 317955
+        "team": "speedball",
+        "time": 307864
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 339756
+        "team": "speedball",
+        "time": 329665
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 345275
+        "team": "speedball",
+        "time": 335184
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 359294
+        "team": "speedball",
+        "time": 349203
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 365476
+        "team": "speedball",
+        "time": 355385
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 371502
+        "team": "speedball",
+        "time": 361411
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 380549
+        "team": "speedball",
+        "time": 370458
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 383029
+        "team": "speedball",
+        "time": 372938
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 393035
+        "team": "speedball",
+        "time": 382944
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 406801
+        "team": "speedball",
+        "time": 396710
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 410139
+        "team": "speedball",
+        "time": 400048
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 413719
+        "team": "speedball",
+        "time": 403628
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 417888
+        "team": "speedball",
+        "time": 407797
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 427009
+        "team": "speedball",
+        "time": 416918
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 448049
+        "team": "speedball",
+        "time": 437958
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 453890
+        "team": "speedball",
+        "time": 443799
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 455214
+        "team": "speedball",
+        "time": 445123
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 457972
+        "team": "speedball",
+        "time": 447881
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 464361
+        "team": "speedball",
+        "time": 454270
       },
       {
         "player": "mj",
-        "team": "red",
-        "time": 472011
+        "team": "mj",
+        "time": 461920
       },
       {
         "player": "mj",
-        "team": "red",
-        "time": 486618
+        "team": "mj",
+        "time": 476527
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 500245
+        "team": "speedball",
+        "time": 490154
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 504219
+        "team": "speedball",
+        "time": 494128
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 507657
+        "team": "speedball",
+        "time": 497566
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 509635
+        "team": "speedball",
+        "time": 499544
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 519402
+        "team": "speedball",
+        "time": 509311
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 534571
+        "team": "speedball",
+        "time": 524480
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 543805
+        "team": "speedball",
+        "time": 533714
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 556260
+        "team": "speedball",
+        "time": 546169
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 568179
+        "team": "speedball",
+        "time": 558088
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 575546
+        "team": "speedball",
+        "time": 565455
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 581789
+        "team": "speedball",
+        "time": 571698
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 584296
+        "team": "speedball",
+        "time": 574205
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 595413
+        "team": "speedball",
+        "time": 585322
       },
       {
         "player": "speedball",
-        "team": "",
-        "time": 603049
+        "team": "speedball",
+        "time": 592958
       }
     ],
     "locTable": [

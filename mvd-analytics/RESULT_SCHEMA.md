@@ -621,13 +621,16 @@ attacker. Pairs with `killEvents` for the Timeline tab's per-player
 `CoreOutputs.FragEntries`) filtered to real enemy kills (suicides and
 teamkills excluded). A player's cumulative `killEvents` reconciles
 exactly with `frags.byPlayer[].kills` and thus the kills-based
-efficiency `kills / (kills + deaths)`. Parallel to `deathEvents`; the
-Timeline per-player drill-down plots `killEvents − deathEvents` as a
-windowed +/- area. `team` is best-effort via the name table and — like
-`fragEvents` / `deathEvents` — is **not** gated to non-empty:
+efficiency `kills / (kills + deaths)`. Parallel to `deathEvents`: `time`
+is match-relative ms on the same clock (both are shifted by
+`streams.global.demoOffset` in post-processing — the Timeline per-player
+drill-down plots `killEvents − deathEvents` as a windowed +/- area, so
+they must share the clock). `team` is best-effort via the name table and
+— like `fragEvents` / `deathEvents` — is **not** gated to non-empty:
 `byPlayer.kills` isn't either, so gating would silently drop a player's
 whole kill curve in POV demos with an incomplete name↔team join (the
-consumer groups by player name and ignores `team`).
+consumer groups by player name and ignores `team`); in 1v1 results the
+duel normalization rewrites it to the player's own name.
 
 ### PowerupEvent
 
@@ -1645,6 +1648,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v48 | Correctness fixes to already-emitted values; no field-shape change. (1) `timelineAnalysis.killEvents` is now on the match-relative clock and carries duel team labels, exactly like the sibling `deathEvents`/`fragEvents` (both post-processors previously skipped it): each kill `time` was ~`demoOffset` ms late and, in 1v1s, `team` was a raw colour tag instead of the player name. (2) Match-timing detection ignores `PRINT_CHAT` (level 3), so a pre-match "go!" or a mid-match "gg game over" chat line can no longer flip the match window (`streams.global.matchStart`/`matchEnd`) or freeze streams; the obituary parser likewise rejects level-3 prints. (3) The CRMod "eats 2 scoops of" super-shotgun obituary is reachable again — those kills were mislabeled `gl` with a phantom "2 scoops of X" killer, now `ssg` with the real killer. (4) `match.players`/`match.teams` no longer drop players who finished on exactly 0 frags (surface-authoritative-data), and duel detection trusts `demoInfo.players` as authoritative so a 2on2 in which two players end on 0 frags is no longer misclassified as a duel and team-renamed; a paired reader fix parses the server-set `*spectator` userinfo star key (and resets the flag on every full userinfo update, ezquake-style) so actual spectators don't leak into `match.players` in place of the removed filter. (5) Powerup interval end times use the same effective match end as the weapon intervals on demos cut before intermission. |
 | v47 | LG miss reclassification on `WeaponAim`. A miss now only counts as `blocked` / `outOfRange` when the shooter was **on target**: `blocked` = the beam stopped short of its ~600 qu max range on geometry and its extension to full range crosses a live enemy's collision hull (a would-be hit denied by the obstruction); `outOfRange` = the beam ran its full length and its extension to infinity crosses a live enemy's hull (denied by reach). Previously every short-of-max-range beam whose endpoint wasn't near an enemy was blocked (even fired into a wall with nobody behind) and every full-length beam was out of range. `nearMiss` is **removed**: with blocked detection on the beam line, the near/wide distinction among plain aim errors carried no signal — all remaining whiffs land in the lg `miss` bucket (shares the field with the sg/ssg per-pellet miss). LG invariant becomes `hits + blocked + miss + outOfRange + unresolved == shots`. Only the opt-in beam-enriched parse is affected (the split needs `streams.beams`); expect `blocked`/`outOfRange` to drop sharply and `miss` to absorb them. |
 | v46 | Weapon-stay pickup recovery: in deathmatch 2/3/5 and coop, world weapon pickups are synthesized from `STAT_ITEMS` weapon-bit 0→1 transitions (KTX never emits `//ktx took` there). `WeaponPickup` gains `inferred`; the `source` vocabulary gains `unknown`. Weapon-stay item phases use the zero-length unavailability convention (`takenAt == respawnAt`). Duel team normalization now also rewrites items/pickup/backpack/shots/airgib team strings and folds duel `team` victim-kinds into `enemy`. Item pickup attribution samples per-frame positions at the touch instant under a shared 128 qu touch gate. |
 | v45 | Victim-class classification on the shots/aim pipeline, mirroring the damage layer's `isSelf`/`isTeam` semantics. `Shot` gains `victimKinds` (parallel to `victims`: `enemy`/`team`/`self`, omitted when all-enemy); `WeaponShots` gains `enemyHits`/`teamHits`/`selfHits` (overlapping buckets — a multi-victim fire counts in each bucket it has a victim in); `CrosshairSamples` and `LGRampSamples` gain a `team` column; `WeaponAim` gains `enemy`/`team`/`self` `WeaponAimSplit` hit-counter slices (emitted only when they differ from the top-level counters — see WeaponAimSplit). All additive (`omitempty`); `hits`/`accuracy` stay all-victims for KTX parity. |
