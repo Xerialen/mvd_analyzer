@@ -1208,6 +1208,35 @@ dropTime }`. `kills` is the kills-before-next-death effectiveness
 metric (only non-zero on first acquisition in a life — redundant grabs
 stay listed as zero-kill entries so denial labelling still works).
 
+## Decisions (`decisions`) — schema v38
+
+Tactical-decision section: what a player DECIDED, joined into the analyzer's
+canonical vocabulary. Absent unless qw-analyze ran with `-decision-log
+<server.log>` (source `"kdlog"`: Komodobot KDLOG telemetry resolved against
+this demo) or `-infer-decisions` (source `"inferred"`: pickup-anchored
+reverse-engineering from the demo alone). Both sources share the record
+shape so bot-logged and human-inferred decisions compare 1:1. Full field
+reference: `result/decisions.go`.
+
+- `source`, `emitterVersion`, `dlogLevel`, `errors[]` (parse/resolve
+  problems; never fatal).
+- `records[]`: `t` (int32 ms match-relative), `player`/`team`/`slot`,
+  `type` (`goal` | `enemy` | `evade` | `play`), decider `x/y/z` + `loc`
+  (from the player's own PVS-attributed position stream), `state`
+  (field-code snapshot: h/a/at/aw, rl/lg/gl/ssg/sng, q/pe/r, sh/nl/rk/cl),
+  `trigger`.
+- `type=goal`: `chosen` / `prim` / `candidates[]` — each a goal in item
+  vocabulary (`kind`/`name`/`loc` via ItemTimeline join; `player` for
+  player goals; `cls`/`entNum`/`marker` raw identities; `desire`,
+  `travelMs`, `score` from the brain).
+- `type=enemy`: `target`, `targetLoc`, `dist`.
+- `type=evade`: `on`.
+- `type=play`: `play`/`lane`/`phase`/`detail` (gapjump state machine).
+- `confidence` marks inferred records (0..1].
+
+TimelineAnalysis gains `playerSlots` (name -> demo slot), the KDLOG edict
+join key.
+
 ## Cross-references / join keys
 
 - `weaponPickups[i].backpackEnt` ↔ `backpacks[j].entNum` —

@@ -414,7 +414,17 @@ package result
 //     the armor cap). Additive (omitempty); absent when the source carried
 //     no active-weapon stat. Also registered as the `w` view query field
 //     (buckets / state-at / stream-slice).
-const CurrentSchemaVersion = 37
+//
+// v38:
+//   - New top-level Decisions section (result/decisions.go): tactical
+//     decisions, either resolved from a Komodobot KDLOG server-log sidecar
+//     (source "kdlog", qw-analyze -decision-log) or reverse-engineered from
+//     the demo alone (source "inferred", qw-analyze -infer-decisions).
+//     Additive (omitempty); absent unless one of those inputs was given.
+//   - TimelineAnalysisResult gains PlayerSlots (map name -> demo slot),
+//     the join key between KDLOG edicts (slot+1) and canonical stream
+//     names. Additive (omitempty).
+const CurrentSchemaVersion = 38
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -440,5 +450,6 @@ type Result struct {
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
 	Streams          *Streams                `json:"streams,omitempty"`
+	Decisions        *Decisions              `json:"decisions,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }
