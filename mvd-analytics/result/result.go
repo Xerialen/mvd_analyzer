@@ -396,6 +396,7 @@ package result
 //     the match) still has one. Additive (omitempty); absent when the
 //     demo has no movers. The same internal mover tracks already feed the
 //     v27 floor-height pass.
+//
 // v36:
 //   - MatchResult drops the dead StartTime / EndTime fields. After the
 //     match-relative time normalization StartTime was always 0 (already
@@ -432,7 +433,111 @@ package result
 //     This test also gates the LOS raycast, so PVS ⊇ LOS by construction: the
 //     gap is the occlusion-tolerant "on the wire but no clear ray" signal.
 //     Additive (omitempty); absent on BSP-less maps and on the default parse.
-const CurrentSchemaVersion = 38
+//
+// v39:
+//   - New top-level Shots *ShotsResult: a per-shot weapon-fire stream
+//     (who fired what, at exactly what match-relative ms) derived from
+//     svc_sound CHAN_WEAPON fire sounds (SG/SSG/RL/GL/NG/SNG) and LG cell
+//     decrements, with same-frame hitscan→damage linking (sg/ssg/lg) and a
+//     diagnostic reconciliation against KTX acc.attacks. Additive
+//     (omitempty); the stream is present whenever any fire is detected,
+//     even on non-KTX servers (no damage stream → no hit links).
+//
+// v40:
+//   - Streams gains two opt-in spatial weapon-fire streams for the map view:
+//     Streams.Projectiles (every tracked rocket/grenade flight as
+//     spawn→despawn segments + times) and Streams.Beams (every LG
+//     TE_LIGHTNING2 bolt as a muzzle→impact segment + time). Both are built
+//     only when requested (qw-analyze -include projectiles,beams; the WASM
+//     map build) so the default output and goldens stay lean. Additive
+//     (omitempty); absent from the default parse.
+//
+// v41:
+//   - New top-level Aim (*AimResult): per-player aim analysis derived as a
+//     post-process from Shots + Streams (interpolated position/view at fire
+//     time) + Damage + the LG beam stream — normalized crosshair-error
+//     samples (hitscan), LG ramp-onto-target, rocket direct/splash, LG
+//     reach/whiff. Additive (omitempty); the crosshair/ramp blocks compute
+//     by default, the rocket/reach blocks only when their streams were built.
+//
+// v42:
+//   - Shot gains Warmup: true for fires outside the match (prewar / warmup /
+//     post-match). The shot stream still keeps them; ByPlayer and the aim
+//     analysis exclude them. Additive (omitempty).
+//
+// v43:
+//   - Aim target attribution gates candidates on being alive at fire time
+//     (losAliveAt over the spawn/death streams). Dead players keep streaming
+//     position samples (the death-anim body), so a corpse could previously
+//     win nearest-crosshair attribution in team games. No field changes;
+//     crosshair sample counts/targets shift on team demos, and a duel fire
+//     while the lone enemy is dead no longer emits a sample.
+//
+// v44:
+//   - Aim crosshair samples of hit shots attribute to the server-confirmed
+//     victim (nearest by crosshair error when a pellet fire hit several),
+//     bypassing the v43 liveness gate and the enemy filter. The killing blow
+//     lands in the same frame the victim dies, so the liveness gate read the
+//     victim as already dead at the fire time and attributed the shot to the
+//     nearest *other* live enemy — hits appeared tens of hull-widths off
+//     target in team games, and duels dropped their killing-blow samples
+//     entirely. No field changes; hit samples' tgt/dyaw/dpitch/nyaw/npitch/
+//     dist shift, and duels gain one sample per hitscan kill.
+//
+// v45:
+//   - Victim-class classification on the shots/aim pipeline, mirroring the
+//     Damage layer's IsSelf/IsTeam semantics. Shot gains VictimKinds
+//     (parallel to Victims: "enemy"/"team"/"self", omitted when all-enemy);
+//     WeaponShots gains EnemyHits/TeamHits/SelfHits (overlapping buckets —
+//     a multi-victim fire counts in each bucket it has a victim in);
+//     CrosshairSamples and LGRampSamples gain a Team column; WeaponAim gains
+//     Enemy/Team/Self *WeaponAimSplit hit-counter slices. All additive
+//     (omitempty) — Hits/Accuracy stay all-victims for KTX parity.
+//
+// v46:
+//   - Weapon-stay recovery (serverinfo deathmatch 2/3/5, or coop — the
+//     standard duel/2on2 dmm3 included): KTX never emits `//ktx took` for
+//     weapons in those modes and the weapon entity never leaves the wire,
+//     so world weapon pickups were previously absent entirely. They are now
+//     synthesized from STAT_ITEMS weapon-bit 0→1 transitions. WeaponPickup
+//     gains Inferred (marks synthesized entries) and the Source vocabulary
+//     gains "unknown" (a flip with no weapon pad in touch range — typically
+//     a non-RL/LG backpack grant, which has no hint in any mode).
+//   - ItemTimeline weapon phases in weapon-stay demos use a zero-length
+//     unavailability convention: TakenAt == RespawnAt, with the next phase
+//     opening at the same instant (the weapon never left the map).
+//   - Duel team normalization now also rewrites Items phase teams,
+//     WeaponPickups Team/DropperTeam, Backpacks Team, Shots stream/ByPlayer
+//     teams (and transitively Aim teams), and Airgibs attacker/victim teams
+//     — previously these kept the raw pre-normalization team strings in 1v1
+//     demos, so team-keyed pickup aggregation bucketed under stale labels.
+//     It also reclassifies Shot.VictimKinds "team" → "enemy" (folding the
+//     WeaponShots TeamHits bucket into EnemyHits): victimKindOf compares
+//     raw team strings, so a duel where both players share a colour team
+//     classified every opponent hit as "team". Aim's enemy/team splits
+//     follow via aimPost ordering.
+//   - Item pickup attribution: the Layer-4 distance corroborator samples
+//     positions from the per-frame history at the touch instant and all
+//     proximity consumers share a measured 128 u touch gate (was a 256 u
+//     stale-sample bound) — a handful of beyond-gate distance attributions
+//     become honestly unattributed phases.
+//
+// v47:
+//   - LG miss reclassification (WeaponAim). A miss only counts as Blocked
+//     or OutOfRange when the shooter was on target: Blocked = the beam
+//     stopped short of its ~600 u max range on geometry and its extension
+//     to full range crosses a live enemy's collision hull (a would-be hit
+//     denied by the obstruction); OutOfRange = the beam ran its full
+//     length and its extension to infinity crosses a live enemy's hull
+//     (denied by reach). Previously every short-of-max-range beam whose
+//     endpoint wasn't near an enemy was Blocked (even fired into a wall
+//     with nobody behind) and every full-length beam was OutOfRange.
+//     NearMiss is removed: with blocked detection on the beam line, the
+//     near/wide distinction among plain aim errors carried no signal —
+//     all remaining whiffs land in the lg `miss` bucket (field shared
+//     with the SG/SSG per-pellet Miss). LG invariant becomes
+//     Hits + Blocked + Miss + OutOfRange + Unresolved == Shots.
+const CurrentSchemaVersion = 47
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -454,6 +559,8 @@ type Result struct {
 	LocGraph         *LocGraphResult         `json:"locGraph,omitempty"`
 	Items            *ItemsResult            `json:"items,omitempty"`
 	Damage           *DamageResult           `json:"damage,omitempty"`
+	Shots            *ShotsResult            `json:"shots,omitempty"`
+	Aim              *AimResult              `json:"aim,omitempty"`
 	MapEntities      *MapEntitiesResult      `json:"mapEntities,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`

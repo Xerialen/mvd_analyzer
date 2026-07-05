@@ -4,6 +4,8 @@
 **Inputs:** `ItemSpawnEvent`, `ItemStateEvent`, `ItemPickupHintEvent`,
             `ItemPickupPrintEvent`, `StatUpdateEvent`,
             `DeathEvent`, `SpawnEvent`, `PrintEvent`, `StuffTextEvent`,
+            `ServerInfoEvent`, `BackpackDropHintEvent`,
+            `BackpackPickupHintEvent` (weapon-stay support),
             `PlayerPositionEvent`, `IntermissionEvent`
 **Writes to Result:** `result.Items` (`*ItemsResult`)
 
@@ -60,13 +62,17 @@ and returns at the first hit:
    stat updates arrive at ~3 Hz per player so the correlation window
    is generous (T-100ms .. T+500ms).
 
-4. **Distance corroborator** — Last resort. Iterates slots whose
-   last `PlayerPositionEvent` is within 250 ms of `T` and returns
-   the closest within `256²` units squared of the item origin. If
-   layer 3 produced multiple candidates with the same kind evidence
-   (a real contest), the distance check is restricted to those
-   candidates only — *not* opened back up to the whole player set.
-   Refuses to attribute when no candidate is in radius.
+4. **Distance corroborator** — Last resort. Samples each slot's
+   position from its per-frame history at `T` (the entity-removal
+   frame *is* the touch frame; slots with no sample within 250 ms of
+   `T` are dropped) and returns the closest within the 128 u touch
+   gate — a genuine pickup is a bbox overlap (~32-48 u
+   center-to-center), and measured genuine touches across the corpus
+   bottom out at 54-104 u. If layer 3 produced multiple candidates
+   with the same kind evidence (a real contest), the distance check
+   is restricted to those candidates only — *not* opened back up to
+   the whole player set. Refuses to attribute when no candidate is
+   in radius.
 
 A pickup with no signal in any layer gets `TakenBy=""` and an
 internal `attributionSource="none"`. The diagnostic harness reports
@@ -180,6 +186,41 @@ correctly — see the +26..50 two-row evidence rule above.
 
 Synthesis can be disabled per analyser via `SetSyntheticPickups(false)`
 when wire-only behaviour is needed for comparison.
+
+## Weapon-stay synthesis
+
+In weapon-stay modes (serverinfo `deathmatch` 2/3/5 or `coop` — dmm3
+duels/2on2 included) touched weapons keep their model: no
+`ItemStateEvent{Taken}` ever fires for them and KTX skips the weapon
+`//ktx took` (its `weapon_touch` returns through the `leave` branch,
+`ktx/src/items.c:835, 1046-1052`). Neither the phase model above nor
+the insta-regrab synthesis can see those pickups, so a third path
+handles them (`synthesizeWeaponStayPickup`):
+
+1. A `weaponStayDetector` (shared with weapon_pickups.go via
+   `weaponstay.go`) latches `deathmatch`/`coop` from serverinfo. Off →
+   weapon bits keep feeding Layer-3 stat evidence as before.
+2. Flips are detected by a shared `weaponFlipTracker` whose baseline
+   is maintained continuously and never reset (warmup included — the
+   first in-match update can already BE the pickup; any reset opens a
+   swallow window that loses real grants). Flips while dead are
+   absorbed as inventory bookkeeping — except within 50 ms of the
+   DeathEvent (grab-then-die, counted by KTX) — and flips inside a
+   50 ms post-spawn window are dropped as loadout.
+3. On a detected flip, the pickup is attributed to the nearest
+   same-kind entity the slot passed within the distance gate of
+   during the stat-lag window (`[T-0.5s, T]` — the flip can lag the
+   touch, so a point-in-time check would miss fast movers).
+4. The phase closes as a **zero-length unavailability** —
+   `TakenAt == RespawnAt == T`, next phase opening at `T` — because
+   the weapon never actually left the map
+   (`attributionSource = "weaponstay"`). No respawn prediction is
+   scheduled.
+5. Dedup guards: a pending `//ktx took` hint for the same slot+kind
+   (weapon-stay mis-detection) or a recent `//ktx bp` grant of the
+   same kind (backpack, not pad) suppresses the synthesis.
+6. No candidate in range → no phase change; the kind-level pickup is
+   still recorded by weapon_pickups.go with `source: "unknown"`.
 
 ## Display name resolution
 

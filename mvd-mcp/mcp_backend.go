@@ -14,6 +14,7 @@ type MCPBackend interface {
 	GetMetadata(ctx context.Context, in GetMetadataInput) (any, error)
 	GetFrags(ctx context.Context, in GetFragsInput) (any, error)
 	GetDamage(ctx context.Context, in GetDamageInput) (any, error)
+	GetAim(ctx context.Context, in GetAimInput) (any, error)
 	GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error)
 	GetChat(ctx context.Context, in GetChatInput) (any, error)
 	GetBackpacks(ctx context.Context, in GetBackpacksInput) (any, error)
@@ -143,6 +144,11 @@ type GetDamageInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players []string `json:"players,omitempty" jsonschema:"restrict aggregates + damage log to entries involving these players (attacker OR victim)"`
 	Weapon  []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + damage log to these attacker weapon codes (rl, lg, gl, ssg, sng, sg, tele, ...)"`
+}
+
+// GetAimInput identifies a demo for its per-player aim analysis.
+type GetAimInput struct {
+	DemoID string `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 }
 
 // GetLocGraphInput identifies a demo for its per-loc adjacency graph.

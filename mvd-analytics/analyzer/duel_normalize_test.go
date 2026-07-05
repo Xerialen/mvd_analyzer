@@ -134,6 +134,114 @@ func TestNormalizeDuelTeams_MatchRebuildFromDemoInfo(t *testing.T) {
 	}
 }
 
+// Pickup / shot data carries the raw userinfo team stamped at analyzer
+// Finalize time; the duel pass must re-point all of it at the synthetic
+// name-per-player teams or the frontend's team-keyed pickup aggregation
+// buckets everything under stale colour strings.
+func TestNormalizeDuelTeams_PickupAndShotTeamsRewritten(t *testing.T) {
+	r := &Result{
+		DemoInfo: &DemoInfoResult{
+			Players: []DemoInfoPlayer{
+				{Name: "alice", Team: "green"},
+				{Name: "bob", Team: ""},
+			},
+		},
+		Items: &ItemsResult{Items: []ItemTimeline{
+			{Kind: "ra", Phases: []ItemPhase{
+				{TakenAt: 1000, TakenBy: "alice", Team: "green"},
+				{TakenAt: 2000, TakenBy: "bob", Team: ""},
+				{AvailableFrom: 3000}, // open phase — untouched
+			}},
+		}},
+		WeaponPickups: []WeaponPickup{
+			{Player: "alice", Team: "green", Weapon: "rl", Source: "world"},
+			{Player: "bob", Team: "", Weapon: "rl", Source: "backpack",
+				Dropper: "alice", DropperTeam: "green"},
+		},
+		Backpacks: []BackpackDrop{
+			{Player: "alice", Team: "green", Weapon: "rl"},
+		},
+		Shots: &ShotsResult{
+			Shots:    []Shot{{Player: "bob", Team: "", Weapon: "sg"}},
+			ByPlayer: []PlayerShots{{Player: "alice", Team: "green"}},
+		},
+	}
+	normalizeDuelTeams(r)
+
+	phases := r.Items.Items[0].Phases
+	if phases[0].Team != "alice" || phases[1].Team != "bob" {
+		t.Errorf("item phase teams = %q/%q, want alice/bob", phases[0].Team, phases[1].Team)
+	}
+	if phases[2].Team != "" {
+		t.Errorf("open phase team = %q, want untouched empty", phases[2].Team)
+	}
+	if r.WeaponPickups[0].Team != "alice" {
+		t.Errorf("weaponPickups[0].Team = %q, want alice", r.WeaponPickups[0].Team)
+	}
+	if r.WeaponPickups[1].Team != "bob" || r.WeaponPickups[1].DropperTeam != "alice" {
+		t.Errorf("weaponPickups[1] teams = %q/%q, want bob/alice",
+			r.WeaponPickups[1].Team, r.WeaponPickups[1].DropperTeam)
+	}
+	if r.Backpacks[0].Team != "alice" {
+		t.Errorf("backpacks[0].Team = %q, want alice", r.Backpacks[0].Team)
+	}
+	if r.Shots.Shots[0].Team != "bob" || r.Shots.ByPlayer[0].Team != "alice" {
+		t.Errorf("shot teams = %q/%q, want bob/alice",
+			r.Shots.Shots[0].Team, r.Shots.ByPlayer[0].Team)
+	}
+}
+
+// victimKindOf compares raw userinfo team strings at analyzer time, so
+// a duel where both players share a non-empty colour team classifies
+// every opponent hit as "team". The duel pass reclassifies: in a 1v1
+// any non-self victim is an enemy, all-enemy kind slices fold back to
+// the omitted wire form, and the per-weapon team buckets fold into the
+// enemy buckets (exact — one opponent pair classifies uniformly).
+func TestNormalizeDuelTeams_VictimKindsReclassified(t *testing.T) {
+	r := &Result{
+		DemoInfo: &DemoInfoResult{
+			Players: []DemoInfoPlayer{
+				{Name: "alice", Team: "red"},
+				{Name: "bob", Team: "red"}, // same colour team → analyzer said "team"
+			},
+		},
+		Shots: &ShotsResult{
+			Shots: []Shot{
+				{Player: "alice", Team: "red", Weapon: "lg", Hit: true,
+					Victims: []string{"bob"}, VictimKinds: []string{"team"}},
+				{Player: "alice", Team: "red", Weapon: "rl", Hit: true,
+					Victims: []string{"bob", "alice"}, VictimKinds: []string{"team", "self"}},
+				{Player: "bob", Team: "red", Weapon: "rl", Hit: true,
+					Victims: []string{"bob"}, VictimKinds: []string{"self"}},
+			},
+			ByPlayer: []PlayerShots{
+				{Player: "alice", Team: "red", ByWeapon: []WeaponShots{
+					{Weapon: "lg", Shots: 10, Hits: 4, TeamHits: 4},
+					{Weapon: "rl", Shots: 6, Hits: 3, TeamHits: 2, SelfHits: 1},
+				}},
+			},
+		},
+	}
+	normalizeDuelTeams(r)
+
+	if r.Shots.Shots[0].VictimKinds != nil {
+		t.Errorf("all-enemy kinds should fold to omitted, got %v", r.Shots.Shots[0].VictimKinds)
+	}
+	if got := r.Shots.Shots[1].VictimKinds; len(got) != 2 || got[0] != "enemy" || got[1] != "self" {
+		t.Errorf("kinds = %v, want [enemy self]", got)
+	}
+	if got := r.Shots.Shots[2].VictimKinds; len(got) != 1 || got[0] != "self" {
+		t.Errorf("self-only kinds must survive, got %v", got)
+	}
+	bw := r.Shots.ByPlayer[0].ByWeapon
+	if bw[0].EnemyHits != 4 || bw[0].TeamHits != 0 {
+		t.Errorf("lg buckets = %+v, want enemyHits=4 teamHits=0", bw[0])
+	}
+	if bw[1].EnemyHits != 2 || bw[1].TeamHits != 0 || bw[1].SelfHits != 1 {
+		t.Errorf("rl buckets = %+v, want enemyHits=2 teamHits=0 selfHits=1", bw[1])
+	}
+}
+
 func TestNormalizeDuelTeams_NoOpForTeamMatches(t *testing.T) {
 	// 4 players → not a duel → normalizer should leave everything alone.
 	r := &Result{

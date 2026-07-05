@@ -70,7 +70,34 @@ A slim top bar (wordmark + commit-hash version + GitHub link) sits
 above a Grafana-style frame: a fixed left **sidebar** with one button
 per analysis tab, and a **main pane** that fills the rest of the
 viewport (no width cap). Sidebar order is `Search`, `Summary`,
-`Timeline`, `Chat`, `Map`, `Locs & Regions`, `Key Moments`, `Pack Drops`.
+`Timeline`, `Chat`, `Map`, `Locs & Regions`, `Key Moments`, `Pack Drops`,
+`Pickups`, `Aim Stats`.
+
+The **Aim Stats** tab (experimental) is a thin renderer over the Go-computed
+`result.aim` block: all-players accuracy tables (counts plus
+share-of-fires % columns, so players with different shot volumes compare
+directly) and — driven by a per-player picker inside the Crosshair placement
+panel, the only place it applies — a smoothed crosshair-density image
+(hitscan; a Gaussian-smoothed
+2-D histogram on canvas with a colorbar, hull box marked; radius 1 ≈ the
+hitbox edge, so it's range-comparable) split into LG and SG, per-axis
+**yaw / pitch marginal histograms** stacked under each image (zero-centered
+bins over the image's extents; their clamp edge bins keep the outliers the
+image drops, and the on-hull |n| ≤ 1 band is shaded), an LG shaft-time
+(ramp) histogram in the same style under the LG image (bars = hit % per
+100 ms cell on a dynamic labelled scale, bar opacity = sample size), a
+rocket direct/splash panel, and an LG-whiffs split. All geometry/attribution lives
+in `mvd-analytics/analyzer/aim.go`; the tab only bins and paints. Target
+attribution: hits use the server-confirmed victim (exact in duels and team
+games alike); misses are exact in duels and a labeled nearest-crosshair
+heuristic in team games, only among enemies alive at the fire time.
+A **Victims** filter (All / Enemy / Team / Self) slices every panel by who
+the shots hit — the tables read the Go-computed per-bucket counter slices
+(`WeaponAim.enemy/team/self`), the heatmaps/marginals filter samples by the
+per-sample `team` flag, and the LG ramp rescores its bars; **All** (the
+default) matches the server's authoritative numbers (KTX counts team and
+self hits too). Duels hide the Team option; Self (rl/gl self-splash —
+rocket jumps) has no crosshair samples, tables only.
 The **Key Moments** tab has three tables: powerup runs, longest frag
 streaks, and a full-width **Airborne Rocket Gibs** table — enemy rocket
 hits on airborne victims (`timelineAnalysis.airgibs`), sortable by any
@@ -428,6 +455,18 @@ double-blend, no painter-sort flicker. A mover sampled `vis=false` is hidden. Mi
 either piece (older geometry, or a demo with no movers) is a graceful
 no-op. Code: `drawMovers` / `moverPoseAt` / `moverMeshFaces` /
 `drawMoverMesh`.
+
+**Weapon fire** — with `streams.projectiles` / `streams.beams` (schema
+v40, built by the WASM map analysis), rocket/grenade flights and LG bolts
+overlay the map during playback. Each in-flight rocket/grenade is a small
+dot interpolated along its spawn→despawn segment at the current time
+(orange for `rl`, green for `gl`); each LG bolt is a brief light-blue line
+from muzzle to impact, flashed for ~60 ms around its instant. Both are
+columnar parallel-array streams; absent (e.g. a non-WASM result that
+didn't build them) is a graceful no-op. Nails (`streams.nails`, small
+yellow dots) render the same way when present, but are **off by default**
+even in the web build — they are the highest-volume stream and a separate
+opt-in. Code: `drawProjectiles` / `drawBeams` / `drawFlightDots`.
 
 **Liquids** — version-4 geometry also carries `liquids` (water/slime/lava
 volume meshes). Rendered as a shaded, depth-sorted translucent solid

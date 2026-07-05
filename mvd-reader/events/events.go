@@ -62,6 +62,11 @@ const (
 	KindPausedDuration      = parser.EventPausedDuration
 	KindMoverSpawn          = parser.EventMoverSpawn
 	KindMoverState          = parser.EventMoverState
+	KindSound               = parser.EventSound
+	KindProjectileSpawn     = parser.EventProjectileSpawn
+	KindProjectileDespawn   = parser.EventProjectileDespawn
+	KindBeam                = parser.EventBeam
+	KindNails               = parser.EventNails
 )
 
 // Concrete event types emitted on the Source.
@@ -91,6 +96,12 @@ type (
 	PausedDurationEvent      = parser.PausedDurationEvent
 	MoverSpawnEvent          = parser.MoverSpawnEvent
 	MoverStateEvent          = parser.MoverStateEvent
+	SoundEvent               = parser.SoundEvent
+	ProjectileSpawnEvent     = parser.ProjectileSpawnEvent
+	ProjectileDespawnEvent   = parser.ProjectileDespawnEvent
+	BeamEvent                = parser.BeamEvent
+	NailsFrameEvent          = parser.NailsFrameEvent
+	Nail                     = parser.Nail
 	EntityState              = parser.EntityState
 )
 

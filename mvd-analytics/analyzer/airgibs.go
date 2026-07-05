@@ -60,7 +60,15 @@ func airgibsPost(res *Result, co *CoreOutputs) {
 
 	locTable := res.TimelineAnalysis.LocTable
 	userIDs := res.TimelineAnalysis.PlayerUserIDs
+	// Prefer the player-stream team: this post-processor runs after
+	// duelTeamNormalize, which rewrites stream teams (but not co.Names)
+	// to the synthetic name-per-player duel teams. Outside duel mode
+	// the two sources agree; co.Names remains the fallback for players
+	// without a stream.
 	teamFor := func(name string) string {
+		if ps := streamByName[name]; ps != nil && ps.Team != "" {
+			return ps.Team
+		}
 		if co != nil && co.Names != nil {
 			return co.Names.TeamForName(name)
 		}

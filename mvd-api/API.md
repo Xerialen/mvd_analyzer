@@ -151,6 +151,7 @@ Non-2xx responses use a stable envelope:
 | 422 | `damage_unavailable` | no KTX `mvdhidden_dmgdone` damage stream |
 | 422 | `locgraph_unavailable` | no position track |
 | 422 | `region_control_unavailable` | no region-control layout for this map |
+| 422 | `airgibs_unavailable` | no timeline analysis (BSP-less maps return `[]`, not this) |
 | 502 | `hub_upstream` | network / 5xx from the hub |
 | 500 | `internal` / `panic` | unexpected |
 
@@ -314,6 +315,50 @@ and exposed as the opt-in `telefrag` / `stomp` events (see §4.8). The
 `weapon` filter treats their implicit weapon as `tele` / `stomp`. The
 kill itself still appears in `/frags` and as a `frag` event.
 
+### 4.5c `GET /v1/demos/{id}/aim`
+
+No params. Per-player aim analysis (`result.Aim`): the `weapons` array
+(per-weapon shots/hits, SG/SSG pellet stats + full/partial/miss, RL/GL
+direct/splash/missed, the LG miss/blocked/out-of-range whiff split, plus
+`enemy`/`team`/`self` per-victim-class counter slices — emitted only when a
+weapon had team or self hits; see RESULT_SCHEMA.md §WeaponAimSplit for the
+fallback rules), columnar `crosshair` samples for hitscan fires (signed
+degrees off the enemy + a version normalized by the target's angular size,
+so radius 1 ≈ the hitbox edge, with hit flag + attributed target + a `team`
+flag when the target is a teammate), and the `lgRamp` series (per-LG-cell
+hit vs ms since the shaft opened, with a `team` flag on teammate-only
+connects). `mode` is `"duel"` (exact target) or
+`"team"`; hits attribute to the server-confirmed victim, misses to the
+nearest-crosshair enemy alive at the fire time (a heuristic in team games).
+Shape: `result.AimResult` →
+[RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).
+
+**Availability:** served from the stream-enriched parse (like the
+`/streams/*` endpoints — the first request re-parses the demo with the
+projectile/beam streams on, then it is cached), so the stream-derived
+weapon blocks are always present. 422 (`aim_unavailable`) when the demo has
+no shots/position data.
+
+### 4.5d `GET /v1/demos/{id}/shots`
+
+The per-fire weapon stream (`result.Shots`): `shots` — every detected fire,
+chronological, with `time` (match ms), `player`, `weapon`, `source`
+(`sound`/`beam`/`ammo`), `hit` + `victims` where linkable (plus
+`victimKinds` classifying each victim `enemy`/`team`/`self`, omitted when
+all-enemy), and a `warmup` flag on out-of-match fires; `byPlayer` —
+match-time per-weapon counts, hitscan accuracy and the
+`enemyHits`/`teamHits`/`selfHits` victim-class buckets (overlapping — a
+multi-victim fire counts in each); `reconciliation` — the cross-check
+against KTX's authoritative `acc.attacks`. Served from the same
+stream-enriched parse as `/aim`, so rl/gl fires carry their
+projectile-linked hits.
+
+| param | meaning |
+|---|---|
+| `nails` | `1`/`true` to include ng/sng fires (opt-in — high volume, needs the nail decode pass) |
+
+422 (`shots_unavailable`) when the demo has no shot data.
+
 ### 4.6 `GET /v1/demos/{id}/loc-graph`
 
 Per-map loc adjacency graph (nodes + directed transitions, with optional
@@ -329,7 +374,10 @@ KTX-hint-derived item analytics:
   timeline. `result.ItemsResult`.
 - **`/weapon-pickups`** (`players`, `weapon`, `source`) — slot-weapon
   acquisitions with kills-before-next-death; joins to backpacks via
-  `backpackEnt`. `[]result.WeaponPickup`.
+  `backpackEnt`. `[]result.WeaponPickup`. `source` is
+  `world`/`backpack`/`unknown` (schema v46: weapon-stay demos carry
+  synthesized `inferred` entries; `unknown` = a grant with no weapon
+  pad in touch range, typically a non-RL/LG pack).
 
 Shapes in
 [RESULT_SCHEMA.md §Items / Backpacks / WeaponPickups](../mvd-analytics/RESULT_SCHEMA.md#itemsresult-items).
@@ -500,6 +548,41 @@ visibility, not FOV).
   { "name": "realpit", "los": [ … ], "pvs": [ … ] }, … ] }
 ```
 
+### 4.11c `GET /v1/demos/{id}/streams/{projectiles|beams|nails}`
+
+Three endpoints serving the opt-in **spatial weapon-fire streams** for the map
+view (schema v40), each requested independently:
+
+- `/streams/projectiles` → `{ "projectiles": ProjectileStreams | null }` —
+  every rocket/grenade flight as a spawn→despawn segment + times.
+- `/streams/beams` → `{ "beams": BeamStreams | null }` — every LG
+  `TE_LIGHTNING2` bolt as a muzzle→impact segment + time.
+- `/streams/nails` → `{ "nails": ProjectileStreams | null }` — ng/sng spike
+  flights (`Weapon` == `"nail"`). Highest volume; a **separate** request.
+
+No params. All columnar (parallel arrays), times **match-relative
+milliseconds**. Shapes are in
+[RESULT_SCHEMA.md → ProjectileStreams / BeamStreams](../mvd-analytics/RESULT_SCHEMA.md#projectilestreams-streamsprojectiles).
+The body field is `null` when the demo has none (e.g. no LG → `beams: null`).
+
+Like `/los`, these are **built on demand** — they are off in the default parse
+to keep the cache lean, and (unlike LOS) cannot be recomputed from the cached
+Result, so the **first** request re-parses the demo with the build flags on (a
+few seconds on a large 4on4) and caches the streams in memory; later requests
+are free. `/streams/nails` is latched separately from projectiles/beams. The
+on-disk gob stays lean.
+
+```jsonc
+// GET /streams/projectiles
+{ "projectiles": {
+  "w":  ["rl", "rl", "gl"],          // weapon per flight
+  "s":  [3042, 5210, 9001],          // spawn ms
+  "e":  [3065, 5470, 9800],          // despawn ms
+  "sx": [88, …], "sy": […], "sz": […],   // muzzle
+  "ex": [88, …], "ey": […], "ez": […] }  // impact
+}
+```
+
 ### 4.12 `GET /v1/demos/{id}/loc-trails`
 
 Params: `from`, `to`, `players`, `minDwellMs`, `loc`. Per-player loc
@@ -534,6 +617,20 @@ a sub-window — e.g. "who controlled QUAD between 4:00 and 6:00". Shape:
     "byPlayer": { "sailorman": { "team":"red","armed":3,"unarmed":1 }, … } } } }
 ```
 
+### 4.13b `GET /v1/demos/{id}/airgibs`
+
+No params. The Key Moments airgib list (`timelineAnalysis.airgibs`): every
+**direct** enemy rocket hit on an airborne victim above the qualification
+height, sorted by height descending. Each entry carries `time`, `attacker` /
+`victim` (+ teams, user ids), `height` (victim's feet above the floor),
+`heightAboveAttacker` (the vertical gap the rocket climbed; negative =
+victim below the shooter), `loc`, `damage` (unbound), and the `lethal`
+heuristic. Shape: `[]result.AirgibEvent` →
+[RESULT_SCHEMA.md](../mvd-analytics/RESULT_SCHEMA.md). Height needs the
+map's clip hull, so the list is **empty (not an error) when the map's BSP
+was not provisioned** at parse time. `422 airgibs_unavailable` only when
+the demo has no timeline analysis at all.
+
 ### 4.14 `GET /v1/demos/{id}/loc-table`
 
 The interned loc-name decoder for `loc=index` mode: `{ "locTable":
@@ -558,9 +655,8 @@ UIs that have a map name from `/overview` or a match listing.
   embedded BSP entity corpus (identical for every demo on the map).
   Shape: `result.MapEntitiesResult` →
   [RESULT_SCHEMA.md §MapEntitiesResult](../mvd-analytics/RESULT_SCHEMA.md#mapentitiesresult-mapentities).
-  Aliases are resolved (`phantombase` → `phantoma`). `404 map_unavailable`
-  when no corpus exists. For the per-match pickup timeline use
-  `/demos/{id}/items`.
+  `404 map_unavailable` when no corpus exists. For the per-match pickup
+  timeline use `/demos/{id}/items`.
 
   ```jsonc
   // ?types=item,teleportSrc,teleportDst&kinds=weapon

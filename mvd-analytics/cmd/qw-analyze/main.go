@@ -47,17 +47,17 @@ import (
 // viewOptions bundles every flag that's meaningful only for the
 // non-full views. Parsed once in main().
 type viewOptions struct {
-	view       string
-	bucketDur  time.Duration
-	fields     []string
-	reducers   map[string]string
-	from, to   time.Duration
-	players    []string
-	eventTypes []string
-	minDwell   time.Duration
-	timeAt     time.Duration
+	view        string
+	bucketDur   time.Duration
+	fields      []string
+	reducers    map[string]string
+	from, to    time.Duration
+	players     []string
+	eventTypes  []string
+	minDwell    time.Duration
+	timeAt      time.Duration
 	includeTeam bool
-	include    map[string]bool // -include positions etc. for -view full
+	include     map[string]bool // -include positions etc. for -view full
 }
 
 func main() {
@@ -78,7 +78,7 @@ func main() {
 	minDwellStr := flag.String("min-dwell", "0", "drop transitions shorter than this for -view trails")
 	timeStr := flag.String("time", "", "time for -view state-at (required)")
 	includeTeam := flag.Bool("include-team", false, "emit per-team aggregates on -view buckets")
-	includeStr := flag.String("include", "", "comma-separated extras for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity; los (line-of-sight + pvs potential-visibility intervals, computed on request)")
+	includeStr := flag.String("include", "", "comma-separated extras for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity; los (line-of-sight + pvs potential-visibility intervals, computed on request); projectiles, beams (spatial rocket/grenade-flight and LG-beam streams for the map); nails (ng/sng nail tracking — links ng/sng fires to damage + nail map stream; high volume)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
@@ -233,6 +233,19 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 	reg := analyzer.NewDefaultRegistry()
 	if regionsOverride != nil {
 		reg.SetRegionsOverride(regionsOverride)
+	}
+	// Spatial weapon-fire streams (rocket/grenade flights, LG beams) are
+	// sizeable and off by default; -include projectiles/beams builds them.
+	if vopts != nil && (vopts.include["projectiles"] || vopts.include["beams"]) {
+		reg.BuildShotStreams = true
+	}
+	// Nails (ng/sng) are highest volume and a separate opt-in: -include nails
+	// decodes svc_nails, links ng/sng fires to their nail damage, and builds
+	// the nail map stream. AnalyzeSource takes a pre-opened source, so the
+	// parser's nail decode is enabled here rather than inside the registry.
+	if vopts != nil && vopts.include["nails"] {
+		reg.BuildNails = true
+		src.Parser().SetDecodeNails(true)
 	}
 	res, err := reg.AnalyzeSource(src, filepath.Base(path))
 	if err != nil {
@@ -613,8 +626,8 @@ func splitCSV(s string) []string {
 // returned pointer's []string accumulates one entry per occurrence.
 type stringList []string
 
-func (s *stringList) String() string         { return strings.Join(*s, ",") }
-func (s *stringList) Set(v string) error     { *s = append(*s, v); return nil }
+func (s *stringList) String() string     { return strings.Join(*s, ",") }
+func (s *stringList) Set(v string) error { *s = append(*s, v); return nil }
 func stringListFlag(name, usage string) *stringList {
 	var sl stringList
 	flag.Var(&sl, name, usage)

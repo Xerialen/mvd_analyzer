@@ -105,7 +105,8 @@ claude mcp add mvd-mcp /usr/local/bin/mvd-mcp -api http://localhost:8080 -label 
 ```
 
 After either, restart Claude Code. Run `/mcp` in the prompt to verify
-the eight tools appear.
+the tools appear (the full list is the tool table in
+[README.md](README.md)).
 
 To auto-approve tool calls (skip the permission prompt each time), add
 to `.claude/settings.local.json`:
@@ -125,10 +126,10 @@ config file path.
 
 ## Smoke test
 
-After your client restarts, the tool list should include eight tools:
-
-`loadDemo`, `getOverview`, `getBuckets`, `getEvents`, `getStreamSlice`,
-`getStateAt`, `getLocTrails`, `getRegionControl`.
+After your client restarts, the tool list should match the tool table in
+[README.md](README.md) — `searchGames` and `loadDemo`, then the per-demo
+views (`getOverview`, `getFrags`, `getDamage`, `getAim`, `getBuckets`,
+`getEvents`, `getStateAt`, …).
 
 Try a prompt like:
 

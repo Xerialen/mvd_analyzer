@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mvd-analyzer/mvd-api/internal/democache"
 	"github.com/mvd-analyzer/mvd-analytics/result"
+	"github.com/mvd-analyzer/mvd-api/internal/democache"
 )
 
 // fakeStore implements demoStore for handler tests without touching
@@ -36,6 +36,12 @@ func (f *fakeStore) GetResult(_ context.Context, id democache.DemoID) (*result.R
 		FromCache:     true,
 		SchemaVersion: result.CurrentSchemaVersion,
 	}, nil
+}
+
+// EnsureShotStreams returns the stored Result as-is — fakes pre-populate any
+// streams they want to assert on; there is no re-parse without real bytes.
+func (f *fakeStore) EnsureShotStreams(ctx context.Context, id democache.DemoID, _ bool) (*result.Result, democache.CacheMeta, error) {
+	return f.GetResult(ctx, id)
 }
 
 // stubResult builds a minimal but well-formed *Result so handlers
@@ -115,6 +121,50 @@ func stubResult() *result.Result {
 			{Time: 100000, Player: "milton", Team: "blue", Weapon: "rl", Source: "backpack", BackpackEnt: 17, Dropper: "bps", Kills: 1},
 		},
 		Errors: []string{"itemAnalyzer: respawn before pickup"},
+	}
+}
+
+// TestShotStreamEndpoints exercises the three on-demand spatial-stream
+// endpoints; the fake store returns whatever streams the result carries.
+func TestShotStreamEndpoints(t *testing.T) {
+	r := stubResult()
+	r.Streams.Projectiles = &result.ProjectileStreams{
+		Weapon: []string{"rl"}, Spawn: []int32{1000}, End: []int32{1500},
+		Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3},
+		Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6},
+	}
+	r.Streams.Beams = &result.BeamStreams{
+		T: []int32{2000}, Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3},
+		Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6},
+	}
+	r.Streams.Nails = &result.ProjectileStreams{
+		Weapon: []string{"nail"}, Spawn: []int32{3000}, End: []int32{3100},
+		Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3},
+		Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6},
+	}
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": r}})
+	defer srv.Close()
+
+	for _, c := range []struct{ path, key string }{
+		{"/v1/demos/gameId:42/streams/projectiles", "projectiles"},
+		{"/v1/demos/gameId:42/streams/beams", "beams"},
+		{"/v1/demos/gameId:42/streams/nails", "nails"},
+	} {
+		resp := getJSON(t, srv.URL+c.path, 200)
+		if resp[c.key] == nil {
+			t.Errorf("%s: %q missing/null, body=%v", c.path, c.key, resp)
+		}
+	}
+}
+
+// TestShotStreamEndpoints_Absent returns 200 with a null stream when the demo
+// has none (the stub has no rockets).
+func TestShotStreamEndpoints_Absent(t *testing.T) {
+	srv := newTestServer(t, storeWithStub())
+	defer srv.Close()
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/streams/projectiles", 200)
+	if resp["projectiles"] != nil {
+		t.Errorf("expected null projectiles, got %v", resp["projectiles"])
 	}
 }
 
@@ -561,6 +611,125 @@ func TestDemoInfo_Unavailable(t *testing.T) {
 	srv := newTestServer(t, store)
 	defer srv.Close()
 	resp, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/demoinfo")
+	if status != 422 {
+		t.Errorf("status = %d; want 422 (%s)", status, resp)
+	}
+}
+
+func TestAirgibs(t *testing.T) {
+	r := &result.Result{
+		SchemaVersion: result.CurrentSchemaVersion,
+		TimelineAnalysis: &result.TimelineAnalysisResult{
+			Airgibs: []result.AirgibEvent{{
+				Time: 60000, Attacker: "bps", Victim: "milton", Height: 120, Damage: 110,
+			}},
+		},
+	}
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": r}})
+	defer srv.Close()
+	body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/airgibs")
+	if status != 200 {
+		t.Fatalf("status = %d (%s)", status, body)
+	}
+	var arr []map[string]any
+	if err := json.Unmarshal(body, &arr); err != nil {
+		t.Fatalf("unmarshal: %v (%s)", err, body)
+	}
+	if len(arr) != 1 || arr[0]["attacker"] != "bps" {
+		t.Errorf("airgibs = %s; want one bps hit", body)
+	}
+}
+
+func TestAirgibs_EmptyWithoutBSP(t *testing.T) {
+	// TimelineAnalysis present but no airgibs (no clip hull → no heights):
+	// an empty list, not an error.
+	r := &result.Result{
+		SchemaVersion:    result.CurrentSchemaVersion,
+		TimelineAnalysis: &result.TimelineAnalysisResult{},
+	}
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": r}})
+	defer srv.Close()
+	body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/airgibs")
+	if status != 200 || strings.TrimSpace(string(body)) != "[]" {
+		t.Errorf("status = %d, body = %q; want 200 []", status, body)
+	}
+}
+
+func TestAirgibs_Unavailable(t *testing.T) {
+	store := &fakeStore{byID: map[string]*result.Result{
+		"gameId:42": {SchemaVersion: result.CurrentSchemaVersion}, // no TimelineAnalysis
+	}}
+	srv := newTestServer(t, store)
+	defer srv.Close()
+	resp, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/airgibs")
+	if status != 422 {
+		t.Errorf("status = %d; want 422 (%s)", status, resp)
+	}
+}
+
+func TestShots(t *testing.T) {
+	r := &result.Result{
+		SchemaVersion: result.CurrentSchemaVersion,
+		Shots: &result.ShotsResult{
+			Shots: []result.Shot{
+				{Time: 1000, Player: "bps", Weapon: "lg", Source: "beam", Hit: true, Victims: []string{"milton"}},
+				{Time: 1500, Player: "milton", Weapon: "rl", Source: "sound"},
+			},
+			ByPlayer: []result.PlayerShots{{Player: "bps", Total: 1,
+				ByWeapon: []result.WeaponShots{{Weapon: "lg", Shots: 1, Hits: 1, Accuracy: 1}}}},
+		},
+	}
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": r}})
+	defer srv.Close()
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/shots", 200)
+	if shots, _ := resp["shots"].([]any); len(shots) != 2 {
+		t.Fatalf("len(shots) = %d; want 2 (%v)", len(shots), resp)
+	}
+	if byPlayer, _ := resp["byPlayer"].([]any); len(byPlayer) != 1 {
+		t.Fatalf("len(byPlayer) = %d; want 1 (%v)", len(byPlayer), resp)
+	}
+}
+
+func TestShots_Unavailable(t *testing.T) {
+	store := &fakeStore{byID: map[string]*result.Result{
+		"gameId:42": {SchemaVersion: result.CurrentSchemaVersion}, // no Shots
+	}}
+	srv := newTestServer(t, store)
+	defer srv.Close()
+	resp, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/shots")
+	if status != 422 {
+		t.Errorf("status = %d; want 422 (%s)", status, resp)
+	}
+}
+
+func TestAim(t *testing.T) {
+	r := &result.Result{
+		SchemaVersion: result.CurrentSchemaVersion,
+		Aim: &result.AimResult{Players: []result.PlayerAim{{
+			Player: "bps", Team: "blue", Mode: "duel",
+			Crosshair: &result.CrosshairSamples{
+				T: []int32{1000}, Weapon: []string{"lg"},
+				DYaw: []float32{1}, DPitch: []float32{-1},
+				NYaw: []float32{0.5}, NPitch: []float32{-0.5},
+				Dist: []float32{800}, Hit: []bool{true}, Target: []string{"milton"},
+			},
+		}}},
+	}
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": r}})
+	defer srv.Close()
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/aim", 200)
+	if players, _ := resp["players"].([]any); len(players) != 1 {
+		t.Fatalf("len(players) = %d; want 1 (%v)", len(players), resp)
+	}
+}
+
+func TestAim_Unavailable(t *testing.T) {
+	store := &fakeStore{byID: map[string]*result.Result{
+		"gameId:42": {SchemaVersion: result.CurrentSchemaVersion}, // no Aim
+	}}
+	srv := newTestServer(t, store)
+	defer srv.Close()
+	resp, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/aim")
 	if status != 422 {
 		t.Errorf("status = %d; want 422 (%s)", status, resp)
 	}

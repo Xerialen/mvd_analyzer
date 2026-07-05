@@ -74,6 +74,14 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
+		Name:        "getAim",
+		Description: "Per-player aim analysis. Start with players[].weapons — per-weapon shots/hits plus SG/SSG pellet stats (pellets, pelletHits, full/partial/miss fires), RL/GL direct/splash/missed, and the LG miss split (miss = aim error, no enemy on the beam's line; blocked = the beam would have hit an enemy in range but an object stopped it short; outOfRange = the enemy was on the beam's line but beyond its ~600u reach). hits count ALL victims (team + self hits included — server parity); the enemy/team/self objects slice the hit counters by victim class and appear only when a weapon had team or self hits (enemy absent = every hit was an enemy hit; a rocket jump is a self hit). Each player also carries two large columnar blocks: crosshair (per-hitscan-fire angular error, both signed degrees and normalized so ±1 = the hitbox edge, with hit flag + attributed target + team flag on teammate targets) and lgRamp (per-LG-cell hit vs ms since the shaft opened, team flag on teammate-only connects). Prefer the weapons aggregates unless per-shot detail is needed. mode notes attribution quality: 'duel' (exact, one enemy) or 'team' (nearest-crosshair-enemy heuristic); only enemies alive at fire time are miss candidates. First call on a demo may be slow (builds the projectile/beam streams). Response shape: see mvd-api /v1/demos/{id}/aim.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetAimInput) (*mcp.CallToolResult, any, error) {
+		out, err := b.GetAim(ctx, in)
+		return toolResult(out, err)
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
 		Name:        "getLocGraph",
 		Description: "Per-map adjacency graph of named locations: which locs are reachable from which, with edge weights derived from per-player loc-to-loc transitions. Useful for movement-pattern reasoning ('what's adjacent to RA?').",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetLocGraphInput) (*mcp.CallToolResult, any, error) {

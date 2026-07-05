@@ -203,6 +203,76 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 	return r, meta, nil
 }
 
+// EnsureShotStreams returns the demo's Result with the opt-in spatial
+// weapon-fire streams built: rockets/grenades + LG beams, and (when nails is
+// true) the nail-flight stream. These are off in the default parse to keep
+// the cache lean and — unlike LOS — cannot be recomputed from the cached
+// Result, so the first request re-parses the cached MVD bytes with the build
+// flags on and splices the streams onto the in-memory Result. The rebuilt
+// Shots and Aim blocks ride along: their stream-derived parts (RL/GL
+// direct/splash, the LG whiff split, nail fires) only exist in the enriched
+// parse, so /shots and /aim serve complete data. The ShotStreamsComputed /
+// NailsComputed latches make repeat requests free.
+//
+// Callers serialize concurrent calls for one demo (see the API's streamsMu),
+// matching the ComputeLOS pattern. A demo with no Streams (no player tracks)
+// is returned unchanged.
+func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*result.Result, CacheMeta, error) {
+	res, meta, err := c.GetResult(ctx, id)
+	if err != nil {
+		return nil, meta, err
+	}
+	if res.Streams == nil {
+		return res, meta, nil
+	}
+	needBase := !res.Streams.ShotStreamsComputed
+	needNails := nails && !res.Streams.NailsComputed
+	if !needBase && !needNails {
+		return res, meta, nil
+	}
+
+	sha, err := c.resolveSHA(id)
+	if err != nil {
+		return nil, meta, err
+	}
+	mvdBytes, err := os.ReadFile(mvdPath(c.Root, sha))
+	if err != nil {
+		// Bytes should be on disk after GetResult; if not, surface the lean
+		// Result rather than failing the request.
+		return res, meta, nil
+	}
+
+	reg := analyzer.NewDefaultRegistry()
+	// Always rebuild with the base streams on: the grafted Shots/Aim blocks
+	// below only carry their stream-derived parts when the pipeline saw the
+	// streams. Nails stay opt-in, but once computed they are kept on so a
+	// later base-only rebuild cannot drop them from the grafts.
+	reg.BuildShotStreams = true
+	reg.BuildNails = needNails || res.Streams.NailsComputed
+	built, err := reg.AnalyzeReader(bytes.NewReader(mvdBytes), fmt.Sprintf("%s.mvd.gz", sha))
+	if err != nil {
+		return nil, meta, fmt.Errorf("rebuild shot streams: %w", err)
+	}
+	if built.Streams != nil {
+		if needBase {
+			res.Streams.Projectiles = built.Streams.Projectiles
+			res.Streams.Beams = built.Streams.Beams
+			res.Streams.ShotStreamsComputed = true
+		}
+		if needNails {
+			res.Streams.Nails = built.Streams.Nails
+			res.Streams.NailsComputed = true
+		}
+	}
+	if built.Shots != nil {
+		res.Shots = built.Shots
+	}
+	if built.Aim != nil {
+		res.Aim = built.Aim
+	}
+	return res, meta, nil
+}
+
 func (c *Cache) resolveDownloadInfo(sha string, id DemoID) (*hubfetch.GameInfo, error) {
 	if v, ok := c.lastResolved.LoadAndDelete(sha); ok {
 		return v.(*hubfetch.GameInfo), nil

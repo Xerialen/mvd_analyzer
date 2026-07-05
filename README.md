@@ -359,6 +359,13 @@ Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `ItemPickupPrintEvent`, `BackpackPickupPrintEvent`,
 `DemoStartTimestampEvent` (mvdhidden `0x000B` wall-clock anchor),
 `PausedDurationEvent` (mvdhidden `0x000A` per-frame pause duration),
+`SoundEvent` (`svc_sound` — emitting entity + channel + resolved sound
+path; weapon-fire sounds drive the shots analyzer),
+`ProjectileSpawnEvent` / `ProjectileDespawnEvent` (rocket/grenade entity
+flight brackets — the shots analyzer links RL/GL fires to their impacts),
+`BeamEvent` (`svc_temp_entity` lightning beams — `TE_LIGHTNING2` is the
+per-tick LG fire signal),
+`NailsFrameEvent` (`svc_nails` spike snapshots — opt-in, off by default),
 `MoverSpawnEvent` / `MoverStateEvent` (inline brush-model entities —
 lifts, doors, trains — identity plus per-frame origin while moving).
 Domain types carried by events — `ServerData`, `PlayerInfo`,
@@ -399,6 +406,15 @@ items (per-item pickup / respawn timeline — works on any MVD source),
 damage (per-hit damage log + aggregates — attacker→victim matrix,
 per-weapon, given/taken, and the EWep victim-weapon buckets — from the
 KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
+shots (per-shot weapon-fire stream — who fired what at exactly what ms,
+from `svc_sound` fire sounds + LG cell-ammo — with same-frame hitscan→damage
+links, entity-tracked rocket/grenade→impact links, per-victim
+enemy/team/self classification, and a KTX-accuracy cross-check),
+aim (per-player aim analysis derived from shots + streams + damage —
+normalized crosshair-error samples for hitscan, LG ramp-onto-target, rocket
+direct/splash, LG reach/whiff, and enemy/team/self hit-counter slices;
+exact target attribution in duels, a labeled nearest-crosshair heuristic
+in team games),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
 `//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
@@ -693,8 +709,15 @@ diff -r /tmp/before /tmp/after
 ## Known limitations
 
 1. **Weapon switching scripts**: QW players use scripts that switch weapons
-   faster than MVD stat updates, causing RL/GL shot undercounting in
-   MVD-based tracking. KTX demoinfo stats (when available) are authoritative.
+   faster than MVD stat updates, so any *ammo-delta*-based inference of
+   RL/GL usage undercounts. The `shots` analyzer sidesteps this by keying on
+   the `svc_sound` weapon-fire sound (which carries the firing entity), not
+   ammo — its per-weapon counts match KTX `acc.attacks` exactly across the
+   corpus, including RL/GL. The one weapon still counted from ammo is LG
+   (it has no per-shot fire sound), which can slip by a single cell at a
+   death/discharge boundary. KTX demoinfo stats (when available) remain the
+   authoritative reference, and `shots.reconciliation` cross-checks against
+   them.
 
 2. **Auth name override**: When players authenticate via mvdsv,
    `sv_forcenick` can set the userinfo name to the login. The analyzer
@@ -728,11 +751,16 @@ diff -r /tmp/before /tmp/after
 
 5. **Weapon pickups from backpacks (SSG/SNG/GL/NG)**: KTX emits the
    `//ktx bp` backpack-pickup hint only for RL and LG packs, so
-   `result.WeaponPickups` captures world (spawn) grabs of every weapon
-   but misses super-shotgun / super-nailgun / nailgun / grenade-launcher
-   taken off a dropped pack. Per-weapon totals reconcile with KTX
-   `weapons.<w>.pickups.spawn-taken` but fall short of `total-taken` by
-   the backpack grabs (systemic; RL/LG reconcile fully). See
+   super-shotgun / super-nailgun / nailgun / grenade-launcher grabs off
+   a dropped pack have no authoritative wire signal. In non-weapon-stay
+   modes (dmm1/dmm4) they are simply missing: per-weapon totals
+   reconcile with KTX `weapons.<w>.pickups.spawn-taken` but fall short
+   of `total-taken` by the backpack grabs (systemic; RL/LG reconcile
+   fully). In weapon-stay modes (deathmatch 2/3/5, coop — dmm3
+   duels/2on2 included), where world weapon pickups are synthesized
+   from STAT_ITEMS flips, these pack grabs *do* surface — as
+   `source: "unknown"` entries, since a bit flip away from any weapon
+   pad can't be tied to a specific pack. See
    [mvd-analytics/README.md](mvd-analytics/README.md#weapon-pickups).
 
 6. **Damage is unbound (overkill)**: `result.Damage` is reconstructed
@@ -808,6 +836,23 @@ diff -r /tmp/before /tmp/after
    height (h) are **`float32`** — the wire-native sub-unit origin, no
    longer truncated to whole units (which also sharpens the velocity);
    the `h` no-floor sentinel is now `-1000000000`.
+
+9. **Aim target attribution (schema v41, refined v44)**: the `aim` block's
+   crosshair error is computed against the player it attributes each shot
+   to. A **hit** attributes to its server-confirmed victim (exact; nearest
+   by crosshair error when a pellet fire hit several — can be a teammate on
+   team damage, flagged per sample since v45). A **miss** has no confirmed
+   target: in a **duel** the one enemy is exact (`mode: "duel"`); in a
+   **team game** it is a heuristic — the live enemy nearest the crosshair
+   at the fire time (`mode: "team"`), so a missed shot tracking one
+   opponent while another crosses closer to the crosshair can be
+   mis-attributed. Misses are only attributed to an enemy whose position
+   track brackets the fire time and who is alive at it. The rocket
+   "direct hit" count is likewise a heuristic (non-splash damage events ≈
+   direct contacts). These are labeled in the data so consumers can
+   disambiguate. Hit counts include team and self hits (server parity) —
+   the v45 `victimKinds` / per-bucket splits let consumers separate them
+   (a rocket jump is a self hit, not an enemy hit).
 
 ## Reference sources
 
