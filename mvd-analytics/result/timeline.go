@@ -19,6 +19,7 @@ type TimelineAnalysisResult struct {
 	LocationData  []MapLocation        `json:"locationData,omitempty"`  // Location points from .loc file for map view
 	LocTable      []string             `json:"locTable,omitempty"`      // Interned loc names; index 0 is "" sentinel.
 	PlayerUserIDs map[string]int       `json:"playerUserIDs,omitempty"` // Player name -> UserID for Hub viewer links
+	PlayerSlots   map[string]int       `json:"playerSlots,omitempty"`   // Player name -> demo slot (KDLOG edict-1 join key, schema v38)
 	RegionControl *RegionControlResult `json:"regionControl,omitempty"` // Region control stats
 }
 

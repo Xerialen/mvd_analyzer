@@ -263,6 +263,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		LocationData:  locationData,
 		LocTable:      locTable,
 		PlayerUserIDs: playerUserIDsByName,
+		PlayerSlots:   playerSlotsByName(slotToName),
 	}
 
 	matchEnd := a.timing.EndTime
@@ -443,6 +444,24 @@ func medoidLocations(locs []loc.Location) []MapLocation {
 		}
 		m := pts[best]
 		out = append(out, MapLocation{X: m.X, Y: m.Y, Z: m.Z, Name: m.Name})
+	}
+	return out
+}
+
+// playerSlotsByName inverts the slot->name mapping for export as
+// TimelineAnalysisResult.PlayerSlots (schema v38) — the join key between
+// KDLOG edicts (slot+1) and canonical player names. On a name collision the
+// lowest slot wins, matching the stream naming convention where later
+// duplicates are suffixed "name#slot".
+func playerSlotsByName(slotToName map[int]string) map[string]int {
+	if len(slotToName) == 0 {
+		return nil
+	}
+	out := make(map[string]int, len(slotToName))
+	for slot, name := range slotToName {
+		if prev, ok := out[name]; !ok || slot < prev {
+			out[name] = slot
+		}
 	}
 	return out
 }
