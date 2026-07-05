@@ -7,6 +7,52 @@ detail.
 
 ## 2026-07-05
 
+- **mvd-api / mvd-mcp hardening for hosted use (no schema change; REST
+  surface semantics + one MCP tool-schema change).** Prerequisites for
+  running the API/MCP on the internet for third-party apps:
+  - **Downloaded demo bytes are verified against their SHA before
+    caching.** A cold download now hashes the `.mvd.gz` bytes and rejects
+    them as `hub_upstream` (502) if they don't match the hub-claimed
+    `demo_sha256` that keys the cache, the `sha:` address, and the ETag —
+    a corrupted CDN object can no longer poison the cache permanently.
+  - **Hub "not found" is classified by error identity, not message
+    text.** A new `hubfetch.ErrNotFound` sentinel + `errors.Is` replaces
+    two `strings.Contains(err, "not found")` checks, so a hub 5xx whose
+    body merely contains "not found" is now correctly a 502 (was
+    misreported as `demo_not_found` 404).
+  - **Model-supplied `demoId` is validated + escaped in the MCP proxy.**
+    All demo-scoped tool calls route through a `demoPath` helper that
+    rejects anything but a canonical `gameId:N` / `sha:HEX` and
+    PathEscapes it, so an id containing `/`, `?`, or `#` can no longer
+    reroute a request to a different endpoint.
+  - **Per-demo lazy computes no longer serialize globally.** `/los` and
+    the on-demand shot-stream rebuild (`/shots`, `/aim`, `/streams/*`)
+    now lock per demo SHA (shared `KeyedMutex` helper) instead of one
+    server-wide mutex each, so a request for demo B does not queue behind
+    demo A's multi-second pass. (Disk persistence of the computed
+    artifacts is deliberately out of scope here.)
+  - **Cache correctness nits.** A resolved-`GameInfo` map entry that
+    previously leaked for process life when a demo was served from a
+    warm tier is now drained unconditionally; `GetResult` documents that
+    a cold fetch runs its hub download + parse to completion regardless
+    of the caller's context (the singleflight shares one computation, so
+    the first caller's cancellation must not poison the others).
+  - **The stream-enriched endpoints signal a degrade instead of serving
+    silently-incomplete data.** When the tier-1 MVD bytes are missing so
+    the opt-in weapon-fire streams can't be rebuilt, `/shots`, `/aim`,
+    and `/streams/*` now set `X-Shot-Streams: unavailable` (+
+    `Cache-Control: no-store`) rather than quietly returning the lean
+    result.
+  - **MCP tool-schema change:** `getBackpacks`'s `weapon` input is now a
+    `string[]` set (forwarded as CSV), matching REST `/backpacks` since
+    v36 (was a single string); `getEvents`'s `types` schema now lists the
+    opt-in `damage` / `telefrag` / `stomp` kinds.
+  - **Docs:** API.md's `/overview` example is corrected to int32
+    milliseconds (the code has emitted ms since v24) with an added §2.1
+    units row; the §2.4 error table gains `shots_unavailable` /
+    `aim_unavailable`; and stale `schemaVersion: 36` examples are updated
+    to 48.
+
 - **Clean end-of-demo, and truncated demos become visible (no schema
   change).** The standard MVD termination — `svc_disconnect
   "EndOfDemo"` — now surfaces through `events.Source.Next` as `io.EOF`

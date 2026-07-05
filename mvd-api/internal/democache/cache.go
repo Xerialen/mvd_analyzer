@@ -48,6 +48,14 @@ type CacheMeta struct {
 	FromCache     bool // true when neither the parser nor the hub was invoked
 	FromMVDTier   bool // true when MVD bytes were on disk but the parser ran
 	SchemaVersion int
+	// ShotStreamsUnavailable is set by EnsureShotStreams when the opt-in
+	// weapon-fire streams could not be built because the tier-1 MVD bytes
+	// were missing (evicted after the base Result was cached). The returned
+	// Result is the lean one — its stream-derived parts (rl/gl splash, the
+	// LG whiff split, projectile/beam/nail streams) are absent. Surfaced so
+	// /shots, /aim and /streams/* can signal the degrade rather than serve
+	// silently incomplete data.
+	ShotStreamsUnavailable bool
 }
 
 // ParseFunc parses MVD bytes (gzip or plain) into a Result.
@@ -73,6 +81,11 @@ type Cache struct {
 	mem          *resultLRU
 	inflight     sync.Map // sha → *inflightEntry
 	lastResolved sync.Map // sha → *hubfetch.GameInfo (drained by loadResult)
+
+	// shotLocks serializes the on-demand shot-stream rebuild per SHA, so a
+	// rebuild for demo B does not queue behind demo A's multi-second
+	// re-parse (EnsureShotStreams).
+	shotLocks KeyedMutex
 }
 
 // New constructs a Cache rooted at the given directory.
@@ -97,9 +110,26 @@ func (c *Cache) ensureInit() {
 
 // GetResult resolves the demo, fetches/parses/caches as needed, and
 // returns a read-only *Result along with cache metadata.
+//
+// The ctx is accepted for call-site symmetry (and to satisfy the
+// demoStore interface the API handlers use), but a cold GetResult runs
+// its hub download and parse *to completion even if ctx is cancelled*:
+// the per-SHA singleflight shares one computation across every waiter, so
+// honoring the first caller's cancellation would poison all the others.
+// Cancellation is therefore deliberately not threaded into the hub client
+// or ParseFunc; ctx is passed through unused (see defaultParse).
 func (c *Cache) GetResult(ctx context.Context, id DemoID) (*result.Result, CacheMeta, error) {
 	c.ensureInit()
 
+	// resolveSHA for a cold gameId hits the hub once. It runs outside the
+	// SHA-keyed singleflight (the SHA is what keys it — chicken/egg), so N
+	// concurrent cold requests for the same new gameId issue N parallel
+	// Hub.Resolve calls before any of them has a SHA to dedupe on. We accept
+	// that stampede: a resolve is a single cheap Supabase GET, the result is
+	// persisted to the gameId index on first success, and only the
+	// download+parse — the expensive part — needs deduping, which the
+	// singleflight below does. (F9: revisit with a gameId-keyed singleflight
+	// only if resolve cost ever shows up.)
 	sha, err := c.resolveSHA(id)
 	if err != nil {
 		return nil, CacheMeta{}, err
@@ -135,10 +165,7 @@ func (c *Cache) resolveSHA(id DemoID) (string, error) {
 		}
 		info, err := c.Hub.Resolve(id.GameID)
 		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				return "", fmt.Errorf("%w: gameId %d", ErrDemoNotFound, id.GameID)
-			}
-			return "", fmt.Errorf("%w: %v", ErrHubUpstream, err)
+			return "", classifyHubError(err, id.GameID)
 		}
 		if !isValidSHA(info.DemoSHA256) {
 			return "", fmt.Errorf("%w: hub returned invalid sha for gameId %d", ErrHubUpstream, id.GameID)
@@ -156,6 +183,16 @@ func (c *Cache) resolveSHA(id DemoID) (string, error) {
 // loadResult walks the cache tiers. Runs once per SHA via singleflight.
 func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.Result, CacheMeta, error) {
 	meta := CacheMeta{SHA256: sha, SchemaVersion: result.CurrentSchemaVersion}
+
+	// Drain any GameInfo stashed by resolveSHA unconditionally, regardless
+	// of which tier ends up serving this call. Only the download path below
+	// consumes it; a mem/tier-2/tier-1 hit never downloads, so without this
+	// the entry would leak in lastResolved for the life of the process
+	// (F9).
+	var stashed *hubfetch.GameInfo
+	if v, ok := c.lastResolved.LoadAndDelete(sha); ok {
+		stashed = v.(*hubfetch.GameInfo)
+	}
 
 	if r := c.mem.get(sha); r != nil {
 		meta.FromCache = true
@@ -177,13 +214,22 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 		mvdBytes = data
 		meta.FromMVDTier = true
 	} else {
-		info, err := c.resolveDownloadInfo(sha, id)
+		info, err := c.resolveDownloadInfo(id, stashed)
 		if err != nil {
 			return nil, CacheMeta{}, err
 		}
 		data, err := c.Hub.Download(info)
 		if err != nil {
 			return nil, CacheMeta{}, fmt.Errorf("%w: %v", ErrHubUpstream, err)
+		}
+		// Verify the downloaded bytes hash to the SHA that keys everything:
+		// the tier-1/tier-2 path, the sha: public address, and the ETag. A
+		// corrupted CDN object or a wrong demo_source_url would otherwise
+		// poison the cache permanently under this sha and make every
+		// "immutable" promise built on it false. Reject and do not cache on
+		// mismatch. (One hash per cold download — negligible.)
+		if got := sha256Hex(data); got != sha {
+			return nil, CacheMeta{}, fmt.Errorf("%w: downloaded bytes hash to %s, expected %s", ErrHubUpstream, got, sha)
 		}
 		if err := writeFileAtomic(mp, data, 0o644); err != nil {
 			return nil, CacheMeta{}, fmt.Errorf("write tier-1: %w", err)
@@ -214,8 +260,10 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 // parse, so /shots and /aim serve complete data. The ShotStreamsComputed /
 // NailsComputed latches make repeat requests free.
 //
-// Callers serialize concurrent calls for one demo (see the API's streamsMu),
-// matching the ComputeLOS pattern. A demo with no Streams (no player tracks)
+// This serializes concurrent calls for one demo internally via a per-SHA
+// lock (shotLocks): a rebuild for demo B does not queue behind demo A's,
+// and two callers for the same demo cannot both re-parse and race the
+// splice onto the shared Result. A demo with no Streams (no player tracks)
 // is returned unchanged.
 func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*result.Result, CacheMeta, error) {
 	res, meta, err := c.GetResult(ctx, id)
@@ -225,20 +273,28 @@ func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*
 	if res.Streams == nil {
 		return res, meta, nil
 	}
+
+	// meta.SHA256 is the resolved cache key from GetResult; use it to lock
+	// the rebuild per-demo. The lock covers the need-check so the re-parse
+	// decision is not a TOCTOU race between two callers (F8).
+	sha := meta.SHA256
+	unlock := c.shotLocks.Lock(sha)
+	defer unlock()
+
 	needBase := !res.Streams.ShotStreamsComputed
 	needNails := nails && !res.Streams.NailsComputed
 	if !needBase && !needNails {
 		return res, meta, nil
 	}
 
-	sha, err := c.resolveSHA(id)
-	if err != nil {
-		return nil, meta, err
-	}
 	mvdBytes, err := os.ReadFile(mvdPath(c.Root, sha))
 	if err != nil {
-		// Bytes should be on disk after GetResult; if not, surface the lean
-		// Result rather than failing the request.
+		// The tier-1 bytes are gone (evicted after the base Result was
+		// cached), so the opt-in streams cannot be rebuilt. Surface the lean
+		// Result rather than failing the request, but flag the degrade so the
+		// handler signals it instead of serving silently-incomplete data
+		// (the "surface authoritative data" rule).
+		meta.ShotStreamsUnavailable = true
 		return res, meta, nil
 	}
 
@@ -273,19 +329,28 @@ func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*
 	return res, meta, nil
 }
 
-func (c *Cache) resolveDownloadInfo(sha string, id DemoID) (*hubfetch.GameInfo, error) {
-	if v, ok := c.lastResolved.LoadAndDelete(sha); ok {
-		return v.(*hubfetch.GameInfo), nil
+func (c *Cache) resolveDownloadInfo(id DemoID, stashed *hubfetch.GameInfo) (*hubfetch.GameInfo, error) {
+	if stashed != nil {
+		return stashed, nil
 	}
 	if id.Kind == "sha256" {
 		return nil, fmt.Errorf("%w: sha not in local cache and no gameId to resolve source", ErrDemoNotFound)
 	}
 	info, err := c.Hub.Resolve(id.GameID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			return nil, fmt.Errorf("%w: gameId %d", ErrDemoNotFound, id.GameID)
-		}
-		return nil, fmt.Errorf("%w: %v", ErrHubUpstream, err)
+		return nil, classifyHubError(err, id.GameID)
 	}
 	return info, nil
+}
+
+// classifyHubError maps a hubfetch.Resolve error to the democache error
+// taxonomy by identity, not by message substring: a genuine "no such
+// game" (hubfetch.ErrNotFound) becomes ErrDemoNotFound (404); anything
+// else — network failure, 5xx, decode error, even a 5xx whose body text
+// happens to contain "not found" — becomes ErrHubUpstream (502) (F2).
+func classifyHubError(err error, gameID int) error {
+	if errors.Is(err, hubfetch.ErrNotFound) {
+		return fmt.Errorf("%w: gameId %d", ErrDemoNotFound, gameID)
+	}
+	return fmt.Errorf("%w: %v", ErrHubUpstream, err)
 }

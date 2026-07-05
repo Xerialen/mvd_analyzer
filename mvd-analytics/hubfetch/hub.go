@@ -35,6 +35,13 @@ const (
 	CDNBase        = "https://d.quake.world"
 )
 
+// ErrNotFound is returned by Resolve when the hub has no row for the
+// requested gameId (an empty result set). Callers should detect it with
+// errors.Is rather than matching the message, so a hub outage whose body
+// merely contains "not found" is not misclassified as a 404. See
+// democache's classifyHubError.
+var ErrNotFound = errors.New("not found")
+
 // GameInfo is the minimal subset of the Supabase row that the
 // downloader needs. The real schema has many more fields (teams, mode,
 // timestamp, …) — leave them off here so we don't need to track
@@ -94,7 +101,7 @@ func (c *Client) Resolve(gameID int) (*GameInfo, error) {
 		return nil, fmt.Errorf("supabase resolve: decode: %w", err)
 	}
 	if len(rows) == 0 {
-		return nil, fmt.Errorf("game %d not found", gameID)
+		return nil, fmt.Errorf("game %d %w", gameID, ErrNotFound)
 	}
 	return &rows[0], nil
 }

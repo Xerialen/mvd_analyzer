@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
 // corpusDemo returns a real demo from the analytics test cache, or skips when
@@ -101,5 +103,52 @@ func TestEnsureShotStreams(t *testing.T) {
 	}
 	if res2.Streams.Nails == nil || !res2.Streams.NailsComputed {
 		t.Error("nails request did not build/latch the nail stream")
+	}
+}
+
+// TestEnsureShotStreams_MissingTier1_FlagsUnavailable covers the quiet-degrade
+// path: when the tier-1 MVD bytes are gone (evicted after the base Result was
+// cached), EnsureShotStreams serves the lean Result and sets
+// CacheMeta.ShotStreamsUnavailable so the handlers can signal the degrade
+// (X-Shot-Streams: unavailable) instead of serving silently-incomplete data.
+// The flag is per-call meta, never persisted, so it cannot stick once the
+// bytes are back.
+func TestEnsureShotStreams_MissingTier1_FlagsUnavailable(t *testing.T) {
+	hub := newFakeHub()
+	defer hub.Close()
+	hub.addGame(42, testSHA, testMVD)
+
+	c, root := newTestCache(t, hub.hubClient(), &stubParser{})
+	// The stub parse must yield a Streams block (EnsureShotStreams returns
+	// early on Streams == nil) with the latches unset, so the rebuild is
+	// attempted and hits the missing tier-1 file.
+	c.Parse = func(_ context.Context, _ []byte, filename string) (*result.Result, error) {
+		return &result.Result{
+			SchemaVersion: result.CurrentSchemaVersion,
+			FilePath:      filename,
+			Streams:       &result.Streams{},
+		}, nil
+	}
+	ctx := context.Background()
+	id := DemoID{Kind: "gameId", GameID: 42}
+
+	// Cold fetch caches the Result in memory and the bytes at tier 1.
+	if _, _, err := c.GetResult(ctx, id); err != nil {
+		t.Fatalf("GetResult: %v", err)
+	}
+	// Simulate tier-1 eviction.
+	if err := os.Remove(mvdPath(root, testSHA)); err != nil {
+		t.Fatalf("remove tier-1: %v", err)
+	}
+
+	res, meta, err := c.EnsureShotStreams(ctx, id, false)
+	if err != nil {
+		t.Fatalf("EnsureShotStreams: %v", err)
+	}
+	if !meta.ShotStreamsUnavailable {
+		t.Error("meta.ShotStreamsUnavailable = false; want true when tier-1 bytes are gone")
+	}
+	if res.Streams.ShotStreamsComputed {
+		t.Error("ShotStreamsComputed latched without a rebuild")
 	}
 }

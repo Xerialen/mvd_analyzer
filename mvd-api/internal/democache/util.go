@@ -2,7 +2,9 @@ package democache
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,6 +19,13 @@ var shaRe = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
 
 // isValidSHA reports whether s is 64 hex chars.
 func isValidSHA(s string) bool { return shaRe.MatchString(s) }
+
+// sha256Hex returns the lowercase hex SHA-256 of b — the same encoding
+// used for the cache key, the sha: public address, and the ETag.
+func sha256Hex(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
 
 // ParseDemoID parses URL-style identifiers used by the qw-mvd REST
 // path segment: "gameId:NNNN" or "sha:HEX". Empty or malformed input

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -230,6 +231,70 @@ func TestProxy_EmptyLabel_NoAuthHeader(t *testing.T) {
 	}
 	if seenAuth != "" {
 		t.Errorf("Authorization=%q; want empty", seenAuth)
+	}
+}
+
+// TestProxy_DemoPathValidation covers F5: a model-supplied demoId that
+// isn't a canonical gameId:N / sha:HEX — in particular one carrying '/' or
+// '?' — is rejected before any HTTP call, so it can't reroute the request.
+func TestProxy_DemoPathValidation(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	bad := []string{
+		"",                          // empty
+		"gameId:42/frags?players=x", // path-splice reroute
+		"gameId:42#frag",            // fragment
+		"sha:xyz",                   // not 64 hex
+		"../secrets",                // traversal
+		"gameId:",                   // missing number
+		"gameId:0x10",               // non-decimal
+	}
+	for _, id := range bad {
+		if _, err := b.GetOverview(ctx, GetOverviewInput{DemoID: id}); err == nil {
+			t.Errorf("GetOverview(%q): expected validation error, got nil", id)
+		}
+	}
+	if hits != 0 {
+		t.Errorf("invalid demoIds reached the backend %d times; want 0", hits)
+	}
+
+	// Canonical ids pass through untouched.
+	for _, id := range []string{"gameId:42", "sha:" + strings.Repeat("a", 64), "sha:" + strings.Repeat("A", 64)} {
+		if _, err := b.GetOverview(ctx, GetOverviewInput{DemoID: id}); err != nil {
+			t.Errorf("GetOverview(%q): valid id rejected: %v", id, err)
+		}
+	}
+	if hits != 3 {
+		t.Errorf("valid ids reached backend %d times; want 3", hits)
+	}
+}
+
+// TestProxy_GetBackpacks_WeaponCSV covers F7a: Weapon is a []string set
+// forwarded as CSV, matching REST /backpacks (was a single string).
+func TestProxy_GetBackpacks_WeaponCSV(t *testing.T) {
+	var seenQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.RawQuery
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	if _, err := b.GetBackpacks(context.Background(), GetBackpacksInput{
+		DemoID: "gameId:42", Weapon: []string{"rl", "lg"},
+	}); err != nil {
+		t.Fatalf("GetBackpacks: %v", err)
+	}
+	vals, _ := url.ParseQuery(seenQuery)
+	if vals.Get("weapon") != "rl,lg" {
+		t.Errorf("weapon=%q; want rl,lg (CSV set)", vals.Get("weapon"))
 	}
 }
 

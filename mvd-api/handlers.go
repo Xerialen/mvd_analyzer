@@ -21,8 +21,8 @@ type demoStore interface {
 	GetResult(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
 	// EnsureShotStreams returns the Result with the opt-in spatial weapon-fire
 	// streams built (projectiles + beams; plus nails when nails is true),
-	// re-parsing the cached MVD bytes on first request. Callers serialize via
-	// streamsMu.
+	// re-parsing the cached MVD bytes on first request. It serializes the
+	// rebuild per demo SHA internally, so no server-wide lock is needed.
 	EnsureShotStreams(ctx context.Context, id democache.DemoID, nails bool) (*result.Result, democache.CacheMeta, error)
 }
 
@@ -617,13 +617,15 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 // array; los is omitted for a player with no sightlines and empty for every
 // player on a map with no provisioned BSP.
 func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
-	res, _, ok := s.resolveDemo(w, r)
+	res, meta, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	s.losMu.Lock()
+	// Per-SHA lock: concurrent /los for one demo serialize on the shared
+	// Result, but /los for a different demo does not queue behind it.
+	unlock := s.losLocks.Lock(meta.SHA256)
 	analyzer.ComputeLOS(res)
-	s.losMu.Unlock()
+	unlock()
 
 	type losPlayer struct {
 		Name string            `json:"name"`
@@ -645,23 +647,29 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 }
 
 // resolveShotStreams mirrors resolveDemo but routes through EnsureShotStreams
-// (under streamsMu) so the requested spatial weapon-fire streams are built —
-// a one-time re-parse of the cached MVD bytes, since they are opt-in and not
-// in the lean default Result.
+// so the requested spatial weapon-fire streams are built — a one-time
+// re-parse of the cached MVD bytes, since they are opt-in and not in the lean
+// default Result. EnsureShotStreams serializes the rebuild per demo SHA
+// internally (see cache.shotLocks), so no server-wide lock is held here.
 func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request, nails bool) (*result.Result, bool) {
 	id, err := democache.ParseDemoID(r.PathValue("id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
 		return nil, false
 	}
-	s.streamsMu.Lock()
 	res, meta, err := s.store.EnsureShotStreams(r.Context(), id, nails)
-	s.streamsMu.Unlock()
 	if err != nil {
 		mapStoreError(w, err)
 		return nil, false
 	}
 	setCacheHeaders(w, meta)
+	if meta.ShotStreamsUnavailable {
+		// The tier-1 bytes were gone, so the stream-derived parts are absent.
+		// Flag the degrade and don't let clients cache the incomplete body as
+		// immutable (see API.md §4.5c/4.5d/4.11c).
+		w.Header().Set("X-Shot-Streams", "unavailable")
+		w.Header().Set("Cache-Control", "no-store")
+	}
 	etag := fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion)
 	if match := r.Header.Get("If-None-Match"); match != "" && strings.Contains(match, etag) {
 		w.WriteHeader(http.StatusNotModified)

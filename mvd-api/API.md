@@ -55,6 +55,7 @@ track which is which:
 |---|---|---|
 | **Query inputs** `from` / `to` / `time` | **seconds** (float) | `?from=105&to=110`, `?time=105` |
 | **View envelope** times | **seconds** (float) | `events[].t=101.298`, `state-at.t=105`, `stream-slice.startTime=105`, row-bucket `.t=120`, loc-trail `s`/`e`=`1.015` |
+| **`/overview`** times | **int32 milliseconds** | `duration`, `matchStart`, `matchEnd`, `topStreaks[].start`/`.duration`, `topPowerups[].start`/`.duration`, `timing.*` (see §4.2) |
 | **Raw stream entries** embedded in `/stream-slice` | **int32 milliseconds** | `h:[{ "t":105000, "v":-7 }]`, `pos.t:[105001,…]`, `rl:[{ "s":105000,"e":105182 }]` |
 | **Columnar buckets** axis | **int32 milliseconds** | `startMs`, `windowMs`, `time(i)=startMs+i*windowMs` |
 
@@ -149,6 +150,8 @@ Non-2xx responses use a stable envelope:
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
 | 422 | `damage_unavailable` | no KTX `mvdhidden_dmgdone` damage stream |
+| 422 | `shots_unavailable` | no shot data (no weapon fires decoded) |
+| 422 | `aim_unavailable` | no aim data (needs shots + position/view streams) |
 | 422 | `locgraph_unavailable` | no position track |
 | 422 | `region_control_unavailable` | no region-control layout for this map |
 | 422 | `airgibs_unavailable` | no timeline analysis (BSP-less maps return `[]`, not this) |
@@ -213,7 +216,7 @@ all endpoints and aren't repeated.
 Warm the cache and resolve the canonical id. Idempotent.
 
 ```jsonc
-{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 36 }
+{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 48 }
 ```
 
 Use `demoId` for subsequent calls to skip the gameId→sha lookup.
@@ -225,15 +228,15 @@ single call to populate a match header and decide which panels to show.
 
 ```jsonc
 {
-  "schemaVersion": 36,
+  "schemaVersion": 48,
   "map": "dm6", "gameDir": "qw",
   "mode": "4on4",            // omitempty
-  "duration": 613.4,         // seconds
-  "matchStart": 0, "matchEnd": 613.4,
+  "duration": 613400,        // int32 ms (NOT seconds — see §2.1)
+  "matchStart": 0, "matchEnd": 613400,   // int32 ms
   "teams":   [ { "name": "Die", "frags": 89 }, … ],          // sorted desc
   "players": [ { "name": "bps", "team": "Die", "frags": 35, "kills": 38, "deaths": 21, "suicides": 2 }, … ], // corrected scoreboard; sorted by frags desc
-  "topStreaks":  [ { "player":"bps","weapon":"rl","length":7,"start":234.1,"duration":18.3 } ], // ≤5
-  "topPowerups": [ { "player":"milton","type":"quad","start":412.0,"duration":29.7,"frags":5 } ], // ≤5
+  "topStreaks":  [ { "player":"bps","weapon":"rl","length":7,"start":234100,"duration":18300 } ], // ≤5; start/duration int32 ms
+  "topPowerups": [ { "player":"milton","type":"quad","start":412000,"duration":29700,"frags":5 } ], // ≤5; start/duration int32 ms
   "locCount": 47,
   "hasRegionControl": true,   // false ⇒ hide the region panel
   "timing": {                 // omitempty; demo-open wall-clock anchor (from streams.global)
@@ -249,6 +252,13 @@ single call to populate a match header and decide which panels to show.
 
 `topStreaks`/`topPowerups` cap at 5; for the full lists use `/events`.
 Composed in [`overview.go`](overview.go).
+
+**Time units — `/overview` is int32 milliseconds, not seconds.** Unlike the
+view-envelope endpoints (§2.1), every time field here is copied verbatim from
+the stored schema and is **int32 ms**: `duration`, `matchStart`, `matchEnd`,
+each `topStreaks[].start`/`.duration`, each `topPowerups[].start`/`.duration`,
+and the whole `timing` block (`demoOffset`, `demoStartUnixMs`,
+`demoStartAccuracyMs`, `pauses[].atMs`/`.durationMs`). Scale ms→s by `* 0.001`.
 
 **Wall-clock mapping.** Use `timing` to convert any match-relative game
 time `g` (ms) to a real-world clock — handy for syncing voice tracks or
@@ -339,6 +349,15 @@ projectile/beam streams on, then it is cached), so the stream-derived
 weapon blocks are always present. 422 (`aim_unavailable`) when the demo has
 no shots/position data.
 
+**Degrade signal (`/shots`, `/aim`, `/streams/*`).** Rebuilding the streams
+needs the cached tier-1 MVD bytes. In the rare case those have been evicted
+after the base result was cached, the endpoint serves the **lean** data
+(stream-derived parts absent) rather than failing, and marks it with the
+response header **`X-Shot-Streams: unavailable`** plus `Cache-Control:
+no-store`. A client that needs the full data can detect the header and retry
+after a fresh `POST /v1/demos/{id}` (loadDemo re-fetches the bytes). The
+normal, bytes-present response never carries this header.
+
 ### 4.5d `GET /v1/demos/{id}/shots`
 
 The per-fire weapon stream (`result.Shots`): `shots` — every detected fire,
@@ -357,7 +376,8 @@ projectile-linked hits.
 |---|---|
 | `nails` | `1`/`true` to include ng/sng fires (opt-in — high volume, needs the nail decode pass) |
 
-422 (`shots_unavailable`) when the demo has no shot data.
+422 (`shots_unavailable`) when the demo has no shot data. The
+`X-Shot-Streams: unavailable` degrade header (§4.5c) applies here too.
 
 ### 4.6 `GET /v1/demos/{id}/loc-graph`
 
@@ -570,7 +590,9 @@ to keep the cache lean, and (unlike LOS) cannot be recomputed from the cached
 Result, so the **first** request re-parses the demo with the build flags on (a
 few seconds on a large 4on4) and caches the streams in memory; later requests
 are free. `/streams/nails` is latched separately from projectiles/beams. The
-on-disk gob stays lean.
+on-disk gob stays lean. If the tier-1 bytes are gone and the streams cannot be
+rebuilt, the body field is `null` and the response carries `X-Shot-Streams:
+unavailable` (§4.5c).
 
 ```jsonc
 // GET /streams/projectiles
@@ -641,7 +663,7 @@ indices client-side.
 
 - **`/chat`** (`from`, `to`, `players`, `types`) — chat + teamsay only;
   `[]result.MatchEvent`.
-- **`/healthz`** — `{ "ok": true, "schemaVersion": 36 }`.
+- **`/healthz`** — `{ "ok": true, "schemaVersion": 48 }`.
 - **`/v1/version`** — `{ "hash", "tag", "buildDate" }`.
 
 ### 4.16 Per-map static data — `GET /v1/maps/{map}/…`
