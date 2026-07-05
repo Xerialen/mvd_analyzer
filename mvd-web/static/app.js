@@ -86,12 +86,27 @@ let currentResult = null;
 
 const worker = new Worker('worker.js');
 let wasmReady = false;
-let analyzeResolve = null;
-let analyzeReject = null;
-let recomputeResolve = null;
-let recomputeReject = null;
-let losResolve = null;
-let losReject = null;
+
+// Worker RPC correlation. Each request carries a monotonic `reqId` that the
+// worker echoes back on its reply; pending resolvers are keyed by that id in
+// `pendingWorkerReqs` so two in-flight calls on the same lane (e.g. the user
+// clicking two search rows, or a region recompute issued before the previous
+// reply lands) can no longer cross-wire — the old single-slot resolvers let
+// the first reply settle the second caller and dropped the second reply,
+// hanging one promise forever. Non-correlated broadcasts (the deferred
+// 'buckets' message, the WASM-load-failure 'error') carry no reqId and are
+// handled without a lookup.
+let nextWorkerReqId = 1;
+const pendingWorkerReqs = new Map(); // reqId -> { resolve, reject }
+
+// takePendingWorkerReq pops the resolver pair for a correlated reply. Returns
+// undefined for an unknown/absent id (a superseded-and-already-settled request
+// or a non-correlated message), so a stray reply is dropped without throwing.
+function takePendingWorkerReq(reqId) {
+    const p = pendingWorkerReqs.get(reqId);
+    if (p) pendingWorkerReqs.delete(reqId);
+    return p;
+}
 
 // ─── Load-timing instrumentation ────────────────────────────────────────────
 // Structured per-stage timing for the demo load path, printed to the console
@@ -199,50 +214,32 @@ worker.onmessage = (e) => {
             tag.appendChild(a);
             tag.appendChild(document.createTextNode(`) — ${v.date}`));
         }
-    } else if (e.data.type === 'result') {
-        if (analyzeResolve) {
-            analyzeResolve({
-                json: e.data.json,
-                timings: e.data.timings,
-            });
-            analyzeResolve = null;
-            analyzeReject = null;
-        }
     } else if (e.data.type === 'buckets') {
         // Deferred 50ms bucket + region-control payload — arrives a few
         // seconds after 'result'. Stash it and render the Timeline/Map
-        // tabs that displayResults intentionally skipped.
+        // tabs that displayResults intentionally skipped. Not request-
+        // correlated (broadcast follow-up to the analyze), so no reqId lookup.
         applyDeferredBuckets(e.data);
-    } else if (e.data.type === 'error') {
-        if (analyzeReject) {
-            analyzeReject(new Error(e.data.message));
-            analyzeResolve = null;
-            analyzeReject = null;
-        }
-    } else if (e.data.type === 'recompute_result') {
-        if (recomputeResolve) {
-            recomputeResolve(e.data.json);
-            recomputeResolve = null;
-            recomputeReject = null;
-        }
-    } else if (e.data.type === 'recompute_error') {
-        if (recomputeReject) {
-            recomputeReject(new Error(e.data.message));
-            recomputeResolve = null;
-            recomputeReject = null;
-        }
-    } else if (e.data.type === 'los_result') {
-        if (losResolve) {
-            losResolve(e.data.json);
-            losResolve = null;
-            losReject = null;
-        }
-    } else if (e.data.type === 'los_error') {
-        if (losReject) {
-            losReject(new Error(e.data.message));
-            losResolve = null;
-            losReject = null;
-        }
+    } else if (
+        e.data.type === 'result' ||
+        e.data.type === 'recompute_result' ||
+        e.data.type === 'los_result'
+    ) {
+        // Correlated success reply — hand the whole message to the caller's
+        // resolver, which pulls the fields it needs (json/timings). Keyed by
+        // reqId so it always settles its own caller.
+        const pending = takePendingWorkerReq(e.data.reqId);
+        if (pending) pending.resolve(e.data);
+    } else if (
+        e.data.type === 'error' ||
+        e.data.type === 'recompute_error' ||
+        e.data.type === 'los_error'
+    ) {
+        // Correlated failure reply. The WASM-load-failure 'error' emitted
+        // before any analyze is issued carries no reqId → no pending entry →
+        // dropped (matches the previous null-resolver behaviour).
+        const pending = takePendingWorkerReq(e.data.reqId);
+        if (pending) pending.reject(new Error(e.data.message));
     }
 };
 
@@ -253,26 +250,29 @@ worker.onmessage = (e) => {
 // result.timelineAnalysis.bucketView by applyDeferredBuckets.
 function analyzeInWorker(bytes, filename) {
     return new Promise((resolve, reject) => {
-        analyzeResolve = (payload) => {
-            try {
-                const tParse = performance.now();
-                const result = JSON.parse(payload.json);
-                if (loadTiming) {
-                    loadTiming.parseMs = performance.now() - tParse;
-                    loadTiming.worker = payload.timings || null;
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => {
+                try {
+                    const tParse = performance.now();
+                    const result = JSON.parse(payload.json);
+                    if (loadTiming) {
+                        loadTiming.parseMs = performance.now() - tParse;
+                        loadTiming.worker = payload.timings || null;
+                    }
+                    // Buckets / region states arrive later via the 'buckets'
+                    // message and are stashed by applyDeferredBuckets — the
+                    // summary renders without waiting for them.
+                    resolve(result);
+                } catch (e) {
+                    reject(e);
                 }
-                // Buckets / region states arrive later via the 'buckets'
-                // message and are stashed by applyDeferredBuckets — the
-                // summary renders without waiting for them.
-                resolve(result);
-            } catch (e) {
-                reject(e);
-            }
-        };
-        analyzeReject = reject;
+            },
+            reject,
+        });
         // Transfer the ArrayBuffer (zero-copy)
         worker.postMessage(
-            { type: 'analyze', bytes: bytes.buffer, filename },
+            { type: 'analyze', reqId, bytes: bytes.buffer, filename },
             [bytes.buffer]
         );
     });
@@ -333,9 +333,12 @@ function applyDeferredBuckets(data) {
 // that's why edited region stats stayed stale before this lane existed.
 function recomputeInWorker(overrideJSON) {
     return new Promise((resolve, reject) => {
-        recomputeResolve = resolve;
-        recomputeReject = reject;
-        worker.postMessage({ type: 'recomputeRegions', overrideJSON });
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => resolve(payload.json),
+            reject,
+        });
+        worker.postMessage({ type: 'recomputeRegions', reqId, overrideJSON });
     });
 }
 
@@ -345,9 +348,12 @@ function recomputeInWorker(overrideJSON) {
 // fills both the actual-sightline and potential-visibility metrics).
 function computeLosInWorker() {
     return new Promise((resolve, reject) => {
-        losResolve = resolve;
-        losReject = reject;
-        worker.postMessage({ type: 'computeLos' });
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => resolve(payload.json),
+            reject,
+        });
+        worker.postMessage({ type: 'computeLos', reqId });
     });
 }
 
@@ -1613,12 +1619,26 @@ function displayScoreboardFallback(byPlayer, players) {
 
     playerData.sort((a, b) => b.frags - a.frags);
 
+    // This fallback path has no demoinfo, hence no handicap data — always hide
+    // the handicap column, mirroring displayPlayerStats (there is no default
+    // CSS hiding .handicap-col).
+    document.querySelectorAll('#scoreboard .handicap-col').forEach(el => {
+        el.style.display = 'none';
+    });
+
     playerData.forEach(player => {
         const tr = document.createElement('tr');
+        // One cell per #scoreboard header, in header order (index.html):
+        // Player, Team, HC, Frags, Eff, Kills, RL K, LG K, Deaths, TK, Bores,
+        // Dmg, Taken, Ewep, ToDie, Ping. '-' fillers for stats this fallback
+        // (frag-log only, no demoinfo) cannot supply.
         tr.innerHTML = `
             <td>${escapeHtml(player.name)}</td>
             <td>${escapeHtml(player.team)}</td>
+            <td class="handicap-col" style="display: none;">-</td>
             <td>${player.frags}</td>
+            <td>-</td>
+            <td>-</td>
             <td>-</td>
             <td>-</td>
             <td>${player.deaths}</td>
@@ -3076,8 +3096,11 @@ function displayTimelineAnalysis(result) {
         duration: (ev.duration || 0) * 0.001,
     }));
 
-    // Set shared current time to start (all times are now match-relative, starting at 0)
-    mapState.currentTime = 0;
+    // Note: the shared playhead (mapState.currentTime) is initialised to 0 by
+    // resetUIToCleanState at the start of each demo load. It is deliberately
+    // NOT reset here — displayTimelineAnalysis is re-run by applyDeferredBuckets
+    // seconds after load, and a reset there would clobber a ?t= deep link or
+    // any early scrubbing the user did during the deferred-bucket window.
 
     // Update legend team names
     if (teams.length >= 2) {
@@ -4748,22 +4771,31 @@ function buildFullChat() {
         renderChatTimeAxisFull(axisContainer);
     }
 
-    // Add current-time line inside the scroll inner (scrolls with content)
+    // Add current-time line inside the scroll inner (scrolls with content).
+    // resetUIToCleanState clears the message containers but not this persistent
+    // wrapper, so guard against re-appending a duplicate line on every rebuild
+    // (each demo load re-runs buildFullChat); reuse the existing one.
     const scrollInner = viewport.querySelector('.chat-scroll-inner');
-    if (scrollInner) {
+    if (scrollInner && !document.getElementById('chat-current-time-line')) {
         const line = document.createElement('div');
         line.className = 'chat-current-time-line';
         line.id = 'chat-current-time-line';
         scrollInner.appendChild(line);
     }
 
-    // Scroll listener: only mark user scrolling if it's not our programmatic scroll
-    viewport.addEventListener('scroll', () => {
-        if (_chatProgrammaticScroll) return;
-        chatUserScrolling = true;
-        if (_chatScrollTimer) clearTimeout(_chatScrollTimer);
-        _chatScrollTimer = setTimeout(() => { chatUserScrolling = false; }, 2000);
-    }, { passive: true });
+    // Scroll listener: only mark user scrolling if it's not our programmatic
+    // scroll. The viewport persists across demo loads, so wire the listener
+    // exactly once (mirrors the _toggleWired pattern) — a fresh listener per
+    // rebuild would accumulate one per demo.
+    if (!viewport._scrollWired) {
+        viewport._scrollWired = true;
+        viewport.addEventListener('scroll', () => {
+            if (_chatProgrammaticScroll) return;
+            chatUserScrolling = true;
+            if (_chatScrollTimer) clearTimeout(_chatScrollTimer);
+            _chatScrollTimer = setTimeout(() => { chatUserScrolling = false; }, 2000);
+        }, { passive: true });
+    }
 
     chatRendered = true;
     updateChatTimeLine();
@@ -5333,7 +5365,7 @@ function updateTeamStatus() {
                 hasRL: isDead ? false : (data.rl ?? data.hasRL ?? false),
                 hasLG: isDead ? false : (data.lg ?? data.hasLG ?? false),
                 hasQuad: isDead ? false : (data.q ?? data.hasQuad ?? false),
-                hasPent: isDead ? false : (data.pent ?? data.hasPent ?? false),
+                hasPent: isDead ? false : (data.pe ?? false),
                 hasRing: isDead ? false : (data.r ?? data.hasRing ?? false),
                 frags: fragCounts[name] || 0,
             });
@@ -6377,10 +6409,12 @@ function initMapView(result) {
     // Reset trail checkboxes
     document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = false; });
 
-    // Initial render at match start
-    mapState.currentTime = 0;
+    // Render at the current playhead. On first load resetUIToCleanState has
+    // set currentTime to 0; on the deferred re-init (applyDeferredBuckets) it
+    // holds the user's scrub position or a ?t= deep link, which must survive —
+    // so currentTime is deliberately NOT reset to 0 here.
     const slider = document.getElementById('map-timeline-slider');
-    if (slider) slider.value = 0;
+    if (slider) slider.value = mapState.currentTime;
 
     // Initialize region control data
     initRegionControl(result);
