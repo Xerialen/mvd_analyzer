@@ -21,11 +21,11 @@ Role separation:
 - Coder implements.
 - Reviewer reviews technical merge safety.
 - Merge executor only merges after the deterministic gate passes.
-- Codex-authored PRs require independent non-Codex review before being treated as independently reviewed.
+- Agent-authored PRs require independent review by a different agent (a different model than the author) before being treated as independently reviewed.
 
-Whenever Codex posts a GitHub issue, PR, PR review, review comment, issue comment, or merge/gate comment through `@Xerialen`, include this visible line:
+Whenever an AI agent posts a GitHub issue, PR, PR review, review comment, issue comment, or merge/gate comment through `@Xerialen`, include a visible line naming the posting agent:
 
-`_Posted by Codex via @Xerialen._`
+`_Posted by <agent> via @Xerialen._`
 
 Required gate comment format:
 
