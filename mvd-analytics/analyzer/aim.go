@@ -28,7 +28,6 @@ import (
 // heuristic; rocket "direct" is a non-splash-damage heuristic.
 const (
 	aimShaftGapMs     = 150  // LG fires more than this apart start a new shaft
-	aimReachNearUnits = 48.0 // beam endpoint within this of an enemy hull = near miss
 	aimBeamMatchUnits = 64.0 // beam muzzle within this of the shooter muzzle = same shot
 
 	// Crosshair geometry. The shot traces from the weapon muzzle (≈ origin+16,
@@ -44,8 +43,11 @@ const (
 	aimHalfH   = 28.0
 
 	// LG beam max length (KTX W_FireLightning traces v_forward·600). A missed
-	// beam within aimLGRangeSlack of this reached open space (out of range);
-	// shorter means it stopped on geometry (blocked).
+	// beam within aimLGRangeSlack of this ran its full length; shorter means
+	// geometry stopped it. Either way the miss is only Blocked / OutOfRange
+	// when the beam's extension (to full range / to infinity respectively)
+	// crosses a live enemy hull — something denied a would-be hit (an
+	// obstruction / the range cap). Plain Miss otherwise.
 	aimLGRange      = 600.0
 	aimLGRangeSlack = 12.0
 )
@@ -423,7 +425,8 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		}
 	}
 
-	// LG: classify each missed fire by where the beam ended (needs the beams).
+	// LG: classify each missed fire by where its beam ran relative to the
+	// live enemy hulls (needs the beams).
 	if streams.Beams != nil && shooterTrack != nil {
 		if wa := wagg["lg"]; wa != nil {
 			for _, sh := range shots {
@@ -442,27 +445,47 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 				}
 				sx, sy, sz := float64(streams.Beams.Sx[bi]), float64(streams.Beams.Sy[bi]), float64(streams.Beams.Sz[bi])
 				ex, ey, ez := float64(streams.Beams.Ex[bi]), float64(streams.Beams.Ey[bi]), float64(streams.Beams.Ez[bi])
-				best := math.MaxFloat64
-				for _, e := range enemies {
-					if !trackCovers(tracks[e], sh.Time) || !aliveAt(e, sh.Time) {
-						continue
+				beamLen := math.Sqrt((ex-sx)*(ex-sx) + (ey-sy)*(ey-sy) + (ez-sz)*(ez-sz))
+				start := [3]float64{sx, sy, sz}
+				var dir [3]float64
+				if beamLen > 0 {
+					dir = [3]float64{(ex - sx) / beamLen, (ey - sy) / beamLen, (ez - sz) / beamLen}
+				}
+				// On-target check: does the beam's extension past where it
+				// physically ended cross a live enemy hull? For a beam that
+				// stopped short on geometry the extension runs to max range
+				// (Blocked — the obstruction denied the hit); for a full-
+				// length beam it runs to infinity (OutOfRange — the enemy
+				// was on the line but beyond reach). Everything else is a
+				// plain aim-error Miss.
+				fullLen := beamLen >= aimLGRange-aimLGRangeSlack
+				onTarget := false
+				if beamLen > 0 {
+					extEnd := aimLGRange
+					if fullLen {
+						extEnd = math.Inf(1)
 					}
-					es, ok := tracks[e].SampleAt(sh.Time)
-					if !ok {
-						continue
-					}
-					if d := bboxDist(ex, ey, ez, es.X, es.Y, es.Z); d < best {
-						best = d
+					for _, e := range enemies {
+						if !trackCovers(tracks[e], sh.Time) || !aliveAt(e, sh.Time) {
+							continue
+						}
+						es, ok := tracks[e].SampleAt(sh.Time)
+						if !ok {
+							continue
+						}
+						if segIntersectsHull(start, dir, beamLen, extEnd, es.X, es.Y, es.Z) {
+							onTarget = true
+							break
+						}
 					}
 				}
-				beamLen := math.Sqrt((ex-sx)*(ex-sx) + (ey-sy)*(ey-sy) + (ez-sz)*(ez-sz))
 				switch {
-				case best <= aimReachNearUnits:
-					wa.NearMiss++ // aim error — beam ended on/near the hull
-				case beamLen >= aimLGRange-aimLGRangeSlack:
-					wa.OutOfRange++ // beam ran its full length into open space
+				case !onTarget:
+					wa.Miss++ // aim error — no enemy on the beam's line
+				case fullLen:
+					wa.OutOfRange++ // on target — the enemy was beyond max range
 				default:
-					wa.Blocked++ // beam stopped on geometry short of max range
+					wa.Blocked++ // on target within range — geometry intercepted
 				}
 			}
 		}
@@ -609,24 +632,31 @@ func matchBeam(b *result.BeamStreams, t int32, ex, ey, ez float64) int {
 	return best
 }
 
-// bboxDist is the distance from point p to the player hull centered at origin o
-// (losBoxMin..losBoxMax). 0 inside the hull.
-func bboxDist(px, py, pz, ox, oy, oz float64) float64 {
-	cx := clampF(px, ox+float64(losBoxMin[0]), ox+float64(losBoxMax[0]))
-	cy := clampF(py, oy+float64(losBoxMin[1]), oy+float64(losBoxMax[1]))
-	cz := clampF(pz, oz+float64(losBoxMin[2]), oz+float64(losBoxMax[2]))
-	dx, dy, dz := px-cx, py-cy, pz-cz
-	return math.Sqrt(dx*dx + dy*dy + dz*dz)
-}
-
-func clampF(v, lo, hi float64) float64 {
-	if v < lo {
-		return lo
+// segIntersectsHull reports whether the beam-line points s + t·dir,
+// t ∈ [t0,t1], intersect the player hull (losBoxMin..losBoxMax — the
+// server's player collision box) centered at (ox,oy,oz). Standard slab
+// test; dir must be unit length so t is in world units.
+func segIntersectsHull(s, dir [3]float64, t0, t1, ox, oy, oz float64) bool {
+	lo, hi := t0, t1
+	o := [3]float64{ox, oy, oz}
+	for i := 0; i < 3; i++ {
+		bmin, bmax := o[i]+float64(losBoxMin[i]), o[i]+float64(losBoxMax[i])
+		if dir[i] == 0 {
+			if s[i] < bmin || s[i] > bmax {
+				return false
+			}
+			continue
+		}
+		ta, tb := (bmin-s[i])/dir[i], (bmax-s[i])/dir[i]
+		if ta > tb {
+			ta, tb = tb, ta
+		}
+		lo, hi = math.Max(lo, ta), math.Min(hi, tb)
+		if lo > hi {
+			return false
+		}
 	}
-	if v > hi {
-		return hi
-	}
-	return v
+	return true
 }
 
 func trackCovers(pt *result.PositionTrack, t int32) bool {

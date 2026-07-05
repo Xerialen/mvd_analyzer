@@ -319,7 +319,7 @@ kill itself still appears in `/frags` and as a `frag` event.
 
 No params. Per-player aim analysis (`result.Aim`): the `weapons` array
 (per-weapon shots/hits, SG/SSG pellet stats + full/partial/miss, RL/GL
-direct/splash/missed, the LG near/blocked/out-of-range whiff split, plus
+direct/splash/missed, the LG miss/blocked/out-of-range whiff split, plus
 `enemy`/`team`/`self` per-victim-class counter slices — emitted only when a
 weapon had team or self hits; see RESULT_SCHEMA.md §WeaponAimSplit for the
 fallback rules), columnar `crosshair` samples for hitscan fires (signed

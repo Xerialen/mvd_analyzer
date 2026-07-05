@@ -192,7 +192,7 @@ scoreboard — see `scoreboard` for the cross-check.
 
 Per-player aim analysis. Start with `players[].weapons` (per-weapon
 shots/hits, SG/SSG pellet stats + full/partial/miss fires, RL/GL
-direct/splash/missed, the LG near/blocked/out-of-range miss split); the
+direct/splash/missed, the LG miss/blocked/out-of-range whiff split); the
 columnar `crosshair` (per-hitscan-fire angular error, normalized so ±1 =
 the hitbox edge, with hit + attributed target) and `lgRamp` (per-LG-cell
 hit vs ms since the shaft opened) blocks are large — reach for them only

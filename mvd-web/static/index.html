@@ -928,9 +928,11 @@
                         column to sort). <strong>SG/SSG</strong> show pellets hit / fired
                         and how many fires landed all pellets (full), some (partial) or
                         none (miss); <strong>RL/GL</strong> show direct vs splash vs
-                        missed; <strong>LG</strong> splits its misses into near-aim (just
-                        off the hull), blocked (an object was in the way) and out of
-                        range (beam reached its full ~600u length). Every count also has
+                        missed; <strong>LG</strong> splits its misses into miss (an aim
+                        error — no enemy on the beam's line), blocked (the beam would
+                        have hit an enemy in range but an object stopped it short) and
+                        far (the enemy was on the beam's line but beyond its ~600u
+                        reach). Every count also has
                         a <strong>share-of-fires %</strong> column — the counts scale
                         with how much a player fired, so the percentages are what
                         compare across players. Pellet and direct figures match the
@@ -954,12 +956,15 @@
                         <span id="aim-mode" class="aim-mode"></span>
                     </div>
                     <div class="aim-desc">
-                        Where the enemy sat relative to the crosshair at each fire.
-                        Each axis is the angular error divided by the target's hull
-                        half-extent, so <strong>±1 (the outlined box) = the edge of
-                        the hull</strong>. The image is the <strong>smoothed density
-                        of shots</strong> (colorbar = shots per bin); a tight bright
-                        spot at the center is good placement. Hover for exact
+                        Where the enemy sat relative to the crosshair at each fire,
+                        in <strong>Quake units at the target's range</strong> — both
+                        axes share the same scale, and <strong>the solid box is
+                        the player's collision box, true to shape (32 wide × 56
+                        tall)</strong>; the dashed box is its corner-on silhouette
+                        (viewed diagonally the axis-aligned box reads ~1.4× wider).
+                        The image is the <strong>smoothed
+                        density of shots</strong> (colorbar = shots per bin); a tight
+                        bright spot at the center is good placement. Hover for exact
                         shot/hit counts. Below each image: yaw and pitch histograms
                         of the same fires (shaded band = within the hull edge, rule
                         = dead center; the outermost bins also collect shots beyond

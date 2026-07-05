@@ -58,7 +58,7 @@ func TestEnsureShotStreams(t *testing.T) {
 	// The rebuilt Shots/Aim ride along, carrying the stream-derived blocks
 	// the lean parse cannot compute: with projectiles linked every RL/GL
 	// fire splits into direct+splash+missed == shots, and with beams every
-	// missed LG fire is classified (near+blocked+far+unresolved == misses).
+	// missed LG fire is classified (blocked+miss+far+unresolved == misses).
 	// In the lean parse those fields are all zero, so the sums cannot match.
 	// (The corpus demo is schloss — no LG on the map — so RL/GL carries the
 	// check and the LG branch is exercised only if the demo changes.)
@@ -80,8 +80,8 @@ func TestEnsureShotStreams(t *testing.T) {
 				}
 			case "lg":
 				streamDerived = true
-				if got := wa.NearMiss + wa.Blocked + wa.OutOfRange + wa.Unresolved; got != wa.Shots-wa.Hits {
-					t.Errorf("%s lg whiffs: near+blocked+far+unresolved = %d; want shots-hits = %d",
+				if got := wa.Blocked + wa.Miss + wa.OutOfRange + wa.Unresolved; got != wa.Shots-wa.Hits {
+					t.Errorf("%s lg whiffs: blocked+miss+far+unresolved = %d; want shots-hits = %d",
 						pa.Player, got, wa.Shots-wa.Hits)
 				}
 			}

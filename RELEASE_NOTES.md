@@ -5,6 +5,40 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-05
+
+- **Crosshair placement plots in true Quake units.** The Aim Stats
+  density images and yaw/pitch marginals plotted hull-normalized error
+  (each axis divided by the target's angular half-extent), so one x
+  unit was ~16-23 qu while one y unit was 28 qu, and the "hull" box
+  drew as a square. Both now plot the offset in Quake units at the
+  target's range (derived from the existing `dyaw`/`dpitch`/`dist`
+  columns — no schema change), the axes share one scale, and the
+  solid outlined box is the player's collision box true to shape (32
+  wide × 56 tall), with a dashed outline at its corner-on silhouette
+  (~45 qu wide — the axis-aligned box reads √2 wider viewed
+  diagonally). Extents ±96 qu × ±64 qu, ticks every hull-width (32
+  qu), hover read-outs and histogram bins in qu.
+
+- **LG whiff split reclassified: miss / blocked / far (schema v47).**
+  The split classified from the beam endpoint only, so every beam that
+  stopped on geometry short of its ~600u max range counted as `blocked`
+  — including shafts fired into a wall with nobody behind them, which
+  made Blocked % implausibly high. Now a whiff only counts as blocked
+  or out of range when the shooter was on target: `blocked` = the beam
+  stopped short on geometry and its extension to full range crosses a
+  live enemy's collision hull (in range — the obstruction denied a
+  would-be hit); `outOfRange` = the beam ran its full length and its
+  extension to infinity crosses a live enemy's hull (denied by reach);
+  `miss` = every other whiff, a plain aim error with no enemy on the
+  beam's line (shares the `miss` field with the SG/SSG pellet split). The
+  endpoint-proximity `nearMiss` field is **removed** — with blocked
+  detection on the beam line, the near/wide distinction among aim
+  errors carried no signal. The Aim Stats LG table now shows Miss /
+  Blocked / Far (+ share-of-fires %) with reworded tooltips. Only
+  beam-enriched parses are affected (the split needs `streams.beams`),
+  so the golden corpus is untouched.
+
 ## 2026-07-04
 
 - **Timeline frag/death events no longer dropped for players with no

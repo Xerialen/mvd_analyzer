@@ -473,20 +473,19 @@ stats; `Direct` matches the server's RL/GL direct-hit count.
 | PelletHits | `pelletHits` | int (sg/ssg) — pellets that hit (Σ damage / 4) |
 | Full | `full` | int (sg/ssg) — fires where all pellets hit |
 | Partial | `partial` | int (sg/ssg) — fires where some pellets hit |
-| Miss | `miss` | int (sg/ssg) — fires where no pellet hit |
+| Miss | `miss` | int (sg/ssg: fires where no pellet hit; lg: aim-error misses — neither blocked nor out of range) |
 | Direct | `direct` | int (rl/gl) — non-splash contacts (≈ server hits) |
 | Splash | `splash` | int (rl/gl) — linked hits that were splash-only |
 | Missed | `missed` | int (rl/gl) — fires that linked to no impact |
-| NearMiss | `nearMiss` | int (lg) — missed beam ended ≤ 48 qu from an enemy hull (aim error) |
-| Blocked | `blocked` | int (lg) — missed beam stopped on geometry short of max range (object in the way) |
-| OutOfRange | `outOfRange` | int (lg) — missed beam reached its ~600u max length (open space / beyond reach) |
+| Blocked | `blocked` | int (lg) — the missed beam stopped short on geometry and its extension to the ~600u max range crosses a live enemy's collision hull (32×32×56 box at the enemy's tracked position): on target and in range, the obstruction denied a would-be hit |
+| OutOfRange | `outOfRange` | int (lg) — the missed beam ran its full ~600u max length and its extension to infinity crosses a live enemy's collision hull: on target, the enemy was beyond reach |
 | Unresolved | `unresolved` | int (lg) — no beam matched the miss |
 
-For LG, `Hits + NearMiss + Blocked + OutOfRange + Unresolved == Shots`.
+For LG, `Hits + Blocked + Miss + OutOfRange + Unresolved == Shots`.
 
 The pellet stats need the KTX damage stream; the RL/GL direct/splash split
-needs projectile linking (`Streams.Projectiles`); the LG near/blocked split
-needs `Streams.Beams`. Absent inputs simply leave those fields zero.
+needs projectile linking (`Streams.Projectiles`); the LG miss split needs
+`Streams.Beams`. Absent inputs simply leave those fields zero.
 
 ### WeaponAimSplit
 
@@ -502,8 +501,9 @@ does — i.e. iff it differs from the top-level counters, so consumers use
 `w.enemy || w` for the enemy view and `w.team / w.self || zeros` for the
 others. An all-zero `enemy` split is legitimate (every hit was FF/self).
 Not split: `shots`, `pellets` and the LG miss classes
-(`nearMiss`/`blocked`/`outOfRange`/`unresolved`) — misses have no victim
-(the miss heuristic targets enemies by construction). Derivable per bucket:
+(`blocked`/`miss`/`outOfRange`/`unresolved`) — misses have no victim (the
+miss heuristic targets enemies by construction; note the lg `miss` shares
+its field with the pellet `miss`, which *is* split). Derivable per bucket:
 `splash = hits − direct`, `missed = shots − hits`.
 
 The SG/SSG per-fire split is exact per fire except when the per-fire pellet
@@ -1645,6 +1645,8 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v47 | LG miss reclassification on `WeaponAim`. A miss now only counts as `blocked` / `outOfRange` when the shooter was **on target**: `blocked` = the beam stopped short of its ~600 qu max range on geometry and its extension to full range crosses a live enemy's collision hull (a would-be hit denied by the obstruction); `outOfRange` = the beam ran its full length and its extension to infinity crosses a live enemy's hull (denied by reach). Previously every short-of-max-range beam whose endpoint wasn't near an enemy was blocked (even fired into a wall with nobody behind) and every full-length beam was out of range. `nearMiss` is **removed**: with blocked detection on the beam line, the near/wide distinction among plain aim errors carried no signal — all remaining whiffs land in the lg `miss` bucket (shares the field with the sg/ssg per-pellet miss). LG invariant becomes `hits + blocked + miss + outOfRange + unresolved == shots`. Only the opt-in beam-enriched parse is affected (the split needs `streams.beams`); expect `blocked`/`outOfRange` to drop sharply and `miss` to absorb them. |
+| v46 | Weapon-stay pickup recovery: in deathmatch 2/3/5 and coop, world weapon pickups are synthesized from `STAT_ITEMS` weapon-bit 0→1 transitions (KTX never emits `//ktx took` there). `WeaponPickup` gains `inferred`; the `source` vocabulary gains `unknown`. Weapon-stay item phases use the zero-length unavailability convention (`takenAt == respawnAt`). Duel team normalization now also rewrites items/pickup/backpack/shots/airgib team strings and folds duel `team` victim-kinds into `enemy`. Item pickup attribution samples per-frame positions at the touch instant under a shared 128 qu touch gate. |
 | v45 | Victim-class classification on the shots/aim pipeline, mirroring the damage layer's `isSelf`/`isTeam` semantics. `Shot` gains `victimKinds` (parallel to `victims`: `enemy`/`team`/`self`, omitted when all-enemy); `WeaponShots` gains `enemyHits`/`teamHits`/`selfHits` (overlapping buckets — a multi-victim fire counts in each bucket it has a victim in); `CrosshairSamples` and `LGRampSamples` gain a `team` column; `WeaponAim` gains `enemy`/`team`/`self` `WeaponAimSplit` hit-counter slices (emitted only when they differ from the top-level counters — see WeaponAimSplit). All additive (`omitempty`); `hits`/`accuracy` stay all-victims for KTX parity. |
 | v44 | Aim crosshair samples of **hit** shots attribute to the server-confirmed victim (nearest by crosshair error when a pellet fire hit several), bypassing the v43 liveness gate and the enemy filter — the killing blow lands in the frame the victim dies, so the gate read the victim as dead and handed the sample to the nearest *other* live enemy. No field changes; hit samples' `tgt`/error columns shift, and duels gain one sample per hitscan kill. |
 | v43 | Aim target attribution gates candidates on being **alive at fire time** (spawn/death streams) — dead players keep streaming position samples (the death-anim body), so a corpse could win nearest-crosshair attribution. No field changes; crosshair sample counts/targets shift on team demos. |

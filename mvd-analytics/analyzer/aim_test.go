@@ -97,11 +97,11 @@ func TestAimPostDuel(t *testing.T) {
 		t.Errorf("rocket identity broken: %+v", rl)
 	}
 
-	// Per-weapon: LG — 3 shots, 2 hits; the single miss (t=1000) joins the beam
-	// ending on B → near-miss.
+	// Per-weapon: LG — 3 shots, 2 hits; the single miss (t=1000) joins the
+	// ~1000 u beam, past max range → out of range.
 	lg := findWeaponAim(pa, "lg")
-	if lg == nil || lg.Shots != 3 || lg.Hits != 2 || lg.NearMiss != 1 || lg.Blocked != 0 {
-		t.Fatalf("lg weapon = %+v, want shots3 hits2 near1 blocked0", lg)
+	if lg == nil || lg.Shots != 3 || lg.Hits != 2 || lg.OutOfRange != 1 || lg.Blocked != 0 {
+		t.Fatalf("lg weapon = %+v, want shots3 hits2 far1 blocked0", lg)
 	}
 }
 
@@ -369,31 +369,86 @@ func TestAimPostRampTeamFlag(t *testing.T) {
 	}
 }
 
-// A miss whose beam ends far from any enemy is "blocked", not a near miss.
-func TestAimPostReachBlocked(t *testing.T) {
-	res := &result.Result{
-		Shots: &result.ShotsResult{
-			Shots:    []result.Shot{{Time: 1000, Player: "A", Weapon: "lg", Hit: false}},
-			ByPlayer: []result.PlayerShots{{Player: "A"}, {Player: "B"}},
-		},
-		Streams: &result.Streams{
-			Players: []result.PlayerStream{
-				aimTrack("A", 0, 0, 0, 3000),
-				aimTrack("B", 1000, 0, 0, 3000),
-			},
-			Beams: &result.BeamStreams{
-				T:  []int32{1000},
-				Sx: []float32{0}, Sy: []float32{0}, Sz: []float32{22},
-				Ex: []float32{0}, Ey: []float32{500}, Ez: []float32{0}, // far from B
-			},
-		},
+// Classification of a single missed LG fire: blocked (the beam stopped
+// short on geometry and its extension to full range crosses the enemy hull
+// — the obstruction denied a would-be hit), far (the beam ran its full
+// ~600 u length and its extension to infinity crosses the enemy hull — on
+// target, enemy beyond reach), miss (every other whiff — an aim error, no
+// enemy on the beam's line).
+func TestAimPostLGMissClasses(t *testing.T) {
+	cases := []struct {
+		name       string
+		bx, by, bz float64 // enemy B origin
+		ex, ey, ez float32 // beam endpoint; start is always A's muzzle (0,0,22)
+		want       string
+	}{
+		// Perpendicular wall shot 500 u from B: nothing was in the way of a
+		// would-be hit, so it is a plain miss (pre-v47 this was "blocked").
+		{"wide wall shot", 1000, 0, 0, 0, 500, 0, "miss"},
+		// Beam stops at x=200 aimed at B at x=400: the extension to full
+		// range crosses B's hull, so the obstruction denied a real hit.
+		{"enemy behind obstruction", 400, 0, 0, 200, 0, 10, "blocked"},
+		// Beam passes 24 u off B's hull mid-flight and ends on a wall far
+		// behind: the extension never crosses the hull → an aim error, not
+		// blocked (pre-v47 this was "blocked").
+		{"passed the hull mid-flight", 200, 40, 0, 500, 0, 4, "miss"},
+		// Non-hit whose beam ends inside the hull (a lag-compensation /
+		// track-interpolation artifact): the extension starts inside the
+		// hull, so it reads as a denied would-be hit.
+		{"endpoint on the hull", 300, 0, 0, 300, 0, 4, "blocked"},
+		// Full-length beam pointing dead at B beyond max range: on target,
+		// denied only by reach.
+		{"enemy on the line beyond reach", 1000, 0, 0, 590, 0, 22, "far"},
+		// Full-length beam with B perpendicular to it: aimed into open
+		// space, nobody anywhere on the line — a plain miss, not "far".
+		{"full-length into open space", 0, 1000, 0, 590, 0, 22, "miss"},
+		// Full-length beam that narrowly passed the hull mid-flight with
+		// nobody on the line beyond: an aim error too.
+		{"full-length past the hull", 200, 40, 0, 590, 0, 22, "miss"},
+		// Degenerate zero-length beam: no direction to extend.
+		{"zero-length beam", 1000, 0, 0, 0, 0, 22, "miss"},
 	}
-	aimPost(res, nil)
-	if res.Aim == nil || len(res.Aim.Players) != 1 {
-		t.Fatalf("expected 1 aim player, got %+v", res.Aim)
-	}
-	lg := findWeaponAim(res.Aim.Players[0], "lg")
-	if lg == nil || lg.Blocked != 1 || lg.NearMiss != 0 {
-		t.Fatalf("lg weapon = %+v, want blocked1 near0", lg)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := &result.Result{
+				Shots: &result.ShotsResult{
+					Shots:    []result.Shot{{Time: 1000, Player: "A", Weapon: "lg", Hit: false}},
+					ByPlayer: []result.PlayerShots{{Player: "A"}, {Player: "B"}},
+				},
+				Streams: &result.Streams{
+					Players: []result.PlayerStream{
+						aimTrack("A", 0, 0, 0, 3000),
+						aimTrack("B", tc.bx, tc.by, tc.bz, 3000),
+					},
+					Beams: &result.BeamStreams{
+						T:  []int32{1000},
+						Sx: []float32{0}, Sy: []float32{0}, Sz: []float32{22},
+						Ex: []float32{tc.ex}, Ey: []float32{tc.ey}, Ez: []float32{tc.ez},
+					},
+				},
+			}
+			aimPost(res, nil)
+			if res.Aim == nil || len(res.Aim.Players) != 1 {
+				t.Fatalf("expected 1 aim player, got %+v", res.Aim)
+			}
+			lg := findWeaponAim(res.Aim.Players[0], "lg")
+			if lg == nil {
+				t.Fatalf("no lg weapon aim")
+			}
+			got := map[string]int{
+				"blocked": lg.Blocked,
+				"far":     lg.OutOfRange,
+				"miss":    lg.Miss,
+			}
+			for class, n := range got {
+				want := 0
+				if class == tc.want {
+					want = 1
+				}
+				if n != want {
+					t.Errorf("%s = %d, want %d (weapon %+v)", class, n, want, lg)
+				}
+			}
+		})
 	}
 }

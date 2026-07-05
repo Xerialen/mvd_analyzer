@@ -521,7 +521,23 @@ package result
 //     proximity consumers share a measured 128 u touch gate (was a 256 u
 //     stale-sample bound) — a handful of beyond-gate distance attributions
 //     become honestly unattributed phases.
-const CurrentSchemaVersion = 46
+//
+// v47:
+//   - LG miss reclassification (WeaponAim). A miss only counts as Blocked
+//     or OutOfRange when the shooter was on target: Blocked = the beam
+//     stopped short of its ~600 u max range on geometry and its extension
+//     to full range crosses a live enemy's collision hull (a would-be hit
+//     denied by the obstruction); OutOfRange = the beam ran its full
+//     length and its extension to infinity crosses a live enemy's hull
+//     (denied by reach). Previously every short-of-max-range beam whose
+//     endpoint wasn't near an enemy was Blocked (even fired into a wall
+//     with nobody behind) and every full-length beam was OutOfRange.
+//     NearMiss is removed: with blocked detection on the beam line, the
+//     near/wide distinction among plain aim errors carried no signal —
+//     all remaining whiffs land in the lg `miss` bucket (field shared
+//     with the SG/SSG per-pellet Miss). LG invariant becomes
+//     Hits + Blocked + Miss + OutOfRange + Unresolved == Shots.
+const CurrentSchemaVersion = 47
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
