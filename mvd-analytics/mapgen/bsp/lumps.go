@@ -38,7 +38,3 @@ const (
 	clipnodeSize    = 8  // v29 dclipnode_t: planenum(4) + 2×int16
 	clipnodeSize29a = 12 // BSP2/2PSB dclipnode29a_t: planenum(4) + 2×int32
 )
-
-// Entities lump index is kept in case we need it later; mark it used to
-// satisfy go vet without exporting a symbol.
-var _ = lumpEntities

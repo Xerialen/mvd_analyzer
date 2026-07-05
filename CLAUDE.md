@@ -93,7 +93,7 @@ belongs in the frontend.
      `mvd-analytics/analyzer/` (backpacks, duel normalisation, items,
      loc graph, metadata, obituaries, pickup invariants, timeline +
      blip filter, weapon pickups, floor-height traces),
-     `mvd-analytics/internal/hubfetch/`,
+     `mvd-analytics/hubfetch/`,
      `mvd-analytics/mapgen/{bsp,mapgeom}/`, and `mvd-analytics/mapclip/`.
   2. **Golden corpus** — `mvd-analytics/analyzer/golden_test.go` reads
      `mvd-analytics/testdata/corpus.json` (a manifest of hub.quakeworld.nu

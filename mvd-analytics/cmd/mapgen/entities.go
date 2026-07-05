@@ -20,7 +20,7 @@ import (
 // Point entities (items, spawnpoints, teleport destinations) carry their
 // position in the entity origin and are emitted directly. Brush entities
 // (buttons, teleport sources, doors) need bmodel bbox resolution from the
-// BSP models lump and are skipped here until that lands.
+// BSP models lump, resolved via brushPlacement below.
 func emitEntities(path, name string, finder *loc.Finder, outDir string, verbose bool) error {
 	ents, err := bsp.ReadEntities(path)
 	if err != nil {

@@ -392,16 +392,3 @@ func LoadBytes(data []byte) (*BSP, error) {
 func readF32(b []byte) float32 {
 	return math.Float32frombits(binary.LittleEndian.Uint32(b))
 }
-
-var (
-	_ = lumpEntities
-	_ = lumpTextures
-	_ = lumpVertexes
-	_ = lumpTexinfo
-	_ = lumpFaces
-	_ = lumpLighting
-	_ = lumpClipnodes
-	_ = lumpMarksurfaces
-	_ = lumpEdges
-	_ = lumpSurfedges
-)

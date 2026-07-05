@@ -1,18 +1,19 @@
 // Package hubfetch resolves and downloads MVD demos from
 // hub.quakeworld.nu by game ID. It mirrors the fetch flow already used
-// by the web frontend (qw-web/static/app.js:131-179): query the
-// Supabase v1_games endpoint for the demo's sha256 + source URL, then
-// try the public CDN before falling back to the original recording
-// server.
+// by the web frontend (mvd-web/static/app.js, the SUPABASE_URL / CDN
+// path): query the Supabase v1_games endpoint for the demo's sha256 +
+// source URL, then try the public CDN before falling back to the
+// original recording server.
 //
 // The Supabase URL and anon key are public (already shipped in the
 // browser bundle) and authenticate read-only access to the public
 // game catalog. There is no token rotation concern.
 //
-// This package exists for the golden test harness in
-// qwanalytics/analyzer/golden_test.go. It is intentionally small and
-// has no dependency on the analyzer or result packages so it can be
-// reused for ad-hoc tooling (e.g. a future cache-warming CLI).
+// Its consumers are the golden test harness
+// (mvd-analytics/analyzer/golden_test.go) and mvd-api (via
+// mvd-api/internal/democache). It is intentionally small and has no
+// dependency on the analyzer or result packages so it can be reused for
+// ad-hoc tooling (e.g. a future cache-warming CLI).
 package hubfetch
 
 import (
@@ -27,7 +28,7 @@ import (
 )
 
 // SupabaseURL is the v1_games REST endpoint backing hub.quakeworld.nu.
-// The anon key below is the same one shipped in qw-web/static/app.js.
+// The anon key below is the same one shipped in mvd-web/static/app.js.
 const (
 	SupabaseURL    = "https://ncsphkjfominimxztjip.supabase.co/rest/v1/v1_games"
 	SupabaseAPIKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jc3Boa2pmb21pbmlteHp0amlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY5Mzg1NjMsImV4cCI6MjAxMjUxNDU2M30.NN6hjlEW-qB4Og9hWAVlgvUdwrbBO13s8OkAJuBGVbo"
@@ -39,9 +40,9 @@ const (
 // timestamp, …) — leave them off here so we don't need to track
 // schema drift for fields we never read.
 type GameInfo struct {
-	ID              int    `json:"id"`
-	DemoSHA256      string `json:"demo_sha256"`
-	DemoSourceURL   string `json:"demo_source_url"`
+	ID            int    `json:"id"`
+	DemoSHA256    string `json:"demo_sha256"`
+	DemoSourceURL string `json:"demo_source_url"`
 }
 
 // Client is a small wrapper around http.Client so tests can swap in

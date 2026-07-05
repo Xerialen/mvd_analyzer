@@ -2,7 +2,7 @@ package mapgeom
 
 import "strings"
 
-// itemKeywords mirrors ITEM_KEYWORDS in internal/web/static/app.js:2679.
+// itemKeywords mirrors the ITEM_KEYWORDS const in mvd-web/static/app.js:5534.
 // Keep this list byte-for-byte identical to the JS side so Go-generated
 // map geometry keys match the frontend's processLocationGroups keys.
 var itemKeywords = map[string]bool{
@@ -12,7 +12,7 @@ var itemKeywords = map[string]bool{
 	"MEGA": true, "QUAD": true, "PENT": true, "RING": true,
 }
 
-// NormalizeLocationName mirrors normalizeLocationName in app.js:2682.
+// NormalizeLocationName mirrors normalizeLocationName in mvd-web/static/app.js:5537.
 //
 // Steps:
 //  1. Trim whitespace

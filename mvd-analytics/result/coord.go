@@ -66,8 +66,17 @@ func (cs Coords) MarshalJSON() ([]byte, error) {
 // standard encoder still handles the field layout, omitempty, and the int
 // columns (t/li/lq/vp/vya) unchanged — only x/y/z/h/vx/vy/vz get the
 // rounded encoding. The Coords conversions are free (same underlying
-// type). Mirrors the field set of PositionTrack; keep in sync when adding
-// a column.
+// type). Mirrors the field set of PositionTrack.
+//
+// CANONICAL CHECKLIST — adding a PositionTrack column touches every one of
+// these sites; keep them in sync (each carries a pointer comment back here):
+//  1. streamBuilder parallel arrays — analyzer/state.go
+//  2. recordPosition (append at record time) — analyzer/timeline_streams.go
+//  3. toPlayerStream (builder → result.PlayerStream) — analyzer/timeline_streams.go
+//  4. appendSlice (window concatenation) — analyzer/timeline_streams.go
+//  5. shiftAndFilterPosition (match-relative trim) — analyzer/postprocess.go
+//  6. this MarshalJSON shadow struct — result/coord.go
+//  7. the view-layer kind/slice/columnar plumbing — mvd-analytics/view
 func (p PositionTrack) MarshalJSON() ([]byte, error) {
 	type shadow struct {
 		T   []int32 `json:"t"`

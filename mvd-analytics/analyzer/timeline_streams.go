@@ -101,6 +101,9 @@ func (b *streamBuilder) recordCells(tMs int32, v int16) {
 // boundary comparisons in locgraph / blip filter. x/y/z are kept as the
 // wire-native float32 origin (no truncation to whole units). vp/vya are
 // the raw angle16 view pitch/yaw shorts off the wire, stored losslessly.
+//
+// PositionTrack column checklist site 2 (record-time append); see the
+// checklist in result/coord.go (PositionTrack.MarshalJSON).
 func (b *streamBuilder) recordPosition(tMs int32, x, y, z float32, vp, vya int16) {
 	b.posT = append(b.posT, tMs)
 	b.posX = append(b.posX, x)
@@ -236,6 +239,8 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 			ps.Cells[i] = result.ChangeI16{T: c.t, V: c.v}
 		}
 	}
+	// PositionTrack column checklist site 3 (builder → result.PlayerStream);
+	// see the checklist in result/coord.go (PositionTrack.MarshalJSON).
 	if len(b.posT) > 0 {
 		pos := &result.PositionTrack{
 			T: append([]int32(nil), b.posT...),
@@ -367,6 +372,8 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 		b.armorType = append(b.armorType, c)
 	}
 
+	// PositionTrack column checklist site 4 (window concatenation); see the
+	// checklist in result/coord.go (PositionTrack.MarshalJSON).
 	hasLi := len(src.posLi) == len(src.posT)
 	hasH := len(src.posH) == len(src.posT)
 	hasLq := len(src.posLq) == len(src.posT)

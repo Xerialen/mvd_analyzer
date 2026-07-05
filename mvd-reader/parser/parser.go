@@ -234,7 +234,7 @@ func (p *Parser) ParseOne() error {
 
 // parseMessage handles a single demo message
 func (p *Parser) parseMessage(msg *mvd.DemoMessage) error {
-	if msg.Payload == nil || len(msg.Payload) == 0 {
+	if len(msg.Payload) == 0 {
 		return nil
 	}
 
@@ -650,13 +650,11 @@ func (p *Parser) parseHiddenDemoInfo(r *mvd.BufferReader, time float64, dataLen 
 		return nil
 	}
 
-	content := make([]byte, contentLen)
-	for i := 0; i < contentLen; i++ {
-		b, err := r.ReadByte()
-		if err != nil {
-			return err
-		}
-		content[i] = b
+	// ReadBytes returns a sub-slice of the message payload; safe to retain
+	// here because each DemoMessage.Payload is freshly allocated per message.
+	content, err := r.ReadBytes(contentLen)
+	if err != nil {
+		return err
 	}
 
 	return p.emit(&DemoInfoEvent{

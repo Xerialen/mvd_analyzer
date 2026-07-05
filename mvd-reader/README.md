@@ -66,8 +66,8 @@ The concrete event list, in stable order:
 | `KindStuffText` | `StuffTextEvent` | Server-pushed console command |
 | `KindCenterPrint` | `CenterPrintEvent` | HUD center text (match settings countdown) |
 | `KindServerInfo` | `ServerInfoEvent` | Mid-game serverinfo key/value update |
-| `KindDeath` | `DeathEvent` | Player died — `StatHealth` crossed from >0 to ≤0 |
-| `KindSpawn` | `SpawnEvent` | Player spawned — `StatHealth` crossed from ≤0 to >0 |
+| `KindDeath` | `DeathEvent` | Player died — deduplicated across `StatHealth` edges, the `DF_DEAD` playerinfo bit, and obituary corroboration |
+| `KindSpawn` | `SpawnEvent` | Player spawned — deduplicated across `StatHealth` edges and the `DF_DEAD` playerinfo bit clearing |
 | `KindItemSpawn` | `ItemSpawnEvent` | Item entity observed — baseline known (kind, position) |
 | `KindItemState` | `ItemStateEvent` | Item became taken or respawned — from entity modelindex transitions |
 | `KindBackpackDropHint` | `BackpackDropHintEvent` | KTX `//ktx drop` stuffcmd: `(BackpackEnt, ItemFlags, PlayerEnt)` for RL/LG drops only |
@@ -85,15 +85,32 @@ The concrete event list, in stable order:
 | `KindBeam` | `BeamEvent` | `svc_temp_entity` lightning beam (`TE_LIGHTNING1/2/3`) — firing entity + start/end coords. `TE_LIGHTNING2` is the player LG bolt (one per fire tick), the authoritative per-shot LG signal for the `shots` analyzer |
 | `KindNails` | `NailsFrameEvent` | `svc_nails` / `svc_nails2` — the full live nail set for one frame (ids + origins). Emitted only when nail decoding is enabled (`Parser.SetDecodeNails`); high volume, off by default. Note most modern servers (`sv_nailhack`) send nails as packet entities (spike models) instead, so this fires only on non-nailhack servers |
 
-`DeathEvent` and `SpawnEvent` are derived events synthesised by the
-parser from protocol-level `StatHealth` transitions. They fire at the
-exact event time, so analytics don't have to reconstruct death/spawn
-by comparing health samples across the sampling boundary (including
-the instant-respawn case where a gib and respawn land in the same
-50 ms window). See `parser/stats.go` for the emission logic;
-consumers that want killer / weapon attribution still go to the
-analyzer-layer obituary parser (that's KTX-mod-specific text, not a
-protocol signal).
+`DeathEvent` and `SpawnEvent` are derived events the parser synthesises
+from up to three sources sharing one per-player dead-state cursor, so a
+transition is captured even when an individual protocol signal misses it:
+
+1. **`StatHealth` edges** in `dem_stats` (>0 → ≤0 for death, ≤0 → >0 for
+   spawn) — reliable for the player whose stat block is being consumed,
+   but structurally blind to transitions whose stat update is addressed
+   to a different player.
+2. **The `DF_DEAD` bit** in `svc_playerinfo`, broadcast every frame for
+   every player, catching the deaths the stat detector misses. The first
+   two are deduplicated in `maybeEmitDeath` / `maybeEmitSpawn`.
+3. **Obituary corroboration** (`forceEmitDeath`, driven by the parser's
+   obituary-print path, gated on match start): force-emits a death when
+   KTX broadcasts an obit whose entity-state transition never reaches the
+   wire — tight respawn cycles and the pent-deflection corner case. This
+   is the only source that bypasses the dedup, since KTX's scoreboard is
+   authoritative that a death happened. (`DeathEvent` only; the paired
+   `SpawnEvent` still arrives via the normal `DF_DEAD`-clear path.)
+
+They fire at the exact event time, so analytics don't have to reconstruct
+death/spawn by comparing health samples across the sampling boundary
+(including the instant-respawn case where a gib and respawn land in the
+same 50 ms window). See `parser/stats.go` and `parser/print.go` for the
+emission logic; consumers that want killer / weapon attribution still go
+to the analyzer-layer obituary parser (that's KTX-mod-specific text, not
+a protocol signal).
 
 `ItemSpawnEvent` and `ItemStateEvent` are derived events synthesised
 from the entity-state stream (`svc_spawnbaseline`,

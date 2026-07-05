@@ -288,6 +288,9 @@ func shiftAndFilterInts(stream []int32, matchStartMs int32) []int32 {
 // view.RegionControl, airgibsPost) guard on `len(col) == len(pt.T)` and
 // will silently skip the player if the lengths drift. All time
 // arithmetic is int32 ms.
+//
+// PositionTrack column checklist site 5 (match-relative trim); see the
+// checklist in result/coord.go (PositionTrack.MarshalJSON).
 func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
 	if pt == nil || len(pt.T) == 0 {
 		return

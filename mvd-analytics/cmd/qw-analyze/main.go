@@ -1,4 +1,4 @@
-// qw-analyze is a command-line consumer of the qwanalytics pipeline.
+// qw-analyze is a command-line consumer of the mvd-analytics pipeline.
 // It reads an MVD demo file and writes the analysis result in one of
 // several formats — full JSON (the stable result-schema contract),
 // markdown (a human-readable summary suitable as a seed for an AI
@@ -69,7 +69,7 @@ func main() {
 
 	viewName := flag.String("view", "full", "view: full | buckets | events | trails | stream-slice | state-at | region-control")
 	bucketStr := flag.String("bucket", "50ms", "bucket duration for -view buckets / region-control (e.g. 50ms, 1s, 10s)")
-	fieldsStr := flag.String("fields", "", "comma-separated field codes (see qwanalytics/view docs)")
+	fieldsStr := flag.String("fields", "", "comma-separated field codes (see mvd-analytics/view docs)")
 	reducerArgs := stringListFlag("reducer", "field=name reducer override; repeatable (e.g. -reducer h=min)")
 	fromStr := flag.String("from", "", "start time (match-relative; e.g. 30s, 1m30s)")
 	toStr := flag.String("to", "", "end time")

@@ -1,7 +1,8 @@
 // Package events defines the source-agnostic event schema that any
 // QuakeWorld data source — recorded MVD demo, live QTV stream, etc. —
 // produces. Analytics consumers depend only on this package; they should
-// never need to import qwdemo/mvd or qwdemo/parser directly.
+// never need to import the mvd-reader/mvd or mvd-reader/parser packages
+// directly.
 //
 // The package is intentionally small: it re-exports the concrete event
 // types and their payload domain types from the underlying parser/mvd

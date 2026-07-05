@@ -272,10 +272,13 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// access. The default ordering (set in NewDefaultRegistry) is:
 	//   1. recoverTelefragTeamkills
 	//   2. normalizeMatchRelativeTimes
-	//   3. duelTeamNormalize
-	//   4. scoreboardStatsPost
-	//   5. locGraphPost
-	//   6. regionControlPost
+	//   3. deriveDemoStartAnchor
+	//   4. duelTeamNormalize
+	//   5. aimPost
+	//   6. airgibsPost
+	//   7. scoreboardStatsPost
+	//   8. locGraphPost
+	//   9. regionControlPost
 	// — but the slice is otherwise unconstrained. Add a step by
 	// calling r.RegisterPostProcessor(...) before Analyze.
 	for _, p := range r.postProcessors {

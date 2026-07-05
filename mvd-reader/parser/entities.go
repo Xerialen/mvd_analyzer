@@ -148,8 +148,8 @@ func (e *ProjectileDespawnEvent) EventTime() float64   { return e.Time }
 // can filter non-items cheaply.
 //
 // Armors all share progs/armor.mdl; the skin disambiguates GA/YA/RA
-// (see classifyArmor below). Every other item is unambiguous from the
-// path alone.
+// (the disambiguation is inline in classifyItem). Every other item is
+// unambiguous from the path alone.
 //
 // Sources cross-referenced: ktx/src/items.c setmodel() calls for each
 // item class, plus Quake 1 progs (id Software originals).

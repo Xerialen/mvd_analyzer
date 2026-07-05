@@ -19,14 +19,14 @@ import (
 // Source is an events.Source implementation that pulls events from an
 // MVD file or byte stream. Satisfies events.Source.
 //
-// Internally, the push-style parser emits into a small ring of events
-// buffered between ParseOne calls. Most ParseOne invocations emit 0–4
-// events (one demo message may carry multiple svc_* commands), so the
-// buffer lives on the stack-allocated initial backing array in the
-// common case and never grows. `head` tracks the read cursor; when the
-// consumer drains to the end we reset to index 0 and reuse the same
-// backing array for the next batch — crucial to avoid per-event
-// allocations along the hot path.
+// Internally, the push-style parser emits into a small reset-and-reuse
+// slice of events buffered between ParseOne calls. Most ParseOne
+// invocations emit 0–4 events (one demo message may carry multiple
+// svc_* commands), so the buffer lives on the stack-allocated initial
+// backing array in the common case and never grows. `head` tracks the
+// read cursor; when the consumer drains to the end we reset to index 0
+// and reuse the same backing array for the next batch — crucial to
+// avoid per-event allocations along the hot path.
 type Source struct {
 	closer  io.Closer
 	decoder *mvd.Decoder

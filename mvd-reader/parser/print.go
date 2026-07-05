@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/mvd-analyzer/mvd-reader/mvd"
 )
 
@@ -114,46 +116,13 @@ func (p *Parser) updateMatchStartedFromPrint(msg string) {
 	if p.matchStarted {
 		return
 	}
-	lower := lowercaseASCII(msg)
+	lower := strings.ToLower(msg)
 	for _, phrase := range matchStartedPhrases {
-		if containsASCII(lower, phrase) {
+		if strings.Contains(lower, phrase) {
 			p.matchStarted = true
 			return
 		}
 	}
-}
-
-// lowercaseASCII is a tiny ASCII-only ToLower (the start phrases above
-// are pure ASCII; QW names with markup get folded the same way the
-// matcher in matchStartedPhrases expects).
-func lowercaseASCII(s string) string {
-	b := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			c += 'a' - 'A'
-		}
-		b[i] = c
-	}
-	return string(b)
-}
-
-// containsASCII is a stdlib-free strings.Contains substitute scoped to
-// the obituary path — the parser package keeps its low-level helpers
-// independent of strings so the import surface stays minimal.
-func containsASCII(haystack, needle string) bool {
-	if len(needle) == 0 {
-		return true
-	}
-	if len(needle) > len(haystack) {
-		return false
-	}
-	for i := 0; i+len(needle) <= len(haystack); i++ {
-		if haystack[i:i+len(needle)] == needle {
-			return true
-		}
-	}
-	return false
 }
 
 // lookupSlotByName finds the player slot whose userinfo name matches

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"math"
 	"os"
 )
@@ -341,7 +340,3 @@ func nulString(b []byte) string {
 func readF32(b []byte) float32 {
 	return math.Float32frombits(binary.LittleEndian.Uint32(b))
 }
-
-// Assert io.Reader-friendly path for completeness (currently unused but
-// keeps the package honest — ParseBytes is the workhorse).
-var _ = io.EOF

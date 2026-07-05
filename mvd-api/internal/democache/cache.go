@@ -9,8 +9,8 @@
 // of tier 2 to absorb the gob-decode cost during a session of related
 // queries.
 //
-// The cache is exclusively consumed by qwanalytics/cmd/qw-mvd; it does
-// not appear on the public qwanalytics API.
+// The cache is consumed by mvd-api (the REST host); it is not part of
+// the public mvd-analytics API.
 package democache
 
 import (
