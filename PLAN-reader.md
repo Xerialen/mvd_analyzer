@@ -1,6 +1,8 @@
 # PLAN-reader — review of mvd-reader
 
-Scope: `mvd-reader/` (events/, mvd/, parser/, mvdfile/, source/mvd/), ~6.8k LOC
+> Updated 2026-07-05 against main @ 05e2ed9 (schema v47). Originally written pre-#97; the sound/tempentity/nails decoders added since materially change the skip-path inventory — re-verified throughout.
+
+Scope: `mvd-reader/` (events/, mvd/, parser/, mvdfile/, source/mvd/), ~7.7k LOC
 including tests. Review targets: correctness, quality, LOC bloat, readability,
 extensibility, maintainability.
 
@@ -34,11 +36,16 @@ refactor is warranted. The suggestions below are consolidation, not redesign.
 **A2. One wire format, two implementations — consolidate the parse and skip
 paths.** Every layout the parser understands is written twice: once to decode
 (`entities.go` `applyDeltaFields`/`parseSpawnBaseline`, `position.go`
-`parsePlayerInfo`) and once to skip (`parser.go` `skipEntityDelta`,
-`skipSpawnBaseline`, `skipPlayerInfo`, `skipPacketEntities`). Duplicate
-layout code *will* drift, and it already has (see F3). Worse, most of the
-skip copies are unreachable (see F4) because the main dispatch switch handles
-those commands, so the dead copy silently rots. Suggested end state:
+`parsePlayerInfo`, and since #97 `sound.go` `parseSound`, `tempentity.go`
+`parseTempEntity`, `nails.go` `parseNails`, `serverdata.go` `parseSoundList`)
+and once to skip (`parser.go` `skipEntityDelta`, `skipSpawnBaseline`,
+`skipPlayerInfo`, `skipPacketEntities`, `skipSound`, `skipTempEntity`,
+`skipNails`, `skipModelList`/`skipSoundList`). #97 gave svc_sound /
+svc_temp_entity / svc_nails real parse paths in the main switch but kept
+their skip twins, so the duplicated surface *grew*. Duplicate layout code
+*will* drift, and it already has (see F3). Worse, most of the skip copies
+are unreachable (see F4) because the main dispatch switch handles those
+commands, so the dead copy silently rots. Suggested end state:
 - `skipCommand` handles only commands the main switch does **not** decode.
 - The entity-delta layout has exactly one implementation
   (`applyDeltaFields` + a flag-word reader shared with `parsePacketEntities`
@@ -46,23 +53,25 @@ those commands, so the dead copy silently rots. Suggested end state:
   byte cost of decoding into a stack `EntityState` is negligible relative to
   drift risk.
 - Delete `skipPlayerInfo`, `skipSpawnBaseline`-as-duplicate,
-  `skipPacketEntities`/`skipDeltaPacketEntities`, and fold
-  `skipTempEntityDiag`/`skipTempEntity` and `skipModelList`/`skipSoundList`
-  into single functions.
-Impact: correctness + bloat (~150 LOC net deletion) + extensibility (new FTE
+  `skipPacketEntities`/`skipDeltaPacketEntities`, and the newly-dead
+  `skipSound`/`skipTempEntity`/`skipNails`/`skipModelList`/`skipSoundList`
+  (#97 already removed `skipTempEntityDiag`, folding its diagnostics into
+  `parseTempEntity`).
+Impact: correctness + bloat (~200 LOC net deletion) + extensibility (new FTE
 flag handled in one place).
 
 **A3. Clean end-of-demo is reported as an error.** `events/events.go:23-25`
 promises "Next returns io.EOF at a clean end of stream", but the standard MVD
 termination — `svc_disconnect` with text `"EndOfDemo"` — returns
-`mvd.ErrEndOfDemo` from `parseNetworkMessage` (parser.go:317), which
-`ParseOne` (parser.go:216-225) passes through raw (it only maps the
+`mvd.ErrEndOfDemo` from `parseNetworkMessage` (parser.go:346-350), which
+`ParseOne` (parser.go:224-233) passes through raw (it only maps the
 *decoder*-level `ErrEndOfDemo` to `io.EOF`), so `Source.Next`
 (source/mvd/source.go:87-93) returns it as a hard error. Evidence this bites
-in practice: the untracked debug tools special-case `err != mvd.ErrEndOfDemo`,
-`qw-analyze dumpEvents` (mvd-analytics/cmd/qw-analyze/main.go:438-443) returns
+in practice: the untracked debug tools special-case `err != mvd.ErrEndOfDemo`
+(cmd/debug-frags/main.go:52, cmd/debug-stats/main.go:86),
+`qw-analyze dumpEvents` (mvd-analytics/cmd/qw-analyze/main.go:442-457) returns
 an error for every healthy demo that ends with the disconnect, and
-`registry.go:185-192` copes by treating **every** Next error as end-of-stream
+`registry.go:201-208` copes by treating **every** Next error as end-of-stream
 ("Log and stop" — and it doesn't even log), which means real corruption is
 now indistinguishable from a clean end. Fix in Layer 1:
 1. In `ParseOne` (or at the `SvcDisconnect` site), map the disconnect-based
@@ -80,7 +89,7 @@ state.** `UserInfoEvent.Player` (userinfo.go:57, 110) and
 parser-owned structs that the parser keeps mutating. This is load-bearing
 spookiness: `parseModelList` (serverdata.go:161-164) fills in
 `ServerData.MapFile` *after* `ServerDataEvent` was emitted, and the analytics
-registry stores `e.Player` pointers (`registry.go:196-198`) that retroactively
+registry stores `e.Player` pointers (`registry.go:213-215`) that retroactively
 change on every subsequent userinfo update. A consumer that value-copies at
 event time gets a different answer than one that holds the pointer — nothing
 in the `events` package documents which is intended. Suggested fix: emit
@@ -91,20 +100,23 @@ sequence it deliberately, with the analytics consumers audited in the same
 PR. Impact: correctness (latent) + extensibility.
 
 **A5. Inconsistent event time representation.** The project learned the
-float-drift lesson and added canonical `TimeMs` — but only to five event
-types (`PlayerPositionEvent`, `DeathEvent`, `SpawnEvent`, `MoverSpawnEvent`,
-`MoverStateEvent`). Everything else carries only float seconds, and
-`entities.go:183-185` (`wireMs`) round-trips float→ms to recover what the
-decoder had exactly. Suggestion: pass `TimeMs` alongside `Time` through the
-parse call-chain (it is already threaded to several parsers) and put it on
-every event; consider an `EventTimeMs() int32` companion on the `Event`
+float-drift lesson and added canonical `TimeMs` — now on ten event types
+(`PlayerPositionEvent`, `DeathEvent`, `SpawnEvent`, `MoverSpawnEvent`,
+`MoverStateEvent`, plus #97's `SoundEvent`, `BeamEvent`, `NailsFrameEvent`,
+`ProjectileSpawnEvent`, `ProjectileDespawnEvent` — every new event adopted
+it, so the convention is winning). Everything else still carries only float
+seconds, and `entities.go:250-255` (`wireMs`) round-trips float→ms to recover
+what the decoder had exactly. Suggestion: pass `TimeMs` alongside `Time`
+through the parse call-chain (it is already threaded to most parsers) and put
+it on every event; consider an `EventTimeMs() int32` companion on the `Event`
 interface so consumers stop re-deriving it. Impact: correctness-adjacent
 consistency + extensibility.
 
 **A6. Parser state never resets on a second `svc_serverdata`.**
-`parseServerData` replaces `p.serverData` but leaves `modelList`, `baselines`,
-`currentEntities`, `spawnedItems`, `spawnedMovers`, `playerDead*`, and
-`matchStarted` from the previous map. Irrelevant for single-match MVD files,
+`parseServerData` replaces `p.serverData` but leaves `modelList`, `soundList`,
+`baselines`, `currentEntities`, `spawnedItems`, `spawnedMovers`,
+`spawnedProjectiles`, `playerDead*`, and `matchStarted` from the previous
+map. Irrelevant for single-match MVD files,
 but the package doc sells the event schema as QTV-stream-ready
 (events/events.go:2-14), and a live QTV stream crosses map changes. Either
 reset the per-map state in `parseServerData` or document the single-map
@@ -112,11 +124,13 @@ assumption where the QTV claim is made. Impact: extensibility.
 
 **A7. Match-start phrase list is duplicated across layers in the wrong
 direction.** `print.go:96-109` keeps a copy of the analyzer's
-`matchStartPatterns` with a "keep in sync" comment — a drift landmine both
-files acknowledge. The dependency arrow allows the clean fix: analytics
-imports mvd-reader, so the **canonical table can live in Layer 1** (parser or
-events) and `mvd-analytics/analyzer/matchtiming.go` can import it. Delete the
-mirror comment pair. Impact: maintainability.
+`matchStartPatterns` with a "should be mirrored here" comment — a drift
+landmine only the parser side even acknowledges (matchtiming.go:32-39 carries
+no back-pointer, so an addition there silently strands the parser's gate).
+The dependency arrow allows the clean fix: analytics imports mvd-reader, so
+the **canonical table can live in Layer 1** (parser or events) and
+`mvd-analytics/analyzer/matchtiming.go` can import it. Delete the mirror
+comment. Impact: maintainability.
 
 ---
 
@@ -138,54 +152,66 @@ verify against the golden corpus). Add a regression test with a real
 `\*spectator\1` userinfo string. *(correctness)*
 
 **F2. `ErrEndOfDemo` escapes the Source contract; queued events dropped.**
-Details and fix in A3. Concrete edits: parser.go:317 (or 216-225),
+Details and fix in A3. Concrete edits: parser.go:346-350 (or 224-233),
 source/mvd/source.go:87-93 (drain-then-error), plus a test asserting a demo
 ending in `svc_disconnect "EndOfDemo"` yields the tail events then `io.EOF`.
 *(correctness)*
 
 **F3. The skip-path entity delta has diverged from the parse-path.** Three
-concrete divergences between `skipEntityDelta` (parser.go:1074-1169) and
-`applyDeltaFields`/`parsePacketEntities` (entities.go:446-616):
+concrete divergences between `skipEntityDelta` (parser.go:1079-1176) and
+`applyDeltaFields`/`parsePacketEntities` (entities.go:412-643), all
+re-verified on current HEAD:
 - `skipEntityDelta` does not skip `uFTEScale` / `uFTEFatness` payload bytes
-  that `applyDeltaFields` handles (entities.go:544-553) — a demo using those
+  that `applyDeltaFields` handles (entities.go:614-623) — a demo using those
   would misalign only on the (dead-ish) skip path.
 - Extension gating differs: skip gates `uFTETrans`/`uFTEColourMod` on the
-  negotiated `fteExt` bits (parser.go:1159-1166), parse skips them
-  unconditionally on `morebits` (entities.go:539-564). ezquake gates on the
-  negotiated extension, so the parse path is the nonconforming one.
+  negotiated `fteExt` bits (parser.go:1166-1173), parse skips them
+  unconditionally on `morebits` (entities.go:609-634). ezquake gates on the
+  negotiated extension (cl_ents.c:580, 586), so the parse path is the
+  nonconforming one.
 - `parsePacketEntities` reads the FTE morebits byte only when `fteExt != 0`
-  (entities.go:393) but `readDelta` reads it unconditionally
-  (entities.go:590).
+  (entities.go:463) but `readDelta` reads it unconditionally
+  (entities.go:660).
 Resolving A2 (single implementation) makes all three impossible by
 construction; otherwise fix each individually. *(correctness)*
 
-**F4. ~150 LOC of unreachable/duplicate skip code.** `skipCommand` is only
-invoked from the `default:` arm of the main dispatch switch
-(parser.go:418-429), so its branches for commands the main switch already
-handles are dead: `SvcSpawnBaseline` (731-737), `SvcPlayerInfo` (768-769),
-`SvcModelList` (774-775), `SvcPacketEntities` (778-779),
-`SvcDeltaPacketEntities` (780-781), `SvcSetInfo` (786-797, even
-self-documented as "unused"), `SvcFTESpawnBaseline2` (807-813),
-`SvcFTEModelListShort` (821-822). Their helper functions `skipPlayerInfo`
-(946-986, a byte-for-byte duplicate of position.go's
-`skipPlayerInfoRemainder`), `skipPacketEntities` (1028-1042),
-`skipDeltaPacketEntities` (1044-1047) die with them (`skipEntityDelta` stays
-— still reachable via `SvcFTESpawnStatic2`, until A2 replaces it). Also fold:
-`skipTempEntityDiag` and `skipTempEntity` (parser.go:889-932) are identical
-except for returning the TE type — implement one as a one-line wrapper of the
-other; `skipModelList`/`skipSoundList` (1000-1026) are identical — keep one.
-*(bloat)*
+**F4. ~200 LOC of unreachable/duplicate skip code — grown since #97.**
+`skipCommand` is only invoked from the `default:` arm of the main dispatch
+switch (parser.go:450-455), so its branches for commands the main switch
+already handles are dead. #97 moved svc_sound / svc_temp_entity /
+svc_nails / svc_soundlist into the main switch without deleting their skip
+branches, so the dead set grew. Dead branches now: `SvcSound` (738-739),
+`SvcSpawnBaseline` (757-763), `SvcTempEntity` (767-768), `SvcPlayerInfo`
+(794-795), `SvcNails`/`SvcNails2` (796-797), `SvcModelList` (800-801),
+`SvcSoundList` (802-803), `SvcPacketEntities` (804-805),
+`SvcDeltaPacketEntities` (806-807), `SvcSetInfo` (812-823, even
+self-documented as "unused"), `SvcFTESpawnBaseline2` (833-839),
+`SvcFTEModelListShort` (847-848). Helper functions with no live caller die
+with them: `skipSound` (856-872), `skipTempEntity` (892-939 — its own doc
+now admits it is a "skip-only fallback retained on skipCommand's path", but
+that path is unreachable), `skipPlayerInfo` (953-993, a byte-for-byte
+duplicate of position.go's `skipPlayerInfoRemainder`), `skipNails`
+(995-1005), `skipModelList`/`skipSoundList` (1007-1033, identical twins —
+both now deletable outright), `skipPacketEntities` (1035-1049),
+`skipDeltaPacketEntities` (1051-1054). Still reachable and staying:
+`skipSpawnBaseline` (via `SvcSpawnStatic`), `skipDownload`, and
+`skipEntityDelta` (via `SvcFTESpawnStatic2`) — until A2 replaces them.
+The pre-#97 `skipTempEntityDiag`/`skipTempEntity` fold suggestion is
+resolved: #97 removed `skipTempEntityDiag`. *(bloat)*
 
 **F5. Skip helpers ignore `Skip`/read errors → silent cursor misalignment.**
 `BufferReader.Skip` returns `io.EOF` *without advancing* (mvd/reader.go:266-272),
 so an ignored error leaves the cursor in place and the command loop
 reinterprets the remaining payload bytes as fresh svc commands — exactly the
 "silent drift" failure mode the project's own comments call the worst case
-(parser.go:869-887). Ignored returns at: `skipSound` (parser.go:836-845),
-`skipSpawnBaseline` (848-860), `skipDownload` (939), `parseHiddenDamage`
-(570), `skipDeltaPacketEntities` (1045), `skipPlayerInfoRemainder`
-(position.go:161-190), and the `SvcDisconnect` `ReadString` (parser.go:315).
-All of these can trivially propagate. *(correctness)*
+(parser.go:892-916). Ignored returns at: `skipSound` (parser.go:861-867),
+`skipSpawnBaseline` (874-886), `skipDownload` (946), `parseHiddenDamage`
+(596), `skipDeltaPacketEntities` (1052), `skipPlayerInfoRemainder`
+(position.go:161-190), and the `SvcDisconnect` `ReadString` (parser.go:347).
+All of these can trivially propagate — though note the skipSound and
+skipDeltaPacketEntities sites are now dead code per F4, so deletion also
+cures them. (#97's new `parseSound`/`parseTempEntity`/`parseNails` all check
+their Skip errors — the new code got this right.) *(correctness)*
 
 **F6. Dead exported types and aliases.** Verified zero references anywhere in
 the workspace (reader, analytics, api, web, mcp):
@@ -194,13 +220,15 @@ the workspace (reader, analytics, api, web, mcp):
   (218-232), `mvd.DamageEvent` (289-297 — a stale duplicate of
   `parser.DamageEvent`, differing in field types).
 - Their `events` aliases `PlayerState`, `Stats`, `PrintMessage`, `FragEvent`,
-  `Vec3`, `Angle3`, `EntityState` (events/events.go:94-108) — none used by
-  any consumer (position/mover events use raw `[3]float32`).
-- The entire `Kind` alias + 25 `Kind*` constants block (events/events.go:35-65)
+  `Vec3`, `Angle3` (events/events.go:110-119) and `EntityState`
+  (events/events.go:105) — none used by any consumer (position/mover events
+  and #97's sound/beam/projectile events all use raw `[3]float32`).
+- The entire `Kind` alias + `Kind*` constants block (events/events.go:35-70)
   — zero consumer references; dispatch is by type switch as the docs
-  recommend.
+  recommend. #97 dutifully extended it to 30 constants (KindSound…KindNails),
+  growing the untested surface.
 Delete them (and fix the README "domain types carried on those events" list,
-which names `PlayerState`/`Stats` — mvd-reader/README.md:10-12). If the Kind
+which names `PlayerState`/`Stats` — mvd-reader/README.md:9-13). If the Kind
 constants are meant as public API for future consumers, document that intent;
 otherwise they are 30 lines of untested surface. *(bloat)*
 
@@ -217,14 +245,14 @@ imports `strings`. Replace with `strings.Contains(strings.ToLower(msg), …)`
 identical: match prefix, `strings.Fields`, N × `strconv.Atoi`, emit. Extract
 `parseKtxHintInts(cmd, prefix string, n int) ([]int, bool)` and reduce each
 to ~8 lines; the next `//ktx` directive becomes a table entry. Also consider
-having the `SvcStuffText` case (parser.go:344-351) check the `"//ktx "`
+having the `SvcStuffText` case (parser.go:364-384) check the `"//ktx "`
 prefix once before fanning out to the three matchers. *(bloat / extensibility)*
 
 **F9. `ItemStateEvent` doc contradicts re-baseline behaviour.** The doc
 promises `Taken=false` when "a fresh baseline replaced a taken entity"
-(entities.go:61-66), but `registerBaseline` overwrites `currentEntities`
-without emitting an item state event (entities.go:280-304; only movers get
-the re-baseline state emission at 317-327) — and because the overwrite makes
+(entities.go:57-69), but `registerBaseline` overwrites `currentEntities`
+without emitting an item state event (entities.go:337-374; only movers get
+the re-baseline state emission at 386-397) — and because the overwrite makes
 the entity already-visible, the next frame diff sees no transition either.
 Either emit the transition for items on re-baseline (mirroring the mover
 branch) or fix the doc to say re-baselines reset silently. Decide against a
@@ -232,19 +260,23 @@ demo that actually resends baselines if one exists. *(correctness / docs)*
 
 **F10. Diagnostics mislabel truncated known commands as "unknown_svc".**
 `skipCommand` returns `io.EOF` both for "command not in the table"
-(parser.go:823-825) and for a genuine truncated read inside a known command's
-skip; the caller then warns `unknown_svc` for both (parser.go:425-428). Use a
+(parser.go:849-852) and for a genuine truncated read inside a known command's
+skip; the caller then warns `unknown_svc` for both (parser.go:450-455). Use a
 distinct sentinel (`errUnknownSvc`) for the not-in-table case and report
-truncation as `parse_error` with the command name. Cheap, and makes the
-diagnostic corpus runs trustworthy. *(readability / diagnostics)*
+truncation as `parse_error` with the command name. (#97 fixed the temp-entity
+instance of this by giving it its own `unknown_te` warning at parser.go:334-338;
+the general skipCommand conflation remains.) Cheap, and makes the diagnostic
+corpus runs trustworthy. *(readability / diagnostics)*
 
 **F11. Entity-diff emit errors are discarded.** `diffItemEntity` /
-`diffMoverEntity` use `_ = p.emit(...)` (entities.go:677, 696, 730, 752)
-because `diffEntityTransitions` returns void — breaking the documented
-handler contract (a handler error should abort parsing; parser.go:190-197).
-Today's only production handler never errors, but the contract exists for
-sources/tools that do. Make the diff functions return error and propagate
-from `parsePacketEntities`. *(correctness / API contract)*
+`diffMoverEntity` / #97's `diffProjectileEntity` use `_ = p.emit(...)`
+(entities.go:754, 770, 773, 797, 816, 850, 872 — the pattern spread to the
+new projectile events) because `diffEntityTransitions` returns void —
+breaking the handler contract (a handler error should abort parsing; see
+`emit`, parser.go:197-205). Today's only production handler never errors,
+but the contract exists for sources/tools that do. Make the diff functions
+return error and propagate from `parsePacketEntities`. *(correctness / API
+contract)*
 
 **F12. `parseServerData` silently zeroes the ten movevars on truncation.**
 serverdata.go:87-115 ignores every error (`gravity, _ := …`). A truncated
@@ -253,28 +285,29 @@ careful error handling five lines earlier. Propagate the first error.
 *(correctness, low likelihood)*
 
 **F13. `parseHiddenDemoInfo` reads the JSON body byte-by-byte.**
-parser.go:627-634 loops `ReadByte` into a pre-sized slice; `r.ReadBytes(contentLen)`
+parser.go:653-660 loops `ReadByte` into a pre-sized slice; `r.ReadBytes(contentLen)`
 is one line (note it returns a sub-slice of the message payload — fine here
-because each `DemoMessage.Payload` is freshly allocated, but copy if F6's
-aliasing note ever changes). *(readability)*
+because each `DemoMessage.Payload` is freshly allocated, but copy if the
+ReadBytes aliasing nit below ever changes). *(readability)*
 
-**F14. gofmt failures.** `gofmt -l mvd-reader/` flags 7 files:
-`mvd/reader.go`, `mvd/types.go`, `parser/entities.go`,
-`parser/entities_mover_test.go`, `parser/ktx_drop.go`, `parser/ktx_pickup.go`,
-`parser/obituary.go`. For a repo whose CLAUDE.md demands style discipline,
-run gofmt once and keep it clean (consider a CI check). *(readability)*
+**F14. gofmt failures.** `gofmt -l mvd-reader/` flags 6 files:
+`mvd/reader.go`, `mvd/types.go`, `parser/entities_mover_test.go`,
+`parser/ktx_drop.go`, `parser/ktx_pickup.go`, `parser/obituary.go`
+(`parser/entities.go` came clean via #97's rewrite). For a repo whose
+CLAUDE.md demands style discipline, run gofmt once and keep it clean
+(consider a CI check). *(readability)*
 
 **F15. Doc drift, various.** Fix while touching the files:
 - events/events.go:4 references `qwdemo/mvd` / `qwdemo/parser` — stale module
   name.
-- README event table + prose (mvd-reader/README.md:69-70, 83-91) describe
+- README event table + prose (mvd-reader/README.md:69-70, 88-96) describe
   `DeathEvent`/`SpawnEvent` as StatHealth-derived only; the implementation now
   has three deduplicated sources (StatHealth edges, DF_DEAD bit, obituary
   corroboration via `forceEmitDeath`) — the README should sell that design,
   it's one of the best parts of the parser.
 - diagnostic.go:8 lists warning categories `invalid_slot` and
   `payload_abandoned` that nothing emits.
-- entities.go:116 says "see classifyArmor below" — no such function (the
+- entities.go:150 says "see classifyArmor below" — no such function (the
   logic is inline in `classifyItem`).
 - source/mvd/source.go:22 calls the queue a "ring"; it's a reset-and-reuse
   slice. *(docs)*
@@ -290,7 +323,7 @@ extract the shared peek-and-detect used by both `Open` and `NewReader`.
 `updateStat`'s `StatFrags` arm (stats.go:228-231) updates `players[].Frags`
 but emits only the generic `StatUpdateEvent`, while `svc_updatefrags`
 (stats.go:170-195) emits `FragUpdateEvent`. The analytics registry builds
-`ctx.FragsBySlot` from `FragUpdateEvent` only (registry.go:199-201). If any
+`ctx.FragsBySlot` from `FragUpdateEvent` only (registry.go:216-218). If any
 demo carries a frag change only through `STAT_FRAGS`, that consumer misses
 it. Either emit `FragUpdateEvent` (deduplicated on value change) from the
 stat path, or record why `svc_updatefrags` is guaranteed to always accompany
@@ -300,17 +333,16 @@ it (mvdsv reference). *(correctness, needs verification)*
 
 ## Low priority / nits
 
-- `parseMessage` (parser.go:229): `msg.Payload == nil || len(msg.Payload) == 0`
+- `parseMessage` (parser.go:237): `msg.Payload == nil || len(msg.Payload) == 0`
   — the second test covers the first.
-- `decoder.go:105-177`: the `DemSingle, DemStats` and `DemAll, DemRead` cases
+- `decoder.go:140-168`: the `DemSingle, DemStats` and `DemAll, DemRead` cases
   are identical; merge into one `case` list. The "unknown message type" error
   (176) should include the type byte and stream offset for diagnosability.
 - `decoder.go:101`: `Time: float64(d.timeMs) * 0.001` duplicates
   `CurrentTime()`; call the method.
-- `registerBaseline` (entities.go:281): local variable named `copy` shadows
+- `registerBaseline` (entities.go:351): local variable named `copy` shadows
   the builtin.
-- entities.go:1164 (`parser.go` actually): `morebits&int(uFTEColourMod)` — the
-  cast is redundant.
+- parser.go:1171: `morebits&int(uFTEColourMod)` — the cast is redundant.
 - `ktx_pickup_print.go:178`: the `!strings.HasPrefix(trimmed, ktxGotThePrefix)`
   guard is unreachable ("You get " and "You got the " already differ at byte
   5) and the check inconsistently uses `msg` while the others use `trimmed`.
@@ -323,14 +355,14 @@ it (mvdsv reference). *(correctness, needs verification)*
   "surface, don't filter" policy. Probably harmless (players are never at the
   exact world origin on real maps), but the comment should cite that
   reasoning, not just "likely uninitialized".
-- `Parser.Players()` / `Parser.PlayerStats()` (parser.go:179-187) have no
+- `Parser.Players()` / `Parser.PlayerStats()` (parser.go:187-195) have no
   non-test callers in the workspace outside untracked debug tools — candidates
   for pruning when A4 (snapshot events) is done.
-- `decodeULEB128` (parser.go:691-702) silently accepts a truncated varint
+- `decodeULEB128` (parser.go:717-728) silently accepts a truncated varint
   (all-continuation bytes); given F15's note that some demos carry garbage in
   this block anyway, fine — but a comment would help.
 - Naming: the constant `KindPlayerInfo` maps to `PlayerPositionEvent`
-  (events.go:45/74) — a rename-in-place trap for readers; if F6 keeps the
+  (events.go:45/79) — a rename-in-place trap for readers; if F6 keeps the
   Kind constants, align the names.
 
 ## Suggested sequencing
@@ -345,3 +377,37 @@ it (mvdsv reference). *(correctness, needs verification)*
 5. **Schema-touching (design first):** A4 (event immutability), A5 (TimeMs
    everywhere), A6 (multi-map reset), F17 — these change observable
    behaviour; bump schema/docs per CLAUDE.md rules.
+
+## New since this review (#97–#102, not covered above)
+
+Only #97 materially touched this module (#100 edited `MVD_FORMAT.md` docs
+only — `ktx_pickup.go`/`ktx_drop.go` are unchanged, F8 stands as written).
+Not deep-reviewed; pattern flags only:
+
+- `parser/sound.go` — svc_sound decoded into `SoundEvent` (emitting entity
+  unpacked from the channel word, precache name resolved via the new
+  `parseSoundList` table in serverdata.go). Value-typed, carries `TimeMs`,
+  checks every `Skip` error — clean against the A4/A5/F5 patterns.
+- `parser/tempentity.go` — `parseTempEntity` surfaces `TE_LIGHTNING1/2/3`
+  as `BeamEvent` and consumes point effects by known length; it absorbed
+  `skipTempEntityDiag` and the main-switch route, but its TE-type case list
+  duplicates the layout table in the now-unreachable `skipTempEntity`
+  (parser.go:917-939) — the parse/skip duplication pattern recurring
+  (folded into the A2/F4 inventories above).
+- `parser/nails.go` — opt-in svc_nails/svc_nails2 decode
+  (`Parser.SetDecodeNails`) into `NailsFrameEvent`; its internal
+  `!p.decodeNails` consume-without-emitting branch restates the dead
+  `skipNails` layout — one more A2 instance, though at least inside a
+  single function.
+- entities.go projectile tracking (`ProjectileSpawnEvent` /
+  `ProjectileDespawnEvent`, `diffProjectileEntity`) — adopts the
+  `_ = p.emit(...)` discard (extends F11) and adds `spawnedProjectiles`
+  to the per-map state that never resets (extends A6).
+- events/events.go dutifully grew five new Kind constants + aliases for the
+  new events — extending the dead surface F6 wants deleted; none of the new
+  code uses `Vec3`/`Kind` either.
+- All five new event types carry `TimeMs` and share no pointers with parser
+  state — the new code follows the A5 convention and avoids the A4 trap.
+- New tests (`sound_test.go`, `tempentity_test.go`, `nails_test.go`,
+  `entities_projectile_test.go`) exercise real wire encodings, matching the
+  module's existing test style.
