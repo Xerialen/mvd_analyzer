@@ -20,10 +20,12 @@ import (
 type demoStore interface {
 	GetResult(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
 	// EnsureShotStreams returns the Result with the opt-in spatial weapon-fire
-	// streams built (projectiles + beams; plus nails when nails is true),
-	// re-parsing the cached MVD bytes on first request. It serializes the
-	// rebuild per demo SHA internally, so no server-wide lock is needed.
-	EnsureShotStreams(ctx context.Context, id democache.DemoID, nails bool) (*result.Result, democache.CacheMeta, error)
+	// streams built (projectiles + beams + nails — one variant, so response
+	// bodies stay a pure function of the URL under the immutable cache
+	// headers), re-parsing the cached MVD bytes on first request. It
+	// serializes the rebuild per demo SHA internally, so no server-wide lock
+	// is needed.
+	EnsureShotStreams(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
 }
 
 // httpError carries the wire-format error body.
@@ -281,10 +283,13 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 // (result.Shots): every detected fire with time/player/weapon/source, hit +
 // victims where linkable, per-player match-time aggregates, and the KTX
 // reconciliation cross-check. Served from the stream-enriched parse (like
-// /aim, built on first request) so rl/gl fires carry their projectile-linked
-// hits. Pass nails=1 to include ng/sng fires (opt-in — high volume).
+// /aim, built on first request), so rl/gl fires carry their
+// projectile-linked hits and ng/sng fires their nail-linked ones. The
+// former `nails` opt-in param is accepted and ignored: it made the body
+// depend on latch state under an immutable ETag (F12), and ng/sng fires
+// were always in the stream anyway — only their linking was gated.
 func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r, parseBool(r.URL.Query(), "nails"))
+	res, ok := s.resolveShotStreams(w, r)
 	if !ok {
 		return
 	}
@@ -306,7 +311,7 @@ func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
 // request like the /streams/* endpoints, then cached) so the projectile/
 // beam-derived weapon blocks are always present.
 func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r, false)
+	res, ok := s.resolveShotStreams(w, r)
 	if !ok {
 		return
 	}
@@ -610,13 +615,13 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 // re-parse of the cached MVD bytes, since they are opt-in and not in the lean
 // default Result. EnsureShotStreams serializes the rebuild per demo SHA
 // internally (see cache.shotLocks), so no server-wide lock is held here.
-func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request, nails bool) (*result.Result, bool) {
+func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request) (*result.Result, bool) {
 	id, err := democache.ParseDemoID(r.PathValue("id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
 		return nil, false
 	}
-	res, meta, err := s.store.EnsureShotStreams(r.Context(), id, nails)
+	res, meta, err := s.store.EnsureShotStreams(r.Context(), id)
 	if err != nil {
 		mapStoreError(w, err)
 		return nil, false
@@ -639,7 +644,7 @@ func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request, nail
 // handleProjectiles serves the rocket/grenade flight stream (opt-in; built on
 // first request). Body is {"projectiles": ...}, null when the demo has none.
 func (s *server) handleProjectiles(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r, false)
+	res, ok := s.resolveShotStreams(w, r)
 	if !ok {
 		return
 	}
@@ -654,7 +659,7 @@ func (s *server) handleProjectiles(w http.ResponseWriter, r *http.Request) {
 
 // handleBeams serves the LG bolt stream (opt-in; built on first request).
 func (s *server) handleBeams(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r, false)
+	res, ok := s.resolveShotStreams(w, r)
 	if !ok {
 		return
 	}
@@ -670,7 +675,7 @@ func (s *server) handleBeams(w http.ResponseWriter, r *http.Request) {
 // handleNails serves the ng/sng nail-flight stream (opt-in, highest volume;
 // built on first request, separate from projectiles/beams).
 func (s *server) handleNails(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r, true)
+	res, ok := s.resolveShotStreams(w, r)
 	if !ok {
 		return
 	}

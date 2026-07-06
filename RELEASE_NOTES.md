@@ -7,6 +7,20 @@ detail.
 
 ## 2026-07-06
 
+- **mvd-api: deterministic /shots + /aim responses; panic-proof demo
+  loading (no schema change).**
+  - The shot-stream rebuild now builds projectiles, beams and nails in a
+    single variant. Previously nails were a separate server-side latch:
+    after any client passed `?nails=1`, plain `GET /shots` and `GET /aim`
+    served nail-linked bodies under the same immutable ETag — and reverted
+    after an LRU eviction. Responses are now a pure function of the URL.
+    The `/shots` `nails` parameter is deprecated (accepted and ignored);
+    ng/sng fires were always included, and their flight-linking + accuracy
+    now always is too.
+  - A panicking demo parse no longer releases concurrent requests for the
+    same demo with a nil result and nil error (a cascade of confusing
+    nil-dereference 500s); all callers now receive a real error and the
+    panic stack is logged.
 - **Aim/shots correctness batch (schema v49; value fixes, no shape
   change).** Four fixes from the deferred aim/shots review:
   - The Aim tab's RL/GL direct/splash/missed split now appears on every

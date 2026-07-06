@@ -250,22 +250,33 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 }
 
 // EnsureShotStreams returns the demo's Result with the opt-in spatial
-// weapon-fire streams built: rockets/grenades + LG beams, and (when nails is
-// true) the nail-flight stream. These are off in the default parse to keep
-// the cache lean and — unlike LOS — cannot be recomputed from the cached
-// Result, so the first request re-parses the cached MVD bytes with the build
-// flags on and splices the streams onto the in-memory Result. The rebuilt
-// Shots and Aim blocks ride along: their stream-derived parts (RL/GL
-// direct/splash, the LG whiff split, nail fires) only exist in the enriched
-// parse, so /shots and /aim serve complete data. The ShotStreamsComputed /
-// NailsComputed latches make repeat requests free.
+// weapon-fire streams built: rocket/grenade flights, LG beams AND nail
+// flights, in one rebuild. These are off in the default parse to keep the
+// cache lean and — unlike LOS — cannot be recomputed from the cached
+// Result, so the first request re-parses the cached MVD bytes with the
+// build flags on and splices the streams onto the in-memory Result. The
+// rebuilt Shots and Aim blocks ride along: their stream-derived parts
+// (RL/GL direct/splash, the LG whiff split, ng/sng linking + accuracy)
+// only exist in the enriched parse, so /shots and /aim serve complete
+// data. The ShotStreamsComputed / NailsComputed latches make repeat
+// requests free.
+//
+// There is deliberately only ONE variant (F12): nails used to be a
+// separate opt-in latch, which made /shots and /aim bodies depend on
+// whether any earlier client had asked for nails — same URL, same strong
+// ETag, different body before/after the latch (and again after an LRU
+// eviction reverted it). Folding nails into the base rebuild makes every
+// response a pure function of the URL, which the immutable cache headers
+// require. The extra nail decode is a one-time per-demo cost on a path
+// that already re-parses the whole MVD, and the spliced nail stream keeps
+// only per-flight endpoints.
 //
 // This serializes concurrent calls for one demo internally via a per-SHA
 // lock (shotLocks): a rebuild for demo B does not queue behind demo A's,
 // and two callers for the same demo cannot both re-parse and race the
 // splice onto the shared Result. A demo with no Streams (no player tracks)
 // is returned unchanged.
-func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*result.Result, CacheMeta, error) {
+func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID) (*result.Result, CacheMeta, error) {
 	res, meta, err := c.GetResult(ctx, id)
 	if err != nil {
 		return nil, meta, err
@@ -281,9 +292,7 @@ func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*
 	unlock := c.shotLocks.Lock(sha)
 	defer unlock()
 
-	needBase := !res.Streams.ShotStreamsComputed
-	needNails := nails && !res.Streams.NailsComputed
-	if !needBase && !needNails {
+	if res.Streams.ShotStreamsComputed && res.Streams.NailsComputed {
 		return res, meta, nil
 	}
 
@@ -299,26 +308,21 @@ func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID, nails bool) (*
 	}
 
 	reg := analyzer.NewDefaultRegistry()
-	// Always rebuild with the base streams on: the grafted Shots/Aim blocks
-	// below only carry their stream-derived parts when the pipeline saw the
-	// streams. Nails stay opt-in, but once computed they are kept on so a
-	// later base-only rebuild cannot drop them from the grafts.
+	// One rebuild builds everything (see the one-variant rationale above);
+	// the grafted Shots/Aim blocks below carry their stream-derived parts
+	// only when the pipeline saw the streams.
 	reg.BuildShotStreams = true
-	reg.BuildNails = needNails || res.Streams.NailsComputed
+	reg.BuildNails = true
 	built, err := reg.AnalyzeReader(bytes.NewReader(mvdBytes), fmt.Sprintf("%s.mvd.gz", sha))
 	if err != nil {
 		return nil, meta, fmt.Errorf("rebuild shot streams: %w", err)
 	}
 	if built.Streams != nil {
-		if needBase {
-			res.Streams.Projectiles = built.Streams.Projectiles
-			res.Streams.Beams = built.Streams.Beams
-			res.Streams.ShotStreamsComputed = true
-		}
-		if needNails {
-			res.Streams.Nails = built.Streams.Nails
-			res.Streams.NailsComputed = true
-		}
+		res.Streams.Projectiles = built.Streams.Projectiles
+		res.Streams.Beams = built.Streams.Beams
+		res.Streams.ShotStreamsComputed = true
+		res.Streams.Nails = built.Streams.Nails
+		res.Streams.NailsComputed = true
 	}
 	if built.Shots != nil {
 		res.Shots = built.Shots

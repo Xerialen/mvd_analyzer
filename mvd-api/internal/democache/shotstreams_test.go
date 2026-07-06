@@ -26,7 +26,10 @@ func corpusDemo(t *testing.T) (sha string, bytes []byte) {
 }
 
 // TestEnsureShotStreams re-parses a real demo to build the opt-in spatial
-// streams on demand, latches them, and serves nails as a separate request.
+// streams on demand in ONE variant — projectiles, beams and nails together
+// (F12: a separate nails latch made /shots and /aim bodies depend on
+// request history under an immutable ETag) — latches everything, and
+// serves repeat requests from the same Result.
 func TestEnsureShotStreams(t *testing.T) {
 	sha, demo := corpusDemo(t)
 	root := t.TempDir()
@@ -42,19 +45,19 @@ func TestEnsureShotStreams(t *testing.T) {
 	id := DemoID{Kind: "sha256", SHA: sha}
 	ctx := context.Background()
 
-	// Base request: projectiles + beams, not nails.
-	res, _, err := c.EnsureShotStreams(ctx, id, false)
+	// First request builds and latches everything in one rebuild.
+	res, _, err := c.EnsureShotStreams(ctx, id)
 	if err != nil {
-		t.Fatalf("EnsureShotStreams base: %v", err)
+		t.Fatalf("EnsureShotStreams: %v", err)
 	}
 	if res.Streams == nil || res.Streams.Projectiles == nil {
-		t.Fatal("base request did not build the projectile stream")
+		t.Fatal("first request did not build the projectile stream")
 	}
 	if !res.Streams.ShotStreamsComputed {
 		t.Error("ShotStreamsComputed not latched")
 	}
-	if res.Streams.Nails != nil || res.Streams.NailsComputed {
-		t.Error("nails built/latched on a base request")
+	if !res.Streams.NailsComputed {
+		t.Error("NailsComputed not latched — the one-variant rebuild must build nails too (F12)")
 	}
 
 	// The rebuilt Shots/Aim ride along, carrying the stream-derived blocks
@@ -93,16 +96,13 @@ func TestEnsureShotStreams(t *testing.T) {
 		t.Error("no RL/GL/LG fires in corpus demo — stream-derived aim graft not exercised")
 	}
 
-	// Nails request: same cached Result, nails now present and latched.
-	res2, _, err := c.EnsureShotStreams(ctx, id, true)
+	// Repeat request: same cached Result pointer, no rebuild.
+	res2, _, err := c.EnsureShotStreams(ctx, id)
 	if err != nil {
-		t.Fatalf("EnsureShotStreams nails: %v", err)
+		t.Fatalf("EnsureShotStreams repeat: %v", err)
 	}
 	if res2 != res {
 		t.Error("expected the cached Result pointer to be reused")
-	}
-	if res2.Streams.Nails == nil || !res2.Streams.NailsComputed {
-		t.Error("nails request did not build/latch the nail stream")
 	}
 }
 
@@ -141,7 +141,7 @@ func TestEnsureShotStreams_MissingTier1_FlagsUnavailable(t *testing.T) {
 		t.Fatalf("remove tier-1: %v", err)
 	}
 
-	res, meta, err := c.EnsureShotStreams(ctx, id, false)
+	res, meta, err := c.EnsureShotStreams(ctx, id)
 	if err != nil {
 		t.Fatalf("EnsureShotStreams: %v", err)
 	}

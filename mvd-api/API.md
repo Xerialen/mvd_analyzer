@@ -374,7 +374,7 @@ projectile-linked hits.
 
 | param | meaning |
 |---|---|
-| `nails` | `1`/`true` to include ng/sng fires (opt-in — high volume, needs the nail decode pass) |
+| `nails` | deprecated, accepted and ignored. ng/sng fires were always in the stream; their flight-linking + accuracy (formerly gated on this param) is now always included, because a latch-dependent body under an immutable ETag broke HTTP caching. |
 
 422 (`shots_unavailable`) when the demo has no shot data. The
 `X-Shot-Streams: unavailable` degrade header (§4.5c) applies here too.
@@ -589,8 +589,9 @@ Like `/los`, these are **built on demand** — they are off in the default parse
 to keep the cache lean, and (unlike LOS) cannot be recomputed from the cached
 Result, so the **first** request re-parses the demo with the build flags on (a
 few seconds on a large 4on4) and caches the streams in memory; later requests
-are free. `/streams/nails` is latched separately from projectiles/beams. The
-on-disk gob stays lean. If the tier-1 bytes are gone and the streams cannot be
+are free. One rebuild builds projectiles, beams and nails together — a
+single variant, so every response body stays a pure function of its URL
+under the immutable cache headers. The on-disk gob stays lean. If the tier-1 bytes are gone and the streams cannot be
 rebuilt, the body field is `null` and the response carries `X-Shot-Streams:
 unavailable` (§4.5c).
 
