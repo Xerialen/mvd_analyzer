@@ -1,0 +1,162 @@
+package analyzer
+
+import (
+	"encoding/json"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+// registrationOrder is the canonical node order the default pipeline has
+// always run in: the core slice, then the derived slice, then the
+// post-processor slice, as registered in NewDefaultRegistry. The DAG's
+// derived topological order must equal this exactly (decision 4) — that
+// is what makes Stage 1 a structurally-enforced zero-behaviour-change.
+var registrationOrder = []string{
+	// core
+	"demoinfo", "identity", "frag",
+	// derived
+	"metadata", "match", "messages", "timeline", "items", "damage",
+	"shots", "map-entities", "backpacks", "weapon-pickups",
+	// post-processors
+	"recover-telefrag-teamkills", "normalize-match-relative-times",
+	"derive-demo-start-anchor", "duel-team-normalize", "aim", "airgibs",
+	"scoreboard-stats", "loc-graph", "region-control",
+}
+
+func nodeNames(specs []nodeSpec) []string {
+	out := make([]string, len(specs))
+	for i, s := range specs {
+		out[i] = s.Name
+	}
+	return out
+}
+
+// TestDefaultDAGValidates guarantees NewDefaultRegistry's buildGraph never
+// panics in production: the declared graph is well-formed (every Requires
+// has exactly one provider, no cycles).
+func TestDefaultDAGValidates(t *testing.T) {
+	r := NewDefaultRegistry() // panics via buildGraph if the graph is invalid
+	if err := validateDAG(r.specs); err != nil {
+		t.Fatalf("default DAG failed validation: %v", err)
+	}
+	if _, err := buildDAG(r.specs); err != nil {
+		t.Fatalf("default DAG failed to build: %v", err)
+	}
+}
+
+// TestDAGTopoOrderMatchesRegistration is the load-bearing Stage-1 check:
+// the topological order the engine derives is byte-identical to the
+// hand-ordered registration order (core, derived, post). If this passes,
+// driving execution from the DAG cannot change the Result.
+func TestDAGTopoOrderMatchesRegistration(t *testing.T) {
+	r := NewDefaultRegistry()
+
+	if got := nodeNames(r.specs); !reflect.DeepEqual(got, registrationOrder) {
+		t.Fatalf("registration order drifted from expected:\n got:  %v\n want: %v", got, registrationOrder)
+	}
+	if got := nodeNames(r.nodes); !reflect.DeepEqual(got, registrationOrder) {
+		t.Fatalf("topological order != registration order:\n got:  %v\n want: %v", got, registrationOrder)
+	}
+}
+
+// TestDAGMissingProviderNamesIt: a Requires with no provider is a startup
+// error naming both the missing artifact and the node that wanted it.
+func TestDAGMissingProviderNamesIt(t *testing.T) {
+	specs := []nodeSpec{
+		{Name: "a", regIndex: 0, Provides: []string{"a"}},
+		{Name: "b", regIndex: 1, Provides: []string{"b"}, Requires: []string{"ghost"}},
+	}
+	_, err := buildDAG(specs)
+	if err == nil {
+		t.Fatal("expected error for missing provider, got nil")
+	}
+	if !strings.Contains(err.Error(), "ghost") || !strings.Contains(err.Error(), `"b"`) {
+		t.Fatalf("error should name the missing artifact and node: %v", err)
+	}
+}
+
+// TestDAGDuplicateProviderNamesIt: two providers of one artifact is a
+// startup error naming the artifact and both nodes.
+func TestDAGDuplicateProviderNamesIt(t *testing.T) {
+	specs := []nodeSpec{
+		{Name: "a", regIndex: 0, Provides: []string{"a", "shared"}},
+		{Name: "b", regIndex: 1, Provides: []string{"b", "shared"}},
+	}
+	_, err := buildDAG(specs)
+	if err == nil {
+		t.Fatal("expected error for duplicate provider, got nil")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "shared") || !strings.Contains(msg, `"a"`) || !strings.Contains(msg, `"b"`) {
+		t.Fatalf("error should name the artifact and both providers: %v", err)
+	}
+}
+
+// TestDAGCycleDetected: a dependency cycle is reported (validation passes
+// because every Requires has a provider; the topo sort catches it).
+func TestDAGCycleDetected(t *testing.T) {
+	specs := []nodeSpec{
+		{Name: "a", regIndex: 0, Provides: []string{"a"}, Requires: []string{"b"}},
+		{Name: "b", regIndex: 1, Provides: []string{"b"}, Requires: []string{"a"}},
+	}
+	_, err := buildDAG(specs)
+	if err == nil {
+		t.Fatal("expected cycle error, got nil")
+	}
+	if !strings.Contains(err.Error(), "cycle") {
+		t.Fatalf("error should mention a cycle: %v", err)
+	}
+}
+
+// TestDAGDeterministic: the sort is stable across repeated runs (no
+// map-iteration nondeterminism leaks into the order). Run many times so a
+// randomised Go map seed would eventually surface a difference.
+func TestDAGDeterministic(t *testing.T) {
+	specs := NewDefaultRegistry().specs
+	want, err := buildDAG(specs)
+	if err != nil {
+		t.Fatalf("buildDAG: %v", err)
+	}
+	wantNames := nodeNames(want)
+	for i := 0; i < 50; i++ {
+		got, err := buildDAG(specs)
+		if err != nil {
+			t.Fatalf("buildDAG run %d: %v", i, err)
+		}
+		if !reflect.DeepEqual(nodeNames(got), wantNames) {
+			t.Fatalf("run %d order differs:\n got:  %v\n want: %v", i, nodeNames(got), wantNames)
+		}
+	}
+}
+
+// TestExportGraph smoke-tests the two export formats the -graph flag
+// exposes: mermaid is non-empty, json parses and carries every node.
+func TestExportGraph(t *testing.T) {
+	mermaid, err := ExportGraph("mermaid")
+	if err != nil {
+		t.Fatalf("mermaid: %v", err)
+	}
+	if !strings.HasPrefix(mermaid, "flowchart TB") || len(mermaid) == 0 {
+		t.Fatalf("mermaid output looks wrong:\n%s", mermaid)
+	}
+
+	jsonStr, err := ExportGraph("json")
+	if err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	var g graphJSON
+	if err := json.Unmarshal([]byte(jsonStr), &g); err != nil {
+		t.Fatalf("json does not parse: %v", err)
+	}
+	if len(g.Nodes) != len(registrationOrder) {
+		t.Fatalf("json node count = %d, want %d", len(g.Nodes), len(registrationOrder))
+	}
+	if len(g.Edges) == 0 {
+		t.Fatal("json graph has no edges")
+	}
+
+	if _, err := ExportGraph("dot"); err == nil {
+		t.Fatal("expected error for unsupported format 'dot'")
+	}
+}

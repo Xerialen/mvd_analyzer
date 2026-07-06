@@ -24,6 +24,7 @@
 //	qw-analyze -view state-at -time 432.5 demo.mvd.gz
 //	qw-analyze -view trails -min-dwell 500ms demo.mvd.gz
 //	qw-analyze -view region-control -bucket 1s demo.mvd.gz
+//	qw-analyze -graph mermaid                            # print the pipeline DAG (no demo)
 //	qw-analyze -bulk demos/ -out-dir analyses/          # batch mode
 package main
 
@@ -80,12 +81,24 @@ func main() {
 	timeStr := flag.String("time", "", "time for -view state-at (required)")
 	includeTeam := flag.Bool("include-team", false, "emit per-team aggregates on -view buckets")
 	includeStr := flag.String("include", "", "comma-separated extras for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity; los (line-of-sight + pvs potential-visibility intervals, computed on request); projectiles, beams (spatial rocket/grenade-flight and LG-beam streams for the map); nails (ng/sng nail tracking — links ng/sng fires to damage + nail map stream; high volume)")
+	graphFmt := flag.String("graph", "", "print the analyzer dependency graph (mermaid | json) and exit; no demo argument needed")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	// -graph dumps the pipeline's dependency DAG and exits; it needs no demo.
+	if *graphFmt != "" {
+		out, err := analyzer.ExportGraph(*graphFmt)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "qw-analyze:", err)
+			os.Exit(2)
+		}
+		fmt.Println(out)
+		return
+	}
 
 	if flag.NArg() != 1 {
 		flag.Usage()

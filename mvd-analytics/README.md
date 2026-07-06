@@ -179,6 +179,34 @@ guard. Now the contract is:
 - Anything that operates on the assembled `Result` is a
   `ResultPostProcessor`, not an analyser.
 
+### The dependency DAG (explicit ordering)
+
+The pipeline order is no longer just registration discipline. Each
+analyser and post-processor is wrapped in an internal `nodeSpec`
+(`analyzer/dag.go`) that declares the artifacts it **Requires** and
+**Provides** — the CoreOutputs edges (`demoinfo → identity → frag`, the
+`co.*` reads), the hidden `timeline → shots` container edge, the
+post-processor `result.*` reads, and the ordering barriers expressed as
+pseudo-artifacts (`telefrags:recovered`, `epoch:match`, `teams:final`).
+
+At `NewDefaultRegistry` construction the engine **validates** the wiring
+(every `Requires` has exactly one provider; no cycles — a typo or a
+missing provider panics with a message naming the artifact and the node)
+and **derives the execution order** from it via a deterministic
+topological sort (Kahn's algorithm, ties broken by registration index).
+`analyzeSource` then drives Init / event-pass / Finalize / post-processing
+from that sorted node list, so the ordering can no longer silently drift
+from the declared dependencies. The derived order is identical to the
+historical registration order by construction (a test asserts this), so
+this is a zero-behaviour-change refactor. Post-processors still mutate the
+`Result` in place — each node is flagged `Mutates` as a temporary marker
+of debt a later stage removes.
+
+Dump the graph with `qw-analyze -graph mermaid` (a tier-grouped
+flowchart) or `-graph json` (`{nodes, edges}`); neither needs a demo. The
+heavy lazy passes (`ComputeLOS`, the shot/nail stream re-parse) run
+out-of-band and are not DAG nodes yet.
+
 ### CoreOutputs shape
 
 ```go

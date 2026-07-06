@@ -7,6 +7,19 @@ detail.
 
 ## 2026-07-06
 
+- **Analytics pipeline: explicit dependency DAG + `qw-analyze -graph`
+  (no schema change).** The analyzer/post-processor execution order was
+  previously implicit — four different mechanisms expressed ordering and
+  only one was checked, so a wrong registration order was a silent data
+  bug. Each node now declares the artifacts it Requires and Provides
+  (`mvd-analytics/analyzer/dag.go`); `NewDefaultRegistry` validates the
+  wiring at construction (every dependency has exactly one provider, no
+  cycles — a typo panics with a message naming the offending artifact and
+  node) and derives the execution order from it with a deterministic
+  topological sort. The derived order is byte-identical to the historical
+  registration order (asserted by a structural test), so the `Result` is
+  unchanged. New `qw-analyze -graph mermaid` / `-graph json` prints the
+  pipeline DAG (nodes, edges, tiers) without needing a demo.
 - **Web Aim Stats: LG Unresolved column, accurate hover on narrow
   layouts, DYaw sign docs (no schema change).**
   - The LG table gains an `Unresolved` column (whiffs no beam matched), so

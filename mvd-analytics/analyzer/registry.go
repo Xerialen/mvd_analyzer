@@ -43,6 +43,14 @@ type Registry struct {
 	postProcessors []ResultPostProcessor
 	Config         *config.Config
 
+	// specs is the registration-order node list with declared artifact
+	// edges; nodes is that list in validated topological execution order.
+	// Both are populated by buildGraph (called from NewDefaultRegistry).
+	// A hand-built registry (NewRegistry + Register*) leaves them nil and
+	// executes in registration order (see execOrder). See dag.go.
+	specs []nodeSpec
+	nodes []nodeSpec
+
 	// BuildShotStreams opts into the spatial weapon-fire streams
 	// (Streams.Projectiles / Streams.Beams) for the map view. Off by
 	// default so the standard output and golden corpus stay lean; the WASM
@@ -182,14 +190,20 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 		Nails:       r.BuildNails,
 	}
 
+	// Execution is driven by the DAG's topological node order (dag.go).
+	// For the default registry this is the validated topo sort; for a
+	// hand-built one it falls back to registration order. Either way all
+	// analyzer nodes precede all post-processor nodes, and core precedes
+	// derived, so the phase structure below is identical to the previous
+	// hand-ordered slices.
+	nodes := r.execOrder()
+
 	initStart := time.Now()
-	for _, a := range r.core {
-		if err := a.Init(ctx); err != nil {
-			return nil, err
+	for _, n := range nodes {
+		if n.analyzer == nil {
+			continue
 		}
-	}
-	for _, a := range r.derived {
-		if err := a.Init(ctx); err != nil {
+		if err := n.analyzer.Init(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -219,15 +233,14 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 		if e, ok := event.(*events.UserInfoEvent); ok {
 			ctx.Players[e.Player.Slot] = e.Player
 		}
-		// Core analysers see events first, then derived. Within each
-		// slice, registration order is preserved.
-		for _, a := range r.core {
-			if err := a.OnEvent(event); err != nil {
-				return nil, err
+		// Analyser nodes see every event in topological order, which
+		// places core before derived exactly as the previous two-slice
+		// loop did.
+		for _, n := range nodes {
+			if n.analyzer == nil {
+				continue
 			}
-		}
-		for _, a := range r.derived {
-			if err := a.OnEvent(event); err != nil {
+			if err := n.analyzer.OnEvent(event); err != nil {
 				return nil, err
 			}
 		}
@@ -244,11 +257,13 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 
 	co := &CoreOutputs{}
 
-	// Phase 1 — core finalises and populates CoreOutputs. Each core
-	// analyser also gets a chance to read the running CoreOutputs
-	// (UseCoreOutputs) so a later core entry can consume an earlier
-	// core entry's fields (e.g. Frag reads co.Names produced by
-	// DemoInfo).
+	// finalizeOne runs one analyser's Finalize with CoreOutputs plumbing:
+	// a CoreConsumer reads the running CoreOutputs before its Finalize, and
+	// a CoreProducer publishes into it after — so a node finalised later
+	// (core or derived) sees an earlier core node's fields (e.g. Frag reads
+	// co.Names produced by DemoInfo). Topological order keeps all core
+	// nodes ahead of derived, so CoreOutputs is complete before any derived
+	// Finalize runs.
 	finalizeOne := func(a Analyzer) {
 		start := time.Now()
 		defer func() { record("finalize:"+a.Name(), start) }()
@@ -263,33 +278,27 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 			cp.PopulateCore(co)
 		}
 	}
-	for _, a := range r.core {
-		finalizeOne(a)
-	}
-	// Phase 2 — derived. CoreOutputs is fully populated by the time
-	// any derived Finalize runs.
-	for _, a := range r.derived {
-		finalizeOne(a)
-	}
-
-	// Run registered post-processors in order. Each one operates on the
-	// fully-finalized Result; CoreOutputs is passed through for read
-	// access. The default ordering (set in NewDefaultRegistry) is:
-	//   1. recoverTelefragTeamkills
-	//   2. normalizeMatchRelativeTimes
-	//   3. deriveDemoStartAnchor
-	//   4. duelTeamNormalize
-	//   5. aimPost
-	//   6. airgibsPost
-	//   7. scoreboardStatsPost
-	//   8. locGraphPost
-	//   9. regionControlPost
-	// — but the slice is otherwise unconstrained. Add a step by
-	// calling r.RegisterPostProcessor(...) before Analyze.
-	for _, p := range r.postProcessors {
-		start := time.Now()
-		p(result, co)
-		record("post:"+postProcName(p), start)
+	// Finalize analyser nodes, then run post-processors, in one pass over
+	// the topological order. The DAG guarantees every analyser node
+	// precedes every post-processor node (post nodes only require analyser
+	// artifacts or barrier pseudo-artifacts), so this reproduces the old
+	// two-phase "all Finalize, then all post-processors" structure — and
+	// core precedes derived within the analyser prefix. CoreOutputs is
+	// fully populated by the time any derived Finalize or post-processor
+	// runs. The default post-processor order (encoded in dag.go as the
+	// §1.3 edge list + ordering barriers) is: recover-telefrag-teamkills →
+	// normalize-match-relative-times → derive-demo-start-anchor →
+	// duel-team-normalize → aim → airgibs → scoreboard-stats → loc-graph →
+	// region-control.
+	for _, n := range nodes {
+		switch {
+		case n.analyzer != nil:
+			finalizeOne(n.analyzer)
+		case n.post != nil:
+			start := time.Now()
+			n.post(result, co)
+			record("post:"+postProcName(n.post), start)
+		}
 	}
 
 	return result, nil
@@ -357,5 +366,14 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterPostProcessor(scoreboardStatsPost)
 	r.RegisterPostProcessor(locGraphPost)
 	r.RegisterPostProcessor(regionControlPost)
+
+	// Make the pipeline's dependency DAG explicit: declare each node's
+	// Requires/Provides (dag.go), validate the wiring, and derive the
+	// execution order from it. The derived order equals this registration
+	// order by construction (dag_test.go), so behaviour is unchanged — the
+	// DAG turns silent mis-ordering into a startup panic. Panics on a
+	// wiring bug (a programmer error); a test asserts the default graph is
+	// valid so it can never ship.
+	r.buildGraph()
 	return r
 }
