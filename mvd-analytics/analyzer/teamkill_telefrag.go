@@ -27,11 +27,15 @@ const (
 // two to agree (or, when only one is determinate, not to conflict) keeps a
 // rare position or score alias from misattributing the kill.
 //
-// Runs as a post-processor BEFORE normalizeMatchRelativeTimes, so the
-// obituary times (CoreOutputs), Streams positions, and FragEvents are all
-// still demo-relative and share one clock. Deaths are untouched (the
-// victim's death is already counted from the protocol DeathEvent); this
-// only fills in the killer side.
+// The signals it correlates share one clock. Since the producers rebase their
+// own timestamps at Finalize (clock refactor), by the time this runs the
+// Streams positions, FragEvents and Frags log are all match-relative, so the
+// victim-named teamkill times (co.VictimNamedTeamkills, still demo-relative)
+// are converted with co.Clock.ToMatch before use — the position/frag-penalty
+// windows are differences, invariant under the uniform shift, and the recovered
+// frag entry lands on the same match clock as the rest of Frags. Deaths are
+// untouched (the victim's death is already counted from the protocol
+// DeathEvent); this only fills in the killer side.
 func recoverTelefragTeamkills(res *Result, co *CoreOutputs) {
 	if res.Frags == nil || res.Streams == nil || co == nil || len(co.VictimNamedTeamkills) == 0 {
 		return
@@ -62,6 +66,9 @@ func recoverTelefragTeamkills(res *Result, co *CoreOutputs) {
 
 	appended := false
 	for _, tk := range co.VictimNamedTeamkills {
+		// tk carries a demo-clock time; positions/FragEvents/Frags are already
+		// match-relative here, so convert once and use throughout.
+		tkTime := co.Clock.ToMatch(tk.Time)
 		victim := tk.Victim
 		vTeam := teamByName[victim]
 		if vTeam == "" {
@@ -81,13 +88,13 @@ func recoverTelefragTeamkills(res *Result, co *CoreOutputs) {
 		// Position signal: teammates co-located with the victim at the kill.
 		posSet := map[string]bool{}
 		if vt := posByName[victim]; vt != nil {
-			if vx, vy, vz, ok := positionAt(vt, tk.Time); ok {
+			if vx, vy, vz, ok := positionAt(vt, tkTime); ok {
 				for m := range mates {
 					mt := posByName[m]
 					if mt == nil {
 						continue
 					}
-					if mx, my, mz, ok := positionAt(mt, tk.Time); ok &&
+					if mx, my, mz, ok := positionAt(mt, tkTime); ok &&
 						absF32(mx-vx) <= telefragPosHorizTol &&
 						absF32(my-vy) <= telefragPosHorizTol &&
 						absF32(mz-vz) <= telefragPosVertTol {
@@ -100,7 +107,7 @@ func recoverTelefragTeamkills(res *Result, co *CoreOutputs) {
 		// Frag-penalty signal: teammates that lost a frag at the kill.
 		deltaSet := map[string]bool{}
 		for _, d := range negDeltas {
-			if mates[d.player] && absI32(d.tMs-tk.Time) <= telefragDeltaWin {
+			if mates[d.player] && absI32(d.tMs-tkTime) <= telefragDeltaWin {
 				deltaSet[d.player] = true
 			}
 		}
@@ -117,6 +124,7 @@ func recoverTelefragTeamkills(res *Result, co *CoreOutputs) {
 		}
 		entry := tk
 		entry.Killer = killer
+		entry.Time = tkTime
 		res.Frags.Frags = append(res.Frags.Frags, entry)
 		appended = true
 	}

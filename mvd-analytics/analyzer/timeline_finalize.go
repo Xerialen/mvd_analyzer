@@ -303,19 +303,17 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		// As of schema v23 the demo/wall-clock anchor lives on Streams.Global —
 		// it describes how to map a stream's match time to wall-clock time, so
 		// it belongs next to the match window rather than in TimelineAnalysis.
-
-		// Wall-clock anchor. The mvdhidden 0x000B block is the millisecond-
-		// accurate source; when it is absent, deriveDemoStartAnchor fills these
-		// from the whole-second serverinfo `epoch` cvar in post-processing.
-		if a.demoStartFromHidden {
-			result.Streams.Global.DemoStartUnixMs = a.demoStartUnixMs
-			result.Streams.Global.DemoStartAccuracyMs = 1
+		// The clock owns both the anchor (0x000B ms / serverinfo `epoch` secs)
+		// and the coalesced pauses; the timeline writes them here because it
+		// owns Streams.Global. AtMs is demo-relative at this point; rebaseToMatch
+		// (below) shifts it, and Global.MatchStart/MatchEnd/DemoOffset, once the
+		// match-start shift is applied.
+		if a.core != nil && a.core.Clock != nil {
+			clk := a.core.Clock
+			result.Streams.Global.DemoStartUnixMs = clk.DemoStartUnixMs
+			result.Streams.Global.DemoStartAccuracyMs = clk.DemoStartAccuracyMs
+			result.Streams.Global.Pauses = append([]TimelinePause(nil), clk.Pauses...)
 		}
-
-		// Coalesce paused_duration samples into per-pause segments. AtMs is
-		// demo-relative here; normalizeMatchRelativeTimes rebases it (and sets
-		// Global.DemoOffset) once the match-start shift is known.
-		result.Streams.Global.Pauses = coalescePauses(a.rawPauses)
 	}
 
 	// Region control: detect regions + resolve team labels. The
@@ -375,7 +373,96 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			result.TimelineAnalysis.RegionControl = regionControl
 		}
 	}
+
+	// Born-correct timestamps: rebase every timeline-owned time field from the
+	// demo clock to match-relative, using the shift the clock published. This
+	// replaces the timeline's share of the old normalizeMatchRelativeTimes
+	// rebase; it runs here so the timeline's own artifacts leave Finalize
+	// already on the match clock (no post-hoc whole-Result pass).
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		a.rebaseToMatch(result, ms)
+	}
 	return nil
+}
+
+// rebaseToMatch shifts every timeline-owned timestamp in result from the demo
+// clock to match-relative (t' = t - matchStartMs), dropping warmup samples the
+// same way the old normalizeMatchRelativeTimes did. Only the timeline's own
+// artifacts are touched: the TimelineAnalysis event streams, Streams.Global's
+// match window / offset / pauses, and each player's + mover's stream. Shots'
+// spatial streams (Projectiles/Beams/Nails) are rebased by the shots node,
+// which produces them. Called only when a match start was detected (ms > 0),
+// mirroring the old rebase's early return.
+func (a *TimelineAnalyzer) rebaseToMatch(result *Result, matchStartMs int32) {
+	if ta := result.TimelineAnalysis; ta != nil {
+		for i := range ta.FragEvents {
+			ta.FragEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.DeathEvents {
+			ta.DeathEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.KillEvents {
+			ta.KillEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.PowerupEvents {
+			ta.PowerupEvents[i].Time -= matchStartMs
+			ta.PowerupEvents[i].EndTime -= matchStartMs
+		}
+		for i := range ta.FragStreaks {
+			ta.FragStreaks[i].Time -= matchStartMs
+			ta.FragStreaks[i].EndTime -= matchStartMs
+		}
+	}
+
+	streams := result.Streams
+	if streams == nil {
+		return
+	}
+	// The match-window + wall-clock anchors on Streams.Global also rebase.
+	streams.Global.MatchStart -= matchStartMs
+	streams.Global.MatchEnd -= matchStartMs
+	if streams.Global.MatchStart < 0 {
+		streams.Global.MatchStart = 0
+	}
+	// Record the demo→match offset and rebase pause anchors to match time.
+	// AtMs only — DurationMs is a span, not a timestamp. Pauses during the
+	// countdown go negative; keep them, they still consume wall time the
+	// mapping must account for. DemoStartUnixMs is NOT shifted (it anchors
+	// demo open, not match start).
+	streams.Global.DemoOffset = matchStartMs
+	for i := range streams.Global.Pauses {
+		streams.Global.Pauses[i].AtMs -= matchStartMs
+	}
+	for pi := range streams.Players {
+		p := &streams.Players[pi]
+		p.Health = shiftAndFilterChangeI16(p.Health, matchStartMs)
+		p.Armor = shiftAndFilterChangeI16(p.Armor, matchStartMs)
+		p.ArmorType = shiftAndFilterChangeStr(p.ArmorType, matchStartMs)
+		p.Loc = shiftAndFilterChangeI16(p.Loc, matchStartMs)
+		p.Shells = shiftAndFilterChangeI16(p.Shells, matchStartMs)
+		p.Nails = shiftAndFilterChangeI16(p.Nails, matchStartMs)
+		p.Rockets = shiftAndFilterChangeI16(p.Rockets, matchStartMs)
+		p.Cells = shiftAndFilterChangeI16(p.Cells, matchStartMs)
+
+		p.RL = shiftAndFilterIntervals(p.RL, matchStartMs)
+		p.LG = shiftAndFilterIntervals(p.LG, matchStartMs)
+		p.GL = shiftAndFilterIntervals(p.GL, matchStartMs)
+		p.SSG = shiftAndFilterIntervals(p.SSG, matchStartMs)
+		p.SNG = shiftAndFilterIntervals(p.SNG, matchStartMs)
+		p.Quad = shiftAndFilterIntervals(p.Quad, matchStartMs)
+		p.Pent = shiftAndFilterIntervals(p.Pent, matchStartMs)
+		p.Ring = shiftAndFilterIntervals(p.Ring, matchStartMs)
+
+		p.Spawns = shiftAndFilterInts(p.Spawns, matchStartMs)
+		p.Deaths = shiftAndFilterInts(p.Deaths, matchStartMs)
+
+		if p.Position != nil {
+			shiftAndFilterPosition(p.Position, matchStartMs)
+		}
+	}
+	for mi := range streams.Movers {
+		shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
+	}
 }
 
 // pauseCoalesceGapSec separates one pause from the next. mvdsv emits a

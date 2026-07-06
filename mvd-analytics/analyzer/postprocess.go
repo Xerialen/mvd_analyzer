@@ -36,73 +36,12 @@ func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
 		return
 	}
 
-	if ta := res.TimelineAnalysis; ta != nil {
-		for i := range ta.FragEvents {
-			ta.FragEvents[i].Time -= matchStartMs
-		}
-		for i := range ta.DeathEvents {
-			ta.DeathEvents[i].Time -= matchStartMs
-		}
-		for i := range ta.KillEvents {
-			ta.KillEvents[i].Time -= matchStartMs
-		}
-		for i := range ta.PowerupEvents {
-			ta.PowerupEvents[i].Time -= matchStartMs
-			ta.PowerupEvents[i].EndTime -= matchStartMs
-		}
-		for i := range ta.FragStreaks {
-			ta.FragStreaks[i].Time -= matchStartMs
-			ta.FragStreaks[i].EndTime -= matchStartMs
-		}
-	}
-
-	// Shift every per-player stream's timestamps and drop warmup
-	// entries. The match-window + wall-clock anchors on Streams.Global also rebase.
+	// The timeline node (TimelineAnalysis event streams, Streams.Global's
+	// match window / offset / pauses, and each player's + mover's stream) now
+	// rebases its own timestamps at Finalize (TimelineAnalyzer.rebaseToMatch).
+	// The shot spatial streams below are still rebased here until the shots
+	// node adopts them.
 	if streams := res.Streams; streams != nil {
-		streams.Global.MatchStart -= matchStartMs
-		streams.Global.MatchEnd -= matchStartMs
-		if streams.Global.MatchStart < 0 {
-			streams.Global.MatchStart = 0
-		}
-		// Record the demo→match offset and rebase pause anchors to match time.
-		// AtMs only — DurationMs is a span, not a timestamp. Pauses during the
-		// countdown go negative; keep them, they still consume wall time the
-		// mapping must account for. DemoStartUnixMs is NOT shifted (it anchors
-		// demo open, not match start).
-		streams.Global.DemoOffset = matchStartMs
-		for i := range streams.Global.Pauses {
-			streams.Global.Pauses[i].AtMs -= matchStartMs
-		}
-		for pi := range streams.Players {
-			p := &streams.Players[pi]
-			p.Health = shiftAndFilterChangeI16(p.Health, matchStartMs)
-			p.Armor = shiftAndFilterChangeI16(p.Armor, matchStartMs)
-			p.ArmorType = shiftAndFilterChangeStr(p.ArmorType, matchStartMs)
-			p.Loc = shiftAndFilterChangeI16(p.Loc, matchStartMs)
-			p.Shells = shiftAndFilterChangeI16(p.Shells, matchStartMs)
-			p.Nails = shiftAndFilterChangeI16(p.Nails, matchStartMs)
-			p.Rockets = shiftAndFilterChangeI16(p.Rockets, matchStartMs)
-			p.Cells = shiftAndFilterChangeI16(p.Cells, matchStartMs)
-
-			p.RL = shiftAndFilterIntervals(p.RL, matchStartMs)
-			p.LG = shiftAndFilterIntervals(p.LG, matchStartMs)
-			p.GL = shiftAndFilterIntervals(p.GL, matchStartMs)
-			p.SSG = shiftAndFilterIntervals(p.SSG, matchStartMs)
-			p.SNG = shiftAndFilterIntervals(p.SNG, matchStartMs)
-			p.Quad = shiftAndFilterIntervals(p.Quad, matchStartMs)
-			p.Pent = shiftAndFilterIntervals(p.Pent, matchStartMs)
-			p.Ring = shiftAndFilterIntervals(p.Ring, matchStartMs)
-
-			p.Spawns = shiftAndFilterInts(p.Spawns, matchStartMs)
-			p.Deaths = shiftAndFilterInts(p.Deaths, matchStartMs)
-
-			if p.Position != nil {
-				shiftAndFilterPosition(p.Position, matchStartMs)
-			}
-		}
-		for mi := range streams.Movers {
-			shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
-		}
 		for _, pr := range []*result.ProjectileStreams{streams.Projectiles, streams.Nails} {
 			if pr == nil {
 				continue
@@ -122,12 +61,6 @@ func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
 	if res.Messages != nil {
 		for i := range res.Messages.Events {
 			res.Messages.Events[i].Time -= matchStartMs
-		}
-	}
-
-	if res.Frags != nil {
-		for i := range res.Frags.Frags {
-			res.Frags.Frags[i].Time -= matchStartMs
 		}
 	}
 

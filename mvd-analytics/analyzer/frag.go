@@ -201,6 +201,22 @@ func (a *FragAnalyzer) Finalize(result *Result) error {
 		ByWeapon:   a.byWeapon,
 		ByPlayer:   a.byPlayer,
 	}
+
+	// Born-correct timestamps: emit the frag log on the match clock. The shift
+	// lands on a copy so co.FragEntries (published from a.frags by
+	// PopulateCore) stays on the demo clock — timeline's killEvents/powerup
+	// windows and weapon_pickups' kill attribution do their arithmetic against
+	// the raw demo-time entries, then rebase their own outputs. Only .Time is a
+	// timestamp. When no match start was detected (ms <= 0) nothing shifts,
+	// matching the old rebase's early return.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		shifted := make([]FragEntry, len(a.frags))
+		copy(shifted, a.frags)
+		for i := range shifted {
+			shifted[i].Time -= ms
+		}
+		result.Frags.Frags = shifted
+	}
 	return nil
 }
 
