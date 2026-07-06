@@ -115,11 +115,14 @@ func (c *Client) Download(info *GameInfo) ([]byte, error) {
 	}
 
 	// Path 1: CDN, when we have a sha to address it.
+	var cdnErr error
 	if len(info.DemoSHA256) >= 3 {
 		cdnURL := fmt.Sprintf("%s/%s/%s.mvd.gz", c.CDNBase, info.DemoSHA256[:3], info.DemoSHA256)
-		if data, err := c.fetch(cdnURL); err == nil {
+		data, err := c.fetch(cdnURL)
+		if err == nil {
 			return data, nil
 		}
+		cdnErr = err
 		// Fall through to source on CDN miss / error.
 	}
 
@@ -132,6 +135,12 @@ func (c *Client) Download(info *GameInfo) ([]byte, error) {
 		return data, nil
 	}
 
+	// No source URL to fall back on. When a sha was present, the CDN
+	// attempt is the real failure — report it rather than the misleading
+	// "no sha256" message.
+	if cdnErr != nil {
+		return nil, fmt.Errorf("cdn: %v; no demo_source_url fallback", cdnErr)
+	}
 	return nil, errors.New("no download URL available (no sha256 and no demo_source_url)")
 }
 

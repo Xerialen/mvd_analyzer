@@ -21,6 +21,12 @@ var locDirOverride string
 // embedded .loc corpus. Only meaningful for native builds; WASM callers
 // route through the host-provided fetchLocSync regardless.
 // Pass "" to revert to the embedded corpus.
+//
+// Not safe to call concurrently with LoadForMap, and it does not
+// invalidate locvis's memoised Finder (which bakes in the loc table) —
+// today's only callers (cmd/mapgen, tests) set it once at startup before
+// any analysis. If a corpus switch mid-process is ever needed, add the
+// invalidation then.
 func SetLocDir(dir string) {
 	locDirOverride = dir
 }

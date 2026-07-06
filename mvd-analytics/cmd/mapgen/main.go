@@ -107,7 +107,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "mapgen: -demos has no effect without -out-dir (pruning only touches geometry)")
 		} else {
 			mapbsp.SetDir(*bspDir) // so the analyzer computes per-sample H/Lq
-			usageByMap = collectUsage(*demosDir, *verbose)
+			usageByMap, err = collectUsage(*demosDir, *verbose)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "mapgen: walk demos-dir: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 	params := mapgeom.DefaultParams()
@@ -234,8 +238,11 @@ func emitGeometry(path, name string, finder *loc.Finder, outDir string, verbose 
 // samples with no floor (H == NoFloor) or where the player is in a liquid
 // (Lq level ≥ 1 — liquid-supported, not floor) are skipped. A demo that
 // fails to analyze is logged and skipped rather than aborting the run.
-func collectUsage(demosDir string, verbose bool) map[string]*mapgeom.FloorUsage {
-	paths := findDemos(demosDir)
+func collectUsage(demosDir string, verbose bool) (map[string]*mapgeom.FloorUsage, error) {
+	paths, err := findDemos(demosDir)
+	if err != nil {
+		return nil, err
+	}
 	if verbose {
 		fmt.Fprintf(os.Stderr, "mapgen: pruning from %d demos under %s\n", len(paths), demosDir)
 	}
@@ -284,13 +291,15 @@ func collectUsage(demosDir string, verbose bool) map[string]*mapgeom.FloorUsage 
 			}
 		}
 	}
-	return out
+	return out, nil
 }
 
-// findDemos returns every .mvd / .mvd.gz path under root.
-func findDemos(root string) []string {
+// findDemos returns every .mvd / .mvd.gz path under root. A walk error
+// (e.g. a typo'd -demos path) is propagated so the run fails rather than
+// silently emitting an unpruned corpus, matching findBSPs.
+func findDemos(root string) ([]string, error) {
 	var out []string
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -304,5 +313,5 @@ func findDemos(root string) []string {
 		return nil
 	})
 	sort.Strings(out)
-	return out
+	return out, err
 }

@@ -386,6 +386,30 @@ func LoadBytes(data []byte) (*BSP, error) {
 		return nil, fmt.Errorf("bspvis: BSP has no leaves")
 	}
 
+	// Validate node references once, up front, so the spatial queries
+	// (PointInLeaf, BoxLeafs, RayHitsSolid, the liquid walk) can index
+	// Planes/Nodes/Leaves without a per-step bounds check — a corrupt or
+	// truncated user-provisioned BSP is rejected here instead of panicking
+	// mid-analysis. Mirrors the clipnode validation in mapclip/build.go.
+	nNodes := int32(len(bsp.Nodes))
+	nLeaves := int32(len(bsp.Leaves))
+	nPlanes := uint32(len(bsp.Planes))
+	for i := range bsp.Nodes {
+		n := &bsp.Nodes[i]
+		if n.PlaneID >= nPlanes {
+			return nil, fmt.Errorf("bspvis: node %d references plane %d of %d", i, n.PlaneID, nPlanes)
+		}
+		for _, c := range n.Children {
+			if c >= 0 {
+				if c >= nNodes {
+					return nil, fmt.Errorf("bspvis: node %d references child node %d of %d", i, c, nNodes)
+				}
+			} else if leaf := -1 - c; leaf >= nLeaves {
+				return nil, fmt.Errorf("bspvis: node %d references leaf %d of %d", i, leaf, nLeaves)
+			}
+		}
+	}
+
 	return bsp, nil
 }
 

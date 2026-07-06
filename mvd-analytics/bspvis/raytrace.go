@@ -42,9 +42,7 @@ func (b *BSP) segHitsSolid(nodeIdx int32, p1, p2 [3]float32) bool {
 		return true
 	}
 	n := &b.Nodes[nodeIdx]
-	if int(n.PlaneID) >= len(b.Planes) {
-		return true
-	}
+	// Node.PlaneID is validated in LoadBytes, so the index is safe here.
 	pl := &b.Planes[n.PlaneID]
 	t1 := pl.Normal.X*p1[0] + pl.Normal.Y*p1[1] + pl.Normal.Z*p1[2] - pl.Dist
 	t2 := pl.Normal.X*p2[0] + pl.Normal.Y*p2[1] + pl.Normal.Z*p2[2] - pl.Dist

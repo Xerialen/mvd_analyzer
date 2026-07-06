@@ -7,6 +7,14 @@
 // This is the map's *designed* layout, independent of any demo. For the
 // per-match "what actually spawned and who took it" timeline, see
 // result.ItemsResult (derived from the MVD entity stream).
+//
+// Regeneration dependency: each entity's Name/Loc fields bake in the loc
+// corpus (loc/data) that existed when cmd/mapgen ran. Updating loc/data
+// therefore silently de-syncs mapents/data until the entity corpus is
+// regenerated too — after changing loc files, re-run
+// `cmd/mapgen -entities-out mvd-analytics/mapents/data` so the two stay
+// consistent. Bump CorpusVersion whenever the on-disk shape changes; parse
+// rejects a corpus whose version does not match the running binary.
 package mapents
 
 import (
@@ -20,6 +28,14 @@ func parse(base string, data []byte) (*MapEntities, error) {
 	var me MapEntities
 	if err := json.Unmarshal(data, &me); err != nil {
 		return nil, fmt.Errorf("map-entities %s: %w", base, err)
+	}
+	// A version mismatch means the corpus predates (or postdates) this
+	// binary's MapEntity shape: fields would unmarshal partially or to
+	// their zero value and load silently wrong. Reject it so the caller
+	// leaves the section absent rather than serving a stale layout — the
+	// same graceful degradation as a missing corpus file.
+	if me.Version != CorpusVersion {
+		return nil, fmt.Errorf("map-entities %s: corpus version %d, want %d (regenerate with cmd/mapgen -entities-out)", base, me.Version, CorpusVersion)
 	}
 	return &me, nil
 }

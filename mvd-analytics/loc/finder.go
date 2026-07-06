@@ -32,6 +32,13 @@ func (f *Finder) FindNearest(x, y, z float32) string {
 	idx := f.pencilIndex()
 	li, _ := idx.findNearest(f.locations, x, y, z)
 	if li < 0 {
+		// The expanding-shell search caps at r<=16 (index.go); a query
+		// farther than that from every loc finds nothing. Fall back to the
+		// exhaustive linear scan so the pencil path never disagrees with
+		// the linear path on the true (far) nearest.
+		li, _ = findNearestLinear(f.locations, x, y, z)
+	}
+	if li < 0 {
 		return ""
 	}
 	return f.locations[li].Name
