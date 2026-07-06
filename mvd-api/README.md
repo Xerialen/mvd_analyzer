@@ -122,8 +122,8 @@ index/games/<gameId>.txt               # gameId → sha map
 ```
 
 A 4-on-4 demo typically occupies ~3–7 MB in tier 1 and ~3–10 MB in
-tier 2. There is no automatic eviction; documented as a follow-up
-(see [`FOLLOWUPS.md`](../FOLLOWUPS.md)).
+tier 2. There is no automatic eviction yet — a size-capped store / GC
+is planned as part of the hosting-prep work.
 
 ## Smoke tests
 

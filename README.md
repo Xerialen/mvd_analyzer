@@ -630,7 +630,6 @@ mvd-analyzer/
 
 - [.devcontainer/README.md](.devcontainer/README.md) — reproducible dev environment (Zed / VS Code / `devcontainer` CLI)
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — feature-level changes as they land on `main`, with dates and schema bumps
-- [PLAN-implementation-order.md](PLAN-implementation-order.md) — execution order for the six `PLAN-*.md` review/design documents (per-module code reviews + the analytics-DAG proposal)
 - [mvd-reader/README.md](mvd-reader/README.md) — ingestion layer, how to add a source
 - [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md) — MVD binary format spec with ezQuake references
 - [mvd-analytics/README.md](mvd-analytics/README.md) — pipeline, how to add an analyzer, Result schema
