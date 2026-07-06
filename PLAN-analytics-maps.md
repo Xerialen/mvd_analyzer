@@ -1,85 +1,128 @@
 # PLAN-analytics-maps — review of map/geometry/support packages
 
-> Updated 2026-07-05 against main @ 05e2ed9 (schema v47). Originally written against a pre-#96 review tree; re-verified after merging #96–#102.
+> Updated 2026-07-06 after implementation phases 0–5 (branches phase-0…phase-5). Only open items remain below; resolved findings are in the ledger at the bottom and in git history.
 
 Scope: `mvd-analytics/{mapgen,mapbsp,mapents,mapclip,bspvis,loc,locvis,hubfetch,cmd}`.
-Overall assessment: this is a well-built corner of the codebase. The layering is coherent (offline `cmd/mapgen` → committed corpora → per-platform loaders → analyze-time consumers), the engine-algorithm ports (`mapclip` hull trace, `bspvis` PVS/ray/liquid walks) cite ground-truth C line-by-line, tests are genuinely strong (fixture-built BSPs, engine-equivalence tests, benchmarks justifying constants), and every non-obvious filter carries a why-comment as CLAUDE.md demands. I found no serious bugs in the geometry or trace math. The real issues are systemic rather than local: the same BSP is re-read and re-parsed 5–6 times per analyzed demo with the locvis PVS precompute repeated three times; there is a documented-but-real ~150-line parser overlap between `mapgen/bsp` and `bspvis`; a noticeable amount of exported API has zero callers; and doc comments have drifted (stale repo/paths, one comment that contradicts the code, one diagnostic counter that is always zero). Everything below is fixable incrementally without reshaping the architecture.
+Overall assessment after phases 0–5: the systemic issues this review found are
+now closed — the 5–6× BSP re-read is a one-entry generation-guarded cache pair
+(mapbsp bytes + locvis Finder), the four platform-loader copies share one
+`internal/jshost` bridge, bspvis validates corrupt input at load instead of
+panicking mid-query, the dead exported surface is deleted, and the whole scope
+is gofmt-clean. What remains is one structural item (A2, the deliberate
+~150-line parser overlap between `mapgen/bsp` and `bspvis`, scheduled as
+Phase 12 of PLAN-implementation-order), two doc-drift slivers left over from
+F4, and a short nit list re-verified below against the current tree.
 
-## Big picture
+## Open items
 
-**A1. Package inventory and data flow are sound.** There are two BSP parsers plus one lump-extractor, each with a distinct lump set: `mapgen/bsp` (geometry lumps: planes/verts/faces/edges/models/clipnodes/texinfo, `mapgen/bsp/bsp.go`), `bspvis` (visibility lumps: nodes/leaves/visdata/planes/models, `bspvis/load.go`), and the lightweight entities/models extractor (`mapgen/bsp/entities.go:179`, `mapgen/bsp/models.go:41`) that also accepts HL v30. Raw bytes flow through a single choke point, `mapbsp.LoadBytes` (`mapbsp/loader_native.go:34`), on both native and WASM. Offline, `cmd/mapgen` writes two committed corpora (floor geometry → `mvd-web/static/maps`, entity corpus → `mapents/data` embedded) plus the embedded `.loc` corpus in `loc/data`; at analyze time `mapclip` builds hulls straight from the BSP (no third corpus — good design, documented at `mapclip/mapclip.go:27-29`). `mvd-analytics/README.md:621-631` documents the two-parser split accurately. The split is defensible; the overlap it costs is quantified in A2.
+**A2. Parser overlap between `mapgen/bsp` and `bspvis` — REMAINS (now Phase 12 / task #13 of `PLAN-implementation-order.md`).**
+Duplicated near-verbatim, refs re-verified at 22629a6: `Vec3`/`Plane` structs
+(`mapgen/bsp/types.go:12-21` vs `bspvis/load.go:37-46`), `Model`
+(`types.go:44-52` vs `load.go:85-93`), lump-index tables
+(`mapgen/bsp/lumps.go:6-20` vs `load.go:108-127`), magic/version sniffing
+(`mapgen/bsp/bsp.go:50-64` vs `load.go:161-175`), the plane decode loop
+(`bsp.go:73-94` vs `load.go:202-218`), the model decode loop (`bsp.go:197-220`
+vs `load.go:355-377`), and `readF32` (`bsp.go:321-323` vs `load.go:416-418`).
+Phase 5 shrank the overlap by one item — `mapgen/bsp.ParseBytes` now calls the
+shared bounds-checked `lumpBytes` (`entities.go:163-202`) instead of carrying
+its own dentry/closure copy (old F9) — but bspvis still has its own dentry
+array + `lumpBytes` closure (`load.go:177-199`). `bspvis/load.go:6-9`
+documents the standalone-package choice, but both packages live in the same
+module and are co-consumed by the analyzer, so the isolation buys nothing.
+Suggested direction unchanged: extract the header/directory/plane/model layer
+into one low-level package (or fold bspvis's node/leaf/vis decoding into
+`mapgen/bsp`), keeping the query code (`PointInLeaf`, `RayHitsSolid`, PVS) in
+`bspvis`. Any future format fix (e.g. a new BSP2 quirk) currently has to be
+made twice. When this lands, also drop the never-read `Node.FirstFace/NumFaces`
+and `Leaf.FirstMarkSurface/NumMarkSurfaces/Ambient` fields (see nits).
 
-**A2. Parser overlap between `mapgen/bsp` and `bspvis` is ~150 lines and growing pressure.** Duplicated near-verbatim: `Vec3`/`Plane` structs (`mapgen/bsp/types.go:12-21` vs `bspvis/load.go:37-46`), `Model` (`types.go:44-52` vs `load.go:85-93`), lump-index tables (`mapgen/bsp/lumps.go:5-22` vs `load.go:109-126`), magic/version sniffing (`bsp.go:55-65` vs `load.go:161-175`), the lump-directory + bounds-checked `lumpBytes` closure (`bsp.go:67-89` vs `load.go:188-198`), the plane decode loop (`bsp.go:94-113` vs `load.go:202-217`), the model decode loop (`bsp.go:218-240` vs `load.go:355-377`), and `readF32` (`bsp.go:341-343` vs `load.go:392-394`). `bspvis/load.go:6-9` documents this as a deliberate standalone-package choice, but both packages live in the same module and are co-consumed by the analyzer, so the isolation buys nothing. Suggested direction (not urgent): extract the header/directory/plane/model layer into one low-level package (or fold bspvis's node/leaf/vis decoding into `mapgen/bsp`), keeping the query code (`PointInLeaf`, `RayHitsSolid`, PVS) in `bspvis`. Any future format fix (e.g. a new BSP2 quirk) currently has to be made twice.
+**A3 remnant — the caches landed (with generation guards); one cache edge stays open by design.**
+Phase 5's one-entry caches (`mapbsp/mapbsp.go:36-89` for raw bytes,
+`locvis/loader.go:23-52` for the built Finder) are generation-guarded:
+`SetDir`/`SetBspDir` bump a generation so an in-flight load that started
+against the old directory discards its store instead of re-caching stale
+data, and concurrent `-race` stress tests cover load-vs-invalidate. The one
+edge deliberately left open, documented in code: `loc.SetLocDir` does **not**
+invalidate locvis's memoised Finder (which bakes in the loc table) —
+`loc/loader_native.go:25-29` spells out why (today's only callers, cmd/mapgen
+and tests, set it once at startup before any analysis) and says to add the
+invalidation if a mid-process corpus switch is ever needed. Nothing to do
+unless that caller appears.
 
-**A3. No BSP caching: one demo analysis loads and parses the same BSP 5–6 times.** Call sites per analysis run: `analyzer/items.go:1226`, `analyzer/timeline_finalize.go:22`, and `analyzer/backpacks.go:147` each call `locvis.LoadForMap`, which re-reads the file *and* re-runs the O(leafCount×N) per-leaf PVS precompute (`locvis/locvis.go:166-210`) — three times; `analyzer/timeline_finalize.go:34` (`mapclip.LoadForMapWithMovers`) and `:46` re-read and re-parse again via `bspvis.LoadBytes`; the lazy LOS pass (`analyzer/los.go:57`, run on demand by the web overlay / `-include los` / the API `/los` endpoint) adds the sixth. (Re-checked post-#102: the new shots/aim analyzers add no further load sites, and no caching has landed.) On WASM each `mapbsp.LoadBytes` is a fresh synchronous XHR of the multi-MB BSP — `mvd-web/static/worker.js:53-71` has no cache — so a single demo analysis performs 5–6 blocking fetches + copies of the same file. The analyzer side is out of my scope, but the fix belongs in these packages: memoize the last `(mapName → bytes)` in `mapbsp` and/or the last built `locvis.Finder`/`bspvis.BSP` keyed by normalized map name (one demo = one map, so a one-entry cache suffices). This is the single largest cheap win in the review.
+**F4 remnants (doc drift — bulk fixed in phase 0, two slivers left).**
+(d) still open: `bspvis/load.go:23-25` and `locvis/locvis.go:17-18` cite
+`experiments/locattr/{RESEARCH_BSP.md,V2b-V6-HANDOFF.md}` — documents that are
+still not in the repo (the `experiments/` tree is untracked, per-machine).
+Either commit them or reword the comments to note they are historical.
+(a) re-drifted: the JS-mirror contract refs that phase 0 pointed at the real
+`app.js` lines (`mapgen/mapgeom/normalize.go:5,15` → `app.js:5534/5537`) were
+shifted again by the phase-5 web consolidation — the actual locations are now
+`mvd-web/static/app.js:5500` (`ITEM_KEYWORDS`) and `:5503`
+(`normalizeLocationName`). The symbol names still match, only the line numbers
+rot; consider citing symbols without line numbers in that comment, since its
+whole job is to survive exactly this kind of churn.
 
-**A4. The per-platform loader pattern is duplicated four times where once would do.** Three WASM loaders re-implement the same "look up global JS fn, type-check, Invoke, null-check, CopyBytesToGo" bridge: `loc/loader_wasm.go:25-55`, `mapents/loader_wasm.go:20-49`, `mapbsp/loader_wasm.go:20-37` (~90 lines; two of the three also carry a legacy-string fallback the third lacks, so behaviour has already drifted). Separately, `locvis/loader_native.go` and `locvis/loader_wasm.go` are build-tag-split despite having byte-identical `LoadForMap` bodies — the platform variance is fully encapsulated in `mapbsp` (whose `SetDir` exists as a no-op on WASM precisely to make this possible, `mapbsp/loader_wasm.go:13`). See F7/F8.
+## Low priority / nits (each re-verified 2026-07-06 at 22629a6)
 
-**A5. Corpus regeneration workflows are documented but under-enforced.** The regen commands live in CLAUDE.md and `cmd/mapgen`'s package doc; `PruneInfo` records pruning provenance (good). Two drift gaps: `mapents.CorpusVersion` is written into every JSON (`cmd/mapgen/entities.go:74`) and documented as "so regenerated and stale corpora are distinguishable" (`mapents/types.go:27-29`), but `parse` (`types.go:19-25`) never checks `Version`, so a stale-shape corpus loads silently with zero fields; and entity `Name`/`Loc` fields bake in the loc corpus that existed at generation time, so updating `loc/data` silently de-syncs `mapents/data` until someone remembers to regenerate. Minimum fix: check `Version != CorpusVersion` at load (warn or error), and note the loc→mapents regeneration dependency in `mapents`' package doc.
+- `mapgen/mapgeom/mapgeom.go:606-607`: the `se == 0` default branch of
+  `assembleRing` still indexes `b.Edges[0]` without a `len(b.Edges) > 0`
+  guard (the positive/negative branches check at `:595,:601`). Corrupt-input
+  only; add the guard for symmetry.
+- `loc/loader.go:87`: `strings.NewReader(string(data))` copies the whole
+  file; `bytes.NewReader(data)` avoids it.
+- `mapgen/mapgeom/prune.go:77-80,171-184`: `minF`/`maxF` duplicate the Go
+  1.21+ builtins `min`/`max` (module is at go 1.25); `absF` stays.
+- `cmd/qw-analyze/main.go:569-594`: `runBulk` still increments `processed`
+  before attempting (inclusive of failures), while
+  `cmd/mapgen/main.go:121-141` counts exclusively (`processed++` only on
+  success). Pick one convention.
+- `cmd/qw-analyze/main.go:212-227`: `-format md`/`-format events` still
+  silently ignore `-view` and all view flags (`runOne` routes md/events
+  without consulting `vopts`); consider erroring on the meaningless
+  combination.
+- **[RESOLVED on main — #96; insurance only]** `cmd/mapgen/main.go:123,210` +
+  `entities.go:79`: output filenames use the raw lowercased BSP basename, not
+  `loc.NormalizeMapName`, while every runtime loader normalizes. #96 emptied
+  `mapAliases`, so normalize is now just lowercase-basename and no
+  emit/load divergence is reachable. Normalizing at emit time remains cheap
+  insurance if an alias is ever reintroduced.
+- `cmd/mapgen` reads the same BSP file three times per map (`bsp.Parse`,
+  `main.go:189`; `bsp.ReadEntities`, `entities.go:25`; `bsp.ReadModelBounds`,
+  `entities.go:31`). Offline tool, so harmless; read once and pass bytes if
+  it ever grows.
+- `bspvis/load.go:61-62,77-79`: `Node.FirstFace/NumFaces`,
+  `Leaf.FirstMarkSurface/NumMarkSurfaces/Ambient` are decoded and stored but
+  never read — ~16 bytes per node/leaf on every loaded map; drop them when
+  the parser layers are unified (A2 / Phase 12).
+- `mapgen/mapgeom/mapgeom.go:229-233,399-412` (`Stats.WallsKept/WallTris`):
+  wall classification and per-triangle area math survive solely to feed
+  verbose counters for the removed "solid" render — now at least documented
+  as such in a why-comment at `:400-401`. Still a candidate for deletion next
+  time this file is touched.
+- `mapgen/mapgeom/mapgeom.go:366-384` still re-implements the
+  nearest-loc linear scan inline (it needs the winning *index* for the
+  ceiling cap at `:389-393`, and `loc.findNearestLinear` is unexported).
+  Phase 5's F11 fix added a linear *fallback* inside `loc.FindNearest`
+  (`loc/finder.go:33-40`) but did not export an index-returning API, so the
+  copy remains; exporting a `(*Finder) FindNearestIndex` would remove it.
 
-## Findings
+## Resolved (implementation phases 0–5)
 
-**F1. bspvis queries inconsistently bounds-check plane indices — corrupt BSP can panic production analysis.** (correctness)
-`bspvis/pointinleaf.go:52` (`pl := &b.Planes[n.PlaneID]` in `PointInLeaf`) and `pointinleaf.go:99` (`boxLeafs`) index `Planes` unchecked, while the sibling traversals do check (`raytrace.go:45-47`, `liquid.go:129-131`). `LoadBytes` validates lump sizes but never validates `Node.PlaneID` or children ranges. bspvis parses arbitrary user-provisioned `.bsp` files at analyze time (native `bsps/` dir, WASM host fetch), so a truncated/corrupt file can panic the whole analysis instead of degrading. Suggested change: validate all `Node.PlaneID < len(Planes)` and children ranges once at the end of `LoadBytes` (as `mapclip/build.go:62-63,82-84` already does for clipnodes), then delete the scattered per-query checks — fewer lines and stronger guarantees.
-
-**F2. `Stats.FacesDropped` is never incremented — the mapgen CLI always reports `dropped=0`.** (correctness)
-`mapgen/mapgeom/mapgeom.go:228` documents the counter as "ring assembly or geometry drops", and `cmd/mapgen/main.go:203` (failure message) and `:226` (verbose line) print it, but no code path increments it: the bad-PlaneID skip (`mapgeom.go:309-310`), the liquid ring-assembly failure (`:321-323`), and the floor/wall ring-assembly failure (`:347-349`) all `continue` without touching stats. Diagnostics that silently read zero are worse than none — add `stats.FacesDropped++` at those three sites (or delete the field and its two print sites).
-
-**F3. Six exported symbols have zero callers; several carry doc comments claiming callers that don't exist.** (bloat)
-Verified against the whole workspace (mvd-analytics, mvd-web, mvd-api, mvd-reader), tests included, and re-verified post-#102 (the new aim/shots/LOS code calls none of these): `bspvis.PointSolid` (`pointinleaf.go:67-71`, no callers at all), `bspvis.CountPVSVisible` (`pvs.go:87-97`, test-only), `loc.Finder.FindLocationsInRadius` (`loc/finder.go:73-89`) **and** its locvis wrapper (`locvis/locvis.go:121-128`, whose comment "the existing callers want a geometric set" describes callers that no longer exist), `locvis.Finder.Base()` (`locvis.go:143-150`), `bsp.ReadEntitiesBytes` (`mapgen/bsp/entities.go:33-42`, comment says "Used by tests" but tests use `ParseEntitiesText`), and `mapgeom.FloorUsage.Demos()` (`prune.go:59-60`; `buildRegions` reads `.demos` directly at `mapgeom.go:561`). Also `loc.NewFinder`'s doc (`loc/types.go:24-27`) claims `cmd/mapgen` uses it — it doesn't (it uses `SetLocDir`+`LoadForMap`). Delete the dead symbols and fix the two false doc claims; each is a trap for the next reader trying to find the call graph.
-
-**F4. Doc-drift cluster: stale repo names and paths, one comment contradicting the code.** (readability / correctness-of-docs)
-(a) `mapgen/mapgeom/normalize.go:5,15` points the byte-for-byte JS mirror contract at `internal/web/static/app.js:2679/2682`; the real location is `mvd-web/static/app.js:5534/5537`. This one matters most — the comment's whole job is to tell you what to keep in sync. (b) `cmd/mapgen/entities.go:21-23` says brush entities "are skipped here until that lands", but the code right below places them via `brushPlacement` (`entities.go:48-57`) — delete the stale sentence. (c) `hubfetch/hub.go:3,30` references `qw-web/static/app.js` and `:13` `qwanalytics/analyzer/golden_test.go` (actual: `mvd-web/...`, `mvd-analytics/analyzer/golden_test.go`); `cmd/qw-analyze/main.go:1,72` still says "qwanalytics". (d) `locvis/locvis.go:18` and `bspvis/load.go:23-25` cite `experiments/locattr/...` documents that are not in the repo — either commit them, or reword to note they're historical. (e) CLAUDE.md:96 lists the test-coverage path as `mvd-analytics/internal/hubfetch/`; the package lives at `mvd-analytics/hubfetch/`.
-
-**F5. Merge the four redundant platform-loader implementations.** (bloat)
-Concrete changes for A4: (1) collapse `locvis/loader_native.go` and `locvis/loader_wasm.go` into one untagged `loader.go` — the bodies are identical and `mapbsp.SetDir` exists on both platforms; keep `SetBspDir` there too. (2) Add a tiny internal helper package (e.g. `internal/jshost`) with one `FetchSync(fnName, arg string) ([]byte, error)` used by `loc/loader_wasm.go`, `mapents/loader_wasm.go`, and `mapbsp/loader_wasm.go`; it also unifies the currently inconsistent legacy-string handling (loc and mapents accept a string return, mapbsp doesn't). Net ~100 lines removed and one place to fix the bridge.
-
-**F6. `cmd/mapgen` silently swallows `-demos` directory errors, producing an unpruned corpus without warning.** (correctness)
-`findDemos` discards the `filepath.WalkDir` error (`cmd/mapgen/main.go:293` `_ = filepath.WalkDir(...)`), so a typo'd `-demos` path yields zero demos, `usageByMap` stays empty, and every map is emitted *unpruned* — the exact opposite of what the operator asked for, with no message unless `-verbose` is on (and even then only "pruning from 0 demos"). `findBSPs` (`main.go:142-157`) propagates its error; make `findDemos` do the same and fail the run.
-
-**F7. `qw-analyze -view state-at -time 0` is wrongly rejected.** (correctness, CLI)
-`cmd/qw-analyze/main.go:346` uses `vopts.timeAt == 0` as "flag missing", so querying match start (`-time 0s`, a legitimate request) errors with "requires -time". Track presence separately (e.g. keep `timeStr != ""` in `viewOptions`, or use a negative sentinel).
-
-**F8. Three copies of the open→registry→override→analyze preamble in qw-analyze.** (bloat)
-`dumpView` (`cmd/qw-analyze/main.go:284-298`) and `dumpMarkdown` (`:471-486`) still repeat the identical 12-line block (open source, defer close, new registry, set override, `AnalyzeSource`); `dumpJSON` (`:226-262`) has since diverged — #97 added the `-include` registry knobs (`BuildShotStreams`, `BuildNails`, `SetDecodeNails`, lazy `ComputeLOS`) to that copy only, which is exactly the "future flag needs a registry knob" growth this finding predicted, and means `-format md` / `-view` paths silently lack those knobs. Extract `analyzePath(path string, ov []config.MapRegionOverride, vopts *viewOptions) (*result.Result, error)`; ~25 lines saved and one place to grow.
-
-**F9. In-package duplication of the lump-directory reader in `mapgen/bsp`.** (bloat)
-`ParseBytes` builds its own dentry array + `lumpBytes` closure (`mapgen/bsp/bsp.go:67-89`) while the same package already exports the bounds-checked `lumpBytes(data, lumpIndex)` (`entities.go:179-202`). `ParseBytes` performs its stricter version check first, so it can simply call the shared helper per lump; delete the closure and the dentry struct.
-
-**F10. Filler `var _` statements and a dead import.** (bloat)
-(a) `mapgen/bsp/bsp.go:345-347` keeps the otherwise-unused `io` import alive with `var _ = io.EOF` and a confusing comment — delete both. (b) `mapgen/bsp/lumps.go:43-44` says `lumpEntities` is "kept in case we need it later" and marks it used "to satisfy go vet" — it *is* used (`entities.go:171`), unused consts are legal Go anyway, and vet doesn't flag them; delete the `var _` and comment. (c) `bspvis/load.go:396-407` is a ten-entry `var _` block for constants that are legal to leave unreferenced; delete it (the `// unused here` comments in the const table at `load.go:112-123` already document intent).
-
-**F11. Pencil-index hard shell cap can diverge from the linear path.** (correctness, edge case)
-`loc/index.go:68` caps the expanding-shell search at `r <= 16` (≈4096 world units in XY). If no loc lies within the 33×33-cell neighbourhood, `findNearest` returns −1 and `Finder.FindNearest` returns `""` (`loc/finder.go:33-37`) where the L<500 linear path would have returned the true (far) nearest name. Only reachable on ≥500-loc custom maps with a player very far from every loc, but it's a silent behavioural fork between the two code paths. Either fall back to `findNearestLinear` when the capped search finds nothing, or derive the cap from the index's cell-key extent.
-
-**F12. Eleven in-scope files are not gofmt-clean.** (readability)
-`gofmt -l` flags (re-run at v47): `mapgen/mapgeom/{mapgeom.go,prune.go}`, `mapents/types.go`, `hubfetch/hub.go`, `cmd/mapgen/main.go`, plus six test files (`mapgen/bsp/bsp_test.go`, `mapgen/bsp/entities_test.go`, `mapgen/mapgeom/mapgeom_test.go`, `mapgen/mapgeom/prune_test.go`, `mapclip/mapclip_test.go`, `loc/index_test.go`). `cmd/qw-analyze/main.go` was on the original list but came back clean after #97's rewrite. Diffs are import ordering and struct-field alignment (e.g. `hubfetch/hub.go:42-45`, `mapgeom.go:26-31,226-231`). Run `gofmt -w` in one no-logic commit; misaligned fields (`GameInfo`) currently read like a field was deleted without re-formatting.
-
-**F13. `hubfetch.Download` reports the wrong reason when the CDN fails and no source URL exists.** (correctness, minor)
-`hubfetch/hub.go:112-127`: on a CDN error the error is discarded (documented fall-through, fine), but if `DemoSourceURL` is empty the final error says "no sha256 and no demo_source_url" even though a sha *was* present and the CDN attempt failed. Carry the CDN error into the final message (`fmt.Errorf("cdn: %v; no demo_source_url fallback", cdnErr)`).
-
-**F14. Stale "viewer edit mode" story on `mapgeom.Params`.** (readability / extensibility)
-`mapgen/mapgeom/mapgeom.go:73-75` says Params is fed "from form inputs over the WASM bridge" by the viewer's geometry edit mode, and the struct carries JSON tags for that purpose — but nothing in `mvd-web` imports `mapgeom`, and `BuildParams` has no non-test callers. Rewrite the comment to name the real consumers (tests + `cmd/mapgen` prune flags); drop the JSON tags unless a bridge caller is actually planned.
-
-## Low priority / nits
-
-- `mapgen/mapgeom/mapgeom.go:603-605`: the `se == 0` branch of `assembleRing` indexes `b.Edges[0]` without checking `len(b.Edges) > 0` (the positive/negative branches do check). Corrupt-input-only; add the guard for symmetry.
-- `mapents/types.go:19-25`: `parse` ignores `MapEntities.Version` — see A5; a one-line check makes `CorpusVersion` actually do its documented job.
-- `loc/loader.go:87`: `strings.NewReader(string(data))` copies the whole file; `bytes.NewReader(data)` avoids it.
-- `mapgen/mapgeom/prune.go:174-193`: `minF`/`maxF` duplicate Go 1.21+ builtin `min`/`max` (module is at go 1.25); `absF` stays.
-- `cmd/qw-analyze/main.go:556-588`: `runBulk` increments `processed` before attempting, so `processed=8 failed=3` double-counts failures; `cmd/mapgen/main.go:118-139` uses the opposite (exclusive) convention. Pick one.
-- `cmd/qw-analyze/main.go:210-224`: `-format md`/`-format events` silently ignore `-view` and all view flags; consider erroring on the meaningless combination.
-- **[RESOLVED on main — #96]** `cmd/mapgen/main.go:119` + `entities.go:80`: output filenames use the raw lowercased BSP basename, not `loc.NormalizeMapName`, while every runtime loader normalizes. #96 deliberately emptied `mapAliases` (`loc/loader.go:60` — the phantom family are distinct maps, not aliases), so normalize is now just lowercase-basename and no emit/load divergence is reachable. Normalizing at emit time remains cheap insurance if an alias is ever reintroduced.
-- `cmd/mapgen/entities.go` reads the same BSP file three times per map (`bsp.Parse` in `emitGeometry`, `bsp.ReadEntities`, `bsp.ReadModelBounds`). Offline tool, so harmless; read once and pass bytes if it ever grows.
-- `bspvis/load.go:56-80`: `Node.FirstFace/NumFaces`, `Leaf.FirstMarkSurface/NumMarkSurfaces/Ambient` are decoded and stored but never read — "kept for completeness" costs ~16 bytes per node/leaf on every loaded map; consider dropping when the parser layers are unified (A2).
-- `mapgen/mapgeom/mapgeom.go:399-411` + `Stats.WallsKept/WallTris`: wall classification and per-triangle area math survive solely to feed verbose counters for the removed "solid" render; fine to keep as diagnostics, but a candidate for deletion next time this file is touched.
-- `mapgen/mapgeom/mapgeom.go:364-382` re-implements `loc.findNearestLinear` inline (it needs the index for the ceiling cap, and the loc helper is unexported); exporting a `(*Finder) FindNearestIndex` would remove the copy.
-
-## New since this review (#96–#102, not covered above)
-
-- **#96 corpus expansion widens A3's blast radius.** Eleven duel/2on2 maps (ztndm3, metron, toxicity, dad2, catalyst, nova, pocket, katt, shifter, spinev2, zeal) now ship BSPs (`scripts/fetch-bsps.sh`) and usage-pruned V4 geometry — so the 5-loads-per-demo pattern (and the WASM 5× sync XHR, `worker.js:53-71` still uncached) now fires on most competitive demos, not just the 4on4 staples.
-- **#96 emptied `loc.mapAliases`** (`loc/loader.go:54-60`): `NormalizeMapName` is now effectively lowercase-basename-minus-`.bsp`. Resolves the phantombase nit above; any future alias re-opens it.
-- **#97's full-data API re-parses per enrichment.** `mvd-api` `EnsureShotStreams` (`internal/democache/cache.go:206-240`) re-runs the whole parse+analyze on the cached MVD bytes to build shot/nail streams — each such request repeats A3's five BSP loads on top of the original analysis. The one-entry `mapbsp` cache would pay off twice there.
-- **#97–#102 add no new map-package surface.** The aim/shots/victim/streak/whiff analyzers (`analyzer/{aim,shots,frag,duel_normalize,weapon_pickups}.go`) consume player/shot streams only — no new `mapbsp`/`bspvis`/`locvis`/`mapclip` call sites, and still no callers for the F3 dead symbols (`PointSolid`, `CountPVSVisible`, `FindLocationsInRadius`, `Base()`, `ReadEntitiesBytes`, `Demos()`).
-- **F8's pattern recurred immediately**: #97 grew registry knobs in `dumpJSON` only (see updated F8) — the extract-helper refactor is now slightly more than a de-dupe.
-- **F12 shrank by one**: #97's qw-analyze rewrite left `cmd/qw-analyze/main.go` gofmt-clean; the other eleven files still fail.
+| ID | What | Phase / commit |
+|---|---|---|
+| A3 | 5–6 BSP reads + 3 PVS precomputes per analysis → one-entry generation-guarded caches: mapbsp `(map → bytes)` (`mapbsp/mapbsp.go`), locvis `(map → *Finder)` (`locvis/loader.go`); on WASM 5–6 blocking multi-MB fetches collapse to one; also pays off on the mvd-api shot-stream re-parse path | Phase 5 maps, bcfb8ce |
+| A4 / F5 | Four platform-loader copies → one `internal/jshost.FetchSync` bridge shared by loc/mapents/mapbsp WASM loaders (legacy-string handling unified); locvis native/wasm split collapsed into one untagged `loader.go` | Phase 5 maps, bcfb8ce |
+| A5 (+ its nit) | `mapents` corpus files with a stale shape version rejected at load (`mapents/types.go:37-38`); loc→mapents regeneration dependency documented in the package doc (`types.go:9-15`) | Phase 5 maps, bcfb8ce |
+| F1 | bspvis validates `Node.PlaneID` and children ranges once at `LoadBytes` (`load.go:386-412`, mirroring mapclip's clipnode validation); scattered per-query checks deleted; previously-unchecked `PointInLeaf`/`boxLeafs` covered by tests | Phase 5 maps, bcfb8ce |
+| F2 | `Stats.FacesDropped` incremented at the three drop sites (`mapgeom.go:309,322,350`) — the CLI counter is no longer always zero | Phase 0, 7d1a8e2 |
+| F3 | Six dead exported symbols deleted (`PointSolid`, `CountPVSVisible`, `FindLocationsInRadius` ×2, `Finder.Base`, `ReadEntitiesBytes`, `FloorUsage.Demos`) plus the two doc comments claiming callers that didn't exist | Phase 4, f494471 |
+| F4 | Doc-drift cluster: JS-mirror contract re-pointed, stale brush-entity sentence deleted, qw-web/qwanalytics names fixed, CLAUDE.md hubfetch path corrected (two slivers remain — see F4 remnants above) | Phase 0, 7d1a8e2 |
+| F6 | `findDemos` propagates its `WalkDir` error (`cmd/mapgen/main.go:300-313`) — a typo'd `-demos` fails the run instead of silently emitting an unpruned corpus | Phase 5 maps, bcfb8ce |
+| F7 | `-view state-at -time 0` accepted: presence tracked via `timeSet` (`cmd/qw-analyze/main.go:59,186,360`) | Phase 5 maps, bcfb8ce |
+| F8 | One `analyzePath` preamble + `analyzeOptions` knobs shared by json/view/md dumpers (`main.go:229-273`) — the `-include` registry knobs no longer live in the json copy alone | Phase 5 maps, bcfb8ce |
+| F9 | `ParseBytes` uses the shared bounds-checked `lumpBytes` helper (`bsp.go:66-74`); its private dentry/closure copy deleted | Phase 5 maps, bcfb8ce |
+| F10 | `var _` filler blocks and the dead `io` import deleted (bsp.go, lumps.go, bspvis/load.go) | Phase 0, 7d1a8e2 |
+| F11 | Pencil-index shell cap (`r <= 16`) falls back to the exhaustive linear scan, so the two paths can no longer disagree on a far nearest (`loc/finder.go:33-40`) | Phase 5 maps, bcfb8ce |
+| F12 | gofmt sweep — the eleven flagged files (and drifted neighbours) reformatted; whole scope verified gofmt-clean at 22629a6 | Phase 0, ff47a76 |
+| F13 | `hubfetch.Download` reports the actual CDN failure when no `demo_source_url` fallback exists (`hub.go:138-144`) | Phase 5 maps, bcfb8ce |
+| F14 | `mapgeom.Params` doc names its real consumers (tests + cmd/mapgen prune flags); unused JSON tags dropped | Phase 0, 7d1a8e2 |

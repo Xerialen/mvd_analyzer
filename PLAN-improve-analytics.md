@@ -1,8 +1,11 @@
 # PLAN — Extensible analytics as an explicit DAG
 
-Status: proposal / design review. Nothing here is implemented yet.
+Status: active roadmap — Stages 1–4 below map to Phases 6–9 of
+PLAN-implementation-order. The DAG engine itself is not yet implemented;
+phases 0–5 cleared the prerequisites and correctness debt around it.
 
 > Updated 2026-07-05 against main @ 05e2ed9 (schema v47); pipeline inventory in §1 re-verified after merging #98–#102.
+> Phases 0–5 of PLAN-implementation-order are implemented (2026-07-06); Stage 1 is unblocked and next. The §1 inventory below was re-verified after those phases.
 
 Goal: make mvd-analytics extensible so that a contributor can add an
 analytics package by declaring **what it needs and what it produces**,
@@ -25,10 +28,14 @@ API exposure.
 
 `Registry.analyzeSource` (analyzer/registry.go:171) runs four fixed
 tiers; **ordering inside each tier is registration order**, set once in
-`NewDefaultRegistry` (registry.go:296):
+`NewDefaultRegistry` (registry.go:309):
 
 1. **Event pass** — one streaming pass; every analyzer's `OnEvent` sees
-   every event (core slice first, then derived slice).
+   every event (core slice first, then derived slice). Since phase 2
+   (cda9940) a truncated stream stops the pass and records
+   `"event stream aborted: …"` into `Result.Errors`
+   (registry.go:200-215, 246-248) — partial results still finalise, and
+   a consumer can tell a truncated parse from a clean one.
 2. **Core Finalize** — `demoinfo` → `identity` → `frag`. Each populates
    `CoreOutputs` via `PopulateCore` right after its own `Finalize`, so a
    later core node can read an earlier one's fields.
@@ -41,24 +48,35 @@ tiers; **ordering inside each tier is registration order**, set once in
    `scoreboardStatsPost` → `locGraphPost` → `regionControlPost`.
    Plain functions mutating the assembled `Result`.
 
-Outside the pipeline there are already **three ad-hoc lazy nodes**:
+Outside the pipeline there are already **two ad-hoc lazy nodes** (a
+third, `tracks.ExtractTracks`, was shelved scaffolding with zero callers
+and was deleted in phase 4, f494471 — if revived it enters as a new lazy
+node):
 
 - `ComputeLOS` (analyzer/los.go:42) — heaviest pass, computed on demand,
   idempotent via the `Streams.LOSComputed` latch. Cached on the
   *in-memory* Result only: the gob is written once at parse time and
   never re-encoded, so LOS recomputes after an LRU eviction
-  (mvd-api/handlers.go:614 — "the on-disk gob stays lean"; the
-  result/streams.go:34 comment claiming the API persists it is stale).
-- Shot/nail spatial streams — `democache.EnsureShotStreams` *re-parses
-  the cached MVD bytes* with `BuildShotStreams`/`BuildNails` on, splices
-  the streams onto the in-memory Result, latches
+  (mvd-api/handlers.go:575 — "the on-disk gob stays lean"; the
+  result/streams.go:32-43 doc now states exactly this, fixed in
+  phase 0).
+- Shot/nail spatial streams — `democache.EnsureShotStreams`
+  (mvd-api/internal/democache/cache.go:268) *re-parses the cached MVD
+  bytes* with `BuildShotStreams`/`BuildNails` on, splices the streams
+  onto the in-memory Result, latches
   `ShotStreamsComputed`/`NailsComputed`. Since v44–v47 it also grafts
   the rebuilt `Shots` and `Aim` blocks onto the cached Result — their
   stream-derived parts (RL/GL direct/splash, the LG whiff split) exist
   only in the enriched parse. That is a hand-maintained dependency cone:
   the lazy pass recomputes three artifacts by name because the engine
-  cannot express `aim ← shots ← streams`.
-- `tracks.ExtractTracks` — written, not registered, no consumer yet.
+  cannot express `aim ← shots ← streams`. Phase 3 (6179589) hardened the
+  mechanics without changing them: the rebuild is serialised per demo
+  SHA (the need-check sits under the lock, closing a TOCTOU), and if the
+  tier-1 bytes were evicted it degrades explicitly
+  (`meta.ShotStreamsUnavailable`) instead of serving silently-incomplete
+  data. Phase 5's one-entry BSP caches (mapbsp bytes + locvis Finder)
+  also make each re-parse cheaper — its repeated BSP loads now hit the
+  in-process cache.
 
 And one family of **pure parameterised reads**: `view/` (Buckets,
 Events, StreamSlice, StateAt, LocTrails, RegionControl) — computed per
@@ -74,7 +92,7 @@ way (see §3.4).
 | Post-processor registration order | telefrag recovery before time normalisation | never — comments only |
 | Reads of `result.*` written by an earlier node | aimPost reads `Shots` + `Streams` + `Damage` | never |
 
-### 1.3 The edge list (reverse-engineered 2026-07-02, re-verified 2026-07-05 @ 05e2ed9)
+### 1.3 The edge list (reverse-engineered 2026-07-02, re-verified 2026-07-05 @ 05e2ed9 and 2026-07-06 @ 22629a6 post-phases-0–5)
 
 **Via CoreOutputs:**
 
@@ -83,7 +101,11 @@ demoinfo → identity                     (ctx.DemoInfo, read in PopulateCore)
 demoinfo → frag, messages, match, timeline, items, damage, shots
                                         (co.DemoInfo / co.Names / co.Slots)
 identity → frag, timeline, items, damage, shots, weapon_pickups
-                                        (co.Sessions via SlotIdentityAt)
+                                        (co.Sessions via ResolveSlotAt,
+                                         core_outputs.go:146 — phase 5 replaced
+                                         five per-analyzer resolution copies
+                                         with this one helper; same edge,
+                                         now one mechanism)
 frag     → timeline                     (co.FragEntries: streaks, powerup frags)
 frag     → weapon_pickups               (co.FragEntries: kill attribution)
 frag     → recoverTelefragTeamkills     (co.VictimNamedTeamkills)
@@ -93,14 +115,23 @@ demoinfo → recoverTelefragTeamkills, airgibsPost
 ```
 
 **Hidden intra-derived edge (the registry comment "no derived analyser
-depends on another's output" — registry.go:314 — is wrong):**
+depends on another's output" — registry.go:327 — is wrong):**
 
 ```
-timeline → shots                        (shots.buildSpatialStreams writes
-                                         Projectiles/Beams/Nails INTO result.Streams,
-                                         which timeline creates; if timeline were
-                                         unregistered, shots silently drops them)
+timeline → shots                        (shots.buildSpatialStreams, shots.go:364-401,
+                                         writes Projectiles/Beams/Nails INTO
+                                         result.Streams, which timeline creates;
+                                         if timeline were unregistered, shots
+                                         silently drops them)
 ```
+
+(A related non-edge closed by phase 5: frag and messages each carried a
+~250-line obituary pattern table that had drifted apart — a semantic
+coupling invisible to any dependency mechanism, since both are pure
+event consumers. 7619ad7 collapsed them into one parser,
+analyzer/obituary_parse.go, with frag.go's semantics as the reference.
+No scheduling impact, but it retires a drift class the DAG could not
+have expressed anyway.)
 
 **Via result.\* into post-processors:**
 
@@ -115,7 +146,12 @@ weapon_pickups           → duelTeamNormalize           (rewrites team labels e
                                                         since v45/v46 also pickup Team/
                                                         DropperTeam, backpack + shot Team,
                                                         the VictimKinds team→enemy flip and
-                                                        the per-weapon TeamHits→EnemyHits fold)
+                                                        the per-weapon TeamHits→EnemyHits fold;
+                                                        since v48 (phase 1) also
+                                                        Streams.KillEvents[].Team — and
+                                                        normalizeMatchRelativeTimes had to
+                                                        learn KillEvents[].Time in the same
+                                                        fix, postprocess.go:47-48)
 shots, timeline, damage  → aimPost                     (Shots incl. Victims/VictimKinds v44/v45,
                                                         Streams.{Position,Spawns,Deaths,
                                                         Projectiles,Beams}, Damage.Events)
@@ -168,7 +204,7 @@ flowchart TB
   match --> sb & rc
 
   subgraph L["lazy / on-demand"]
-    los[ComputeLOS]; ss[shot/nail streams re-parse]; tracks[ExtractTracks — shelved]
+    los[ComputeLOS]; ss[shot/nail streams re-parse]
   end
   timeline --> los
   norm --> los
@@ -187,7 +223,12 @@ Two structural observations fall out of this map:
    on them" true and useless. And the rewrite set keeps growing:
    #99/#100 (v45/v46) had to teach `duelTeamNormalize` four more
    sections by hand — items, backpacks, weapon pickups, shots (including
-   a VictimKinds reclassification). This — not the analyzer tier — is
+   a VictimKinds reclassification) — and phase 1 (v48) found the drift's
+   cost the other way round: `Streams.KillEvents` had shipped *missed by
+   both rewriters*, so every kill was ~demoOffset late with wrong duel
+   teams until both were hand-extended (3ebc9cd;
+   `TestTimelineInvariants` now walks the goldens generically so the
+   next missed field fails a test). This — not the analyzer tier — is
    the real architectural debt (see §2.2, challenge 2).
 
 ---
@@ -200,8 +241,9 @@ Two structural observations fall out of this map:
   ordering and only one is checked. `weapon_pickups.go:43` carries a
   comment "MUST be registered after FragAnalyzer" — comments are not
   constraints (and they decay: the ordering comment inside
-  `analyzeSource`, registry.go:272, still lists only six of the nine
-  registered post-processors). Declared deps + topo sort make wrong wiring a startup
+  `analyzeSource` listed only six of the nine registered
+  post-processors until phase 0 completed it, registry.go:280-293 —
+  nothing but review keeps it true). Declared deps + topo sort make wrong wiring a startup
   error, not a silent data bug (the timeline→shots hidden edge is
   exactly the kind that bites during a refactor).
 - **Extensibility without archaeology.** A contributor declares
@@ -260,7 +302,11 @@ Two structural observations fall out of this map:
    or golden files churn. Parallel Finalize must not reorder
    append-to-shared-slice writes (today every failing node's Finalize
    error is appended to the shared `result.Errors` slice — one site,
-   registry.go:254, but one append per failing node).
+   `finalizeOne` at registry.go:264, plus the stream-abort append at
+   registry.go:247, but one append per failing node). Phase 5 already
+   paid down the intra-node side of this: powerup detection and
+   interval-event emission iterate in documented sorted order, so
+   Finalize output is byte-stable under GOMAXPROCS variation (7619ad7).
 6. **Don't over-engineer.** The whole surface is ~13 analyzers + 9
    post-processors + 3 lazy passes. The engine must stay small
    (~300 LOC: registry, topo sort, memo, cache adapter). If the
@@ -359,7 +405,12 @@ type NodeSpec struct {
   calls `clock.ToMatch(t)` when emitting timestamps.
   `normalizeMatchRelativeTimes` is deleted; nothing is ever rebased
   after the fact. Telefrag recovery's "shared demo clock" constraint
-  dissolves — everything is match-relative from birth.
+  dissolves — everything is match-relative from birth. (Phase 5 already
+  centralised the input vocabulary: the match-start phrase table now
+  lives once in Layer 1 — `events.MatchStartPatterns`, re-exported from
+  the parser; `matchtiming.go:32-36` aliases it instead of mirroring
+  it — and phase 1 gated match timing on print level, so the state
+  `clock` would consume is already single-sourced.)
 - **`roster`** (core tier): identity sessions + name table + team
   labels with the duel (player-name-as-team) rewrite already applied.
   Producers read team labels from roster; `duelTeamNormalize`'s
@@ -367,7 +418,13 @@ type NodeSpec struct {
   bot frag events from DemoInfo, and (since v45/v46) the duel
   VictimKinds team→enemy flip + TeamHits fold — move into the frags
   and shots nodes respectively, where they become classify-at-birth
-  against roster instead of reclassify-after-the-fact.
+  against roster instead of reclassify-after-the-fact. (Phase 5 did the
+  enabling consolidation: `ResolveSlotAt` (core_outputs.go:146) is now
+  the single slot→identity/team resolver, replacing five per-analyzer
+  copies and giving every consumer the same name-table team backfill.
+  `roster` is essentially that helper promoted to an artifact — one
+  table computed once, with the duel label rewrite folded in — rather
+  than a nil-safe lookup each producer calls.)
 
 This is a behaviour-preserving refactor validated by the golden corpus
 (the committed goldens are already match-relative and duel-rewritten,
@@ -464,7 +521,8 @@ one producer at a time.
 
 **Stage 3 — lazy materialisation + tier-3 cache.**
 `Materialize(goals)`; mark `los`, `projectile-streams`, `beam-streams`,
-`nail-streams` (and shelved `tracks`) as `Lazy`; replace the
+`nail-streams` as `Lazy` (`tracks` was deleted in phase 4 — if revived
+it registers as a new lazy node); replace the
 `LOSComputed`/`EnsureShotStreams` special cases in mvd-api with the
 generic path; per-artifact gob cache with effective-version keys.
 **Gate: existing `/los` and `/streams/*` endpoints behave identically

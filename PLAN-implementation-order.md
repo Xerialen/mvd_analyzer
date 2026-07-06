@@ -11,6 +11,21 @@
 > Item IDs below (`analytics F1`, `reader A2`, …) refer to those documents;
 > the details, line references and fix sketches live there, not here.
 
+> **Status 2026-07-06: Phases 0–5 are DONE** — implemented on stacked
+> branches `phase-0` … `phase-5` (each off the previous, all pushed),
+> Opus-implemented, Fable-verified, all gates green. Commits:
+> P0 `ff47a76`+`7d1a8e2` · P1 `3ebc9cd` (schema v47→v48, goldens
+> regenerated once) · P2 `cda9940`+`c690ec0` · P3 `6179589`+`3316d50` ·
+> P4 `f494471` · P5 `1300742`,`bcfb8ce`,`d87334b`,`7619ad7`,`02b376a`.
+> The per-plan documents now list only still-open findings, each with a
+> resolved-ledger at the bottom. **Next up is the Phase 6+ queue below**
+> (tracked as session tasks: Phase 6→task #7 … Phase 12→task #13).
+> The phase tables that follow are kept as the record of what each
+> phase covered; deviations from plan are noted inline where they
+> happened (reader F1 was pulled into Phase 1 when the 0-frag fix
+> exposed it; reader F17/F9 closed as documentation with mvdsv
+> citations; web F13 resolved by removing the filter).
+
 Only two plans order their own work (PLAN-reader's sequencing section,
 PLAN-improve-analytics' Stage 1–4); none order work across plans. This file
 does. Tick items off here as they land.
@@ -143,7 +158,54 @@ Order within the phase matters:
 
 - Anything speculative in the plans (parallel Finalize, per-artifact goldens,
   202/Retry-After) stays behind the DAG stages' "measure first" gates.
-- The unreviewed v39–v47 surface (aim/shots analyzers, aim tab internals)
-  gets its own review pass after Phase 2, when its patterns (already flagged
-  in each plan's "New since this review" section) can be checked against the
-  freshly fixed invariants.
+- ~~The unreviewed v39–v47 surface (aim/shots analyzers, aim tab internals)
+  gets its own review pass~~ — done 2026-07-06; findings live in each plan's
+  "deferred review" section and feed the Phase 6+ queue.
+
+## Phase numbering going forward (tasks #7–#13)
+
+Phase 6 split into one phase per structural item so each gets its own
+branch, in dependency order:
+
+| Phase | Task | Item |
+|---|---|---|
+| 6 | #7 | DAG Stage 1 — NodeSpecs, validation, `-graph` export (golden-identical gate) |
+| 7 | #8 | DAG Stage 2 — clock/roster artifacts; delete the barrier mutators (highest risk) |
+| 8 | #9 | DAG Stage 3 — lazy materialisation + per-artifact tier-3 cache (absorbs api F8's persistence half) |
+| 9 | #10 | DAG Stage 4 — artifact manifest, generic endpoints, MCP tool generation |
+| 10 | #11 | web A1→A2→A3 — ES module split, init/reset registry, time-change subscriber |
+| 11 | #12 | reader schema batch — A4 value-snapshot events, A5 TimeMs everywhere, A6 multi-map reset |
+| 12 | #13 | maps A2 — unify the mapgen/bsp and bspvis parsers |
+
+The 2026-07-06 deferred reviews (aim/shots analytics, Aim Stats tab,
+aim/full-data API + democache, #97 decoders) produced new findings —
+see each plan's "deferred review" section. The urgent ones form a
+correctness batch that runs BEFORE Phase 6, as **Phase 6-pre (task #14)**:
+
+- analytics F18 (Aim's RL/GL direct/splash block absent on every default
+  parse — gated on a stream it never reads), F19 (unwindowed damage in
+  those splits), F17 (extend the invariant test beyond timelineAnalysis
+  to Shots/other event sections), F20 (duel normalize flips VictimKinds
+  but not Damage.IsTeam), F23 (doc drift per the lock-step rule).
+- api F12 (nails-latch cache consistency under one immutable ETag),
+  F13 (panicking parse → nil-deref cascade for singleflight waiters);
+  the hosted-deployment cluster F14/F15/F16/F17 (disk quota/GC, cross-
+  demo stampede + rate limiting, capped reads, CORS) can ride along or
+  become its own phase right before the service goes public.
+- web F17 (SSG heatmap shipped but never rendered), F19 (DYaw sign doc
+  trap), F18/F20 (density sizing, LG unresolved column).
+- reader F18–F22 as one small mechanical PR (signed beam ent, unknown_te
+  sentinel, doc nits, parseNails twin); F20 batches with Phase 11.
+
+## Loose ends (small, unscheduled)
+
+- `mvd-api/serve.go` is gofmt-dirty at HEAD (pre-dates all phases; left
+  per the no-reformatting rule). Options: dedicated no-logic gofmt
+  commit; leave until next touched; or add a gofmt CI gate and fix it
+  there (PLAN-reader F14 suggested the gate). Decision pending.
+- `experiments/locattr/cmd/demoeval` was already broken by the schema
+  v23 DemoOffset move (untracked local tool; not a phase casualty).
+- The `phase-0`…`phase-5` history contains two since-removed committed
+  binaries (`mvd-mcp/mvd-mcp`, `mvd-web/wasm`, ~17 MB; removed and
+  gitignored at `22629a6`). Purging them from history would need a
+  force-push of the phase branches — only worth it if repo size matters.
