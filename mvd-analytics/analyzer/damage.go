@@ -211,23 +211,10 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	return nil
 }
 
-// resolveAt maps a wire slot to its identity at tMs, falling back to the
-// live userinfo name when no session/identity covers the slot. Mirrors
-// the resolution chain used by the frag and timeline analyzers.
+// resolveAt maps a wire slot to its identity at tMs via the canonical
+// ResolveSlotAt chain (session table → userinfo → name→team backfill).
 func (a *DamageAnalyzer) resolveAt(slot int, tMs int32) SlotInfo {
-	id := a.core.SlotIdentityAt(slot, tMs)
-	if id.Name == "" && slot >= 0 && slot < len(a.ctx.Players) {
-		if p := a.ctx.Players[slot]; p != nil {
-			id.Name = p.Name
-			if id.Team == "" {
-				id.Team = p.Team
-			}
-		}
-	}
-	if id.Name != "" && id.Team == "" && a.core != nil && a.core.Names != nil {
-		id.Team = a.core.Names.TeamForName(id.Name)
-	}
-	return id
+	return ResolveSlotAt(a.core, a.ctx.Players, slot, tMs)
 }
 
 // victimWeaponClass classifies a victim's StatItems bitfield into the

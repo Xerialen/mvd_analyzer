@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"sort"
 	"strings"
@@ -91,6 +92,14 @@ type ItemAnalyzer struct {
 	// + a matching stat delta is enough to infer the pickup.
 	syntheticEnabled bool
 	syntheticChain   map[int]*syntheticSchedule // entNum -> next predicted pickup
+	// nextDue is the earliest (predicted + settle) time across syntheticChain,
+	// or +Inf when the chain is empty. processSyntheticRespawns early-returns
+	// while currentT < nextDue instead of sorting the chain on every event.
+	// Inserts lower it (scheduleSyntheticRespawn); it's recomputed after the
+	// synthesis loop mutates the chain. Kept a conservative lower bound —
+	// deletes elsewhere may leave it stale-low, which only costs an extra loop
+	// pass, never a missed pickup.
+	nextDue float64
 }
 
 type syntheticSchedule struct {
@@ -239,6 +248,7 @@ func NewItemAnalyzer() *ItemAnalyzer {
 		attrCounts:          make(map[string]int),
 		syntheticEnabled:    true,
 		syntheticChain:      make(map[int]*syntheticSchedule),
+		nextDue:             math.Inf(1),
 	}
 }
 
@@ -308,22 +318,8 @@ func (a *ItemAnalyzer) OnEvent(event events.Event) error {
 }
 
 func (a *ItemAnalyzer) extractMapName(cmd string) {
-	rest := strings.TrimPrefix(cmd, "fullserverinfo ")
-	rest = strings.TrimSpace(rest)
-	rest = strings.TrimPrefix(rest, "\"")
-	if i := strings.LastIndexByte(rest, '"'); i >= 0 {
-		rest = rest[:i]
-	}
-	parts := strings.Split(rest, "\\")
-	start := 0
-	if len(parts) > 0 && parts[0] == "" {
-		start = 1
-	}
-	for i := start; i+1 < len(parts); i += 2 {
-		if parts[i] == "map" {
-			a.mapName = parts[i+1]
-			return
-		}
+	if v, ok := parseInfoString(cmd)["map"]; ok {
+		a.mapName = v
 	}
 }
 
@@ -484,6 +480,11 @@ func (a *ItemAnalyzer) scheduleSyntheticRespawn(ent int, predicted float64, chai
 		return
 	}
 	a.syntheticChain[ent] = &syntheticSchedule{predicted: predicted, chainLen: chainLen}
+	// Lower the early-out bound so the next event that reaches this entity's
+	// due time can't be skipped.
+	if due := predicted + syntheticSettleWindow; due < a.nextDue {
+		a.nextDue = due
+	}
 }
 
 // processSyntheticRespawns walks the schedule and synthesizes a pickup
@@ -492,6 +493,12 @@ func (a *ItemAnalyzer) scheduleSyntheticRespawn(ent int, predicted float64, chai
 // that lag the touch instant land before we make the call.
 func (a *ItemAnalyzer) processSyntheticRespawns(currentT float64) {
 	if !a.syntheticEnabled || !a.timing.Started || a.timing.Ended {
+		return
+	}
+	// Nothing due yet: skip the sort/scan. nextDue is a conservative lower
+	// bound on the earliest predicted+settle, so currentT < nextDue proves no
+	// entity can fire (see the field doc).
+	if len(a.syntheticChain) == 0 || currentT < a.nextDue {
 		return
 	}
 	for _, ent := range sortedKeys(a.syntheticChain) {
@@ -520,6 +527,20 @@ func (a *ItemAnalyzer) processSyntheticRespawns(currentT float64) {
 			continue
 		}
 		a.recordSyntheticPickup(ent, sched.predicted, slot, sched.chainLen+1)
+	}
+	// The loop consumed/rescheduled entries; retighten the early-out bound.
+	a.recomputeNextDue()
+}
+
+// recomputeNextDue resets nextDue to the earliest (predicted + settle) across
+// the current chain, or +Inf when it's empty. Called after the synthesis loop
+// mutates the chain; inserts lower it incrementally (scheduleSyntheticRespawn).
+func (a *ItemAnalyzer) recomputeNextDue() {
+	a.nextDue = math.Inf(1)
+	for _, s := range a.syntheticChain {
+		if due := s.predicted + syntheticSettleWindow; due < a.nextDue {
+			a.nextDue = due
+		}
 	}
 }
 
@@ -1308,20 +1329,9 @@ func (a *ItemAnalyzer) resolveAttributions(it *itemEntity) {
 		// Resolve to the identity that held the slot *when the pickup
 		// happened* (TakenAt), so a player's pre-reconnect pickups don't
 		// get relabelled with whoever later took their old slot.
-		id := a.co.SlotIdentityAt(pa.slot, it.phases[i].TakenAt)
-		name, team := id.Name, id.Team
-		if name == "" {
-			if pa.slot < len(a.ctx.Players) && a.ctx.Players[pa.slot] != nil {
-				name = a.ctx.Players[pa.slot].Name
-			}
-		}
-		if team == "" {
-			if pa.slot < len(a.ctx.Players) && a.ctx.Players[pa.slot] != nil {
-				team = a.ctx.Players[pa.slot].Team
-			}
-		}
-		it.phases[i].TakenBy = name
-		it.phases[i].Team = team
+		id := ResolveSlotAt(a.co, a.ctx.Players, pa.slot, it.phases[i].TakenAt)
+		it.phases[i].TakenBy = id.Name
+		it.phases[i].Team = id.Team
 	}
 }
 

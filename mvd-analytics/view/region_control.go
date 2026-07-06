@@ -377,8 +377,8 @@ func classifyRegions(
 			if !ok {
 				continue
 			}
-			armed := intervalsOverlapAt(p.RL, bucketStart) ||
-				intervalsOverlapAt(p.LG, bucketStart)
+			armed := intervalContains(p.RL, bucketStart) ||
+				intervalContains(p.LG, bucketStart)
 			c := presence[bi][regionName]
 			if c == nil {
 				continue
@@ -474,17 +474,6 @@ func classifyRegions(
 		stats[rg.Name] = rgStats
 	}
 	return bucketStates, stats
-}
-
-// intervalsOverlapAt returns true iff tMs falls inside any half-open
-// interval [Start, End). Times are integer ms (schema v8).
-func intervalsOverlapAt(iv []result.Interval, tMs int32) bool {
-	for _, in := range iv {
-		if tMs >= in.Start && tMs < in.End {
-			return true
-		}
-	}
-	return false
 }
 
 // classifyRegionState is the seven-state decision rule. Faithful port

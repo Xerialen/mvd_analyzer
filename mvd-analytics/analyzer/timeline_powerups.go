@@ -16,8 +16,19 @@ func (a *TimelineAnalyzer) detectPowerupEvents(matchEndMs int32) []PowerupEvent 
 		return nil
 	}
 
+	// Iterate slots in ascending order so the event list is built in a
+	// fixed order before sorting; a Go map range over a.playerState would
+	// otherwise shuffle same-ms ties across runs (and under GOMAXPROCS
+	// variation), which the stable sort below then locks in.
+	slots := make([]int, 0, len(a.playerState))
+	for slot := range a.playerState {
+		slots = append(slots, slot)
+	}
+	sort.Ints(slots)
+
 	events := []PowerupEvent{}
-	for slot, state := range a.playerState {
+	for _, slot := range slots {
+		state := a.playerState[slot]
 		if state == nil {
 			continue
 		}
@@ -37,7 +48,10 @@ func (a *TimelineAnalyzer) detectPowerupEvents(matchEndMs int32) []PowerupEvent 
 		appendRuns(state.streams.ring.closed, "ring")
 	}
 
-	sort.Slice(events, func(i, j int) bool {
+	// Stable sort by start time; equal-time events keep the deterministic
+	// build order above (slot ascending, then quad→pent→ring, then interval
+	// order) so the output is byte-stable.
+	sort.SliceStable(events, func(i, j int) bool {
 		return events[i].Time < events[j].Time
 	})
 	return events

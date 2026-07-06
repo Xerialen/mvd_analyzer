@@ -3,6 +3,7 @@ package analyzer
 import (
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-reader/events"
@@ -292,7 +293,7 @@ func (a *IdentityAnalyzer) PopulateCore(co *CoreOutputs) {
 	// +inf so events on the edges (before the first userinfo, after the
 	// last) still resolve.
 	sessions := make(map[int][]ResolvedSession)
-	identityKey := func(root int) string { return "id:" + intToStr(root) }
+	identityKey := func(root int) string { return "id:" + strconv.Itoa(root) }
 	for i, s := range a.sessions {
 		root := uf.find(i)
 		g := groups[root]
