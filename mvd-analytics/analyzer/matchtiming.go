@@ -29,14 +29,11 @@ type MatchTimingDetector struct {
 	EndTime   float64
 }
 
-var matchStartPatterns = []string{
-	"match has begun",
-	"match started",
-	"fight!",
-	"go!",
-	"begins in 1",
-	"game start",
-}
+// matchStartPatterns is the canonical Layer 1 table (events.MatchStartPatterns),
+// re-exported from mvd-reader so the parser's obituary-death gate and this
+// detector share one definition. Match-END phrases gate no parser behaviour,
+// so they stay analytics-only below.
+var matchStartPatterns = events.MatchStartPatterns
 
 var matchEndPatterns = []string{
 	"match is over",

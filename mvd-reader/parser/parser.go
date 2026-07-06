@@ -395,13 +395,7 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 			if err := p.emit(&StuffTextEvent{Command: s, Time: msg.Time}); err != nil {
 				return err
 			}
-			if err := p.tryEmitBackpackDropHint(s, msg.Time); err != nil {
-				return err
-			}
-			if err := p.tryEmitItemPickupHint(s, msg.Time); err != nil {
-				return err
-			}
-			if err := p.tryEmitBackpackPickupHint(s, msg.Time); err != nil {
+			if err := p.tryEmitKtxHints(s, msg.Time); err != nil {
 				return err
 			}
 
@@ -470,7 +464,7 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 			}
 
 		default:
-			if err := skipCommand(r, cmd, p.floatCoords, p.fteExtensions); err != nil {
+			if err := p.skipCommand(r, cmd); err != nil {
 				if errors.Is(err, errUnknownSvc) {
 					p.warn(msg.Time, "unknown_svc", "%s (cmd %d), %d bytes remaining in payload abandoned",
 						SvcName(cmd), cmd, r.Remaining())
@@ -754,9 +748,15 @@ func decodeULEB128(b []byte) uint64 {
 	return v
 }
 
-// skipCommand attempts to skip an unknown command
-// Returns error if we can't determine the size
-func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32) error {
+// skipCommand consumes a command the main dispatch switch does not decode.
+// For the fixed-layout commands it skips the known byte count; for the two
+// commands that share a layout with a real decoder — svc_spawnstatic (the
+// baseline body) and svc_fte_spawnstatic2 (an entity delta) — it routes
+// through that same reader and discards the result, so the layout is decoded
+// in exactly one place. Returns errUnknownSvc when the command is not in the
+// size table at all (its length is undeterminable and the rest of the payload
+// is unrecoverable), distinct from a truncated read inside a known command.
+func (p *Parser) skipCommand(r *mvd.BufferReader, cmd byte) error {
 	switch cmd {
 	case mvd.SvcNop:
 		return nil
@@ -780,8 +780,11 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 	case mvd.SvcSetPause:
 		return r.Skip(1)
 	case mvd.SvcSpawnStatic:
-		// svc_spawnstatic has no prefix — CL_ParseStatic calls CL_ParseBaseline directly.
-		return skipSpawnStatic(r, floatCoords)
+		// svc_spawnstatic has no entity-number prefix — CL_ParseStatic calls
+		// CL_ParseBaseline directly (ezquake cl_parse.c). Decode the shared
+		// baseline body and discard: static entities are scenery, not tracked.
+		_, err := readBaselineBody(r, p.floatCoords)
+		return err
 	case mvd.SvcKilledMonster:
 		return nil
 	case mvd.SvcFoundSecret:
@@ -790,7 +793,7 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 		// [byte] armor [byte] blood [vec3] from — coords are short in QW
 		// standard protocol, float if FTE_PEXT_FLOATCOORDS was negotiated.
 		// Ref: qwprot protocol.h (svc_damage = 19), ezquake cl_view.c V_ParseDamage.
-		if floatCoords {
+		if p.floatCoords {
 			return r.Skip(14) // 1 + 1 + 3*4
 		}
 		return r.Skip(8) // 1 + 1 + 3*2
@@ -818,50 +821,26 @@ func skipCommand(r *mvd.BufferReader, cmd byte, floatCoords bool, fteExt uint32)
 	case mvd.SvcSpawnStaticSound:
 		// 3 coords + sound_num(1) + vol(1) + atten(1).
 		// Ref: ezquake cl_parse.c CL_ParseStaticSound.
-		if floatCoords {
+		if p.floatCoords {
 			return r.Skip(15) // 3*4 + 3
 		}
 		return r.Skip(9) // 3*2 + 3
 	case mvd.SvcFTESpawnStatic2:
-		// Extended static: 2-byte flag word + entity delta
+		// Extended static: 2-byte flag word + entity delta, same wire layout
+		// as svc_fte_spawnbaseline2. Decode through the shared delta reader
+		// and discard.
 		w, err := r.ReadUint16()
 		if err != nil {
 			return err
 		}
-		return skipEntityDelta(r, w, floatCoords, fteExt)
+		_, _, err = p.readEntityDelta(r, uint32(w), &EntityState{}, p.floatCoords, p.fteExtensions)
+		return err
 	default:
 		// Command not in the size table — we can't determine its length, so
 		// the rest of the payload is unrecoverable. Signal that distinctly
 		// from a truncated read inside a known command's skip.
 		return errUnknownSvc
 	}
-}
-
-// Skip functions for complex commands
-func skipSpawnBaseline(r *mvd.BufferReader, floatCoords bool) error {
-	// model(1) + frame(1) + colormap(1) + skin(1) + 3*(coord + angle)
-	if err := r.Skip(4); err != nil { // model, frame, colormap, skin
-		return err
-	}
-	for i := 0; i < 3; i++ {
-		if floatCoords {
-			if err := r.Skip(4); err != nil { // float coord
-				return err
-			}
-		} else {
-			if err := r.Skip(2); err != nil { // short coord
-				return err
-			}
-		}
-		if err := r.Skip(1); err != nil { // angle byte
-			return err
-		}
-	}
-	return nil
-}
-
-func skipSpawnStatic(r *mvd.BufferReader, floatCoords bool) error {
-	return skipSpawnBaseline(r, floatCoords)
 }
 
 func skipDownload(r *mvd.BufferReader) error {
@@ -875,127 +854,5 @@ func skipDownload(r *mvd.BufferReader) error {
 	if size > 0 {
 		return r.Skip(int(size))
 	}
-	return nil
-}
-
-// Entity update flag bits (from protocol.h)
-const (
-	uOrigin1  = 1 << 9
-	uOrigin2  = 1 << 10
-	uOrigin3  = 1 << 11
-	uAngle2   = 1 << 12
-	uFrame    = 1 << 13
-	uMoreBits = 1 << 15
-	// Low byte flags (read if uMoreBits set)
-	uAngle1      = 1 << 0
-	uAngle3      = 1 << 1
-	uModel       = 1 << 2
-	uColormap    = 1 << 3
-	uSkin        = 1 << 4
-	uEffects     = 1 << 5
-	uFTEEvenMore = 1 << 7
-	// FTE morebits flags
-	uFTETrans     = 1 << 1
-	uFTEModelDbl  = 1 << 3
-	uFTEYetMore   = 1 << 7
-	uFTEColourMod = 1 << 10 // bit 2 of second byte (after shift by 8)
-)
-
-// skipEntityDelta skips variable-length entity delta data for a given flag word.
-// Mirrors CL_ParseDelta from ezquake cl_ents.c.
-func skipEntityDelta(r *mvd.BufferReader, word uint16, floatCoords bool, fteExt uint32) error {
-	bits := int(word)
-	bits &= ^511 // clear entity number bits 0-8
-
-	// Step 1: If U_MOREBITS, read low-order flag byte
-	var lowFlags int
-	if bits&uMoreBits != 0 {
-		b, err := r.ReadByte()
-		if err != nil {
-			return err
-		}
-		lowFlags = int(b)
-		bits |= lowFlags
-	}
-
-	// Step 2: FTE extensions
-	var morebits int
-	if lowFlags&uFTEEvenMore != 0 && fteExt != 0 {
-		b, err := r.ReadByte()
-		if err != nil {
-			return err
-		}
-		morebits = int(b)
-		if morebits&uFTEYetMore != 0 {
-			b2, err := r.ReadByte()
-			if err != nil {
-				return err
-			}
-			morebits |= int(b2) << 8
-		}
-	}
-
-	// Step 3: Read fields in CL_ParseDelta order
-	if bits&uModel != 0 {
-		if morebits&uFTEModelDbl != 0 {
-			// U_MODEL set + U_FTE_MODELDBL: modelindex = byte + 256 (just 1 byte)
-			r.Skip(1)
-		} else {
-			r.Skip(1) // modelindex byte
-		}
-	} else if morebits&uFTEModelDbl != 0 {
-		// !U_MODEL + U_FTE_MODELDBL: modelindex = short (2 bytes)
-		r.Skip(2)
-	}
-
-	if bits&uFrame != 0 {
-		r.Skip(1) // frame byte
-	}
-	if bits&uColormap != 0 {
-		r.Skip(1) // colormap byte
-	}
-	if bits&uSkin != 0 {
-		r.Skip(1) // skin byte
-	}
-	if bits&uEffects != 0 {
-		r.Skip(1) // effects byte
-	}
-
-	// Origins: 2 bytes (short coord) or 4 bytes (float coord)
-	coordSize := 2
-	if floatCoords {
-		coordSize = 4
-	}
-	if bits&uOrigin1 != 0 {
-		r.Skip(coordSize)
-	}
-	if lowFlags&uAngle1 != 0 {
-		r.Skip(1) // angle byte
-	}
-	if bits&uOrigin2 != 0 {
-		r.Skip(coordSize)
-	}
-	if bits&uAngle2 != 0 {
-		r.Skip(1) // angle byte
-	}
-	if bits&uOrigin3 != 0 {
-		r.Skip(coordSize)
-	}
-	if lowFlags&uAngle3 != 0 {
-		r.Skip(1) // angle byte
-	}
-
-	// U_SOLID: no data
-
-	// FTE transparency
-	if morebits&uFTETrans != 0 && fteExt&mvd.FTEPextTrans != 0 {
-		r.Skip(1)
-	}
-
-	// FTE colour mod (3 bytes RGB)
-	if morebits&int(uFTEColourMod) != 0 && fteExt&mvd.FTEPextColourMod != 0 {
-		r.Skip(3)
-	}
-
 	return nil
 }

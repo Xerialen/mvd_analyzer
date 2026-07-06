@@ -88,6 +88,12 @@ const (
 	PrintChat   = mvd.PrintChat
 )
 
+// MatchStartPatterns re-exports the canonical Layer 1 match-start phrase
+// table (parser.MatchStartPatterns) so analytics consumers can share the
+// single definition without importing the parser package directly. It is
+// read-only; do not mutate the returned slice.
+var MatchStartPatterns = parser.MatchStartPatterns
+
 // Stat indices for StatUpdateEvent.StatIndex — KTX/QW stat slot IDs.
 const (
 	StatHealth       = mvd.StatHealth

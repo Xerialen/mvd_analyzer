@@ -16,18 +16,40 @@ import (
 // fields that matter for item identity (modelindex, origin, skin) are
 // decoded; the rest of each delta is skipped.
 
-// Extra entity-delta flag bits not already defined on parser.go's
-// skip-only path. (uOrigin1/2/3, uAngle1/2/3, uModel, uColormap, uSkin,
-// uEffects, uFrame, uMoreBits, uFTEEvenMore, uFTETrans, uFTEModelDbl,
-// uFTEYetMore, uFTEColourMod live there.) Values match
-// ezquake-source/src/qwprot/src/protocol.h:344-401.
+// Entity-delta flag bits. The 16-bit flag word carries the high-order
+// field bits plus the 9-bit entity number; U_MOREBITS pulls in a
+// low-order byte, and (on FTE streams) U_FTE_EVENMORE pulls in one or
+// two "evenmorebits" bytes. This is the single definition for the one
+// entity-delta reader in this file. Values match ezquake CL_ParseDelta
+// (ezquake-source/src/cl_ents.c:487-605) and qwprot protocol.h.
 const (
-	uRemove       = 1 << 14
-	uSolid        = 1 << 6
+	// High bits of the 16-bit flag word (low 9 bits are the entity number).
+	uOrigin1  = 1 << 9
+	uOrigin2  = 1 << 10
+	uOrigin3  = 1 << 11
+	uAngle2   = 1 << 12
+	uFrame    = 1 << 13
+	uRemove   = 1 << 14
+	uMoreBits = 1 << 15
+	// Low-order byte, read when U_MOREBITS is set.
+	uAngle1      = 1 << 0
+	uAngle3      = 1 << 1
+	uModel       = 1 << 2
+	uColormap    = 1 << 3
+	uSkin        = 1 << 4
+	uEffects     = 1 << 5
+	uSolid       = 1 << 6 // U_SOLID: no payload in QW
+	uFTEEvenMore = 1 << 7
+	// FTE evenmorebits byte(s), read when U_FTE_EVENMORE is set and an
+	// FTE extension was negotiated.
 	uFTEScale     = 1 << 0
+	uFTETrans     = 1 << 1
 	uFTEFatness   = 1 << 2
+	uFTEModelDbl  = 1 << 3
 	uFTEEntityDbl = 1 << 5
 	uFTEEntity2   = 1 << 6
+	uFTEYetMore   = 1 << 7
+	uFTEColourMod = 1 << 10 // bit 2 of the high evenmorebits byte
 )
 
 // EntityState is the subset of fields we care about per entity.
@@ -281,21 +303,36 @@ func (p *Parser) parseSpawnBaseline(r *mvd.BufferReader, time float64, floatCoor
 	if err != nil {
 		return err
 	}
-	modelIdx, err := r.ReadByte()
+	state, err := readBaselineBody(r, floatCoords)
 	if err != nil {
 		return err
+	}
+	return p.registerBaseline(int(ent), state, time)
+}
+
+// readBaselineBody decodes the fixed baseline layout — model(1) +
+// frame(1) + colormap(1) + skin(1) + 3×(coord + angle byte) — that
+// follows the 2-byte entity number in svc_spawnbaseline and stands
+// alone (no entity-number prefix) in svc_spawnstatic. Single
+// implementation of the layout for both the parse and the
+// decode-and-discard (skipCommand) callers. Mirrors ezquake
+// CL_ParseBaseline (cl_parse.c:1817).
+func readBaselineBody(r *mvd.BufferReader, floatCoords bool) (*EntityState, error) {
+	modelIdx, err := r.ReadByte()
+	if err != nil {
+		return nil, err
 	}
 	frame, err := r.ReadByte()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	colormap, err := r.ReadByte()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	skin, err := r.ReadByte()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var origin [3]float32
 	for i := 0; i < 3; i++ {
@@ -305,22 +342,21 @@ func (p *Parser) parseSpawnBaseline(r *mvd.BufferReader, time float64, floatCoor
 			origin[i], err = r.ReadCoord()
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// angle follows each coord — read and discard.
 		if _, err := r.ReadByte(); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	state := &EntityState{
+	return &EntityState{
 		ModelIndex: int(modelIdx),
 		Frame:      int(frame),
 		Colormap:   int(colormap),
 		SkinNum:    int(skin),
 		Origin:     origin,
 		Present:    true,
-	}
-	return p.registerBaseline(int(ent), state, time)
+	}, nil
 }
 
 // parseSpawnBaseline2 handles the FTE extended form
@@ -333,7 +369,7 @@ func (p *Parser) parseSpawnBaseline2(r *mvd.BufferReader, time float64, floatCoo
 	if err != nil {
 		return err
 	}
-	state, entNum, err := p.readDelta(r, uint32(word), &EntityState{}, floatCoords)
+	state, entNum, err := p.readEntityDelta(r, uint32(word), &EntityState{}, floatCoords, p.fteExtensions)
 	if err != nil {
 		return err
 	}
@@ -457,39 +493,9 @@ func (p *Parser) parsePacketEntities(r *mvd.BufferReader, delta, floatCoords boo
 			break
 		}
 
-		bits := uint32(word)
-		entNum := int(bits & 511)
-		bits &= ^uint32(511)
-
-		if bits&uMoreBits != 0 {
-			b, err := r.ReadByte()
-			if err != nil {
-				return err
-			}
-			bits |= uint32(b)
-		}
-
-		var morebits uint32
-		if bits&uFTEEvenMore != 0 && fteExt != 0 {
-			b, err := r.ReadByte()
-			if err != nil {
-				return err
-			}
-			morebits = uint32(b)
-			if morebits&uFTEYetMore != 0 {
-				b2, err := r.ReadByte()
-				if err != nil {
-					return err
-				}
-				morebits |= uint32(b2) << 8
-			}
-		}
-
-		if morebits&uFTEEntityDbl != 0 {
-			entNum += 512
-		}
-		if morebits&uFTEEntity2 != 0 {
-			entNum += 1024
+		bits, morebits, entNum, err := readDeltaBits(r, uint32(word), fteExt)
+		if err != nil {
+			return err
 		}
 
 		if bits&uRemove != 0 {
@@ -507,7 +513,7 @@ func (p *Parser) parsePacketEntities(r *mvd.BufferReader, delta, floatCoords boo
 		if from != nil {
 			base = *from
 		}
-		state, _, err := p.applyDeltaFields(r, bits, morebits, &base, floatCoords)
+		state, err := p.applyDeltaFields(r, bits, morebits, &base, floatCoords, fteExt)
 		if err != nil {
 			return err
 		}
@@ -522,15 +528,84 @@ func (p *Parser) parsePacketEntities(r *mvd.BufferReader, delta, floatCoords boo
 	return nil
 }
 
-// applyDeltaFields reads the delta payload after the flag word(s) have
-// been consumed and fills in the target state. Returns the state and
-// (unused, for future use) entity-number delta offset.
-func (p *Parser) applyDeltaFields(r *mvd.BufferReader, bits, morebits uint32, from *EntityState, floatCoords bool) (*EntityState, int, error) {
+// readDeltaBits reads the low-order U_MOREBITS byte and the FTE
+// evenmorebits byte(s) that follow a 16-bit entity flag word, returning
+// the full flag word `bits` (entity-number bits cleared), the FTE
+// `morebits`, and the resolved entity number (including the FTE
+// entitydbl adjustments). This is the single flag-word reader shared by
+// parsePacketEntities and readEntityDelta.
+//
+// The FTE "even more" flag bytes are present only when an FTE extension
+// was negotiated: mvdsv gates every evenmorebits emission on
+// fte_extensions (mvdsv/src/sv_ents.c:216-235) and ezquake gates the
+// read on cls.fteprotocolextensions being non-zero (cl_ents.c:505).
+// Reading them unconditionally would consume a stray byte on a non-FTE
+// stream — the F3 divergence between the old parse and skip paths.
+func readDeltaBits(r *mvd.BufferReader, word, fteExt uint32) (bits, morebits uint32, entNum int, err error) {
+	bits = word
+	entNum = int(bits & 511)
+	bits &= ^uint32(511)
+
+	if bits&uMoreBits != 0 {
+		b, berr := r.ReadByte()
+		if berr != nil {
+			return 0, 0, 0, berr
+		}
+		bits |= uint32(b)
+	}
+	if bits&uFTEEvenMore != 0 && fteExt != 0 {
+		b, berr := r.ReadByte()
+		if berr != nil {
+			return 0, 0, 0, berr
+		}
+		morebits = uint32(b)
+		if morebits&uFTEYetMore != 0 {
+			b2, berr := r.ReadByte()
+			if berr != nil {
+				return 0, 0, 0, berr
+			}
+			morebits |= uint32(b2) << 8
+		}
+	}
+	if morebits&uFTEEntityDbl != 0 {
+		entNum += 512
+	}
+	if morebits&uFTEEntity2 != 0 {
+		entNum += 1024
+	}
+	return bits, morebits, entNum, nil
+}
+
+// readEntityDelta decodes one entity delta given its leading 16-bit flag
+// word: it reads the FTE morebits, resolves the entity number, and reads
+// the field payload. This is the single whole-delta reader; the
+// svc_fte_spawnbaseline2 / svc_fte_spawnstatic2 sites both route through
+// it. Mirrors ezquake CL_ParseDelta (cl_ents.c:487-605).
+func (p *Parser) readEntityDelta(r *mvd.BufferReader, word uint32, from *EntityState, floatCoords bool, fteExt uint32) (*EntityState, int, error) {
+	bits, morebits, entNum, err := readDeltaBits(r, word, fteExt)
+	if err != nil {
+		return nil, 0, err
+	}
+	state, err := p.applyDeltaFields(r, bits, morebits, from, floatCoords, fteExt)
+	if err != nil {
+		return nil, 0, err
+	}
+	state.Present = true
+	return state, entNum, nil
+}
+
+// applyDeltaFields reads the entity-delta field payload after the flag
+// word(s) have been consumed (by readDeltaBits) and fills in the target
+// state. The FTE trans / colourmod fields are gated on the negotiated
+// extension, exactly as both mvdsv's writer (sv_ents.c:217, 226) and
+// ezquake's reader (cl_ents.c:580, 586) gate them — the flag bit alone
+// is not enough to decide the field is present.
+func (p *Parser) applyDeltaFields(r *mvd.BufferReader, bits, morebits uint32, from *EntityState, floatCoords bool, fteExt uint32) (*EntityState, error) {
 	state := *from
 	if bits&uModel != 0 {
 		b, err := r.ReadByte()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.ModelIndex = int(b)
 		if morebits&uFTEModelDbl != 0 {
@@ -539,35 +614,35 @@ func (p *Parser) applyDeltaFields(r *mvd.BufferReader, bits, morebits uint32, fr
 	} else if morebits&uFTEModelDbl != 0 {
 		mi, err := r.ReadUint16()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.ModelIndex = int(mi)
 	}
 	if bits&uFrame != 0 {
 		b, err := r.ReadByte()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.Frame = int(b)
 	}
 	if bits&uColormap != 0 {
 		b, err := r.ReadByte()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.Colormap = int(b)
 	}
 	if bits&uSkin != 0 {
 		b, err := r.ReadByte()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.SkinNum = int(b)
 	}
 	if bits&uEffects != 0 {
 		b, err := r.ReadByte()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.Effects = int(b)
 	}
@@ -581,67 +656,71 @@ func (p *Parser) applyDeltaFields(r *mvd.BufferReader, bits, morebits uint32, fr
 	if bits&uOrigin1 != 0 {
 		v, err := readCoord()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.Origin[0] = v
 	}
 	if bits&uAngle1 != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 	if bits&uOrigin2 != 0 {
 		v, err := readCoord()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.Origin[1] = v
 	}
 	if bits&uAngle2 != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 	if bits&uOrigin3 != 0 {
 		v, err := readCoord()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		state.Origin[2] = v
 	}
 	if bits&uAngle3 != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 	// U_SOLID has no payload in QW (see ezquake cl_ents.c:574-576).
 
-	// FTE extension payloads we don't care about but must skip to keep
-	// the byte cursor aligned.
-	if morebits&uFTETrans != 0 {
+	// FTE extension payloads we don't decode but must consume to keep the
+	// byte cursor aligned. trans and colourmod are gated on the negotiated
+	// extension (cl_ents.c:580, 586). Scale and fatness are consumed on the
+	// flag bit alone: mvdsv never writes them (sv_ents.c's SV_WriteDelta
+	// emits only trans/colourmod), so on real MVDs the bits are never set;
+	// if a full-FTE stream does set one, consuming the byte keeps us aligned.
+	if morebits&uFTETrans != 0 && fteExt&mvd.FTEPextTrans != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 	if morebits&uFTEScale != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 	if morebits&uFTEFatness != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
-	if morebits&uFTEColourMod != 0 {
+	if morebits&uFTEColourMod != 0 && fteExt&mvd.FTEPextColourMod != 0 {
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		if _, err := r.ReadByte(); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 	// Other FTE flags (drawflags, abslight, etc.) are rarer still
@@ -651,50 +730,7 @@ func (p *Parser) applyDeltaFields(r *mvd.BufferReader, bits, morebits uint32, fr
 	// will desynchronise and the parser will error — which is the
 	// safe failure mode.
 
-	return &state, 0, nil
-}
-
-// readDelta is a convenience wrapper for baseline2: reads the
-// two-byte flag word plus payload.
-func (p *Parser) readDelta(r *mvd.BufferReader, word uint32, from *EntityState, floatCoords bool) (*EntityState, int, error) {
-	bits := word
-	entNum := int(bits & 511)
-	bits &= ^uint32(511)
-
-	if bits&uMoreBits != 0 {
-		b, err := r.ReadByte()
-		if err != nil {
-			return nil, 0, err
-		}
-		bits |= uint32(b)
-	}
-	var morebits uint32
-	if bits&uFTEEvenMore != 0 {
-		b, err := r.ReadByte()
-		if err != nil {
-			return nil, 0, err
-		}
-		morebits = uint32(b)
-		if morebits&uFTEYetMore != 0 {
-			b2, err := r.ReadByte()
-			if err != nil {
-				return nil, 0, err
-			}
-			morebits |= uint32(b2) << 8
-		}
-	}
-	if morebits&uFTEEntityDbl != 0 {
-		entNum += 512
-	}
-	if morebits&uFTEEntity2 != 0 {
-		entNum += 1024
-	}
-	state, _, err := p.applyDeltaFields(r, bits, morebits, from, floatCoords)
-	if err != nil {
-		return nil, 0, err
-	}
-	state.Present = true
-	return state, entNum, nil
+	return &state, nil
 }
 
 // diffEntityTransitions compares the prior current-frame state against

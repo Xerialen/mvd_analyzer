@@ -57,9 +57,57 @@ func (e *BackpackPickupHintEvent) EventType() EventType { return EventBackpackPi
 func (e *BackpackPickupHintEvent) EventTime() float64   { return e.Time }
 
 const (
-	ktxTookPrefix = "//ktx took "
-	ktxBpPrefix   = "//ktx bp "
+	// ktxDirectivePrefix is the common opener for every KTX
+	// STUFFCMD_DEMOONLY pickup/drop hint directive (//ktx took, //ktx bp,
+	// //ktx drop, ...). tryEmitKtxHints checks it once before fanning out.
+	ktxDirectivePrefix = "//ktx "
+	ktxTookPrefix      = "//ktx took "
+	ktxBpPrefix        = "//ktx bp "
 )
+
+// parseKtxHintInts matches a `//ktx <verb> ...` directive: it trims
+// trailing whitespace, checks for prefix, splits the remainder on
+// whitespace, and parses the first n fields as ints. Returns the parsed
+// ints and true on success; false if the prefix doesn't match, there
+// are fewer than n fields, or any field is not an integer. Malformed
+// input is a soft failure (the StuffTextEvent for the same command is
+// emitted regardless), so callers just skip emitting their typed hint.
+func parseKtxHintInts(cmd, prefix string, n int) ([]int, bool) {
+	s := strings.TrimRight(cmd, "\n\r ")
+	if !strings.HasPrefix(s, prefix) {
+		return nil, false
+	}
+	parts := strings.Fields(s[len(prefix):])
+	if len(parts) < n {
+		return nil, false
+	}
+	out := make([]int, n)
+	for i := 0; i < n; i++ {
+		v, err := strconv.Atoi(parts[i])
+		if err != nil {
+			return nil, false
+		}
+		out[i] = v
+	}
+	return out, true
+}
+
+// tryEmitKtxHints fans a stufftext payload out to the KTX pickup/drop
+// hint matchers, but only when it carries a `//ktx ` directive — the
+// common case (weapon-stat tickers, download hints, fullserverinfo)
+// short-circuits after one prefix check.
+func (p *Parser) tryEmitKtxHints(cmd string, time float64) error {
+	if !strings.HasPrefix(cmd, ktxDirectivePrefix) {
+		return nil
+	}
+	if err := p.tryEmitBackpackDropHint(cmd, time); err != nil {
+		return err
+	}
+	if err := p.tryEmitItemPickupHint(cmd, time); err != nil {
+		return err
+	}
+	return p.tryEmitBackpackPickupHint(cmd, time)
+}
 
 // tryEmitItemPickupHint scans a stuffcmd payload for `//ktx took`
 // and emits a typed ItemPickupHintEvent on success. Returns nil
@@ -67,30 +115,14 @@ const (
 // command has already been emitted by the caller, so dropping a
 // hint event is a soft failure.
 func (p *Parser) tryEmitItemPickupHint(cmd string, time float64) error {
-	s := strings.TrimRight(cmd, "\n\r ")
-	if !strings.HasPrefix(s, ktxTookPrefix) {
-		return nil
-	}
-	parts := strings.Fields(s[len(ktxTookPrefix):])
-	if len(parts) < 3 {
-		return nil
-	}
-	ent, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return nil
-	}
-	respawn, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return nil
-	}
-	playerEnt, err := strconv.Atoi(parts[2])
-	if err != nil {
+	v, ok := parseKtxHintInts(cmd, ktxTookPrefix, 3)
+	if !ok {
 		return nil
 	}
 	return p.emit(&ItemPickupHintEvent{
-		ItemEnt:    ent,
-		RespawnSec: respawn,
-		PlayerEnt:  playerEnt,
+		ItemEnt:    v[0],
+		RespawnSec: v[1],
+		PlayerEnt:  v[2],
 		Time:       time,
 	})
 }
@@ -99,25 +131,13 @@ func (p *Parser) tryEmitItemPickupHint(cmd string, time float64) error {
 // and emits a typed BackpackPickupHintEvent on success. Silently
 // drops malformed input for the same reason as above.
 func (p *Parser) tryEmitBackpackPickupHint(cmd string, time float64) error {
-	s := strings.TrimRight(cmd, "\n\r ")
-	if !strings.HasPrefix(s, ktxBpPrefix) {
-		return nil
-	}
-	parts := strings.Fields(s[len(ktxBpPrefix):])
-	if len(parts) < 2 {
-		return nil
-	}
-	bpEnt, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return nil
-	}
-	playerEnt, err := strconv.Atoi(parts[1])
-	if err != nil {
+	v, ok := parseKtxHintInts(cmd, ktxBpPrefix, 2)
+	if !ok {
 		return nil
 	}
 	return p.emit(&BackpackPickupHintEvent{
-		BackpackEnt: bpEnt,
-		PlayerEnt:   playerEnt,
+		BackpackEnt: v[0],
+		PlayerEnt:   v[1],
 		Time:        time,
 	})
 }
