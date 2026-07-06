@@ -3,9 +3,9 @@ package result
 // ShotsResult is the per-shot weapon-fire stream plus per-player/weapon
 // aggregates. A "shot" is one discrete weapon fire as observed on the wire:
 // for SG/SSG/RL/GL/NG/SNG it is one svc_sound fire event on the shooter's
-// CHAN_WEAPON (the sound carries the firing entity); for LG it is one cell
-// consumed (no per-shot fire sound exists), inferred from the cell-ammo
-// stat and flagged Source="ammo".
+// CHAN_WEAPON (the sound carries the firing entity); for LG — the one
+// weapon with no per-shot fire sound — it is one TE_LIGHTNING2 beam
+// (KTX emits exactly one per fire tick), flagged Source="beam".
 //
 // The raw Shots stream is NOT match-gated — warmup fires are real signal and
 // consumers window by Time. ByPlayer aggregates ARE match-gated (KTX
@@ -24,14 +24,15 @@ type ShotsResult struct {
 // Shot is one weapon fire. Time is match-relative milliseconds (same clock
 // as DamageEntry.Time). Weapon is the lowercase KTX weapon name
 // ("sg","ssg","ng","sng","gl","rl","lg"). Source is "sound" (a CHAN_WEAPON
-// fire sound) or "ammo" (LG cell decrement).
+// fire sound) or "beam" (an LG TE_LIGHTNING2 bolt).
 //
-// Hit/Victims are populated only for instantaneous hitscan weapons
-// (sg/ssg/lg), where the shot and its damage land in the same server frame
-// and can be linked truthfully via the KTX damage stream. Projectile fires
-// (rl/gl/ng/sng) are left unlinked here — they have travel time and are
-// linked by the entity-tracking phase. On non-KTX servers there is no
-// damage stream, so Hit is always false.
+// Hit/Victims are populated for instantaneous hitscan weapons (sg/ssg/lg),
+// where the shot and its damage land in the same server frame and link
+// truthfully via the KTX damage stream, and for projectile fires whose
+// tracked flight (entity spawn→despawn) brackets back to the fire and
+// forward to impact damage — rl/gl on every parse, ng/sng only when nail
+// decoding was enabled. On non-KTX servers there is no damage stream, so
+// Hit is always false.
 //
 // Warmup is true for fires outside the match (prewar / warmup / post-match) —
 // the stream keeps them, but the ByPlayer aggregates and match-time consumers

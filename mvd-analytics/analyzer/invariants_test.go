@@ -21,6 +21,7 @@ package analyzer_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,11 +40,31 @@ import (
 // corpus is 0 ms over matchEnd; 1 s is generous.
 const invariantSlackMs = 1000
 
+// invariantPostMatchSlackMs bounds how far past match end an event of a
+// deliberately ungated log (shots' warmup fires, damage.events,
+// messages.events, frags.frags) may legitimately sit — the post-match
+// intermission tail: "gg" chat, end-of-game fires. It is wider than
+// invariantSlackMs, so on these streams the missed-rebase check only bites
+// when the demo's prewar offset exceeds it; the strict window on the gated
+// sections and on non-warmup shots is what carries the F1-class detection.
+const invariantPostMatchSlackMs = 30_000
+
 // timeKeys / teamKeys are the JSON field-name conventions every timestamped /
 // team-labelled TimelineAnalysis event type follows (result/timeline.go).
 var (
 	timeKeys = []string{"time", "endTime"}
 	teamKeys = []string{"team", "attackerTeam", "victimTeam"}
+)
+
+// sectionTimeKeys / sectionTeamKeys extend the conventions with the field
+// names the other event-carrying sections use (result/items.go phases,
+// result/weapon_pickups.go). ItemPhase.respawnAt is deliberately absent:
+// it is a *scheduled* respawn (takenAt + item interval), which legitimately
+// lands past match end for an item taken near the final bell — the same
+// phase's availableFrom/takenAt anchor its clock for the shift check.
+var (
+	sectionTimeKeys = []string{"time", "endTime", "availableFrom", "takenAt", "dropTime", "nextDeathTime"}
+	sectionTeamKeys = []string{"team", "dropperTeam"}
 )
 
 func TestTimelineInvariants(t *testing.T) {
@@ -109,6 +130,178 @@ func TestTimelineInvariants(t *testing.T) {
 			})
 		})
 	}
+}
+
+// eventSection describes one event-carrying Result section outside
+// timelineAnalysis whose time/team fields the same two hand-enumerating
+// post-processors maintain (F17): where the event array lives, which element
+// key names the acting player (scopes the duel team check to participants —
+// spectator chat keeps its raw team), and how its clock relates to the match
+// window.
+type eventSection struct {
+	name      string
+	path      []string          // JSON path to the event array
+	nestedKey string            // optional per-element nested event array ("phases")
+	ownerKey  string            // element key naming the acting player
+	teamOwner map[string]string // team-key → owner-key overrides (dropperTeam → dropper)
+	postMatch bool              // ungated log — may legitimately run past match end
+	warmupKey string            // bool key marking the out-of-match elements ("warmup")
+}
+
+var eventSections = []eventSection{
+	// Non-warmup shots are in-match by construction (strict window); warmup
+	// ones are the ungated tail. Team labels rewritten by normalizeDuelTeams.
+	{name: "shots.shots", path: []string{"shots", "shots"}, ownerKey: "player", warmupKey: "warmup", postMatch: true},
+	{name: "shots.byPlayer", path: []string{"shots", "byPlayer"}, ownerKey: "player"},
+	// The damage/messages/frags logs are deliberately ungated.
+	{name: "damage.events", path: []string{"damage", "events"}, postMatch: true},
+	{name: "messages.events", path: []string{"messages", "events"}, ownerKey: "player", postMatch: true},
+	{name: "frags.frags", path: []string{"frags", "frags"}, postMatch: true},
+	{name: "weaponPickups", path: []string{"weaponPickups"}, ownerKey: "player", teamOwner: map[string]string{"dropperTeam": "dropper"}},
+	{name: "backpacks", path: []string{"backpacks"}, ownerKey: "player"},
+	{name: "items.items[].phases", path: []string{"items", "items"}, nestedKey: "phases", ownerKey: "takenBy"},
+	{name: "aim.players", path: []string{"aim", "players"}, ownerKey: "player"},
+}
+
+// TestEventSectionInvariants extends the A1 invariant beyond
+// timelineAnalysis (F17): every other event-carrying section shares the
+// time/team key conventions and is maintained by the same hand-enumerated
+// post-processors, so a section they skip must fail here, not ship silently.
+// Aim's columnar crosshair.t gets a bespoke bounds check.
+func TestEventSectionInvariants(t *testing.T) {
+	files, err := filepath.Glob(filepath.Join("..", "testdata", "golden", "*.json"))
+	if err != nil {
+		t.Fatalf("glob goldens: %v", err)
+	}
+	if len(files) == 0 {
+		t.Skip("no golden files — run TestGoldenCorpus -args -update-golden first")
+	}
+
+	for _, path := range files {
+		label := strings.TrimSuffix(filepath.Base(path), ".json")
+		t.Run(label, func(t *testing.T) {
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+			var doc map[string]any
+			if err := json.Unmarshal(raw, &doc); err != nil {
+				t.Fatalf("parse %s: %v", path, err)
+			}
+
+			demoOffset := jsonNum(doc, "streams", "global", "demoOffset")
+			matchEnd := jsonNum(doc, "streams", "global", "matchEnd")
+			lo := -demoOffset - invariantSlackMs
+			hiStrict := matchEnd + invariantSlackMs
+			hiLoose := matchEnd + invariantPostMatchSlackMs
+			names, dueled := duelNames(doc)
+
+			for _, sec := range eventSections {
+				forEachSectionEvent(doc, sec, func(where string, obj map[string]any) {
+					// (a) Time bounds. Ungated elements (postMatch section,
+					// or the warmup-flagged tail of a gated one) get the
+					// loose upper edge; everything else the strict window.
+					hi := hiStrict
+					if sec.postMatch && (sec.warmupKey == "" || obj[sec.warmupKey] == true) {
+						hi = hiLoose
+					}
+					for _, tk := range sectionTimeKeys {
+						tv, ok := obj[tk].(float64)
+						if !ok {
+							continue
+						}
+						if tv < lo || tv > hi {
+							t.Errorf("%s.%s = %.0f outside match-relative window [%.0f, %.0f] (demoOffset=%.0f matchEnd=%.0f) — did a post-processor skip this section's time shift? (F1/F17)",
+								where, tk, tv, lo, hi, demoOffset, matchEnd)
+						}
+					}
+
+					// (b) Duel team labels, scoped to participants (spectator
+					// chat keeps its raw team on purpose).
+					if !dueled {
+						return
+					}
+					for _, teamKey := range sectionTeamKeys {
+						tv, ok := obj[teamKey].(string)
+						if !ok || tv == "" {
+							continue
+						}
+						ownerKey := sec.ownerKey
+						if alt, ok := sec.teamOwner[teamKey]; ok {
+							ownerKey = alt
+						}
+						if ownerKey != "" {
+							owner, _ := obj[ownerKey].(string)
+							if !names[owner] {
+								continue
+							}
+						}
+						if !names[tv] {
+							t.Errorf("%s.%s = %q is not a duel participant name %v — did normalizeDuelTeams skip this section? (F17)",
+								where, teamKey, tv, sortedKeys(names))
+						}
+					}
+				})
+			}
+
+			// Aim's columnar crosshair samples: in-match fires only, so every
+			// t must sit in the strict window.
+			players, _ := jsonAt(doc, "aim", "players").([]any)
+			for i, p := range players {
+				pm, _ := p.(map[string]any)
+				ch, _ := pm["crosshair"].(map[string]any)
+				ts, _ := ch["t"].([]any)
+				for j, v := range ts {
+					tv, ok := v.(float64)
+					if !ok {
+						continue
+					}
+					if tv < lo || tv > hiStrict {
+						t.Errorf("aim.players[%d].crosshair.t[%d] = %.0f outside match-relative window [%.0f, %.0f] (F17)",
+							i, j, tv, lo, hiStrict)
+					}
+				}
+			}
+		})
+	}
+}
+
+// forEachSectionEvent walks one section's event array (and its optional
+// nested per-element array) and invokes fn with a location label per object.
+func forEachSectionEvent(doc map[string]any, sec eventSection, fn func(where string, obj map[string]any)) {
+	arr, _ := jsonAt(doc, sec.path...).([]any)
+	for i, e := range arr {
+		obj, ok := e.(map[string]any)
+		if !ok {
+			continue
+		}
+		if sec.nestedKey == "" {
+			fn(fmt.Sprintf("%s[%d]", sec.name, i), obj)
+			continue
+		}
+		nested, _ := obj[sec.nestedKey].([]any)
+		for j, ne := range nested {
+			nobj, ok := ne.(map[string]any)
+			if !ok {
+				continue
+			}
+			fn(fmt.Sprintf("%s[%d].%s[%d]", sec.name, i, sec.nestedKey, j), nobj)
+		}
+	}
+}
+
+// jsonAt walks a nested JSON object by keys and returns the terminal value
+// (nil if any hop is absent).
+func jsonAt(doc map[string]any, path ...string) any {
+	var cur any = doc
+	for _, k := range path {
+		m, ok := cur.(map[string]any)
+		if !ok {
+			return nil
+		}
+		cur = m[k]
+	}
+	return cur
 }
 
 // forEachEvent invokes fn for every object element of every array-valued field

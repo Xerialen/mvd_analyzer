@@ -283,7 +283,10 @@ func normalizeDuelTeams(result *Result) {
 		// victim is by definition an enemy — flip those, restoring the
 		// all-enemy-omitted wire convention (emitKinds) where the flip
 		// leaves no informative kind. aimPost reads VictimKinds after
-		// this pass, so the Aim enemy/team splits follow.
+		// this pass, so the Aim enemy/team splits follow. (Damage has no
+		// equivalent rewrite here: DamageAnalyzer classifies IsTeam
+		// duel-aware at birth — isDuelResult in damage.go Finalize — so
+		// its events, aggregates and matrix are already enemy-labelled.)
 		for i := range result.Shots.Shots {
 			s := &result.Shots.Shots[i]
 			if s.VictimKinds == nil {

@@ -5,6 +5,33 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-06
+
+- **Aim/shots correctness batch (schema v49; value fixes, no shape
+  change).** Four fixes from the deferred aim/shots review:
+  - The Aim tab's RL/GL direct/splash/missed split now appears on every
+    default parse. It was accidentally gated on the opt-in
+    `streams.projectiles` payload, which is emission-only — the projectile
+    linking the split actually needs runs on every parse, so the block was
+    absent everywhere except `-include projectiles` runs.
+  - Warmup and post-match damage no longer leaks into those splits: the
+    damage records feeding aim's pellet and direct counters are windowed
+    to match time, so a warmup direct rocket no longer inflates `direct`
+    and deflates `splash`.
+  - Duels where both players share a colour team (e.g. both "green") no
+    longer classify every hit on the opponent as team damage. Damage is
+    classified duel-aware at birth, restoring airgibs, the aim enemy
+    splits, the damage matrix, `victimWep` and the EWep buckets on such
+    demos — all previously empty or folded into `givenTeam`.
+  - Shots player identity uses the canonical slot resolver, backfilling
+    a missing team from the demoinfo name table like damage/frags do.
+  - Doc drift cleanup: the LG fire signal is `TE_LIGHTNING2` beams
+    (`source: "beam"`), not the never-shipped "ammo" detection; rl/gl
+    fires are linked, not "left unlinked"; `Dist` is muzzle-based.
+  - The structural invariant test now covers every event-carrying result
+    section (shots, damage, messages, frags, pickups, backpacks, item
+    phases, aim) — not just `timelineAnalysis`.
+
 ## 2026-07-05
 
 - **Web: chat shows every authentic message (no schema change).** The chat

@@ -261,18 +261,23 @@
             "weapon": "ssg"
           },
           {
+            "direct": 13,
             "enemy": {
+              "direct": 13,
               "hits": 57
             },
             "hits": 62,
+            "missed": 106,
             "self": {
               "hits": 16
             },
             "shots": 168,
+            "splash": 49,
             "weapon": "rl"
           },
           {
             "hits": 0,
+            "missed": 8,
             "shots": 8,
             "weapon": "gl"
           }
@@ -566,19 +571,25 @@
             "weapon": "sg"
           },
           {
+            "direct": 10,
             "enemy": {
+              "direct": 10,
               "hits": 48
             },
             "hits": 54,
+            "missed": 105,
             "self": {
               "hits": 13
             },
             "shots": 159,
+            "splash": 44,
             "weapon": "rl"
           },
           {
             "hits": 3,
+            "missed": 24,
             "shots": 27,
+            "splash": 3,
             "weapon": "gl"
           },
           {
@@ -10617,7 +10628,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 48,
+  "schemaVersion": 49,
   "shots": {
     "byPlayer": [
       {

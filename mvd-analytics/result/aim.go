@@ -7,7 +7,8 @@ package result
 //
 // Truthfulness contract:
 //   - The crosshair-error samples are HITSCAN-ONLY (sg/ssg/lg). Rockets are
-//     led, so crosshair-to-enemy is not "error" — they get Rocket instead.
+//     led, so crosshair-to-enemy is not "error" — rl/gl get the Weapons
+//     direct/splash/missed split instead.
 //   - Error is reported both as signed degrees (DYaw/DPitch — the literal
 //     "degrees off the enemy" drift metric) AND normalized by the target's
 //     angular half-size (NYaw/NPitch — comparable across range; |n|<=1 is
@@ -24,9 +25,10 @@ type AimResult struct {
 }
 
 // PlayerAim holds one player's aim sub-blocks. Sub-blocks are nil when their
-// inputs are absent (e.g. Rocket needs projectile linking, LGReach needs the
-// beam stream), so a non-KTX or non-shot-stream analysis still yields the
-// crosshair/ramp blocks it can compute.
+// inputs are absent (e.g. the rl/gl direct/splash split inside Weapons needs
+// linked projectile fires, the LG whiff classes need the opt-in beam
+// stream), so a non-KTX analysis still yields the crosshair/ramp blocks it
+// can compute.
 type PlayerAim struct {
 	Player string `json:"player"`
 	Team   string `json:"team,omitempty"`
@@ -45,8 +47,9 @@ type PlayerAim struct {
 // CrosshairSamples is the columnar per-hitscan-fire crosshair error to the
 // attributed target. All slices share one index. DYaw/DPitch are signed
 // degrees (right/up positive); NYaw/NPitch are those divided by the target's
-// angular half-width/half-height at Dist. Dist is the eye→target-center
-// distance in Quake units. Team flags samples whose attributed target is a
+// angular half-width/half-height at Dist. Dist is the muzzle→target-center
+// distance in Quake units (the shot traces from the weapon muzzle,
+// ≈ origin+16 — not the +22 eye; see analyzer/aim.go). Team flags samples whose attributed target is a
 // teammate (a hit's confirmed victim — misses attribute to enemies only);
 // nil when no sample is team-attributed. Self targets cannot occur here:
 // the samples are hitscan-only and a hitscan trace cannot hit its shooter.
@@ -83,7 +86,9 @@ type LGRampSamples struct {
 //     hit) / Partial (some) / Miss (none).
 //   - RL/GL: Direct (non-splash contacts ≈ KTX hits), Splash (linked hits that
 //     were splash-only), Missed (fires that linked to no impact);
-//     Direct+Splash+Missed == Shots. Present only when projectile linking ran.
+//     Direct+Splash+Missed == Shots. Projectile linking runs on every parse;
+//     the block is present whenever any rl/gl fire linked to its flight
+//     (absent only when nothing linked — e.g. non-KTX demos).
 //   - LG: of the missed fires, Blocked (the beam stopped short of its ~600-
 //     unit max length on geometry and its extension to full range crosses a
 //     live enemy's collision hull — on target and in range, the obstruction

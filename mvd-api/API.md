@@ -362,7 +362,7 @@ normal, bytes-present response never carries this header.
 
 The per-fire weapon stream (`result.Shots`): `shots` — every detected fire,
 chronological, with `time` (match ms), `player`, `weapon`, `source`
-(`sound`/`beam`/`ammo`), `hit` + `victims` where linkable (plus
+(`sound`/`beam`), `hit` + `victims` where linkable (plus
 `victimKinds` classifying each victim `enemy`/`team`/`self`, omitted when
 all-enemy), and a `warmup` flag on out-of-match fires; `byPlayer` —
 match-time per-weapon counts, hitscan accuracy and the

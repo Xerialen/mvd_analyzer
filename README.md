@@ -407,7 +407,7 @@ damage (per-hit damage log + aggregates — attacker→victim matrix,
 per-weapon, given/taken, and the EWep victim-weapon buckets — from the
 KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
 shots (per-shot weapon-fire stream — who fired what at exactly what ms,
-from `svc_sound` fire sounds + LG cell-ammo — with same-frame hitscan→damage
+from `svc_sound` fire sounds + LG `TE_LIGHTNING2` beams — with same-frame hitscan→damage
 links, entity-tracked rocket/grenade→impact links, per-victim
 enemy/team/self classification, and a KTX-accuracy cross-check),
 aim (per-player aim analysis derived from shots + streams + damage —

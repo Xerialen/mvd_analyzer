@@ -4814,14 +4814,18 @@
             "weapon": "ssg"
           },
           {
+            "direct": 7,
             "enemy": {
+              "direct": 7,
               "hits": 27
             },
             "hits": 30,
+            "missed": 20,
             "self": {
               "hits": 6
             },
             "shots": 50,
+            "splash": 23,
             "team": {
               "hits": 1
             },
@@ -4832,10 +4836,12 @@
               "hits": 2
             },
             "hits": 2,
+            "missed": 7,
             "self": {
               "hits": 2
             },
             "shots": 9,
+            "splash": 2,
             "weapon": "gl"
           },
           {
@@ -9311,14 +9317,18 @@
             "weapon": "ssg"
           },
           {
+            "direct": 7,
             "enemy": {
+              "direct": 7,
               "hits": 23
             },
             "hits": 25,
+            "missed": 34,
             "self": {
               "hits": 5
             },
             "shots": 59,
+            "splash": 18,
             "team": {
               "hits": 1
             },
@@ -9326,7 +9336,9 @@
           },
           {
             "hits": 2,
+            "missed": 15,
             "shots": 17,
+            "splash": 2,
             "weapon": "gl"
           },
           {
@@ -13650,14 +13662,18 @@
             "weapon": "ssg"
           },
           {
+            "direct": 6,
             "enemy": {
+              "direct": 6,
               "hits": 20
             },
             "hits": 21,
+            "missed": 17,
             "self": {
               "hits": 1
             },
             "shots": 38,
+            "splash": 15,
             "weapon": "rl"
           },
           {
@@ -18242,14 +18258,18 @@
             "weapon": "ssg"
           },
           {
+            "direct": 6,
             "enemy": {
+              "direct": 6,
               "hits": 34
             },
             "hits": 35,
+            "missed": 24,
             "self": {
               "hits": 5
             },
             "shots": 59,
+            "splash": 29,
             "team": {
               "hits": 3
             },
@@ -18260,10 +18280,12 @@
               "hits": 1
             },
             "hits": 2,
+            "missed": 13,
             "self": {
               "hits": 1
             },
             "shots": 15,
+            "splash": 2,
             "team": {
               "hits": 1
             },
@@ -22185,11 +22207,15 @@
             "weapon": "ssg"
           },
           {
+            "direct": 3,
             "enemy": {
+              "direct": 3,
               "hits": 27
             },
             "hits": 28,
+            "missed": 38,
             "shots": 66,
+            "splash": 25,
             "team": {
               "hits": 4
             },
@@ -22200,10 +22226,12 @@
               "hits": 4
             },
             "hits": 5,
+            "missed": 4,
             "self": {
               "hits": 2
             },
             "shots": 9,
+            "splash": 5,
             "weapon": "gl"
           },
           {
@@ -26031,14 +26059,18 @@
             "weapon": "ssg"
           },
           {
+            "direct": 7,
             "enemy": {
+              "direct": 7,
               "hits": 29
             },
             "hits": 30,
+            "missed": 26,
             "self": {
               "hits": 4
             },
             "shots": 56,
+            "splash": 23,
             "team": {
               "hits": 1
             },
@@ -26049,7 +26081,9 @@
               "hits": 2
             },
             "hits": 3,
+            "missed": 4,
             "shots": 7,
+            "splash": 3,
             "team": {
               "hits": 2
             },
@@ -32503,14 +32537,18 @@
             "weapon": "ssg"
           },
           {
+            "direct": 12,
             "enemy": {
+              "direct": 12,
               "hits": 31
             },
             "hits": 33,
+            "missed": 51,
             "self": {
               "hits": 5
             },
             "shots": 84,
+            "splash": 21,
             "team": {
               "hits": 3
             },
@@ -32521,10 +32559,12 @@
               "hits": 2
             },
             "hits": 2,
+            "missed": 13,
             "self": {
               "hits": 1
             },
             "shots": 15,
+            "splash": 2,
             "weapon": "gl"
           },
           {
@@ -36299,21 +36339,27 @@
             "weapon": "ssg"
           },
           {
+            "direct": 16,
             "enemy": {
+              "direct": 15,
               "hits": 50
             },
             "hits": 52,
+            "missed": 63,
             "self": {
               "hits": 3
             },
             "shots": 115,
+            "splash": 36,
             "team": {
+              "direct": 1,
               "hits": 8
             },
             "weapon": "rl"
           },
           {
             "hits": 0,
+            "missed": 2,
             "shots": 2,
             "weapon": "gl"
           },
@@ -88996,7 +89042,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 48,
+  "schemaVersion": 49,
   "shots": {
     "byPlayer": [
       {

@@ -99,6 +99,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// flattened + sorted for deterministic output.
 	matrix := make(map[string]*DamagePair)
 
+	// In a 1v1 any non-self hit is enemy damage by definition, but two
+	// duelers sharing a non-empty colour team would classify every hit as
+	// IsTeam — silently emptying airgibs, zeroing the aim enemy splits and
+	// contradicting the duel-normalized Shots.VictimKinds (F20). DemoInfo
+	// (core tier) and Match (registered before damage) are final by now, so
+	// classify at birth with the same duel test normalizeDuelTeams uses —
+	// exact, because the victim-weapon buckets and the matrix are then
+	// built once, correctly, instead of being rebuilt after the fact.
+	duel := isDuelResult(result)
+
 	for _, d := range a.raw {
 		isWorld := d.attacker < 0
 		isSelf := !isWorld && d.attacker == d.victim
@@ -129,7 +139,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			}
 		}
 
-		isTeam := !isWorld && !isSelf && attackerTeam != "" &&
+		isTeam := !duel && !isWorld && !isSelf && attackerTeam != "" &&
 			victimTeam != "" && attackerTeam == victimTeam
 
 		// Telefrags and stomps are positional instant kills, not weapon

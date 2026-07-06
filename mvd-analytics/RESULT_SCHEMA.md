@@ -27,7 +27,7 @@ analyzer are also covered there.
 | LocGraph | `locGraph` | *LocGraphResult | Loc-to-loc movement graph (nodes + transitions). |
 | Items | `items` | *ItemsResult | Per-entity pickup / respawn timeline (per match). |
 | Damage | `damage` | *DamageResult | Per-hit damage log + aggregates (matrix, per-weapon, given/taken, EWep victim-weapon buckets) from the KTX `mvdhidden_dmgdone` stream, with a KTX-scoreboard cross-check. |
-| Shots | `shots` | *ShotsResult | Per-shot weapon-fire stream (who fired what, at what ms) from `svc_sound` fire sounds + LG cell-ammo, with same-frame hitscan→damage links and a KTX-accuracy cross-check. |
+| Shots | `shots` | *ShotsResult | Per-shot weapon-fire stream (who fired what, at what ms) from `svc_sound` fire sounds + LG `TE_LIGHTNING2` beams, with same-frame hitscan→damage links and a KTX-accuracy cross-check. |
 | Aim | `aim` | *AimResult | Per-player aim analysis: normalized crosshair-error samples (hitscan), LG ramp-onto-target, rocket direct/splash, LG reach/whiff. Derived (post-process) from Shots + Streams + Damage. |
 | MapEntities | `mapEntities` | *MapEntitiesResult | Static designed map layout (item spawns, spawnpoints, teleporters, buttons) from the BSP entity corpus. |
 | Backpacks | `backpacks` | []BackpackDrop | RL/LG backpack drops from KTX `//ktx drop` hint. |
@@ -316,7 +316,7 @@ every victim is an enemy (the common case); when present it is parallel to
 | Team | `team` | string (omitempty) | |
 | Weapon | `weapon` | string | |
 | Source | `source` | string | `sound` \| `beam` (LG). |
-| Hit | `hit` | bool (omitempty) | Hitscan fire that connected (≥1 victim same frame). |
+| Hit | `hit` | bool (omitempty) | Fire that connected: hitscan via the same-frame damage link, rl/gl (and ng/sng with nails) via projectile linking. |
 | Victims | `victims` | []string (omitempty) | Hitscan victims hit by this fire. |
 | VictimKinds | `victimKinds` | []string (omitempty) | Per-victim class, parallel to `victims`: `enemy` \| `team` \| `self`. Omitted when all-enemy. |
 | Warmup | `warmup` | bool (omitempty) | Fired outside the match (prewar / warmup / post-match). The stream keeps it; `ByPlayer` and the aim analysis exclude it. |
@@ -484,8 +484,10 @@ stats; `Direct` matches the server's RL/GL direct-hit count.
 For LG, `Hits + Blocked + Miss + OutOfRange + Unresolved == Shots`.
 
 The pellet stats need the KTX damage stream; the RL/GL direct/splash split
-needs projectile linking (`Streams.Projectiles`); the LG miss split needs
-`Streams.Beams`. Absent inputs simply leave those fields zero.
+needs projectile linking, which runs on every parse (the block appears
+whenever any rl/gl fire linked to its flight — no opt-in required); the LG
+miss split needs the opt-in `Streams.Beams`. Absent inputs simply leave
+those fields zero.
 
 ### WeaponAimSplit
 
@@ -1649,6 +1651,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v49 | Aim/shots correctness fixes; no field-shape change. (1) The `aim.players[].weapons` rl/gl `direct`/`splash`/`missed` block appears on every default parse: it was gated on the opt-in `streams.projectiles` emission while the projectile linking it needs runs on every parse — it now gates on linking evidence (any linked rl/gl fire). (2) The damage records feeding aim's pellet and direct splits are windowed to match time `[0, matchEnd]`, so warmup and post-match damage no longer inflates `direct` (and deflates `splash`). (3) In a 1v1 where both players share a non-empty colour team, `damage.events[].isTeam` is no longer true for hits on the opponent: `DamageAnalyzer` classifies duel hits as enemy at birth, so the events, `given`/`givenTeam`, the matrix, `victimWep` and the EWep buckets agree with the duel-normalized `shots` victim kinds (previously airgibs came out empty and the aim enemy splits zero on such demos). (4) Shots identity resolution uses the canonical `ResolveSlotAt` chain, backfilling an empty team from the demoinfo name table (parity with damage/frags). |
 | v48 | Correctness fixes to already-emitted values; no field-shape change. (1) `timelineAnalysis.killEvents` is now on the match-relative clock and carries duel team labels, exactly like the sibling `deathEvents`/`fragEvents` (both post-processors previously skipped it): each kill `time` was ~`demoOffset` ms late and, in 1v1s, `team` was a raw colour tag instead of the player name. (2) Match-timing detection ignores `PRINT_CHAT` (level 3), so a pre-match "go!" or a mid-match "gg game over" chat line can no longer flip the match window (`streams.global.matchStart`/`matchEnd`) or freeze streams; the obituary parser likewise rejects level-3 prints. (3) The CRMod "eats 2 scoops of" super-shotgun obituary is reachable again — those kills were mislabeled `gl` with a phantom "2 scoops of X" killer, now `ssg` with the real killer. (4) `match.players`/`match.teams` no longer drop players who finished on exactly 0 frags (surface-authoritative-data), and duel detection trusts `demoInfo.players` as authoritative so a 2on2 in which two players end on 0 frags is no longer misclassified as a duel and team-renamed; a paired reader fix parses the server-set `*spectator` userinfo star key (and resets the flag on every full userinfo update, ezquake-style) so actual spectators don't leak into `match.players` in place of the removed filter. (5) Powerup interval end times use the same effective match end as the weapon intervals on demos cut before intermission. |
 | v47 | LG miss reclassification on `WeaponAim`. A miss now only counts as `blocked` / `outOfRange` when the shooter was **on target**: `blocked` = the beam stopped short of its ~600 qu max range on geometry and its extension to full range crosses a live enemy's collision hull (a would-be hit denied by the obstruction); `outOfRange` = the beam ran its full length and its extension to infinity crosses a live enemy's hull (denied by reach). Previously every short-of-max-range beam whose endpoint wasn't near an enemy was blocked (even fired into a wall with nobody behind) and every full-length beam was out of range. `nearMiss` is **removed**: with blocked detection on the beam line, the near/wide distinction among plain aim errors carried no signal — all remaining whiffs land in the lg `miss` bucket (shares the field with the sg/ssg per-pellet miss). LG invariant becomes `hits + blocked + miss + outOfRange + unresolved == shots`. Only the opt-in beam-enriched parse is affected (the split needs `streams.beams`); expect `blocked`/`outOfRange` to drop sharply and `miss` to absorb them. |
 | v46 | Weapon-stay pickup recovery: in deathmatch 2/3/5 and coop, world weapon pickups are synthesized from `STAT_ITEMS` weapon-bit 0→1 transitions (KTX never emits `//ktx took` there). `WeaponPickup` gains `inferred`; the `source` vocabulary gains `unknown`. Weapon-stay item phases use the zero-length unavailability convention (`takenAt == respawnAt`). Duel team normalization now also rewrites items/pickup/backpack/shots/airgib team strings and folds duel `team` victim-kinds into `enemy`. Item pickup attribution samples per-frame positions at the touch instant under a shared 128 qu touch gate. |

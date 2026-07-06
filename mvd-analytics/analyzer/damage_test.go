@@ -220,6 +220,67 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 	}
 }
 
+// F20: in a 1v1 where both players share a non-empty colour team, damage is
+// classified enemy at birth — consistent with the duel-normalized
+// Shots.VictimKinds instead of contradicting them (airgibsPost and aimPost
+// read IsTeam downstream, and the matrix/EWep buckets only fill on the
+// enemy path).
+func TestDamageAnalyzer_DuelSharedTeamClassifiedEnemy(t *testing.T) {
+	build := func() (*DamageAnalyzer, *Result) {
+		a := NewDamageAnalyzer()
+		ctx := &Context{}
+		ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "alpha", Team: "green"}
+		ctx.Players[1] = &events.PlayerInfo{Slot: 1, Name: "bravo", Team: "green"}
+		_ = a.Init(ctx)
+		a.timing.Started = true
+		a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatItems, Value: events.ITRocketLauncher})
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+		a.UseCoreOutputs(&CoreOutputs{Slots: map[int]SlotInfo{
+			0: {Name: "alpha", Team: "green"}, 1: {Name: "bravo", Team: "green"},
+		}})
+		return a, &Result{}
+	}
+
+	// Duel: DemoInfo lists exactly the two participants.
+	a, res := build()
+	res.DemoInfo = &DemoInfoResult{Players: []DemoInfoPlayer{
+		{Name: "alpha", Team: "green"}, {Name: "bravo", Team: "green"},
+	}}
+	if err := a.Finalize(res); err != nil {
+		t.Fatal(err)
+	}
+	e := res.Damage.Events[0]
+	if e.IsTeam {
+		t.Errorf("duel shared-team hit classified IsTeam — contradicts duel-normalized victimKinds (F20)")
+	}
+	if e.VictimWep != "rl" {
+		t.Errorf("VictimWep = %q, want rl (enemy path fills it)", e.VictimWep)
+	}
+	alpha := res.Damage.ByPlayer["alpha"]
+	if alpha.Given != 100 || alpha.GivenTeam != 0 {
+		t.Errorf("Given/GivenTeam = %d/%d, want 100/0", alpha.Given, alpha.GivenTeam)
+	}
+	if len(res.Damage.Matrix) != 1 {
+		t.Errorf("Matrix entries = %d, want 1", len(res.Damage.Matrix))
+	}
+
+	// Control — a third participant makes it a real team game: the same
+	// shared-colour hit stays team damage.
+	a2, res2 := build()
+	res2.DemoInfo = &DemoInfoResult{Players: []DemoInfoPlayer{
+		{Name: "alpha", Team: "green"}, {Name: "bravo", Team: "green"}, {Name: "charlie", Team: "red"},
+	}}
+	if err := a2.Finalize(res2); err != nil {
+		t.Fatal(err)
+	}
+	if !res2.Damage.Events[0].IsTeam {
+		t.Errorf("team-game shared-team hit lost its IsTeam flag")
+	}
+	if got := res2.Damage.ByPlayer["alpha"].GivenTeam; got != 100 {
+		t.Errorf("GivenTeam = %d, want 100", got)
+	}
+}
+
 func TestDamageAnalyzer_ScoreboardReconciliation(t *testing.T) {
 	a := buildDamageAnalyzer()
 	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 4, StatIndex: events.StatItems, Value: events.ITRocketLauncher})

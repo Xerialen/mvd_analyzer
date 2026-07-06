@@ -562,7 +562,27 @@ package result
 //   - Powerup interval end times use the same effective match end as the
 //     weapon intervals on demos cut before intermission (were the per-player
 //     last sample vs the global max).
-const CurrentSchemaVersion = 48
+//
+// v49: aim/shots correctness fixes (no field shape change).
+//   - aim.players[].weapons rl/gl direct/splash/missed is present on every
+//     default parse: the block was gated on the opt-in streams.projectiles
+//     emission, while the projectile linking it actually needs runs on every
+//     parse — it now gates on linking evidence (any linked rl/gl fire).
+//   - The damage records feeding aim's pellet and direct splits are windowed
+//     to match time [0, matchEnd]: warmup and post-match damage no longer
+//     inflates direct (and deflates splash).
+//   - Duel damage classification: in a 1v1 where both players share a
+//     non-empty colour team, damage.events[].isTeam was true for every hit
+//     on the opponent — contradicting the duel-normalized shots victimKinds,
+//     silently emptying timelineAnalysis.airgibs and zeroing the aim enemy
+//     splits, and folding all given damage into givenTeam (empty matrix,
+//     empty victimWep buckets). DamageAnalyzer now classifies duel hits as
+//     enemy at birth, so events, aggregates, matrix and EWep buckets are
+//     consistent with the rest of the duel-normalized result.
+//   - Shots identity resolution uses the canonical ResolveSlotAt chain,
+//     which backfills an empty team from the demoinfo name table even when
+//     the name resolved (parity with damage/frags).
+const CurrentSchemaVersion = 49
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

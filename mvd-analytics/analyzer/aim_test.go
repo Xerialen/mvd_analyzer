@@ -46,7 +46,8 @@ func TestAimPostDuel(t *testing.T) {
 				aimTrack("A", 0, 0, 0, 3000),
 				aimTrack("B", 1000, 0, 0, 3000),
 			},
-			Projectiles: &result.ProjectileStreams{}, // non-nil → rocket block enabled
+			// (The rl/gl direct/splash block gates on a linked rl/gl fire in
+			// Shots, not on this opt-in stream — see F18 and the test below.)
 			Beams: &result.BeamStreams{
 				T:  []int32{1000},
 				Sx: []float32{0}, Sy: []float32{0}, Sz: []float32{22}, // muzzle ≈ A eye
@@ -102,6 +103,82 @@ func TestAimPostDuel(t *testing.T) {
 	lg := findWeaponAim(pa, "lg")
 	if lg == nil || lg.Shots != 3 || lg.Hits != 2 || lg.OutOfRange != 1 || lg.Blocked != 0 {
 		t.Fatalf("lg weapon = %+v, want shots3 hits2 far1 blocked0", lg)
+	}
+}
+
+// F18: the rl/gl direct/splash split must appear on a default parse — no
+// opt-in streams.projectiles — as long as projectile linking produced a
+// linked rl/gl fire. The old gate keyed on the stream's presence, which is
+// emission-only, so every default parse silently lost the block.
+func TestAimPostRocketBlockWithoutProjectileStream(t *testing.T) {
+	res := &result.Result{
+		Shots: &result.ShotsResult{
+			Shots: []result.Shot{
+				{Time: 2000, Player: "A", Weapon: "rl", Hit: true},
+				{Time: 2100, Player: "A", Weapon: "rl", Hit: false},
+			},
+		},
+		Damage: &result.DamageResult{
+			Events: []result.DamageEntry{
+				{Time: 2000, Attacker: "A", Victim: "B", Weapon: "rl"}, // non-splash → direct
+			},
+		},
+		Streams: &result.Streams{
+			Players: []result.PlayerStream{
+				aimTrack("A", 0, 0, 0, 3000),
+				aimTrack("B", 1000, 0, 0, 3000),
+			},
+			// No Projectiles, no Beams — the default parse shape.
+		},
+	}
+
+	aimPost(res, nil)
+
+	if res.Aim == nil || len(res.Aim.Players) != 1 {
+		t.Fatalf("expected 1 aim player, got %+v", res.Aim)
+	}
+	rl := findWeaponAim(res.Aim.Players[0], "rl")
+	if rl == nil || rl.Direct != 1 || rl.Splash != 0 || rl.Missed != 1 {
+		t.Fatalf("rl = %+v, want direct1 splash0 missed1 without the opt-in stream (F18)", rl)
+	}
+}
+
+// F19: the damage records feeding the rl/gl direct split are windowed to
+// match time — a warmup direct rocket (negative post-normalize time) or a
+// post-match one (past matchEnd) must not inflate Direct / deflate Splash.
+func TestAimPostDamageWindowedToMatch(t *testing.T) {
+	res := &result.Result{
+		Shots: &result.ShotsResult{
+			Shots: []result.Shot{
+				{Time: 2000, Player: "A", Weapon: "rl", Hit: true},
+				{Time: 2100, Player: "A", Weapon: "rl", Hit: true},
+			},
+		},
+		Damage: &result.DamageResult{
+			Events: []result.DamageEntry{
+				{Time: 2000, Attacker: "A", Victim: "B", Weapon: "rl"},                 // in-match direct
+				{Time: 2100, Attacker: "A", Victim: "B", Weapon: "rl", IsSplash: true}, // in-match splash
+				{Time: -500, Attacker: "A", Victim: "B", Weapon: "rl"},                 // warmup direct — excluded
+				{Time: 3500, Attacker: "A", Victim: "B", Weapon: "rl"},                 // post-match direct — excluded
+			},
+		},
+		Streams: &result.Streams{
+			Global: result.GlobalStream{MatchEnd: 3000},
+			Players: []result.PlayerStream{
+				aimTrack("A", 0, 0, 0, 3000),
+				aimTrack("B", 1000, 0, 0, 3000),
+			},
+		},
+	}
+
+	aimPost(res, nil)
+
+	if res.Aim == nil || len(res.Aim.Players) != 1 {
+		t.Fatalf("expected 1 aim player, got %+v", res.Aim)
+	}
+	rl := findWeaponAim(res.Aim.Players[0], "rl")
+	if rl == nil || rl.Direct != 1 || rl.Splash != 1 || rl.Missed != 0 {
+		t.Fatalf("rl = %+v, want direct1 splash1 missed0 (out-of-window damage excluded, F19)", rl)
 	}
 }
 

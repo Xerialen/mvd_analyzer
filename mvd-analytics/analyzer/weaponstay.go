@@ -28,24 +28,17 @@ type weaponStayDetector struct {
 	coop    bool
 }
 
-// OnStuffText feeds the initial `fullserverinfo "\k\v\..."` dump.
+// OnStuffText feeds the initial `fullserverinfo "\k\v\..."` dump through
+// the shared parseInfoString walker. parseInfoString is last-write-wins
+// for a key duplicated inside a single info string (protocol-pathological,
+// never observed); observe's first-value latch still governs across
+// messages, which is the case that matters.
 func (d *weaponStayDetector) OnStuffText(e *events.StuffTextEvent) {
 	if !strings.HasPrefix(e.Command, "fullserverinfo ") {
 		return
 	}
-	rest := strings.TrimPrefix(e.Command, "fullserverinfo ")
-	rest = strings.TrimSpace(rest)
-	rest = strings.TrimPrefix(rest, "\"")
-	if i := strings.LastIndexByte(rest, '"'); i >= 0 {
-		rest = rest[:i]
-	}
-	parts := strings.Split(rest, "\\")
-	start := 0
-	if len(parts) > 0 && parts[0] == "" {
-		start = 1
-	}
-	for i := start; i+1 < len(parts); i += 2 {
-		d.observe(parts[i], parts[i+1])
+	for key, value := range parseInfoString(e.Command) {
+		d.observe(key, value)
 	}
 }
 
