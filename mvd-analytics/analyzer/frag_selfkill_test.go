@@ -26,7 +26,7 @@ func TestFragSelfKillWeaponLabels(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.msg, func(t *testing.T) {
 			a := NewFragAnalyzer()
-			ctx := &Context{FragsBySlot: map[int]int{}}
+			ctx := &Context{}
 			ctx.Players[1] = &events.PlayerInfo{Slot: 1, Name: "nexus", Team: "red"}
 			_ = a.Init(ctx)
 			a.timing.Started = true
@@ -59,7 +59,7 @@ func TestFragSelfKillWeaponLabels(t *testing.T) {
 // suicide with the same weapon does not.
 func TestFragByWeaponEnemyKillsOnly(t *testing.T) {
 	a := NewFragAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	ctx.Players[1] = &events.PlayerInfo{Slot: 1, Name: "killa", Team: "red"}
 	ctx.Players[2] = &events.PlayerInfo{Slot: 2, Name: "prey", Team: "blue"}
 	_ = a.Init(ctx)

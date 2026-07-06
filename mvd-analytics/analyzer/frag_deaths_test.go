@@ -12,7 +12,7 @@ import (
 // authoritative protocol DeathEvent must still count it.
 func TestFragDeaths_TeamkillVictimCountedViaDeathEvent(t *testing.T) {
 	a := NewFragAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	ctx.Players[1] = &events.PlayerInfo{Slot: 1, Name: "killa", Team: "red"}
 	ctx.Players[2] = &events.PlayerInfo{Slot: 2, Name: "victim", Team: "red"}
 	_ = a.Init(ctx)
@@ -46,7 +46,7 @@ func TestFragDeaths_TeamkillVictimCountedViaDeathEvent(t *testing.T) {
 // only bumps deaths while match_in_progress.
 func TestFragDeaths_GatedToMatchTime(t *testing.T) {
 	a := NewFragAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	ctx.Players[3] = &events.PlayerInfo{Slot: 3, Name: "p", Team: "red"}
 	_ = a.Init(ctx)
 
@@ -77,7 +77,7 @@ func TestFragDeaths_GatedToMatchTime(t *testing.T) {
 // the identity at death-time must fold them into one player.
 func TestFragDeaths_ReconnectFoldsBothSlots(t *testing.T) {
 	a := NewFragAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	a.timing.Started = true
 

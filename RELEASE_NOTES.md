@@ -53,6 +53,14 @@ detail.
     demos — all previously empty or folded into `givenTeam`.
   - Shots player identity uses the canonical slot resolver, backfilling
     a missing team from the demoinfo name table like damage/frags do.
+  - A player who reconnects after the match ends no longer shows 0 frags
+    on the corrected scoreboard: the server re-initializes the returning
+    slot with `svc_updatefrags 0` during intermission, which clobbered the
+    tracked final score (v48's removal of the 0-frag filter had surfaced
+    these corrupted zeros — previously the same players were silently
+    missing from `match.players` altogether). Frag tracking now freezes at
+    match end; mid-match reconnects were already safe because KTX
+    re-asserts the restored count itself.
   - Doc drift cleanup: the LG fire signal is `TE_LIGHTNING2` beams
     (`source: "beam"`), not the never-shipped "ammo" detection; rl/gl
     fires are linked, not "left unlinked"; `Dist` is muzzle-based.

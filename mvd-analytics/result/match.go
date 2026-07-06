@@ -13,7 +13,7 @@ type MatchResult struct {
 }
 
 // PlayerStat is a player's final scoreboard line. Frags is the canonical
-// QW net score (from the svc_updatefrags scoreboard via Context.FragsBySlot).
+// QW net score (from the svc_updatefrags scoreboard, frozen at match end).
 // Kills, Deaths and Suicides are the corrected counts from the frag log —
 // they fix the KTX demoinfo stats, which credit several self / positional
 // deaths to the wrong entity: a pentagram-deflect telefrag (dtTELE2) inflates

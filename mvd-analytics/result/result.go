@@ -582,6 +582,11 @@ package result
 //   - Shots identity resolution uses the canonical ResolveSlotAt chain,
 //     which backfills an empty team from the demoinfo name table even when
 //     the name resolved (parity with damage/frags).
+//   - match.players[].frags no longer clobbered by a post-match reconnect:
+//     the svc_updatefrags scoreboard is frozen at match end, so a slot
+//     re-init to 0 during intermission cannot erase the final score (the
+//     v48 removal of the 0-frag filter had surfaced these corrupted zeros
+//     as if they were real scores).
 const CurrentSchemaVersion = 49
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each

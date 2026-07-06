@@ -48629,7 +48629,7 @@
     "players": [
       {
         "deaths": 50,
-        "frags": 0,
+        "frags": 55,
         "kills": 57,
         "name": "squeeze",
         "suicides": 1,
@@ -48662,7 +48662,7 @@
     ],
     "teams": [
       {
-        "frags": 70,
+        "frags": 125,
         "name": "1"
       },
       {

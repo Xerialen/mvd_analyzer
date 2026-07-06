@@ -8,7 +8,7 @@ import (
 
 func newTestBackpackAnalyzer() (*BackpackAnalyzer, *Context) {
 	a := NewBackpackAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	a.timing.Started = true
 	return a, ctx
@@ -103,7 +103,7 @@ func TestBackpackAnalyzer_UnrecognisedFlagsDropped(t *testing.T) {
 // shouldn't pollute the match timeline).
 func TestBackpackAnalyzer_PreMatchIgnored(t *testing.T) {
 	a := NewBackpackAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
 	// matchStarted intentionally false.

@@ -178,7 +178,6 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	}
 
 	ctx := &Context{
-		FragsBySlot: make(map[int]int),
 		ShotStreams: r.BuildShotStreams,
 		Nails:       r.BuildNails,
 	}
@@ -220,10 +219,6 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 		if e, ok := event.(*events.UserInfoEvent); ok {
 			ctx.Players[e.Player.Slot] = e.Player
 		}
-		if e, ok := event.(*events.FragUpdateEvent); ok {
-			ctx.FragsBySlot[e.PlayerNum] = e.Frags
-		}
-
 		// Core analysers see events first, then derived. Within each
 		// slice, registration order is preserved.
 		for _, a := range r.core {

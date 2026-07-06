@@ -24,8 +24,10 @@
 > 5.2 `4298e46` (aim/shots correctness, schema v48→v49, goldens
 > regenerated once) · 5.3 `67a95ff` (one shot-stream variant +
 > singleflight recover) · 5.4 `a742b0e` (aim-tab fixes; web F17 closed
-> by decision). **Next up: merge everything to main as sequential PRs
-> (phase-0 → … → phase-5.4), then the Phase 6+ structural queue.**
+> by decision) · 5.5 (post-match frag-reset fix — a regression QA on
+> the phase-1 golden diff caught: analytics F25). **Next up: merge
+> everything to main (single non-squash merge of the tip, or
+> sequential PRs), then the Phase 6+ structural queue.**
 > The phase tables that follow are kept as the record of what each
 > phase covered; deviations from plan are noted inline where they
 > happened (reader F1 was pulled into Phase 1 when the 0-frag fix
