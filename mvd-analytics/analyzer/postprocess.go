@@ -36,28 +36,6 @@ func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
 		return
 	}
 
-	// The timeline node (TimelineAnalysis event streams, Streams.Global's
-	// match window / offset / pauses, and each player's + mover's stream) now
-	// rebases its own timestamps at Finalize (TimelineAnalyzer.rebaseToMatch).
-	// The shot spatial streams below are still rebased here until the shots
-	// node adopts them.
-	if streams := res.Streams; streams != nil {
-		for _, pr := range []*result.ProjectileStreams{streams.Projectiles, streams.Nails} {
-			if pr == nil {
-				continue
-			}
-			for i := range pr.Spawn {
-				pr.Spawn[i] -= matchStartMs
-				pr.End[i] -= matchStartMs
-			}
-		}
-		if bm := streams.Beams; bm != nil {
-			for i := range bm.T {
-				bm.T[i] -= matchStartMs
-			}
-		}
-	}
-
 	if res.Messages != nil {
 		for i := range res.Messages.Events {
 			res.Messages.Events[i].Time -= matchStartMs
@@ -101,12 +79,6 @@ func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
 	if res.Damage != nil {
 		for i := range res.Damage.Events {
 			res.Damage.Events[i].Time -= matchStartMs
-		}
-	}
-
-	if res.Shots != nil {
-		for i := range res.Shots.Shots {
-			res.Shots.Shots[i].Time -= matchStartMs
 		}
 	}
 }

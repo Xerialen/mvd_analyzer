@@ -363,6 +363,34 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 
 	result.Shots = out
 	a.buildSpatialStreams(result)
+
+	// Born-correct timestamps: rebase the fire log and the spatial streams
+	// this node produces from the demo clock to match-relative. The spatial
+	// streams (Projectiles/Beams/Nails) are built above into result.Streams,
+	// after the timeline's own rebase ran, so they are shifted here by their
+	// producer rather than by a whole-Result pass. Nothing shifts when no match
+	// start was detected (ms <= 0).
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range out.Shots {
+			out.Shots[i].Time -= ms
+		}
+		if s := result.Streams; s != nil {
+			for _, pr := range []*ProjectileStreams{s.Projectiles, s.Nails} {
+				if pr == nil {
+					continue
+				}
+				for i := range pr.Spawn {
+					pr.Spawn[i] -= ms
+					pr.End[i] -= ms
+				}
+			}
+			if bm := s.Beams; bm != nil {
+				for i := range bm.T {
+					bm.T[i] -= ms
+				}
+			}
+		}
+	}
 	return nil
 }
 
