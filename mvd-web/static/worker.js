@@ -193,25 +193,24 @@ onmessage = function(e) {
             try {
                 bucketsJSON = getDefaultBuckets();
             } catch (err) {
+                console.warn('[mvd-worker] getDefaultBuckets failed:', err);
                 bucketsJSON = '';
             }
             const bucketsMs = performance.now() - tBuckets;
 
+            // Region control states for the default region layout. The Go side
+            // still holds the analysed result, so an argument-less
+            // recomputeRegionControl() rebuilds the bucket states from its
+            // stored default regions — no need to JSON.parse the multi-MB
+            // result here just to hand the default regions straight back. On a
+            // non-binary team layout it returns an {"error":...} envelope,
+            // which applyDeferredBuckets tolerates (it skips when rs.error set).
             let regionStatesJSON = '';
             const tRegion = performance.now();
             try {
-                const parsed = JSON.parse(jsonStr);
-                const rc = parsed.timelineAnalysis && parsed.timelineAnalysis.regionControl;
-                if (rc && rc.regions && rc.teamA && rc.teamB) {
-                    const overrideJSON = JSON.stringify({
-                        regions: rc.regions.map(r => ({
-                            name: r.name,
-                            locs: [...new Set((r.points || []).map(p => p.name))],
-                        })),
-                    });
-                    regionStatesJSON = recomputeRegionControl(overrideJSON);
-                }
+                regionStatesJSON = recomputeRegionControl();
             } catch (err) {
+                console.warn('[mvd-worker] deferred recomputeRegionControl failed:', err);
                 regionStatesJSON = '';
             }
             const regionMs = performance.now() - tRegion;

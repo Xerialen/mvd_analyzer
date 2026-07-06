@@ -98,11 +98,7 @@ func getDemoInfo(this js.Value, args []js.Value) interface{} {
 	if lastResult == nil || lastResult.DemoInfo == nil {
 		return "null"
 	}
-	b, err := json.Marshal(lastResult.DemoInfo)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(lastResult.DemoInfo)
 }
 
 // getDefaultBuckets returns the column-major ColumnarBuckets the
@@ -123,11 +119,7 @@ func getDefaultBuckets(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return errorJSON(err.Error())
 	}
-	b, err := json.Marshal(cb)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(cb)
 }
 
 // getBuckets is the query API surface. Argument is a JSON string of
@@ -150,21 +142,13 @@ func getBuckets(this js.Value, args []js.Value) interface{} {
 		if err != nil {
 			return errorJSON(err.Error())
 		}
-		b, err := json.Marshal(cb)
-		if err != nil {
-			return errorJSON(err.Error())
-		}
-		return string(b)
+		return respondJSON(cb)
 	}
 	bv, err := view.Buckets(lastResult, opts)
 	if err != nil {
 		return errorJSON(err.Error())
 	}
-	b, err := json.Marshal(bv)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(bv)
 }
 
 // getEvents returns a tagged event list. Argument is a JSON string of
@@ -184,11 +168,7 @@ func getEvents(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return errorJSON(err.Error())
 	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(v)
 }
 
 // getStreamSlice returns raw change entries in a window — right shape
@@ -208,11 +188,7 @@ func getStreamSlice(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return errorJSON(err.Error())
 	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(v)
 }
 
 // getStateAt resolves each requested field's value at a specific time.
@@ -231,11 +207,7 @@ func getStateAt(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return errorJSON(err.Error())
 	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(v)
 }
 
 // getLocTrails returns per-player loc residences.
@@ -253,11 +225,7 @@ func getLocTrails(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return errorJSON(err.Error())
 	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(v)
 }
 
 // recomputeRegionControl is the JS-callable region recompute hook.
@@ -272,26 +240,35 @@ func recomputeRegionControl(this js.Value, args []js.Value) interface{} {
 	if lastResult == nil || lastResult.TimelineAnalysis == nil {
 		return errorJSON("no demo analyzed yet")
 	}
-	if len(args) < 1 {
-		return errorJSON("missing regions argument")
-	}
-	var ov config.MapRegionOverrides
-	if err := json.Unmarshal([]byte(args[0].String()), &ov); err != nil {
-		return errorJSON("bad regions JSON: " + err.Error())
-	}
 
 	ta := lastResult.TimelineAnalysis
 	if ta.RegionControl == nil || ta.RegionControl.TeamA == "" || ta.RegionControl.TeamB == "" {
 		return errorJSON("region control unavailable (non-binary team layout)")
 	}
 
-	regions := make([]result.ControlRegion, 0, len(ov.Regions))
-	for _, r := range ov.Regions {
-		regions = append(regions, result.ControlRegion{
-			Name: r.Name,
-			Locs: append([]string(nil), r.Locs...),
-		})
+	var regions []result.ControlRegion
+	if len(args) >= 1 && args[0].String() != "" {
+		// Caller-edited regions (the map-tab region editor).
+		var ov config.MapRegionOverrides
+		if err := json.Unmarshal([]byte(args[0].String()), &ov); err != nil {
+			return errorJSON("bad regions JSON: " + err.Error())
+		}
+		regions = make([]result.ControlRegion, 0, len(ov.Regions))
+		for _, r := range ov.Regions {
+			regions = append(regions, result.ControlRegion{
+				Name: r.Name,
+				Locs: append([]string(nil), r.Locs...),
+			})
+		}
+	} else {
+		// No argument: default to the stored region layout. This lets the
+		// deferred bucket-state build call recomputeRegionControl() without
+		// first JSON.parse-ing the whole multi-MB result on the JS side just
+		// to hand the default regions back — the analysed result is already
+		// pinned in lastResult here.
+		regions = defaultStoredRegions(ta.RegionControl.Regions)
 	}
+
 	// view.RegionControl's default teamOf already handles the
 	// disambiguation suffix via Match.Players lookup, so we don't need
 	// to pass TeamOf explicitly. Regions are caller-edited and must be
@@ -305,12 +282,30 @@ func recomputeRegionControl(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return errorJSON(err.Error())
 	}
+	return respondJSON(rcv)
+}
 
-	b, err := json.Marshal(rcv)
-	if err != nil {
-		return errorJSON(err.Error())
+// defaultStoredRegions rebuilds a region override list from the regions
+// already on lastResult, deriving each region's loc list from its Points'
+// unique names in first-occurrence order. This reproduces exactly what the
+// JS worker used to construct after JSON.parse-ing the result
+// (`[...new Set(points.map(p => p.name))]`), so the argument-less
+// recomputeRegionControl is byte-identical to the old parse-then-pass path.
+func defaultStoredRegions(stored []result.ControlRegion) []result.ControlRegion {
+	regions := make([]result.ControlRegion, 0, len(stored))
+	for _, r := range stored {
+		seen := make(map[string]struct{}, len(r.Points))
+		locs := make([]string, 0, len(r.Points))
+		for _, p := range r.Points {
+			if _, ok := seen[p.Name]; ok {
+				continue
+			}
+			seen[p.Name] = struct{}{}
+			locs = append(locs, p.Name)
+		}
+		regions = append(regions, result.ControlRegion{Name: r.Name, Locs: locs})
 	}
-	return string(b)
+	return regions
 }
 
 // computeLineOfSight is the JS-callable lazy line-of-sight hook. LOS is not
@@ -337,15 +332,22 @@ func computeLineOfSight(this js.Value, args []js.Value) interface{} {
 		out[i].LOS = players[i].LOS
 		out[i].PVS = players[i].PVS
 	}
-	b, err := json.Marshal(out)
-	if err != nil {
-		return errorJSON(err.Error())
-	}
-	return string(b)
+	return respondJSON(out)
 }
 
 func errorJSON(msg string) string {
 	b, _ := json.Marshal(map[string]string{"error": msg})
+	return string(b)
+}
+
+// respondJSON marshals v to a JSON string, falling back to the error
+// envelope on marshal failure. Collapses the identical marshal-or-errorJSON
+// tail that every js.FuncOf export returns.
+func respondJSON(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return errorJSON(err.Error())
+	}
 	return string(b)
 }
 

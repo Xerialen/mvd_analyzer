@@ -7,6 +7,61 @@ detail.
 
 ## 2026-07-05
 
+- **Web: chat shows every authentic message (no schema change).** The chat
+  panel silently dropped any message whose exact text repeated within three
+  seconds. The wire-level duplication that filter targeted (KTX sprints each
+  say once per recipient at one wire timestamp) is already collapsed upstream
+  by the analyzer's exact-key dedupe, so the web filter was only swallowing
+  authentic repeats — a re-sent bind, two identical obituaries in quick
+  succession. Removed; only the match-window clip remains.
+- **Single obituary parser; timeline frag weapon codes corrected (no schema
+  change).** The obituary/suicide pattern table lived twice — once for the
+  frag log (`frags`), once for the timeline message stream
+  (`messages.events[type=frag]`) — and the two had drifted. The timeline copy
+  is now generated from the same table the frag log uses, so for the affected
+  obituary lines the timeline stream's `weapon` now matches `frags[]` exactly.
+  Consumer-visible corrections in `messages.events` (the frag log was already
+  correct):
+  - drowning self-kills now carry weapon `water` (was `drown`), matching the
+    documented FragEntry vocabulary;
+  - the unknown-cause self-kill "X somehow becomes bored with life" is now
+    `suicide` (was mislabelled `rl` by the shorter-substring fallthrough);
+  - CRMod obituaries ("blown to chunks", "shish-kebabed", "disembowled",
+    "gets intimate", "warm fuzzy feeling") and KTX `k_spawnicide` self-kills
+    ("shiny spawn point", "baby factory", "poor life choices") now produce a
+    timeline frag event instead of being dropped or mislabelled.
+  These lines are rare (env/CRMod/spawnicide), so the golden corpus output is
+  byte-identical; the fix is verified by unit tests. Internal cleanup in the
+  same change: one canonical slot→identity resolver (`ResolveSlotAt`) replaces
+  five drifted per-analyzer copies, and one `parseInfoString` helper replaces
+  three duplicated serverinfo walkers.
+
+- **One entity-delta wire-layout implementation; FTE parse fixes (no
+  schema change).** The parser's entity-baseline and entity-delta
+  layouts each had a decode copy and a separate byte-skip copy that had
+  drifted apart; they are now a single reader each (`readBaselineBody`
+  for the baseline body, `readDeltaBits` + `readEntityDelta` for the
+  delta), and `svc_spawnstatic` / `svc_fte_spawnstatic2` decode through
+  that same code and discard rather than re-skipping by hand. Three
+  FTE-only divergences between the old copies are fixed by construction
+  to match ezquake (`cl_ents.c`) and mvdsv (`sv_ents.c`): the FTE
+  "evenmorebits" byte is read only when an FTE extension was negotiated
+  (the `svc_fte_spawnbaseline2` / `svc_fte_spawnstatic2` path previously
+  read it unconditionally, misaligning a non-FTE stream), and the
+  transparency / colour-mod fields are gated on the negotiated
+  `FTE_PEXT_TRANS` / `FTE_PEXT_COLOURMOD` (previously consumed on the
+  flag bit alone). Only demos that negotiated FTE entity extensions are
+  affected — none exist in the golden corpus, which stays byte-identical,
+  so the schema is unchanged (v48).
+
+- **Dev-CLI correctness fixes (no schema change).**
+  - `qw-analyze -view state-at -time 0` (and `-time 0s`) now queries match
+    start instead of erroring with "requires -time"; flag presence is
+    tracked separately from the zero value.
+  - `mapgen` now fails the run when its `-demos` directory can't be walked
+    (e.g. a typo'd path) instead of silently emitting an unpruned corpus,
+    matching the existing `-bsp-dir` behaviour.
+
 - **mvd-api / mvd-mcp hardening for hosted use (no schema change; REST
   surface semantics + one MCP tool-schema change).** Prerequisites for
   running the API/MCP on the internet for third-party apps:
