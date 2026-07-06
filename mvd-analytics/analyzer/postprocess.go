@@ -25,62 +25,11 @@ import (
 // All time fields are integer milliseconds at schema v8; the shift is
 // a single int32 subtraction per value.
 func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
-	// The match-start shift is published on co.Clock (ClockAnalyzer), the
-	// single source producers convert against as they migrate to born-correct
-	// timestamps. It equals the value this function previously read off
-	// Streams.Global.MatchStart (both are msTime of the same detector's
-	// StartTime); sourcing it from the clock lets the timeline emit
-	// Streams.Global.MatchStart already rebased without breaking this fallback.
-	matchStartMs := co.MatchStartMs()
-	if matchStartMs <= 0 {
-		return
-	}
-
-	if res.Messages != nil {
-		for i := range res.Messages.Events {
-			res.Messages.Events[i].Time -= matchStartMs
-		}
-	}
-
-	if res.Items != nil {
-		for i := range res.Items.Items {
-			ph := res.Items.Items[i].Phases
-			for j := range ph {
-				// AvailableFrom=0 is the synthetic "match start" marker
-				// for initial phases; leave it alone. All real
-				// timestamps get shifted.
-				if ph[j].AvailableFrom > 0 {
-					ph[j].AvailableFrom -= matchStartMs
-				}
-				if ph[j].TakenAt > 0 {
-					ph[j].TakenAt -= matchStartMs
-				}
-				if ph[j].RespawnAt > 0 {
-					ph[j].RespawnAt -= matchStartMs
-				}
-			}
-		}
-	}
-
-	for i := range res.Backpacks {
-		res.Backpacks[i].Time -= matchStartMs
-	}
-
-	for i := range res.WeaponPickups {
-		res.WeaponPickups[i].Time -= matchStartMs
-		if res.WeaponPickups[i].NextDeathTime > 0 {
-			res.WeaponPickups[i].NextDeathTime -= matchStartMs
-		}
-		if res.WeaponPickups[i].DropTime > 0 {
-			res.WeaponPickups[i].DropTime -= matchStartMs
-		}
-	}
-
-	if res.Damage != nil {
-		for i := range res.Damage.Events {
-			res.Damage.Events[i].Time -= matchStartMs
-		}
-	}
+	// Every producer now emits match-relative timestamps at its own Finalize
+	// by converting against co.Clock (see clock.go). This whole-Result rebase
+	// therefore has nothing left to do and is retired in the next commit; the
+	// empty body is kept for one step so the migration lands field-group by
+	// field-group with a byte-identical golden at each commit.
 }
 
 // shiftAndFilterChanges subtracts matchStartMs from each entry's

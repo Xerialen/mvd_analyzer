@@ -1306,6 +1306,28 @@ func (a *ItemAnalyzer) Finalize(result *Result) error {
 	})
 
 	result.Items = &ItemsResult{Items: out}
+
+	// Born-correct timestamps: rebase each item phase to the match clock.
+	// AvailableFrom==0 is the synthetic "match start" marker for initial
+	// phases; leave it (and any other zero) alone — only real timestamps
+	// (>0) shift. Attribution above already resolved against the demo-time
+	// TakenAt, so this runs last.
+	if ms := a.co.MatchStartMs(); ms > 0 {
+		for i := range out {
+			ph := out[i].Phases
+			for j := range ph {
+				if ph[j].AvailableFrom > 0 {
+					ph[j].AvailableFrom -= ms
+				}
+				if ph[j].TakenAt > 0 {
+					ph[j].TakenAt -= ms
+				}
+				if ph[j].RespawnAt > 0 {
+					ph[j].RespawnAt -= ms
+				}
+			}
+		}
+	}
 	return nil
 }
 

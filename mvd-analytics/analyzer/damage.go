@@ -218,6 +218,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	out.Scoreboard = a.reconcile(out.ByPlayer)
 
 	result.Damage = out
+
+	// Born-correct timestamps: rebase the damage log to the match clock. Only
+	// Events carries a rebased timestamp (Telefrags/Stomps Time stayed on the
+	// demo clock under the old rebase too; preserve that). Identity resolution
+	// above used the demo-time d.tMs, so this runs last.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range out.Events {
+			out.Events[i].Time -= ms
+		}
+	}
 	return nil
 }
 

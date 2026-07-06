@@ -525,6 +525,23 @@ func (a *WeaponPickupsAnalyzer) Finalize(result *Result) error {
 
 	sort.Slice(out, func(i, j int) bool { return out[i].Time < out[j].Time })
 	result.WeaponPickups = out
+
+	// Born-correct timestamps: rebase pickup times to the match clock. Kill
+	// attribution and the next-death windows above ran against the demo-time
+	// FragEntries / pickup times, so this shifts only the emitted fields.
+	// NextDeathTime/DropTime are omitempty when 0 (never dies / not a
+	// backpack), so they shift only when set.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range out {
+			out[i].Time -= ms
+			if out[i].NextDeathTime > 0 {
+				out[i].NextDeathTime -= ms
+			}
+			if out[i].DropTime > 0 {
+				out[i].DropTime -= ms
+			}
+		}
+	}
 	return nil
 }
 

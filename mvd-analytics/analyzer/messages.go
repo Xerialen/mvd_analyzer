@@ -260,5 +260,12 @@ func (a *MessagesAnalyzer) Finalize(result *Result) error {
 	result.Messages = &MessagesResult{
 		Events: a.events,
 	}
+
+	// Born-correct timestamps: rebase chat/message times to the match clock.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range result.Messages.Events {
+			result.Messages.Events[i].Time -= ms
+		}
+	}
 	return nil
 }
