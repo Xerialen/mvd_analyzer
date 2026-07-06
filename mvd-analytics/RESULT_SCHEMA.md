@@ -531,11 +531,12 @@ Defined in `result/messages.go`.
 | Message | `message` | string | Q-normalised text **with** ezQuake markup intact (color codes `&cRGB`, sound triggers `!K`, macro delimiters `{}` `[]`). |
 | MessageClean | `messageClean` | string (omitempty) | Same text with markup stripped (plain ASCII). Elided when identical to `message`. |
 | Victim | `victim` | string (omitempty) | Frag-only. |
-| Weapon | `weapon` | string (omitempty) | Frag-only. |
+| Weapon | `weapon` | string (omitempty) | Frag-only. Same vocabulary as [FragEntry](#fragentry) `weapon` (`rl`/`lg`/…, env `lava`/`fall`/`water`/`slime`/`world`/`squish`, plus `teamkill` for phrasing-only teamkills). |
 
 Frag entries here overlap with `FragResult.Frags[]` — same time / killer
-/ victim / weapon, plus the obit text. Pick the one whose shape matches
-your consumer's needs; see "Layered views" below.
+/ victim / weapon (both derived from the one obituary parser), plus the
+obit text. Pick the one whose shape matches your consumer's needs; see
+"Layered views" below.
 
 ## DemoInfoResult (`demoInfo`)
 
