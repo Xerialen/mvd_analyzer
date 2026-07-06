@@ -118,15 +118,6 @@ func (f *Finder) Locations() []loc.Location {
 	return f.base.Locations()
 }
 
-// FindLocationsInRadius pass-through (no visibility filter — the
-// existing callers want a geometric set, not a visibility set).
-func (f *Finder) FindLocationsInRadius(x, y, z, radius float32) []loc.Location {
-	if f == nil || f.base == nil {
-		return nil
-	}
-	return f.base.FindLocationsInRadius(x, y, z, radius)
-}
-
 // FindNearest returns the name of the nearest loc-point to (x, y, z),
 // subject to the active visibility veto. Same signature as
 // loc.Finder.FindNearest; safe drop-in replacement.
@@ -138,15 +129,6 @@ func (f *Finder) FindNearest(x, y, z float32) string {
 		return f.base.FindNearest(x, y, z)
 	}
 	return f.attributeV6(x, y, z)
-}
-
-// Base returns the underlying loc.Finder. Use when downstream code
-// needs methods locvis.Finder doesn't expose.
-func (f *Finder) Base() *loc.Finder {
-	if f == nil {
-		return nil
-	}
-	return f.base
 }
 
 // newFinder is the shared constructor used by both loader_native.go and

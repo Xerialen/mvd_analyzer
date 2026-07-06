@@ -147,15 +147,11 @@ func TestLeafPVS_NonEmptyForLeaf1(t *testing.T) {
 			if len(row) == 0 {
 				t.Fatalf("%s: PVS row for leaf 1 has zero length", name)
 			}
-			visible := CountPVSVisible(row)
-			if visible == 0 {
-				t.Errorf("%s: PVS for leaf 1 has zero visible leaves — expected at least itself", name)
-			}
 			if !b.PVSContains(row, 1) {
 				t.Errorf("%s: PVS for leaf 1 does not include itself", name)
 			}
-			t.Logf("%s PVS[leaf 1]: %d visible leaves out of %d (row=%d bytes)",
-				name, visible, b.LeafCount(), len(row))
+			t.Logf("%s PVS[leaf 1]: leaf count %d (row=%d bytes)",
+				name, b.LeafCount(), len(row))
 		})
 	}
 }

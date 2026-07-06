@@ -44,6 +44,9 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 		for i := range ta.DeathEvents {
 			ta.DeathEvents[i].Time -= matchStartMs
 		}
+		for i := range ta.KillEvents {
+			ta.KillEvents[i].Time -= matchStartMs
+		}
 		for i := range ta.PowerupEvents {
 			ta.PowerupEvents[i].Time -= matchStartMs
 			ta.PowerupEvents[i].EndTime -= matchStartMs
@@ -176,10 +179,14 @@ func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
 	}
 }
 
-// shiftAndFilterChangeI16 subtracts matchStartMs from each entry's T
-// and drops entries with negative T. The first surviving entry is
-// the carry-forward state at t=0. All times are integer milliseconds.
-func shiftAndFilterChangeI16(stream []result.ChangeI16, matchStartMs int32) []result.ChangeI16 {
+// shiftAndFilterChanges subtracts matchStartMs from each entry's
+// timestamp and drops entries with negative T. The latest entry at or
+// before matchStartMs is kept, clamped to T=0, as the carry-forward
+// "value at t=0"; getT reads an entry's timestamp and withT returns a
+// copy with a new timestamp (value preserved). All times are integer
+// milliseconds. Instantiated for result.ChangeI16 and result.ChangeStr,
+// whose JSON shapes are unchanged.
+func shiftAndFilterChanges[C any](stream []C, matchStartMs int32, getT func(C) int32, withT func(C, int32) C) []C {
 	if len(stream) == 0 {
 		return nil
 	}
@@ -187,21 +194,21 @@ func shiftAndFilterChangeI16(stream []result.ChangeI16, matchStartMs int32) []re
 	// carry-forward "value at t=0" entry.
 	carryIdx := -1
 	for i, c := range stream {
-		if c.T <= matchStartMs {
+		if getT(c) <= matchStartMs {
 			carryIdx = i
 			continue
 		}
 		break
 	}
-	out := make([]result.ChangeI16, 0, len(stream))
+	out := make([]C, 0, len(stream))
 	if carryIdx >= 0 {
-		out = append(out, result.ChangeI16{T: 0, V: stream[carryIdx].V})
+		out = append(out, withT(stream[carryIdx], 0))
 	}
 	for _, c := range stream {
-		if c.T <= matchStartMs {
+		if getT(c) <= matchStartMs {
 			continue
 		}
-		out = append(out, result.ChangeI16{T: c.T - matchStartMs, V: c.V})
+		out = append(out, withT(c, getT(c)-matchStartMs))
 	}
 	if len(out) == 0 {
 		return nil
@@ -209,32 +216,16 @@ func shiftAndFilterChangeI16(stream []result.ChangeI16, matchStartMs int32) []re
 	return out
 }
 
+func shiftAndFilterChangeI16(stream []result.ChangeI16, matchStartMs int32) []result.ChangeI16 {
+	return shiftAndFilterChanges(stream, matchStartMs,
+		func(c result.ChangeI16) int32 { return c.T },
+		func(c result.ChangeI16, t int32) result.ChangeI16 { c.T = t; return c })
+}
+
 func shiftAndFilterChangeStr(stream []result.ChangeStr, matchStartMs int32) []result.ChangeStr {
-	if len(stream) == 0 {
-		return nil
-	}
-	carryIdx := -1
-	for i, c := range stream {
-		if c.T <= matchStartMs {
-			carryIdx = i
-			continue
-		}
-		break
-	}
-	out := make([]result.ChangeStr, 0, len(stream))
-	if carryIdx >= 0 {
-		out = append(out, result.ChangeStr{T: 0, V: stream[carryIdx].V})
-	}
-	for _, c := range stream {
-		if c.T <= matchStartMs {
-			continue
-		}
-		out = append(out, result.ChangeStr{T: c.T - matchStartMs, V: c.V})
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
+	return shiftAndFilterChanges(stream, matchStartMs,
+		func(c result.ChangeStr) int32 { return c.T },
+		func(c result.ChangeStr, t int32) result.ChangeStr { c.T = t; return c })
 }
 
 // shiftAndFilterIntervals shifts each interval and clamps to t >= 0.
@@ -288,6 +279,9 @@ func shiftAndFilterInts(stream []int32, matchStartMs int32) []int32 {
 // view.RegionControl, airgibsPost) guard on `len(col) == len(pt.T)` and
 // will silently skip the player if the lengths drift. All time
 // arithmetic is int32 ms.
+//
+// PositionTrack column checklist site 5 (match-relative trim); see the
+// checklist in result/coord.go (PositionTrack.MarshalJSON).
 func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
 	if pt == nil || len(pt.T) == 0 {
 		return
@@ -487,7 +481,11 @@ func regionControlPost(res *Result, _ *CoreOutputs) {
 		return
 	}
 	rc, err := view.RegionControl(res, view.RegionControlOptions{})
-	if err != nil || rc == nil {
+	if err != nil {
+		res.Errors = append(res.Errors, "region control: "+err.Error())
+		return
+	}
+	if rc == nil {
 		return
 	}
 	// Finalize wrote Regions + tentative TeamA/TeamB (computed pre-

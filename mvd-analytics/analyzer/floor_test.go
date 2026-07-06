@@ -75,10 +75,10 @@ func TestMoverTrackAtCursor(t *testing.T) {
 		z   float32
 		vis bool
 	}{
-		{500, 0, true},   // before first state: clamp to baseline pose
-		{1000, 0, true},  // exact hit
-		{1500, 0, true},  // hold-last between states
-		{2500, 50, true}, // after the move
+		{500, 0, true},    // before first state: clamp to baseline pose
+		{1000, 0, true},   // exact hit
+		{1500, 0, true},   // hold-last between states
+		{2500, 50, true},  // after the move
 		{9000, 50, false}, // after the visibility flip
 	}
 	for _, c := range cases {
@@ -133,10 +133,10 @@ func TestResolveFloorHeights_StandsOnMover(t *testing.T) {
 	}
 
 	st := &timelinePlayerState{}
-	st.streams.recordPosition(500, 0, 0, 25, 0, 0)    // riding the lift at rest
-	st.streams.recordPosition(1500, 0, 0, 125, 0, 0)  // riding the risen lift
+	st.streams.recordPosition(500, 0, 0, 25, 0, 0)     // riding the lift at rest
+	st.streams.recordPosition(1500, 0, 0, 125, 0, 0)   // riding the risen lift
 	st.streams.recordPosition(2000, 300, 0, 125, 0, 0) // outside the lift bounds, airborne over the shaft
-	st.streams.recordPosition(3500, 0, 0, 125, 0, 0)  // lift invisible: shaft floor answers
+	st.streams.recordPosition(3500, 0, 0, 125, 0, 0)   // lift invisible: shaft floor answers
 	a.playerState[0] = st
 
 	a.resolveFloorHeights()

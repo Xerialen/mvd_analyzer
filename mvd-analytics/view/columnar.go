@@ -393,40 +393,54 @@ func buildColumn(p *result.PlayerStream, field, redName string, red Reducer, g b
 	return col, firstNonNil, true
 }
 
-// buildPositionCols splits the [3]result.Coord position reduction into
-// the dense x/y/z columns (result.Coords). All three share one validFrom.
-func buildPositionCols(p *result.PlayerStream, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer) {
-	n := cp.N
-	xs := make(result.Coords, n)
-	ys := make(result.Coords, n)
-	zs := make(result.Coords, n)
+// buildMultiCols materialises a multi-column field: one reduced value
+// per bucket is fanned out into the parallel dense columns named by
+// keys, using put to write element j of each pre-allocated column from
+// the boxed reduced value. cols[i] is the slice for keys[i] and is
+// assigned into cp.Cols only when at least one bucket produced a value
+// (matching the row builder, which omits a nil field). All columns
+// share the single validFrom of the first non-nil bucket.
+func buildMultiCols(p *result.PlayerStream, field, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer, keys []string, cols []any, put func(v any, j int)) {
 	firstNonNil := -1
-	for j := 0; j < n; j++ {
-		v := reduceFieldValue(p, FieldPosition, redName, red, g, cp.First+j)
+	for j := 0; j < cp.N; j++ {
+		v := reduceFieldValue(p, field, redName, red, g, cp.First+j)
 		if v == nil {
 			continue
 		}
 		if firstNonNil < 0 {
 			firstNonNil = cp.First + j
 		}
-		if pos, ok := v.([3]result.Coord); ok {
-			xs[j], ys[j], zs[j] = float32(pos[0]), float32(pos[1]), float32(pos[2])
-		}
+		put(v, j)
 	}
 	if firstNonNil < 0 {
 		return
 	}
-	cp.Cols["x"] = xs
-	cp.Cols["y"] = ys
-	cp.Cols["z"] = zs
+	for i, k := range keys {
+		cp.Cols[k] = cols[i]
+	}
 	if firstNonNil > cp.First {
 		if cp.ValidFrom == nil {
 			cp.ValidFrom = make(map[string]int)
 		}
-		cp.ValidFrom["x"] = firstNonNil
-		cp.ValidFrom["y"] = firstNonNil
-		cp.ValidFrom["z"] = firstNonNil
+		for _, k := range keys {
+			cp.ValidFrom[k] = firstNonNil
+		}
 	}
+}
+
+// buildPositionCols splits the [3]result.Coord position reduction into
+// the dense x/y/z columns (result.Coords). All three share one validFrom.
+func buildPositionCols(p *result.PlayerStream, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer) {
+	xs := make(result.Coords, cp.N)
+	ys := make(result.Coords, cp.N)
+	zs := make(result.Coords, cp.N)
+	buildMultiCols(p, FieldPosition, redName, red, g, cp,
+		[]string{"x", "y", "z"}, []any{xs, ys, zs},
+		func(v any, j int) {
+			if pos, ok := v.([3]result.Coord); ok {
+				xs[j], ys[j], zs[j] = float32(pos[0]), float32(pos[1]), float32(pos[2])
+			}
+		})
 }
 
 // buildViewCols splits the [2]int16 view reduction into the dense
@@ -435,71 +449,31 @@ func buildPositionCols(p *result.PlayerStream, redName string, red Reducer, g bu
 // coerce, so no value is produced and the columns are omitted — exactly
 // as the row builder omits a nil field.
 func buildViewCols(p *result.PlayerStream, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer) {
-	n := cp.N
-	vps := make([]int16, n)
-	vyas := make([]int16, n)
-	firstNonNil := -1
-	for j := 0; j < n; j++ {
-		v := reduceFieldValue(p, FieldView, redName, red, g, cp.First+j)
-		if v == nil {
-			continue
-		}
-		if firstNonNil < 0 {
-			firstNonNil = cp.First + j
-		}
-		if pair, ok := v.([2]int16); ok {
-			vps[j], vyas[j] = pair[0], pair[1]
-		}
-	}
-	if firstNonNil < 0 {
-		return
-	}
-	cp.Cols["vp"] = vps
-	cp.Cols["vya"] = vyas
-	if firstNonNil > cp.First {
-		if cp.ValidFrom == nil {
-			cp.ValidFrom = make(map[string]int)
-		}
-		cp.ValidFrom["vp"] = firstNonNil
-		cp.ValidFrom["vya"] = firstNonNil
-	}
+	vps := make([]int16, cp.N)
+	vyas := make([]int16, cp.N)
+	buildMultiCols(p, FieldView, redName, red, g, cp,
+		[]string{"vp", "vya"}, []any{vps, vyas},
+		func(v any, j int) {
+			if pair, ok := v.([2]int16); ok {
+				vps[j], vyas[j] = pair[0], pair[1]
+			}
+		})
 }
 
 // buildVelocityCols splits the [3]result.Coord velocity reduction into
 // the dense vx/vy/vz columns (result.Coords), mirroring buildPositionCols.
 // All three share one validFrom.
 func buildVelocityCols(p *result.PlayerStream, redName string, red Reducer, g bucketGrid, cp *ColumnarPlayer) {
-	n := cp.N
-	vxs := make(result.Coords, n)
-	vys := make(result.Coords, n)
-	vzs := make(result.Coords, n)
-	firstNonNil := -1
-	for j := 0; j < n; j++ {
-		v := reduceFieldValue(p, FieldVelocity, redName, red, g, cp.First+j)
-		if v == nil {
-			continue
-		}
-		if firstNonNil < 0 {
-			firstNonNil = cp.First + j
-		}
-		if vel, ok := v.([3]result.Coord); ok {
-			vxs[j], vys[j], vzs[j] = float32(vel[0]), float32(vel[1]), float32(vel[2])
-		}
-	}
-	if firstNonNil < 0 {
-		return
-	}
-	cp.Cols["vx"] = vxs
-	cp.Cols["vy"] = vys
-	cp.Cols["vz"] = vzs
-	if firstNonNil > cp.First {
-		if cp.ValidFrom == nil {
-			cp.ValidFrom = make(map[string]int)
-		}
-		cp.ValidFrom["vx"] = firstNonNil
-		cp.ValidFrom["vy"] = firstNonNil
-		cp.ValidFrom["vz"] = firstNonNil
-	}
+	vxs := make(result.Coords, cp.N)
+	vys := make(result.Coords, cp.N)
+	vzs := make(result.Coords, cp.N)
+	buildMultiCols(p, FieldVelocity, redName, red, g, cp,
+		[]string{"vx", "vy", "vz"}, []any{vxs, vys, vzs},
+		func(v any, j int) {
+			if vel, ok := v.([3]result.Coord); ok {
+				vxs[j], vys[j], vzs[j] = float32(vel[0]), float32(vel[1]), float32(vel[2])
+			}
+		})
 }
 
 // reduceFieldValue computes the reduced value for one (field, bucket),

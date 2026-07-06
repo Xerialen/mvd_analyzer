@@ -349,8 +349,17 @@ func appendIntervalEvents(
 	start, end float64,
 ) []TaggedEvent {
 	// Interval.Start/End are int32 ms (schema v8); TaggedEvent.T is
-	// float64 seconds — convert each emission.
-	for code, ivs := range streams {
+	// float64 seconds — convert each emission. Iterate codes in sorted
+	// order (not Go map-range order) so same-(T,Type) events across codes
+	// append deterministically; the caller's final (T,Type) sort is stable
+	// and leaves these ties in this order, giving byte-stable output.
+	codes := make([]string, 0, len(streams))
+	for code := range streams {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	for _, code := range codes {
+		ivs := streams[code]
 		for _, iv := range ivs {
 			startSec := float64(iv.Start) * 0.001
 			endSec := float64(iv.End) * 0.001

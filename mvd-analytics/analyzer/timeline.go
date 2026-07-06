@@ -54,12 +54,12 @@ type TimelineAnalyzer struct {
 	// arrival order. Finalize coalesces contiguous runs into per-pause
 	// segments (TimelineAnalysis.Pauses). Captured unconditionally — pauses
 	// during the countdown matter for the wall-clock mapping too.
-	rawPauses []pauseSample
-	locFinder           *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
-	clipHull            *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
-	visBSP              *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
-	blipThresholdMs     int                        // Per-player loc smoothing threshold, 0 disables
-	regionsOverride     []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
+	rawPauses       []pauseSample
+	locFinder       *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
+	clipHull        *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
+	visBSP          *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
+	blipThresholdMs int                        // Per-player loc smoothing threshold, 0 disables
+	regionsOverride []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
 	// movers is each inline brush-model entity's wire-state timeline
 	// (origin + visibility at demo-relative ms), accumulated from
 	// MoverSpawn/MoverState events — NOT gated on match start, the
@@ -391,26 +391,14 @@ func (a *TimelineAnalyzer) handleSpawn(e *events.SpawnEvent) {
 	state.isDead = false
 }
 
-// resolveAt resolves a wire slot to its (name, team) at time tMs using
-// the reconnect-aware CoreOutputs session table, with the same fallback
-// chain the timeline has always used: userinfo (ctx.Players), then the
-// last-seen userinfo name (playerNames), then a name→team lookup in the
-// demoinfo NameTable. Centralises what fragEvents / powerups / streaks
-// all need so a player's pre-reconnect events resolve to the player who
-// was actually on the slot then, not the slot's final occupant.
+// resolveAt resolves a wire slot to its (name, team) at time tMs via the
+// canonical ResolveSlotAt chain (session table → userinfo → name→team
+// backfill), then adds the timeline-only last-resort fallback of the
+// last-seen userinfo name (playerNames) for a slot the shared chain couldn't
+// name. Used by fragEvents / powerups / streaks.
 func (a *TimelineAnalyzer) resolveAt(slot int, tMs int32) (name, team string) {
-	if a.core != nil {
-		id := a.core.SlotIdentityAt(slot, tMs)
-		name, team = id.Name, id.Team
-	}
-	if name == "" {
-		if p := a.ctx.Players[slot]; p != nil {
-			name = p.Name
-			if team == "" {
-				team = p.Team
-			}
-		}
-	}
+	info := ResolveSlotAt(a.core, a.ctx.Players, slot, tMs)
+	name, team = info.Name, info.Team
 	if name == "" {
 		if n, ok := a.playerNames[slot]; ok {
 			name = n

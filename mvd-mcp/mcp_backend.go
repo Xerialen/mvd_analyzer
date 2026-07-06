@@ -76,7 +76,7 @@ type GetEventsInput struct {
 	StartTime float64  `json:"startTime,omitempty"`
 	EndTime   float64  `json:"endTime,omitempty"`
 	Players   []string `json:"players,omitempty"`
-	Types     []string `json:"types,omitempty" jsonschema:"event types: frag, powerup, streak, spawn, death, weapon, item, chat, loc, health, armor"`
+	Types     []string `json:"types,omitempty" jsonschema:"event types. Default set (when empty): frag, powerup, streak, spawn, death, weapon, item, chat. Opt-in (pass explicitly): loc, health, armor, damage, telefrag, stomp. A damage event carries detail{victim, damage, weapon, isSplash?, ...}; telefrag/stomp carry detail{victim, isTeam?} with player = the killer (the kill is already in the frag feed, hence opt-in)"`
 	Loc       string   `json:"loc,omitempty" jsonschema:"loc-event representation: 'name' (default) or 'index' (raw LocTable index; decode via getLocTable)"`
 }
 
@@ -170,7 +170,7 @@ type GetChatInput struct {
 type GetBackpacksInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players []string `json:"players,omitempty" jsonschema:"restrict to drops by these dropper names"`
-	Weapon  string   `json:"weapon,omitempty" jsonschema:"'rl' or 'lg' (single-weapon filter)"`
+	Weapon  []string `json:"weapon,omitempty" jsonschema:"restrict to these dropped-weapon codes (rl, lg); empty = both. Forwarded as a CSV set, matching REST /backpacks"`
 }
 
 // GetItemsInput filters /v1/demos/{id}/items.

@@ -45,7 +45,11 @@ All paths under the base URL (default `http://localhost:8080`). The
 Successful 2xx responses set `Cache-Control: public, max-age=86400,
 immutable`, `X-Schema-Version: <n>`, `X-Cache: HIT|WARM|MISS`, and
 `ETag: "<sha>-v<n>"` (where `<n>` is the current `CurrentSchemaVersion`).
-Send `If-None-Match` to get a cheap 304.
+Send `If-None-Match` to get a cheap 304. The stream-enriched endpoints
+(`/shots`, `/aim`, `/streams/*`) additionally set `X-Shot-Streams:
+unavailable` (+ `Cache-Control: no-store`) in the rare case the tier-1 MVD
+bytes were evicted and the streams could not be rebuilt — the body is then
+the lean data (see API.md §4.5c).
 
 | Method | Path | Query params | 200 body |
 |---|---|---|---|
@@ -57,7 +61,7 @@ Send `If-None-Match` to get a cheap 304.
 | GET | `/v1/demos/{id}/metadata` | — | `result.MetadataResult` (full fullserverinfo cvars + KTX match settings: timelimit, fraglimit, spawnmodel, antilag, midair, instagib, …) |
 | GET | `/v1/demos/{id}/frags` | `players`, `weapon` | `result.FragResult` (totalFrags + byPlayer + byWeapon + full kill log) |
 | GET | `/v1/demos/{id}/damage` | `players`, `weapon` | `result.DamageResult` (per-hit damage log + byPlayer/byWeapon/matrix + EWep victim-weapon buckets + KTX-scoreboard cross-check; unbound/overkill amounts) |
-| GET | `/v1/demos/{id}/shots` | `nails` | `result.ShotsResult` (per-fire stream with linked hits/victims + per-player aggregates + KTX cross-check; stream-enriched parse on first request) |
+| GET | `/v1/demos/{id}/shots` | — | `result.ShotsResult` (per-fire stream with linked hits/victims + per-player aggregates + KTX cross-check; stream-enriched parse on first request) |
 | GET | `/v1/demos/{id}/aim` | — | `result.AimResult` (per-player per-weapon effectiveness + crosshair-error samples (hitscan) + LG ramp; stream-enriched parse on first request, so RL/GL direct/splash + the LG whiff split are always present) |
 | GET | `/v1/demos/{id}/loc-graph` | — | `result.LocGraphResult` (per-map loc adjacency + edge weights) |
 | GET | `/v1/demos/{id}/chat` | `from`, `to`, `players`, `types` | `[]result.MatchEvent` (chat + teamsay only; types defaults to both) |
@@ -86,7 +90,8 @@ The full HTTP reference lives in [`API.md`](API.md):
 - **Query conventions** — `players`/`fields`/`types` lists, `reducers`,
   `loc=name|index`, `layout=column|row`, defaults.
 - **Units** — the seconds-vs-milliseconds split (view envelopes are
-  seconds; raw stream entries and the columnar grid are int32 ms).
+  seconds; raw stream entries, the columnar grid, and all `/overview`
+  times are int32 ms).
 - **Response shapes** — per-endpoint, cross-linked to
   [`mvd-analytics/RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md)
   (the authoritative source for `BucketsView`, `EventsView`,

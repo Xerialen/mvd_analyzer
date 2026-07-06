@@ -29,13 +29,17 @@ type Streams struct {
 	// higher volume than rockets/grenades.
 	Nails *ProjectileStreams `json:"nails,omitempty"`
 
-	// LOSComputed records whether the (lazy) line-of-sight pass has run, so a
-	// caller can compute it on demand exactly once and not retry on maps that
-	// genuinely have no LOS (no BSP). It is gob-serialized — the API persists
-	// it with the cached Result so a second request reuses the first's work —
-	// but excluded from JSON (`json:"-"`): consumers read presence/absence of
-	// PlayerStream.LOS itself, and the goldens stay agnostic to it. See
-	// analyzer.ComputeLOS.
+	// LOSComputed records whether the (lazy) line-of-sight pass has run on
+	// this in-memory Result, so a caller (web overlay, -include los, the
+	// mvd-api /los endpoint) computes it on demand exactly once and does not
+	// retry on maps that genuinely have no LOS (no BSP). It latches only for
+	// the lifetime of this Result value — LOS lives only in memory. The API's
+	// gob cache is written once at parse (before any LOS pass) and never
+	// re-encoded (mvd-api/internal/democache/cache.go), so this flag never
+	// persists as true: a Result re-decoded from the gob starts with
+	// LOSComputed=false and recomputes on the next /los request. Excluded from
+	// JSON (`json:"-"`): consumers read presence/absence of PlayerStream.LOS
+	// itself, and the goldens stay agnostic to it. See analyzer.ComputeLOS.
 	LOSComputed bool `json:"-"`
 
 	// ShotStreamsComputed / NailsComputed latch the opt-in spatial weapon-fire

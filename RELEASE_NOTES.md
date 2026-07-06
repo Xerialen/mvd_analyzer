@@ -5,7 +5,235 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-06
+
+- **Web Aim Stats: LG Unresolved column, accurate hover on narrow
+  layouts, DYaw sign docs (no schema change).**
+  - The LG table gains an `Unresolved` column (whiffs no beam matched), so
+    the LG miss classes visibly sum to shots − hits instead of silently
+    falling short.
+  - The crosshair-density hover now maps cursor position through the
+    rendered/intrinsic size ratio, and the image keeps its aspect ratio
+    when a narrow panel shrinks it — previously the reported bin (and its
+    shot/hit counts) drifted and the bitmap distorted horizontally.
+  - The schema docs for `crosshair.dyaw` had the sign convention backwards
+    ("right positive"); positive is enemy-left (Quake yaw grows
+    counterclockwise). The web's plotting flip was already correct; the
+    docs now match it. SSG crosshair samples remain deliberately
+    unrendered (SG + LG panels only).
+- **mvd-api: deterministic /shots + /aim responses; panic-proof demo
+  loading (no schema change).**
+  - The shot-stream rebuild now builds projectiles, beams and nails in a
+    single variant. Previously nails were a separate server-side latch:
+    after any client passed `?nails=1`, plain `GET /shots` and `GET /aim`
+    served nail-linked bodies under the same immutable ETag — and reverted
+    after an LRU eviction. Responses are now a pure function of the URL.
+    The `/shots` `nails` parameter is deprecated (accepted and ignored);
+    ng/sng fires were always included, and their flight-linking + accuracy
+    now always is too.
+  - A panicking demo parse no longer releases concurrent requests for the
+    same demo with a nil result and nil error (a cascade of confusing
+    nil-dereference 500s); all callers now receive a real error and the
+    panic stack is logged.
+- **Aim/shots correctness batch (schema v49; value fixes, no shape
+  change).** Four fixes from the deferred aim/shots review:
+  - The Aim tab's RL/GL direct/splash/missed split now appears on every
+    default parse. It was accidentally gated on the opt-in
+    `streams.projectiles` payload, which is emission-only — the projectile
+    linking the split actually needs runs on every parse, so the block was
+    absent everywhere except `-include projectiles` runs.
+  - Warmup and post-match damage no longer leaks into those splits: the
+    damage records feeding aim's pellet and direct counters are windowed
+    to match time, so a warmup direct rocket no longer inflates `direct`
+    and deflates `splash`.
+  - Duels where both players share a colour team (e.g. both "green") no
+    longer classify every hit on the opponent as team damage. Damage is
+    classified duel-aware at birth, restoring airgibs, the aim enemy
+    splits, the damage matrix, `victimWep` and the EWep buckets on such
+    demos — all previously empty or folded into `givenTeam`.
+  - Shots player identity uses the canonical slot resolver, backfilling
+    a missing team from the demoinfo name table like damage/frags do.
+  - A player who reconnects after the match ends no longer shows 0 frags
+    on the corrected scoreboard: the server re-initializes the returning
+    slot with `svc_updatefrags 0` during intermission, which clobbered the
+    tracked final score (v48's removal of the 0-frag filter had surfaced
+    these corrupted zeros — previously the same players were silently
+    missing from `match.players` altogether). Frag tracking now freezes at
+    match end; mid-match reconnects were already safe because KTX
+    re-asserts the restored count itself.
+  - Doc drift cleanup: the LG fire signal is `TE_LIGHTNING2` beams
+    (`source: "beam"`), not the never-shipped "ammo" detection; rl/gl
+    fires are linked, not "left unlinked"; `Dist` is muzzle-based.
+  - The structural invariant test now covers every event-carrying result
+    section (shots, damage, messages, frags, pickups, backpacks, item
+    phases, aim) — not just `timelineAnalysis`.
+
 ## 2026-07-05
+
+- **Web: chat shows every authentic message (no schema change).** The chat
+  panel silently dropped any message whose exact text repeated within three
+  seconds. The wire-level duplication that filter targeted (KTX sprints each
+  say once per recipient at one wire timestamp) is already collapsed upstream
+  by the analyzer's exact-key dedupe, so the web filter was only swallowing
+  authentic repeats — a re-sent bind, two identical obituaries in quick
+  succession. Removed; only the match-window clip remains.
+- **Single obituary parser; timeline frag weapon codes corrected (no schema
+  change).** The obituary/suicide pattern table lived twice — once for the
+  frag log (`frags`), once for the timeline message stream
+  (`messages.events[type=frag]`) — and the two had drifted. The timeline copy
+  is now generated from the same table the frag log uses, so for the affected
+  obituary lines the timeline stream's `weapon` now matches `frags[]` exactly.
+  Consumer-visible corrections in `messages.events` (the frag log was already
+  correct):
+  - drowning self-kills now carry weapon `water` (was `drown`), matching the
+    documented FragEntry vocabulary;
+  - the unknown-cause self-kill "X somehow becomes bored with life" is now
+    `suicide` (was mislabelled `rl` by the shorter-substring fallthrough);
+  - CRMod obituaries ("blown to chunks", "shish-kebabed", "disembowled",
+    "gets intimate", "warm fuzzy feeling") and KTX `k_spawnicide` self-kills
+    ("shiny spawn point", "baby factory", "poor life choices") now produce a
+    timeline frag event instead of being dropped or mislabelled.
+  These lines are rare (env/CRMod/spawnicide), so the golden corpus output is
+  byte-identical; the fix is verified by unit tests. Internal cleanup in the
+  same change: one canonical slot→identity resolver (`ResolveSlotAt`) replaces
+  five drifted per-analyzer copies, and one `parseInfoString` helper replaces
+  three duplicated serverinfo walkers.
+
+- **One entity-delta wire-layout implementation; FTE parse fixes (no
+  schema change).** The parser's entity-baseline and entity-delta
+  layouts each had a decode copy and a separate byte-skip copy that had
+  drifted apart; they are now a single reader each (`readBaselineBody`
+  for the baseline body, `readDeltaBits` + `readEntityDelta` for the
+  delta), and `svc_spawnstatic` / `svc_fte_spawnstatic2` decode through
+  that same code and discard rather than re-skipping by hand. Three
+  FTE-only divergences between the old copies are fixed by construction
+  to match ezquake (`cl_ents.c`) and mvdsv (`sv_ents.c`): the FTE
+  "evenmorebits" byte is read only when an FTE extension was negotiated
+  (the `svc_fte_spawnbaseline2` / `svc_fte_spawnstatic2` path previously
+  read it unconditionally, misaligning a non-FTE stream), and the
+  transparency / colour-mod fields are gated on the negotiated
+  `FTE_PEXT_TRANS` / `FTE_PEXT_COLOURMOD` (previously consumed on the
+  flag bit alone). Only demos that negotiated FTE entity extensions are
+  affected — none exist in the golden corpus, which stays byte-identical,
+  so the schema is unchanged (v48).
+
+- **Dev-CLI correctness fixes (no schema change).**
+  - `qw-analyze -view state-at -time 0` (and `-time 0s`) now queries match
+    start instead of erroring with "requires -time"; flag presence is
+    tracked separately from the zero value.
+  - `mapgen` now fails the run when its `-demos` directory can't be walked
+    (e.g. a typo'd path) instead of silently emitting an unpruned corpus,
+    matching the existing `-bsp-dir` behaviour.
+
+- **mvd-api / mvd-mcp hardening for hosted use (no schema change; REST
+  surface semantics + one MCP tool-schema change).** Prerequisites for
+  running the API/MCP on the internet for third-party apps:
+  - **Downloaded demo bytes are verified against their SHA before
+    caching.** A cold download now hashes the `.mvd.gz` bytes and rejects
+    them as `hub_upstream` (502) if they don't match the hub-claimed
+    `demo_sha256` that keys the cache, the `sha:` address, and the ETag —
+    a corrupted CDN object can no longer poison the cache permanently.
+  - **Hub "not found" is classified by error identity, not message
+    text.** A new `hubfetch.ErrNotFound` sentinel + `errors.Is` replaces
+    two `strings.Contains(err, "not found")` checks, so a hub 5xx whose
+    body merely contains "not found" is now correctly a 502 (was
+    misreported as `demo_not_found` 404).
+  - **Model-supplied `demoId` is validated + escaped in the MCP proxy.**
+    All demo-scoped tool calls route through a `demoPath` helper that
+    rejects anything but a canonical `gameId:N` / `sha:HEX` and
+    PathEscapes it, so an id containing `/`, `?`, or `#` can no longer
+    reroute a request to a different endpoint.
+  - **Per-demo lazy computes no longer serialize globally.** `/los` and
+    the on-demand shot-stream rebuild (`/shots`, `/aim`, `/streams/*`)
+    now lock per demo SHA (shared `KeyedMutex` helper) instead of one
+    server-wide mutex each, so a request for demo B does not queue behind
+    demo A's multi-second pass. (Disk persistence of the computed
+    artifacts is deliberately out of scope here.)
+  - **Cache correctness nits.** A resolved-`GameInfo` map entry that
+    previously leaked for process life when a demo was served from a
+    warm tier is now drained unconditionally; `GetResult` documents that
+    a cold fetch runs its hub download + parse to completion regardless
+    of the caller's context (the singleflight shares one computation, so
+    the first caller's cancellation must not poison the others).
+  - **The stream-enriched endpoints signal a degrade instead of serving
+    silently-incomplete data.** When the tier-1 MVD bytes are missing so
+    the opt-in weapon-fire streams can't be rebuilt, `/shots`, `/aim`,
+    and `/streams/*` now set `X-Shot-Streams: unavailable` (+
+    `Cache-Control: no-store`) rather than quietly returning the lean
+    result.
+  - **MCP tool-schema change:** `getBackpacks`'s `weapon` input is now a
+    `string[]` set (forwarded as CSV), matching REST `/backpacks` since
+    v36 (was a single string); `getEvents`'s `types` schema now lists the
+    opt-in `damage` / `telefrag` / `stomp` kinds.
+  - **Docs:** API.md's `/overview` example is corrected to int32
+    milliseconds (the code has emitted ms since v24) with an added §2.1
+    units row; the §2.4 error table gains `shots_unavailable` /
+    `aim_unavailable`; and stale `schemaVersion: 36` examples are updated
+    to 48.
+
+- **Clean end-of-demo, and truncated demos become visible (no schema
+  change).** The standard MVD termination — `svc_disconnect
+  "EndOfDemo"` — now surfaces through `events.Source.Next` as `io.EOF`
+  (the value the Source contract always promised) instead of a hard
+  error the analytics registry silently swallowed; any tail events in
+  that final message are drained before EOF. A *non*-EOF `Next` error
+  (a truncated or corrupt stream) now records `"event stream aborted:
+  …"` into `result.errors`, and a failed region-control pass records
+  `"region control: …"` there too, so a partial parse is
+  distinguishable from a clean one. Previously-ignored read/skip errors
+  inside the parser (sound/baseline/download skips, serverdata movevars,
+  entity-diff emits) now propagate instead of silently misaligning the
+  decode cursor, and a truncated known command is reported as
+  `parse_error` naming the command rather than `unknown_svc`. No value
+  changes on well-formed demos — the golden corpus is byte-identical
+  (its `EndOfDemo` message carries no tail events); the new `errors`
+  entries appear only on broken demos, so the schema version is
+  unchanged (v48).
+
+- **Timeline, scoreboard and duel-detection correctness fixes (schema
+  v48).** Five bugs in already-emitted values, no field-shape change:
+  - **Kill events were on the wrong clock and mislabeled in duels.**
+    `timelineAnalysis.killEvents` shipped demo-relative (each kill
+    ~`demoOffset`, typically ~10 s, later than the matching
+    `deathEvents`) and, in 1v1s, tagged with a raw colour team like
+    `"red"` instead of the player name — the two post-processors that
+    rebase time and rewrite duel teams both skipped it. The Timeline
+    per-player drill-down plots `killEvents − deathEvents` on one axis,
+    so every kill drew displaced and duel team colours were wrong. Now
+    `killEvents` is match-relative and duel-team-labelled exactly like
+    its sibling streams. A new structural invariant test over the golden
+    corpus enforces this for *every* timeline event stream, so a future
+    field that forgets a post-processor fails loudly instead of shipping
+    wrong.
+  - **A chat line could start or end the match.** Match-start/-end
+    detection scanned every print for substrings like "go!" / "game
+    over", including player chat: a pre-match "go go go!" started
+    recording warmup, a mid-match "gg game over" froze every stat and
+    stream for the rest of the demo. Chat prints (level 3) are now
+    ignored for match timing; only broadcast prints move the match
+    window. The obituary parser likewise rejects chat-level prints, so a
+    say containing " rides " can't inject a phantom frag.
+  - **CRMod super-shotgun kills were mislabeled.** "X eats 2 scoops of
+    Y's lead shot" was matched by the generic grenade " eats " pattern
+    first, so the kill came out as weapon `gl` with a phantom killer
+    "2 scoops of Y". It is now correctly `ssg` with killer Y.
+  - **0-frag players no longer vanish; team games aren't mistaken for
+    duels.** A player who legitimately finished on exactly 0 frags was
+    dropped from `match.players`/`match.teams`. That is fixed
+    (surface-authoritative-data), and duel detection now trusts
+    `demoInfo.players` as authoritative — so a 2on2 in which two players
+    end on 0 frags is no longer misread as a 1v1 and team-renamed.
+    To keep actual spectators from leaking in once the 0-frag filter is
+    gone, the reader now parses the server-set `*spectator` userinfo
+    star key (mvdsv strips the client's bare `spectator` key before
+    broadcast, so the old bare-key check never matched in MVDs) and
+    recomputes the flag on every full userinfo update the way ezquake
+    does, so a slot reused after a spectator disconnects doesn't
+    inherit a stale flag.
+  - **Consistent powerup interval end times.** On a demo cut before
+    intermission, quad/pent/ring runs were closed at each player's last
+    position sample while weapon intervals closed at the global last
+    sample; both now use one shared effective match end.
 
 - **Crosshair placement plots in true Quake units.** The Aim Stats
   density images and yaw/pitch marginals plotted hull-normalized error

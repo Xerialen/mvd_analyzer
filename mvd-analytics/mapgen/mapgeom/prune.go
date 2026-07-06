@@ -20,7 +20,7 @@ const usageCell float32 = 8.0
 // construct with NewFloorUsage.
 type FloorUsage struct {
 	cell  float32
-	seen  map[[3]int32]bool        // dedup key (qx,qy,qz)
+	seen  map[[3]int32]bool         // dedup key (qx,qy,qz)
 	byXY  map[[2]int32][]usagePoint // spatial index keyed by (qx,qy)
 	demos int
 }
@@ -55,9 +55,6 @@ func (u *FloorUsage) AddPoint(x, y, z float32) {
 
 // Points is the number of distinct (deduplicated) floor-contact points.
 func (u *FloorUsage) Points() int { return len(u.seen) }
-
-// Demos is the number of demos that contributed (see AddDemo).
-func (u *FloorUsage) Demos() int { return u.demos }
 
 func (u *FloorUsage) q(v float32) int32 {
 	return int32(math.Floor(float64(v / u.cell)))

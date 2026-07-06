@@ -5,7 +5,7 @@ import "fmt"
 // Warning represents a diagnostic issue found during parsing.
 type Warning struct {
 	Time    float64 // Demo time when the warning occurred
-	Type    string  // Category: "parse_error", "unknown_svc", "unknown_te", "unknown_hidden", "invalid_slot", "payload_abandoned"
+	Type    string  // Category: "parse_error", "unknown_svc", "unknown_te", "unknown_hidden"
 	Message string  // Human-readable description
 }
 

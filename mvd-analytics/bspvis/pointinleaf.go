@@ -64,12 +64,6 @@ func (b *BSP) PointInLeaf(p [3]float32) int {
 	return leafIdx
 }
 
-// PointSolid is a convenience: returns true iff the point falls inside a
-// CONTENTS_SOLID leaf. Liquid contents (water/slime/lava) are not solid.
-func (b *BSP) PointSolid(p [3]float32) bool {
-	return b.LeafContents(b.PointInLeaf(p)) == ContentsSolid
-}
-
 // BoxLeafs appends the index of every leaf the axis-aligned box [mins,maxs]
 // overlaps to dst (which is truncated first) and returns it, descending the
 // worldspawn visibility BSP. This is the engine broadphase (Mod_BoxLeafnums /

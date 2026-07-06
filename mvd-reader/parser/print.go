@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/mvd-analyzer/mvd-reader/mvd"
 )
 
@@ -93,13 +95,16 @@ func (p *Parser) tryEmitObituaryDeath(msg string, time float64, timeMs int32) er
 	return p.forceEmitDeath(slot, time, timeMs)
 }
 
-// matchStartedPhrases mirrors the analyzer's MatchTimingDetector
-// matchStartPatterns. Kept here as a small duplicate so the parser
-// doesn't have to import the analytics package — the canonical list
-// lives at mvd-analytics/analyzer/matchtiming.go; any addition there
-// should be mirrored here so the obit corroborator's gate stays
-// aligned with the analyzer's recording gate.
-var matchStartedPhrases = []string{
+// MatchStartPatterns is the canonical set of case-insensitive substrings
+// that mark a KTX match start in a broadcast print line. It lives in
+// Layer 1 because two independent consumers gate on it — the parser's
+// obituary-death corroborator here (via updateMatchStartedFromPrint) and
+// the analytics MatchTimingDetector (via the events re-export) — and the
+// dependency arrow only allows analytics to import mvd-reader, not the
+// reverse. Keeping a single definition here removes the old mirror pair
+// that could silently drift. Match-END phrases are analytics-only (they
+// gate no parser behaviour) and stay in the analyzer.
+var MatchStartPatterns = []string{
 	"match has begun",
 	"match started",
 	"fight!",
@@ -114,46 +119,13 @@ func (p *Parser) updateMatchStartedFromPrint(msg string) {
 	if p.matchStarted {
 		return
 	}
-	lower := lowercaseASCII(msg)
-	for _, phrase := range matchStartedPhrases {
-		if containsASCII(lower, phrase) {
+	lower := strings.ToLower(msg)
+	for _, phrase := range MatchStartPatterns {
+		if strings.Contains(lower, phrase) {
 			p.matchStarted = true
 			return
 		}
 	}
-}
-
-// lowercaseASCII is a tiny ASCII-only ToLower (the start phrases above
-// are pure ASCII; QW names with markup get folded the same way the
-// matcher in matchStartedPhrases expects).
-func lowercaseASCII(s string) string {
-	b := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			c += 'a' - 'A'
-		}
-		b[i] = c
-	}
-	return string(b)
-}
-
-// containsASCII is a stdlib-free strings.Contains substitute scoped to
-// the obituary path — the parser package keeps its low-level helpers
-// independent of strings so the import surface stays minimal.
-func containsASCII(haystack, needle string) bool {
-	if len(needle) == 0 {
-		return true
-	}
-	if len(needle) > len(haystack) {
-		return false
-	}
-	for i := 0; i+len(needle) <= len(haystack); i++ {
-		if haystack[i:i+len(needle)] == needle {
-			return true
-		}
-	}
-	return false
 }
 
 // lookupSlotByName finds the player slot whose userinfo name matches

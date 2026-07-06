@@ -26,6 +26,10 @@ talks to it through a JS shim.
     XHR is still allowed inside Web Workers.
   - `wasm_exec.js` — Go runtime glue, copied from the Go toolchain at
     build time.
+  - `vendor/` — the frontend's only third-party runtime code, vendored
+    (no CDN): Cytoscape + fcose for the loc graph and the Rajdhani/Inter
+    web fonts. Pinned, sha256-recorded and committed; see
+    [`vendor/README.md`](static/vendor/README.md).
   - `maps/` — pre-generated per-map floor polygon JSON (version 2:
     per-vertex x,y,z — drives the map tab's 3D view). Committed; the
     frontend fetches `maps/<basename>.json` at demo load.
@@ -48,6 +52,7 @@ dist/
   wasm_exec.js                Go glue
   index.html, styles.css,
   app.js, worker.js           frontend
+  vendor/                     vendored Cytoscape + fcose + web fonts
   maps/                       pre-generated map geometry
   locs/                       .loc files copied from mvd-analytics/loc/data
   bsps/                       BSP files from `make bsps` for the locvis
@@ -160,7 +165,15 @@ requires decoding the whole demo — cheap to *read*, not cheap to *skip
 ahead to*.
 
 The WASM boundary is the only place that bridges Go and JS. The rest of
-the frontend is dependency-free JS plus a sprinkle of CSS.
+the frontend has **no runtime CDN dependencies**: its own vanilla JS plus
+a sprinkle of CSS, with Cytoscape + fcose (the Locs & Regions loc graph)
+and the Rajdhani/Inter web fonts vendored under
+[`static/vendor/`](static/vendor/README.md) — pinned, sha256-recorded,
+committed and copied to `dist/` by `make build`, so the app works when
+unpkg / Google Fonts are unreachable. To bump a vendored version: replace
+the file (keeping the version in its name), update the matching
+`<script>` / `<link>` in `index.html`, and update the row in
+`static/vendor/README.md` (see that file for the full procedure).
 
 ## Performance timing (console)
 

@@ -14,54 +14,54 @@ const (
 
 // Server command types (svc_*)
 const (
-	SvcBad                   = 0
-	SvcNop                   = 1
-	SvcDisconnect            = 2
-	SvcUpdateStat            = 3
-	SvcSound                 = 6
-	SvcPrint                 = 8
-	SvcStuffText             = 9
-	SvcSetAngle              = 10
-	SvcServerData            = 11
-	SvcLightStyle            = 12
-	SvcUpdateFrags           = 14
-	SvcDamage                = 19
-	SvcSpawnStatic           = 20
-	SvcSpawnBaseline         = 22
-	SvcTempEntity            = 23
-	SvcSetPause              = 24
-	SvcCenterPrint           = 26
-	SvcKilledMonster         = 27
-	SvcFoundSecret           = 28
-	SvcSpawnStaticSound      = 29
-	SvcIntermission          = 30
-	SvcFinale                = 31
-	SvcCDTrack               = 32
-	SvcSellScreen            = 33
-	SvcSmallKick             = 34
-	SvcBigKick               = 35
-	SvcUpdatePing            = 36
-	SvcUpdateEnterTime       = 37
-	SvcUpdateStatLong        = 38
-	SvcMuzzleFlash           = 39
-	SvcUpdateUserInfo        = 40
-	SvcDownload              = 41
-	SvcPlayerInfo            = 42
-	SvcNails                 = 43
-	SvcChokeCount            = 44
-	SvcModelList             = 45
-	SvcSoundList             = 46
-	SvcPacketEntities        = 47
-	SvcDeltaPacketEntities   = 48
-	SvcMaxSpeed              = 49
-	SvcEntGravity            = 50
-	SvcSetInfo               = 51
-	SvcServerInfo            = 52
-	SvcUpdatePL              = 53
-	SvcNails2                = 54
-	SvcFTEModelListShort     = 60
-	SvcFTESpawnBaseline2     = 66
-	SvcFTESpawnStatic2       = 21
+	SvcBad                 = 0
+	SvcNop                 = 1
+	SvcDisconnect          = 2
+	SvcUpdateStat          = 3
+	SvcSound               = 6
+	SvcPrint               = 8
+	SvcStuffText           = 9
+	SvcSetAngle            = 10
+	SvcServerData          = 11
+	SvcLightStyle          = 12
+	SvcUpdateFrags         = 14
+	SvcDamage              = 19
+	SvcSpawnStatic         = 20
+	SvcSpawnBaseline       = 22
+	SvcTempEntity          = 23
+	SvcSetPause            = 24
+	SvcCenterPrint         = 26
+	SvcKilledMonster       = 27
+	SvcFoundSecret         = 28
+	SvcSpawnStaticSound    = 29
+	SvcIntermission        = 30
+	SvcFinale              = 31
+	SvcCDTrack             = 32
+	SvcSellScreen          = 33
+	SvcSmallKick           = 34
+	SvcBigKick             = 35
+	SvcUpdatePing          = 36
+	SvcUpdateEnterTime     = 37
+	SvcUpdateStatLong      = 38
+	SvcMuzzleFlash         = 39
+	SvcUpdateUserInfo      = 40
+	SvcDownload            = 41
+	SvcPlayerInfo          = 42
+	SvcNails               = 43
+	SvcChokeCount          = 44
+	SvcModelList           = 45
+	SvcSoundList           = 46
+	SvcPacketEntities      = 47
+	SvcDeltaPacketEntities = 48
+	SvcMaxSpeed            = 49
+	SvcEntGravity          = 50
+	SvcSetInfo             = 51
+	SvcServerInfo          = 52
+	SvcUpdatePL            = 53
+	SvcNails2              = 54
+	SvcFTEModelListShort   = 60
+	SvcFTESpawnBaseline2   = 66
+	SvcFTESpawnStatic2     = 21
 )
 
 // Delta flags for player info (DF_*)
@@ -90,24 +90,24 @@ const (
 
 // Stat indices
 const (
-	StatHealth       = 0
-	StatFrags        = 1
-	StatWeapon       = 2
-	StatAmmo         = 3
-	StatArmor        = 4
-	StatWeaponFrame  = 5
-	StatShells       = 6
-	StatNails        = 7
-	StatRockets      = 8
-	StatCells        = 9
-	StatActiveWeapon = 10
-	StatTotalSecrets = 11
-	StatTotalMonsters= 12
-	StatSecrets      = 13
-	StatMonsters     = 14
-	StatItems        = 15
-	StatViewHeight   = 16
-	StatTime         = 17
+	StatHealth        = 0
+	StatFrags         = 1
+	StatWeapon        = 2
+	StatAmmo          = 3
+	StatArmor         = 4
+	StatWeaponFrame   = 5
+	StatShells        = 6
+	StatNails         = 7
+	StatRockets       = 8
+	StatCells         = 9
+	StatActiveWeapon  = 10
+	StatTotalSecrets  = 11
+	StatTotalMonsters = 12
+	StatSecrets       = 13
+	StatMonsters      = 14
+	StatItems         = 15
+	StatViewHeight    = 16
+	StatTime          = 17
 )
 
 // Item flags
@@ -215,22 +215,6 @@ type DemoMessage struct {
 	Time float64
 }
 
-// PlayerState represents the state of a player at a point in time
-type PlayerState struct {
-	PlayerNum   int
-	Flags       uint16
-	Frame       uint8
-	Origin      Vec3
-	Angles      Angle3
-	ModelIndex  int
-	SkinNum     int
-	Effects     uint8
-	WeaponFrame uint8
-	IsDead      bool
-	IsGib       bool
-	Time        float64
-}
-
 // PlayerInfo represents player metadata
 type PlayerInfo struct {
 	Slot        int
@@ -269,64 +253,37 @@ type ServerData struct {
 	EntGravity        float32
 }
 
-// PrintMessage represents a print event
-type PrintMessage struct {
-	Level   int
-	Message string
-	Time    float64
-}
-
-// FragEvent represents a frag (kill) detected from print messages
-type FragEvent struct {
-	Killer     string
-	Victim     string
-	WeaponCode string
-	Time       float64
-	IsSuicide  bool
-	IsTeamKill bool
-}
-
-// DamageEvent represents damage dealt (from hidden messages)
-type DamageEvent struct {
-	Attacker  int
-	Victim    int
-	Damage    int
-	DeathType int  // Weapon/death type that caused the damage
-	IsSplash  bool
-	Time      float64
-}
-
 // Death types (from KTX deathtype.h)
 const (
-	DtNone       = 0
-	DtAxe        = 1
-	DtSG         = 2
-	DtSSG        = 3
-	DtNG         = 4
-	DtSNG        = 5
-	DtGL         = 6
-	DtRL         = 7
-	DtLGBeam     = 8
-	DtLGDischarge = 9
+	DtNone            = 0
+	DtAxe             = 1
+	DtSG              = 2
+	DtSSG             = 3
+	DtNG              = 4
+	DtSNG             = 5
+	DtGL              = 6
+	DtRL              = 7
+	DtLGBeam          = 8
+	DtLGDischarge     = 9
 	DtLGDischargeSelf = 10
-	DtHook       = 11
-	DtChangeLevel = 12
-	DtLava       = 13
-	DtSlime      = 14
-	DtWater      = 15
-	DtFall       = 16
-	DtStomp      = 17
-	DtTele1      = 18
-	DtTele2      = 19
-	DtTele3      = 20
-	DtTele4      = 21
-	DtExploBox   = 22
-	DtLaser      = 23
-	DtFireball   = 24
-	DtSquish     = 25
-	DtTriggerHurt = 26
-	DtSuicide    = 27
-	DtUnknown    = 28
+	DtHook            = 11
+	DtChangeLevel     = 12
+	DtLava            = 13
+	DtSlime           = 14
+	DtWater           = 15
+	DtFall            = 16
+	DtStomp           = 17
+	DtTele1           = 18
+	DtTele2           = 19
+	DtTele3           = 20
+	DtTele4           = 21
+	DtExploBox        = 22
+	DtLaser           = 23
+	DtFireball        = 24
+	DtSquish          = 25
+	DtTriggerHurt     = 26
+	DtSuicide         = 27
+	DtUnknown         = 28
 )
 
 // DeathTypeToWeapon converts a death type to weapon/damage source name
@@ -403,17 +360,4 @@ type Stats struct {
 	Cells        int
 	ActiveWeapon int
 	Items        int
-}
-
-// Demo represents a parsed MVD demo
-type Demo struct {
-	ServerData    *ServerData
-	Players       [MaxClients]*PlayerInfo
-	PlayerStates  []PlayerState
-	PrintMessages []PrintMessage
-	FragEvents    []FragEvent
-	DamageEvents  []DamageEvent
-	Duration      float64
-	Models        []string
-	Sounds        []string
 }

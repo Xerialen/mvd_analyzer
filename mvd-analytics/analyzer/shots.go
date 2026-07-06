@@ -9,11 +9,12 @@ import (
 
 // ShotsAnalyzer derives a per-shot weapon-fire stream from the raw wire
 // signals: svc_sound fire sounds (which carry the firing entity on
-// CHAN_WEAPON) for SG/SSG/RL/GL/NG/SNG, and LG cell-ammo decrements for the
-// one weapon with no per-shot fire sound. Instantaneous hitscan fires
+// CHAN_WEAPON) for SG/SSG/RL/GL/NG/SNG, and TE_LIGHTNING2 beams for LG —
+// the one weapon with no per-shot fire sound. Instantaneous hitscan fires
 // (sg/ssg/lg) are linked to the damage they caused in the same server frame
-// via the KTX damage stream; projectile fires (rl/gl/ng/sng) are left
-// unlinked here (they have travel time and are linked by entity tracking).
+// via the KTX damage stream; projectile fires are linked through their
+// tracked entity flight (linkProjectiles) — rl/gl on every parse, ng/sng
+// when nail decoding is enabled.
 //
 // It mirrors DamageAnalyzer: raw events are collected during OnEvent and
 // resolved to player identities in Finalize via CoreOutputs. The Shots
@@ -58,7 +59,7 @@ type ShotsAnalyzer struct {
 type rawShot struct {
 	slot       int
 	weapon     string
-	source     string // "sound" | "ammo"
+	source     string // "sound" | "beam"
 	tMs        int32
 	inMatch    bool
 	hitscan    bool
@@ -612,22 +613,11 @@ func (a *ShotsAnalyzer) reconcile(aggByName map[string]*shotAgg) *ShotsReconcili
 	return rec
 }
 
-// resolveAt maps a wire slot to its identity at tMs, mirroring the
-// resolution chain used by the damage and frag analyzers.
+// resolveAt maps a wire slot to its identity at tMs via the canonical
+// ResolveSlotAt chain (session table → userinfo → name→team backfill),
+// same as the damage and frag analyzers.
 func (a *ShotsAnalyzer) resolveAt(slot int, tMs int32) SlotInfo {
-	id := a.core.SlotIdentityAt(slot, tMs)
-	if id.Name == "" && slot >= 0 && slot < len(a.ctx.Players) {
-		if p := a.ctx.Players[slot]; p != nil {
-			id.Name = p.Name
-			if id.Team == "" {
-				id.Team = p.Team
-			}
-		}
-	}
-	if id.Name != "" && id.Team == "" && a.core != nil && a.core.Names != nil {
-		id.Team = a.core.Names.TeamForName(id.Name)
-	}
-	return id
+	return ResolveSlotAt(a.core, a.ctx.Players, slot, tMs)
 }
 
 type shotAgg struct {

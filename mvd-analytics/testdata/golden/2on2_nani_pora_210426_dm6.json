@@ -1834,14 +1834,18 @@
             "weapon": "sg"
           },
           {
+            "direct": 17,
             "enemy": {
+              "direct": 17,
               "hits": 66
             },
             "hits": 71,
+            "missed": 96,
             "self": {
               "hits": 12
             },
             "shots": 167,
+            "splash": 54,
             "team": {
               "hits": 3
             },
@@ -1849,7 +1853,9 @@
           },
           {
             "hits": 2,
+            "missed": 40,
             "shots": 42,
+            "splash": 2,
             "weapon": "gl"
           },
           {
@@ -7008,14 +7014,18 @@
             "weapon": "sg"
           },
           {
+            "direct": 6,
             "enemy": {
+              "direct": 6,
               "hits": 38
             },
             "hits": 40,
+            "missed": 105,
             "self": {
               "hits": 9
             },
             "shots": 145,
+            "splash": 34,
             "weapon": "rl"
           },
           {
@@ -7023,10 +7033,12 @@
               "hits": 2
             },
             "hits": 4,
+            "missed": 46,
             "self": {
               "hits": 1
             },
             "shots": 50,
+            "splash": 4,
             "team": {
               "hits": 2
             },
@@ -9944,19 +9956,25 @@
             "weapon": "sg"
           },
           {
+            "direct": 8,
             "enemy": {
+              "direct": 8,
               "hits": 50
             },
             "hits": 51,
+            "missed": 84,
             "self": {
               "hits": 12
             },
             "shots": 135,
+            "splash": 43,
             "weapon": "rl"
           },
           {
             "hits": 2,
+            "missed": 47,
             "shots": 49,
+            "splash": 2,
             "weapon": "gl"
           },
           {
@@ -12946,14 +12964,18 @@
             "weapon": "sg"
           },
           {
+            "direct": 6,
             "enemy": {
+              "direct": 6,
               "hits": 32
             },
             "hits": 37,
+            "missed": 88,
             "self": {
               "hits": 5
             },
             "shots": 125,
+            "splash": 31,
             "team": {
               "hits": 3
             },
@@ -12961,7 +12983,9 @@
           },
           {
             "hits": 1,
+            "missed": 19,
             "shots": 20,
+            "splash": 1,
             "weapon": "gl"
           }
         ]
@@ -30167,7 +30191,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 47,
+  "schemaVersion": 49,
   "shots": {
     "byPlayer": [
       {
@@ -128604,542 +128628,542 @@
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 17363
+        "time": 7273
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 17458
+        "time": 7368
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 25140
+        "time": 15050
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 36842
+        "time": 26752
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 39452
+        "time": 29362
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 54620
+        "time": 44530
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 64620
+        "time": 54530
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 64995
+        "time": 54905
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 71422
+        "time": 61332
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 71981
+        "time": 61891
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 74038
+        "time": 63948
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 111968
+        "time": 101878
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 124657
+        "time": 114567
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 127614
+        "time": 117524
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 128839
+        "time": 118749
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 128915
+        "time": 118825
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 130651
+        "time": 120561
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 131121
+        "time": 121031
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 132823
+        "time": 122733
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 137650
+        "time": 127560
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 142211
+        "time": 132121
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 144847
+        "time": 134757
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 151849
+        "time": 141759
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 154571
+        "time": 144481
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 165251
+        "time": 155161
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 167531
+        "time": 157441
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 173985
+        "time": 163895
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 184964
+        "time": 174874
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 186664
+        "time": 176574
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 190093
+        "time": 180003
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 191555
+        "time": 181465
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 192911
+        "time": 182821
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 196853
+        "time": 186763
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 211401
+        "time": 201311
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 220584
+        "time": 210494
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 223097
+        "time": 213007
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 250309
+        "time": 240219
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 251199
+        "time": 241109
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 253952
+        "time": 243862
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 278163
+        "time": 268073
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 281734
+        "time": 271644
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 290334
+        "time": 280244
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 290468
+        "time": 280378
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 293707
+        "time": 283617
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 295993
+        "time": 285903
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 298163
+        "time": 288073
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 301215
+        "time": 291125
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 302202
+        "time": 292112
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 305135
+        "time": 295045
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 311954
+        "time": 301864
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 318622
+        "time": 308532
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 322147
+        "time": 312057
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 324004
+        "time": 313914
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 326095
+        "time": 316005
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 335758
+        "time": 325668
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 339321
+        "time": 329231
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 347684
+        "time": 337594
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 350601
+        "time": 340511
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 352417
+        "time": 342327
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 368728
+        "time": 358638
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 370925
+        "time": 360835
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 372962
+        "time": 362872
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 373682
+        "time": 363592
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 377224
+        "time": 367134
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 381624
+        "time": 371534
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 382572
+        "time": 372482
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 385558
+        "time": 375468
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 388636
+        "time": 378546
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 403713
+        "time": 393623
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 407260
+        "time": 397170
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 407297
+        "time": 397207
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 416648
+        "time": 406558
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 417598
+        "time": 407508
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 426170
+        "time": 416080
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 430819
+        "time": 420729
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 434971
+        "time": 424881
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 437780
+        "time": 427690
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 469180
+        "time": 459090
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 479218
+        "time": 469128
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 481474
+        "time": 471384
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 483815
+        "time": 473725
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 487866
+        "time": 477776
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 499202
+        "time": 489112
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 505342
+        "time": 495252
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 508488
+        "time": 498398
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 513071
+        "time": 502981
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 514238
+        "time": 504148
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 515955
+        "time": 505865
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 518877
+        "time": 508787
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 521198
+        "time": 511108
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 523367
+        "time": 513277
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 524902
+        "time": 514812
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 526915
+        "time": 516825
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 539379
+        "time": 529289
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 539456
+        "time": 529366
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 551627
+        "time": 541537
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 553406
+        "time": 543316
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 555988
+        "time": 545898
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 573987
+        "time": 563897
       },
       {
         "player": "kippo",
         "team": "pora",
-        "time": 576402
+        "time": 566312
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 580105
+        "time": 570015
       },
       {
         "player": "rusti",
         "team": "pora",
-        "time": 584105
+        "time": 574015
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 584302
+        "time": 574212
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 586535
+        "time": 576445
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 587804
+        "time": 577714
       },
       {
         "player": "gLAd",
         "team": "nAnI",
-        "time": 594375
+        "time": 584285
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 595908
+        "time": 585818
       },
       {
         "player": "SS",
         "team": "nAnI",
-        "time": 599115
+        "time": 589025
       }
     ],
     "locTable": [

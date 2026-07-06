@@ -1,18 +1,19 @@
 // Package hubfetch resolves and downloads MVD demos from
 // hub.quakeworld.nu by game ID. It mirrors the fetch flow already used
-// by the web frontend (qw-web/static/app.js:131-179): query the
-// Supabase v1_games endpoint for the demo's sha256 + source URL, then
-// try the public CDN before falling back to the original recording
-// server.
+// by the web frontend (mvd-web/static/app.js, the SUPABASE_URL / CDN
+// path): query the Supabase v1_games endpoint for the demo's sha256 +
+// source URL, then try the public CDN before falling back to the
+// original recording server.
 //
 // The Supabase URL and anon key are public (already shipped in the
 // browser bundle) and authenticate read-only access to the public
 // game catalog. There is no token rotation concern.
 //
-// This package exists for the golden test harness in
-// qwanalytics/analyzer/golden_test.go. It is intentionally small and
-// has no dependency on the analyzer or result packages so it can be
-// reused for ad-hoc tooling (e.g. a future cache-warming CLI).
+// Its consumers are the golden test harness
+// (mvd-analytics/analyzer/golden_test.go) and mvd-api (via
+// mvd-api/internal/democache). It is intentionally small and has no
+// dependency on the analyzer or result packages so it can be reused for
+// ad-hoc tooling (e.g. a future cache-warming CLI).
 package hubfetch
 
 import (
@@ -27,21 +28,28 @@ import (
 )
 
 // SupabaseURL is the v1_games REST endpoint backing hub.quakeworld.nu.
-// The anon key below is the same one shipped in qw-web/static/app.js.
+// The anon key below is the same one shipped in mvd-web/static/app.js.
 const (
 	SupabaseURL    = "https://ncsphkjfominimxztjip.supabase.co/rest/v1/v1_games"
 	SupabaseAPIKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jc3Boa2pmb21pbmlteHp0amlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY5Mzg1NjMsImV4cCI6MjAxMjUxNDU2M30.NN6hjlEW-qB4Og9hWAVlgvUdwrbBO13s8OkAJuBGVbo"
 	CDNBase        = "https://d.quake.world"
 )
 
+// ErrNotFound is returned by Resolve when the hub has no row for the
+// requested gameId (an empty result set). Callers should detect it with
+// errors.Is rather than matching the message, so a hub outage whose body
+// merely contains "not found" is not misclassified as a 404. See
+// democache's classifyHubError.
+var ErrNotFound = errors.New("not found")
+
 // GameInfo is the minimal subset of the Supabase row that the
 // downloader needs. The real schema has many more fields (teams, mode,
 // timestamp, …) — leave them off here so we don't need to track
 // schema drift for fields we never read.
 type GameInfo struct {
-	ID              int    `json:"id"`
-	DemoSHA256      string `json:"demo_sha256"`
-	DemoSourceURL   string `json:"demo_source_url"`
+	ID            int    `json:"id"`
+	DemoSHA256    string `json:"demo_sha256"`
+	DemoSourceURL string `json:"demo_source_url"`
 }
 
 // Client is a small wrapper around http.Client so tests can swap in
@@ -93,7 +101,7 @@ func (c *Client) Resolve(gameID int) (*GameInfo, error) {
 		return nil, fmt.Errorf("supabase resolve: decode: %w", err)
 	}
 	if len(rows) == 0 {
-		return nil, fmt.Errorf("game %d not found", gameID)
+		return nil, fmt.Errorf("game %d %w", gameID, ErrNotFound)
 	}
 	return &rows[0], nil
 }
@@ -107,11 +115,14 @@ func (c *Client) Download(info *GameInfo) ([]byte, error) {
 	}
 
 	// Path 1: CDN, when we have a sha to address it.
+	var cdnErr error
 	if len(info.DemoSHA256) >= 3 {
 		cdnURL := fmt.Sprintf("%s/%s/%s.mvd.gz", c.CDNBase, info.DemoSHA256[:3], info.DemoSHA256)
-		if data, err := c.fetch(cdnURL); err == nil {
+		data, err := c.fetch(cdnURL)
+		if err == nil {
 			return data, nil
 		}
+		cdnErr = err
 		// Fall through to source on CDN miss / error.
 	}
 
@@ -124,6 +135,12 @@ func (c *Client) Download(info *GameInfo) ([]byte, error) {
 		return data, nil
 	}
 
+	// No source URL to fall back on. When a sha was present, the CDN
+	// attempt is the real failure — report it rather than the misleading
+	// "no sha256" message.
+	if cdnErr != nil {
+		return nil, fmt.Errorf("cdn: %v; no demo_source_url fallback", cdnErr)
+	}
 	return nil, errors.New("no download URL available (no sha256 and no demo_source_url)")
 }
 

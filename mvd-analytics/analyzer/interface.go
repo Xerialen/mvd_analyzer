@@ -16,17 +16,17 @@ import (
 
 // Context provides shared state for analyzers during a single analysis
 // run. ServerData and Players are populated by the registry as events
-// stream through; FragsBySlot and DemoInfo are written during the
-// finalize loop.
+// stream through; DemoInfo is written during the finalize loop. (The
+// svc_updatefrags scoreboard is tracked by MatchAnalyzer itself, frozen
+// at match end — it is not shared state.)
 //
 // Fields that one analyser writes during Finalize and another reads
 // (frag entries, name tables, etc.) live on CoreOutputs in
 // core_outputs.go — see CoreConsumer.UseCoreOutputs.
 type Context struct {
-	ServerData  *events.ServerData
-	Players     [events.MaxClients]*events.PlayerInfo
-	FragsBySlot map[int]int     // Final frag count per slot
-	DemoInfo    *DemoInfoResult // Parsed demoinfo (set during finalization, used by ResolveSlotDemoInfo)
+	ServerData *events.ServerData
+	Players    [events.MaxClients]*events.PlayerInfo
+	DemoInfo   *DemoInfoResult // Parsed demoinfo (set during finalization, used by ResolveSlotDemoInfo)
 
 	// ShotStreams opts the shots analyzer into building the spatial
 	// weapon-fire streams (Streams.Projectiles / Streams.Beams). Off by

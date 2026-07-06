@@ -8,7 +8,7 @@ import (
 
 func newTestWeaponPickupsAnalyzer() (*WeaponPickupsAnalyzer, *Context) {
 	a := NewWeaponPickupsAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	a.timing.Started = true
 	return a, ctx

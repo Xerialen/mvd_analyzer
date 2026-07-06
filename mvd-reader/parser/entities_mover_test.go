@@ -191,7 +191,7 @@ func TestClassifyMover(t *testing.T) {
 	}{
 		{"*1", 1, true},
 		{"*27", 27, true},
-		{"*0", 0, false},   // worldspawn is never an entity model
+		{"*0", 0, false}, // worldspawn is never an entity model
 		{"*", 0, false},
 		{"*x", 0, false},
 		{"maps/dm2.bsp", 0, false},

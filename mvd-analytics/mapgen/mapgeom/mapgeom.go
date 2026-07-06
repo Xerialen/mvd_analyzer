@@ -26,9 +26,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mvd-analyzer/mvd-analytics/loc"
 	"github.com/mvd-analyzer/mvd-analytics/mapclip"
 	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
-	"github.com/mvd-analyzer/mvd-analytics/loc"
 )
 
 const (
@@ -69,27 +69,27 @@ const (
 )
 
 // Params are the tunable extraction thresholds. The zero value of any
-// field means "use the package default" (see the constants above), so
-// callers — e.g. the viewer's geometry edit mode, which feeds these
-// from form inputs over the WASM bridge — can set only what they want
-// to override.
+// field means "use the package default" (see the constants above), so a
+// caller can override just the fields it cares about. The real callers
+// are the mapgeom tests and cmd/mapgen, which maps its -prune-xy-tol /
+// -prune-z-tol flags onto PruneXYTol / PruneZTol (cmd/mapgen/main.go).
 type Params struct {
 	// FloorNormalZ: minimum plane-normal Z for a face to count as
 	// floor; faces with |normal Z| below it are walls. 0.7 ≈ 45°.
-	FloorNormalZ float32 `json:"floorNormalZ,omitempty"`
+	FloorNormalZ float32
 	// CeilingMaxAboveLoc: drop faces whose centroid sits more than
 	// this far above their 3D-nearest loc point (roof/ceiling cap).
-	CeilingMaxAboveLoc float32 `json:"ceilingMaxAboveLoc,omitempty"`
+	CeilingMaxAboveLoc float32
 	// PlayerOriginAboveFloor: standing-player origin height used to
 	// put face Z and loc Z in the same frame for the ceiling cap.
-	PlayerOriginAboveFloor float32 `json:"playerOriginAboveFloor,omitempty"`
+	PlayerOriginAboveFloor float32
 	// PruneXYTol: max XY distance from a usage sample to a floor polygon
 	// for the sample to count as "touching" it (BuildPruned only).
 	// Default mapclip.FootprintReach (24).
-	PruneXYTol float32 `json:"pruneXYTol,omitempty"`
+	PruneXYTol float32
 	// PruneZTol: max |faceZ − sampleZ| for a usage sample to count as on
 	// a floor polygon (BuildPruned only). Larger for slope-heavy maps.
-	PruneZTol float32 `json:"pruneZTol,omitempty"`
+	PruneZTol float32
 }
 
 // defaultPruneZTol is the BuildPruned vertical match tolerance: how far a
@@ -220,12 +220,11 @@ type MapRegions struct {
 	Pruned    *PruneInfo     `json:"pruned,omitempty"`
 }
 
-
 // Stats carries per-map counters for CLI verbose logging.
 type Stats struct {
-	FacesTotal   int
-	FacesKept    int
-	FacesDropped int // ring assembly or geometry drops (not Z-reject)
+	FacesTotal     int
+	FacesKept      int
+	FacesDropped   int // ring assembly or geometry drops (not Z-reject)
 	FacesUnnamed   int // kept but routed into the unnamed backdrop bucket
 	FacesCeiling   int // kept-but-filtered-as-ceiling-detail
 	WallsKept      int // vertical faces classified as walls (not stored)
@@ -307,6 +306,7 @@ func buildRegions(mapName string, b *bsp.BSP, finder *loc.Finder, p Params, usag
 		face := b.Faces[faceIdx]
 
 		if int(face.PlaneID) >= len(b.Planes) {
+			stats.FacesDropped++
 			continue
 		}
 
@@ -319,6 +319,7 @@ func buildRegions(mapName string, b *bsp.BSP, finder *loc.Finder, p Params, usag
 		if texName := strings.ToLower(b.FaceTexName(face)); strings.HasPrefix(texName, "*") && !strings.Contains(texName, "tele") {
 			ring3D, ok := assembleRing(b, face)
 			if !ok || len(ring3D) < 3 {
+				stats.FacesDropped++
 				continue
 			}
 			stats.LiquidFaces++
@@ -346,6 +347,7 @@ func buildRegions(mapName string, b *bsp.BSP, finder *loc.Finder, p Params, usag
 		// Assemble ring by walking surfedges → edges → vertices.
 		ring3D, ok := assembleRing(b, face)
 		if !ok || len(ring3D) < 3 {
+			stats.FacesDropped++
 			continue
 		}
 
@@ -663,4 +665,3 @@ func triArea(a, b, c bsp.Vec3) float32 {
 	cz := ux*vy - uy*vx
 	return 0.5 * float32(math.Sqrt(float64(cx*cx+cy*cy+cz*cz)))
 }
-

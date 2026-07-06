@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mvd-analyzer/mvd-api/internal/democache"
 	"github.com/mvd-analyzer/mvd-analytics/hubfetch"
 	"github.com/mvd-analyzer/mvd-analytics/result"
+	"github.com/mvd-analyzer/mvd-api/internal/democache"
 )
 
 // runServe starts the HTTP REST server. Blocks until SIGINT/SIGTERM.

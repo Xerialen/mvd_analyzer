@@ -3,8 +3,8 @@ package mapgeom
 import (
 	"testing"
 
-	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
 	"github.com/mvd-analyzer/mvd-analytics/loc"
+	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
 )
 
 // buildTwoFloorBSP constructs an in-memory BSP containing two quads

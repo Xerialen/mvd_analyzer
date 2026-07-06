@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"io"
 	"os"
-	"strings"
 )
 
 // File represents an opened MVD file that may be compressed
@@ -17,30 +16,16 @@ type File struct {
 }
 
 // Open opens an MVD file, automatically detecting and handling gzip compression.
-// Files ending in .gz or containing gzip magic bytes are decompressed.
+// Files that begin with the gzip magic bytes (0x1f 0x8b) are decompressed;
+// the filename suffix is not consulted.
 func Open(path string) (*File, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use buffered reader so we can peek at magic bytes
-	bufReader := bufio.NewReader(f)
-
-	// Check for gzip magic bytes (0x1f 0x8b)
-	magic, err := bufReader.Peek(2)
-	if err != nil {
-		// File too short, treat as raw
-		return &File{
-			file:   f,
-			reader: bufReader,
-		}, nil
-	}
-
-	isGzip := (magic[0] == 0x1f && magic[1] == 0x8b) || strings.HasSuffix(strings.ToLower(path), ".gz")
-
-	if isGzip && magic[0] == 0x1f && magic[1] == 0x8b {
-		// Create gzip reader
+	bufReader, isGzip := peekGzip(f)
+	if isGzip {
 		gzReader, err := gzip.NewReader(bufReader)
 		if err != nil {
 			f.Close()
@@ -58,6 +43,19 @@ func Open(path string) (*File, error) {
 		file:   f,
 		reader: bufReader,
 	}, nil
+}
+
+// peekGzip wraps r in a buffered reader and reports whether the stream
+// begins with the gzip magic bytes (0x1f 0x8b). A stream too short to
+// peek two bytes is reported as not gzipped. The returned reader has not
+// consumed the magic bytes, so it is safe to pass to gzip.NewReader.
+func peekGzip(r io.Reader) (*bufio.Reader, bool) {
+	br := bufio.NewReader(r)
+	magic, err := br.Peek(2)
+	if err != nil {
+		return br, false
+	}
+	return br, magic[0] == 0x1f && magic[1] == 0x8b
 }
 
 // Read implements io.Reader
@@ -87,21 +85,13 @@ func (f *File) IsCompressed() bool {
 // If the stream starts with gzip magic bytes (0x1f 0x8b), it returns a gzip reader.
 // Otherwise, it returns the original stream. The caller must close the returned ReadCloser.
 func NewReader(r io.Reader) (io.ReadCloser, error) {
-	bufReader := bufio.NewReader(r)
-
-	magic, err := bufReader.Peek(2)
-	if err != nil {
-		// Stream too short to detect, treat as raw
-		return io.NopCloser(bufReader), nil
-	}
-
-	if magic[0] == 0x1f && magic[1] == 0x8b {
+	bufReader, isGzip := peekGzip(r)
+	if isGzip {
 		gzReader, err := gzip.NewReader(bufReader)
 		if err != nil {
 			return nil, err
 		}
 		return gzReader, nil
 	}
-
 	return io.NopCloser(bufReader), nil
 }

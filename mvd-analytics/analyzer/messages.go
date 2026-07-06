@@ -181,263 +181,51 @@ func (a *MessagesAnalyzer) parseChatMessage(msg string, time float64) *MatchEven
 	}
 }
 
-// parseObituarySimple does a simplified frag parse for the timeline.
-// Uses the same comprehensive pattern list as frag.go (KTX client.c obituaries
-// + mvdsv/src/sv_mod_frags.h fuhquake fragfile).
+// parseObituarySimple parses a print line as a timeline frag MatchEvent,
+// mapping the shared neutral obituary parse (obituary_parse.go) — the same
+// table and order the frag analyzer uses. Phrasing-based teamkills keep the
+// generic "teammate" placeholder for the party the obituary didn't name;
+// every other kind needs both parties to resolve to real names (MatchEvent
+// carries no IsTeamKill flag, so a membership test isn't needed here).
 func (a *MessagesAnalyzer) parseObituarySimple(msg string, time float64) *MatchEvent {
-
-	// --- Teamkill patterns (must check before kill patterns) ---
-	tkKillerPatterns := []string{
-		" gets a frag for the other team",
-		" mows down a teammate",
-		" squished a teammate",
-		" checks his glasses",
-		" checks her glasses",
-		" loses another friend",
+	o := parseObituaryLine(msg)
+	if o == nil {
+		return nil
 	}
-	for _, pattern := range tkKillerPatterns {
-		if idx := strings.Index(msg, pattern); idx > 0 {
-			killer := strings.TrimSpace(msg[:idx])
-			if killer != "" && !isGenericPlayer(killer) {
-				return &MatchEvent{
-					Time:    msTime(time),
-					Type:    "frag",
-					Player:  killer,
-					Team:    a.getPlayerTeam(killer),
-					Message: msg,
-					Victim:  "teammate",
-					Weapon:  "teamkill",
-				}
+
+	if o.TeamKill {
+		// One party is the generic "teammate". Emit around the KNOWN party.
+		if isGenericPlayer(o.Victim) {
+			// Killer-named ("X loses another friend").
+			if o.Killer == "" || isGenericPlayer(o.Killer) {
+				return nil
 			}
-		}
-	}
-
-	// Teammate victim patterns
-	tkVictimPatterns := []string{
-		" was telefragged by his teammate",
-		" was telefragged by her teammate",
-		" was crushed by his teammate",
-		" was crushed by her teammate",
-		" was jumped by his teammate",
-		" was jumped by her teammate",
-	}
-	for _, pattern := range tkVictimPatterns {
-		if idx := strings.Index(msg, pattern); idx > 0 {
-			victim := strings.TrimSpace(msg[:idx])
-			if victim != "" && !isGenericPlayer(victim) {
-				return &MatchEvent{
-					Time:    msTime(time),
-					Type:    "frag",
-					Player:  "teammate",
-					Team:    a.getPlayerTeam(victim),
-					Message: msg,
-					Victim:  victim,
-					Weapon:  "teamkill",
-				}
-			}
-		}
-	}
-
-	// --- Killer-first patterns (Y <verb> X) ---
-	if idx := strings.Index(msg, " rips "); idx > 0 && strings.Contains(msg, " a new one") {
-		killer := strings.TrimSpace(msg[:idx])
-		rest := msg[idx+6:]
-		if victimEnd := strings.Index(rest, " a new one"); victimEnd > 0 {
-			victim := strings.TrimSpace(rest[:victimEnd])
-			if killer != "" && victim != "" {
-				return &MatchEvent{
-					Time: msTime(time), Type: "frag", Player: killer, Team: a.getPlayerTeam(killer),
-					Message: msg, Victim: victim, Weapon: "rl",
-				}
-			}
-		}
-	}
-	for _, kf := range []struct{ pattern, weapon string }{{" stomps ", "stomp"}, {" squishes ", "squish"}} {
-		if idx := strings.Index(msg, kf.pattern); idx > 0 {
-			killer := strings.TrimSpace(msg[:idx])
-			victim := strings.TrimSpace(msg[idx+len(kf.pattern):])
-			if killer != "" && victim != "" {
-				return &MatchEvent{
-					Time: msTime(time), Type: "frag", Player: killer, Team: a.getPlayerTeam(killer),
-					Message: msg, Victim: victim, Weapon: kf.weapon,
-				}
-			}
-		}
-	}
-
-	// --- SSG buckshot pattern ("X ate N loads of Y's buckshot") ---
-	if idx := strings.Index(msg, " ate "); idx > 0 {
-		victim := strings.TrimSpace(msg[:idx])
-		rest := msg[idx+5:]
-		if strings.Contains(rest, "'s buckshot") || strings.Contains(rest, "' buckshot") {
-			killerEnd := strings.Index(rest, "'s buckshot")
-			if killerEnd < 0 {
-				killerEnd = strings.Index(rest, "' buckshot")
-			}
-			loadsIdx := strings.Index(rest, " loads of ")
-			if loadsIdx >= 0 && killerEnd > loadsIdx {
-				killer := strings.TrimSpace(rest[loadsIdx+10 : killerEnd])
-				if victim != "" && killer != "" && !isGenericPlayer(victim) && !isGenericPlayer(killer) {
-					return &MatchEvent{
-						Time: msTime(time), Type: "frag", Player: killer, Team: a.getPlayerTeam(killer),
-						Message: msg, Victim: victim, Weapon: "ssg",
-					}
-				}
-			}
-		}
-	}
-
-	// --- Victim-first kill patterns (X <pattern> Y) ---
-	// Complete list from KTX client.c + mvdsv sv_mod_frags.h, order matters
-	killPatterns := []struct {
-		pattern string
-		weapon  string
-	}{
-		// Telefrag
-		{" was telefragged by ", "tele"},
-		// Lightning Gun
-		{" accepts ", "lg"},
-		{" gets a natural disaster from ", "lg"},
-		{" drains ", "lg"},
-		// Rocket Launcher
-		{" rides ", "rl"},
-		{" was brutalized by ", "rl"},
-		{" was smeared by ", "rl"},
-		// Grenade Launcher
-		{" eats ", "gl"},
-		// Nailgun
-		{" was body pierced by ", "ng"},
-		{" was nailed by ", "ng"},
-		// Super Nailgun
-		{" was straw-cuttered by ", "sng"},
-		{" was perforated by ", "sng"},
-		{" was punctured by ", "sng"},
-		{" was ventilated by ", "sng"},
-		// Shotgun
-		{" chewed on ", "sg"},
-		{" was lead poisoned by ", "sg"},
-		{" was instagibbed by ", "sg"},
-		// Axe
-		{" was ax-murdered by ", "axe"},
-		{" was axed to pieces by ", "axe"},
-		// Hook
-		{" was hooked by ", "hook"},
-		// Rail
-		{" was railed by ", "rail"},
-		// Stomp
-		{" softens ", "stomp"},
-		{" tried to catch ", "stomp"},
-		{" was literally stomped into particles by ", "stomp"},
-		{" was jumped by ", "stomp"},
-		{" was crushed by ", "stomp"},
-		// Generic
-		{" was killed by ", "unknown"},
-		{" was fragged by ", "unknown"},
-	}
-
-	for _, p := range killPatterns {
-		if idx := strings.Index(msg, p.pattern); idx > 0 {
-			victim := strings.TrimSpace(msg[:idx])
-			rest := msg[idx+len(p.pattern):]
-			killer := extractKillerName(rest)
-
-			if victim != "" && killer != "" && !isGenericPlayer(victim) && !isGenericPlayer(killer) {
-				return &MatchEvent{
-					Time:    msTime(time),
-					Type:    "frag",
-					Player:  killer,
-					Team:    a.getPlayerTeam(killer),
-					Message: msg,
-					Victim:  victim,
-					Weapon:  p.weapon,
-				}
-			}
-		}
-	}
-
-	// "was gibbed by" — grenade vs rocket
-	if idx := strings.Index(msg, " was gibbed by "); idx > 0 {
-		victim := strings.TrimSpace(msg[:idx])
-		rest := msg[idx+15:]
-		weapon := "rl"
-		if strings.Contains(rest, "'s grenade") || strings.Contains(rest, "' grenade") {
-			weapon = "gl"
-		}
-		killer := extractKillerName(rest)
-		if victim != "" && killer != "" && !isGenericPlayer(victim) && !isGenericPlayer(killer) {
 			return &MatchEvent{
-				Time: msTime(time), Type: "frag", Player: killer, Team: a.getPlayerTeam(killer),
-				Message: msg, Victim: victim, Weapon: weapon,
+				Time: msTime(time), Type: "frag",
+				Player: o.Killer, Team: a.getPlayerTeam(o.Killer),
+				Message: msg, Victim: o.Victim, Weapon: o.Weapon,
 			}
 		}
-	}
-
-	// --- Suicide patterns ---
-	suicidePatterns := []struct {
-		pattern string
-		weapon  string
-	}{
-		{" suicides", "suicide"},
-		{" discovers blast radius", "rl"},
-		{" becomes bored with life", "rl"},
-		{" tries to put the pin back in", "gl"},
-		{" electrocutes himself", "lg"},
-		{" electrocutes herself", "lg"},
-		{" heats up the water", "lg"},
-		{" discharges into the water", "lg"},
-		{" discharges into the slime", "lg"},
-		{" discharges into the lava", "lg"},
-		{" sleeps with the fishes", "drown"},
-		{" sucks it down", "drown"},
-		{" gulped a load of slime", "slime"},
-		{" can't exist on slime alone", "slime"},
-		{" burst into flames", "lava"},
-		{" turned into hot slag", "lava"},
-		{" visits the Volcano God", "lava"},
-		{" cratered", "fall"},
-		{" fell to his death", "fall"},
-		{" fell to her death", "fall"},
-		{" was spiked", "world"},
-		{" was zapped", "world"},
-		{" ate a lavaball", "world"},
-		{" blew up", "world"},
-		{" was squished", "squish"},
-		{" tried to leave", "world"},
-	}
-
-	for _, p := range suicidePatterns {
-		if idx := strings.Index(msg, p.pattern); idx > 0 {
-			victim := strings.TrimSpace(msg[:idx])
-			if victim != "" && !isGenericPlayer(victim) {
-				return &MatchEvent{
-					Time:    msTime(time),
-					Type:    "frag",
-					Player:  victim,
-					Team:    a.getPlayerTeam(victim),
-					Message: msg,
-					Victim:  victim,
-					Weapon:  p.weapon,
-				}
-			}
+		// Victim-named ("X was telefragged by his teammate").
+		if o.Victim == "" || isGenericPlayer(o.Victim) {
+			return nil
 		}
-	}
-
-	// Satan's-power deflection (dtTELE2): an infix self-telefrag suicide the
-	// prefix loop above can't catch. Tag it so messages stays a complete
-	// obituary stream (one frag event per death). See frag.go.
-	if victim := satanDeflectVictim(msg); victim != "" && !isGenericPlayer(victim) {
 		return &MatchEvent{
-			Time:    msTime(time),
-			Type:    "frag",
-			Player:  victim,
-			Team:    a.getPlayerTeam(victim),
-			Message: msg,
-			Victim:  victim,
-			Weapon:  "tele",
+			Time: msTime(time), Type: "frag",
+			Player: o.Killer, Team: a.getPlayerTeam(o.Victim),
+			Message: msg, Victim: o.Victim, Weapon: o.Weapon,
 		}
 	}
 
-	return nil
+	// Regular kill / suicide — both parties must resolve to real names.
+	if o.Killer == "" || o.Victim == "" || isGenericPlayer(o.Killer) || isGenericPlayer(o.Victim) {
+		return nil
+	}
+	return &MatchEvent{
+		Time: msTime(time), Type: "frag",
+		Player: o.Killer, Team: a.getPlayerTeam(o.Killer),
+		Message: msg, Victim: o.Victim, Weapon: o.Weapon,
+	}
 }
 
 // getPlayerTeam returns the team name for a player using fuzzy lookup.

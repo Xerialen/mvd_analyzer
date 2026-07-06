@@ -145,8 +145,29 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		})
 	}
 
+	// Effective match end, computed once and shared by the powerup-close
+	// pass (detectPowerupEvents) and the per-player stream finalize
+	// (buildStreamsResult → streams.finalize). Both flush still-open
+	// intervals at this instant, so they must agree — otherwise a demo cut
+	// before intermission closes quad/pent/ring at one time and rl/lg/gl/…
+	// at another (F13). timing.EndTime is the explicit end; without it we
+	// fall back to the GLOBAL latest position sample (not any single
+	// player's) so every player's intervals close at the same time. posT is
+	// int32 ms (schema v8); EndTime is float64 seconds, converted here.
+	matchEnd := a.timing.EndTime
+	if matchEnd == 0 {
+		for _, state := range a.playerState {
+			if n := len(state.streams.posT); n > 0 {
+				if t := float64(state.streams.posT[n-1]) * 0.001; t > matchEnd {
+					matchEnd = t
+				}
+			}
+		}
+	}
+	matchEndMs := msTime(matchEnd)
+
 	// Detect powerup pickup events for Key Moments
-	powerupEvents := a.detectPowerupEvents()
+	powerupEvents := a.detectPowerupEvents(matchEndMs)
 
 	// Count frags during each powerup run
 	for i := range powerupEvents {
@@ -195,7 +216,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// short-residence wall-bleed via the blip filter, and emit the
 	// resulting sparse Loc change stream into each player's stream
 	// builder. Returns the ordered locTable we'll ship in Result.
-	locTable, locIndex := a.resolveLocsAndFilterBlips()
+	locTable := a.resolveLocsAndFilterBlips()
 
 	// Trace each player's height above the floor beneath them at every
 	// native-rate position sample (schema v24). Runs per-slot before the
@@ -211,7 +232,6 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	if len(locTable) <= 1 {
 		locTable = nil
 	}
-	_ = locIndex // used by the regions builder below if regions are configured
 
 	// Build name -> UserID mapping for Hub viewer links. Key by the
 	// reconnect-unified identity active on each slot session, and skip
@@ -274,20 +294,9 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		PlayerUserIDs: playerUserIDsByName,
 	}
 
-	matchEnd := a.timing.EndTime
-	if matchEnd == 0 {
-		// Fall back to latest position sample if timing didn't observe
-		// an explicit end (e.g. demo cut short before intermission).
-		// posT is int32 ms (schema v8); convert to seconds for the
-		// comparison against the float64 EndTime placeholder.
-		for _, state := range a.playerState {
-			if n := len(state.streams.posT); n > 0 {
-				if t := float64(state.streams.posT[n-1]) * 0.001; t > matchEnd {
-					matchEnd = t
-				}
-			}
-		}
-	}
+	// matchEnd (and matchEndMs) were computed once above and already fed the
+	// powerup-close pass; buildStreamsResult reuses the same value so weapon
+	// and powerup intervals close consistently (F13).
 	if streams := a.buildStreamsResult(slotToName, slotToTeam, a.timing.StartTime, matchEnd); streams != nil {
 		result.Streams = streams
 

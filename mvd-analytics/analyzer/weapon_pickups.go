@@ -83,27 +83,12 @@ type WeaponPickupsAnalyzer struct {
 // each weapon pickup window.
 func (a *WeaponPickupsAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
-// identityAt returns the resolved name+team that held a slot at time
-// tMs (integer ms). Prefers the reconnect-aware CoreOutputs session
-// table so a player's pre-reconnect pickups/drops aren't relabelled with
-// whoever later took their slot; falls back to the live userinfo entry
-// in ctx.Players (which keeps unit tests that only wire up ctx.Players
-// working).
+// identityAt returns the resolved name+team that held a slot at time tMs
+// (integer ms) via the canonical ResolveSlotAt chain (session table →
+// userinfo → name→team backfill), so a player's pre-reconnect pickups/drops
+// aren't relabelled with whoever later took their slot.
 func (a *WeaponPickupsAnalyzer) identityAt(slot int, tMs int32) SlotInfo {
-	id := a.core.SlotIdentityAt(slot, tMs)
-	if id.Name == "" || id.Team == "" {
-		if slot >= 0 && slot < len(a.ctx.Players) {
-			if p := a.ctx.Players[slot]; p != nil {
-				if id.Name == "" {
-					id.Name = p.Name
-				}
-				if id.Team == "" {
-					id.Team = p.Team
-				}
-			}
-		}
-	}
-	return id
+	return ResolveSlotAt(a.core, a.ctx.Players, slot, tMs)
 }
 
 type packDrop struct {

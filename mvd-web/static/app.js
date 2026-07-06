@@ -86,12 +86,27 @@ let currentResult = null;
 
 const worker = new Worker('worker.js');
 let wasmReady = false;
-let analyzeResolve = null;
-let analyzeReject = null;
-let recomputeResolve = null;
-let recomputeReject = null;
-let losResolve = null;
-let losReject = null;
+
+// Worker RPC correlation. Each request carries a monotonic `reqId` that the
+// worker echoes back on its reply; pending resolvers are keyed by that id in
+// `pendingWorkerReqs` so two in-flight calls on the same lane (e.g. the user
+// clicking two search rows, or a region recompute issued before the previous
+// reply lands) can no longer cross-wire — the old single-slot resolvers let
+// the first reply settle the second caller and dropped the second reply,
+// hanging one promise forever. Non-correlated broadcasts (the deferred
+// 'buckets' message, the WASM-load-failure 'error') carry no reqId and are
+// handled without a lookup.
+let nextWorkerReqId = 1;
+const pendingWorkerReqs = new Map(); // reqId -> { resolve, reject }
+
+// takePendingWorkerReq pops the resolver pair for a correlated reply. Returns
+// undefined for an unknown/absent id (a superseded-and-already-settled request
+// or a non-correlated message), so a stray reply is dropped without throwing.
+function takePendingWorkerReq(reqId) {
+    const p = pendingWorkerReqs.get(reqId);
+    if (p) pendingWorkerReqs.delete(reqId);
+    return p;
+}
 
 // ─── Load-timing instrumentation ────────────────────────────────────────────
 // Structured per-stage timing for the demo load path, printed to the console
@@ -199,50 +214,32 @@ worker.onmessage = (e) => {
             tag.appendChild(a);
             tag.appendChild(document.createTextNode(`) — ${v.date}`));
         }
-    } else if (e.data.type === 'result') {
-        if (analyzeResolve) {
-            analyzeResolve({
-                json: e.data.json,
-                timings: e.data.timings,
-            });
-            analyzeResolve = null;
-            analyzeReject = null;
-        }
     } else if (e.data.type === 'buckets') {
         // Deferred 50ms bucket + region-control payload — arrives a few
         // seconds after 'result'. Stash it and render the Timeline/Map
-        // tabs that displayResults intentionally skipped.
+        // tabs that displayResults intentionally skipped. Not request-
+        // correlated (broadcast follow-up to the analyze), so no reqId lookup.
         applyDeferredBuckets(e.data);
-    } else if (e.data.type === 'error') {
-        if (analyzeReject) {
-            analyzeReject(new Error(e.data.message));
-            analyzeResolve = null;
-            analyzeReject = null;
-        }
-    } else if (e.data.type === 'recompute_result') {
-        if (recomputeResolve) {
-            recomputeResolve(e.data.json);
-            recomputeResolve = null;
-            recomputeReject = null;
-        }
-    } else if (e.data.type === 'recompute_error') {
-        if (recomputeReject) {
-            recomputeReject(new Error(e.data.message));
-            recomputeResolve = null;
-            recomputeReject = null;
-        }
-    } else if (e.data.type === 'los_result') {
-        if (losResolve) {
-            losResolve(e.data.json);
-            losResolve = null;
-            losReject = null;
-        }
-    } else if (e.data.type === 'los_error') {
-        if (losReject) {
-            losReject(new Error(e.data.message));
-            losResolve = null;
-            losReject = null;
-        }
+    } else if (
+        e.data.type === 'result' ||
+        e.data.type === 'recompute_result' ||
+        e.data.type === 'los_result'
+    ) {
+        // Correlated success reply — hand the whole message to the caller's
+        // resolver, which pulls the fields it needs (json/timings). Keyed by
+        // reqId so it always settles its own caller.
+        const pending = takePendingWorkerReq(e.data.reqId);
+        if (pending) pending.resolve(e.data);
+    } else if (
+        e.data.type === 'error' ||
+        e.data.type === 'recompute_error' ||
+        e.data.type === 'los_error'
+    ) {
+        // Correlated failure reply. The WASM-load-failure 'error' emitted
+        // before any analyze is issued carries no reqId → no pending entry →
+        // dropped (matches the previous null-resolver behaviour).
+        const pending = takePendingWorkerReq(e.data.reqId);
+        if (pending) pending.reject(new Error(e.data.message));
     }
 };
 
@@ -253,26 +250,29 @@ worker.onmessage = (e) => {
 // result.timelineAnalysis.bucketView by applyDeferredBuckets.
 function analyzeInWorker(bytes, filename) {
     return new Promise((resolve, reject) => {
-        analyzeResolve = (payload) => {
-            try {
-                const tParse = performance.now();
-                const result = JSON.parse(payload.json);
-                if (loadTiming) {
-                    loadTiming.parseMs = performance.now() - tParse;
-                    loadTiming.worker = payload.timings || null;
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => {
+                try {
+                    const tParse = performance.now();
+                    const result = JSON.parse(payload.json);
+                    if (loadTiming) {
+                        loadTiming.parseMs = performance.now() - tParse;
+                        loadTiming.worker = payload.timings || null;
+                    }
+                    // Buckets / region states arrive later via the 'buckets'
+                    // message and are stashed by applyDeferredBuckets — the
+                    // summary renders without waiting for them.
+                    resolve(result);
+                } catch (e) {
+                    reject(e);
                 }
-                // Buckets / region states arrive later via the 'buckets'
-                // message and are stashed by applyDeferredBuckets — the
-                // summary renders without waiting for them.
-                resolve(result);
-            } catch (e) {
-                reject(e);
-            }
-        };
-        analyzeReject = reject;
+            },
+            reject,
+        });
         // Transfer the ArrayBuffer (zero-copy)
         worker.postMessage(
-            { type: 'analyze', bytes: bytes.buffer, filename },
+            { type: 'analyze', reqId, bytes: bytes.buffer, filename },
             [bytes.buffer]
         );
     });
@@ -333,9 +333,12 @@ function applyDeferredBuckets(data) {
 // that's why edited region stats stayed stale before this lane existed.
 function recomputeInWorker(overrideJSON) {
     return new Promise((resolve, reject) => {
-        recomputeResolve = resolve;
-        recomputeReject = reject;
-        worker.postMessage({ type: 'recomputeRegions', overrideJSON });
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => resolve(payload.json),
+            reject,
+        });
+        worker.postMessage({ type: 'recomputeRegions', reqId, overrideJSON });
     });
 }
 
@@ -345,9 +348,12 @@ function recomputeInWorker(overrideJSON) {
 // fills both the actual-sightline and potential-visibility metrics).
 function computeLosInWorker() {
     return new Promise((resolve, reject) => {
-        losResolve = resolve;
-        losReject = reject;
-        worker.postMessage({ type: 'computeLos' });
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => resolve(payload.json),
+            reject,
+        });
+        worker.postMessage({ type: 'computeLos', reqId });
     });
 }
 
@@ -506,8 +512,7 @@ function setCurrentTime(time) {
     mapState.renderDirty = true;
     updateUnifiedCursor();
     updateUnifiedTimeDisplay();
-    updateTimeIndicators();
-    updateTeamStatus();
+    updateTimeIndicators(); // tail-calls updateTeamStatus() when range > 0
     updateMapLegend();
     updateRegionStatus();
     updateItemsPanelStatus(mapState.currentTime);
@@ -891,6 +896,26 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Sum stats.frags per team over a demoInfo.players array, returning a
+// { teamName: totalFrags } map. Players with no team bucket under
+// `emptyTeamKey` (default '' — the topbar/team-order convention; the Teams
+// panel passes 'unknown' so a teamless bucket renders with a visible label).
+function teamFragTotals(players, emptyTeamKey = '') {
+    const totals = {};
+    for (const p of (players || [])) {
+        const t = p.team || emptyTeamKey;
+        totals[t] = (totals[t] || 0) + (p.stats?.frags || 0);
+    }
+    return totals;
+}
+
+// Return a new array of players sorted by stats.frags descending. The sort is
+// stable (equal-frag players keep input order); this frag-sorted order is the
+// canonical TEAM_COLORS source, so its semantics must not change.
+function sortByFragsDesc(players) {
+    return [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+}
+
 function updateTopbarDemoInfo(result) {
     const el = document.getElementById('topbar-demo-info');
     if (!el) return;
@@ -905,12 +930,9 @@ function updateTopbarDemoInfo(result) {
     if (teams.length < 2 && demoInfo?.teams) teams = [...demoInfo.teams];
     if (teams.length < 2 && result?.match?.teams) teams = result.match.teams.map(t => t.name);
 
-    const teamScores = {};
+    let teamScores = {};
     if (demoInfo?.players) {
-        for (const p of demoInfo.players) {
-            const t = p.team || '';
-            teamScores[t] = (teamScores[t] || 0) + (p.stats?.frags || 0);
-        }
+        teamScores = teamFragTotals(demoInfo.players);
     } else if (result?.match?.teams) {
         for (const t of result.match.teams) teamScores[t.name] = t.frags || 0;
     }
@@ -1064,11 +1086,7 @@ function displayResults(result) {
             teams = result.match.teams.map(t => t.name);
         }
         if (teams.length >= 2 && demoInfo?.players) {
-            const teamFrags = {};
-            for (const p of demoInfo.players) {
-                const t = p.team || '';
-                teamFrags[t] = (teamFrags[t] || 0) + (p.stats?.frags || 0);
-            }
+            const teamFrags = teamFragTotals(demoInfo.players);
             teams.sort((a, b) => (teamFrags[b] || 0) - (teamFrags[a] || 0));
         }
         timelineState.teams = teams;
@@ -1229,15 +1247,9 @@ function displayTeamsFromDemoInfo(demoInfo) {
     const container = document.getElementById('teams-list');
     container.innerHTML = '';
 
-    // Calculate team scores from players
-    const teamScores = {};
-    for (const player of demoInfo.players || []) {
-        const team = player.team || 'unknown';
-        if (!teamScores[team]) {
-            teamScores[team] = 0;
-        }
-        teamScores[team] += player.stats?.frags || 0;
-    }
+    // Calculate team scores from players (teamless players bucket as 'unknown'
+    // so they render with a visible label in this panel).
+    const teamScores = teamFragTotals(demoInfo.players, 'unknown');
 
     // Use timelineState.teams order for consistent colors, fall back to score sort
     let ordered;
@@ -1375,20 +1387,23 @@ function displayPlayerStats(players) {
 // pickups) still renders normally.
 //
 // Detection: the Go `normalizeDuelTeams` pass rewrites every participant
-// team field to their own name for duels, so we can detect duel mode
-// reliably by checking whether every demoInfo player has `team ===
-// name`. This avoids depending on the metadata mode string, which can
-// be "duel" / "1on1" / "LGC" / "Hoony" / missing entirely depending on
+// team field to their own name for duels (and only for exactly-2-player
+// matches — see isDuelResult in duel_normalize.go), so we can detect duel
+// mode reliably by checking whether the two demoInfo players each have
+// `team === name`. This avoids depending on the metadata mode string, which
+// can be "duel" / "1on1" / "LGC" / "Hoony" / missing entirely depending on
 // the server flavour.
-function applyDuelModeUI(result) {
-    const players = result.demoInfo?.players || [];
-    const isDuel = players.length === 2 && players.every(p => p.team === p.name);
+function isDuel(result) {
+    const players = result?.demoInfo?.players || [];
+    return players.length === 2 && players.every(p => p.team === p.name);
+}
 
+function applyDuelModeUI(result) {
     // Toggle a class on <body> so CSS can drive the hiding. Using a
     // class (instead of inline style writes) means the UI can re-render
     // cleanly on demo reload without leaking stale display:none values
     // onto unrelated elements.
-    document.body.classList.toggle('duel-mode', isDuel);
+    document.body.classList.toggle('duel-mode', isDuel(result));
 }
 
 // Long-form names for KTX spawn algorithms (k_spw values). Mirrors
@@ -1555,7 +1570,7 @@ function formatWeaponCells(weapon) {
 }
 
 function displayItemsTable(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
 
     renderTableRows('items-body', sorted, player => {
@@ -1613,12 +1628,26 @@ function displayScoreboardFallback(byPlayer, players) {
 
     playerData.sort((a, b) => b.frags - a.frags);
 
+    // This fallback path has no demoinfo, hence no handicap data — always hide
+    // the handicap column, mirroring displayPlayerStats (there is no default
+    // CSS hiding .handicap-col).
+    document.querySelectorAll('#scoreboard .handicap-col').forEach(el => {
+        el.style.display = 'none';
+    });
+
     playerData.forEach(player => {
         const tr = document.createElement('tr');
+        // One cell per #scoreboard header, in header order (index.html):
+        // Player, Team, HC, Frags, Eff, Kills, RL K, LG K, Deaths, TK, Bores,
+        // Dmg, Taken, Ewep, ToDie, Ping. '-' fillers for stats this fallback
+        // (frag-log only, no demoinfo) cannot supply.
         tr.innerHTML = `
             <td>${escapeHtml(player.name)}</td>
             <td>${escapeHtml(player.team)}</td>
+            <td class="handicap-col" style="display: none;">-</td>
             <td>${player.frags}</td>
+            <td>-</td>
+            <td>-</td>
             <td>-</td>
             <td>-</td>
             <td>${player.deaths}</td>
@@ -1664,7 +1693,7 @@ function groupByTeam(players) {
 // ─── Per-team aggregate tables ─────────────────────────────────────────────
 
 function displayPlayerStatsTeams(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
     // Same accurate-count sourcing as displayPlayerStats so the team totals
@@ -1715,7 +1744,7 @@ function displayPlayerStatsTeams(players) {
 }
 
 function displayWeaponStatsTeamsTable(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
     const wNames = ['sg', 'ssg', 'sng', 'gl', 'rl', 'lg'];
@@ -1745,7 +1774,7 @@ function displayWeaponStatsTeamsTable(players) {
 }
 
 function displayItemsTeamsTable(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
     const fmtPu = (took, time) => time > 0 ? `${took} (${time}s)` : `${took}`;
@@ -1852,7 +1881,7 @@ function displayKeyMoments(result) {
                 const fromTime = Math.max(0, Math.floor(event.time + demoOff) - 10);
                 const toTime = Math.floor(event.endTime + demoOff) + 5;
                 const trackId = event.playerUserID || event.playerSlot;
-                const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+                const viewerUrl = hubReplayUrl({ gameId: hubInfo.gameId, from: fromTime, to: toTime, track: trackId });
                 watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
             }
 
@@ -1904,7 +1933,7 @@ function displayKeyMoments(result) {
                 const fromTime = Math.max(0, Math.floor(streak.time + demoOff));
                 const toTime = Math.floor(streak.endTime + demoOff) + 3;
                 const trackId = streak.playerUserID || 0;
-                const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+                const viewerUrl = hubReplayUrl({ gameId: hubInfo.gameId, from: fromTime, to: toTime, track: trackId });
                 watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
             }
 
@@ -1933,69 +1962,44 @@ function displayKeyMoments(result) {
     displayAirgibs(result);
 }
 
-// Airgib table state: the raw events plus the active client-side sort.
-// Default sort is height-above-shooter descending — the vertical gap
-// the rocket climbed is what makes a hit look spectacular. (The
-// analyzer ships the list ordered by floor height; the table re-sorts
-// client-side and is re-sortable by any column.)
-const airgibState = { data: [], hubInfo: null, sortKey: 'aboveShooter', sortDir: 'desc', bound: false };
-
+// Render the airborne-rocket-gib table. Default view is height-above-shooter
+// descending — the vertical gap the rocket climbed is what makes a hit look
+// spectacular (the analyzer ships the list ordered by floor height). The table
+// is re-sortable by any column through the shared makeSortable machinery: the
+// numeric/raw columns carry data-sort-value so display strings ("1:23", rounded
+// heights) don't mis-sort, and the header indicator is reset to the default
+// each load so a fresh demo always opens on the aboveShooter-desc view.
 function displayAirgibs(result) {
+    const table = document.getElementById('airgibs-table');
     const body = document.getElementById('airgibs-body');
     const empty = document.getElementById('airgibs-empty');
-    if (!body) return;
+    if (!table || !body) return;
 
+    const hubInfo = currentResult?.hubInfo || null;
     // time is int32 ms on the raw result; keep a seconds copy for seek/hub.
-    airgibState.data = (result.timelineAnalysis?.airgibs || []).map(a => ({
-        ...a,
-        timeSec: a.time * 0.001,
-    }));
-    airgibState.hubInfo = currentResult?.hubInfo || null;
+    const data = (result.timelineAnalysis?.airgibs || []).map(a => ({ ...a, timeSec: a.time * 0.001 }));
 
-    if (!airgibState.bound) {
-        initAirgibSorting();
-        airgibState.bound = true;
-    }
-
-    if (airgibState.data.length === 0) {
+    if (data.length === 0) {
         body.innerHTML = '';
         empty.style.display = 'block';
         return;
     }
     empty.style.display = 'none';
-    renderAirgibs();
-}
 
-function renderAirgibs() {
-    const body = document.getElementById('airgibs-body');
-    if (!body) return;
-    const { data, sortKey, sortDir, hubInfo } = airgibState;
-    const dir = sortDir === 'asc' ? 1 : -1;
+    // Reset the header indicators to the default (aboveShooter desc) and lay
+    // the rows out in that order; makeSortable takes over on click.
+    table.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc', 'sort-active'));
+    const aboveTh = table.querySelector('thead th[data-sort="aboveShooter"]');
+    if (aboveTh) aboveTh.classList.add('sort-desc');
+    data.sort((a, b) => ((b.heightAboveAttacker ?? 0) - (a.heightAboveAttacker ?? 0)) || (a.time - b.time));
 
-    const sorted = data.slice().sort((a, b) => {
-        let av, bv;
-        switch (sortKey) {
-            case 'attacker': return dir * (a.attacker || '').localeCompare(b.attacker || '') || (a.time - b.time);
-            case 'victim':   return dir * (a.victim || '').localeCompare(b.victim || '') || (a.time - b.time);
-            case 'loc':      return dir * (a.loc || '').localeCompare(b.loc || '') || (a.time - b.time);
-            case 'lethal':   av = a.lethal ? 1 : 0; bv = b.lethal ? 1 : 0; break;
-            case 'time':     av = a.time; bv = b.time; break;
-            // Absent on the wire means dead-level 0 (omitempty), or the
-            // rare missing shooter sample — both sort as the neutral 0.
-            case 'aboveShooter':
-                av = a.heightAboveAttacker ?? 0;
-                bv = b.heightAboveAttacker ?? 0;
-                break;
-            case 'height':
-            default:         av = a.height; bv = b.height; break;
-        }
-        if (av < bv) return -dir;
-        if (av > bv) return dir;
-        return a.time - b.time; // stable tiebreak
-    });
-
+    // heightAboveAttacker is omitted on the wire for a dead-level 0 (omitempty)
+    // and when the shooter had no position sample near the hit — the neutral 0
+    // covers both. Heights are float32 units; display rounds to 1 decimal while
+    // data-sort-value keeps the raw value for sorting.
+    const round1 = v => Math.round(v * 10) / 10;
     body.innerHTML = '';
-    sorted.forEach(a => {
+    for (const a of data) {
         const tr = document.createElement('tr');
 
         let watchCell = '-';
@@ -2004,59 +2008,28 @@ function renderAirgibs() {
             const fromTime = Math.max(0, Math.floor(a.timeSec + demoOff) - 5);
             const toTime = Math.floor(a.timeSec + demoOff) + 3;
             const trackId = a.attackerUserID || 0; // shooter perspective
-            const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+            const viewerUrl = hubReplayUrl({ gameId: hubInfo.gameId, from: fromTime, to: toTime, track: trackId });
             watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
         }
 
         const lethalCell = a.lethal ? '<span class="airgib-lethal">gib</span>' : '';
-        // heightAboveAttacker is omitted on the wire for a dead-level 0
-        // (omitempty) and when the shooter had no position sample near
-        // the hit — render the neutral 0 for both. Heights are float32
-        // units; round to 1 decimal for display (sorting uses the raw
-        // values above).
-        const round1 = v => Math.round(v * 10) / 10;
-        const aboveShooterCell = round1(a.heightAboveAttacker ?? 0);
+        const aboveShooter = a.heightAboveAttacker ?? 0;
 
         tr.innerHTML = `
-            <td>${round1(a.height)}</td>
-            <td>${aboveShooterCell}</td>
+            <td data-sort-value="${a.height}">${round1(a.height)}</td>
+            <td data-sort-value="${aboveShooter}">${round1(aboveShooter)}</td>
             <td>${escapeHtml(a.attacker || 'Unknown')}</td>
             <td>${escapeHtml(a.victim || 'Unknown')}</td>
             <td>${escapeHtml(a.loc || '-')}</td>
-            <td>${lethalCell}</td>
-            <td class="time-cell time-link">${formatDuration(a.timeSec)}</td>
+            <td data-sort-value="${a.lethal ? 1 : 0}">${lethalCell}</td>
+            <td class="time-cell time-link" data-sort-value="${a.time}">${formatDuration(a.timeSec)}</td>
             <td>${watchCell}</td>
         `;
         tr.querySelector('.time-link').addEventListener('click', () => setCurrentTime(a.timeSec));
         body.appendChild(tr);
-    });
+    }
 
-    updateAirgibSortIndicators();
-}
-
-function updateAirgibSortIndicators() {
-    document.querySelectorAll('#airgibs-table thead th[data-sort]').forEach(th => {
-        th.classList.remove('sort-active', 'sort-asc', 'sort-desc');
-        if (th.dataset.sort === airgibState.sortKey) {
-            th.classList.add('sort-active', airgibState.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
-        }
-    });
-}
-
-function initAirgibSorting() {
-    document.querySelectorAll('#airgibs-table thead th[data-sort]').forEach(th => {
-        th.addEventListener('click', () => {
-            const key = th.dataset.sort;
-            if (airgibState.sortKey === key) {
-                airgibState.sortDir = airgibState.sortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                airgibState.sortKey = key;
-                // Text columns read better ascending; numerics descending.
-                airgibState.sortDir = (key === 'attacker' || key === 'victim' || key === 'loc') ? 'asc' : 'desc';
-            }
-            renderAirgibs();
-        });
-    });
+    makeSortable(table);
 }
 
 function getPowerupDisplay(type) {
@@ -2197,7 +2170,7 @@ function renderPickupsTables(result) {
 
 function computePickupsState(result) {
     const players = result.demoInfo?.players || [];
-    const teamOrder = getTeamOrder([...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0)));
+    const teamOrder = getTeamOrder(sortByFragsDesc(players));
     const playerByName = new Map(players.map(p => [p.name, p]));
 
     const items = result.items?.items || [];
@@ -2607,7 +2580,7 @@ function renderPackDropRows() {
         if (!trackId) return '-';
         const f = Math.max(0, Math.floor(from + demoOff));
         const t = Math.floor(to + demoOff);
-        const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${f}&to=${t}&track=${trackId}`;
+        const url = hubReplayUrl({ gameId: hubInfo.gameId, from: f, to: t, track: trackId });
         return `<a href="${url}" target="_blank" class="viewer-link">Hub</a>`;
     };
 
@@ -2694,13 +2667,6 @@ function getWeaponName(code) {
         'slime': 'Slime'
     };
     return names[code] || code;
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Escape a single character for HTML
@@ -2797,14 +2763,12 @@ function formatQuakeMessage(text) {
 
 // Timeline Analysis State
 let timelineState = {
-    buckets: [],
     bucketView: null,      // column-major ColumnarBuckets (50ms) from getDefaultBuckets
     highResDuration: 0.05, // High-res bucket interval
     events: [],
     duration: 0,
     matchStartTime: 0,
     teams: [],
-    overviewBucketSize: 5, // Aggregate to 5-second buckets for overview
     segment: null, // { start, end } or null for full match - selected time segment
     dragging: false, // Is user dragging to select a segment on overview?
     dragStartTime: 0 // Time at drag start
@@ -2962,6 +2926,7 @@ function resetUIToCleanState() {
     mapState.lastRenderedBucket = null;
     mapState.renderDirty = false;
     mapState.followPlayer = null;
+    mapState._regionIconCache = null; // composited region-status icons (per demo)
     if ('controlRegions' in mapState) mapState.controlRegions = null;
     if ('rcResult' in mapState) mapState.rcResult = null;
     if ('locToRegion' in mapState) mapState.locToRegion = {};
@@ -3065,7 +3030,9 @@ function displayTimelineAnalysis(result) {
     timelineState.demoOffset = (result.streams?.global?.demoOffset || 0) * 0.001;
     timelineState.duration = (result.match?.duration || 600000) * 0.001;
     timelineState.events = (result.messages?.events || []).map(e => ({ ...e, time: e.time * 0.001 }));
-    timelineState.fragEvents = (timeline?.fragEvents || []).map(f => ({ ...f, time: f.time * 0.001 })); // Frag events from stat tracking
+    // Sorted by time once here so prepScoreData / precomputeFragCounts don't
+    // each re-sort a clone on every render (pan-drag re-renders many times/sec).
+    timelineState.fragEvents = (timeline?.fragEvents || []).map(f => ({ ...f, time: f.time * 0.001 })).sort((a, b) => a.time - b.time); // Frag events from stat tracking
     timelineState.deathEvents = (timeline?.deathEvents || []).map(d => ({ ...d, time: d.time * 0.001 })); // Per-player deaths (every death) for the frags/deaths drill-down
     timelineState.killEvents = (timeline?.killEvents || []).map(k => ({ ...k, time: k.time * 0.001 })); // Per-player enemy kills (killer-keyed) for the frags/deaths drill-down
     timelineState.backpacks = (result.backpacks || []).map(d => ({ ...d, time: d.time * 0.001 })); // RL/LG drops from KTX hint
@@ -3076,14 +3043,15 @@ function displayTimelineAnalysis(result) {
         duration: (ev.duration || 0) * 0.001,
     }));
 
-    // Set shared current time to start (all times are now match-relative, starting at 0)
-    mapState.currentTime = 0;
+    // Note: the shared playhead (mapState.currentTime) is initialised to 0 by
+    // resetUIToCleanState at the start of each demo load. It is deliberately
+    // NOT reset here — displayTimelineAnalysis is re-run by applyDeferredBuckets
+    // seconds after load, and a reset there would clobber a ?t= deep link or
+    // any early scrubbing the user did during the deferred-bucket window.
 
     // Update legend team names
     if (teams.length >= 2) {
         const setTextIfExists = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        setTextIfExists('legend-team-a', teams[0] + ' ↑');
-        setTextIfExists('legend-team-b', teams[1] + ' ↓');
         setTextIfExists('team-a-chat-title', `${teams[0]} Chat`);
         setTextIfExists('team-b-chat-title', `${teams[1]} Chat`);
         setTextIfExists('legend-health-team-a', teams[0] + ' ↑');
@@ -3311,6 +3279,66 @@ function drawXAxisTicks(ctx, { W, Wcss, dpr, graphH, startTime, endTime }) {
     }
 }
 
+// Output-driven (scanline) sampler shared by the diverging + mini stacked
+// renderers. Returns a closure that, given a query time, walks a monotonic
+// cursor over the sorted `points` (step function / hold-last) and returns
+// the active point (or null before the first point / past the last point's
+// declared dt). Walking the *output* (one call per pixel column) makes
+// "every column is drawn" structural and gives a draw cost that scales with
+// canvas width, not bucket count — empty buckets no longer leave un-painted
+// vertical stripes through the bars.
+function makeScanlineSampler(points) {
+    let cursor = -1;
+    return (tQuery) => {
+        while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
+        if (cursor < 0) return null;
+        const pt = points[cursor];
+        // Last point: cap at its declared dt so we don't paint past the end
+        // of the data when the view extends slightly beyond it.
+        if (cursor === points.length - 1) {
+            const endT = pt.t + (pt.dt || 0);
+            if (endT > 0 && tQuery > endT) return null;
+        }
+        return pt;
+    };
+}
+
+// Fill one 1px-wide stacked column of segments, snapping each segment
+// boundary to a pixel row so stacked segments meet on exact rows instead of
+// anti-aliased fractional ones. `from` is the baseline y (device px); `dir`
+// is -1 to stack upward, +1 downward; `scale` is the full-height pixel span
+// that maps to `maxValue`. Shared by renderDivergingGraph / renderMiniStack /
+// renderMiniDiverging.
+function fillStackedColumn(ctx, px, segs, from, dir, scale, maxValue) {
+    if (!segs) return;
+    let yAcc = from;
+    let yPrev = Math.round(from);
+    for (const seg of segs) {
+        if (seg.h > 0) {
+            yAcc += dir * ((seg.h / maxValue) * scale);
+            const yCur = Math.round(yAcc);
+            const segH = (yCur - yPrev) * dir;
+            if (segH > 0) {
+                ctx.fillStyle = seg.color;
+                ctx.fillRect(px, Math.min(yPrev, yCur), 1, segH);
+            }
+            yPrev = yCur;
+        }
+    }
+}
+
+// Diverging-graph layout, in CSS px. renderDivergingGraph multiplies these
+// by dpr for device-pixel drawing; the weapon-graph hit-tester
+// (attachWeaponGraphTooltip) consumes them directly since its cursor coords
+// are CSS px. One source of truth so the renderer and hit-tester can never
+// drift apart.
+const DIVERGING_GRAPH_LAYOUT = {
+    H: 200,           // total canvas height
+    AXIS_H: 20,       // bottom x-axis strip
+    PAD: 4,           // inner padding
+    DROP_STRIP_H: 8,  // reserved drop-dot strip at top/bottom of plot
+};
+
 // Render a diverging bar graph on a canvas.
 //   dataPoints: [{t, dt, up: [{h, color}], down: [{h, color}]}]
 //   dropMarks:  [{time, color, isTop}] (optional, e.g. RL/LG backpack drops
@@ -3324,22 +3352,22 @@ function renderDivergingGraph(canvasId, {
     yTopLabel, yBottomLabel,
     dropMarks,
 }) {
-    const setup = setupGraphCanvas(canvasId, 200);
+    const setup = setupGraphCanvas(canvasId, DIVERGING_GRAPH_LAYOUT.H);
     if (!setup) return;
     const { ctx, Wcss, W, H, dpr } = setup;
 
-    // Constants below are in device pixels — multiply by dpr so the
-    // displayed (CSS-px) size of axes / padding / dots / fonts matches
-    // what the previous CSS-px-coordinate version drew.
-    const AXIS_H = Math.round(20 * dpr);
-    const PAD = Math.round(4 * dpr);
+    // Constants below are in device pixels — multiply the shared CSS-px
+    // layout by dpr so the displayed (CSS-px) size of axes / padding / dots
+    // / fonts matches what the previous CSS-px-coordinate version drew.
+    const AXIS_H = Math.round(DIVERGING_GRAPH_LAYOUT.AXIS_H * dpr);
+    const PAD = Math.round(DIVERGING_GRAPH_LAYOUT.PAD * dpr);
     const graphH = H - AXIS_H;
     // Drop-mark strips live in a reserved zone at the top and bottom of
     // the plot area so weapon bars can never grow into them — the
     // weapons bar height scales with max players-per-team, so without
     // this reservation a high-rollout 5v5 snapshot could paint bars
     // straight through the dots. Sized for one row of ~6 px dots.
-    const DROP_STRIP_H = Math.round(8 * dpr);
+    const DROP_STRIP_H = Math.round(DIVERGING_GRAPH_LAYOUT.DROP_STRIP_H * dpr);
     const hasDropMarks = !!(dropMarks && dropMarks.length);
     const stripZone = hasDropMarks ? DROP_STRIP_H + Math.round(2 * dpr) : 0;
     const midY = PAD + (graphH - PAD) / 2;
@@ -3363,79 +3391,17 @@ function renderDivergingGraph(canvasId, {
     ctx.stroke();
 
     if (duration > 0 && dataPoints && dataPoints.length > 0) {
-        // Output-driven (scanline) rendering: for each pixel column,
-        // sample the data at that pixel's time via a monotonic cursor
-        // (step function / hold-last) and paint a 1-pixel-wide column.
-        // Replaces the older data-driven loop where we rasterised each
-        // bucket as a fillRect of bw px — that was correct when bw ≥ 1
-        // but skipped points whose `up` and `down` were both empty,
-        // leaving the canvas pixel column un-painted; gaps in the data
-        // surfaced as visible vertical stripes. Walking the *output*
-        // makes "every column is drawn" structural and gives a draw
-        // cost that scales with canvas width, not bucket count.
-        let cursor = -1;
-        const sampleAt = (tQuery) => {
-            while (cursor + 1 < dataPoints.length && dataPoints[cursor + 1].t <= tQuery) {
-                cursor++;
-            }
-            if (cursor < 0) return null;
-            const pt = dataPoints[cursor];
-            // Last point: cap at its declared dt so we don't paint past
-            // the end of the data when the view extends slightly beyond it.
-            if (cursor === dataPoints.length - 1) {
-                const endT = pt.t + (pt.dt || 0);
-                if (endT > 0 && tQuery > endT) return null;
-            }
-            return pt;
-        };
-
+        // Scanline hold-last rendering: sample each pixel column via a
+        // monotonic cursor and paint a 1px column. Team A stacks up from
+        // the center, team B stacks down. See makeScanlineSampler /
+        // fillStackedColumn for the sampling + integer-snap details.
+        const sampleAt = makeScanlineSampler(dataPoints);
         for (let px = 0; px < W; px++) {
             const tPx = startTime + (px / W) * duration;
             const pt = sampleAt(tPx);
             if (pt == null) continue;
-
-            // Stack segments with integer-aligned y boundaries: track
-            // the boundary in floating point but snap each fillRect
-            // edge to a pixel row, using the previous segment's snapped
-            // edge as the next segment's start. Stacked segments then
-            // meet on exact pixel rows instead of anti-aliased
-            // fractional ones.
-
-            // Up segments (team A, above center).
-            let yAcc = midY;
-            let yPrev = Math.round(midY);
-            if (pt.up) {
-                for (const seg of pt.up) {
-                    if (seg.h > 0) {
-                        yAcc -= (seg.h / maxValue) * barH;
-                        const yCur = Math.round(yAcc);
-                        const segH = yPrev - yCur;
-                        if (segH > 0) {
-                            ctx.fillStyle = seg.color;
-                            ctx.fillRect(px, yCur, 1, segH);
-                        }
-                        yPrev = yCur;
-                    }
-                }
-            }
-
-            // Down segments (team B, below center).
-            yAcc = midY;
-            yPrev = Math.round(midY);
-            if (pt.down) {
-                for (const seg of pt.down) {
-                    if (seg.h > 0) {
-                        yAcc += (seg.h / maxValue) * barH;
-                        const yCur = Math.round(yAcc);
-                        const segH = yCur - yPrev;
-                        if (segH > 0) {
-                            ctx.fillStyle = seg.color;
-                            ctx.fillRect(px, yPrev, 1, segH);
-                        }
-                        yPrev = yCur;
-                    }
-                }
-            }
+            fillStackedColumn(ctx, px, pt.up, midY, -1, barH, maxValue);
+            fillStackedColumn(ctx, px, pt.down, midY, 1, barH, maxValue);
         }
     }
 
@@ -3671,36 +3637,12 @@ function renderMiniStack(canvasId, { startTime, endTime, points, maxValue, heigh
     const duration = endTime - startTime;
     if (duration <= 0 || !points || points.length === 0 || maxValue <= 0) return;
 
-    let cursor = -1;
-    const sampleAt = (tQuery) => {
-        while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
-        if (cursor < 0) return null;
-        const pt = points[cursor];
-        if (cursor === points.length - 1) {
-            const endT = pt.t + (pt.dt || 0);
-            if (endT > 0 && tQuery > endT) return null;
-        }
-        return pt;
-    };
-
+    const sampleAt = makeScanlineSampler(points);
     for (let px = 0; px < W; px++) {
         const tPx = startTime + (px / W) * duration;
         const pt = sampleAt(tPx);
-        if (!pt || !pt.up) continue;
-        let yAcc = baseY;
-        let yPrev = Math.round(baseY);
-        for (const seg of pt.up) {
-            if (seg.h > 0) {
-                yAcc -= (seg.h / maxValue) * usableH;
-                const yCur = Math.round(yAcc);
-                const segH = yPrev - yCur;
-                if (segH > 0) {
-                    ctx.fillStyle = seg.color;
-                    ctx.fillRect(px, yCur, 1, segH);
-                }
-                yPrev = yCur;
-            }
-        }
+        if (!pt) continue;
+        fillStackedColumn(ctx, px, pt.up, baseY, -1, usableH, maxValue);
     }
 }
 
@@ -3873,43 +3815,14 @@ function renderMiniDiverging(canvasId, { startTime, endTime, points, maxValue, h
 
     const duration = endTime - startTime;
     if (duration > 0 && points && points.length && maxValue > 0) {
-        let cursor = -1;
-        const sampleAt = (tQuery) => {
-            while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
-            if (cursor < 0) return null;
-            const pt = points[cursor];
-            if (cursor === points.length - 1) {
-                const endT = pt.t + (pt.dt || 0);
-                if (endT > 0 && tQuery > endT) return null;
-            }
-            return pt;
-        };
+        const sampleAt = makeScanlineSampler(points);
         for (let px = 0; px < W; px++) {
             const tPx = startTime + (px / W) * duration;
             const pt = sampleAt(tPx);
             if (!pt) continue;
-            // Up (net frags, above center).
-            let yAcc = midY, yPrev = midY;
-            if (pt.up) for (const seg of pt.up) {
-                if (seg.h > 0) {
-                    yAcc -= (seg.h / maxValue) * halfH;
-                    const yCur = Math.round(yAcc);
-                    const segH = yPrev - yCur;
-                    if (segH > 0) { ctx.fillStyle = seg.color; ctx.fillRect(px, yCur, 1, segH); }
-                    yPrev = yCur;
-                }
-            }
-            // Down (deaths, below center).
-            yAcc = midY; yPrev = midY;
-            if (pt.down) for (const seg of pt.down) {
-                if (seg.h > 0) {
-                    yAcc += (seg.h / maxValue) * halfH;
-                    const yCur = Math.round(yAcc);
-                    const segH = yCur - yPrev;
-                    if (segH > 0) { ctx.fillStyle = seg.color; ctx.fillRect(px, yPrev, 1, segH); }
-                    yPrev = yCur;
-                }
-            }
+            // Up (net frags, above center); down (deaths, below center).
+            fillStackedColumn(ctx, px, pt.up, midY, -1, halfH, maxValue);
+            fillStackedColumn(ctx, px, pt.down, midY, 1, halfH, maxValue);
         }
     }
 
@@ -4087,7 +4000,7 @@ function renderWeaponsPerPlayer(startTime, endTime) {
 // ─── Data preparation: Score ────────────────────────────────────────────────
 
 function prepScoreData(startTime, endTime, teams) {
-    const fragEvents = (timelineState.fragEvents || []).slice().sort((a, b) => a.time - b.time);
+    const fragEvents = timelineState.fragEvents || []; // pre-sorted at intake
     if (teams.length < 2) return { points: [], max: 10 };
     let score = 0;
     for (const f of fragEvents) {
@@ -4176,34 +4089,54 @@ function graphMouseToTime(canvas, clientX) {
 }
 
 // One global drag tracker shared by all installed canvases — avoids attaching
-// a mousemove listener per canvas.
-const graphPanState = { canvas: null, lastX: 0 };
+// a mousemove listener per canvas. Pan updates are coalesced to one per
+// animation frame: a raw mousemove stream would otherwise run
+// setViewRange → updateDetailView (five graph preps/renders, each resizing its
+// canvas) dozens of times per second.
+const graphPanState = { canvas: null, lastX: 0, pendingX: 0, rafId: 0 };
 let graphPanGlobalsInstalled = false;
+
+// Apply the accumulated pan since the last processed frame. Runs from the rAF
+// scheduled by mousemove, and synchronously from mouseup to flush the final
+// cursor position exactly.
+function processGraphPan() {
+    graphPanState.rafId = 0;
+    const c = graphPanState.canvas;
+    if (!c) return;
+    const rect = c.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const [start, end] = currentViewRange();
+    const secPerPx = (end - start) / rect.width;
+    const dx = graphPanState.pendingX - graphPanState.lastX;
+    if (dx === 0) return;
+    graphPanState.lastX = graphPanState.pendingX;
+    setViewRange(start - dx * secPerPx, end - dx * secPerPx);
+    // Pin the playhead to its on-screen position while panning: shift the
+    // current time by the amount the window actually moved (after the
+    // [0,duration] clamp), so the indicator line stays put and the unified
+    // caret + clock + map follow. Not zoomed ⇒ the window can't move ⇒
+    // applied === 0 ⇒ the playhead holds.
+    const [newStart] = currentViewRange();
+    const applied = newStart - start;
+    if (applied !== 0) setCurrentTime(mapState.currentTime + applied);
+}
 
 function ensureGraphPanGlobals() {
     if (graphPanGlobalsInstalled) return;
     graphPanGlobalsInstalled = true;
     document.addEventListener('mousemove', (e) => {
-        const c = graphPanState.canvas;
-        if (!c) return;
-        const rect = c.getBoundingClientRect();
-        if (rect.width <= 0) return;
-        const [start, end] = currentViewRange();
-        const secPerPx = (end - start) / rect.width;
-        const dx = e.clientX - graphPanState.lastX;
-        graphPanState.lastX = e.clientX;
-        setViewRange(start - dx * secPerPx, end - dx * secPerPx);
-        // Pin the playhead to its on-screen position while panning: shift the
-        // current time by the amount the window actually moved (after the
-        // [0,duration] clamp), so the indicator line stays put and the unified
-        // caret + clock + map follow. Not zoomed ⇒ the window can't move ⇒
-        // applied === 0 ⇒ the playhead holds.
-        const [newStart] = currentViewRange();
-        const applied = newStart - start;
-        if (applied !== 0) setCurrentTime(mapState.currentTime + applied);
+        if (!graphPanState.canvas) return;
+        graphPanState.pendingX = e.clientX;
+        if (!graphPanState.rafId) graphPanState.rafId = requestAnimationFrame(processGraphPan);
     });
     document.addEventListener('mouseup', () => {
         if (!graphPanState.canvas) return;
+        // Flush any pending pan so the drag ends exactly where the cursor is.
+        if (graphPanState.rafId) {
+            cancelAnimationFrame(graphPanState.rafId);
+            graphPanState.rafId = 0;
+            processGraphPan();
+        }
         graphPanState.canvas.style.cursor = 'grab';
         graphPanState.canvas = null;
     });
@@ -4233,6 +4166,7 @@ function installGraphPanZoom(canvasId) {
         if (e.button !== 0) return;
         graphPanState.canvas = canvas;
         graphPanState.lastX = e.clientX;
+        graphPanState.pendingX = e.clientX;
         canvas.style.cursor = 'grabbing';
         e.preventDefault();
     });
@@ -4717,15 +4651,18 @@ function buildFullChat() {
     // timelineState.events was already converted to seconds at intake in
     // displayTimelineAnalysis, so use that pre-converted copy here.
     // `duration` (timelineState.duration) is also seconds.
-    const seen = new Map();
-    const events = (timelineState.events || []).filter(e => {
-        if (e.time < 0 || e.time > duration) return false;
-        const key = e.message;
-        const prevTime = seen.get(key);
-        if (prevTime !== undefined && Math.abs(e.time - prevTime) < 3) return false;
-        seen.set(key, e.time);
-        return true;
-    });
+    //
+    // No client-side text dedup: the only real duplication source — KTX
+    // sprints each say/say_team line once per recipient, all sharing one
+    // wire-ms — is already collapsed upstream by messages.go's seenChat on an
+    // exact (time,type,player,message) key (the documented CLAUDE.md filter
+    // exception; see mvd-reader/MVD_FORMAT.md §chat). Obituaries are broadcast
+    // once and pass through verbatim. A previous 3s message-text filter here
+    // also swallowed authentic repeats (a player re-sending the same bind, or
+    // two genuinely identical deaths within 3s), violating the
+    // surface-authoritative-data rule, so it was removed. Only clip to the
+    // match window.
+    const events = (timelineState.events || []).filter(e => e.time >= 0 && e.time <= duration);
 
     const killEvents = [];
     const teamAEvents = [];
@@ -4748,22 +4685,31 @@ function buildFullChat() {
         renderChatTimeAxisFull(axisContainer);
     }
 
-    // Add current-time line inside the scroll inner (scrolls with content)
+    // Add current-time line inside the scroll inner (scrolls with content).
+    // resetUIToCleanState clears the message containers but not this persistent
+    // wrapper, so guard against re-appending a duplicate line on every rebuild
+    // (each demo load re-runs buildFullChat); reuse the existing one.
     const scrollInner = viewport.querySelector('.chat-scroll-inner');
-    if (scrollInner) {
+    if (scrollInner && !document.getElementById('chat-current-time-line')) {
         const line = document.createElement('div');
         line.className = 'chat-current-time-line';
         line.id = 'chat-current-time-line';
         scrollInner.appendChild(line);
     }
 
-    // Scroll listener: only mark user scrolling if it's not our programmatic scroll
-    viewport.addEventListener('scroll', () => {
-        if (_chatProgrammaticScroll) return;
-        chatUserScrolling = true;
-        if (_chatScrollTimer) clearTimeout(_chatScrollTimer);
-        _chatScrollTimer = setTimeout(() => { chatUserScrolling = false; }, 2000);
-    }, { passive: true });
+    // Scroll listener: only mark user scrolling if it's not our programmatic
+    // scroll. The viewport persists across demo loads, so wire the listener
+    // exactly once (mirrors the _toggleWired pattern) — a fresh listener per
+    // rebuild would accumulate one per demo.
+    if (!viewport._scrollWired) {
+        viewport._scrollWired = true;
+        viewport.addEventListener('scroll', () => {
+            if (_chatProgrammaticScroll) return;
+            chatUserScrolling = true;
+            if (_chatScrollTimer) clearTimeout(_chatScrollTimer);
+            _chatScrollTimer = setTimeout(() => { chatUserScrolling = false; }, 2000);
+        }, { passive: true });
+    }
 
     chatRendered = true;
     updateChatTimeLine();
@@ -4867,39 +4813,63 @@ function updateDetailGraph(startTime, endTime) {
     }
 }
 
-// Mousemove tooltip on the weapon-graph canvas: highlights the drop
-// dot under the cursor and shows {player, weapon, loc, time}. Layout
-// constants must match renderDivergingGraph (PAD, AXIS_H, DROP_STRIP_H).
-function attachWeaponGraphTooltip() {
-    const canvas = document.getElementById('detail-graph-canvas');
-    if (!canvas || canvas._weaponTipAttached) return;
-    canvas._weaponTipAttached = true;
+// Generic canvas hover-tooltip. Creates one `.canvas-tooltip` div inside the
+// canvas's positioned parent, runs `hitTest(mx, my)` (canvas-local CSS px) on
+// every mousemove, and — when it returns a truthy hit — fills the tip with
+// `renderHtml(hit)` and clamp-positions it near the cursor (kept inside the
+// wrapper's right edge). Idempotent per canvas. Shared by the weapon-graph
+// drop-dot and powerup-span tooltips; the loc-graph tooltip is intentionally
+// NOT built on this (it rides Cytoscape's own node/edge mouseover events and
+// renderedPosition, not a raw canvas hit-test).
+function attachCanvasTooltip(canvas, hitTest, renderHtml) {
+    if (!canvas || canvas._canvasTipAttached) return;
+    canvas._canvasTipAttached = true;
 
-    const wrapper = canvas.parentElement; // .detail-graph-outer (positioned)
+    const wrapper = canvas.parentElement; // positioned ancestor
     const tip = document.createElement('div');
     tip.className = 'canvas-tooltip';
     tip.style.display = 'none';
     wrapper.appendChild(tip);
 
-    const HIT_R     = 6;   // hit radius (slightly larger than dot radius=3)
-    const HIT_DY    = 8;   // vertical tolerance — generous so users can hover near
-    const PAD       = 4;
-    const AXIS_H    = 20;
-    const H         = 200;
-    const graphH    = H - AXIS_H;
-    const DROP_STRIP_H = 8;
-    const topY    = PAD + DROP_STRIP_H / 2;
-    const bottomY = graphH - PAD - DROP_STRIP_H / 2;
-
     canvas.addEventListener('mousemove', (e) => {
-        const s = weaponGraphHitState;
-        if (!s.W || !s.dropMarks.length) { tip.style.display = 'none'; return; }
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-        const duration = s.endTime - s.startTime;
-        if (duration <= 0) { tip.style.display = 'none'; return; }
+        const hit = hitTest(mx, my);
+        if (!hit) { tip.style.display = 'none'; return; }
+        tip.innerHTML = renderHtml(hit);
+        tip.style.display = 'block';
+        // Position offset from cursor; clamp inside the wrapper so the tip
+        // doesn't get cut off near the right edge.
+        const tipW = tip.offsetWidth || 200;
+        const wrapW = wrapper.clientWidth;
+        let left = mx + 12;
+        if (left + tipW > wrapW) left = mx - tipW - 12;
+        tip.style.left = left + 'px';
+        tip.style.top  = (my + 12) + 'px';
+    });
+    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
 
+// Hover tooltip on the weapon-graph canvas: highlights the drop dot under
+// the cursor and shows {player, weapon, loc, time}. Layout comes from the
+// shared DIVERGING_GRAPH_LAYOUT (same source the renderer scales by dpr).
+function attachWeaponGraphTooltip() {
+    const canvas = document.getElementById('detail-graph-canvas');
+    if (!canvas) return;
+
+    const HIT_R  = 6;   // hit radius (slightly larger than dot radius=3)
+    const HIT_DY = 8;   // vertical tolerance — generous so users can hover near
+    const { H, AXIS_H, PAD, DROP_STRIP_H } = DIVERGING_GRAPH_LAYOUT;
+    const graphH  = H - AXIS_H;
+    const topY    = PAD + DROP_STRIP_H / 2;
+    const bottomY = graphH - PAD - DROP_STRIP_H / 2;
+
+    const hitTest = (mx, my) => {
+        const s = weaponGraphHitState;
+        if (!s.W || !s.dropMarks.length) return null;
+        const duration = s.endTime - s.startTime;
+        if (duration <= 0) return null;
         let best = null;
         let bestDx = HIT_R + 1;
         for (const m of s.dropMarks) {
@@ -4912,25 +4882,18 @@ function attachWeaponGraphTooltip() {
                 best = m;
             }
         }
+        return best;
+    };
 
-        if (!best) { tip.style.display = 'none'; return; }
-
+    const renderHtml = (best) => {
         const d = best.drop;
         const weapon = (d.weapon || '').toUpperCase();
         const locLine = d.loc ? `<div>Loc: ${escapeHtml(d.loc)}</div>` : '';
-        tip.innerHTML = `<div><strong>${escapeHtml(d.player || '?')}</strong> dropped <strong>${weapon}</strong></div>
+        return `<div><strong>${escapeHtml(d.player || '?')}</strong> dropped <strong>${weapon}</strong></div>
 ${locLine}<div>Time: ${formatDuration(d.time)}</div>`;
-        tip.style.display = 'block';
-        // Position offset from cursor; clamp inside the wrapper so the tip
-        // doesn't get cut off near the right edge.
-        const tipW = tip.offsetWidth || 200;
-        const wrapW = wrapper.clientWidth;
-        let left = mx + 12;
-        if (left + tipW > wrapW) left = mx - tipW - 12;
-        tip.style.left = left + 'px';
-        tip.style.top  = (my + 12) + 'px';
-    });
-    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    };
+
+    attachCanvasTooltip(canvas, hitTest, renderHtml);
 }
 
 function updateHealthArmorGraph(startTime, endTime) {
@@ -5196,54 +5159,38 @@ function updatePowerupTimeline(startTime, endTime) {
 // PowerupEvent metadata (player, team, frags, duration).
 function attachPowerupTimelineTooltip() {
     const canvas = document.getElementById('powerup-canvas');
-    if (!canvas || canvas._powerupTipAttached) return;
-    canvas._powerupTipAttached = true;
 
-    const wrapper = canvas.parentElement; // .region-timeline-outer (positioned)
-    const tip = document.createElement('div');
-    tip.className = 'canvas-tooltip';
-    tip.style.display = 'none';
-    wrapper.appendChild(tip);
-
-    canvas.addEventListener('mousemove', (e) => {
+    const hitTest = (mx, my) => {
         const s = powerupGraphHitState;
-        if (!s.W || !s.rows.length) { tip.style.display = 'none'; return; }
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+        if (!s.W || !s.rows.length) return null;
         const duration = s.endTime - s.startTime;
-        if (duration <= 0) { tip.style.display = 'none'; return; }
-
+        if (duration <= 0) return null;
         // Row index by Y; gracefully ignore the axis strip below the rows.
         const rowIdx = Math.floor(my / RC_ROW_H);
-        if (rowIdx < 0 || rowIdx >= s.rows.length) { tip.style.display = 'none'; return; }
+        if (rowIdx < 0 || rowIdx >= s.rows.length) return null;
         const row = s.rows[rowIdx];
-
-        // Find the span whose [start, end] window contains the cursor x.
+        // Find the first span whose [start, end] window contains the cursor x.
         let hit = null;
         for (const sp of row.spans) {
             const x1 = ((sp.start - s.startTime) / duration) * s.W;
             const x2 = ((sp.end   - s.startTime) / duration) * s.W;
             if (mx >= x1 && mx <= x2) { hit = sp; break; }
         }
-        if (!hit || !hit.event) { tip.style.display = 'none'; return; }
+        if (!hit || !hit.event) return null;
+        return { row, sp: hit };
+    };
 
-        const ev = hit.event;
+    const renderHtml = ({ row, sp }) => {
+        const ev = sp.event;
         const player = escapeHtml(ev.playerName || 'Unknown');
         const team   = ev.team ? `<div>Team: ${escapeHtml(ev.team)}</div>` : '';
         const dur    = (ev.duration != null) ? `${Math.round(ev.duration)}s` : '?';
-        tip.innerHTML = `<div><strong>${escapeHtml(row.name)}</strong> · <strong>${player}</strong></div>
+        return `<div><strong>${escapeHtml(row.name)}</strong> · <strong>${player}</strong></div>
 ${team}<div>Frags: ${ev.frags || 0}</div>
 <div>Duration: ${dur}</div>`;
-        tip.style.display = 'block';
-        const tipW = tip.offsetWidth || 200;
-        const wrapW = wrapper.clientWidth;
-        let left = mx + 12;
-        if (left + tipW > wrapW) left = mx - tipW - 12;
-        tip.style.left = left + 'px';
-        tip.style.top  = (my + 12) + 'px';
-    });
-    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    };
+
+    attachCanvasTooltip(canvas, hitTest, renderHtml);
 }
 
 function updateRegionControlTimeline(startTime, endTime) {
@@ -5333,7 +5280,7 @@ function updateTeamStatus() {
                 hasRL: isDead ? false : (data.rl ?? data.hasRL ?? false),
                 hasLG: isDead ? false : (data.lg ?? data.hasLG ?? false),
                 hasQuad: isDead ? false : (data.q ?? data.hasQuad ?? false),
-                hasPent: isDead ? false : (data.pent ?? data.hasPent ?? false),
+                hasPent: isDead ? false : (data.pe ?? false),
                 hasRing: isDead ? false : (data.r ?? data.hasRing ?? false),
                 frags: fragCounts[name] || 0,
             });
@@ -5412,6 +5359,19 @@ function updateTeamStatus() {
 
 // ─── Hub Watch Link Helper ──────────────────────────────────────────────────
 
+// Build a hub.quakeworld.nu replay URL. `to` is optional — omit it for a
+// single "jump here" link (buildHubWatchLink) and pass it for a windowed
+// clip (powerups / streaks / airgibs / pack drops). Callers do their own
+// demoOffset conversion + window padding (each surface pads differently),
+// then hand the final demo-relative from/to/track here so the URL scheme
+// lives in exactly one place.
+function hubReplayUrl({ gameId, from, to, track }) {
+    let url = `https://hub.quakeworld.nu/games/?gameId=${gameId}&from=${from}`;
+    if (to != null) url += `&to=${to}`;
+    url += `&track=${track}`;
+    return url;
+}
+
 function buildHubWatchLink(playerName, time, hubInfo, playerUserIDs) {
     if (!hubInfo || !hubInfo.gameId) return '';
     const trackId = playerUserIDs[playerName];
@@ -5419,7 +5379,7 @@ function buildHubWatchLink(playerName, time, hubInfo, playerUserIDs) {
     // Our times are match-relative (0 = match start). Hub uses demo-relative time
     // (includes countdown/warmup), so add demoOffset to convert.
     const from = Math.floor(time + (timelineState.demoOffset || 0));
-    const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${from}&track=${trackId}`;
+    const url = hubReplayUrl({ gameId: hubInfo.gameId, from, track: trackId });
     return `<a href="${url}" target="_blank" class="hub-watch-link" title="Watch in Hub">hub</a>`;
 }
 
@@ -5500,11 +5460,10 @@ function resolvePlayerLoc(data, locations) {
 let precomputedFrags = []; // [{ time, cumulative }]
 
 function precomputeFragCounts() {
-    const fragEvents = timelineState.fragEvents || [];
+    const sorted = timelineState.fragEvents || []; // pre-sorted at intake
     precomputedFrags = [];
-    if (fragEvents.length === 0) return;
+    if (sorted.length === 0) return;
 
-    const sorted = fragEvents.slice().sort((a, b) => a.time - b.time);
     const running = {}; // player -> cumulative frags
 
     for (const fe of sorted) {
@@ -5513,17 +5472,24 @@ function precomputeFragCounts() {
     }
 }
 
-function getFragsAtTime(time) {
-    if (precomputedFrags.length === 0) return {};
-    // Binary search for last entry with time <= target
-    let lo = 0, hi = precomputedFrags.length - 1;
-    if (time < precomputedFrags[0].time) return {};
+// Largest index i in a time-sorted container such that accessor(arr, i) <= t,
+// or -1 when t precedes the first element (or the container is empty). Works
+// over arrays of objects (accessor reads a field, e.g. (a, i) => a[i].time)
+// and over parallel arrays where `arr` IS the key array ((a, i) => a[i]).
+function lowerBoundIndex(arr, t, accessor) {
+    let lo = 0, hi = arr.length - 1;
+    if (hi < 0 || accessor(arr, 0) > t) return -1;
     while (lo < hi) {
         const mid = (lo + hi + 1) >> 1;
-        if (precomputedFrags[mid].time <= time) lo = mid;
+        if (accessor(arr, mid) <= t) lo = mid;
         else hi = mid - 1;
     }
-    return precomputedFrags[lo].cumulative;
+    return lo;
+}
+
+function getFragsAtTime(time) {
+    const idx = lowerBoundIndex(precomputedFrags, time, (a, i) => a[i].time);
+    return idx < 0 ? {} : precomputedFrags[idx].cumulative;
 }
 
 // =============================================================================
@@ -6367,9 +6333,6 @@ function initMapView(result) {
     // Populate the Follow-player dropdown with current players.
     rebuildFollowSelect();
 
-    // Build powerup event list
-    buildMapPowerupList(result);
-
     // Build item list panel (armors, weapons, MH, powerups with live
     // up/down status — present for KTX demos, auto-hidden otherwise).
     renderItemsPanel();
@@ -6377,10 +6340,10 @@ function initMapView(result) {
     // Reset trail checkboxes
     document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = false; });
 
-    // Initial render at match start
-    mapState.currentTime = 0;
-    const slider = document.getElementById('map-timeline-slider');
-    if (slider) slider.value = 0;
+    // On first load resetUIToCleanState has set currentTime to 0; on the
+    // deferred re-init (applyDeferredBuckets) it holds the user's scrub
+    // position or a ?t= deep link, which must survive — so currentTime is
+    // deliberately NOT reset to 0 here.
 
     // Initialize region control data
     initRegionControl(result);
@@ -7398,12 +7361,28 @@ function updateRegionStatus() {
     }
 }
 
-// Build a composited canvas icon: player circle+letter with RL/LG weapon icons in corners
+// Build a composited canvas icon: player circle+letter with RL/LG weapon icons
+// in corners. The icon is a pure function of the player's identity (letter +
+// team colour) and current badge set, so it's cached per (name, badge-set):
+// updateRegionStatus runs on every setCurrentTime and every 200 ms during
+// playback, and without the cache each tick allocated + repainted a fresh
+// canvas per player. A player occupies exactly one region per frame, so a
+// cached node is appended at most once per render — no double-attach. Keyed by
+// name so distinct players never share a node; the cache is cleared per demo.
 function buildPlayerRegionIcon(player) {
     const sym = player.sym;
+    const letter = sym?.symbol || player.name.charAt(0).toUpperCase();
+    const teamColor = TEAM_COLORS[sym?.teamIdx ?? player.teamIdx] || TEAM_COLORS[0];
+    const badges = getActiveBadges(player.data);
+
+    const cache = mapState._regionIconCache || (mapState._regionIconCache = new Map());
+    const key = `${player.name}|${letter}|${teamColor}|${badges.join(',')}`;
+    let canvas = cache.get(key);
+    if (canvas) return canvas;
+
     const dpr = window.devicePixelRatio || 1;
     const size = 40;
-    const canvas = document.createElement('canvas');
+    canvas = document.createElement('canvas');
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
     canvas.style.width = size + 'px';
@@ -7413,16 +7392,14 @@ function buildPlayerRegionIcon(player) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // Draw player symbol centered — fresh-drawn so it's crisp at DPR.
-    const letter = sym?.symbol || player.name.charAt(0).toUpperCase();
-    const teamColor = TEAM_COLORS[sym?.teamIdx ?? player.teamIdx] || TEAM_COLORS[0];
     drawPlayerSymbolAt(ctx, letter, teamColor, size / 2, size / 2, PLAYER_SYMBOL_BASE_SIZE);
 
     // Draw status badges around player symbol
-    const badges = getActiveBadges(player.data);
     if (badges.length > 0) {
         drawBadgesAroundCenter(ctx, badges, size / 2, size / 2, 14, 5);
     }
 
+    cache.set(key, canvas);
     return canvas;
 }
 
@@ -7594,18 +7571,10 @@ function moverPoseAt(m, tMs) {
     const t = m.t;
     const n = t ? t.length : 0;
     if (n === 0) return null;
-    let idx;
-    if (tMs <= t[0]) idx = 0;
-    else if (tMs >= t[n - 1]) idx = n - 1;
-    else {
-        let lo = 0, hi = n - 1;
-        idx = 0;
-        while (lo <= hi) {
-            const mid = (lo + hi) >> 1;
-            if (t[mid] <= tMs) { idx = mid; lo = mid + 1; }
-            else hi = mid - 1;
-        }
-    }
+    // Clamp times before the first sample to it (strictly increasing tracks,
+    // so this matches the previous tMs<=t[0] guard exactly).
+    let idx = lowerBoundIndex(t, tMs, (a, i) => a[i]);
+    if (idx < 0) idx = 0;
     return { x: m.x[idx], y: m.y[idx], z: m.z[idx], vis: m.vis[idx] };
 }
 
@@ -8423,18 +8392,10 @@ function streamPosAt(name, tMs) {
     if (!pos || !pos.t || pos.t.length === 0) return null;
     const t = pos.t;
     const n = t.length;
-    let idx;
-    if (tMs <= t[0]) idx = 0;
-    else if (tMs >= t[n - 1]) idx = n - 1;
-    else {
-        let lo = 0, hi = n - 1;
-        idx = 0;
-        while (lo <= hi) {
-            const mid = (lo + hi) >> 1;
-            if (t[mid] <= tMs) { idx = mid; lo = mid + 1; }
-            else hi = mid - 1;
-        }
-    }
+    // Clamp times before the first sample to it (dense, strictly increasing
+    // tracks, so this matches the previous tMs<=t[0] guard exactly).
+    let idx = lowerBoundIndex(t, tMs, (a, i) => a[i]);
+    if (idx < 0) idx = 0;
     let h = null;
     if (pos.h && pos.h.length === n && pos.h[idx] !== MAP_NO_FLOOR) h = pos.h[idx];
     const out = { x: pos.x[idx], y: pos.y[idx], z: pos.z[idx], h };
@@ -9098,16 +9059,9 @@ function updateItemsPanelStatus(time) {
     }
 }
 
-// Binary search: find index of last point with t <= time
+// Index of the last point with t <= time, or -1 if time precedes the first.
 function trailIndexAtTime(points, time) {
-    let low = 0, high = points.length - 1;
-    if (high < 0 || points[0].t > time) return -1;
-    while (low < high) {
-        const mid = (low + high + 1) >> 1;
-        if (points[mid].t <= time) low = mid;
-        else high = mid - 1;
-    }
-    return low;
+    return lowerBoundIndex(points, time, (a, i) => a[i].t);
 }
 
 // ensureLosComputed runs the lazy line-of-sight pass once via the worker, then
@@ -9955,8 +9909,7 @@ function populateLocGraphFilter(result) {
     const players = (result.demoInfo && result.demoInfo.players) || [];
 
     // Hide team options in duel mode (team name == player name for every player).
-    const isDuel = players.length > 0 && players.every(p => p.team === p.name);
-    if (!isDuel) {
+    if (!isDuel(result)) {
         for (const t of teams) opts.push({ value: 'team:' + t, label: 'Team: ' + t });
     }
     for (const p of players) {
@@ -10341,6 +10294,10 @@ function updateDynamicLabelSize() {
 // Click: show a tooltip with top-5 connections. Hover: fade the rest of the
 // graph so the node's neighborhood is clear.
 function attachLocGraphInteractions(cy) {
+    // NB: not built on attachCanvasTooltip — this rides Cytoscape's own
+    // node/edge mouseover delegation and renderedPosition (plus a graph-fade
+    // side effect), not a raw canvas mousemove hit-test, so the shared helper
+    // wouldn't fit without contortion.
     // Tooltip DOM — created lazily, reused across hovers.
     const container = document.getElementById('locgraph-canvas');
     if (!locGraphState.tooltip) {
@@ -10417,12 +10374,6 @@ function edgeTooltipHtml(edge) {
     return `<div><strong>${escapeHtml(from)} → ${escapeHtml(to)}</strong> (${kind})</div>
 <div>Total transitions: ${total}</div>
 ${rows}`;
-}
-
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
 }
 
 // Kept as a thin compatibility shim: the tab-switch handler and old callers
@@ -10565,8 +10516,7 @@ function buildLocHeatmap(result, metric) {
         .sort((a, b) => (W(b).total || 0) - (W(a).total || 0));
     if (baseLocs.length === 0) return null;
 
-    const isDuel = players.length > 0 && players.every(p => p.team === p.name);
-    const hasTeams = !isDuel && teams.length >= 2 && !(teams.length === 1 && teams[0] === '');
+    const hasTeams = !isDuel(result) && teams.length >= 2 && !(teams.length === 1 && teams[0] === '');
 
     // Columns carry `members` so a cell value is uniformly sum(byPlayer[m]);
     // `kind` ('team' | 'player') drives the title wording. `label` is the short
@@ -10937,6 +10887,7 @@ const AIM_COL = {
     blocked: { h: 'Blocked', t: 'Miss — the beam would have hit an enemy in range, but an object stopped it short', cell: w => w.blocked || 0 },
     lgMiss: { h: 'Miss', t: 'Miss — aim error, no enemy on the beam\'s line', cell: w => w.miss || 0 },
     far: { h: 'Far', t: 'Miss — the enemy was on the beam\'s line but beyond its ~600u reach', cell: w => w.outOfRange || 0 },
+    unres: { h: 'Unresolved', t: 'Miss that could not be classified — no beam matched this fire (needs the beam stream / shooter position at fire time)', cell: w => w.unresolved || 0 },
     blockedPct: { h: 'Blocked %', t: 'Share of fires denied by an object in the way', cell: w => shotShare(w.blocked, w) },
     lgMissPct: { h: 'Miss %', t: 'Share of fires missed on aim', cell: w => shotShare(w.miss, w) },
     farPct: { h: 'Far %', t: 'Share of fires denied by beam range', cell: w => shotShare(w.outOfRange, w) },
@@ -10944,7 +10895,7 @@ const AIM_COL = {
 // Per-weapon column order: counts first, then the share-of-fires block.
 // SG/SSG lead with the pellet stats.
 const AIM_TABLE_COLS = {
-    lg: ['shots', 'hits', 'lgMiss', 'blocked', 'far', 'hitPct', 'lgMissPct', 'blockedPct', 'farPct'],
+    lg: ['shots', 'hits', 'lgMiss', 'blocked', 'far', 'unres', 'hitPct', 'lgMissPct', 'blockedPct', 'farPct'],
     sg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
     ssg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
     rl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
@@ -11244,13 +11195,18 @@ function drawAimDensity(canvas, c, idx) {
     ctx.fillText('0', bx + CB + 4, MT + PH - 3);
 
     // Hover read-out: shot/hit counts in the coarse bin under the cursor.
-    canvas._aimHover = { hShots, hHits, hx, hy, ML, MT, PW, PH };
+    canvas._aimHover = { hShots, hHits, hx, hy, ML, MT, PW, PH, W, H };
     if (!canvas._aimWired) {
         canvas.addEventListener('mousemove', e => {
             const d = canvas._aimHover;
             if (!d) return;
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+            // max-width:100% can render the canvas below its intrinsic CSS
+            // size; map cursor px back into the unscaled ML/PW space or the
+            // reported bin drifts on narrow layouts.
+            const sx = rect.width ? d.W / rect.width : 1;
+            const sy = rect.height ? d.H / rect.height : 1;
+            const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sy;
             if (mx < d.ML || mx >= d.ML + d.PW || my < d.MT || my >= d.MT + d.PH) {
                 canvas.title = '';
                 return;
@@ -11526,48 +11482,9 @@ function animatePlayback() {
     if (now - _lastFullSyncTime > 200) {
         _lastFullSyncTime = now;
         mapState.renderDirty = true;
-        updateTimeIndicators();
-        updateTeamStatus();
+        updateTimeIndicators(); // tail-calls updateTeamStatus() when range > 0
         updateMapLegend();
         updateRegionStatus();
         updateItemsPanelStatus(mapState.currentTime);
-    }
-}
-
-function buildMapPowerupList(result) {
-    const list = document.getElementById('map-powerup-events');
-    if (!list) return;
-
-    list.innerHTML = '';
-
-    // Prefer timelineState.powerupEvents (already converted ms→s at intake
-    // in displayTimelineAnalysis). Fall back to the raw schema field with
-    // its own conversion so the panel still renders if displayResults runs
-    // displayMap before displayTimelineAnalysis on some path.
-    const events = timelineState.powerupEvents && timelineState.powerupEvents.length
-        ? timelineState.powerupEvents
-        : (result.timelineAnalysis?.powerupEvents || []).map(ev => ({
-              ...ev,
-              time: ev.time * 0.001,
-          }));
-
-    if (events.length === 0) {
-        list.innerHTML = '<li style="color: #666; font-style: italic;">No powerup events</li>';
-        return;
-    }
-
-    for (const event of events) {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span class="time-cell">${formatDuration(event.time)}</span>
-            <span class="powerup-cell ${event.powerupType}">${getPowerupDisplay(event.powerupType)}</span>
-            <span>${escapeHtml(event.playerName || 'Unknown')}</span>
-        `;
-        li.addEventListener('click', () => {
-            setCurrentTime(event.time);
-            markMapDirty();
-            renderMap(mapState.currentTime);
-        });
-        list.appendChild(li);
     }
 }

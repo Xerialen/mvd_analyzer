@@ -33,6 +33,32 @@ func TestParseUserInfoString_NoAuth(t *testing.T) {
 	}
 }
 
+func TestParseUserInfoString_SpectatorStarKey(t *testing.T) {
+	// mvdsv rewrites the client's "spectator" key to the server-set star
+	// key "*spectator" before broadcast (sv_main.c:1065-1066), so full
+	// userinfo strings in MVDs carry the star spelling. A spectator whose
+	// flag is missed here leaks into match.players as a 0-frag player.
+	player := &mvd.PlayerInfo{}
+	parseUserInfoString(`\*spectator\1\*client\ezQuake 8065\team\psy\name\mythic`, player)
+	if !player.Spectator {
+		t.Errorf("Spectator = false, want true for *spectator key")
+	}
+
+	// Bare spelling still accepted (non-mvdsv sources).
+	player = &mvd.PlayerInfo{}
+	parseUserInfoString(`\spectator\1\name\obs`, player)
+	if !player.Spectator {
+		t.Errorf("Spectator = false, want true for bare spectator key")
+	}
+
+	// "spectator 0" must not set the flag.
+	player = &mvd.PlayerInfo{}
+	parseUserInfoString(`\*spectator\0\name\p1`, player)
+	if player.Spectator {
+		t.Errorf("Spectator = true, want false for *spectator=0")
+	}
+}
+
 func TestStripChatMarkup(t *testing.T) {
 	cases := []struct {
 		name string

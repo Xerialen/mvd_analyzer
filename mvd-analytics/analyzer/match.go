@@ -14,6 +14,11 @@ type MatchAnalyzer struct {
 	core     *CoreOutputs
 	duration float64
 	timing   MatchTimingDetector
+
+	// frags is the per-slot svc_updatefrags scoreboard, frozen at match
+	// end (see OnEvent) so post-match slot re-inits cannot clobber the
+	// final score.
+	frags map[int]int
 }
 
 // UseCoreOutputs lets Match read demoinfo-resolved display names from
@@ -40,6 +45,21 @@ func (a *MatchAnalyzer) OnEvent(event events.Event) error {
 		a.timing.OnPrint(e)
 	case *events.IntermissionEvent:
 		a.timing.OnIntermission(e.EventTime())
+	case *events.FragUpdateEvent:
+		// The match scoreboard is immutable once the match ends; a frag
+		// update after that is next-game bookkeeping, most commonly a
+		// reconnecting client's slot re-init to 0 during intermission,
+		// which would otherwise clobber the final score (hub 212483:
+		// Doomie's 34 reset to 0 by a post-match reconnect; hub 212545:
+		// squeeze's 55 likewise). Mid-match reconnects need no special
+		// case — KTX re-asserts the restored count via svc_updatefrags
+		// right after the rejoin.
+		if !a.timing.Ended {
+			if a.frags == nil {
+				a.frags = make(map[int]int)
+			}
+			a.frags[e.PlayerNum] = e.Frags
+		}
 	}
 
 	return nil
@@ -98,16 +118,22 @@ func (a *MatchAnalyzer) Finalize(result *Result) error {
 			Frags: p.Frags,
 		}
 
-		// Use tracked frags if available (keyed by slot, not name)
-		if frags, ok := a.ctx.FragsBySlot[i]; ok {
+		// Use tracked frags if available (keyed by slot, not name;
+		// frozen at match end — see OnEvent).
+		if frags, ok := a.frags[i]; ok {
 			stat.Frags = frags
 		}
 
-		// Skip players with 0 frags (likely joined briefly but didn't play)
-		if stat.Frags == 0 {
-			continue
-		}
-
+		// A player who legitimately finishes on 0 frags (kills cancelled by
+		// suicides, a short but real appearance) is still a participant — the
+		// surface-authoritative-data policy says report them rather than guess
+		// they "didn't play". True spectators are excluded above by the
+		// Spectator/empty-team gates (final parser state). Known limitation:
+		// those gates are end-of-demo state, so a participant who goes
+		// spectator after the match (sub-out, post-game spec) is dropped here
+		// even though demoinfo lists them; recovering them needs the
+		// demoinfo-authoritative participant merge (see duel_normalize's
+		// Match.Players rebuild for the duel-mode version).
 		mr.Players = append(mr.Players, stat)
 
 		// Aggregate team frags

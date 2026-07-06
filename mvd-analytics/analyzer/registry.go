@@ -178,7 +178,6 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	}
 
 	ctx := &Context{
-		FragsBySlot: make(map[int]int),
 		ShotStreams: r.BuildShotStreams,
 		Nails:       r.BuildNails,
 	}
@@ -197,13 +196,20 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	record("init", initStart)
 
 	eventStart := time.Now()
+	var streamErr error
 	for {
 		event, err := source.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			// Log and stop; partial results still usable downstream.
+			// A clean end of demo arrives as io.EOF (reader F2); any other
+			// error means the event stream was truncated mid-demo (a decode
+			// failure, a corrupt or cut-off file). Partial results are still
+			// usable, so stop the pass but record the abort into
+			// Result.Errors below so a consumer can distinguish a truncated
+			// parse from a clean one.
+			streamErr = err
 			break
 		}
 
@@ -213,10 +219,6 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 		if e, ok := event.(*events.UserInfoEvent); ok {
 			ctx.Players[e.Player.Slot] = e.Player
 		}
-		if e, ok := event.(*events.FragUpdateEvent); ok {
-			ctx.FragsBySlot[e.PlayerNum] = e.Frags
-		}
-
 		// Core analysers see events first, then derived. Within each
 		// slice, registration order is preserved.
 		for _, a := range r.core {
@@ -235,6 +237,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	result := &Result{
 		SchemaVersion: resultpkg.CurrentSchemaVersion,
 		FilePath:      filename,
+	}
+	if streamErr != nil {
+		result.Errors = append(result.Errors, "event stream aborted: "+streamErr.Error())
 	}
 
 	co := &CoreOutputs{}
@@ -272,10 +277,13 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// access. The default ordering (set in NewDefaultRegistry) is:
 	//   1. recoverTelefragTeamkills
 	//   2. normalizeMatchRelativeTimes
-	//   3. duelTeamNormalize
-	//   4. scoreboardStatsPost
-	//   5. locGraphPost
-	//   6. regionControlPost
+	//   3. deriveDemoStartAnchor
+	//   4. duelTeamNormalize
+	//   5. aimPost
+	//   6. airgibsPost
+	//   7. scoreboardStatsPost
+	//   8. locGraphPost
+	//   9. regionControlPost
 	// — but the slice is otherwise unconstrained. Add a step by
 	// calling r.RegisterPostProcessor(...) before Analyze.
 	for _, p := range r.postProcessors {

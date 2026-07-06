@@ -1,7 +1,8 @@
 // Package events defines the source-agnostic event schema that any
 // QuakeWorld data source — recorded MVD demo, live QTV stream, etc. —
 // produces. Analytics consumers depend only on this package; they should
-// never need to import qwdemo/mvd or qwdemo/parser directly.
+// never need to import the mvd-reader/mvd or mvd-reader/parser packages
+// directly.
 //
 // The package is intentionally small: it re-exports the concrete event
 // types and their payload domain types from the underlying parser/mvd
@@ -21,7 +22,11 @@ import (
 
 // Source is a pull-style iterator over events from a QuakeWorld data
 // source. Next returns the next decoded event, or io.EOF at a clean end
-// of stream. A non-EOF error is fatal for the stream; callers should
+// of stream (for an MVD that is either the stream running out or the
+// standard svc_disconnect "EndOfDemo" termination). A non-EOF error is
+// fatal for the stream, but it is surfaced only after the events the
+// failing read had already produced have been returned, so a consumer
+// sees the tail of a truncated stream before the error. Callers should
 // still call Close to release any underlying resources.
 type Source interface {
 	Next() (Event, error)
@@ -31,43 +36,6 @@ type Source interface {
 // Event is the interface implemented by every concrete event type. Use
 // a type switch on Event to dispatch on the specific event kind.
 type Event = parser.Event
-
-// Kind enumerates the concrete event types carried on the Source.
-type Kind = parser.EventType
-
-// Kind values — match 1:1 with the concrete event types below.
-const (
-	KindServerData          = parser.EventServerData
-	KindUserInfo            = parser.EventUserInfo
-	KindPrint               = parser.EventPrint
-	KindStatUpdate          = parser.EventStatUpdate
-	KindFragUpdate          = parser.EventFragUpdate
-	KindPlayerInfo          = parser.EventPlayerInfo
-	KindDamage              = parser.EventDamage
-	KindDemoInfo            = parser.EventDemoInfo
-	KindIntermission        = parser.EventIntermission
-	KindStuffText           = parser.EventStuffText
-	KindCenterPrint         = parser.EventCenterPrint
-	KindServerInfo          = parser.EventServerInfo
-	KindDeath               = parser.EventDeath
-	KindSpawn               = parser.EventSpawn
-	KindItemSpawn           = parser.EventItemSpawn
-	KindItemState           = parser.EventItemState
-	KindBackpackDropHint    = parser.EventBackpackDropHint
-	KindItemPickupHint      = parser.EventItemPickupHint
-	KindBackpackPickupHint  = parser.EventBackpackPickupHint
-	KindItemPickupPrint     = parser.EventItemPickupPrint
-	KindBackpackPickupPrint = parser.EventBackpackPickupPrint
-	KindDemoStartTimestamp  = parser.EventDemoStartTimestamp
-	KindPausedDuration      = parser.EventPausedDuration
-	KindMoverSpawn          = parser.EventMoverSpawn
-	KindMoverState          = parser.EventMoverState
-	KindSound               = parser.EventSound
-	KindProjectileSpawn     = parser.EventProjectileSpawn
-	KindProjectileDespawn   = parser.EventProjectileDespawn
-	KindBeam                = parser.EventBeam
-	KindNails               = parser.EventNails
-)
 
 // Concrete event types emitted on the Source.
 type (
@@ -102,20 +70,13 @@ type (
 	BeamEvent                = parser.BeamEvent
 	NailsFrameEvent          = parser.NailsFrameEvent
 	Nail                     = parser.Nail
-	EntityState              = parser.EntityState
 )
 
 // Domain types carried by events — not MVD-specific, shared across all
 // QuakeWorld data sources.
 type (
-	ServerData   = mvd.ServerData
-	PlayerInfo   = mvd.PlayerInfo
-	PlayerState  = mvd.PlayerState
-	Stats        = mvd.Stats
-	PrintMessage = mvd.PrintMessage
-	FragEvent    = mvd.FragEvent
-	Vec3         = mvd.Vec3
-	Angle3       = mvd.Angle3
+	ServerData = mvd.ServerData
+	PlayerInfo = mvd.PlayerInfo
 )
 
 // Commonly-used constants re-exported.
@@ -126,6 +87,12 @@ const (
 	PrintHigh   = mvd.PrintHigh
 	PrintChat   = mvd.PrintChat
 )
+
+// MatchStartPatterns re-exports the canonical Layer 1 match-start phrase
+// table (parser.MatchStartPatterns) so analytics consumers can share the
+// single definition without importing the parser package directly. It is
+// read-only; do not mutate the returned slice.
+var MatchStartPatterns = parser.MatchStartPatterns
 
 // Stat indices for StatUpdateEvent.StatIndex — KTX/QW stat slot IDs.
 const (

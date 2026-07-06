@@ -109,11 +109,19 @@ func aimPost(res *Result, co *CoreOutputs) {
 	}
 
 	// Per-attacker damage events (non-self), used to size SG/SSG pellet hits
-	// (Σ damage / 4) and RL/GL direct contacts (non-splash).
+	// (Σ damage / 4) and RL/GL direct contacts (non-splash). Aim is a
+	// match-time view — shots exclude warmup above, and the damage feeding
+	// the splits must match or a warmup direct rocket inflates Direct and
+	// deflates Splash (F19). The Damage.Events log is deliberately ungated,
+	// so window it here: post-normalize, match time is [0, MatchEnd].
+	matchEnd := res.Streams.Global.MatchEnd
 	dmgByPlayer := make(map[string][]*dmgRec)
 	if res.Damage != nil {
 		for _, d := range res.Damage.Events {
 			if d.IsSelf || d.Attacker == "" {
+				continue
+			}
+			if d.Time < 0 || (matchEnd > 0 && d.Time > matchEnd) {
 				continue
 			}
 			dmgByPlayer[d.Attacker] = append(dmgByPlayer[d.Attacker],
@@ -121,9 +129,22 @@ func aimPost(res *Result, co *CoreOutputs) {
 		}
 	}
 
+	// The RL/GL direct/splash split needs projectile linking to have filled
+	// Shot.Hit. Linking runs on every parse (ShotsAnalyzer.Finalize) — gate
+	// on its evidence, a linked rl/gl fire, not on Streams.Projectiles,
+	// which is the opt-in *emission* of the flight stream and absent on
+	// every default parse (F18).
+	projLinked := false
+	for _, s := range res.Shots.Shots {
+		if (s.Weapon == "rl" || s.Weapon == "gl") && s.Hit {
+			projLinked = true
+			break
+		}
+	}
+
 	out := &AimResult{}
 	for _, player := range order {
-		if pa := computePlayerAim(player, byPlayer[player], tracks, teamOf, dmgByPlayer[player], res.Streams, aliveAt); pa != nil {
+		if pa := computePlayerAim(player, byPlayer[player], tracks, teamOf, dmgByPlayer[player], res.Streams, aliveAt, projLinked); pa != nil {
 			out.Players = append(out.Players, *pa)
 		}
 	}
@@ -183,7 +204,7 @@ func shotHasKind(sh *Shot, kind string) bool {
 	return false
 }
 
-func computePlayerAim(player string, shots []Shot, tracks map[string]*result.PositionTrack, teamOf map[string]string, dmg []*dmgRec, streams *Streams, aliveAt func(string, int32) bool) *PlayerAim {
+func computePlayerAim(player string, shots []Shot, tracks map[string]*result.PositionTrack, teamOf map[string]string, dmg []*dmgRec, streams *Streams, aliveAt func(string, int32) bool, projLinked bool) *PlayerAim {
 	shooterTrack := tracks[player]
 	sTeam := teamOf[player]
 
@@ -386,11 +407,13 @@ func computePlayerAim(player string, shots []Shot, tracks map[string]*result.Pos
 		}
 	}
 
-	// RL/GL: direct (non-splash contacts) vs splash-only vs missed. Only when
-	// projectile linking ran, else Hit is unreliable. Direct splits by victim
-	// class from the damage records (self direct is protocol-impossible — a
-	// missile ignores its owner for collision — so self hits are splash-only).
-	if streams.Projectiles != nil {
+	// RL/GL: direct (non-splash contacts) vs splash-only vs missed. Only with
+	// linking evidence (a linked rl/gl fire anywhere in the demo), else Hit
+	// is indistinguishable from "linking found nothing". Direct splits by
+	// victim class from the damage records (self direct is protocol-
+	// impossible — a missile ignores its owner for collision — so self hits
+	// are splash-only).
+	if projLinked {
 		for _, wn := range []string{"rl", "gl"} {
 			wa := wagg[wn]
 			if wa == nil {

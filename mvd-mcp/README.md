@@ -244,7 +244,7 @@ structuredContent must be a JSON object.)
 |---|---|---|---|
 | `demoId`  | `string` (required) | — | — |
 | `players` | `string[]` | all | Restrict to drops by these dropper names |
-| `weapon`  | `string`   | both | `rl` or `lg` |
+| `weapon`  | `string[]` | both | Dropped-weapon codes (`rl`, `lg`); forwarded as a CSV set, matching REST `/backpacks` |
 
 Output: `{ backpacks: []result.BackpackDrop }` — each entry has `time`,
 `player` (dropper), `team`, `weapon` (`rl`/`lg`), `origin` (XYZ), `loc`
@@ -310,7 +310,7 @@ Output: `view.ColumnarBuckets` (default) or `view.BucketsView` (`layout=row`)
 | `startTime` | `float64` | match start | — |
 | `endTime`   | `float64` | match end | — |
 | `players`   | `string[]` | all | — |
-| `types`     | `string[]` | discrete-event default set | `frag, powerup, streak, spawn, death, weapon, item, chat` (default), opt-in: `loc, health, armor` |
+| `types`     | `string[]` | discrete-event default set | `frag, powerup, streak, spawn, death, weapon, item, chat` (default), opt-in: `loc, health, armor, damage, telefrag, stomp` |
 
 Output: `view.EventsView` —
 `{ events: [{ t, type, player, detail }, …] }`. Per-type `detail`

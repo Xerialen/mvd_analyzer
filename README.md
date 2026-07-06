@@ -368,8 +368,8 @@ per-tick LG fire signal),
 `NailsFrameEvent` (`svc_nails` spike snapshots — opt-in, off by default),
 `MoverSpawnEvent` / `MoverStateEvent` (inline brush-model entities —
 lifts, doors, trains — identity plus per-frame origin while moving).
-Domain types carried by events — `ServerData`, `PlayerInfo`,
-`PlayerState`, `Stats` — are source-agnostic.
+Domain types carried by events — `ServerData`, `PlayerInfo` — are
+source-agnostic.
 
 `DeathEvent` / `SpawnEvent` are derived events the parser synthesises
 from `StatHealth` edges so analytics never has to reconstruct
@@ -407,7 +407,7 @@ damage (per-hit damage log + aggregates — attacker→victim matrix,
 per-weapon, given/taken, and the EWep victim-weapon buckets — from the
 KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
 shots (per-shot weapon-fire stream — who fired what at exactly what ms,
-from `svc_sound` fire sounds + LG cell-ammo — with same-frame hitscan→damage
+from `svc_sound` fire sounds + LG `TE_LIGHTNING2` beams — with same-frame hitscan→damage
 links, entity-tracked rocket/grenade→impact links, per-victim
 enemy/team/self classification, and a KTX-accuracy cross-check),
 aim (per-player aim analysis derived from shots + streams + damage —
@@ -630,6 +630,7 @@ mvd-analyzer/
 
 - [.devcontainer/README.md](.devcontainer/README.md) — reproducible dev environment (Zed / VS Code / `devcontainer` CLI)
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — feature-level changes as they land on `main`, with dates and schema bumps
+- [PLAN-implementation-order.md](PLAN-implementation-order.md) — execution order for the six `PLAN-*.md` review/design documents (per-module code reviews + the analytics-DAG proposal)
 - [mvd-reader/README.md](mvd-reader/README.md) — ingestion layer, how to add a source
 - [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md) — MVD binary format spec with ezQuake references
 - [mvd-analytics/README.md](mvd-analytics/README.md) — pipeline, how to add an analyzer, Result schema

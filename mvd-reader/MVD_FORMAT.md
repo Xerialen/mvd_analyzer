@@ -598,11 +598,14 @@ Offset  Size  Field
 ------  ----  -----
 0       1     svc_sound (6)
 1       2     channel (short)         <- bit field, see below
-[1]     [1]   volume        (only if channel & 0x8000 / SND_VOLUME)
-[1]     [1]   attenuation   (only if channel & 0x4000 / SND_ATTENUATION)
-1       1     sound_num               <- index into svc_soundlist
-6/12    var   origin (3 coords, short or float)
+var     [1]   volume        (only if channel & 0x8000 / SND_VOLUME)
+var     [1]   attenuation   (only if channel & 0x4000 / SND_ATTENUATION)
+var     1     sound_num               <- index into svc_soundlist
+var     var   origin (3 coords, short or float)
 ```
+
+Every offset after the channel word is variable: it depends on which of
+the two optional bytes the flag bits enable.
 
 Channel-word decode (ezquake `cl_parse.c`): `ent = (channel >> 3) & 1023;
 channel &= 7`. The 3-bit channel index is the Quake `CHAN_*` value —
@@ -949,7 +952,7 @@ The userinfo string is backslash-delimited key-value pairs:
 | `topcolor` | Top color (0-13) | `"4"` |
 | `bottomcolor` | Bottom color (0-13) | `"4"` |
 | `skin` | Skin name | `"base"` |
-| `spectator` | "1" if spectator | `"1"` |
+| `*spectator` | "1" if spectator. Server-set star key: mvdsv strips the client's `spectator` key and re-adds it as `*spectator` before broadcast (`sv_main.c` `SV_UserinfoChanged`/connection path), so MVD userinfo strings only carry the star spelling. Absent key = not a spectator — a full `svc_updateuserinfo` must clear a previously set flag (ezquake `CL_ProcessUserInfo`, `cl_parse.c`). | `"1"` |
 | `*client` | Client software | `"ezQuake 3.6"` |
 
 ### Parsing Userinfo
@@ -2948,6 +2951,12 @@ Offset  Size  Field
 6       1     svc_disconnect (2)
 7       var   "EndOfDemo" (null-terminated string)
 ```
+
+Only a `svc_disconnect` whose text is exactly `"EndOfDemo"` is the clean end
+marker (mvdsv writes it at `sv_demo.c:974-977`); the reader maps it to
+`io.EOF`. A `svc_disconnect` carrying any *other* text is a non-standard or
+inter-map disconnect — ezquake keeps parsing a multi-map MVD past it
+(`cl_parse.c:3673-3685`), and so does this reader.
 
 ---
 

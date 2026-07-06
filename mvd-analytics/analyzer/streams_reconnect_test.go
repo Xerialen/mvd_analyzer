@@ -123,7 +123,7 @@ func TestStreams_PhantomSessionDropped(t *testing.T) {
 	a := NewTimelineAnalyzer()
 	a.timing.Started = true
 	a.playerState[7] = newStreamState(0, 600_000) // real player on slot 7
-	a.playerState[9] = &timelinePlayerState{}      // phantom: no play recorded
+	a.playerState[9] = &timelinePlayerState{}     // phantom: no play recorded
 	a.UseCoreOutputs(&CoreOutputs{Sessions: map[int][]ResolvedSession{
 		7: {{StartMs: minInt32, EndMs: maxInt32, Name: "rusti", Team: "jah", IdentityKey: "id:0"}},
 		9: {{StartMs: minInt32, EndMs: maxInt32, Name: "Luk", Team: "", IdentityKey: "id:1"}},

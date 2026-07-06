@@ -30,17 +30,6 @@ func ReadEntities(path string) ([]Entity, error) {
 	return parseEntities(raw)
 }
 
-// ReadEntitiesBytes is the in-memory counterpart of ReadEntities —
-// parses the entities block from a byte slice that already holds a
-// BSP file's bytes. Used by tests.
-func ReadEntitiesBytes(data []byte) ([]Entity, error) {
-	raw, err := entitiesLumpBytes(data)
-	if err != nil {
-		return nil, err
-	}
-	return parseEntities(raw)
-}
-
 // ParseEntitiesText is exposed for tests that want to feed a raw
 // entities block without wrapping it in a BSP header.
 func ParseEntitiesText(text string) ([]Entity, error) {

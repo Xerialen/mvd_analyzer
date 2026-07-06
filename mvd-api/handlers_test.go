@@ -40,7 +40,7 @@ func (f *fakeStore) GetResult(_ context.Context, id democache.DemoID) (*result.R
 
 // EnsureShotStreams returns the stored Result as-is — fakes pre-populate any
 // streams they want to assert on; there is no re-parse without real bytes.
-func (f *fakeStore) EnsureShotStreams(ctx context.Context, id democache.DemoID, _ bool) (*result.Result, democache.CacheMeta, error) {
+func (f *fakeStore) EnsureShotStreams(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error) {
 	return f.GetResult(ctx, id)
 }
 

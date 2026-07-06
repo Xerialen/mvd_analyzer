@@ -3,7 +3,8 @@ package main
 import (
 	"log/slog"
 	"net/http"
-	"sync"
+
+	"github.com/mvd-analyzer/mvd-api/internal/democache"
 )
 
 // server bundles the per-request dependencies.
@@ -12,16 +13,14 @@ type server struct {
 	logger  *slog.Logger
 	mapsDir string // directory of per-map geometry JSON; "" disables /geometry
 
-	// losMu serializes the lazy line-of-sight pass so concurrent /los
-	// requests don't race on the shared cached Result (ComputeLOS mutates
-	// Streams.Players[].LOS in place and is idempotent, so only the first
-	// holder under the lock does the work).
-	losMu sync.Mutex
-
-	// streamsMu serializes the on-demand shot-stream rebuild (EnsureShotStreams
-	// re-parses and splices Projectiles/Beams/Nails onto the shared cached
-	// Result, latched, so only the first holder does the re-parse).
-	streamsMu sync.Mutex
+	// losLocks serializes the lazy line-of-sight pass per demo SHA so
+	// concurrent /los requests for one demo don't race on the shared cached
+	// Result (ComputeLOS mutates Streams.Players[].LOS in place and is
+	// idempotent, so only the first holder under the key does the work) —
+	// while /los for a different demo proceeds in parallel. The shot-stream
+	// rebuild is likewise per-SHA, but its lock lives in the cache
+	// (EnsureShotStreams) since that is where the SHA is resolved.
+	losLocks democache.KeyedMutex
 }
 
 // newRouter returns an http.Handler with every endpoint registered.

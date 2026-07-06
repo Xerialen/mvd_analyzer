@@ -60,14 +60,14 @@ type BucketsView struct {
 // Team, when populated, is keyed by team name and carries the
 // IncludeTeam aggregate counters.
 type ViewBucket struct {
-	T       float64                       `json:"t"`
-	Players map[string]map[string]any     `json:"p"`
+	T       float64                   `json:"t"`
+	Players map[string]map[string]any `json:"p"`
 	// Team is keyed by team name → field → value. Most fields are
 	// int counters (rl, lg, w, th, ta, …); the special key "abt"
 	// holds an armor-by-type map (string → int, "ra"/"ya"/"ga"
 	// to count). The mixed-type value is why this is map[string]any.
-	Team    map[string]map[string]any     `json:"team,omitempty"`
-	Partial bool                          `json:"partial,omitempty"`
+	Team    map[string]map[string]any `json:"team,omitempty"`
+	Partial bool                      `json:"partial,omitempty"`
 }
 
 // Buckets walks the streams in r and emits one ViewBucket per window
@@ -1017,4 +1017,3 @@ func numericFromAny(v any) (float64, bool) {
 	}
 	return numericToFloat(v)
 }
-

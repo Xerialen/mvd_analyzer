@@ -1,5 +1,7 @@
 package analyzer
 
+import "github.com/mvd-analyzer/mvd-reader/events"
+
 // CoreOutputs is the typed bundle of state-reconstruction results
 // that derived analysers consume during their Finalize. It replaces
 // the previous mechanism — shared mutable Context fields like
@@ -118,6 +120,47 @@ func (co *CoreOutputs) SlotIdentityAt(slot int, tMs int32) SlotInfo {
 		}
 	}
 	return co.Slots[slot]
+}
+
+// ResolveSlotAt resolves a wire slot to the (name, team) that owned it at
+// time tMs, applying the full fallback chain the derived analyzers share.
+// It replaces the per-analyzer copies (TimelineAnalyzer.resolveAt,
+// DamageAnalyzer.resolveAt, WeaponPickupsAnalyzer.identityAt,
+// FragAnalyzer.resolveDeathName, ItemAnalyzer.resolveAttributions) that had
+// drifted apart on which fallback layers they applied.
+//
+// The chain, in order:
+//
+//  1. the reconnect-aware CoreOutputs session table (SlotIdentityAt) — so a
+//     player's pre-reconnect events resolve to who was actually on the slot
+//     then, not the slot's final occupant;
+//  2. the live userinfo entry in players[slot] for any field the session
+//     table left blank (name, then team) — this is also what keeps unit
+//     tests that only wire up ctx.Players (no CoreOutputs) resolving;
+//  3. the demoinfo name→team table to backfill a team when we have a name
+//     but still no team (the KTX auth-name / late-join case).
+//
+// Nil-safe on co (SlotIdentityAt and TeamForName both tolerate nil) and
+// bounds-safe on slot. players is taken by value to match findPlayerByName's
+// convention (an array of pointers — a cheap copy).
+func ResolveSlotAt(co *CoreOutputs, players [events.MaxClients]*events.PlayerInfo, slot int, tMs int32) SlotInfo {
+	info := co.SlotIdentityAt(slot, tMs)
+	if info.Name == "" || info.Team == "" {
+		if slot >= 0 && slot < len(players) {
+			if p := players[slot]; p != nil {
+				if info.Name == "" {
+					info.Name = p.Name
+				}
+				if info.Team == "" {
+					info.Team = p.Team
+				}
+			}
+		}
+	}
+	if info.Name != "" && info.Team == "" && co != nil {
+		info.Team = co.Names.TeamForName(info.Name)
+	}
+	return info
 }
 
 // CoreConsumer is the optional interface for analysers that need

@@ -333,6 +333,10 @@ func sliceInts(stream []int32, start, end float64) []int32 {
 // player is, so it rides with the position). Height (h) and liquid (lq)
 // are NOT included here since schema v31: request them via the `hgt` /
 // `lq` field codes (sliceHeight / sliceLiquid).
+//
+// PositionTrack column checklist site 7 (view-layer kind/slice/columnar
+// plumbing — slicePosition and its sibling slice*/columnar projectors);
+// see the checklist in result/coord.go (PositionTrack.MarshalJSON).
 func slicePosition(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
 	if pt == nil {
 		return nil

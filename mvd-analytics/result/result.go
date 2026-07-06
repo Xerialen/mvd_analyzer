@@ -537,7 +537,57 @@ package result
 //     all remaining whiffs land in the lg `miss` bucket (field shared
 //     with the SG/SSG per-pellet Miss). LG invariant becomes
 //     Hits + Blocked + Miss + OutOfRange + Unresolved == Shots.
-const CurrentSchemaVersion = 47
+//
+// v48: correctness fixes to already-emitted values (no field shape change).
+//   - timelineAnalysis.killEvents are now on the match-relative clock and
+//     carry duel team labels, exactly like the sibling deathEvents/
+//     fragEvents streams (both post-processors previously skipped them):
+//     each kill was ~demoOffset ms late and, in 1v1s, tagged with a raw
+//     colour team instead of the player name.
+//   - Chat lines can no longer start or end the match: the match-timing
+//     detector ignores PRINT_CHAT (level 3), so a pre-match "go!" or a
+//     mid-match "gg game over" say no longer flips the match window (which
+//     would shift matchStart/matchEnd and freeze/warp every stream).
+//   - The CRMod "eats 2 scoops of" super-shotgun obituary is reachable
+//     again: those kills were mislabeled `gl` with a phantom "2 scoops of X"
+//     killer; now `ssg` with the real killer name.
+//   - match.players/match.teams no longer drop players who finished on
+//     exactly 0 frags (surface-authoritative-data); and isDuelResult trusts
+//     demoInfo.players as authoritative, so a 2on2 in which two players end
+//     on 0 frags is no longer misclassified as a duel and team-renamed.
+//     Paired reader fix so spectators don't leak in instead: the full
+//     userinfo parser now reads the server-set `*spectator` star key
+//     (mvdsv strips the bare `spectator` key before broadcast) and resets
+//     the flag on every full update, ezquake-style.
+//   - Powerup interval end times use the same effective match end as the
+//     weapon intervals on demos cut before intermission (were the per-player
+//     last sample vs the global max).
+//
+// v49: aim/shots correctness fixes (no field shape change).
+//   - aim.players[].weapons rl/gl direct/splash/missed is present on every
+//     default parse: the block was gated on the opt-in streams.projectiles
+//     emission, while the projectile linking it actually needs runs on every
+//     parse — it now gates on linking evidence (any linked rl/gl fire).
+//   - The damage records feeding aim's pellet and direct splits are windowed
+//     to match time [0, matchEnd]: warmup and post-match damage no longer
+//     inflates direct (and deflates splash).
+//   - Duel damage classification: in a 1v1 where both players share a
+//     non-empty colour team, damage.events[].isTeam was true for every hit
+//     on the opponent — contradicting the duel-normalized shots victimKinds,
+//     silently emptying timelineAnalysis.airgibs and zeroing the aim enemy
+//     splits, and folding all given damage into givenTeam (empty matrix,
+//     empty victimWep buckets). DamageAnalyzer now classifies duel hits as
+//     enemy at birth, so events, aggregates, matrix and EWep buckets are
+//     consistent with the rest of the duel-normalized result.
+//   - Shots identity resolution uses the canonical ResolveSlotAt chain,
+//     which backfills an empty team from the demoinfo name table even when
+//     the name resolved (parity with damage/frags).
+//   - match.players[].frags no longer clobbered by a post-match reconnect:
+//     the svc_updatefrags scoreboard is frozen at match end, so a slot
+//     re-init to 0 during intermission cannot erase the final score (the
+//     v48 removal of the 0-frag filter had surfaced these corrupted zeros
+//     as if they were real scores).
+const CurrentSchemaVersion = 49
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

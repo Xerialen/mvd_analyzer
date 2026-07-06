@@ -15,8 +15,10 @@ const (
 
 // SoundEvent is emitted for every svc_sound (cmd 6) — a sound the server
 // started on some entity's channel. This is the raw protocol signal; the
-// shots analyzer interprets weapon-fire sounds (Name like
-// "weapons/rocket1i.wav" on CHAN_WEAPON) into shots.
+// shots analyzer interprets weapon-fire sounds on CHAN_WEAPON into shots
+// (e.g. Name "weapons/sgun1.wav" is the Rocket Launcher fire, ktx
+// weapons.c:1044 — beware "weapons/rocket1i.wav", which despite the name
+// is the nailgun, weapons.c:1707).
 //
 // The wire packs the emitting entity into the channel word, so Ent is the
 // authoritative source of the sound (a player firing is Ent in
@@ -52,6 +54,10 @@ func (e *SoundEvent) EventTime() float64   { return e.Time }
 //	[coord×3] origin    (short coords, or float when FTE float-coords set)
 //
 // ent = (channel >> 3) & 1023; channel &= 7.
+//
+// Volume and attenuation are consumed but not retained — no consumer needs
+// them today. They are the candidate fields to surface if one ever wants
+// to separate local (full-volume) from distance-attenuated sounds.
 func (p *Parser) parseSound(r *mvd.BufferReader, time float64, timeMs int32, floatCoords bool) error {
 	channel, err := r.ReadUint16()
 	if err != nil {

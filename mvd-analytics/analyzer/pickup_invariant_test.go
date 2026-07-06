@@ -114,11 +114,11 @@ func TestItemPickupCountsMatchDemoInfo(t *testing.T) {
 			}
 
 			var (
-				matchCells   int
-				overCells    []cellDiff
-				underCells   []cellDiff
-				totalOver    int
-				totalUnder   int
+				matchCells    int
+				overCells     []cellDiff
+				underCells    []cellDiff
+				totalOver     int
+				totalUnder    int
 				kindBreakdown = map[string]struct{ ana, ktx int }{}
 			)
 
@@ -284,9 +284,9 @@ func TestWeaponPickupCountsMatchDemoInfo(t *testing.T) {
 			}
 
 			var (
-				matchCells             int
-				overCells, underCells  []cellDiff
-				totalOver, totalUnder  int
+				matchCells            int
+				overCells, underCells []cellDiff
+				totalOver, totalUnder int
 			)
 			check := func(player, weapon string, ana, ktx int) {
 				switch {
@@ -352,9 +352,8 @@ type playerKind struct {
 }
 
 type cellDiff struct {
-	player    string
-	kind      string
-	ana, ktx  int
-	diff      int
+	player   string
+	kind     string
+	ana, ktx int
+	diff     int
 }
-

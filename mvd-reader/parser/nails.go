@@ -47,6 +47,8 @@ func (p *Parser) parseNails(r *mvd.BufferReader, indexed bool, time float64, tim
 		return err
 	}
 	if !p.decodeNails {
+		// Skip arithmetic mirrors the decode loop below: [1-byte id
+		// (svc_nails2 only)] + 6 packed origin/angle bytes per nail.
 		bytesPerNail := 6
 		if indexed {
 			bytesPerNail = 7

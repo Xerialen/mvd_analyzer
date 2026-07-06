@@ -87,9 +87,22 @@ func (a *MetadataAnalyzer) OnEvent(event events.Event) error {
 }
 
 // parseFullserverinfo extracts the quoted cvar string from a stufftext like
-// `fullserverinfo "\maxfps\77\timelimit\10\..."` and splits it into key/value
-// pairs that get merged into MetadataAnalyzer.serverInfo.
+// `fullserverinfo "\maxfps\77\timelimit\10\..."` and merges its key/value
+// pairs into MetadataAnalyzer.serverInfo (last write wins).
 func (a *MetadataAnalyzer) parseFullserverinfo(cmd string) {
+	for k, v := range parseInfoString(cmd) {
+		a.serverInfo[k] = v
+	}
+}
+
+// parseInfoString parses a `fullserverinfo "\key\value\..."` stufftext into
+// its key/value pairs: it strips the "fullserverinfo " prefix and the
+// surrounding quotes, then walks the backslash-delimited pairs, skipping
+// empty keys. Shared by MetadataAnalyzer (all keys), ItemAnalyzer and
+// BackpackAnalyzer (the "map" key). Distinct from the package-level
+// extractMapName(levelName) in match.go, which parses a serverdata level
+// name, not an info string.
+func parseInfoString(cmd string) map[string]string {
 	rest := strings.TrimPrefix(cmd, "fullserverinfo ")
 	rest = strings.TrimSpace(rest)
 	rest = strings.TrimPrefix(rest, "\"")
@@ -101,14 +114,14 @@ func (a *MetadataAnalyzer) parseFullserverinfo(cmd string) {
 	if len(parts) > 0 && parts[0] == "" {
 		start = 1
 	}
+	out := make(map[string]string, len(parts)/2)
 	for i := start; i+1 < len(parts); i += 2 {
-		k := parts[i]
-		v := parts[i+1]
-		if k == "" {
+		if parts[i] == "" {
 			continue
 		}
-		a.serverInfo[k] = v
+		out[parts[i]] = parts[i+1]
 	}
+	return out
 }
 
 // Finalize converts the collected serverinfo + countdown text into a

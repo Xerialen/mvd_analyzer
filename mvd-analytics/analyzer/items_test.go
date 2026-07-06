@@ -11,7 +11,7 @@ import (
 // event we feed in is counted.
 func newTestItemAnalyzer() (*ItemAnalyzer, *Context) {
 	a := NewItemAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	a.timing.Started = true
 	return a, ctx
@@ -261,7 +261,7 @@ func TestItemAnalyzer_UntouchedItemListed(t *testing.T) {
 // pollute the phase list.
 func TestItemAnalyzer_PreMatchEventsIgnored(t *testing.T) {
 	a := NewItemAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	// matchStarted left false.
 

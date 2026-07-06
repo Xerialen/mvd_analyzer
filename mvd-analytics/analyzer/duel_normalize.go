@@ -191,6 +191,12 @@ func normalizeDuelTeams(result *Result) {
 				de.Team = t
 			}
 		}
+		for i := range result.TimelineAnalysis.KillEvents {
+			ke := &result.TimelineAnalysis.KillEvents[i]
+			if t, ok := nameToTeam[ke.Player]; ok {
+				ke.Team = t
+			}
+		}
 		for i := range result.TimelineAnalysis.FragStreaks {
 			fs := &result.TimelineAnalysis.FragStreaks[i]
 			if t, ok := nameToTeam[fs.PlayerName]; ok {
@@ -277,7 +283,10 @@ func normalizeDuelTeams(result *Result) {
 		// victim is by definition an enemy — flip those, restoring the
 		// all-enemy-omitted wire convention (emitKinds) where the flip
 		// leaves no informative kind. aimPost reads VictimKinds after
-		// this pass, so the Aim enemy/team splits follow.
+		// this pass, so the Aim enemy/team splits follow. (Damage has no
+		// equivalent rewrite here: DamageAnalyzer classifies IsTeam
+		// duel-aware at birth — isDuelResult in damage.go Finalize — so
+		// its events, aggregates and matrix are already enemy-labelled.)
 		for i := range result.Shots.Shots {
 			s := &result.Shots.Shots[i]
 			if s.VictimKinds == nil {
@@ -321,12 +330,23 @@ func normalizeDuelTeams(result *Result) {
 // that somehow made it past the 2-player check (shouldn't happen in
 // practice; kept as defence-in-depth).
 func isDuelResult(result *Result) bool {
-	// Primary signal: exactly two match participants. This correctly
-	// covers KTX duel, Hoony duel, LGC (2 players), 1v1 coop, and
-	// 1-player-vs-1-bot scenarios.
-	if result.DemoInfo != nil && len(result.DemoInfo.Players) == 2 {
-		return true
+	// DemoInfo is authoritative when it parsed a players list: it is KTX's
+	// end-of-match snapshot and its players array lists exactly the match
+	// participants — spectators are never included (find_plr in ktx only
+	// returns ct == ctPlayer clients; DemoInfoAnalyzer projects the JSON
+	// players array verbatim). So a 4-player team game with DemoInfo present
+	// returns false here even if MatchAnalyzer happened to aggregate only
+	// two players. This correctly covers KTX duel, Hoony duel, LGC
+	// (2 players), 1v1 coop, and 1-player-vs-1-bot scenarios.
+	//
+	// A DemoInfo with NO players is not authoritative: a failed demoinfo
+	// JSON parse yields a RawJSON-only DemoInfoResult (demoinfo.go
+	// parseBlocks), and treating its empty players list as "0 participants"
+	// would veto duel detection on a genuine duel. Fall through instead.
+	if result.DemoInfo != nil && len(result.DemoInfo.Players) > 0 {
+		return len(result.DemoInfo.Players) == 2
 	}
+	// No usable demoinfo: fall back to the MatchAnalyzer participant count.
 	if result.Match != nil && len(result.Match.Players) == 2 {
 		return true
 	}
@@ -353,4 +373,3 @@ func mergeFragEventsByTime(a, b []TimelineFragEvent) []TimelineFragEvent {
 	out = append(out, b[j:]...)
 	return out
 }
-

@@ -118,22 +118,8 @@ func weaponFromItemFlags(flags int) string {
 }
 
 func (a *BackpackAnalyzer) extractMapName(cmd string) {
-	rest := strings.TrimPrefix(cmd, "fullserverinfo ")
-	rest = strings.TrimSpace(rest)
-	rest = strings.TrimPrefix(rest, "\"")
-	if i := strings.LastIndexByte(rest, '"'); i >= 0 {
-		rest = rest[:i]
-	}
-	parts := strings.Split(rest, "\\")
-	start := 0
-	if len(parts) > 0 && parts[0] == "" {
-		start = 1
-	}
-	for i := start; i+1 < len(parts); i += 2 {
-		if parts[i] == "map" {
-			a.mapName = parts[i+1]
-			return
-		}
+	if v, ok := parseInfoString(cmd)["map"]; ok {
+		a.mapName = v
 	}
 }
 

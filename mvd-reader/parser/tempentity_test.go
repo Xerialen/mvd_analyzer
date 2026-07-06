@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/binary"
+	"errors"
 	"testing"
 
 	"github.com/mvd-analyzer/mvd-reader/mvd"
@@ -46,6 +47,48 @@ func TestParseTempEntity_LightningBeam(t *testing.T) {
 	}
 	if got.Time != 2.0 || got.TimeMs != 2000 {
 		t.Errorf("beam time = %v/%d, want 2.0/2000", got.Time, got.TimeMs)
+	}
+}
+
+// The beam entity is a signed short on the wire (ezquake cl_tent.c reads
+// MSG_ReadShort): ezquake's rail-trail extension sends TE_LIGHTNING1 with
+// ent in -512..-1, which must not surface as 65024..65535.
+func TestParseTempEntity_SignedBeamEnt(t *testing.T) {
+	p := NewParser(nil)
+	var got *BeamEvent
+	p.OnEvent(func(e Event) error {
+		if b, ok := e.(*BeamEvent); ok {
+			got = b
+		}
+		return nil
+	})
+
+	payload := lightningPayload(5, -3, [3]float32{1, 2, 3}, [3]float32{4, 5, 6})
+	if teType, err := p.parseTempEntity(mvd.NewBufferReader(payload), 1.0, 1000, false); err != nil {
+		t.Fatalf("parseTempEntity: type %d err %v", teType, err)
+	}
+	if got == nil {
+		t.Fatal("no BeamEvent emitted")
+	}
+	if got.Ent != -3 {
+		t.Errorf("Ent = %d, want -3 (signed decode)", got.Ent)
+	}
+}
+
+// An unknown TE type returns errUnknownTE; a truncated read inside a known
+// type does not — the dispatch arm relies on the distinction to label the
+// diagnostic unknown_te vs parse_error.
+func TestParseTempEntity_UnknownVsTruncated(t *testing.T) {
+	p := NewParser(nil)
+	teType, err := p.parseTempEntity(mvd.NewBufferReader([]byte{42}), 1.0, 1000, false)
+	if teType != 42 || !errors.Is(err, errUnknownTE) {
+		t.Fatalf("unknown type: got type %d err %v, want 42 errUnknownTE", teType, err)
+	}
+
+	truncated := lightningPayload(6, 4, [3]float32{1, 2, 3}, [3]float32{4, 5, 6})[:5]
+	teType, err = p.parseTempEntity(mvd.NewBufferReader(truncated), 1.0, 1000, false)
+	if teType != 6 || err == nil || errors.Is(err, errUnknownTE) {
+		t.Fatalf("truncated known type: got type %d err %v, want 6 and a non-errUnknownTE error", teType, err)
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
 // corpusDemo returns a real demo from the analytics test cache, or skips when
@@ -24,7 +26,10 @@ func corpusDemo(t *testing.T) (sha string, bytes []byte) {
 }
 
 // TestEnsureShotStreams re-parses a real demo to build the opt-in spatial
-// streams on demand, latches them, and serves nails as a separate request.
+// streams on demand in ONE variant — projectiles, beams and nails together
+// (F12: a separate nails latch made /shots and /aim bodies depend on
+// request history under an immutable ETag) — latches everything, and
+// serves repeat requests from the same Result.
 func TestEnsureShotStreams(t *testing.T) {
 	sha, demo := corpusDemo(t)
 	root := t.TempDir()
@@ -40,19 +45,19 @@ func TestEnsureShotStreams(t *testing.T) {
 	id := DemoID{Kind: "sha256", SHA: sha}
 	ctx := context.Background()
 
-	// Base request: projectiles + beams, not nails.
-	res, _, err := c.EnsureShotStreams(ctx, id, false)
+	// First request builds and latches everything in one rebuild.
+	res, _, err := c.EnsureShotStreams(ctx, id)
 	if err != nil {
-		t.Fatalf("EnsureShotStreams base: %v", err)
+		t.Fatalf("EnsureShotStreams: %v", err)
 	}
 	if res.Streams == nil || res.Streams.Projectiles == nil {
-		t.Fatal("base request did not build the projectile stream")
+		t.Fatal("first request did not build the projectile stream")
 	}
 	if !res.Streams.ShotStreamsComputed {
 		t.Error("ShotStreamsComputed not latched")
 	}
-	if res.Streams.Nails != nil || res.Streams.NailsComputed {
-		t.Error("nails built/latched on a base request")
+	if !res.Streams.NailsComputed {
+		t.Error("NailsComputed not latched — the one-variant rebuild must build nails too (F12)")
 	}
 
 	// The rebuilt Shots/Aim ride along, carrying the stream-derived blocks
@@ -91,15 +96,59 @@ func TestEnsureShotStreams(t *testing.T) {
 		t.Error("no RL/GL/LG fires in corpus demo — stream-derived aim graft not exercised")
 	}
 
-	// Nails request: same cached Result, nails now present and latched.
-	res2, _, err := c.EnsureShotStreams(ctx, id, true)
+	// Repeat request: same cached Result pointer, no rebuild.
+	res2, _, err := c.EnsureShotStreams(ctx, id)
 	if err != nil {
-		t.Fatalf("EnsureShotStreams nails: %v", err)
+		t.Fatalf("EnsureShotStreams repeat: %v", err)
 	}
 	if res2 != res {
 		t.Error("expected the cached Result pointer to be reused")
 	}
-	if res2.Streams.Nails == nil || !res2.Streams.NailsComputed {
-		t.Error("nails request did not build/latch the nail stream")
+}
+
+// TestEnsureShotStreams_MissingTier1_FlagsUnavailable covers the quiet-degrade
+// path: when the tier-1 MVD bytes are gone (evicted after the base Result was
+// cached), EnsureShotStreams serves the lean Result and sets
+// CacheMeta.ShotStreamsUnavailable so the handlers can signal the degrade
+// (X-Shot-Streams: unavailable) instead of serving silently-incomplete data.
+// The flag is per-call meta, never persisted, so it cannot stick once the
+// bytes are back.
+func TestEnsureShotStreams_MissingTier1_FlagsUnavailable(t *testing.T) {
+	hub := newFakeHub()
+	defer hub.Close()
+	hub.addGame(42, testSHA, testMVD)
+
+	c, root := newTestCache(t, hub.hubClient(), &stubParser{})
+	// The stub parse must yield a Streams block (EnsureShotStreams returns
+	// early on Streams == nil) with the latches unset, so the rebuild is
+	// attempted and hits the missing tier-1 file.
+	c.Parse = func(_ context.Context, _ []byte, filename string) (*result.Result, error) {
+		return &result.Result{
+			SchemaVersion: result.CurrentSchemaVersion,
+			FilePath:      filename,
+			Streams:       &result.Streams{},
+		}, nil
+	}
+	ctx := context.Background()
+	id := DemoID{Kind: "gameId", GameID: 42}
+
+	// Cold fetch caches the Result in memory and the bytes at tier 1.
+	if _, _, err := c.GetResult(ctx, id); err != nil {
+		t.Fatalf("GetResult: %v", err)
+	}
+	// Simulate tier-1 eviction.
+	if err := os.Remove(mvdPath(root, testSHA)); err != nil {
+		t.Fatalf("remove tier-1: %v", err)
+	}
+
+	res, meta, err := c.EnsureShotStreams(ctx, id)
+	if err != nil {
+		t.Fatalf("EnsureShotStreams: %v", err)
+	}
+	if !meta.ShotStreamsUnavailable {
+		t.Error("meta.ShotStreamsUnavailable = false; want true when tier-1 bytes are gone")
+	}
+	if res.Streams.ShotStreamsComputed {
+		t.Error("ShotStreamsComputed latched without a rebuild")
 	}
 }

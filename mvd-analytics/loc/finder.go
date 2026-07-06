@@ -32,6 +32,13 @@ func (f *Finder) FindNearest(x, y, z float32) string {
 	idx := f.pencilIndex()
 	li, _ := idx.findNearest(f.locations, x, y, z)
 	if li < 0 {
+		// The expanding-shell search caps at r<=16 (index.go); a query
+		// farther than that from every loc finds nothing. Fall back to the
+		// exhaustive linear scan so the pencil path never disagrees with
+		// the linear path on the true (far) nearest.
+		li, _ = findNearestLinear(f.locations, x, y, z)
+	}
+	if li < 0 {
 		return ""
 	}
 	return f.locations[li].Name
@@ -67,23 +74,4 @@ func (f *Finder) pencilIndex() *pencilIndex {
 // Locations returns all locations in the finder
 func (f *Finder) Locations() []Location {
 	return f.locations
-}
-
-// FindLocationsInRadius returns all locations within the given radius of the point.
-func (f *Finder) FindLocationsInRadius(x, y, z, radius float32) []Location {
-	if len(f.locations) == 0 {
-		return nil
-	}
-	radiusSq := radius * radius
-	var result []Location
-	for _, loc := range f.locations {
-		dx := x - loc.X
-		dy := y - loc.Y
-		dz := z - loc.Z
-		distSq := dx*dx + dy*dy + dz*dz
-		if distSq <= radiusSq {
-			result = append(result, loc)
-		}
-	}
-	return result
 }

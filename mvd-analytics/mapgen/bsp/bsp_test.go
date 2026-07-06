@@ -60,8 +60,8 @@ func buildFixture() []byte {
 	// vectors and flags are zero (unused by the parser).
 	var texinfo []byte
 	texinfo = appendF32(texinfo, 0, 0, 0, 0, 0, 0, 0, 0) // vecs[2][4]
-	texinfo = appendI32(texinfo, 0)                       // miptex
-	texinfo = appendI32(texinfo, 0)                       // flags
+	texinfo = appendI32(texinfo, 0)                      // miptex
+	texinfo = appendI32(texinfo, 0)                      // flags
 
 	// Miptex: dmiptexlump_t with one entry "floor1". Layout: num(4),
 	// dataofs[0](4)=8, then the miptex_t whose first 16 bytes are the name.
