@@ -67,6 +67,7 @@ type nodeMeta struct {
 //     Projectiles/Beams/Nails into result.Streams, which timeline creates).
 var analyzerNodeMeta = map[string]nodeMeta{
 	// Core producers.
+	"clock":    {name: "clock", tier: "core"},
 	"demoinfo": {name: "demoinfo", tier: "core"},
 	"identity": {name: "identity", tier: "core", requires: []string{"demoinfo"}},
 	"frag":     {name: "frag", tier: "core", requires: []string{"demoinfo", "identity"}},

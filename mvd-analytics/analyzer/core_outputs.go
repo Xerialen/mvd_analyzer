@@ -70,6 +70,23 @@ type CoreOutputs struct {
 	// canonical identity (cross-reconnect-unified) that owned the slot
 	// during it. Nil when the identity analyser was not registered.
 	Sessions map[int][]ResolvedSession
+
+	// Clock is the match-relative time base every producer converts to at
+	// Finalize (see clock.go). Produced by ClockAnalyzer, the first core
+	// node. Nil when the clock analyser was not registered (hand-built
+	// registries / unit tests) — MatchStartMs / ToMatch are nil-safe and
+	// resolve to demo time in that case.
+	Clock *Clock
+}
+
+// MatchStartMs returns the demo→match shift published on the Clock, or 0 when
+// no clock is wired or no match start was detected. Nil-safe for the several
+// unit tests that build a CoreOutputs without a clock.
+func (co *CoreOutputs) MatchStartMs() int32 {
+	if co == nil || co.Clock == nil {
+		return 0
+	}
+	return co.Clock.MatchStartMs
 }
 
 // ResolvedSession is one contiguous occupancy of a wire slot, resolved

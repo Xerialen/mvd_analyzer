@@ -314,9 +314,13 @@ func NewDefaultRegistry() *Registry {
 	r := NewRegistry()
 
 	// Core: the producers that downstream analysers read via
-	// CoreOutputs. DemoInfo runs first so co.{DemoInfo,Names,Slots}
-	// are populated before Frag's Finalize re-evaluates teamkills
-	// against co.Names.
+	// CoreOutputs. Clock runs first — it has no core dependencies and
+	// publishes co.Clock (the match-relative time base) that every
+	// producer converts against at Finalize, replacing the old
+	// whole-Result time rebase.
+	r.RegisterCore(NewClockAnalyzer())
+	// DemoInfo runs next so co.{DemoInfo,Names,Slots} are populated
+	// before Frag's Finalize re-evaluates teamkills against co.Names.
 	r.RegisterCore(NewDemoInfoAnalyzer())
 	// Identity runs right after demoinfo: its PopulateCore reads
 	// ctx.DemoInfo (set by demoinfo's Finalize) to fold reconnect

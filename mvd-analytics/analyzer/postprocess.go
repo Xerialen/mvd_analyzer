@@ -24,15 +24,14 @@ import (
 //
 // All time fields are integer milliseconds at schema v8; the shift is
 // a single int32 subtraction per value.
-func normalizeMatchRelativeTimes(res *Result, _ *CoreOutputs) {
-	// The match-start shift is carried, pre-normalize, on
-	// Streams.Global.MatchStart (the demo-relative match start the analyzer
-	// recorded). Schema v23 dropped the duplicate timelineAnalysis.matchStartTime
-	// that previously held it.
-	matchStartMs := int32(0)
-	if res.Streams != nil {
-		matchStartMs = res.Streams.Global.MatchStart
-	}
+func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
+	// The match-start shift is published on co.Clock (ClockAnalyzer), the
+	// single source producers convert against as they migrate to born-correct
+	// timestamps. It equals the value this function previously read off
+	// Streams.Global.MatchStart (both are msTime of the same detector's
+	// StartTime); sourcing it from the clock lets the timeline emit
+	// Streams.Global.MatchStart already rebased without breaking this fallback.
+	matchStartMs := co.MatchStartMs()
 	if matchStartMs <= 0 {
 		return
 	}
