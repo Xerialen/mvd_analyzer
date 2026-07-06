@@ -16,7 +16,7 @@ F4, and a short nit list re-verified below against the current tree.
 ## Open items
 
 **A2. Parser overlap between `mapgen/bsp` and `bspvis` — REMAINS (now Phase 12 / task #13 of `PLAN-implementation-order.md`).**
-Duplicated near-verbatim, refs re-verified at 22629a6: `Vec3`/`Plane` structs
+Duplicated near-verbatim, refs re-verified at 9016832: `Vec3`/`Plane` structs
 (`mapgen/bsp/types.go:12-21` vs `bspvis/load.go:37-46`), `Model`
 (`types.go:44-52` vs `load.go:85-93`), lump-index tables
 (`mapgen/bsp/lumps.go:6-20` vs `load.go:108-127`), magic/version sniffing
@@ -62,7 +62,7 @@ shifted again by the phase-5 web consolidation — the actual locations are now
 rot; consider citing symbols without line numbers in that comment, since its
 whole job is to survive exactly this kind of churn.
 
-## Low priority / nits (each re-verified 2026-07-06 at 22629a6)
+## Low priority / nits (each re-verified 2026-07-06 at 9016832)
 
 - `mapgen/mapgeom/mapgeom.go:606-607`: the `se == 0` default branch of
   `assembleRing` still indexes `b.Edges[0]` without a `len(b.Edges) > 0`
@@ -123,6 +123,6 @@ whole job is to survive exactly this kind of churn.
 | F9 | `ParseBytes` uses the shared bounds-checked `lumpBytes` helper (`bsp.go:66-74`); its private dentry/closure copy deleted | Phase 5 maps, bcfb8ce |
 | F10 | `var _` filler blocks and the dead `io` import deleted (bsp.go, lumps.go, bspvis/load.go) | Phase 0, 7d1a8e2 |
 | F11 | Pencil-index shell cap (`r <= 16`) falls back to the exhaustive linear scan, so the two paths can no longer disagree on a far nearest (`loc/finder.go:33-40`) | Phase 5 maps, bcfb8ce |
-| F12 | gofmt sweep — the eleven flagged files (and drifted neighbours) reformatted; whole scope verified gofmt-clean at 22629a6 | Phase 0, ff47a76 |
+| F12 | gofmt sweep — the eleven flagged files (and drifted neighbours) reformatted; whole scope verified gofmt-clean at 9016832 | Phase 0, ff47a76 |
 | F13 | `hubfetch.Download` reports the actual CDN failure when no `demo_source_url` fallback exists (`hub.go:138-144`) | Phase 5 maps, bcfb8ce |
 | F14 | `mapgeom.Params` doc names its real consumers (tests + cmd/mapgen prune flags); unused JSON tags dropped | Phase 0, 7d1a8e2 |

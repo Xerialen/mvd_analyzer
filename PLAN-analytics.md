@@ -21,6 +21,10 @@ Each re-verified against the current tree (2026-07-06); line refs updated.
 
 ## Aim/shots surface (deferred review, 2026-07-06)
 
+> Scheduling: F17–F20 + F23 (with F21/F22 riding along) are **Phase 5.2**
+> of PLAN-implementation-order.md — branch `phase-5.2` off `phase-5.1`.
+> F24 (quadratic linkers) and the nits stay unscheduled.
+
 Scope: `analyzer/shots.go`, `analyzer/aim.go`, `analyzer/weaponstay.go`, `result/shots.go`, `result/aim.go`, `result/sample.go`, the `aimPost`/`airgibsPost` post-processors, and how `duel_normalize`/`normalizeMatchRelativeTimes` handle their fields. Overall shape is good: the sound/beam fire detection is well grounded in KTX sources (fireSoundWeapon's filename table, the TE_LIGHTNING2 rationale, the dm 2/3/5 weapon-stay gate matches ktx/src/items.c:835), reconciliation is diagnostic-only as policy demands, `normalizeMatchRelativeTimes` does enumerate Shots/Projectiles/Beams/Nails times (postprocess.go:107–120, :175–179), and phase-1's duel rewrite covers Shot/ByPlayer teams and VictimKinds (duel_normalize.go:265–320). The findings below are the exceptions, each verified against code and the committed goldens.
 
 - **F17 — The A1 invariant test guards `timelineAnalysis` only; Shots (and every other event-carrying section) is outside it.** `TestTimelineInvariants` walks `doc["timelineAnalysis"]` exclusively (invariants_test.go:70, walker at :117–135). `Shots.Shots[]` carries the same `time`/`team` JSON key conventions and is maintained by the same two hand-enumerated post-processors (postprocess.go:175–179; duel_normalize.go:265–277) — exactly the F1 disease class the test exists to catch, and the golden corpus pins whatever values are there rather than failing (the F1 lesson). `damage.events`, `messages.events`, `frags.frags`, `weaponPickups`, `backpacks` and `items[].phases` are equally unguarded; `aim` is currently safe only structurally (computed post-normalize at registry.go:360) — a chain reorder would ship silently. Fix: lift the per-stream walker to run over each top-level section that carries `time`/`team`-keyed event arrays, plus a bespoke bounds check for Aim's columnar `crosshair.t`. **(test gap)**
@@ -46,27 +50,27 @@ Scope: `analyzer/shots.go`, `analyzer/aim.go`, `analyzer/weaponstay.go`, `result
 | ID | What | Phase / commit |
 |---|---|---|
 | A1 | Structural invariant test over the goldens (`TestTimelineInvariants`, analyzer/invariants_test.go) — time bounds + duel team-label membership; scope gap remains (F17) | P1 3ebc9cd |
-| A2 | One obituary parser (`obituary_parse.go`); frag + messages both consume `parseObituaryLine` | P5 7619ad7 |
-| A3 | Canonical `ResolveSlotAt` (core_outputs.go:146) replaces the per-analyzer copies — one straggler remains (F21) | P5 7619ad7 |
+| A2 | One obituary parser (`obituary_parse.go`); frag + messages both consume `parseObituaryLine` | P5 adc4ce5 |
+| A3 | Canonical `ResolveSlotAt` (core_outputs.go:146) replaces the per-analyzer copies — one straggler remains (F21) | P5 adc4ce5 |
 | A4 | Mid-demo source errors and region-control errors recorded into `Result.Errors` (with F9) | P2 cda9940 |
 | A5 | Canonical add-a-column checklist in result/coord.go, referenced from every site (full abstraction deliberately not taken) | P0 7d1a8e2 |
-| A6 | Observation (view/ healthiest surface), no action needed; its nits landed as F12/F15 | P5 7619ad7 |
+| A6 | Observation (view/ healthiest surface), no action needed; its nits landed as F12/F15 | P5 adc4ce5 |
 | F1 | `KillEvents` shifted to match clock + duel team rewrite; goldens regenerated | P1 3ebc9cd |
 | F2 | Match timing ignores PRINT_CHAT; obituary parsing gated to level ≤ 2 (ktx bprints are PRINT_MEDIUM) | P1 3ebc9cd |
 | F3 | CRMod `" eats 2 scoops of "` SSG pattern ordered ahead of generic `" eats "` | P1 3ebc9cd |
-| F4 | Obituary table drift eliminated by the single parser (with A2) | P5 7619ad7 |
+| F4 | Obituary table drift eliminated by the single parser (with A2) | P5 adc4ce5 |
 | F5 | Duel detection demoinfo-authoritative when demoinfo lists players | P1 3ebc9cd |
 | F6 | 0-frag finishers no longer dropped from `match.players` | P1 3ebc9cd |
-| F7 | One `parseInfoString` for the three serverinfo walkers — recurred in weaponstay.go (F22) | P5 7619ad7 |
+| F7 | One `parseInfoString` for the three serverinfo walkers — recurred in weaponstay.go (F22) | P5 adc4ce5 |
 | F8 | Dead `tracks.go` (+ tracks.md) deleted | P4 f494471 |
 | F9 | `source.Next()` abort → `"event stream aborted: …"`; region-control error appended | P2 cda9940 |
-| F10 | `appendChangeI16/Str` helpers, shared convert loop, `strconv.Itoa` | P5 7619ad7 |
-| F11 | Generic `shiftAndFilterChanges[C]` replaces the copy-paste twins | P5 7619ad7 |
-| F12 | One `intervalContains`; `intervalsOverlapAt` deleted | P5 7619ad7 |
+| F10 | `appendChangeI16/Str` helpers, shared convert loop, `strconv.Itoa` | P5 adc4ce5 |
+| F11 | Generic `shiftAndFilterChanges[C]` replaces the copy-paste twins | P5 adc4ce5 |
+| F12 | One `intervalContains`; `intervalsOverlapAt` deleted | P5 adc4ce5 |
 | F13 | One effective match end feeds both the powerup close pass and streams finalize | P1 3ebc9cd |
-| F14 | `nextDue` watermark in `processSyntheticRespawns` (no per-event sort) | P5 7619ad7 |
-| F15 | One `buildMultiCols` columnar builder behind position/view/velocity | P5 7619ad7 |
+| F14 | `nextDue` watermark in `processSyntheticRespawns` (no per-event sort) | P5 adc4ce5 |
+| F15 | One `buildMultiCols` columnar builder behind position/view/velocity | P5 adc4ce5 |
 | F16 | Dead `locIndex` return + misleading comment dropped | P4 f494471 |
 | nit | Registry post-processor ordering comment lists all nine; result/streams.go position-column doc fixed | P0 7d1a8e2 |
-| nit | Determinism ties: powerup events (sorted slots + stable sort), view interval events (sorted codes + (T,Type) tie-break) byte-stable | P5 7619ad7 |
+| nit | Determinism ties: powerup events (sorted slots + stable sort), view interval events (sorted codes + (T,Type) tie-break) byte-stable | P5 adc4ce5 |
 | nit | Duel rewrite gaps for WeaponPickups/Backpacks/Shots teams + victim-kind reclassification | pre-phase, #100 (v46) |

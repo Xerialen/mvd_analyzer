@@ -240,9 +240,11 @@ below. What remains:
    analytics consumers audited in the same PR and schema/docs bumped per
    CLAUDE.md. F20 (handler-error separation) belongs in this batch — it
    touches the same contract text as A4.
-2. **Small mechanical PR, any time**: F18 (with a signed-ent test), F19,
-   F21, F22, and the surviving nits above. Golden corpus is unaffected by
-   all of them except F18 on exotic non-KTX streams.
+2. **Small mechanical PR — scheduled as Phase 5.1** (branch `phase-5.1`
+   off `review`): F18 (with a signed-ent test), F19, F21, F22, and the
+   surviving nits above, plus the `mvd-api/serve.go` gofmt fix riding
+   along as a no-logic commit. Golden corpus is unaffected by all of
+   them except F18 on exotic non-KTX streams.
 
 ---
 

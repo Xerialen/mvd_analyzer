@@ -28,11 +28,16 @@ Overall assessment: all sixteen findings (F1–F16) and two of the big-picture i
 
 ## Aim Stats tab (deferred review, 2026-07-06)
 
+> Scheduling: F18/F19/F20 are **Phase 5.4** of
+> PLAN-implementation-order.md (branch `phase-5.4` off `phase-5.3`);
+> F17 is closed by decision (no SSG rendering for now). F21–F24 and the
+> micro-nits stay unscheduled.
+
 Scope: the `─── Aim Stats Tab ───` section (app.js:10717–11377), its HTML (index.html:907–998), the `.aim-*` CSS (styles.css:898–1131), and the analytics contract it renders (`mvd-analytics/result/aim.go`, `RESULT_SCHEMA.md` §CrosshairSamples/WeaponAim).
 
 What's clean: the layering is right — geometry, attribution and classification live in aim.go; the JS only bins and paints. Team colors route through `getTeamOrder()`/`TEAM_COLORS` (chips 10782–10783, table stripes 10957–10958); the weapon tables use the shared `makeSortable` (10970) with the `_sortBound` guard absorbing the second load-time pass (1155); every listener is wired once behind `_aimWired` flags (10787, 10812, 11198); `escapeHtml` (quote-safe, 894–897) covers the `title` attributes and player names; the victim-filter projection `aimWeaponView` (10915–10929) matches the schema contract exactly (enemy-split fallback, per-bucket `splash = hits − direct`, `missed = shots − hits`); duel detection correctly uses the schema's per-player `mode` (10808) — the right source here, since it must match what aim.go's attribution actually did, not the F15 team-name heuristic. The tab does no work on scrub (nothing subscribes to `setCurrentTime`), and I found no dead JS or orphaned CSS in the section: every `AIM_COL` key is referenced by `AIM_TABLE_COLS`, every `.aim-*` rule has a user.
 
-- **F17 — SSG crosshair samples are shipped but never rendered.** The analyzer collects crosshair-error samples for all three hitscan weapons (`aimHitscan = {sg, ssg, lg}`, mvd-analytics/analyzer/aim.go:55; `w` vocabulary "sg/ssg/lg", RESULT_SCHEMA.md:436), but `renderAimHeatmap` (app.js:10979–10982) draws only an LG and an SG block (index.html:981–995) — a player's SSG fires appear in the accuracy tables yet their crosshair samples are silently invisible in the heatmap and marginal histograms, with no note saying so. Fix: include `'ssg'` in the SG panel's sample filter and relabel it "SG/SSG" (the pellet-scatter caveat in its header already applies), or add a third block. Impact: correctness/completeness.
+- **F17 — SSG crosshair samples are shipped but never rendered. CLOSED BY DECISION (2026-07-06): SSG stays unrendered — SG and LG panels are enough for now.** For the record: the analyzer collects crosshair-error samples for all three hitscan weapons (`aimHitscan = {sg, ssg, lg}`, mvd-analytics/analyzer/aim.go:55; `w` vocabulary "sg/ssg/lg", RESULT_SCHEMA.md:436), but `renderAimHeatmap` (app.js:10979–10982) draws only an LG and an SG block (index.html:981–995), so SSG fires appear in the accuracy tables while their crosshair samples stay invisible in the heatmap. That is now deliberate, not an oversight; the samples remain in the schema. If demand appears, the fix is to include `'ssg'` in the SG panel's sample filter (relabelled "SG/SSG") or add a third block.
 - **F18 — heatmap hover read-out misaligns (and the image distorts) when the canvas is narrower than its intrinsic width.** `drawAimDensity` sizes the canvas explicitly (`style.width = W px`, W ≈ 578 for LG, app.js:11119–11126) but `.aim-density` also has `max-width: 100%` with no `height: auto` (styles.css:989–994) — in a panel narrower than W the browser shrinks the bitmap horizontally only (aspect distortion), and the mousemove handler (11199–11218) maps cursor pixels against the unscaled `ML`/`PW`, so the reported bin (and its shot/hit counts) is wrong. Fix: scale mouse coordinates by `W / rect.width` (store the CSS `W`/`H` in `canvas._aimHover`) and add `height: auto` beside the `max-width`. Impact: correctness (narrow layouts only).
 - **F19 — DYaw sign convention is documented backwards in the schema; the web flip is correct.** Both result/aim.go:46–47 and RESULT_SCHEMA.md:423–424 say DYaw is "right … positive", but the derivation (analyzer/aim.go:593: bearing − aim yaw, and Quake yaw increases counterclockwise) makes **+dyaw = enemy to the left** — which is exactly why `aimOffX` negates (app.js:10735–10740, whose comment states the true convention). A consumer trusting the docs would mirror its yaw plots — or "fix" the correct web flip. Fix: correct the two Layer-2 doc sites to left-positive (pitch up-positive is accurate). Impact: docs/cross-layer correctness trap.
 - **F20 — the LG `unresolved` whiff bucket is invisible, so the LG miss classes silently don't sum.** `WeaponAim.Unresolved` (result/aim.go:125, "no beam matched") has no `AIM_COL` entry and no column in `AIM_TABLE_COLS.lg` (app.js:10896–10897); when it is non-zero the LG row shows hits + miss + blocked + far < shots with no explanation — the kind of silent drop the "surface authoritative data" rule exists to prevent. Fix: an Unresolved column (plain, with a tooltip), or fold it into Miss with the tooltip naming the merge. Impact: correctness/completeness (low).
@@ -54,13 +59,13 @@ What's clean: the layering is right — geometry, attribution and classification
 | A8 | Runtime CDN deps (Cytoscape/fcose/fonts) vendored under `static/vendor/` | P3 3316d50 |
 | F5 | Three competing `escapeHtml` definitions → one null-safe version | P4 f494471 |
 | F6 | Dead code: map-powerup panel, absent-element lookups, unread state, orphan CSS | P4 f494471 |
-| F7 | Scanline hold-last renderer ×3 → `makeScanlineSampler` + `fillStackedColumn` | P5 02b376a |
-| F8 | Duplicated canvas tooltips + forked layout consts → `attachCanvasTooltip` + `DIVERGING_GRAPH_LAYOUT` | P5 02b376a |
-| F9 | Hub replay URL built inline ×5 → `hubReplayUrl` | P5 02b376a |
-| F10 | Per-tick churn: double `updateTeamStatus`, per-call region-icon canvases → single call + cache | P5 02b376a |
-| F11 | Per-render frag re-sort and unthrottled pan → sort at intake + rAF-coalesced pan | P5 02b376a |
-| F13 | Undocumented 3 s chat dedupe removed (analyzer already collapses the wire duplication) | P5 02b376a |
-| F14 | Bespoke airgib sort machine → shared `makeSortable` | P5 02b376a |
-| F15 | `isDuel` / `teamFragTotals` / `lowerBoundIndex` / `sortByFragsDesc` extracted | P5 02b376a |
-| F16 | Worker result re-parse dropped (argless `recomputeRegionControl`, warn on failure); Go bridge `respondJSON` envelope | P5 02b376a |
-| A6 | Observation (canvas/DOM split sound); its residual copy-paste concern closed via F7/F8 | P5 02b376a |
+| F7 | Scanline hold-last renderer ×3 → `makeScanlineSampler` + `fillStackedColumn` | P5 56e3ab6 |
+| F8 | Duplicated canvas tooltips + forked layout consts → `attachCanvasTooltip` + `DIVERGING_GRAPH_LAYOUT` | P5 56e3ab6 |
+| F9 | Hub replay URL built inline ×5 → `hubReplayUrl` | P5 56e3ab6 |
+| F10 | Per-tick churn: double `updateTeamStatus`, per-call region-icon canvases → single call + cache | P5 56e3ab6 |
+| F11 | Per-render frag re-sort and unthrottled pan → sort at intake + rAF-coalesced pan | P5 56e3ab6 |
+| F13 | Undocumented 3 s chat dedupe removed (analyzer already collapses the wire duplication) | P5 56e3ab6 |
+| F14 | Bespoke airgib sort machine → shared `makeSortable` | P5 56e3ab6 |
+| F15 | `isDuel` / `teamFragTotals` / `lowerBoundIndex` / `sortByFragsDesc` extracted | P5 56e3ab6 |
+| F16 | Worker result re-parse dropped (argless `recomputeRegionControl`, warn on failure); Go bridge `respondJSON` envelope | P5 56e3ab6 |
+| A6 | Observation (canvas/DOM split sound); its residual copy-paste concern closed via F7/F8 | P5 56e3ab6 |

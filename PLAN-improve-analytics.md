@@ -92,7 +92,7 @@ way (see §3.4).
 | Post-processor registration order | telefrag recovery before time normalisation | never — comments only |
 | Reads of `result.*` written by an earlier node | aimPost reads `Shots` + `Streams` + `Damage` | never |
 
-### 1.3 The edge list (reverse-engineered 2026-07-02, re-verified 2026-07-05 @ 05e2ed9 and 2026-07-06 @ 22629a6 post-phases-0–5)
+### 1.3 The edge list (reverse-engineered 2026-07-02, re-verified 2026-07-05 @ 05e2ed9 and 2026-07-06 @ 9016832 post-phases-0–5)
 
 **Via CoreOutputs:**
 
@@ -128,7 +128,7 @@ timeline → shots                        (shots.buildSpatialStreams, shots.go:3
 (A related non-edge closed by phase 5: frag and messages each carried a
 ~250-line obituary pattern table that had drifted apart — a semantic
 coupling invisible to any dependency mechanism, since both are pure
-event consumers. 7619ad7 collapsed them into one parser,
+event consumers. adc4ce5 collapsed them into one parser,
 analyzer/obituary_parse.go, with frag.go's semantics as the reference.
 No scheduling impact, but it retires a drift class the DAG could not
 have expressed anyway.)
@@ -306,7 +306,7 @@ Two structural observations fall out of this map:
    registry.go:247, but one append per failing node). Phase 5 already
    paid down the intra-node side of this: powerup detection and
    interval-event emission iterate in documented sorted order, so
-   Finalize output is byte-stable under GOMAXPROCS variation (7619ad7).
+   Finalize output is byte-stable under GOMAXPROCS variation (adc4ce5).
 6. **Don't over-engineer.** The whole surface is ~13 analyzers + 9
    post-processors + 3 lazy passes. The engine must stay small
    (~300 LOC: registry, topo sort, memo, cache adapter). If the
