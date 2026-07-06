@@ -991,6 +991,7 @@ table tbody tr:hover {
     background: var(--bg-deep);
     border-radius: 4px;
     max-width: 100%;
+    height: auto; /* keep aspect when max-width shrinks the bitmap */
 }
 
 .aim-heatmap-block h4 {

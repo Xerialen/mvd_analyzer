@@ -46,7 +46,9 @@ type PlayerAim struct {
 
 // CrosshairSamples is the columnar per-hitscan-fire crosshair error to the
 // attributed target. All slices share one index. DYaw/DPitch are signed
-// degrees (right/up positive); NYaw/NPitch are those divided by the target's
+// degrees — positive DYaw = target LEFT of the crosshair (Quake yaw grows
+// counterclockwise; DYaw is target bearing − aim yaw), positive DPitch =
+// target above; NYaw/NPitch are those divided by the target's
 // angular half-width/half-height at Dist. Dist is the muzzle→target-center
 // distance in Quake units (the shot traces from the weapon muzzle,
 // ≈ origin+16 — not the +22 eye; see analyzer/aim.go). Team flags samples whose attributed target is a

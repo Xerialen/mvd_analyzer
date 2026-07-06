@@ -10887,6 +10887,7 @@ const AIM_COL = {
     blocked: { h: 'Blocked', t: 'Miss — the beam would have hit an enemy in range, but an object stopped it short', cell: w => w.blocked || 0 },
     lgMiss: { h: 'Miss', t: 'Miss — aim error, no enemy on the beam\'s line', cell: w => w.miss || 0 },
     far: { h: 'Far', t: 'Miss — the enemy was on the beam\'s line but beyond its ~600u reach', cell: w => w.outOfRange || 0 },
+    unres: { h: 'Unresolved', t: 'Miss that could not be classified — no beam matched this fire (needs the beam stream / shooter position at fire time)', cell: w => w.unresolved || 0 },
     blockedPct: { h: 'Blocked %', t: 'Share of fires denied by an object in the way', cell: w => shotShare(w.blocked, w) },
     lgMissPct: { h: 'Miss %', t: 'Share of fires missed on aim', cell: w => shotShare(w.miss, w) },
     farPct: { h: 'Far %', t: 'Share of fires denied by beam range', cell: w => shotShare(w.outOfRange, w) },
@@ -10894,7 +10895,7 @@ const AIM_COL = {
 // Per-weapon column order: counts first, then the share-of-fires block.
 // SG/SSG lead with the pellet stats.
 const AIM_TABLE_COLS = {
-    lg: ['shots', 'hits', 'lgMiss', 'blocked', 'far', 'hitPct', 'lgMissPct', 'blockedPct', 'farPct'],
+    lg: ['shots', 'hits', 'lgMiss', 'blocked', 'far', 'unres', 'hitPct', 'lgMissPct', 'blockedPct', 'farPct'],
     sg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
     ssg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
     rl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
@@ -11194,13 +11195,18 @@ function drawAimDensity(canvas, c, idx) {
     ctx.fillText('0', bx + CB + 4, MT + PH - 3);
 
     // Hover read-out: shot/hit counts in the coarse bin under the cursor.
-    canvas._aimHover = { hShots, hHits, hx, hy, ML, MT, PW, PH };
+    canvas._aimHover = { hShots, hHits, hx, hy, ML, MT, PW, PH, W, H };
     if (!canvas._aimWired) {
         canvas.addEventListener('mousemove', e => {
             const d = canvas._aimHover;
             if (!d) return;
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+            // max-width:100% can render the canvas below its intrinsic CSS
+            // size; map cursor px back into the unscaled ML/PW space or the
+            // reported bin drifts on narrow layouts.
+            const sx = rect.width ? d.W / rect.width : 1;
+            const sy = rect.height ? d.H / rect.height : 1;
+            const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sy;
             if (mx < d.ML || mx >= d.ML + d.PW || my < d.MT || my >= d.MT + d.PH) {
                 canvas.title = '';
                 return;

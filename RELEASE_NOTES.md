@@ -7,6 +7,20 @@ detail.
 
 ## 2026-07-06
 
+- **Web Aim Stats: LG Unresolved column, accurate hover on narrow
+  layouts, DYaw sign docs (no schema change).**
+  - The LG table gains an `Unresolved` column (whiffs no beam matched), so
+    the LG miss classes visibly sum to shots − hits instead of silently
+    falling short.
+  - The crosshair-density hover now maps cursor position through the
+    rendered/intrinsic size ratio, and the image keeps its aspect ratio
+    when a narrow panel shrinks it — previously the reported bin (and its
+    shot/hit counts) drifted and the bitmap distorted horizontally.
+  - The schema docs for `crosshair.dyaw` had the sign convention backwards
+    ("right positive"); positive is enemy-left (Quake yaw grows
+    counterclockwise). The web's plotting flip was already correct; the
+    docs now match it. SSG crosshair samples remain deliberately
+    unrendered (SG + LG panels only).
 - **mvd-api: deterministic /shots + /aim responses; panic-proof demo
   loading (no schema change).**
   - The shot-stream rebuild now builds projectiles, beams and nails in a

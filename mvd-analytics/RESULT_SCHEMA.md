@@ -421,7 +421,11 @@ any victim class without re-deriving it.
 ### CrosshairSamples
 
 Columnar, one index per hitscan fire. `DYaw`/`DPitch` are signed **degrees**
-(right/up positive) — the literal "degrees off the enemy" drift. `NYaw`/`NPitch`
+— positive `dyaw` = target **left** of the crosshair (Quake yaw grows
+counterclockwise; `dyaw` is target bearing − aim yaw), positive `dpitch` =
+target above — the literal "degrees off the enemy" drift. (Plotting
+"enemy-right reads right" therefore needs an x flip, which the bundled web
+frontend applies.) `NYaw`/`NPitch`
 divide each by the target's angular half-extent on that axis, so the hull maps
 to the unit square: **±1 on an axis = the hull edge** (corner ≈ √2). The yaw
 half-extent uses the box silhouette at the viewing angle (an axis-aligned hull
