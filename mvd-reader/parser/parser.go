@@ -192,16 +192,6 @@ func (p *Parser) ServerData() *mvd.ServerData {
 	return p.serverData
 }
 
-// Players returns the player info array
-func (p *Parser) Players() [mvd.MaxClients]*mvd.PlayerInfo {
-	return p.players
-}
-
-// PlayerStats returns the player stats array
-func (p *Parser) PlayerStats() [mvd.MaxClients]*mvd.Stats {
-	return p.playerStats
-}
-
 // emit sends an event to all handlers
 func (p *Parser) emit(event Event) error {
 	for _, h := range p.handlers {
@@ -341,13 +331,17 @@ func (p *Parser) parseNetworkMessage(msg *mvd.DemoMessage) error {
 
 		case mvd.SvcTempEntity:
 			if teType, err := p.parseTempEntity(r, msg.Time, msg.TimeMs, p.floatCoords); err != nil {
-				p.warn(msg.Time, "unknown_te", "temp entity type %d: %v, %d bytes remaining in payload abandoned", teType, err, r.Remaining())
+				if errors.Is(err, errUnknownTE) {
+					p.warn(msg.Time, "unknown_te", "temp entity type %d, %d bytes remaining in payload abandoned", teType, r.Remaining())
+				} else {
+					p.warn(msg.Time, "parse_error", "svc_temp_entity type %d: %v", teType, err)
+				}
 				return nil
 			}
 
 		case mvd.SvcNails, mvd.SvcNails2:
 			if err := p.parseNails(r, cmd == mvd.SvcNails2, msg.Time, msg.TimeMs); err != nil {
-				p.warn(msg.Time, "parse_error", "svc_nails: %v", err)
+				p.warn(msg.Time, "parse_error", "%s: %v", SvcName(cmd), err)
 				return nil
 			}
 
@@ -734,7 +728,10 @@ func (p *Parser) parseHiddenDemoStart(r *mvd.BufferReader, time float64, dataLen
 }
 
 // decodeULEB128 decodes an unsigned LEB128 varint: low-order group first, 7
-// data bits per byte, high bit set on every byte except the last.
+// data bits per byte, high bit set on every byte except the last. A
+// truncated varint (all bytes have the continuation bit) is accepted
+// silently and yields the bits read so far — deliberate leniency, since
+// some demos carry garbage in this hidden-message block.
 func decodeULEB128(b []byte) uint64 {
 	var v uint64
 	var shift uint

@@ -1,10 +1,17 @@
 package parser
 
 import (
-	"io"
+	"errors"
 
 	"github.com/mvd-analyzer/mvd-reader/mvd"
 )
+
+// errUnknownTE is returned by parseTempEntity when the TE type byte is not
+// in its layout table — the payload length can't be guessed, so the rest of
+// the message is abandoned. Distinct from a truncated read inside a known
+// type so the caller can warn "unknown_te" for the former and "parse_error"
+// (naming the TE type) for the latter; mirrors errUnknownSvc.
+var errUnknownTE = errors.New("unknown temp entity type")
 
 // Temp-entity types we care about. The lightning types are beams
 // (short entity + start + end coords); everything else is a point effect.
@@ -24,7 +31,7 @@ const (
 // One beam == one LG attack == one cell (discharge does not emit a beam),
 // so beam counts match KTX's acc.attacks.
 type BeamEvent struct {
-	Ent    int // firing entity (player slot = Ent-1 when a client)
+	Ent    int // firing entity (player slot = Ent-1 when a client; negative on ezquake's rail-trail extension, never from KTX)
 	Type   int // raw TE type: 5/6/9
 	Start  [3]float32
 	End    [3]float32
@@ -37,11 +44,10 @@ func (e *BeamEvent) EventTime() float64   { return e.Time }
 
 // parseTempEntity decodes a svc_temp_entity payload. Lightning beams are
 // surfaced as BeamEvent; every other (point-effect) type is consumed for
-// its known byte length. Returns the TE type so the caller can name an
-// unknown type in a diagnostic. Wire layout per type is handled in the
-// switch below (ref: ezquake cl_tent.c::CL_ParseTEnt); an unknown type
-// returns io.EOF since its length can't be guessed without drifting the
-// parser.
+// its known byte length. Returns the TE type so the caller can name it in
+// a diagnostic. Wire layout per type is handled in the switch below (ref:
+// ezquake cl_tent.c::CL_ParseTEnt); an unknown type returns errUnknownTE
+// since its length can't be guessed without drifting the parser.
 func (p *Parser) parseTempEntity(r *mvd.BufferReader, time float64, timeMs int32, floatCoords bool) (byte, error) {
 	teType, err := r.ReadByte()
 	if err != nil {
@@ -75,8 +81,12 @@ func (p *Parser) parseTempEntity(r *mvd.BufferReader, time float64, timeMs int32
 				return teType, err
 			}
 		}
+		// The wire value is a signed short (ezquake cl_tent.c:158): ezquake
+		// gives negative values protocol meaning (TE_LIGHTNING1 with ent in
+		// -512..-1 is its rail-trail extension). KTX always writes a real
+		// edict, but decode faithfully so exotic streams stay recoverable.
 		return teType, p.emit(&BeamEvent{
-			Ent:    int(entRaw),
+			Ent:    int(int16(entRaw)),
 			Type:   int(teType),
 			Start:  start,
 			End:    end,
@@ -88,6 +98,6 @@ func (p *Parser) parseTempEntity(r *mvd.BufferReader, time float64, timeMs int32
 	case 2, 12:
 		return teType, r.Skip(1 + 3*coordSize)
 	default:
-		return teType, io.EOF
+		return teType, errUnknownTE
 	}
 }

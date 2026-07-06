@@ -598,11 +598,14 @@ Offset  Size  Field
 ------  ----  -----
 0       1     svc_sound (6)
 1       2     channel (short)         <- bit field, see below
-[1]     [1]   volume        (only if channel & 0x8000 / SND_VOLUME)
-[1]     [1]   attenuation   (only if channel & 0x4000 / SND_ATTENUATION)
-1       1     sound_num               <- index into svc_soundlist
-6/12    var   origin (3 coords, short or float)
+var     [1]   volume        (only if channel & 0x8000 / SND_VOLUME)
+var     [1]   attenuation   (only if channel & 0x4000 / SND_ATTENUATION)
+var     1     sound_num               <- index into svc_soundlist
+var     var   origin (3 coords, short or float)
 ```
+
+Every offset after the channel word is variable: it depends on which of
+the two optional bytes the flag bits enable.
 
 Channel-word decode (ezquake `cl_parse.c`): `ent = (channel >> 3) & 1023;
 channel &= 7`. The 3-bit channel index is the Quake `CHAN_*` value —

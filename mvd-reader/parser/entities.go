@@ -394,8 +394,8 @@ func (p *Parser) registerBaseline(entNum int, state *EntityState, time float64) 
 		p.spawnedMovers = make(map[int]int)
 	}
 	prev := p.currentEntities[entNum]
-	copy := *state
-	p.baselines[entNum] = &copy
+	baseline := *state
+	p.baselines[entNum] = &baseline
 	// A baseline replacing a prior one is rare but legal (server can
 	// resend). The current-frame state reflects the fresh baseline.
 	currCopy := *state

@@ -10,9 +10,10 @@ maintainability.
 gone: the duplicated parse/skip wire layouts were consolidated to one reader
 per layout (P4+P5), the end-of-demo signalling bug was fixed with a
 drain-then-error Source contract (P2), and the dead exported surface was
-deleted (P4, part of a ~700 LOC cut). `gofmt -l mvd-reader/` is clean. What
-remains open: the schema-touching batch (A4–A6), a handful of nits, and the
-new findings from the deferred #97-decoder review below.
+deleted (P4, part of a ~700 LOC cut). `gofmt -l mvd-reader/` is clean.
+Phase 5.1 then cleared the deferred #97-decoder findings (F18/F19/F21/F22)
+and the mechanical nit list. What remains open: the schema-touching batch
+(A4–A6, plus F20 which shares its contract altitude) and one naming nit.
 
 ---
 
@@ -78,39 +79,15 @@ extensibility.
 
 ---
 
-## Low priority / nits (open; each re-verified on current HEAD)
+## Low priority / nits (open)
 
-- `decoder.go:140-168`: the `DemSingle, DemStats` and `DemAll, DemRead`
-  cases are still byte-identical — merge into one case list. The "unknown
-  message type" error (:176) still omits the type byte and stream offset.
-- `decoder.go:101`: `Time: float64(d.timeMs) * 0.001` still duplicates
-  `CurrentTime()` (:43-45); call the method.
-- `registerBaseline` (entities.go:397): local variable named `copy` still
-  shadows the builtin.
-- `ktx_pickup_print.go:178`: the `!strings.HasPrefix(trimmed, ktxGotThePrefix)`
-  guard is still unreachable ("You get " and "You got the " already differ at
-  byte 5) and the check still inconsistently uses `msg` where the others use
-  `trimmed`.
-- `BufferReader.ReadBytes` still returns an aliased sub-slice while
-  `BinaryReader.ReadBytes` returns a fresh copy (mvd/reader.go:202-209 vs
-  :101-109). P0 documented the aliasing at the one retaining call site
-  (parser.go:676-678), but the method pair itself still carries no warning —
-  document it where the two implementations live.
-- `position.go:111-113` still drops position events for an exact-(0,0,0)
-  origin with only "likely uninitialized" as justification — under the
-  project's "surface, don't filter" policy the comment should cite the
-  reasoning (players are never at the exact world origin on real maps).
-- `Parser.Players()` / `Parser.PlayerStats()` (parser.go:195-203): now
-  **zero** callers anywhere in the workspace, tests included (the untracked
-  debug tools that used them are gone). Delete outright, or fold into A4's
-  snapshot work.
-- `decodeULEB128` (parser.go:737-749) still silently accepts a truncated
-  varint (all-continuation bytes); fine given the garbage some demos carry in
-  this block, but a one-line comment would help.
 - Residual naming trap (the deleted Kind-constant nit, one layer down): the
   parser-side constant `EventPlayerInfo` (parser.go:33) names
   `PlayerPositionEvent` (position.go:27) — align if the constants are ever
   touched.
+
+(The other eight nits of this list were fixed in Phase 5.1 — see the
+ledger.)
 
 ---
 
@@ -163,29 +140,8 @@ now verified against the vendored ground truth:
   naming mismatch, svc_temp_entity, projectile tracking, svc_nails), and the
   README event table lists all five events. No structural doc drift.
 
-What the deeper pass did find:
-
-**F18. BeamEvent decodes the beam entity as unsigned.** `parseTempEntity`
-reads the beam entity with `r.ReadUint16()` and surfaces `Ent: int(entRaw)`
-(tempentity.go:63, :78). ezquake's `CL_ParseBeam` reads a **signed** short
-(cl_tent.c:158) and assigns protocol meaning to negative values —
-TE_LIGHTNING1 with ent in −512..−1 is the rail-trail extension
-(cl_tent.c:175-183). On such a stream the event reports Ent 65024–65535,
-`Ent-1` slot arithmetic silently lands out of range, and a consumer cannot
-recover the intended value. KTX always writes a real edict (`WriteEntity`),
-so the current corpus is unaffected — but the faithful decode is
-`int(int16(entRaw))`, with a test. *(correctness, low likelihood)*
-
-**F19. The `unknown_te` warning conflates three failure modes.**
-`parseTempEntity` returns bare `io.EOF` both for "TE type not in the table"
-(tempentity.go:90-91) and for a genuinely truncated read inside a *known*
-type (any short/coord read), and the single dispatch arm labels both — plus
-any emit-handler error — `unknown_te` (parser.go:342-346). A truncated
-TE_LIGHTNING therefore warns "unknown_te: temp entity type 6: EOF …". This
-is exactly the conflation F10 fixed for `skipCommand` with `errUnknownSvc`
-(parser.go:11-16); mirror it with an `errUnknownTE` sentinel and report
-truncation of a known type as `parse_error` naming the TE type.
-*(diagnostics)*
+What the deeper pass did find (F18/F19/F21/F22 fixed in Phase 5.1 — see
+the ledger; F20 remains open, batched with Phase 11):
 
 **F20. Emit-handler errors are swallowed by the warn-and-continue arms.**
 The new decoders correctly return `p.emit(...)` errors, but the sound / TE /
@@ -199,32 +155,6 @@ wire problem. Latent: the only production handler never errors
 handler errors across all sub-parser arms (wrap or sentinel), which is the
 same altitude as A4's contract work — batch them together. *(API contract,
 latent)*
-
-**F21. Doc nits, sound-adjacent.**
-- sound.go:18-19 and serverdata.go:158 both pick `weapons/rocket1i.wav` as
-  their example weapon-fire sound without the caveat that it is the
-  *nailgun* sound (ktx/src/weapons.c:52, :1707) — a reader will assume
-  rocket. MVD_FORMAT.md's table gets this right; either switch the example
-  to `sgun1.wav` (rl, weapons.c:1044) or name the weapon.
-- The MVD_FORMAT.md svc_sound layout table's offset column contradicts
-  itself: channel occupies offsets 1–2, but `sound_num` is listed at offset
-  1 and origin at 6/12 (MVD_FORMAT.md:597-605); after the optional
-  volume/attenuation bytes every later offset is variable — mark them `var`
-  as other tables do.
-- sound.go discards volume/attenuation (:60-69, "not retained") — a
-  deliberate, documented choice, but note them as candidate fields if a
-  consumer ever needs to separate local vs. attenuated sounds. *(docs)*
-
-**F22. The last parse/skip twin, and a warn label.**
-- `parseNails`' `!p.decodeNails` branch (nails.go:49-55) restates the
-  per-nail layout as `count × 6/7` skip arithmetic beside the decode loop
-  (:57-84) that expresses the same layout — the one skip twin P5 left
-  standing, albeit inside a single function where drift would be visible.
-  Either decode-and-discard through the same loop or add a one-line comment
-  tying the two.
-- The nails dispatch arm warns `"svc_nails: %v"` for both svc_nails and
-  svc_nails2 (parser.go:348-351) — use `SvcName(cmd)`. *(bloat /
-  diagnostics, nit)*
 
 ---
 
@@ -240,11 +170,10 @@ below. What remains:
    analytics consumers audited in the same PR and schema/docs bumped per
    CLAUDE.md. F20 (handler-error separation) belongs in this batch — it
    touches the same contract text as A4.
-2. **Small mechanical PR — scheduled as Phase 5.1** (branch `phase-5.1`
-   off `review`): F18 (with a signed-ent test), F19, F21, F22, and the
-   surviving nits above, plus the `mvd-api/serve.go` gofmt fix riding
-   along as a no-logic commit. Golden corpus is unaffected by all of
-   them except F18 on exotic non-KTX streams.
+2. ~~**Small mechanical PR — scheduled as Phase 5.1**~~ — shipped on
+   branch `phase-5.1`: F18 (with a signed-ent test), F19, F21, F22, the
+   eight surviving nits, and the `mvd-api/serve.go` gofmt fix as a
+   separate no-logic commit. Golden corpus unaffected (verified).
 
 ---
 
@@ -274,3 +203,8 @@ changing behaviour — see their rows.
 | A2/F3 | One reader per wire layout: `readDeltaBits` + `readEntityDelta` + `applyDeltaFields` + `readBaselineBody` shared by parse and decode-and-discard paths (entities.go:299-360, :544-734); FTE evenmorebits/trans/colourmod now gated on the negotiated extension per mvdsv sv_ents.c and ezquake cl_ents.c — all three F3 divergences impossible by construction | P5 1300742 |
 | F8 | KTX stuffcmd hints parse through one `parseKtxHintInts` helper behind a single `//ktx ` prefix gate (ktx_pickup.go:59-110) | P5 1300742 |
 | A7 | `MatchStartPatterns` is canonical in Layer 1 (print.go:98-114), re-exported via `events` (events.go:91-95), imported by `mvd-analytics/analyzer/matchtiming.go:32-36`; mirror comment gone | P5 1300742 |
+| F18 | Beam entity decoded as signed short (`int(int16(entRaw))`) per ezquake CL_ParseBeam; negative-ent regression test added | P5.1 |
+| F19 | `errUnknownTE` sentinel: unknown TE type warns `unknown_te`, truncation inside a known type warns `parse_error` naming the type (mirrors F10's errUnknownSvc) | P5.1 |
+| F21 | Sound doc nits: rl/nailgun example confusion fixed in sound.go + serverdata.go, MVD_FORMAT.md svc_sound offsets marked `var`, volume/attenuation noted as candidate fields | P5.1 |
+| F22 | parseNails skip arithmetic tied to the decode loop by comment; nails dispatch warn uses `SvcName(cmd)` | P5.1 |
+| nits ×8 | decoder.go case merge + typed unknown-message error (type byte + offset) + `CurrentTime()` reuse; `copy` shadow renamed; unreachable ktx_pickup_print guard dropped (and msg→trimmed); ReadBytes aliasing documented on both implementations; position.go (0,0,0) filter justified per the surface-don't-filter rule; dead `Parser.Players()`/`PlayerStats()` deleted; decodeULEB128 leniency documented | P5.1 |

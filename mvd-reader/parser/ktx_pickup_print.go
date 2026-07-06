@@ -175,7 +175,7 @@ func (p *Parser) tryEmitPickupPrint(level int, msg string, targetPlayerNum int, 
 	// per-piece prints ("the Rocket Launcher", ", 25 rockets") are
 	// separate svc_print messages and deliberately ignored; see the
 	// BackpackPickupPrintEvent doc comment.
-	if strings.HasPrefix(msg, ktxBackpackOpen) && !strings.HasPrefix(trimmed, ktxGotThePrefix) {
+	if strings.HasPrefix(trimmed, ktxBackpackOpen) {
 		return p.emit(&BackpackPickupPrintEvent{
 			PlayerNum: targetPlayerNum,
 			Time:      time,

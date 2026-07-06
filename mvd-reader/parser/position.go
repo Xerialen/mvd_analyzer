@@ -108,8 +108,12 @@ func (p *Parser) parsePlayerInfo(r *mvd.BufferReader, time float64, timeMs int32
 		}
 	}
 
-	// Only emit position event if we have valid position data
-	// (skip if all coordinates are zero - likely uninitialized)
+	// Deliberate filter (see "surface authoritative data" in CLAUDE.md):
+	// an exact-(0,0,0) origin is a protocol artifact, not a position —
+	// slots that have not spawned yet diff against the zero baseline, so
+	// their svc_playerinfo carries the world origin. No real map places a
+	// player at exactly (0,0,0), and letting it through would inject a
+	// bogus teleport-to-origin sample into every position track.
 	if origin[0] != 0 || origin[1] != 0 || origin[2] != 0 {
 		if err := p.emit(&PlayerPositionEvent{
 			PlayerNum: int(playerNum),

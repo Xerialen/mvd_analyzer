@@ -155,8 +155,9 @@ func (p *Parser) parseModelList(r *mvd.BufferReader) error {
 // parseSoundList decodes svc_soundlist / svc_fte_soundlistshort. Each
 // precached sound path is appended to the parser's sound-index table so
 // the svc_sound decoder can resolve a wire sound_num back to its path
-// (e.g. "weapons/rocket1i.wav") — which is how the shots analyzer maps a
-// fire sound to the weapon that produced it.
+// (e.g. "weapons/rocket1i.wav" — the nailgun fire sound, despite the
+// name) — which is how the shots analyzer maps a fire sound to the
+// weapon that produced it.
 //
 // Wire format mirrors svc_modellist (ezquake-source/src/cl_parse.c
 // case svc_soundlist): 1-byte start index, NUL-terminated strings until
