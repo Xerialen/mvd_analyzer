@@ -18,9 +18,14 @@
 > regenerated once) · P2 `cda9940`+`c690ec0` · P3 `6179589`+`3316d50` ·
 > P4 `f494471` · P5 `1300742`,`bcfb8ce`,`7c8cf5c`,`adc4ce5`,`56e3ab6`.
 > The per-plan documents now list only still-open findings, each with a
-> resolved-ledger at the bottom. **Next up: phases 5.1–5.4** (the
-> deferred-review correctness batch, see below), then the Phase 6+
-> structural queue.
+> resolved-ledger at the bottom. **Phases 5.1–5.4 are DONE (2026-07-06)**
+> — stacked branches `phase-5.1`…`phase-5.4` off `review`, all pushed:
+> 5.1 `989e6e0`+`26b1c70` (reader batch + serve.go gofmt) ·
+> 5.2 `4298e46` (aim/shots correctness, schema v48→v49, goldens
+> regenerated once) · 5.3 `67a95ff` (one shot-stream variant +
+> singleflight recover) · 5.4 `a742b0e` (aim-tab fixes; web F17 closed
+> by decision). **Next up: merge everything to main as sequential PRs
+> (phase-0 → … → phase-5.4), then the Phase 6+ structural queue.**
 > The phase tables that follow are kept as the record of what each
 > phase covered; deviations from plan are noted inline where they
 > happened (reader F1 was pulled into Phase 1 when the 0-frag fix
