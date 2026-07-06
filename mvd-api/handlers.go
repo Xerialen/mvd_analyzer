@@ -68,13 +68,23 @@ func (s *server) resolveDemo(w http.ResponseWriter, r *http.Request) (*result.Re
 		return nil, democache.CacheMeta{}, false
 	}
 	setCacheHeaders(w, meta)
-	// Honor If-None-Match for cheap 304s.
-	etag := fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion)
-	if match := r.Header.Get("If-None-Match"); match != "" && strings.Contains(match, etag) {
-		w.WriteHeader(http.StatusNotModified)
+	if revalidated(w, r, meta) {
 		return nil, meta, false
 	}
 	return res, meta, true
+}
+
+// revalidated writes a cheap 304 (and reports true) when the request's
+// If-None-Match matches meta's ETag. setCacheHeaders must have run first
+// so the ETag header is already set. This is the shared conditional-GET
+// tail of resolveDemo and resolveShotStreams.
+func revalidated(w http.ResponseWriter, r *http.Request, meta democache.CacheMeta) bool {
+	etag := fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion)
+	if match := r.Header.Get("If-None-Match"); match != "" && strings.Contains(match, etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return true
+	}
+	return false
 }
 
 func mapStoreError(w http.ResponseWriter, err error) {
@@ -101,6 +111,18 @@ func writeUnavailable(w http.ResponseWriter, err error, code, msg string) {
 		return
 	}
 	writeError(w, http.StatusInternalServerError, "internal", err.Error())
+}
+
+// writeInvalidParam writes the 400 invalid_param envelope for a non-nil
+// err — a malformed query param (via qp.Err) or a view-layer rejection of
+// an otherwise-parseable value (unknown field code, bad reducer). Reports
+// whether it wrote, so callers do `if writeInvalidParam(w, err) { return }`.
+func writeInvalidParam(w http.ResponseWriter, err error) bool {
+	if err == nil {
+		return false
+	}
+	writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	return true
 }
 
 func setCacheHeaders(w http.ResponseWriter, meta democache.CacheMeta) {
@@ -173,12 +195,13 @@ func (s *server) handleMetadata(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Metadata == nil {
-		writeError(w, http.StatusUnprocessableEntity, "metadata_unavailable",
+	md, err := view.Metadata(res)
+	if err != nil {
+		writeUnavailable(w, err, "metadata_unavailable",
 			"this demo has no metadata (no fullserverinfo / no countdown centerprint)")
 		return
 	}
-	writeJSON(w, http.StatusOK, res.Metadata)
+	writeJSON(w, http.StatusOK, md)
 }
 
 // handleLocGraph: GET /v1/demos/{id}/loc-graph — per-map loc
@@ -189,12 +212,13 @@ func (s *server) handleLocGraph(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.LocGraph == nil {
-		writeError(w, http.StatusUnprocessableEntity, "locgraph_unavailable",
+	lg, err := view.LocGraph(res)
+	if err != nil {
+		writeUnavailable(w, err, "locgraph_unavailable",
 			"this demo has no loc graph (probably no position track was emitted)")
 		return
 	}
-	writeJSON(w, http.StatusOK, res.LocGraph)
+	writeJSON(w, http.StatusOK, lg)
 }
 
 // handleFrags: GET /v1/demos/{id}/frags — top-level frag aggregates +
@@ -264,12 +288,13 @@ func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Shots == nil {
-		writeError(w, http.StatusUnprocessableEntity, "shots_unavailable",
+	sh, err := view.Shots(res)
+	if err != nil {
+		writeUnavailable(w, err, "shots_unavailable",
 			"this demo has no shot data (no weapon fires decoded)")
 		return
 	}
-	writeJSON(w, http.StatusOK, res.Shots)
+	writeJSON(w, http.StatusOK, sh)
 }
 
 // handleAim: GET /v1/demos/{id}/aim — per-player aim analysis (result.Aim):
@@ -285,12 +310,13 @@ func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.Aim == nil {
-		writeError(w, http.StatusUnprocessableEntity, "aim_unavailable",
+	am, err := view.Aim(res)
+	if err != nil {
+		writeUnavailable(w, err, "aim_unavailable",
 			"this demo has no aim data (needs shots + position/view streams)")
 		return
 	}
-	writeJSON(w, http.StatusOK, res.Aim)
+	writeJSON(w, http.StatusOK, am)
 }
 
 // handleChat: GET /v1/demos/{id}/chat — chat-only slice of
@@ -311,23 +337,17 @@ func (s *server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	from, err := parseFloat(q, "from", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	p := newQP(r.URL.Query())
+	opts := view.ChatOptions{
+		From:    p.Float("from", 0),
+		To:      p.Float("to", 0),
+		Players: p.CSV("players"),
+		Types:   p.CSV("types"),
+	}
+	if writeInvalidParam(w, p.Err()) {
 		return
 	}
-	to, err := parseFloat(q, "to", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, view.Chat(res, view.ChatOptions{
-		From:    from,
-		To:      to,
-		Players: parseCSV(ciGet(q, "players")),
-		Types:   parseCSV(ciGet(q, "types")),
-	}))
+	writeJSON(w, http.StatusOK, view.Chat(res, opts))
 }
 
 // handleDemoInfo: GET /v1/demos/{id}/demoinfo — KTX demoinfo blob
@@ -338,12 +358,13 @@ func (s *server) handleDemoInfo(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.DemoInfo == nil {
-		writeError(w, http.StatusUnprocessableEntity, "demoinfo_unavailable",
+	di, err := view.DemoInfo(res)
+	if err != nil {
+		writeUnavailable(w, err, "demoinfo_unavailable",
 			"this demo has no KTX demoinfo block (likely non-KTX or pre-match abort)")
 		return
 	}
-	writeJSON(w, http.StatusOK, res.DemoInfo)
+	writeJSON(w, http.StatusOK, di)
 }
 
 // handleBackpacks: GET /v1/demos/{id}/backpacks — RL/LG drops with
@@ -442,60 +463,31 @@ func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	windowMs, err := parseInt(q, "windowMs", 50)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	start, err := parseFloat(q, "from", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	end, err := parseFloat(q, "to", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	reducers, err := parseReducers(ciGet(q, "reducers"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	locIndex, err := parseLocIndex(q)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	layout, err := parseLayout(q)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
+	p := newQP(r.URL.Query())
 	opts := view.BucketsOptions{
-		WindowMs:    windowMs,
-		StartTime:   start,
-		EndTime:     end,
-		Players:     parseCSV(ciGet(q, "players")),
-		Fields:      parseCSV(ciGet(q, "fields")),
-		Reducers:    reducers,
-		IncludeTeam: parseBool(q, "includeTeam"),
-		LocIndex:    locIndex,
-		Layout:      layout,
+		WindowMs:    p.Int("windowMs", 50),
+		StartTime:   p.Float("from", 0),
+		EndTime:     p.Float("to", 0),
+		Players:     p.CSV("players"),
+		Fields:      p.CSV("fields"),
+		Reducers:    p.Reducers("reducers"),
+		IncludeTeam: p.Bool("includeTeam"),
+		LocIndex:    p.LocIndex(),
+		Layout:      p.Layout(),
 	}
-	if layout == "column" {
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	if opts.Layout == "column" {
 		cb, err := view.BucketsColumnar(res, opts)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+		if writeInvalidParam(w, err) {
 			return
 		}
 		writeJSON(w, http.StatusOK, cb)
 		return
 	}
 	bv, err := view.Buckets(res, opts)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	if writeInvalidParam(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, bv)
@@ -506,32 +498,19 @@ func (s *server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	start, err := parseFloat(q, "from", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	end, err := parseFloat(q, "to", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	locIndex, err := parseLocIndex(q)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
+	p := newQP(r.URL.Query())
 	filter := view.EventsFilter{
-		StartTime: start,
-		EndTime:   end,
-		Players:   parseCSV(ciGet(q, "players")),
-		Types:     parseCSV(ciGet(q, "types")),
-		LocIndex:  locIndex,
+		StartTime: p.Float("from", 0),
+		EndTime:   p.Float("to", 0),
+		Players:   p.CSV("players"),
+		Types:     p.CSV("types"),
+		LocIndex:  p.LocIndex(),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
 	}
 	ev, err := view.Events(res, filter)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	if writeInvalidParam(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, ev)
@@ -542,32 +521,19 @@ func (s *server) handleStreamSlice(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	start, err := parseFloat(q, "from", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	end, err := parseFloat(q, "to", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	locIndex, err := parseLocIndex(q)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
+	p := newQP(r.URL.Query())
 	opts := view.StreamSliceOptions{
-		StartTime: start,
-		EndTime:   end,
-		Players:   parseCSV(ciGet(q, "players")),
-		Fields:    parseCSV(ciGet(q, "fields")),
-		LocIndex:  locIndex,
+		StartTime: p.Float("from", 0),
+		EndTime:   p.Float("to", 0),
+		Players:   p.CSV("players"),
+		Fields:    p.CSV("fields"),
+		LocIndex:  p.LocIndex(),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
 	}
 	sl, err := view.StreamSlice(res, opts)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	if writeInvalidParam(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sl)
@@ -583,25 +549,18 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "missing_param", "time is required")
 		return
 	}
-	t, err := parseFloat(q, "time", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	locIndex, err := parseLocIndex(q)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
+	p := newQP(q)
 	opts := view.StateAtOptions{
-		Time:     t,
-		Players:  parseCSV(ciGet(q, "players")),
-		Fields:   parseCSV(ciGet(q, "fields")),
-		LocIndex: locIndex,
+		Time:     p.Float("time", 0),
+		Players:  p.CSV("players"),
+		Fields:   p.CSV("fields"),
+		LocIndex: p.LocIndex(),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
 	}
 	sa, err := view.StateAt(res, opts)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	if writeInvalidParam(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sa)
@@ -666,13 +625,12 @@ func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request, nail
 	if meta.ShotStreamsUnavailable {
 		// The tier-1 bytes were gone, so the stream-derived parts are absent.
 		// Flag the degrade and don't let clients cache the incomplete body as
-		// immutable (see API.md §4.5c/4.5d/4.11c).
+		// immutable (see API.md §4.5c/4.5d/4.11c). Set before revalidated so a
+		// 304 still carries the marker.
 		w.Header().Set("X-Shot-Streams", "unavailable")
 		w.Header().Set("Cache-Control", "no-store")
 	}
-	etag := fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion)
-	if match := r.Header.Get("If-None-Match"); match != "" && strings.Contains(match, etag) {
-		w.WriteHeader(http.StatusNotModified)
+	if revalidated(w, r, meta) {
 		return nil, false
 	}
 	return res, true
@@ -730,37 +688,21 @@ func (s *server) handleLocTrails(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	start, err := parseFloat(q, "from", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	end, err := parseFloat(q, "to", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	minDwell, err := parseInt(q, "minDwellMs", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	locIndex, err := parseLocIndex(q)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
+	p := newQP(r.URL.Query())
+	// Field order here fixes which of several malformed params is reported:
+	// keep from, to, minDwellMs, loc — the historical read order.
 	opts := view.LocTrailsOptions{
-		Players:    parseCSV(ciGet(q, "players")),
-		MinDwellMs: minDwell,
-		StartTime:  start,
-		EndTime:    end,
-		LocIndex:   locIndex,
+		StartTime:  p.Float("from", 0),
+		EndTime:    p.Float("to", 0),
+		MinDwellMs: p.Int("minDwellMs", 0),
+		Players:    p.CSV("players"),
+		LocIndex:   p.LocIndex(),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
 	}
 	tr, err := view.LocTrails(res, opts)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	if writeInvalidParam(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, tr)
@@ -787,33 +729,21 @@ func (s *server) handleRegionControl(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.TimelineAnalysis == nil || res.TimelineAnalysis.RegionControl == nil {
-		writeError(w, http.StatusUnprocessableEntity, "region_control_unavailable", "this demo has no region-control layout")
+	if err := view.RegionControlAvailable(res); err != nil {
+		writeUnavailable(w, err, "region_control_unavailable", "this demo has no region-control layout")
 		return
 	}
-	q := r.URL.Query()
-	windowMs, err := parseInt(q, "windowMs", 50)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	p := newQP(r.URL.Query())
+	opts := view.RegionControlOptions{
+		WindowMs:  p.Int("windowMs", 50),
+		StartTime: p.Float("from", 0),
+		EndTime:   p.Float("to", 0),
+	}
+	if writeInvalidParam(w, p.Err()) {
 		return
 	}
-	from, err := parseFloat(q, "from", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	to, err := parseFloat(q, "to", 0)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
-		return
-	}
-	rcv, err := view.RegionControl(res, view.RegionControlOptions{
-		WindowMs:  windowMs,
-		StartTime: from,
-		EndTime:   to,
-	})
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", err.Error())
+	rcv, err := view.RegionControl(res, opts)
+	if writeInvalidParam(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, rcv)
@@ -829,14 +759,11 @@ func (s *server) handleAirgibs(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if res.TimelineAnalysis == nil {
-		writeError(w, http.StatusUnprocessableEntity, "airgibs_unavailable",
+	airgibs, err := view.Airgibs(res)
+	if err != nil {
+		writeUnavailable(w, err, "airgibs_unavailable",
 			"this demo has no timeline analysis")
 		return
-	}
-	airgibs := res.TimelineAnalysis.Airgibs
-	if airgibs == nil {
-		airgibs = []result.AirgibEvent{}
 	}
 	writeJSON(w, http.StatusOK, airgibs)
 }

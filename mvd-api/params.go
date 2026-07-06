@@ -125,3 +125,89 @@ func parseReducers(v string) (map[string]string, error) {
 	}
 	return out, nil
 }
+
+// qp is an error-accumulating reader over a request's url.Values. Each
+// accessor no-ops once an error has been recorded, so a handler does all
+// its reads into the view-options struct and then checks Err() once — the
+// first malformed param wins, exactly as the old sequential parse-then-
+// check chain did. Keys resolve case-insensitively (the accessors funnel
+// through the same ciGet/parse* helpers used elsewhere), so the field
+// order of the options literal determines which of several bad params is
+// reported; keep it matching the historical read order.
+type qp struct {
+	q   url.Values
+	err error
+}
+
+func newQP(q url.Values) *qp { return &qp{q: q} }
+
+// Err returns the first param-read error, or nil. Handlers pass it to
+// writeInvalidParam for the shared 400 invalid_param tail.
+func (p *qp) Err() error { return p.err }
+
+// Float reads a float param (empty → def). No-op after a prior error.
+func (p *qp) Float(key string, def float64) float64 {
+	if p.err != nil {
+		return def
+	}
+	v, err := parseFloat(p.q, key, def)
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
+
+// Int reads an integer param (empty → def). No-op after a prior error.
+func (p *qp) Int(key string, def int) int {
+	if p.err != nil {
+		return def
+	}
+	v, err := parseInt(p.q, key, def)
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
+
+// CSV reads a comma-separated param. It cannot fail, so it never sets err.
+func (p *qp) CSV(key string) []string { return parseCSV(ciGet(p.q, key)) }
+
+// Bool reads a 0/1|true/false param. It cannot fail, so it never sets err.
+func (p *qp) Bool(key string) bool { return parseBool(p.q, key) }
+
+// LocIndex reads ?loc=name|index. No-op after a prior error.
+func (p *qp) LocIndex() bool {
+	if p.err != nil {
+		return false
+	}
+	v, err := parseLocIndex(p.q)
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
+
+// Layout reads ?layout=row|column (empty → "column"). No-op after error.
+func (p *qp) Layout() string {
+	if p.err != nil {
+		return "column"
+	}
+	v, err := parseLayout(p.q)
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
+
+// Reducers reads the "field=name,..." reducer-override param. No-op after
+// a prior error.
+func (p *qp) Reducers(key string) map[string]string {
+	if p.err != nil {
+		return nil
+	}
+	v, err := parseReducers(ciGet(p.q, key))
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
