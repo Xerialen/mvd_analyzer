@@ -79,11 +79,11 @@ func RegionControl(r *result.Result, opts RegionControlOptions) (*result.RegionC
 	//    (the canonical post-normalize scoreboard). Fall back to the
 	//    baked RegionControl.TeamA/TeamB only when Match is absent.
 	//
-	//    Why prefer Match.Players over the baked values: duelTeamNormalize
-	//    rewrites Match.Players[].Team from real team names ("red") to
-	//    per-player synthetic names ("bananfalco"). The regionControlPost
-	//    runs after duelTeamNormalize, so Match.Players already carries
-	//    the canonical labels; reading them keeps the teamOf closure and
+	//    Why prefer Match.Players over the baked values: in a 1v1
+	//    MatchAnalyzer stamps Match.Players[].Team with per-player synthetic
+	//    names ("bananfalco") instead of real team names ("red") at birth (the
+	//    roster duel rewrite). Match.Players therefore already carries the
+	//    canonical labels; reading them keeps the teamOf closure and
 	//    teamA/teamB consistent.
 	teamA, teamB := opts.TeamA, opts.TeamB
 	if teamA == "" || teamB == "" {

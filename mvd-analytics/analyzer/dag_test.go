@@ -19,7 +19,7 @@ var registrationOrder = []string{
 	"metadata", "match", "messages", "timeline", "items", "damage",
 	"shots", "map-entities", "backpacks", "weapon-pickups",
 	// post-processors
-	"recover-telefrag-teamkills", "duel-team-normalize", "aim", "airgibs",
+	"recover-telefrag-teamkills", "aim", "airgibs",
 	"scoreboard-stats", "loc-graph", "region-control",
 }
 

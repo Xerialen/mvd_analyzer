@@ -93,31 +93,28 @@ var analyzerNodeMeta = map[string]nodeMeta{
 
 // postNodeMeta declares the DAG edges for each post-processor, keyed by
 // its resolved function name (postProcName). It encodes §1.3's result.*
-// read edges plus the one remaining "Ordering barriers" pseudo-artifact:
+// read edges. Both whole-Result barrier pseudo-artifacts have now retired:
 //
-//   - duel-team-normalize provides "teams:final" (stable team labels),
-//     required by aim / scoreboard-stats / loc-graph / region-control.
+//   - "epoch:match" retired with the clock refactor — timestamps are born
+//     match-relative in each producer's Finalize.
+//   - "teams:final" retired with the roster refactor — team labels are born
+//     correct in each producer's Finalize (roster/match/timeline/messages/
+//     items/pickups/backpacks/shots read co.Roster). aim / scoreboard-stats /
+//     loc-graph / region-control therefore keep only their data edges: they
+//     already read final team labels through those artifacts (aim via shots,
+//     scoreboard via match, loc-graph/region-control via streams + match).
 //
-// The old "epoch:match" barrier retired with the clock refactor: timestamps
-// are born match-relative in each producer's Finalize, so aim / airgibs /
-// loc-graph / region-control no longer wait on a whole-Result time rebase —
-// they keep only their data edges. recover-telefrag-teamkills still runs
-// before scoreboard-stats (which requires it by name to read the corrected
-// frag log); it requires clock because it converts victim-named teamkill
-// times against co.Clock.
+// recover-telefrag-teamkills still runs before scoreboard-stats (which requires
+// it by name to read the corrected frag log); it requires clock because it
+// converts victim-named teamkill times against co.Clock.
 var postNodeMeta = map[string]nodeMeta{
 	"recoverTelefragTeamkills": {
 		name: "recover-telefrag-teamkills", tier: "post", mutates: true,
 		requires: []string{"clock", "demoinfo", "frag", "timeline"},
 	},
-	"duelTeamNormalize": {
-		name: "duel-team-normalize", tier: "post", mutates: true,
-		requires: []string{"demoinfo", "match", "frag", "timeline", "messages", "items", "shots", "backpacks", "weapon-pickups"},
-		provides: []string{"teams:final"},
-	},
 	"aimPost": {
 		name: "aim", tier: "post", mutates: true,
-		requires: []string{"shots", "timeline", "damage", "teams:final"},
+		requires: []string{"shots", "timeline", "damage"},
 	},
 	"airgibsPost": {
 		name: "airgibs", tier: "post", mutates: true,
@@ -125,15 +122,15 @@ var postNodeMeta = map[string]nodeMeta{
 	},
 	"scoreboardStatsPost": {
 		name: "scoreboard-stats", tier: "post", mutates: true,
-		requires: []string{"match", "frag", "recover-telefrag-teamkills", "teams:final"},
+		requires: []string{"match", "frag", "recover-telefrag-teamkills"},
 	},
 	"locGraphPost": {
 		name: "loc-graph", tier: "post", mutates: true,
-		requires: []string{"timeline", "demoinfo", "teams:final"},
+		requires: []string{"timeline", "demoinfo"},
 	},
 	"regionControlPost": {
 		name: "region-control", tier: "post", mutates: true,
-		requires: []string{"timeline", "match", "demoinfo", "teams:final"},
+		requires: []string{"timeline", "match", "demoinfo"},
 	},
 }
 

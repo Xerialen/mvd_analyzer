@@ -13,12 +13,6 @@ import "github.com/mvd-analyzer/mvd-analytics/view"
 // anchor the timeline writes onto Streams.Global. The rebasing helpers those
 // producers share live in timeshift.go.
 
-// duelTeamNormalize is the post-processor wrapper around
-// normalizeDuelTeams (defined in duel_normalize.go).
-func duelTeamNormalize(res *Result, co *CoreOutputs) {
-	normalizeDuelTeams(res, co.Roster)
-}
-
 // scoreboardStatsPost fills MatchResult.Players[].Kills/Deaths from the
 // frag-log-corrected FragResult.ByPlayer, joining on the final display
 // name. It runs as a post-processor (not in the match analyser's
@@ -53,9 +47,9 @@ func scoreboardStatsPost(res *Result, _ *CoreOutputs) {
 	}
 }
 
-// locGraphPost runs BuildLocGraph on the assembled Result. Streams are
-// already match-relative (producers rebase at Finalize); it still runs after
-// duelTeamNormalize so the loc nodes/edges use the same team labels as the
+// locGraphPost runs BuildLocGraph on the assembled Result. Streams are already
+// match-relative and carry final (roster) team labels (producers are born
+// correct at Finalize), so the loc nodes/edges use the same team labels as the
 // rest of the result.
 func locGraphPost(res *Result, _ *CoreOutputs) {
 	res.LocGraph = BuildLocGraph(res)
@@ -68,8 +62,9 @@ func locGraphPost(res *Result, _ *CoreOutputs) {
 // auto-detection); the view function reads those plus result.Streams
 // and emits the classified bucket states + percentages.
 //
-// Streams are already match-relative (producers rebase at Finalize); this
-// must still run after duelTeamNormalize so per-player team labels are stable.
+// Streams are already match-relative and carry final (roster) team labels
+// (producers are born correct at Finalize), so the classifier's per-player
+// team labels are stable.
 func regionControlPost(res *Result, _ *CoreOutputs) {
 	if res == nil || res.TimelineAnalysis == nil {
 		return

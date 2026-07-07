@@ -5,6 +5,30 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-07
+
+- **Analytics: team labels born correct; the whole-Result duel rewrite is
+  gone (no schema change, byte-identical output).** A new `roster` core
+  node (the last core node) owns the canonical player/team table with the
+  duel (player-name-as-team) rewrite folded in: it publishes the duel
+  verdict, the participant set, and `TeamFor(name, rawTeam)`. Every
+  producer stamps its final team label through `co.TeamFor` at emission —
+  streams, timeline events, messages, item/weapon/backpack pickups, and
+  the shot fire log (whose victim-kind classification is now duel-aware at
+  birth, so the shared-colour-team enemy/team fold happens once, correctly,
+  instead of being reclassified afterwards). The two result-restructuring
+  duties move to the analyzers that own those results: the DemoInfo team
+  rewrite into `RosterAnalyzer`, and the `Match.Players` participant
+  rebuild — including the demoinfo-authoritative merge that recovers a
+  teamless frogbot the spectator gate drops — into `MatchAnalyzer`. The
+  `normalizeDuelTeams` post-processor (which had to enumerate every
+  team-labelled field by hand and grew four more sections in v45/v46) and
+  the `isDuelResult` helper are deleted; `DamageAnalyzer` reads the duel
+  verdict from the roster it already used at birth. The `teams:final` DAG
+  barrier retires with it. Verified byte-identical on the golden corpus
+  (the three 1on1 goldens are the referees); the shared-colour and bot
+  duels the corpus lacks are pinned by ported unit tests.
+
 ## 2026-07-06
 
 - **Analytics: timestamps born match-relative; the whole-Result time

@@ -2,57 +2,54 @@ package analyzer
 
 import "testing"
 
-func TestIsDuelResult(t *testing.T) {
+// TestRoster_DuelDetection ports the old isDuelResult cases onto the roster
+// seams that replaced it: newRoster is the demoinfo authority, and
+// noteMatchParticipants is the no-demoinfo match-players fallback that
+// MatchAnalyzer drives. matchNames simulates the fallback that would run only
+// when demoinfo carried no players.
+func TestRoster_DuelDetection(t *testing.T) {
 	cases := []struct {
-		name string
-		r    *Result
-		want bool
+		name       string
+		di         *DemoInfoResult
+		matchNames []string // participant count MatchAnalyzer would feed the fallback
+		want       bool
 	}{
 		{
 			name: "two demoinfo players",
-			r: &Result{
-				DemoInfo: &DemoInfoResult{
-					Players: []DemoInfoPlayer{{Name: "a"}, {Name: "b"}},
-				},
-			},
+			di:   &DemoInfoResult{Players: []DemoInfoPlayer{{Name: "a"}, {Name: "b"}}},
 			want: true,
 		},
 		{
-			name: "four demoinfo players",
-			r: &Result{
-				DemoInfo: &DemoInfoResult{
-					Players: []DemoInfoPlayer{{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"}},
-				},
-			},
-			want: false,
+			name:       "four demoinfo players (match count ignored)",
+			di:         &DemoInfoResult{Players: []DemoInfoPlayer{{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"}}},
+			matchNames: []string{"a", "b"}, // demoinfo decided; fallback must be vetoed
+			want:       false,
 		},
 		{
-			name: "no demoinfo, two match players",
-			r: &Result{
-				Match: &MatchResult{Players: []PlayerStat{{Name: "a"}, {Name: "b"}}},
-			},
-			want: true,
+			name:       "no demoinfo, two match players",
+			di:         nil,
+			matchNames: []string{"a", "b"},
+			want:       true,
 		},
 		{
 			name: "no demoinfo, no match",
-			r:    &Result{},
+			di:   nil,
 			want: false,
 		},
 		{
 			name: "one demoinfo player",
-			r: &Result{
-				DemoInfo: &DemoInfoResult{
-					Players: []DemoInfoPlayer{{Name: "solo"}},
-				},
-			},
+			di:   &DemoInfoResult{Players: []DemoInfoPlayer{{Name: "solo"}}},
 			want: false,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := isDuelResult(c.r)
-			if got != c.want {
-				t.Errorf("isDuelResult = %v, want %v", got, c.want)
+			r := newRoster(c.di)
+			if c.matchNames != nil {
+				r.noteMatchParticipants(c.matchNames)
+			}
+			if got := r.Duel(); got != c.want {
+				t.Errorf("Duel() = %v, want %v", got, c.want)
 			}
 		})
 	}

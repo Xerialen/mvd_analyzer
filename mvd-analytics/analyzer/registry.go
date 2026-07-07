@@ -286,10 +286,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// core precedes derived within the analyser prefix. CoreOutputs is
 	// fully populated by the time any derived Finalize or post-processor
 	// runs. The default post-processor order (encoded in dag.go as the
-	// §1.3 edge list + ordering barriers) is: recover-telefrag-teamkills →
-	// normalize-match-relative-times → derive-demo-start-anchor →
-	// duel-team-normalize → aim → airgibs → scoreboard-stats → loc-graph →
-	// region-control.
+	// §1.3 edge list) is: recover-telefrag-teamkills → aim → airgibs →
+	// scoreboard-stats → loc-graph → region-control. The whole-Result time
+	// rebase and duel team rewrite are gone — producers are born correct.
 	for _, n := range nodes {
 		switch {
 		case n.analyzer != nil:
@@ -354,20 +353,19 @@ func NewDefaultRegistry() *Registry {
 	// Post-processors run in registration order on the assembled Result.
 	// Timestamps are already match-relative and the demo-start anchor is
 	// already written (every producer converts against co.Clock at Finalize),
-	// so there is no longer a whole-Result time rebase here. Order still
-	// matters: telefrag-teamkill recovery runs first (it appends to the frag
-	// log the scoreboard then reads); the duel team rewrite runs before the
-	// consumers that read per-player team labels (aim, scoreboard, locgraph,
-	// regionControl); locgraph and regionControl last.
+	// and team labels are already born correct (every producer converts against
+	// co.Roster at Finalize), so there is no longer a whole-Result time rebase
+	// or duel team rewrite here. Order still matters: telefrag-teamkill recovery
+	// runs first (it appends to the frag log the scoreboard then reads); locgraph
+	// and regionControl last.
 	r.RegisterPostProcessor(recoverTelefragTeamkills)
 	// Line of sight is NOT a default post-processor — it is the heaviest
 	// position-derived pass and has no in-pipeline consumer, so it is computed
 	// lazily on demand via analyzer.ComputeLOS (web overlay / -include los /
 	// the mvd-api /los endpoint).
-	r.RegisterPostProcessor(duelTeamNormalize)
-	// Aim runs after the duel team rewrite so it sees stable team labels for
-	// enemy attribution; fire/position times are already match-relative. It
-	// reads Shots + Streams + Damage; it writes only Result.Aim.
+	//
+	// Aim reads Shots + Streams + Damage — all born with final team labels — and
+	// writes only Result.Aim; fire/position times are already match-relative.
 	r.RegisterPostProcessor(aimPost)
 	r.RegisterPostProcessor(airgibsPost)
 	r.RegisterPostProcessor(scoreboardStatsPost)

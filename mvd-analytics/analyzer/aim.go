@@ -10,7 +10,7 @@ import (
 // Aim analytics (schema v41). aimPost derives per-player aim metrics from the
 // already-assembled Shots + Streams (interpolated position/view at fire time)
 // + Damage + LG beams. It is a post-processor so it sees match-relative times
-// and stable team labels (registered after duelTeamNormalize). It reuses the
+// and final team labels (Shots are born with the roster's duel labels). It reuses the
 // los* hull/eye/target constants — aim and line-of-sight share the same
 // eye→target geometry — and result.PositionTrack.SampleAt for fire-time
 // interpolation.

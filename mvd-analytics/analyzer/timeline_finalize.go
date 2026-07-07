@@ -81,10 +81,9 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// killEvents below. A duel player with an empty userinfo/demoinfo
 	// team (gameId 224758: iddQd) resolves to team "" for the whole
 	// match; team-gating silently dropped every one of their events, and
-	// the duel post-processor could only paper over FragEvents by
-	// re-synthesising them from obituaries. Team stays best-effort: ""
-	// when unresolvable, rewritten to the player's name by
-	// normalizeDuelTeams in 1v1s.
+	// the duel path could only paper over FragEvents by re-synthesising them
+	// from obituaries. Team stays best-effort: "" when unresolvable, rewritten
+	// to the player's name by the roster (co.TeamFor) in 1v1s.
 	fragEvents := make([]TimelineFragEvent, 0, len(a.rawFrags))
 	for _, raw := range a.rawFrags {
 		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
@@ -439,6 +438,26 @@ func (a *TimelineAnalyzer) synthesizeDuelFragEvents(result *Result) {
 	if len(synthesised) > 0 {
 		ta.FragEvents = mergeFragEventsByTime(ta.FragEvents, synthesised)
 	}
+}
+
+// mergeFragEventsByTime merges two already-sorted TimelineFragEvent slices into
+// a single time-ordered slice. Used by synthesizeDuelFragEvents to splice the
+// obituary-sourced frogbot entries back into the existing frag-update series.
+func mergeFragEventsByTime(a, b []TimelineFragEvent) []TimelineFragEvent {
+	out := make([]TimelineFragEvent, 0, len(a)+len(b))
+	i, j := 0, 0
+	for i < len(a) && j < len(b) {
+		if a[i].Time <= b[j].Time {
+			out = append(out, a[i])
+			i++
+		} else {
+			out = append(out, b[j])
+			j++
+		}
+	}
+	out = append(out, a[i:]...)
+	out = append(out, b[j:]...)
+	return out
 }
 
 // rebaseToMatch shifts every timeline-owned timestamp in result from the demo
