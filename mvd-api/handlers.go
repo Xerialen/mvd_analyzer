@@ -600,7 +600,13 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 	if revalidated(w, r, meta) {
 		return
 	}
+	writeJSON(w, http.StatusOK, losBody(res))
+}
 
+// losBody is the /los (and `los` artifact) response body: per-player LOS/PVS
+// interval sets. Shared so the curated endpoint and the generic artifact
+// endpoint never fork the shape.
+func losBody(res *result.Result) any {
 	type losPlayer struct {
 		Name string            `json:"name"`
 		LOS  []result.LosTrack `json:"los,omitempty"`
@@ -617,7 +623,7 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 			out.Players[i].PVS = res.Streams.Players[i].PVS
 		}
 	}
-	writeJSON(w, http.StatusOK, out)
+	return out
 }
 
 // resolveShotStreams mirrors resolveDemo but routes through EnsureShotStreams

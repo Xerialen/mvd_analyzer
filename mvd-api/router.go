@@ -26,6 +26,12 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string) http.Handle
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
 
+	// Automatic DAG surface (Stage 4): the artifact manifest, the generic
+	// per-artifact endpoint, and the graph as JSON.
+	mux.HandleFunc("GET /v1/artifacts", s.handleArtifactsManifest)
+	mux.HandleFunc("GET /v1/graph", s.handleGraph)
+	mux.HandleFunc("GET /v1/demos/{id}/artifacts/{name}", s.handleArtifact)
+
 	mux.HandleFunc("POST /v1/demos/{id}", s.handleLoad)
 	mux.HandleFunc("GET /v1/demos/{id}/overview", s.handleOverview)
 	mux.HandleFunc("GET /v1/demos/{id}/demoinfo", s.handleDemoInfo)
