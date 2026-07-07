@@ -19,9 +19,10 @@ const (
 	telefragDeltaWin    int32   = 256 // ms — the −1 frag-penalty window
 )
 
-// recoverTelefragTeamkills attributes victim-named teammate teamkills
+// recoverTelefragTeamkills is the DAG node "frags-final" (it publishes the
+// artifact "frags:final"): it attributes victim-named teammate teamkills
 // ("X was telefragged/crushed/jumped by his teammate") whose obituary
-// hides the killer. It combines two independent signals at the kill
+// hides the killer, appending the recovered entries to the raw frag log. It combines two independent signals at the kill
 // instant — the killer is co-located with the victim, AND the killer takes
 // the KTX teamkill frag penalty (a −1 in the frag stream). Requiring the
 // two to agree (or, when only one is determinate, not to conflict) keeps a

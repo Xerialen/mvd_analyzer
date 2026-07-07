@@ -31,14 +31,17 @@ import "fmt"
 //
 // Artifacts are plain string names. Every node provides an artifact
 // named after itself (so any node can be depended on by name), plus any
-// extra pseudo-artifacts it publishes (the ordering barriers
-// "epoch:match" / "teams:final" / "telefrags:recovered"). Requires names
-// the artifacts a node's Finalize / post-processor reads.
+// extra artifacts it publishes. The two fix-up post-processors publish a
+// FINAL artifact beyond their own name — "frags:final" (frags-final) and
+// "match:final" (match-final) — so an in-pipeline consumer wanting the
+// recovered / corrected value requires the ":final" name and can never
+// silently bind the raw producer's pre-fix-up output. Requires names the
+// artifacts a node's Finalize / post-processor reads.
 type nodeSpec struct {
 	Name     string   // unique kebab-case node id and its primary artifact
 	Requires []string // artifact names this node reads
 	Provides []string // artifact names this node writes (includes Name)
-	Mutates  bool     // true for every post-processor (Stage-2 debt marker)
+	Mutates  bool     // post-processor writes into a section another node created; the ambiguity of "which value" is resolved by the ":final" artifact names those nodes publish
 	Lazy     bool     // materialised on demand, not in the eager bundle (Stage 3)
 	tier     string   // "core" | "derived" | "post" | "lazy" — export grouping only
 	regIndex int      // registration position; the deterministic topo tie-break
@@ -96,7 +99,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"identity": {name: "identity", tier: "core", requires: []string{"demoinfo"},
 		desc: "Player identity sessions — the slot→name/userid/team resolution every downstream producer reads."},
 	"frag": {name: "frag", tier: "core", requires: []string{"clock", "demoinfo", "identity"}, resultKey: "frags",
-		desc: "Frag aggregates and the full chronological kill log with weapon, suicide, and team-kill flags."},
+		desc: "Raw frag aggregates and the chronological kill log (weapon, suicide, team-kill flags). In-pipeline consumers wanting the telefrag-recovered log require `frags:final`; the served `frags` key is final by serve time since all nodes run."},
 	"roster": {name: "roster", tier: "core", requires: []string{"demoinfo"},
 		desc: "Canonical player roster with team labels (duel player-as-team rewrite applied), read by every team-aware producer."},
 
@@ -104,7 +107,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"metadata": {name: "metadata", tier: "derived", resultKey: "metadata",
 		desc: "Server cvars and parsed KTX match settings (mode, timelimit, antilag, midair, instagib, ...)."},
 	"match": {name: "match", tier: "derived", requires: []string{"demoinfo"}, resultKey: "match",
-		desc: "Match summary: map, mode, duration, and the corrected per-player scoreboard."},
+		desc: "Match summary: map, mode, duration, and the per-player scoreboard. In-pipeline consumers wanting the frag-log-corrected kills/deaths/suicides require `match:final`; the served `match` key is corrected by serve time since all nodes run."},
 	"messages": {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo", "roster"}, resultKey: "messages",
 		desc: "Chat, teamsay, and other match print messages with markup-stripped text."},
 	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}, resultKey: "timelineAnalysis",
@@ -131,19 +134,29 @@ var analyzerNodeMeta = map[string]nodeMeta{
 //     match-relative in each producer's Finalize.
 //   - "teams:final" retired with the roster refactor — team labels are born
 //     correct in each producer's Finalize (roster/match/timeline/messages/
-//     items/pickups/backpacks/shots read co.Roster). aim / scoreboard-stats /
+//     items/pickups/backpacks/shots read co.Roster). aim / match-final /
 //     loc-graph / region-control therefore keep only their data edges: they
 //     already read final team labels through those artifacts (aim via shots,
-//     scoreboard via match, loc-graph/region-control via streams + match).
+//     match-final via match, loc-graph/region-control via streams + match).
 //
-// recover-telefrag-teamkills still runs before scoreboard-stats (which requires
-// it by name to read the corrected frag log); it requires clock because it
-// converts victim-named teamkill times against co.Clock.
+// The two fix-up nodes are FINAL-artifact producers, not anonymous mutators.
+// frags-final appends recovered telefrag team-kills to the raw frag log and
+// publishes "frags:final"; match-final folds the frag-log-corrected
+// kills/deaths/suicides into the match scoreboard and publishes "match:final".
+// Because match-final requires "frags:final" (not the raw "frag"), it can only
+// bind the recovered log — the DAG makes "which frag log" unambiguous. Both
+// still write in place into a section their raw producer created (frag / match),
+// so both keep Mutates:true; the ":final" name is what disambiguates the value.
+// frags-final requires clock because it converts victim-named teamkill times
+// against co.Clock. The timeline node deliberately stays a consumer of the RAW
+// frag artifact (its streaks / kill events are built from the pre-recovery
+// obituary log, matching every golden) — recovery runs after timeline.
 var postNodeMeta = map[string]nodeMeta{
 	"recoverTelefragTeamkills": {
-		name: "recover-telefrag-teamkills", tier: "post", mutates: true,
+		name: "frags-final", tier: "post", mutates: true,
 		requires: []string{"clock", "demoinfo", "frag", "timeline"},
-		desc:     "Recovers victim-named telefrag team-kills into the frag log.",
+		provides: []string{"frags:final"},
+		desc:     "Final frag log: appends recovered victim-named telefrag team-kills to the raw `frag` log; publishes `frags:final` for in-pipeline consumers.",
 	},
 	"aimPost": {
 		name: "aim", tier: "post", mutates: true,
@@ -157,9 +170,10 @@ var postNodeMeta = map[string]nodeMeta{
 		desc:     "Folds the Key-Moments airgib list into the timeline (direct enemy rocket hits on airborne victims above the height threshold).",
 	},
 	"scoreboardStatsPost": {
-		name: "scoreboard-stats", tier: "post", mutates: true,
-		requires: []string{"match", "frag", "recover-telefrag-teamkills"},
-		desc:     "Folds corrected kills/deaths/suicides into the match scoreboard.",
+		name: "match-final", tier: "post", mutates: true,
+		requires: []string{"match", "frags:final"},
+		provides: []string{"match:final"},
+		desc:     "Final match scoreboard: folds frag-log-corrected kills/deaths/suicides into `match`; publishes `match:final` for in-pipeline consumers.",
 	},
 	"locGraphPost": {
 		name: "loc-graph", tier: "post", mutates: true,

@@ -7,6 +7,27 @@ detail.
 
 ## 2026-07-07
 
+- **Internal: the two fix-up post-processors now produce named FINAL
+  artifacts instead of anonymously patching an earlier node (DAG contract
+  clarification, no schema bump, byte-identical output).** Telefrag-teamkill
+  recovery (node renamed `recover-telefrag-teamkills` → **`frags-final`**,
+  publishing artifact **`frags:final`**) still appends the recovered kills to
+  the raw `frag` log; scoreboard-stats (node renamed `scoreboard-stats` →
+  **`match-final`**, publishing **`match:final`**) still folds the corrected
+  kills/deaths/suicides into `match`. The win is the dependency vocabulary:
+  `match-final` now **requires `frags:final`** (not the raw `frag`), so any
+  future in-pipeline consumer of the recovered log or corrected scoreboard
+  binds it by the semantic `:final` name and can never silently get the
+  pre-fix-up value. The raw `frag` / `match` nodes keep their served
+  `frags` / `match` resultKeys (the JSON is final by serve time since all
+  nodes run); the `timeline` node deliberately stays a consumer of the RAW
+  `frag` log (streaks / kill events are built pre-recovery, matching every
+  golden). Both fix-ups still write in place, so both keep `Mutates:true` —
+  the `:final` artifact name is what disambiguates *which* value. Regenerated
+  [`ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md) and the README DAG diagram; the
+  `/v1/artifacts`, `/v1/graph`, and `-graph` surfaces (unmerged phase branches
+  only) show the new names. No Result/schema change.
+
 - **Internal: analyzer output is now a tested pure function of the demo
   (order-independence hardening, no schema bump).** The pipeline is an
   explicit DAG (`analyzer/dag.go`) executed in a topological order whose

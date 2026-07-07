@@ -294,8 +294,8 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	// core precedes derived within the analyser prefix. CoreOutputs is
 	// fully populated by the time any derived Finalize or post-processor
 	// runs. The default post-processor order (encoded in dag.go as the
-	// §1.3 edge list) is: recover-telefrag-teamkills → aim → airgibs →
-	// scoreboard-stats → loc-graph → region-control. The whole-Result time
+	// §1.3 edge list) is: frags-final → aim → airgibs →
+	// match-final → loc-graph → region-control. The whole-Result time
 	// rebase and duel team rewrite are gone — producers are born correct.
 	for _, n := range nodes {
 		switch {
@@ -389,8 +389,8 @@ func NewDefaultRegistry() *Registry {
 	// Post-processors operate on the assembled Result. Registration order
 	// here is INVENTORY, not scheduling: execution order is derived from the
 	// declared edges in dag.go, and any valid order produces byte-identical
-	// output (TestOrderIndependence) — e.g. telefrag-teamkill recovery runs
-	// before scoreboard-stats because the edge says so, not because of this
+	// output (TestOrderIndependence) — e.g. the frags-final telefrag recovery
+	// runs before match-final because the edge says so, not because of this
 	// list. Register new nodes wherever reads naturally; declare their edges
 	// in dag.go. Timestamps arrive match-relative and team labels born-final
 	// (co.Clock / co.Roster at each producer's Finalize), so there is no

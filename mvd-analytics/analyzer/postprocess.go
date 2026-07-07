@@ -13,11 +13,13 @@ import "github.com/mvd-analyzer/mvd-analytics/view"
 // anchor the timeline writes onto Streams.Global. The rebasing helpers those
 // producers share live in timeshift.go.
 
-// scoreboardStatsPost fills MatchResult.Players[].Kills/Deaths from the
-// frag-log-corrected FragResult.ByPlayer, joining on the final display
+// scoreboardStatsPost is the DAG node "match-final" (it publishes the
+// artifact "match:final"): it fills MatchResult.Players[].Kills/Deaths from
+// the frag-log-corrected FragResult.ByPlayer, joining on the final display
 // name. It runs as a post-processor (not in the match analyser's
-// Finalize) for two reasons: ByPlayer is only final after
-// recoverTelefragTeamkills, and the join must use the *assembled*
+// Finalize) for two reasons: ByPlayer is only final after the frags-final
+// node (recoverTelefragTeamkills), which match-final requires by the
+// "frags:final" artifact name, and the join must use the *assembled*
 // result's names — the same basis the web UI joins on — because a slot's
 // Finalize-time name can differ from its final display name. Players
 // whose name has no ByPlayer entry keep 0/0 (no frag log, or a name that

@@ -156,7 +156,7 @@ it.
 |---|---|---|
 | **Core** | `clock`, [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md), `roster` | Implement `CoreProducer`. Everything they emit (`Clock`, `DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`, `Roster`) is the canonical input some derived analyser consumes during its own Finalize. `clock` owns the match time base: match start/end, demo offset, pauses, and the wall-clock anchor. `roster` (last core node) owns the canonical player/team table with the duel (player-name-as-team) rewrite folded in: it publishes the duel verdict, the participant set, and `TeamFor(name, rawTeam)`. Every producer converts demo-clock ms to match-relative ms against `co.Clock`, and every team label through `co.TeamFor`, in its own Finalize — timestamps and team labels are **born correct**; there is no post-hoc whole-Result rebase or duel rewrite. |
 | **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. `shots` derives a per-shot weapon-fire stream from `svc_sound` fire sounds (+ LG `TE_LIGHTNING2` beams), links hitscan fires to same-frame damage, classifies each linked victim enemy/team/self, and reconciles counts against `co.DemoInfo` accuracy. |
-| **Post-processors** | `recoverTelefragTeamkills`, `aimPost`, `airgibsPost`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order is derived from the declared DAG (`dag.go`): telefrag recovery runs first (it appends to the frag log `scoreboardStatsPost` reads). Timestamps are already match-relative and team labels already final when these run (see the `clock` and `roster` core nodes) — the whole-Result time rebase and duel team rewrite are gone. |
+| **Post-processors** | `recoverTelefragTeamkills`, `aimPost`, `airgibsPost`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order is derived from the declared DAG (`dag.go`). The two fix-ups now produce **named final artifacts** rather than anonymously patching an earlier node's output: `recoverTelefragTeamkills` is node `frags-final`, which appends the recovered telefrag team-kills to the raw `frag` log and publishes `frags:final`; `scoreboardStatsPost` is node `match-final`, which folds the corrected kills/deaths/suicides into `match` and publishes `match:final`. `match-final` *requires* `frags:final` (not the raw `frag`), so an in-pipeline consumer of the recovered log binds it by the semantic name and can never silently get the pre-fix-up value. Both still write in place into a section their raw producer created, so both stay `Mutates:true` — the `:final` name is what disambiguates *which* value. Timestamps are already match-relative and team labels already final when these run (see the `clock` and `roster` core nodes) — the whole-Result time rebase and duel team rewrite are gone. |
 
 Each analyser has a one-page README in `analyzer/` covering what it
 consumes / produces, key algorithm steps, and known limitations. Read
@@ -242,10 +242,10 @@ flowchart TB
     weapon_pickups["weapon-pickups"]
   end
   subgraph post["post-processors (in-place Result mutation)"]
-    recover_telefrag_teamkills["recover-telefrag-teamkills"]
+    frags_final["frags-final"]
     aim["aim"]
     airgibs["airgibs"]
-    scoreboard_stats["scoreboard-stats"]
+    match_final["match-final"]
     loc_graph["loc-graph"]
     region_control["region-control"]
   end
@@ -256,9 +256,9 @@ flowchart TB
   clock -->|"clock"| backpacks
   clock -->|"clock"| damage
   clock -->|"clock"| frag
+  clock -->|"clock"| frags_final
   clock -->|"clock"| items
   clock -->|"clock"| messages
-  clock -->|"clock"| recover_telefrag_teamkills
   clock -->|"clock"| shots
   clock -->|"clock"| timeline
   clock -->|"clock"| weapon_pickups
@@ -267,31 +267,30 @@ flowchart TB
   demoinfo -->|"demoinfo"| airgibs
   demoinfo -->|"demoinfo"| damage
   demoinfo -->|"demoinfo"| frag
+  demoinfo -->|"demoinfo"| frags_final
   demoinfo -->|"demoinfo"| identity
   demoinfo -->|"demoinfo"| items
   demoinfo -->|"demoinfo"| loc_graph
   demoinfo -->|"demoinfo"| los
   demoinfo -->|"demoinfo"| match
   demoinfo -->|"demoinfo"| messages
-  demoinfo -->|"demoinfo"| recover_telefrag_teamkills
   demoinfo -->|"demoinfo"| region_control
   demoinfo -->|"demoinfo"| roster
   demoinfo -->|"demoinfo"| shots
   demoinfo -->|"demoinfo"| timeline
   frag -->|"frag"| airgibs
-  frag -->|"frag"| recover_telefrag_teamkills
-  frag -->|"frag"| scoreboard_stats
+  frag -->|"frag"| frags_final
   frag -->|"frag"| timeline
   frag -->|"frag"| weapon_pickups
+  frags_final -->|"frags:final"| match_final
   identity -->|"identity"| damage
   identity -->|"identity"| frag
   identity -->|"identity"| items
   identity -->|"identity"| shots
   identity -->|"identity"| timeline
   identity -->|"identity"| weapon_pickups
+  match -->|"match"| match_final
   match -->|"match"| region_control
-  match -->|"match"| scoreboard_stats
-  recover_telefrag_teamkills -->|"recover-telefrag-teamkills"| scoreboard_stats
   roster -->|"roster"| backpacks
   roster -->|"roster"| damage
   roster -->|"roster"| items
@@ -303,9 +302,9 @@ flowchart TB
   shots -->|"shots"| shot_streams
   timeline -->|"timeline"| aim
   timeline -->|"timeline"| airgibs
+  timeline -->|"timeline"| frags_final
   timeline -->|"timeline"| loc_graph
   timeline -->|"timeline"| los
-  timeline -->|"timeline"| recover_telefrag_teamkills
   timeline -->|"timeline"| region_control
   timeline -->|"timeline"| shot_streams
   timeline -->|"timeline"| shots

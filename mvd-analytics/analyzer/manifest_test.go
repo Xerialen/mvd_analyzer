@@ -66,7 +66,7 @@ func TestArtifactManifestServability(t *testing.T) {
 	// Pseudo/internal nodes are never servable.
 	for _, name := range []string{
 		"clock", "roster", "identity",
-		"recover-telefrag-teamkills", "airgibs", "scoreboard-stats", "region-control",
+		"frags-final", "airgibs", "match-final", "region-control",
 	} {
 		m := byName[name]
 		if m.Servable || m.ResultKey != "" {

@@ -19,8 +19,8 @@ var registrationOrder = []string{
 	"metadata", "match", "messages", "timeline", "items", "damage",
 	"shots", "map-entities", "backpacks", "weapon-pickups",
 	// post-processors
-	"recover-telefrag-teamkills", "aim", "airgibs",
-	"scoreboard-stats", "loc-graph", "region-control",
+	"frags-final", "aim", "airgibs",
+	"match-final", "loc-graph", "region-control",
 }
 
 func nodeNames(specs []nodeSpec) []string {
