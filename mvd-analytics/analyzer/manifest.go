@@ -17,8 +17,8 @@ import (
 // ARTIFACTS.md catalog and mvd-mcp's listArtifacts / getArtifact tools, so
 // a new artifact becomes reachable everywhere without a hand-written tool.
 
-// Cost levels — advisory, for API gating and docs. The two heavy passes are
-// the lazy nodes (los, shot-streams); every eager node is light.
+// Cost levels — advisory, for API gating and docs. The one heavy pass is the
+// lazy node (los); every eager node is light.
 const (
 	costLight = "light"
 	costHeavy = "heavy"
@@ -99,8 +99,8 @@ func ArtifactsMarkdown() string {
 
 	b.WriteString("**Servable** artifacts are reachable at `GET /v1/demos/{id}/artifacts/{name}` ")
 	b.WriteString("(and via the mvd-mcp `getArtifact` tool). Eager servable artifacts land in the ")
-	b.WriteString("Result JSON under **resultKey**; the two lazy artifacts (`los`, `shot-streams`) ")
-	b.WriteString("are materialised on demand. Non-servable nodes (`clock`, `roster`, `identity`, and ")
+	b.WriteString("Result JSON under **resultKey**; the lazy artifact (`los`) ")
+	b.WriteString("is materialised on demand. Non-servable nodes (`clock`, `roster`, `identity`, and ")
 	b.WriteString("the in-place post-processors) are internal — they have no standalone Result key.\n\n")
 
 	b.WriteString("| Artifact | Tier | Cost | Lazy | resultKey | Requires | Provides | Description |\n")

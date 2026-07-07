@@ -7,10 +7,9 @@ import (
 
 // server bundles the per-request dependencies.
 //
-// The lazy line-of-sight and shot-stream passes are serialised per demo SHA
-// inside the cache (EnsureLOS / EnsureShotStreams), where the SHA is resolved
-// and the tier-3 artifact is read/written, so the server holds no per-demo
-// lock of its own.
+// The lazy line-of-sight pass is serialised per demo SHA inside the cache
+// (EnsureLOS), where the SHA is resolved and the tier-3 artifact is
+// read/written, so the server holds no per-demo lock of its own.
 type server struct {
 	store   demoStore
 	logger  *slog.Logger

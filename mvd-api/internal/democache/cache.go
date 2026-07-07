@@ -10,13 +10,20 @@
 // of tier 2 to absorb the gob-decode cost during a session of related
 // queries.
 //
-// Tier 3 holds the lazily-materialised artifacts (los, shot-streams) so a
-// lazy compute — the ~10s LOS raycast or the full MVD re-parse — survives a
-// process restart or an LRU eviction: after the base Result is served from
-// tier 2, EnsureLOS / EnsureShotStreams splice the artifact from tier 3
-// instead of recomputing it (PLAN-api F8b). Like tier 2 it lives under a
-// version-keyed path (the effective version EV = CurrentSchemaVersion), so a
-// stale version is simply never read; there is no GC (a hosting-prep phase).
+// Tier 3 holds the lazily-materialised los artifact so its ~2.5s raycast
+// survives a process restart or an LRU eviction: after the base Result is
+// served from tier 2, EnsureLOS splices the artifact from tier 3 instead of
+// recomputing it (PLAN-api F8b). Like tier 2 it lives under a version-keyed
+// path (the effective version EV = CurrentSchemaVersion), so a stale version
+// is simply never read; there is no GC (a hosting-prep phase).
+//
+// The spatial weapon-fire streams (projectiles/beams/nails) used to be a
+// second lazy artifact ("shot-streams") behind a full re-parse, but phase 12
+// folded them into the always-full tier-2 parse (defaultParse sets
+// BuildShotStreams+BuildNails): they cost only a few percent of parse time and
+// cache size, and mvd-api has served the enriched /shots and /aim on every
+// request since phase 5.3, so serving them from the base parse changes no
+// response body while deleting the whole lazy machinery.
 //
 // The cache is consumed by mvd-api (the REST host); it is not part of
 // the public mvd-analytics API.
@@ -58,23 +65,24 @@ type CacheMeta struct {
 	FromCache     bool // true when neither the parser nor the hub was invoked
 	FromMVDTier   bool // true when MVD bytes were on disk but the parser ran
 	SchemaVersion int
-	// ShotStreamsUnavailable is set by EnsureShotStreams when the opt-in
-	// weapon-fire streams could not be built because the tier-1 MVD bytes
-	// were missing (evicted after the base Result was cached). The returned
-	// Result is the lean one — its stream-derived parts (rl/gl splash, the
-	// LG whiff split, projectile/beam/nail streams) are absent. Surfaced so
-	// /shots, /aim and /streams/* can signal the degrade rather than serve
-	// silently incomplete data.
-	ShotStreamsUnavailable bool
 }
 
 // ParseFunc parses MVD bytes (gzip or plain) into a Result.
 // Injectable so tests don't need a real demo on disk.
 type ParseFunc func(ctx context.Context, mvdBytes []byte, filename string) (*result.Result, error)
 
-// defaultParse runs the standard analyzer pipeline.
+// defaultParse runs the standard analyzer pipeline with the spatial
+// weapon-fire streams and nails built (BuildShotStreams+BuildNails). Since
+// phase 12 the mvd-api cache is always-full: the +3–4% parse cost and ~+5%
+// cache size buy an enriched Result on every request, which is what /shots,
+// /aim and /streams/* have effectively served since phase 5.3 — so baking the
+// streams into tier 2 deletes the lazy re-parse machinery without changing any
+// response body. The CLI/WASM registries are configured by their own callers;
+// only this API parse turns both flags on.
 func defaultParse(_ context.Context, mvdBytes []byte, filename string) (*result.Result, error) {
 	registry := analyzer.NewDefaultRegistry()
+	registry.BuildShotStreams = true
+	registry.BuildNails = true
 	return registry.AnalyzeReader(bytes.NewReader(mvdBytes), filename)
 }
 
@@ -92,13 +100,11 @@ type Cache struct {
 	inflight     sync.Map // sha → *inflightEntry
 	lastResolved sync.Map // sha → *hubfetch.GameInfo (drained by loadResult)
 
-	// shotLocks / losLocks serialize the on-demand lazy-artifact
-	// materialisation per SHA, so a build for demo B does not queue behind
-	// demo A's multi-second work (the shot-stream re-parse; the LOS raycast),
-	// and two callers for one demo cannot both compute and race the splice
-	// onto the shared Result. The need-check sits inside the lock (no TOCTOU).
-	shotLocks KeyedMutex
-	losLocks  KeyedMutex
+	// losLocks serializes the on-demand LOS materialisation per SHA, so a
+	// raycast for demo B does not queue behind demo A's, and two callers for
+	// one demo cannot both compute and race the splice onto the shared Result.
+	// The need-check sits inside the lock (no TOCTOU).
+	losLocks KeyedMutex
 }
 
 // New constructs a Cache rooted at the given directory.
@@ -262,97 +268,13 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 	return r, meta, nil
 }
 
-// EnsureShotStreams returns the demo's Result with the opt-in spatial
-// weapon-fire streams built: rocket/grenade flights, LG beams AND nail
-// flights, in one rebuild. These are off in the default parse to keep the
-// cache lean and — unlike LOS — cannot be recomputed from the cached
-// Result, so the first request re-parses the cached MVD bytes with the
-// build flags on and splices the streams onto the in-memory Result. The
-// rebuilt Shots and Aim blocks ride along: their stream-derived parts
-// (RL/GL direct/splash, the LG whiff split, ng/sng linking + accuracy)
-// only exist in the enriched parse, so /shots and /aim serve complete
-// data. The ShotStreamsComputed / NailsComputed latches make repeat
-// requests free within a process; the tier-3 artifact cache (below) makes
-// them free across restarts and LRU evictions too — a warm process splices
-// the streams from disk instead of re-parsing (PLAN-api F8b).
-//
-// There is deliberately only ONE variant (F12): nails used to be a
-// separate opt-in latch, which made /shots and /aim bodies depend on
-// whether any earlier client had asked for nails — same URL, same strong
-// ETag, different body before/after the latch (and again after an LRU
-// eviction reverted it). Folding nails into the base rebuild makes every
-// response a pure function of the URL, which the immutable cache headers
-// require. The extra nail decode is a one-time per-demo cost on a path
-// that already re-parses the whole MVD, and the spliced nail stream keeps
-// only per-flight endpoints.
-//
-// This serializes concurrent calls for one demo internally via a per-SHA
-// lock (shotLocks): a rebuild for demo B does not queue behind demo A's,
-// and two callers for the same demo cannot both re-parse and race the
-// splice onto the shared Result. A demo with no Streams (no player tracks)
-// is returned unchanged.
-func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID) (*result.Result, CacheMeta, error) {
-	res, meta, err := c.GetResult(ctx, id)
-	if err != nil {
-		return nil, meta, err
-	}
-	if res.Streams == nil {
-		return res, meta, nil
-	}
-
-	// meta.SHA256 is the resolved cache key from GetResult; use it to lock
-	// the rebuild per-demo. The lock covers the need-check so the re-parse
-	// decision is not a TOCTOU race between two callers (F8).
-	sha := meta.SHA256
-	unlock := c.shotLocks.Lock(sha)
-	defer unlock()
-
-	art := mustLazyArtifact("shot-streams")
-	if art.Computed(res) {
-		return res, meta, nil
-	}
-	// Tier-3 warm path: splice the artifact from disk without a re-parse. A
-	// hit here works even after the tier-1 bytes were evicted — that is the
-	// F8b win (no re-parse, no degrade). A corrupt/partial gob is treated as a
-	// miss (tier3Load slog-warns and returns false).
-	if c.tier3Load(sha, art, res) {
-		return res, meta, nil
-	}
-
-	mvdBytes, err := os.ReadFile(mvdPath(c.Root, sha))
-	if err != nil {
-		// The tier-1 bytes are gone (evicted after the base Result was cached)
-		// and there is no tier-3 artifact, so the opt-in streams cannot be
-		// rebuilt. Surface the lean Result rather than failing the request, but
-		// flag the degrade so the handler signals it instead of serving
-		// silently-incomplete data (the "surface authoritative data" rule).
-		meta.ShotStreamsUnavailable = true
-		return res, meta, nil
-	}
-
-	// One rebuild builds everything (the single F12 variant): the re-parse
-	// runs BuildShotStreams+BuildNails, and the artifact's Build grafts the
-	// streams plus the rebuilt Shots/Aim onto res and latches.
-	deps := analyzer.MaterializeDeps{Reparse: func() (*result.Result, error) {
-		reg := analyzer.NewDefaultRegistry()
-		reg.BuildShotStreams = true
-		reg.BuildNails = true
-		return reg.AnalyzeReader(bytes.NewReader(mvdBytes), fmt.Sprintf("%s.mvd.gz", sha))
-	}}
-	if err := art.Build(res, deps); err != nil {
-		return nil, meta, fmt.Errorf("rebuild shot streams: %w", err)
-	}
-	c.tier3Store(sha, art, res)
-	return res, meta, nil
-}
-
 // EnsureLOS returns the demo's Result with the per-player line-of-sight / PVS
 // interval sets materialised (Streams.Players[].LOS/PVS). LOS is the heaviest
 // position-derived pass and has no in-pipeline consumer, so it is computed on
 // demand: latch check → tier-3 load+splice → else compute (analyzer.ComputeLOS,
-// which loads its own visibility BSP) → write tier-3. Unlike shot-streams it
-// needs no raw bytes, so there is no degrade — a map with no provisioned BSP
-// computes to an empty LOS, latches, and is cached as such (computed once).
+// which loads its own visibility BSP) → write tier-3. It needs no raw bytes, so
+// there is no degrade — a map with no provisioned BSP computes to an empty LOS,
+// latches, and is cached as such (computed once).
 //
 // Serialised per SHA (losLocks) with the need-check inside the lock, so /los
 // for demo B does not queue behind demo A's raycast and two callers for one

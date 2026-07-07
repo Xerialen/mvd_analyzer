@@ -39,9 +39,9 @@ type eagerArtifact struct {
 // eagerArtifacts maps each servable eager artifact (by DAG node name) to its
 // section accessor. It routes through the view availability accessors where
 // one exists (so the 422-vs-200 convention matches the curated endpoints) and
-// otherwise returns the raw section at 200. The shot-streams-enriched parts of
-// shots/aim are NOT rebuilt here — this serves the lean eager section; the
-// enriched blocks come from the `shot-streams` lazy artifact (or /shots, /aim).
+// otherwise returns the raw section at 200. shots/aim serve their stream-
+// enriched sections here: since phase 12 the base parse is always-full, so the
+// spatial weapon-fire streams (and the splits they feed) are on every Result.
 var eagerArtifacts = map[string]eagerArtifact{
 	"demoinfo": {extract: func(r *result.Result) (any, error) { return view.DemoInfo(r) },
 		code: "demoinfo_unavailable", msg: "this demo has no KTX demoinfo block (likely non-KTX or pre-match abort)"},
@@ -154,9 +154,10 @@ func (s *server) handleArtifact(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{meta.ResultKey: section})
 }
 
-// serveLazyArtifact materialises los / shot-streams through the same store
-// hooks the curated /los and /shots|/aim|/streams endpoints use, and serves the
-// artifact's own body (reusing their serialization helpers — no forked shapes).
+// serveLazyArtifact materialises the los artifact through the same store hook
+// the curated /los endpoint uses, and serves its body (reusing losBody — no
+// forked shapes). los is the only lazy artifact since phase 12 folded
+// shot-streams into the always-full base parse.
 func (s *server) serveLazyArtifact(w http.ResponseWriter, r *http.Request, id democache.DemoID, name string) {
 	switch name {
 	case "los":
@@ -170,47 +171,10 @@ func (s *server) serveLazyArtifact(w http.ResponseWriter, r *http.Request, id de
 			return
 		}
 		writeJSON(w, http.StatusOK, losBody(res))
-	case "shot-streams":
-		res, meta, err := s.store.EnsureShotStreams(r.Context(), id)
-		if err != nil {
-			mapStoreError(w, err)
-			return
-		}
-		setArtifactCacheHeaders(w, meta, name)
-		if meta.ShotStreamsUnavailable {
-			// Degrade exactly like /shots: tier-1 bytes gone, stream-derived parts
-			// absent; flag it and don't let clients cache the lean body as immutable.
-			w.Header().Set("X-Shot-Streams", "unavailable")
-			w.Header().Set("Cache-Control", "no-store")
-		}
-		if artifactRevalidated(w, r, meta, name) {
-			return
-		}
-		writeJSON(w, http.StatusOK, shotStreamsBody(res))
 	default:
-		// Unreachable: only los / shot-streams are marked lazy in the manifest.
+		// Unreachable: only los is marked lazy in the manifest.
 		writeError(w, http.StatusInternalServerError, "internal", "unhandled lazy artifact "+name)
 	}
-}
-
-// shotStreamsBody is the `shot-streams` artifact body: the three spatial
-// streams plus the stream-enriched shots / aim blocks — the exact set
-// EnsureShotStreams materialises. Null fields for a demo with none.
-func shotStreamsBody(res *result.Result) any {
-	var pr, nl *result.ProjectileStreams
-	var bm *result.BeamStreams
-	if res.Streams != nil {
-		pr = res.Streams.Projectiles
-		bm = res.Streams.Beams
-		nl = res.Streams.Nails
-	}
-	return struct {
-		Projectiles *result.ProjectileStreams `json:"projectiles"`
-		Beams       *result.BeamStreams       `json:"beams"`
-		Nails       *result.ProjectileStreams `json:"nails"`
-		Shots       *result.ShotsResult       `json:"shots"`
-		Aim         *result.AimResult         `json:"aim"`
-	}{pr, bm, nl, res.Shots, res.Aim}
 }
 
 // --- per-artifact and static cache headers ---

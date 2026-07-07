@@ -7,10 +7,11 @@ import (
 	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
-// TestLazyArtifactRegistry: the two lazy artifacts resolve by name; unknown
-// names do not (a closed registry).
+// TestLazyArtifactRegistry: the lazy artifact resolves by name; unknown names
+// do not (a closed registry). Since phase 12 los is the only lazy artifact —
+// shot-streams folded into the eager always-full parse.
 func TestLazyArtifactRegistry(t *testing.T) {
-	for _, name := range []string{"los", "shot-streams"} {
+	for _, name := range []string{"los"} {
 		a, ok := LazyArtifactByName(name)
 		if !ok {
 			t.Fatalf("LazyArtifactByName(%q) not found", name)
@@ -19,68 +20,11 @@ func TestLazyArtifactRegistry(t *testing.T) {
 			t.Errorf("artifact name = %q, want %q", a.Name(), name)
 		}
 	}
+	if _, ok := LazyArtifactByName("shot-streams"); ok {
+		t.Error("LazyArtifactByName(shot-streams) should not resolve — folded into the eager parse (phase 12)")
+	}
 	if _, ok := LazyArtifactByName("nope"); ok {
 		t.Error("LazyArtifactByName(nope) should not resolve")
-	}
-}
-
-// TestShotStreamsTier3RoundTrip: encode a built shot-streams artifact, decode
-// it onto a fresh lean Result, and assert the spliced blocks + latches match
-// (the warm tier-3 path splices without a re-parse).
-func TestShotStreamsTier3RoundTrip(t *testing.T) {
-	art, _ := LazyArtifactByName("shot-streams")
-
-	built := &result.Result{
-		Streams: &result.Streams{
-			ShotStreamsComputed: true,
-			NailsComputed:       true,
-			Projectiles:         &result.ProjectileStreams{Weapon: []string{"rl"}, Spawn: []int32{100}, End: []int32{200}, Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3}, Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6}},
-			Beams:               &result.BeamStreams{T: []int32{50}, Sx: []float32{7}},
-			Nails:               &result.ProjectileStreams{Weapon: []string{"nail"}, Spawn: []int32{10}},
-		},
-		Shots: &result.ShotsResult{},
-		Aim:   &result.AimResult{},
-	}
-
-	data, ok, err := art.EncodeTier3(built)
-	if err != nil || !ok {
-		t.Fatalf("EncodeTier3: ok=%v err=%v", ok, err)
-	}
-
-	lean := &result.Result{Streams: &result.Streams{}}
-	if art.Computed(lean) {
-		t.Fatal("lean result should not be Computed before decode")
-	}
-	if err := art.DecodeTier3(lean, data); err != nil {
-		t.Fatalf("DecodeTier3: %v", err)
-	}
-	if !art.Computed(lean) {
-		t.Error("shot-streams latch not set after decode")
-	}
-	if !reflect.DeepEqual(lean.Streams.Projectiles, built.Streams.Projectiles) {
-		t.Errorf("projectiles not spliced: %+v", lean.Streams.Projectiles)
-	}
-	if !reflect.DeepEqual(lean.Streams.Beams, built.Streams.Beams) {
-		t.Errorf("beams not spliced: %+v", lean.Streams.Beams)
-	}
-	if !reflect.DeepEqual(lean.Streams.Nails, built.Streams.Nails) {
-		t.Errorf("nails not spliced: %+v", lean.Streams.Nails)
-	}
-	if lean.Shots == nil || lean.Aim == nil {
-		t.Error("Shots/Aim not spliced")
-	}
-}
-
-// TestShotStreamsEncodeSkipsUnbuilt: a lean Result (latch unset) has nothing
-// to persist.
-func TestShotStreamsEncodeSkipsUnbuilt(t *testing.T) {
-	art, _ := LazyArtifactByName("shot-streams")
-	_, ok, err := art.EncodeTier3(&result.Result{Streams: &result.Streams{}})
-	if err != nil {
-		t.Fatalf("EncodeTier3: %v", err)
-	}
-	if ok {
-		t.Error("EncodeTier3 ok=true for an unbuilt artifact")
 	}
 }
 

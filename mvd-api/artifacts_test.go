@@ -54,8 +54,13 @@ func TestArtifactsManifest(t *testing.T) {
 	if clock := byName["clock"]; clock["servable"] != false || clock["resultKey"] != "" {
 		t.Errorf("clock entry = %v; want non-servable, empty resultKey", clock)
 	}
-	if ss := byName["shot-streams"]; ss["lazy"] != true || ss["cost"] != "heavy" || ss["servable"] != true {
-		t.Errorf("shot-streams entry = %v; want lazy heavy servable", ss)
+	// los is the only lazy artifact since phase 12 folded shot-streams into the
+	// eager always-full parse — the latter must be gone from the manifest.
+	if los := byName["los"]; los["lazy"] != true || los["cost"] != "heavy" || los["servable"] != true {
+		t.Errorf("los entry = %v; want lazy heavy servable", los)
+	}
+	if _, present := byName["shot-streams"]; present {
+		t.Error("shot-streams should no longer appear in the manifest (folded into the eager parse)")
 	}
 
 	// Static ETag keyed on the schema version → cheap 304.
@@ -188,7 +193,7 @@ func TestArtifact_EagerAbsent200(t *testing.T) {
 func TestArtifact_UnknownName404(t *testing.T) {
 	srv := newTestServer(t, storeWithStub())
 	defer srv.Close()
-	for _, name := range []string{"bogus", "clock", "roster", "region-control"} {
+	for _, name := range []string{"bogus", "clock", "roster", "region-control", "shot-streams"} {
 		body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/artifacts/"+name)
 		if status != 404 {
 			t.Errorf("%s: status = %d; want 404 (%s)", name, status, body)
@@ -239,42 +244,5 @@ func TestArtifact_LazyLOS(t *testing.T) {
 	etag := resp.Header.Get("ETag")
 	if !containsAll(etag, "-los@v", fmt.Sprintf("v%d", result.CurrentSchemaVersion)) {
 		t.Errorf("ETag = %q; want the <sha>-los@v%d form", etag, result.CurrentSchemaVersion)
-	}
-}
-
-func TestArtifact_LazyShotStreams(t *testing.T) {
-	r := stubResult()
-	r.Streams.Projectiles = &result.ProjectileStreams{
-		Weapon: []string{"rl"}, Spawn: []int32{1000}, End: []int32{1500},
-		Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3},
-		Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6},
-	}
-	r.Streams.Beams = &result.BeamStreams{
-		T: []int32{2000}, Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3},
-		Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6},
-	}
-	r.Streams.Nails = &result.ProjectileStreams{
-		Weapon: []string{"nail"}, Spawn: []int32{3000}, End: []int32{3100},
-		Sx: []float32{1}, Sy: []float32{2}, Sz: []float32{3},
-		Ex: []float32{4}, Ey: []float32{5}, Ez: []float32{6},
-	}
-	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": r}})
-	defer srv.Close()
-
-	body, resp := getWithHeaders(t, srv.URL+"/v1/demos/gameId:42/artifacts/shot-streams")
-	if resp.StatusCode != 200 {
-		t.Fatalf("status = %d; want 200 (%v)", resp.StatusCode, body)
-	}
-	for _, key := range []string{"projectiles", "beams", "nails", "shots", "aim"} {
-		if _, present := body[key]; !present {
-			t.Errorf("shot-streams body missing key %q: %v", key, body)
-		}
-	}
-	if body["projectiles"] == nil {
-		t.Errorf("expected non-null projectiles, got %v", body["projectiles"])
-	}
-	etag := resp.Header.Get("ETag")
-	if !containsAll(etag, "-shot-streams@v") {
-		t.Errorf("ETag = %q; want the <sha>-shot-streams@v form", etag)
 	}
 }

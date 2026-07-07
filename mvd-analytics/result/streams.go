@@ -44,14 +44,16 @@ type Streams struct {
 	// artifact (analyzer/materialize.go).
 	LOSComputed bool `json:"-"`
 
-	// ShotStreamsComputed / NailsComputed latch the opt-in spatial weapon-fire
-	// streams the same way LOSComputed latches LOS: the API builds them on
-	// demand (a re-parse, since unlike LOS they cannot be recomputed from the
-	// lean cached Result) and sets the flag so later requests reuse the work.
-	// Like LOS, the built streams are persisted in the API's tier-3 artifact
-	// cache ("shot-streams"), so a warm process splices them from disk rather
-	// than re-parsing. JSON-excluded — clients read presence/absence of the
-	// streams themselves.
+	// ShotStreamsComputed / NailsComputed latch the spatial weapon-fire streams:
+	// the eager build (shots.go buildSpatialStreams) sets each flag truthfully
+	// when its build flag (Registry.BuildShotStreams / BuildNails) was on, so a
+	// consumer can tell "streams built, possibly empty" from "streams never
+	// built". mvd-api turns both flags on for every parse (the always-full
+	// cache), and the WASM web build likewise; the default CLI parse leaves them
+	// off (lean output). There is no on-demand rebuild anymore — phase 12 folded
+	// the streams into the base parse and deleted the lazy "shot-streams"
+	// artifact. JSON-excluded — clients read presence/absence of the streams
+	// themselves.
 	ShotStreamsComputed bool `json:"-"`
 	NailsComputed       bool `json:"-"`
 }

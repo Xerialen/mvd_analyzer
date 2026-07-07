@@ -436,11 +436,20 @@ func (a *ShotsAnalyzer) buildSpatialStreams(result *Result) {
 			}
 			result.Streams.Beams = bs
 		}
+		// Latch truthfully: the eager build ran with the shot-streams flag on,
+		// so the projectile/beam streams (possibly empty) are as complete as
+		// this demo allows. The mvd-api always-full parse relies on this so a
+		// consumer never re-parses to "materialise" streams that are already
+		// baked into the Result (the phase-12 deletion of EnsureShotStreams).
+		result.Streams.ShotStreamsComputed = true
 	}
 	// Nails are their own opt-in (high volume), independent of the other
 	// shot streams.
-	if a.ctx.Nails && len(a.nailFlights) > 0 {
-		result.Streams.Nails = flightsToStream(a.nailFlights)
+	if a.ctx.Nails {
+		if len(a.nailFlights) > 0 {
+			result.Streams.Nails = flightsToStream(a.nailFlights)
+		}
+		result.Streams.NailsComputed = true
 	}
 }
 

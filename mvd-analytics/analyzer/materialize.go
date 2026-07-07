@@ -9,33 +9,28 @@ import (
 	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
-// This file generalises the two hand-rolled lazy passes (Stage 3 of
+// This file generalises the lazy pipeline passes (Stage 3 of
 // PLAN-improve-analytics.md §5). Each is a lazily-materialised,
 // separately-cacheable DAG node — a *LazyArtifact — registered in
 // lazyArtifacts by name. mvd-api drives a generic materialise-or-load flow
 // through the exported hooks (Computed / Build / EncodeTier3 / DecodeTier3),
 // so the per-artifact tier-3 disk cache lives in one place and the concrete
-// artifacts keep their side-gob shapes and latch semantics private here.
+// artifact keeps its side-gob shape and latch semantics private here.
 //
-// The LAZY UNIT is what is actually materialised atomically today (phase 5.3
-// / PLAN-api F12): artifact "shot-streams" is projectiles + beams + nails +
-// the rebuilt Shots/Aim splice in ONE re-parse (never per-stream variants),
-// and artifact "los" is the per-player LOS/PVS interval sets. Idempotency
-// keeps the existing latches' semantics: Streams.LOSComputed for los,
-// Streams.ShotStreamsComputed && NailsComputed for shot-streams. No schema
-// bump — these fields already exist.
+// Only "los" (the per-player LOS/PVS interval sets) is lazy today. The spatial
+// weapon-fire streams used to be a second lazy artifact ("shot-streams") built
+// by a full MVD re-parse, but phase 12 folded them into the eager always-full
+// mvd-api parse (they cost only a few percent of parse time/cache size and were
+// already served on every /shots and /aim request), deleting the re-parse, the
+// degrade path, and this artifact. Idempotency keeps the los latch semantics:
+// Streams.LOSComputed. No schema bump — the field already exists.
 
 // MaterializeDeps carries external inputs a lazy Build needs that are not on
-// the in-memory Result. Only the shot-streams re-parse uses it today; los
-// loads its own visibility BSP and ignores it.
-type MaterializeDeps struct {
-	// Reparse rebuilds the Result from the demo's raw MVD bytes with the
-	// shot-stream and nail build flags on (the single F12 variant). It is
-	// supplied by the caller that holds the bytes (mvd-api democache). nil
-	// disables the shot-streams build — the degrade case the caller detects
-	// (tier-1 bytes evicted) before invoking Build.
-	Reparse func() (*result.Result, error)
-}
+// the in-memory Result. The one remaining lazy artifact (los) loads its own
+// visibility BSP and needs none, so this is empty; it is retained as the Build
+// hook's parameter so a future lazy artifact can pass inputs without churning
+// the signature.
+type MaterializeDeps struct{}
 
 // LazyArtifact is one lazily-materialised, separately-cacheable DAG node
 // (Policy Lazy). spec supplies the graph metadata; the function hooks drive
@@ -47,9 +42,8 @@ type LazyArtifact struct {
 	// computed reports whether res already carries this artifact (the latch).
 	computed func(res *result.Result) bool
 	// build materialises the artifact onto res in place (the compute path).
-	// A build that cannot run (no BSP, no bytes) is not an error — it sets
-	// the latch and leaves the artifact absent, matching today's
-	// ComputeLOS / EnsureShotStreams degrade behaviour.
+	// A build that cannot run (no BSP) is not an error — it sets the latch and
+	// leaves the artifact absent, matching ComputeLOS's no-BSP behaviour.
 	build func(res *result.Result, deps MaterializeDeps) error
 	// encode extracts the artifact's side-struct from res as a tier-3 gob;
 	// ok=false when there is nothing worth persisting (latch unset).
@@ -60,7 +54,7 @@ type LazyArtifact struct {
 	decode func(res *result.Result, data []byte) error
 }
 
-// Name is the artifact / node id ("los", "shot-streams").
+// Name is the artifact / node id ("los").
 func (a *LazyArtifact) Name() string { return a.spec.Name }
 
 // Computed reports whether res already carries this artifact (its latch is set).
@@ -99,8 +93,7 @@ func (a *LazyArtifact) DecodeTier3(res *result.Result, data []byte) error {
 // PLAN §3.6, via a future Register call) and inherits the tier-3 cache, the
 // graph node, and the generic mvd-api flow.
 var lazyArtifacts = map[string]*LazyArtifact{
-	"los":          losArtifact,
-	"shot-streams": shotStreamsArtifact,
+	"los": losArtifact,
 }
 
 // LazyArtifactByName returns the registered lazy artifact, or ok=false for an
@@ -207,105 +200,6 @@ func decodeLOS(res *result.Result, data []byte) error {
 		players[j].PVS = d.PVS[i]
 	}
 	res.Streams.LOSComputed = true
-	return nil
-}
-
-// --- shot-streams artifact ---
-
-// shotStreamsArtifact is the single F12 variant: projectiles + beams + nails
-// plus the rebuilt Shots/Aim blocks, materialised in one re-parse. It cannot
-// be recomputed from the lean Result (unlike los), so Build needs the raw
-// bytes via MaterializeDeps.Reparse.
-var shotStreamsArtifact = &LazyArtifact{
-	spec: nodeSpec{
-		Name:     "shot-streams",
-		Requires: []string{"timeline", "shots"},
-		Provides: []string{"shot-streams"},
-		Lazy:     true,
-		tier:     "lazy",
-		cost:     costHeavy,
-		desc:     "Spatial weapon-fire streams (projectile, beam, nail flights) plus the stream-enriched shots and aim blocks, rebuilt from the demo bytes on demand.",
-	},
-	computed: func(res *result.Result) bool {
-		return res.Streams != nil && res.Streams.ShotStreamsComputed && res.Streams.NailsComputed
-	},
-	build: func(res *result.Result, deps MaterializeDeps) error {
-		if res.Streams == nil || deps.Reparse == nil {
-			return nil // no streams container, or no bytes (caller degrades)
-		}
-		built, err := deps.Reparse()
-		if err != nil {
-			return err
-		}
-		spliceShotStreams(res, built)
-		return nil
-	},
-	encode: encodeShotStreams,
-	decode: decodeShotStreams,
-}
-
-// spliceShotStreams grafts the stream-derived blocks from a freshly rebuilt
-// Result (built with BuildShotStreams+BuildNails) onto res and latches. This
-// is exactly what EnsureShotStreams spliced inline before Stage 3.
-func spliceShotStreams(res, built *result.Result) {
-	if built.Streams != nil {
-		res.Streams.Projectiles = built.Streams.Projectiles
-		res.Streams.Beams = built.Streams.Beams
-		res.Streams.Nails = built.Streams.Nails
-	}
-	res.Streams.ShotStreamsComputed = true
-	res.Streams.NailsComputed = true
-	if built.Shots != nil {
-		res.Shots = built.Shots
-	}
-	if built.Aim != nil {
-		res.Aim = built.Aim
-	}
-}
-
-// shotStreamsArtifactData is the shot-streams side-gob: the exact blocks
-// EnsureShotStreams splices — the three streams plus the rebuilt Shots/Aim.
-type shotStreamsArtifactData struct {
-	Projectiles *result.ProjectileStreams
-	Beams       *result.BeamStreams
-	Nails       *result.ProjectileStreams
-	Shots       *result.ShotsResult
-	Aim         *result.AimResult
-}
-
-func encodeShotStreams(res *result.Result) ([]byte, bool, error) {
-	if res.Streams == nil || !res.Streams.ShotStreamsComputed || !res.Streams.NailsComputed {
-		return nil, false, nil
-	}
-	d := shotStreamsArtifactData{
-		Projectiles: res.Streams.Projectiles,
-		Beams:       res.Streams.Beams,
-		Nails:       res.Streams.Nails,
-		Shots:       res.Shots,
-		Aim:         res.Aim,
-	}
-	data, err := gobEncode(d)
-	if err != nil {
-		return nil, false, err
-	}
-	return data, true, nil
-}
-
-func decodeShotStreams(res *result.Result, data []byte) error {
-	if res.Streams == nil {
-		return fmt.Errorf("decode shot-streams: result has no streams")
-	}
-	var d shotStreamsArtifactData
-	if err := gobDecode(data, &d); err != nil {
-		return fmt.Errorf("decode shot-streams: %w", err)
-	}
-	res.Streams.Projectiles = d.Projectiles
-	res.Streams.Beams = d.Beams
-	res.Streams.Nails = d.Nails
-	res.Streams.ShotStreamsComputed = true
-	res.Streams.NailsComputed = true
-	res.Shots = d.Shots
-	res.Aim = d.Aim
 	return nil
 }
 

@@ -9,8 +9,8 @@ import (
 
 // ExportGraph renders the analyzer dependency DAG (nodes + declared
 // artifact edges) in the requested format. It builds a default registry
-// to obtain the canonical eager node set, then appends the lazy nodes
-// (los, shot-streams — materialised on demand, not in the eager bundle),
+// to obtain the canonical eager node set, then appends the lazy node
+// (los — materialised on demand, not in the eager bundle),
 // and needs no demo. Supported formats:
 //
 //	"mermaid" — a flowchart TB grouped into core / derived / post / lazy tiers.

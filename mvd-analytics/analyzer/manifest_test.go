@@ -7,22 +7,21 @@ import (
 )
 
 // TestArtifactManifestMirrorsGraph: the manifest carries exactly the graph's
-// node set (eager registration nodes + the two lazy artifacts), so the two
+// node set (eager registration nodes + the lazy los artifact), so the two
 // encodings can never drift.
 func TestArtifactManifestMirrorsGraph(t *testing.T) {
 	m := ArtifactManifest()
-	if len(m) != len(registrationOrder)+2 { // +los +shot-streams
-		t.Fatalf("manifest has %d nodes, want %d", len(m), len(registrationOrder)+2)
+	if len(m) != len(registrationOrder)+1 { // +los
+		t.Fatalf("manifest has %d nodes, want %d", len(m), len(registrationOrder)+1)
 	}
 	for i, name := range registrationOrder {
 		if m[i].Name != name {
 			t.Errorf("manifest[%d] = %q, want %q (registration order)", i, m[i].Name, name)
 		}
 	}
-	// The lazy artifacts trail the eager set, by name.
-	if m[len(registrationOrder)].Name != "los" || m[len(registrationOrder)+1].Name != "shot-streams" {
-		t.Errorf("lazy tail = %q, %q; want los, shot-streams",
-			m[len(registrationOrder)].Name, m[len(registrationOrder)+1].Name)
+	// The lazy artifact trails the eager set.
+	if m[len(registrationOrder)].Name != "los" {
+		t.Errorf("lazy tail = %q; want los", m[len(registrationOrder)].Name)
 	}
 }
 
@@ -55,12 +54,16 @@ func TestArtifactManifestServability(t *testing.T) {
 		}
 	}
 
-	// Lazy artifacts are servable and heavy, with no resultKey.
-	for _, name := range []string{"los", "shot-streams"} {
+	// The lazy artifact is servable and heavy, with no resultKey.
+	for _, name := range []string{"los"} {
 		m := byName[name]
 		if !m.Servable || !m.Lazy || m.Cost != costHeavy || m.ResultKey != "" {
 			t.Errorf("%s = %+v; want servable lazy heavy no-resultKey", name, m)
 		}
+	}
+	// shot-streams folded into the eager parse — no longer a manifest node.
+	if _, present := byName["shot-streams"]; present {
+		t.Error("shot-streams should not appear in the manifest")
 	}
 
 	// Pseudo/internal nodes are never servable.
@@ -83,8 +86,11 @@ func TestServableArtifactLookup(t *testing.T) {
 	if _, ok := ServableArtifact("frag"); !ok {
 		t.Error("frag should resolve as servable")
 	}
-	if _, ok := ServableArtifact("shot-streams"); !ok {
-		t.Error("shot-streams should resolve as servable")
+	if _, ok := ServableArtifact("los"); !ok {
+		t.Error("los should resolve as servable")
+	}
+	if _, ok := ServableArtifact("shot-streams"); ok {
+		t.Error("shot-streams should not resolve — folded into the eager parse")
 	}
 	if _, ok := ServableArtifact("clock"); ok {
 		t.Error("clock is internal; must not resolve as servable")

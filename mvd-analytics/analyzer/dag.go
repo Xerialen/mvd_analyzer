@@ -17,14 +17,15 @@ import "fmt"
 // Mutates:true as a temporary marker of the debt Stage 2 (the clock /
 // roster refactor) removes.
 //
-// The two out-of-band lazy passes — ComputeLOS (los.go) and the shot/nail
-// spatial-stream re-parse — are modelled as lazy DAG nodes since Stage 3
-// (materialize.go): each is a nodeSpec with Lazy:true, registered in
-// lazyArtifacts rather than in the eager core/derived/post slices. They do
-// NOT enter analyzeSource's execution order (r.specs / r.nodes stay the 21
-// eager nodes), so the eager bundle and the golden corpus are unchanged;
-// they appear in -graph output marked lazy and are materialised on demand
-// through the LazyArtifact hooks (mvd-api's per-artifact tier-3 cache).
+// The out-of-band lazy pass ComputeLOS (los.go) is modelled as a lazy DAG node
+// since Stage 3 (materialize.go): a nodeSpec with Lazy:true, registered in
+// lazyArtifacts rather than in the eager core/derived/post slices. It does NOT
+// enter analyzeSource's execution order (r.specs / r.nodes stay the 21 eager
+// nodes), so the eager bundle and the golden corpus are unchanged; it appears
+// in -graph output marked lazy and is materialised on demand through the
+// LazyArtifact hooks (mvd-api's per-artifact tier-3 cache). (The spatial
+// weapon-fire streams were a second lazy node until phase 12 folded them into
+// the eager parse — see materialize.go.)
 
 // nodeSpec is one pipeline node declared as data: an analyzer's Finalize
 // or a post-processor, with the artifact edges the engine schedules on.
@@ -117,7 +118,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"damage": {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}, resultKey: "damage",
 		desc: "Per-hit damage from the KTX stream: totals, matrix, per-weapon, EWep buckets, telefrags, stomps, and the scoreboard cross-check."},
 	"shots": {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline", "roster"}, resultKey: "shots",
-		desc: "Per-fire weapon stream with per-player accuracy aggregates and the KTX cross-check (stream-derived splits need the shot-streams artifact)."},
+		desc: "Per-fire weapon stream with per-player accuracy aggregates and the KTX cross-check. Stream-derived splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build)."},
 	"map_entities": {name: "map-entities", tier: "derived", resultKey: "mapEntities",
 		desc: "The map's static designed entity layout (item spawns, spawnpoints, teleporters) resolved from the embedded BSP corpus."},
 	"backpacks": {name: "backpacks", tier: "derived", requires: []string{"clock", "roster"}, resultKey: "backpacks",
@@ -162,7 +163,7 @@ var postNodeMeta = map[string]nodeMeta{
 		name: "aim", tier: "post", mutates: true,
 		requires:  []string{"shots", "timeline", "damage"},
 		resultKey: "aim",
-		desc:      "Per-player aim analysis: per-weapon effectiveness, crosshair-error samples, and the LG ramp series (full splits need the shot-streams artifact).",
+		desc:      "Per-player aim analysis: per-weapon effectiveness, crosshair-error samples, and the LG ramp series. Full splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build).",
 	},
 	"airgibsPost": {
 		name: "airgibs", tier: "post", mutates: true,
