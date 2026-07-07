@@ -134,9 +134,9 @@ event stream, then a post-pass on the assembled `Result`:
                     │
                     ▼
             ┌─ Result post-processors ─────────────────┐
-            │   normalizeMatchRelativeTimes(result)    │
+            │   recoverTelefragTeamkills(result)       │
             │   normalizeDuelTeams(result)             │
-            │   buildLocGraphPost(result)              │
+            │   buildLocGraphPost(result)  …           │
             └──────────────────────────────────────────┘
                     │
                     ▼
@@ -154,9 +154,9 @@ it.
 
 | Slice | Default analysers | Why |
 |---|---|---|
-| **Core** | [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
+| **Core** | `clock`, [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`Clock`, `DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. `clock` owns the match time base: match start/end, demo offset, pauses, and the wall-clock anchor. Every producer that emits a timestamp converts demo-clock ms to match-relative ms against `co.Clock` in its own Finalize — timestamps are **born correct**; there is no post-hoc whole-Result rebase. |
 | **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. `shots` derives a per-shot weapon-fire stream from `svc_sound` fire sounds (+ LG `TE_LIGHTNING2` beams), links hitscan fires to same-frame damage, classifies each linked victim enemy/team/self, and reconciles counts against `co.DemoInfo` accuracy. |
-| **Post-processors** | `recoverTelefragTeamkills`, `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (telefrag recovery runs before time normalisation so positions/frag-events/obituaries share the demo-relative clock; `scoreboardStatsPost` copies the frag-log-corrected kills/deaths/suicides onto `match.players`, joining on the final display name after teamkill recovery; time normalisation must run before locgraph). |
+| **Post-processors** | `recoverTelefragTeamkills`, `duelTeamNormalize`, `aimPost`, `airgibsPost`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order is derived from the declared DAG (`dag.go`): telefrag recovery runs first (it appends to the frag log `scoreboardStatsPost` reads); the duel team rewrite runs before every consumer of per-player team labels. Timestamps are already match-relative when these run (see the `clock` core node). |
 
 Each analyser has a one-page README in `analyzer/` covering what it
 consumes / produces, key algorithm steps, and known limitations. Read
@@ -599,8 +599,9 @@ produced by DemoInfo).
 If your analyzer is a post-pass that operates on the assembled Result
 (not on the event stream), register it via
 `reg.RegisterPostProcessor(func(*Result, *CoreOutputs))` instead.
-Built-ins like `normalizeMatchRelativeTimes`, `normalizeDuelTeams`,
-and `BuildLocGraph` are wired this way (see `analyzer/postprocess.go`).
+Built-ins like `recoverTelefragTeamkills`, `normalizeDuelTeams`,
+and `BuildLocGraph` are wired this way (see `analyzer/postprocess.go`);
+declare the new node's edges in `analyzer/dag.go` in the same change.
 
 ## Loc files
 

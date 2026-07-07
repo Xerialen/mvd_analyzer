@@ -7,6 +7,18 @@ detail.
 
 ## 2026-07-06
 
+- **Analytics: timestamps born match-relative; the whole-Result time
+  rebase is gone (no schema change, byte-identical output).** A new
+  `clock` core node owns the match time base (match start/end, demo
+  offset, pauses, wall-clock anchor — absorbing the old
+  demo-start-anchor pass). Every producer converts demo-clock ms to
+  match-relative ms against `co.Clock` in its own Finalize, so the
+  `normalizeMatchRelativeTimes` post-processor — which had to enumerate
+  every timestamped field by hand and silently missed newly added ones
+  (the v48 killEvents bug) — is deleted, along with
+  `deriveDemoStartAnchor`. The `epoch:match` DAG barrier retires with
+  it. Verified byte-identical on the golden corpus and on off-corpus
+  demos including pause-carrying and reconnect demos.
 - **Analytics pipeline: explicit dependency DAG + `qw-analyze -graph`
   (no schema change).** The analyzer/post-processor execution order was
   previously implicit — four different mechanisms expressed ordering and

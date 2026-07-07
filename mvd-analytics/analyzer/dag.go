@@ -65,57 +65,49 @@ type nodeMeta struct {
 //     of every derived analyzer via ResolveSlotAt / co.FragEntries);
 //   - the hidden intra-derived edge timeline → shots (shots writes
 //     Projectiles/Beams/Nails into result.Streams, which timeline creates).
+//
+// The clock artifact (co.Clock) is required by every producer that stamps a
+// timestamp match-relative at Finalize (the born-correct conversion that
+// replaced the whole-Result rebase), so those nodes declare "clock" —
+// map_entities and match carry no timestamps and do not.
 var analyzerNodeMeta = map[string]nodeMeta{
 	// Core producers.
 	"clock":    {name: "clock", tier: "core"},
 	"demoinfo": {name: "demoinfo", tier: "core"},
 	"identity": {name: "identity", tier: "core", requires: []string{"demoinfo"}},
-	"frag":     {name: "frag", tier: "core", requires: []string{"demoinfo", "identity"}},
+	"frag":     {name: "frag", tier: "core", requires: []string{"clock", "demoinfo", "identity"}},
 
 	// Derived consumers / independent peers.
 	"metadata":         {name: "metadata", tier: "derived"},
 	"match":            {name: "match", tier: "derived", requires: []string{"demoinfo"}},
-	"messages":         {name: "messages", tier: "derived", requires: []string{"demoinfo"}},
-	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"demoinfo", "identity", "frag"}},
-	"items":            {name: "items", tier: "derived", requires: []string{"demoinfo", "identity"}},
-	"damage":           {name: "damage", tier: "derived", requires: []string{"demoinfo", "identity"}},
-	"shots":            {name: "shots", tier: "derived", requires: []string{"demoinfo", "identity", "timeline"}},
+	"messages":         {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo"}},
+	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag"}},
+	"items":            {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
+	"damage":           {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
+	"shots":            {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline"}},
 	"map_entities":     {name: "map-entities", tier: "derived"},
-	"backpacks":        {name: "backpacks", tier: "derived"},
-	"weaponPickups":    {name: "weapon-pickups", tier: "derived", requires: []string{"identity", "frag"}},
+	"backpacks":        {name: "backpacks", tier: "derived", requires: []string{"clock"}},
+	"weaponPickups":    {name: "weapon-pickups", tier: "derived", requires: []string{"clock", "identity", "frag"}},
 }
 
 // postNodeMeta declares the DAG edges for each post-processor, keyed by
 // its resolved function name (postProcName). It encodes §1.3's result.*
-// read edges plus the "Ordering barriers" block, expressed as
-// pseudo-artifacts so the topo sort pins the barrier order:
+// read edges plus the one remaining "Ordering barriers" pseudo-artifact:
 //
-//   - recover-telefrag-teamkills provides "telefrags:recovered", which
-//     normalize-match-relative-times requires — pinning telefrag recovery
-//     BEFORE the time rebase (both share the demo-relative clock);
-//   - normalize-match-relative-times provides "epoch:match" (the
-//     match-relative time base), required by aim / airgibs / loc-graph /
-//     region-control;
 //   - duel-team-normalize provides "teams:final" (stable team labels),
 //     required by aim / scoreboard-stats / loc-graph / region-control.
 //
-// derive-demo-start-anchor carries only its data edges (metadata,
-// timeline); it needs no barrier because the registration-index tie-break
-// already lands it between normalize and duel, matching today's order.
+// The old "epoch:match" barrier retired with the clock refactor: timestamps
+// are born match-relative in each producer's Finalize, so aim / airgibs /
+// loc-graph / region-control no longer wait on a whole-Result time rebase —
+// they keep only their data edges. recover-telefrag-teamkills still runs
+// before scoreboard-stats (which requires it by name to read the corrected
+// frag log); it requires clock because it converts victim-named teamkill
+// times against co.Clock.
 var postNodeMeta = map[string]nodeMeta{
 	"recoverTelefragTeamkills": {
 		name: "recover-telefrag-teamkills", tier: "post", mutates: true,
-		requires: []string{"demoinfo", "frag", "timeline"},
-		provides: []string{"telefrags:recovered"},
-	},
-	"normalizeMatchRelativeTimes": {
-		name: "normalize-match-relative-times", tier: "post", mutates: true,
-		requires: []string{"timeline", "telefrags:recovered"},
-		provides: []string{"epoch:match"},
-	},
-	"deriveDemoStartAnchor": {
-		name: "derive-demo-start-anchor", tier: "post", mutates: true,
-		requires: []string{"metadata", "timeline"},
+		requires: []string{"clock", "demoinfo", "frag", "timeline"},
 	},
 	"duelTeamNormalize": {
 		name: "duel-team-normalize", tier: "post", mutates: true,
@@ -124,11 +116,11 @@ var postNodeMeta = map[string]nodeMeta{
 	},
 	"aimPost": {
 		name: "aim", tier: "post", mutates: true,
-		requires: []string{"shots", "timeline", "damage", "epoch:match", "teams:final"},
+		requires: []string{"shots", "timeline", "damage", "teams:final"},
 	},
 	"airgibsPost": {
 		name: "airgibs", tier: "post", mutates: true,
-		requires: []string{"demoinfo", "frag", "timeline", "damage", "epoch:match"},
+		requires: []string{"demoinfo", "frag", "timeline", "damage"},
 	},
 	"scoreboardStatsPost": {
 		name: "scoreboard-stats", tier: "post", mutates: true,
@@ -136,11 +128,11 @@ var postNodeMeta = map[string]nodeMeta{
 	},
 	"locGraphPost": {
 		name: "loc-graph", tier: "post", mutates: true,
-		requires: []string{"timeline", "demoinfo", "epoch:match", "teams:final"},
+		requires: []string{"timeline", "demoinfo", "teams:final"},
 	},
 	"regionControlPost": {
 		name: "region-control", tier: "post", mutates: true,
-		requires: []string{"timeline", "match", "demoinfo", "epoch:match", "teams:final"},
+		requires: []string{"timeline", "match", "demoinfo", "teams:final"},
 	},
 }
 

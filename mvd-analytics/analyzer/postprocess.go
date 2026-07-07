@@ -1,273 +1,17 @@
 package analyzer
 
-import (
-	"strconv"
-	"strings"
-
-	"github.com/mvd-analyzer/mvd-analytics/result"
-	"github.com/mvd-analyzer/mvd-analytics/view"
-)
+import "github.com/mvd-analyzer/mvd-analytics/view"
 
 // Default post-processors for the registry. Each one is registered by
 // NewDefaultRegistry; callers building a registry from scratch can
 // pick which ones they want via RegisterPostProcessor.
-
-// normalizeMatchRelativeTimes shifts every time-stamped field in
-// Result so that t=0 is the moment the match started. The original
-// match-start offset is preserved in TimelineAnalysis.DemoOffset so
-// the frontend can map back to demo-time when needed (e.g. building
-// hub viewer URLs).
 //
-// Warmup entries (those with negative t after the shift) are dropped
-// from result.Streams — they would otherwise produce garbage pre-match
-// samples that downstream consumers have no use for.
-//
-// All time fields are integer milliseconds at schema v8; the shift is
-// a single int32 subtraction per value.
-func normalizeMatchRelativeTimes(res *Result, co *CoreOutputs) {
-	// Every producer now emits match-relative timestamps at its own Finalize
-	// by converting against co.Clock (see clock.go). This whole-Result rebase
-	// therefore has nothing left to do and is retired in the next commit; the
-	// empty body is kept for one step so the migration lands field-group by
-	// field-group with a byte-identical golden at each commit.
-}
-
-// shiftAndFilterChanges subtracts matchStartMs from each entry's
-// timestamp and drops entries with negative T. The latest entry at or
-// before matchStartMs is kept, clamped to T=0, as the carry-forward
-// "value at t=0"; getT reads an entry's timestamp and withT returns a
-// copy with a new timestamp (value preserved). All times are integer
-// milliseconds. Instantiated for result.ChangeI16 and result.ChangeStr,
-// whose JSON shapes are unchanged.
-func shiftAndFilterChanges[C any](stream []C, matchStartMs int32, getT func(C) int32, withT func(C, int32) C) []C {
-	if len(stream) == 0 {
-		return nil
-	}
-	// Find the latest entry at or before matchStartMs — it becomes the
-	// carry-forward "value at t=0" entry.
-	carryIdx := -1
-	for i, c := range stream {
-		if getT(c) <= matchStartMs {
-			carryIdx = i
-			continue
-		}
-		break
-	}
-	out := make([]C, 0, len(stream))
-	if carryIdx >= 0 {
-		out = append(out, withT(stream[carryIdx], 0))
-	}
-	for _, c := range stream {
-		if getT(c) <= matchStartMs {
-			continue
-		}
-		out = append(out, withT(c, getT(c)-matchStartMs))
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
-func shiftAndFilterChangeI16(stream []result.ChangeI16, matchStartMs int32) []result.ChangeI16 {
-	return shiftAndFilterChanges(stream, matchStartMs,
-		func(c result.ChangeI16) int32 { return c.T },
-		func(c result.ChangeI16, t int32) result.ChangeI16 { c.T = t; return c })
-}
-
-func shiftAndFilterChangeStr(stream []result.ChangeStr, matchStartMs int32) []result.ChangeStr {
-	return shiftAndFilterChanges(stream, matchStartMs,
-		func(c result.ChangeStr) int32 { return c.T },
-		func(c result.ChangeStr, t int32) result.ChangeStr { c.T = t; return c })
-}
-
-// shiftAndFilterIntervals shifts each interval and clamps to t >= 0.
-// Intervals entirely before matchStartMs are dropped; intervals
-// straddling are clamped to start at 0. Times are integer milliseconds.
-func shiftAndFilterIntervals(stream []result.Interval, matchStartMs int32) []result.Interval {
-	if len(stream) == 0 {
-		return nil
-	}
-	out := make([]result.Interval, 0, len(stream))
-	for _, iv := range stream {
-		if iv.End <= matchStartMs {
-			continue
-		}
-		s := iv.Start - matchStartMs
-		if s < 0 {
-			s = 0
-		}
-		out = append(out, result.Interval{Start: s, End: iv.End - matchStartMs})
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
-// shiftAndFilterInts subtracts matchStartMs from each entry and drops
-// entries that fall before the match start. Used for the int32-ms
-// schema-v8 streams (Spawns, Deaths).
-func shiftAndFilterInts(stream []int32, matchStartMs int32) []int32 {
-	if len(stream) == 0 {
-		return nil
-	}
-	out := make([]int32, 0, len(stream))
-	for _, t := range stream {
-		if t < matchStartMs {
-			continue
-		}
-		out = append(out, t-matchStartMs)
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
-// shiftAndFilterPosition trims pre-match position samples and shifts
-// the survivors. Mutates pt in place. Every column that is sample-
-// aligned with T (X/Y/Z always, Li/H/Lq/VP/VYa/VX/VY/VZ when present)
-// must be trimmed by the same keepFrom — consumers (BuildLocGraph,
-// view.RegionControl, airgibsPost) guard on `len(col) == len(pt.T)` and
-// will silently skip the player if the lengths drift. All time
-// arithmetic is int32 ms.
-//
-// PositionTrack column checklist site 5 (match-relative trim); see the
-// checklist in result/coord.go (PositionTrack.MarshalJSON).
-func shiftAndFilterPosition(pt *result.PositionTrack, matchStartMs int32) {
-	if pt == nil || len(pt.T) == 0 {
-		return
-	}
-	oldLen := len(pt.T)
-	keepFrom := 0
-	for keepFrom < oldLen && pt.T[keepFrom] < matchStartMs {
-		keepFrom++
-	}
-	if keepFrom > 0 {
-		pt.T = pt.T[keepFrom:]
-		pt.X = pt.X[keepFrom:]
-		pt.Y = pt.Y[keepFrom:]
-		pt.Z = pt.Z[keepFrom:]
-		if len(pt.Li) == oldLen {
-			pt.Li = pt.Li[keepFrom:]
-		}
-		if len(pt.H) == oldLen {
-			pt.H = pt.H[keepFrom:]
-		}
-		if len(pt.Lq) == oldLen {
-			pt.Lq = pt.Lq[keepFrom:]
-		}
-		if len(pt.VP) == oldLen {
-			pt.VP = pt.VP[keepFrom:]
-		}
-		if len(pt.VYa) == oldLen {
-			pt.VYa = pt.VYa[keepFrom:]
-		}
-		if len(pt.VX) == oldLen {
-			pt.VX = pt.VX[keepFrom:]
-		}
-		if len(pt.VY) == oldLen {
-			pt.VY = pt.VY[keepFrom:]
-		}
-		if len(pt.VZ) == oldLen {
-			pt.VZ = pt.VZ[keepFrom:]
-		}
-	}
-	for i := range pt.T {
-		pt.T[i] -= matchStartMs
-	}
-}
-
-// shiftAndClampMoverStream rebases a mover's pose timeline to match time,
-// mutating m in place. Unlike player positions (whole pre-match samples
-// are dropped), a mover's pre-match poses must NOT all be discarded — a
-// parked lift's only wire state is its baseline at demo open, and dropping
-// it would leave the mover pose-less for the whole match. Instead the
-// latest pre-match state is kept and clamped to T=0 (the pose held at
-// match start); earlier pre-match states are dropped as superseded, and
-// in-match states shift normally. A mover first seen mid-match keeps all
-// its states. All columns stay index-aligned with T.
-func shiftAndClampMoverStream(m *result.MoverStream, matchStartMs int32) {
-	if m == nil || len(m.T) == 0 {
-		return
-	}
-	// Latest index at or before match start — the pose held at t=0.
-	carry := -1
-	for i, t := range m.T {
-		if t <= matchStartMs {
-			carry = i
-		} else {
-			break
-		}
-	}
-	start := carry
-	if start < 0 {
-		start = 0 // mover first appeared after match start; keep everything
-	}
-	if start > 0 {
-		m.T = m.T[start:]
-		m.X = m.X[start:]
-		m.Y = m.Y[start:]
-		m.Z = m.Z[start:]
-		m.Vis = m.Vis[start:]
-	}
-	for i := range m.T {
-		m.T[i] -= matchStartMs
-		if m.T[i] < 0 {
-			m.T[i] = 0 // the carried pre-match pose anchors at t=0
-		}
-	}
-}
-
-// deriveDemoStartAnchor fills the demo-open wall-clock anchor
-// (Streams.Global.DemoStartUnixMs / DemoStartAccuracyMs) from the
-// whole-second serverinfo `epoch` cvar when the millisecond-accurate
-// mvdhidden 0x000B block was not present. TimelineAnalyzer.Finalize
-// already set both fields (accuracy 1) when 0x000B was seen; this runs
-// only as the fallback, so a non-zero accuracy means "leave it alone".
-//
-// `epoch` is the server clock in whole Unix seconds at demo open — the
-// same instant 0x000B carries to the millisecond. It lives in
-// result.Metadata.ServerInfo, which is why this is a post-processor:
-// MetadataAnalyzer.Finalize has run by now. The anchor is demo-open, so
-// it is independent of the match-relative time shift and does not need
-// to run before/after normalizeMatchRelativeTimes. (Schema v23 moved the
-// anchor from TimelineAnalysis to Streams.Global.)
-func deriveDemoStartAnchor(res *Result, _ *CoreOutputs) {
-	if res.Streams == nil || res.Streams.Global.DemoStartAccuracyMs != 0 {
-		return // no streams, or 0x000B already supplied a finer anchor
-	}
-	if res.Metadata == nil || res.Metadata.ServerInfo == nil {
-		return
-	}
-	epoch, ok := res.Metadata.ServerInfo["epoch"]
-	if !ok {
-		return
-	}
-	secs, err := strconv.ParseInt(strings.TrimSpace(epoch), 10, 64)
-	if err != nil || !plausibleDemoStartUnixMs(secs*1000) {
-		return
-	}
-	res.Streams.Global.DemoStartUnixMs = secs * 1000
-	res.Streams.Global.DemoStartAccuracyMs = 1000
-}
-
-// Plausible wall-clock window for a demo-open anchor, in Unix epoch
-// milliseconds: [2000-01-01, 2100-01-01). QuakeWorld demos carrying a
-// wall-clock source are 2026+, so this generous window accepts every real
-// value while rejecting the non-timestamp 0x000B payloads some demos carry
-// (e.g. 61, 11701 — see the DemoStartTimestampEvent handling in timeline.go).
-const (
-	minDemoStartUnixMs = 946684800000  // 2000-01-01T00:00:00Z
-	maxDemoStartUnixMs = 4102444800000 // 2100-01-01T00:00:00Z
-)
-
-// plausibleDemoStartUnixMs reports whether v could be a real demo-open
-// wall clock rather than a garbage / non-timestamp value.
-func plausibleDemoStartUnixMs(v int64) bool {
-	return v >= minDemoStartUnixMs && v < maxDemoStartUnixMs
-}
+// The old whole-Result time rebase (normalizeMatchRelativeTimes) and the
+// demo-start-anchor fallback (deriveDemoStartAnchor) are gone: every producer
+// now emits match-relative timestamps at its own Finalize by converting
+// against co.Clock (clock.go), and the clock owns the demo-open wall-clock
+// anchor the timeline writes onto Streams.Global. The rebasing helpers those
+// producers share live in timeshift.go.
 
 // duelTeamNormalize is the post-processor wrapper around
 // normalizeDuelTeams (defined in duel_normalize.go).
@@ -309,9 +53,10 @@ func scoreboardStatsPost(res *Result, _ *CoreOutputs) {
 	}
 }
 
-// locGraphPost runs BuildLocGraph on the assembled Result. Has to run
-// after the time and duel normalisations so the loc nodes/edges use
-// the same time base and team labels as the rest of the result.
+// locGraphPost runs BuildLocGraph on the assembled Result. Streams are
+// already match-relative (producers rebase at Finalize); it still runs after
+// duelTeamNormalize so the loc nodes/edges use the same team labels as the
+// rest of the result.
 func locGraphPost(res *Result, _ *CoreOutputs) {
 	res.LocGraph = BuildLocGraph(res)
 }
@@ -323,8 +68,8 @@ func locGraphPost(res *Result, _ *CoreOutputs) {
 // auto-detection); the view function reads those plus result.Streams
 // and emits the classified bucket states + percentages.
 //
-// Must run after normalizeMatchRelativeTimes (so MatchStart=0) and
-// after duelTeamNormalize (so per-player team labels are stable).
+// Streams are already match-relative (producers rebase at Finalize); this
+// must still run after duelTeamNormalize so per-player team labels are stable.
 func regionControlPost(res *Result, _ *CoreOutputs) {
 	if res == nil || res.TimelineAnalysis == nil {
 		return

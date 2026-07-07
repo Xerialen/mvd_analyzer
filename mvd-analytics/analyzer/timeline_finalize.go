@@ -478,7 +478,7 @@ const pauseCoalesceGapSec = 0.5
 // segment per pause. AtMs is the frozen game time the pause sits at (the latest
 // sample time in the run — the plateau the demo clock holds while paused);
 // DurationMs is the summed real wall-clock time of the run. Times are
-// demo-relative here; normalizeMatchRelativeTimes rebases AtMs to match time.
+// demo-relative here; rebaseToMatch (this file) rebases AtMs to match time.
 func coalescePauses(samples []pauseSample) []TimelinePause {
 	if len(samples) == 0 {
 		return nil

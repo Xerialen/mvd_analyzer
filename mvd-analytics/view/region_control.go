@@ -303,8 +303,8 @@ func classifyRegions(
 		return nil, nil
 	}
 
-	// Bucket grid is anchored at MatchStart (after
-	// normalizeMatchRelativeTimes that's 0). The optional sub-window
+	// Bucket grid is anchored at MatchStart (always 0 on the
+	// match-relative clock every producer stamps at Finalize). The optional sub-window
 	// clamps to a tighter range; default behaviour (both opts zero)
 	// covers the full match.
 	matchStart := r.Streams.Global.MatchStart

@@ -346,25 +346,23 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterDerived(NewBackpackAnalyzer())
 	r.RegisterDerived(NewWeaponPickupsAnalyzer())
 
-	// Post-processors run in registration order on the assembled
-	// Result. Order matters: telefrag-teamkill recovery runs first, before
-	// the match-relative shift, so obituary times, Streams positions, and
-	// FragEvents still share one (demo-relative) clock; time normalisation
-	// lands next so downstream processors see match-relative timestamps;
-	// duel team rewrite after that so per-player team labels are stable;
-	// locgraph and regionControl last because they consume both rewritten
-	// teams and normalised time anchors.
+	// Post-processors run in registration order on the assembled Result.
+	// Timestamps are already match-relative and the demo-start anchor is
+	// already written (every producer converts against co.Clock at Finalize),
+	// so there is no longer a whole-Result time rebase here. Order still
+	// matters: telefrag-teamkill recovery runs first (it appends to the frag
+	// log the scoreboard then reads); the duel team rewrite runs before the
+	// consumers that read per-player team labels (aim, scoreboard, locgraph,
+	// regionControl); locgraph and regionControl last.
 	r.RegisterPostProcessor(recoverTelefragTeamkills)
-	r.RegisterPostProcessor(normalizeMatchRelativeTimes)
 	// Line of sight is NOT a default post-processor — it is the heaviest
 	// position-derived pass and has no in-pipeline consumer, so it is computed
 	// lazily on demand via analyzer.ComputeLOS (web overlay / -include los /
 	// the mvd-api /los endpoint).
-	r.RegisterPostProcessor(deriveDemoStartAnchor)
 	r.RegisterPostProcessor(duelTeamNormalize)
-	// Aim runs after the match-relative shift and duel team rewrite so it sees
-	// normalised fire/position times and stable team labels for enemy
-	// attribution. It reads Shots + Streams + Damage; it writes only Result.Aim.
+	// Aim runs after the duel team rewrite so it sees stable team labels for
+	// enemy attribution; fire/position times are already match-relative. It
+	// reads Shots + Streams + Damage; it writes only Result.Aim.
 	r.RegisterPostProcessor(aimPost)
 	r.RegisterPostProcessor(airgibsPost)
 	r.RegisterPostProcessor(scoreboardStatsPost)

@@ -32,9 +32,9 @@ var (
 // (gob-persisted), later calls return immediately, so a map with no BSP is
 // attempted once and not retried.
 //
-// It must be called only after the times are match-relative (the default
-// pipeline's normalizeMatchRelativeTimes has run by the time any Result is
-// handed out), so positions, spawns/deaths and the mover poses share one epoch
+// It must be called only after the times are match-relative (every producer
+// stamps match-relative times at Finalize via co.Clock, so any handed-out
+// Result qualifies), so positions, spawns/deaths and the mover poses share one epoch
 // and the emitted intervals need no further normalization. It loads its own
 // visibility BSP (the same two cheap calls timeline_finalize.go makes); no-op
 // (LOS simply absent) when the map has no provisioned BSP — mirroring the
