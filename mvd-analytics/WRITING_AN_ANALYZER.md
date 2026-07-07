@@ -146,7 +146,7 @@ Add one entry, keyed by your `Name()`:
   (from the table in §1) and each `result.*` section's node. Use the
   `:final` names when that's what you consume.
 - `provides` is only for *extra* names beyond your own (rare — the
-  barrier/`:final` pattern).
+  `:final` pattern).
 - Then register it — **anywhere** in `NewDefaultRegistry`; the list is
   inventory, not ordering:
 

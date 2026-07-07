@@ -9,12 +9,12 @@ import "github.com/mvd-analyzer/mvd-reader/events"
 // and read by the next, with no compile-time guarantee that the
 // writer ran first.
 //
-// The registry builds this struct incrementally as core analysers
-// finalize, then calls UseCoreOutputs on every analyser that
-// implements CoreConsumer just before its own Finalize runs. Two-phase
-// in spirit (core finishes its writes, derived starts its reads), but
-// the registration order still drives the actual sequencing — there
-// is no separate "phase 1 / phase 2" loop today.
+// The registry builds this struct incrementally: each CoreProducer
+// publishes via PopulateCore right after its own Finalize, and every
+// CoreConsumer receives the running struct just before its Finalize.
+// A consumer may rely only on the fields whose producers its declared
+// dag.go edges schedule first — the edges, not tiers or registration
+// order, drive the sequencing.
 //
 // Adding a field here is the right place when an analyser's Finalize
 // would otherwise need to peek into another analyser's intermediate

@@ -27,12 +27,12 @@ type PhaseTiming struct {
 // parameters individual analyzers read; callers may mutate it before
 // analyzing to override defaults for a single run.
 type Registry struct {
-	// core analysers are the producers / state-reconstruction tier.
-	// They populate CoreOutputs (DemoInfo, NameTable, FragEntries, …)
-	// that derived analysers consume during their Finalize. Core
-	// finalises before any derived analyser, so registration into
-	// this slice is the load-bearing "I produce something downstream
-	// reads" signal.
+	// core analysers are the state-reconstruction tier by convention:
+	// they populate CoreOutputs (DemoInfo, NameTable, FragEntries, …)
+	// that most other analysers consume. The slice is a grouping label
+	// (and the default tie-break position), not an ordering mechanism —
+	// what guarantees a producer runs before its consumers is the
+	// consumers' declared edges in dag.go.
 	core []Analyzer
 
 	// derived analysers consume CoreOutputs (or are independent
@@ -116,25 +116,26 @@ func (r *Registry) Register(a Analyzer) {
 	r.RegisterDerived(a)
 }
 
-// RegisterCore adds an analyser whose Finalize populates CoreOutputs
-// (i.e. it implements CoreProducer). Core analysers finalise before
-// any derived analyser so downstream consumers see the produced
-// fields. Within the core slice, registration order is preserved —
-// later core analysers can read fields populated by earlier ones via
-// CoreConsumer.
+// RegisterCore adds an analyser to the core (state-reconstruction)
+// grouping — the convention for CoreProducers whose CoreOutputs fields
+// most of the pipeline consumes. The tier does not order execution:
+// consumers see a producer's fields because their dag.go Requires edge
+// schedules the producer first (a CoreProducer in the derived slice
+// works identically).
 func (r *Registry) RegisterCore(a Analyzer) {
 	r.core = append(r.core, a)
 }
 
 // RegisterDerived adds an analyser that consumes CoreOutputs (or is
-// independent of it). Derived analysers finalise after every core
-// analyser has populated CoreOutputs.
+// independent of it). Its declared edges — not the slice — determine
+// which producers are guaranteed to have finalised first.
 func (r *Registry) RegisterDerived(a Analyzer) {
 	r.derived = append(r.derived, a)
 }
 
-// RegisterPostProcessor adds a Result post-processor. They run in
-// registration order after every analyser has finalised.
+// RegisterPostProcessor adds a Result post-processor. Its declared
+// edges order it after the sections it reads; under the default
+// tie-break all post-processors run after every analyser.
 // SetRegionsOverride threads a caller-supplied region definition list
 // down to whatever TimelineAnalyzer is registered. Used by the CLI's
 // -regions flag and by tests pinning specific region layouts. Pass nil
@@ -267,11 +268,11 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 
 	// finalizeOne runs one analyser's Finalize with CoreOutputs plumbing:
 	// a CoreConsumer reads the running CoreOutputs before its Finalize, and
-	// a CoreProducer publishes into it after — so a node finalised later
-	// (core or derived) sees an earlier core node's fields (e.g. Frag reads
-	// co.Names produced by DemoInfo). Topological order keeps all core
-	// nodes ahead of derived, so CoreOutputs is complete before any derived
-	// Finalize runs.
+	// a CoreProducer publishes into it after — so a consumer sees every
+	// field whose producer its declared edges schedule first (e.g. Frag
+	// reads co.Names because frag requires demoinfo). That per-edge
+	// guarantee is the only one: an unrelated pair may finalise in either
+	// order (TestOrderIndependence proves the output doesn't care).
 	finalizeOne := func(a Analyzer) {
 		start := time.Now()
 		defer func() { record("finalize:"+a.Name(), start) }()
@@ -286,17 +287,14 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 			cp.PopulateCore(co)
 		}
 	}
-	// Finalize analyser nodes, then run post-processors, in one pass over
-	// the topological order. The DAG guarantees every analyser node
-	// precedes every post-processor node (post nodes only require analyser
-	// artifacts or barrier pseudo-artifacts), so this reproduces the old
-	// two-phase "all Finalize, then all post-processors" structure — and
-	// core precedes derived within the analyser prefix. CoreOutputs is
-	// fully populated by the time any derived Finalize or post-processor
-	// runs. The default post-processor order (encoded in dag.go as the
-	// §1.3 edge list) is: frags-final → aim → airgibs →
-	// match-final → loc-graph → region-control. The whole-Result time
-	// rebase and duel team rewrite are gone — producers are born correct.
+	// Finalize analyser nodes and run post-processors in one pass over
+	// the topological order. Only the declared edges constrain the
+	// sequence; under the default registration tie-break this comes out
+	// as the familiar core → derived → post grouping, but that grouping
+	// is a readability property of the default order, not a guarantee —
+	// any valid order yields identical output (TestOrderIndependence).
+	// The whole-Result time rebase and duel team rewrite are gone —
+	// producers are born correct via co.Clock / co.Roster.
 	for _, n := range nodes {
 		switch {
 		case n.analyzer != nil:

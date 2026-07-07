@@ -165,17 +165,17 @@ specific to one of them.
 
 ### Why the split
 
-The two-phase ordering exists so cross-analyser dependencies are
-expressed as types, not registration discipline. Before the cleanup,
-adding a derived analyser that read `ctx.FragEntries` only worked if
-the author knew to register it after `frag` — there was no compile-time
-guard. Now the contract is:
+The core/derived/post grouping is convention and readability, not an
+ordering mechanism — execution order comes from each node's declared
+edges (`analyzer/dag.go`), and any valid order produces identical
+output. The contract is:
 
-- Anything you write into `CoreOutputs` requires `CoreProducer` and
-  `RegisterCore`. The slice is small by design.
-- Anything you read from `CoreOutputs` requires `CoreConsumer`. The
-  registry guarantees `co` is fully populated before any derived
-  Finalize runs.
+- Anything you write into `CoreOutputs` implements `CoreProducer`
+  (conventionally registered core when most of the pipeline consumes
+  it — but the hook works from any tier).
+- Anything you read from `CoreOutputs` implements `CoreConsumer` and
+  declares a `requires` edge on each field's producer — that edge is
+  what guarantees the field is populated when your Finalize runs.
 - Anything that operates on the assembled `Result` is a
   `ResultPostProcessor`, not an analyser.
 
@@ -186,8 +186,9 @@ analyser and post-processor is wrapped in an internal `nodeSpec`
 (`analyzer/dag.go`) that declares the artifacts it **Requires** and
 **Provides** — the CoreOutputs edges (`demoinfo → identity → frag`, the
 `co.*` reads), the hidden `timeline → shots` container edge, the
-post-processor `result.*` reads, and the ordering barriers expressed as
-pseudo-artifacts (`telefrags:recovered`, `epoch:match`, `teams:final`).
+post-processor `result.*` reads, and the refined-artifact names
+(`frags:final`, `match:final`) consumers use to depend on the finished
+value rather than the raw one.
 
 At `NewDefaultRegistry` construction the engine **validates** the wiring
 (every `Requires` has exactly one provider; no cycles — a typo or a
