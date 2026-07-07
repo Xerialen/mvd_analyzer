@@ -7,6 +7,22 @@ detail.
 
 ## 2026-07-07
 
+- **Internal: analyzer output is now a tested pure function of the demo
+  (order-independence hardening, no schema bump).** The pipeline is an
+  explicit DAG (`analyzer/dag.go`) executed in a topological order whose
+  tie-break froze the legacy registration order; that made order-freedom a
+  believed-but-unenforced property. It is now enforced: `Result.Errors`
+  (previously appended in execution order — stream abort, then per-node
+  Finalize / post-processor failures) is canonicalised at the end of
+  `analyzeSource` (stream-abort entry first, then lexicographic), and a new
+  `TestOrderIndependence` runs representative corpus demos under the default
+  order plus seeded-random valid topological orders and asserts the
+  marshalled Result is byte-identical — which also continuously verifies the
+  declared edge list is complete (an undeclared cross-node read shows up as
+  a byte diff). An opt-in `TestPhaseTimingsReport` (`MVDA_TIMINGS=1`)
+  aggregates per-node timings and reports the DAG critical path vs the
+  serial Finalize+post tail. Diagnostics only; goldens are unchanged.
+
 - **API: automatic artifact surface — the DAG is now self-describing and
   generically servable (additive endpoints, no schema bump).** The analyzer
   DAG is exposed as data (`analyzer.ArtifactManifest`), and mvd-api gains three

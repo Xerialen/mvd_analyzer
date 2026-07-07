@@ -202,6 +202,18 @@ this is a zero-behaviour-change refactor. Post-processors still mutate the
 `Result` in place — each node is flagged `Mutates` as a temporary marker
 of debt a later stage removes.
 
+**Output is schedule-independent, and tested.** The Result is a pure
+function of the demo: any valid topological order of the DAG produces
+byte-identical JSON. `TestOrderIndependence` (analyzer package) enforces
+this by running representative corpus demos under the default order and
+several seeded-random valid orders and asserting the marshalled Result is
+identical — which also continuously proves the declared edge list is
+complete, since any undeclared cross-node read surfaces as a byte diff.
+To profile where the tail spends its time, run the opt-in per-node timing
+report: `MVDA_TIMINGS=1 go test ./mvd-analytics/analyzer -run
+TestPhaseTimingsReport -v` (prints a mean/max table plus the parse-vs-tail
+and DAG critical-path breakdown).
+
 The current graph (rendered by GitHub; regenerate with
 `qw-analyze -graph mermaid` — a test fails if this block drifts from the
 code):
