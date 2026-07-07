@@ -93,7 +93,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			fragEvents = append(fragEvents, TimelineFragEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
-				Team:   team,
+				Team:   a.core.TeamFor(playerName, team),
 				Delta:  raw.Delta,
 			})
 		}
@@ -111,7 +111,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			deathEvents = append(deathEvents, TimelineDeathEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
-				Team:   team,
+				Team:   a.core.TeamFor(playerName, team),
 			})
 		}
 	}
@@ -141,7 +141,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		killEvents = append(killEvents, TimelineKillEvent{
 			Time:   fe.Time,
 			Player: fe.Killer,
-			Team:   team,
+			Team:   a.core.TeamFor(fe.Killer, team),
 		})
 	}
 
@@ -382,7 +382,63 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	if ms := a.core.MatchStartMs(); ms > 0 {
 		a.rebaseToMatch(result, ms)
 	}
+
+	// Duel: synthesise the frag-score timeline for a participant who never
+	// emitted svc_updatefrags (a frogbot) and so is absent from the frag-update
+	// stream above, sourcing their entries from the obituary-based frag log
+	// (result.Frags, which captures bots and humans identically). Runs after the
+	// rebase so both the existing FragEvents and the frag log are on the match
+	// clock. Formerly the normalizeDuelTeams FragEvents block.
+	a.synthesizeDuelFragEvents(result)
 	return nil
+}
+
+// synthesizeDuelFragEvents fills in a duel participant's frag-score timeline
+// from the obituary frag log when they never appeared as a killer in the
+// svc_updatefrags-derived FragEvents (the frogbot case). No-op outside duel
+// mode or when the frag log is empty. The synthesised entries carry team ==
+// name (the duel label) and are merged by time so consumers assuming a
+// monotonic slice keep working.
+func (a *TimelineAnalyzer) synthesizeDuelFragEvents(result *Result) {
+	if !a.core.IsDuel() || result.TimelineAnalysis == nil ||
+		result.Frags == nil || len(result.Frags.Frags) == 0 {
+		return
+	}
+	ta := result.TimelineAnalysis
+
+	existingPlayers := make(map[string]bool)
+	for _, fe := range ta.FragEvents {
+		existingPlayers[fe.Player] = true
+	}
+	missing := make(map[string]bool)
+	for _, name := range a.core.Roster.Participants() {
+		if !existingPlayers[name] {
+			missing[name] = true
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+
+	synthesised := make([]TimelineFragEvent, 0)
+	for _, fr := range result.Frags.Frags {
+		if fr.Killer == "" || !missing[fr.Killer] {
+			continue
+		}
+		delta := 1
+		if fr.IsSuicide || fr.IsTeamKill {
+			delta = -1
+		}
+		synthesised = append(synthesised, TimelineFragEvent{
+			Time:   fr.Time,
+			Player: fr.Killer,
+			Team:   fr.Killer, // duel: team == name
+			Delta:  delta,
+		})
+	}
+	if len(synthesised) > 0 {
+		ta.FragEvents = mergeFragEventsByTime(ta.FragEvents, synthesised)
+	}
 }
 
 // rebaseToMatch shifts every timeline-owned timestamp in result from the demo

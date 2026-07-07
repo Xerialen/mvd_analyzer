@@ -97,6 +97,26 @@ func (co *CoreOutputs) MatchStartMs() int32 {
 	return co.Clock.MatchStartMs
 }
 
+// TeamFor returns the final team label a producer should stamp for a record it
+// attributes to name: the player's own name in a 1v1 (born-correct duel
+// rewrite), else rawTeam unchanged. Nil-safe on co and its Roster, so producers
+// call it uniformly whether or not a roster is wired.
+func (co *CoreOutputs) TeamFor(name, rawTeam string) string {
+	if co == nil {
+		return rawTeam
+	}
+	return co.Roster.TeamFor(name, rawTeam)
+}
+
+// IsDuel reports whether the roster classified the match as a 1v1. Nil-safe on
+// co and its Roster.
+func (co *CoreOutputs) IsDuel() bool {
+	if co == nil {
+		return false
+	}
+	return co.Roster.Duel()
+}
+
 // ResolvedSession is one contiguous occupancy of a wire slot, resolved
 // to the canonical (reconnect-unified) player identity. IdentityKey is
 // stable within a single analysis run and equal for every session the

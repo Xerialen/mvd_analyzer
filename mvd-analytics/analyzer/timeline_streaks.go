@@ -130,7 +130,7 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerU
 			if deathT > spawnT {
 				runs = append(runs, run{
 					playerName: name,
-					team:       names.TeamForName(name),
+					team:       a.core.TeamFor(name, names.TeamForName(name)),
 					spawnTime:  spawnT,
 					deathTime:  deathT,
 				})

@@ -82,7 +82,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"metadata":         {name: "metadata", tier: "derived"},
 	"match":            {name: "match", tier: "derived", requires: []string{"demoinfo"}},
 	"messages":         {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo"}},
-	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag"}},
+	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}},
 	"items":            {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
 	"damage":           {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
 	"shots":            {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline"}},
