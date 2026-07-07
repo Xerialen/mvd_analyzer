@@ -148,11 +148,41 @@ func TestExportGraph(t *testing.T) {
 	if err := json.Unmarshal([]byte(jsonStr), &g); err != nil {
 		t.Fatalf("json does not parse: %v", err)
 	}
-	if len(g.Nodes) != len(registrationOrder) {
-		t.Fatalf("json node count = %d, want %d", len(g.Nodes), len(registrationOrder))
+	// The graph carries the eager registration nodes plus the lazy artifacts
+	// (los, shot-streams), which are marked lazy but never enter the eager
+	// execution order.
+	const lazyNodeCount = 2
+	if len(g.Nodes) != len(registrationOrder)+lazyNodeCount {
+		t.Fatalf("json node count = %d, want %d", len(g.Nodes), len(registrationOrder)+lazyNodeCount)
 	}
 	if len(g.Edges) == 0 {
 		t.Fatal("json graph has no edges")
+	}
+
+	// The lazy nodes appear, marked lazy; the eager nodes are not lazy.
+	lazySeen := map[string]bool{}
+	for _, n := range g.Nodes {
+		switch n.Name {
+		case "los", "shot-streams":
+			if !n.Lazy {
+				t.Errorf("node %q should be marked lazy", n.Name)
+			}
+			if n.Tier != "lazy" {
+				t.Errorf("node %q tier = %q, want lazy", n.Name, n.Tier)
+			}
+			lazySeen[n.Name] = true
+		default:
+			if n.Lazy {
+				t.Errorf("eager node %q should not be marked lazy", n.Name)
+			}
+		}
+	}
+	if !lazySeen["los"] || !lazySeen["shot-streams"] {
+		t.Fatalf("expected los and shot-streams lazy nodes in graph, saw %v", lazySeen)
+	}
+	// The lazy nodes' Requires resolve to eager providers (edges into them).
+	if !strings.Contains(mermaid, "los") || !strings.Contains(mermaid, "shot_streams") {
+		t.Errorf("mermaid missing lazy nodes:\n%s", mermaid)
 	}
 
 	if _, err := ExportGraph("dot"); err == nil {

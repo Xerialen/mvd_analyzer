@@ -9,14 +9,16 @@ import (
 
 // ExportGraph renders the analyzer dependency DAG (nodes + declared
 // artifact edges) in the requested format. It builds a default registry
-// to obtain the canonical node set and needs no demo. Supported formats:
+// to obtain the canonical eager node set, then appends the lazy nodes
+// (los, shot-streams — materialised on demand, not in the eager bundle),
+// and needs no demo. Supported formats:
 //
-//	"mermaid" — a flowchart TB grouped into core / derived / post tiers.
-//	"json"    — {nodes:[{name,requires,provides,mutates,tier}], edges:[{from,to,artifact}]}.
+//	"mermaid" — a flowchart TB grouped into core / derived / post / lazy tiers.
+//	"json"    — {nodes:[{name,requires,provides,mutates,lazy,tier}], edges:[{from,to,artifact}]}.
 //
 // It is the single exported entry point the qw-analyze -graph flag needs.
 func ExportGraph(format string) (string, error) {
-	specs := NewDefaultRegistry().specs
+	specs := append(NewDefaultRegistry().specs, lazyArtifactSpecs()...)
 	switch format {
 	case "mermaid":
 		return renderGraphMermaid(specs), nil
@@ -43,6 +45,7 @@ type graphNodeJSON struct {
 	Requires []string `json:"requires"`
 	Provides []string `json:"provides"`
 	Mutates  bool     `json:"mutates"`
+	Lazy     bool     `json:"lazy"`
 	Tier     string   `json:"tier"`
 }
 
@@ -69,6 +72,7 @@ func renderGraphJSON(specs []nodeSpec) (string, error) {
 			Requires: append([]string(nil), s.Requires...),
 			Provides: append([]string(nil), s.Provides...),
 			Mutates:  s.Mutates,
+			Lazy:     s.Lazy,
 			Tier:     s.tier,
 		})
 		for _, req := range s.Requires {
@@ -101,6 +105,7 @@ func renderGraphMermaid(specs []nodeSpec) string {
 		{"core", "core (state reconstruction)"},
 		{"derived", "derived (finalize)"},
 		{"post", "post-processors (in-place Result mutation)"},
+		{"lazy", "lazy (materialised on demand)"},
 	}
 	for _, t := range tiers {
 		fmt.Fprintf(&b, "  subgraph %s[\"%s\"]\n", t.id, t.label)

@@ -16,13 +16,14 @@ import "fmt"
 // Mutates:true as a temporary marker of the debt Stage 2 (the clock /
 // roster refactor) removes.
 //
-// Two out-of-band lazy passes are deliberately NOT modelled as nodes
-// here: ComputeLOS (los.go) and the shot/nail spatial-stream re-parse
-// (mvd-api democache.EnsureShotStreams). They run on demand outside
-// analyzeSource, are not part of the eager bundle, and would each need a
-// lazy-execution flag the Stage-1 engine does not have. They enter the
-// DAG in Stage 3; adding them now would cost execution-path branching
-// for no behavioural gain.
+// The two out-of-band lazy passes — ComputeLOS (los.go) and the shot/nail
+// spatial-stream re-parse — are modelled as lazy DAG nodes since Stage 3
+// (materialize.go): each is a nodeSpec with Lazy:true, registered in
+// lazyArtifacts rather than in the eager core/derived/post slices. They do
+// NOT enter analyzeSource's execution order (r.specs / r.nodes stay the 21
+// eager nodes), so the eager bundle and the golden corpus are unchanged;
+// they appear in -graph output marked lazy and are materialised on demand
+// through the LazyArtifact hooks (mvd-api's per-artifact tier-3 cache).
 
 // nodeSpec is one pipeline node declared as data: an analyzer's Finalize
 // or a post-processor, with the artifact edges the engine schedules on.
@@ -37,7 +38,8 @@ type nodeSpec struct {
 	Requires []string // artifact names this node reads
 	Provides []string // artifact names this node writes (includes Name)
 	Mutates  bool     // true for every post-processor (Stage-2 debt marker)
-	tier     string   // "core" | "derived" | "post" — export grouping only
+	Lazy     bool     // materialised on demand, not in the eager bundle (Stage 3)
+	tier     string   // "core" | "derived" | "post" | "lazy" — export grouping only
 	regIndex int      // registration position; the deterministic topo tie-break
 
 	analyzer Analyzer            // set for analyzer (event-tier) nodes
@@ -201,6 +203,12 @@ func (r *Registry) buildGraph() {
 		panic(err.Error())
 	}
 	r.nodes = sorted
+	// Validate the lazy nodes against the eager set too, so a lazy Requires
+	// typo is a startup panic (they read eager artifacts but never enter the
+	// execution order — see materialize.go). r.specs / r.nodes are unaffected.
+	if err := validateDAG(append(append([]nodeSpec(nil), r.specs...), lazyArtifactSpecs()...)); err != nil {
+		panic(err.Error())
+	}
 }
 
 // buildDAG validates the spec set and returns it in topological
