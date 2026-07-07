@@ -550,10 +550,12 @@ B. `o` indexes the `players` array. Both share shape (`{o, iv}`) and gating.
 
 LOS/PVS are **computed lazily** by one pass: it is the heaviest position-derived
 pass, so it is not in the default parse — the **first** request for a demo runs
-it (a few seconds on a large 4on4) and caches the result in memory, so later
-requests are free. BSP-backed maps only; on a map with no BSP every player's
-`los` and `pvs` are omitted. View direction is not considered (geometric
-visibility, not FOV).
+it (a few seconds on a large 4on4) and writes the result to the tier-3 artifact
+cache, so later requests — and later processes, after a restart or an LRU
+eviction — splice it from disk instead of recomputing. BSP-backed maps only; on
+a map with no BSP every player's `los` and `pvs` are omitted (and that empty
+result is itself cached, so the pass runs at most once). View direction is not
+considered (geometric visibility, not FOV).
 
 ```jsonc
 { "players": [
@@ -588,12 +590,15 @@ The body field is `null` when the demo has none (e.g. no LG → `beams: null`).
 Like `/los`, these are **built on demand** — they are off in the default parse
 to keep the cache lean, and (unlike LOS) cannot be recomputed from the cached
 Result, so the **first** request re-parses the demo with the build flags on (a
-few seconds on a large 4on4) and caches the streams in memory; later requests
-are free. One rebuild builds projectiles, beams and nails together — a
-single variant, so every response body stays a pure function of its URL
-under the immutable cache headers. The on-disk gob stays lean. If the tier-1 bytes are gone and the streams cannot be
-rebuilt, the body field is `null` and the response carries `X-Shot-Streams:
-unavailable` (§4.5c).
+few seconds on a large 4on4) and writes the streams (plus the rebuilt Shots/Aim
+blocks) to the tier-3 artifact cache; later requests — and later processes,
+after a restart or an LRU eviction — splice them from disk instead of
+re-parsing. One rebuild builds projectiles, beams and nails together — a single
+variant, so every response body stays a pure function of its URL under the
+immutable cache headers. The tier-2 gob stays lean. Only if **both** the tier-3
+artifact and the tier-1 bytes are gone (so the streams can be neither loaded nor
+rebuilt) does the body field go `null` with `X-Shot-Streams: unavailable`
+(§4.5c).
 
 ```jsonc
 // GET /streams/projectiles

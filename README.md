@@ -52,7 +52,7 @@ grow on its own timeline. Today's concrete shape:
 - **Layer 3 consumers** read `Result` or call `view/` and produce something
   user-facing. There are four today:
   - `mvd-analytics/cmd/qw-analyze` — offline CLI (one demo → JSON / md / events).
-  - `mvd-api` — hosted REST API + two-tier on-disk cache.
+  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed Result, lazy artifacts).
   - `mvd-mcp` — tiny stdio MCP shim that forwards every tool call to a
     running `mvd-api`. Distributable as a small `.exe` for Claude Desktop /
     Cursor / Claude Code.
@@ -247,7 +247,7 @@ score?", "who played?"), the agent should stop there — no
   `demoId`: fetch bytes, parse, cache, serve view analytics."
 - **`loadDemo` / `get*`** go through `mvd-api`, which talks to the
   hub only to download `.mvd.gz` bytes (the rest comes from its
-  two-tier on-disk cache).
+  three-tier on-disk cache: raw bytes, parsed Result, lazy artifacts).
 - `mvd-web` (the browser UI) uses the same Supabase search path
   directly — both consumers behave identically against the hub.
 

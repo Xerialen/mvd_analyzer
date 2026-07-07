@@ -7,6 +7,25 @@ detail.
 
 ## 2026-07-07
 
+- **API: lazy artifacts (LOS, shot-streams) now persist across restarts and
+  cache evictions — new tier-3 per-artifact cache (no schema change).** The two
+  hand-rolled lazy passes are generalised into the DAG engine as `lazy` nodes
+  (`los`, `shot-streams`), registered by name behind one `LazyArtifact`
+  registry (`analyzer/materialize.go`) and shown in a fourth `-graph` tier.
+  mvd-api gains a third cache tier — `artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob`
+  — so a lazy compute (the multi-second LOS raycast, or the full MVD re-parse
+  behind `/shots`, `/aim`, `/streams/*`) is written to disk on first request
+  and spliced back on later ones, surviving a process restart or an LRU
+  eviction (closes API follow-up F8b). Both `EnsureLOS` (new) and
+  `EnsureShotStreams` run one generic flow: latch → tier-3 load → else compute
+  → write tier-3, serialised per demo SHA. The F12 single-variant shot-stream
+  rebuild and the `X-Shot-Streams: unavailable` degrade are preserved exactly
+  — the degrade now fires only when *both* the tier-3 artifact and the tier-1
+  bytes are absent. `/los`, `/shots`, `/aim`, `/streams/*` are byte-identical
+  from a client's view (status, bodies, ETags, `X-Cache`). `EV` is the current
+  schema version, so a schema bump invalidates tier 3 exactly like tier 2. No
+  schema bump.
+
 - **Analytics: team labels born correct; the whole-Result duel rewrite is
   gone (no schema change, byte-identical output).** A new `roster` core
   node (the last core node) owns the canonical player/team table with the

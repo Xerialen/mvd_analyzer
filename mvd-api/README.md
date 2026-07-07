@@ -1,7 +1,7 @@
 # mvd-api — REST host for QuakeWorld demo analytics
 
 `mvd-api` exposes [`mvd-analytics/view`](../mvd-analytics/view) as a
-hosted HTTP REST API, backed by a two-tier on-disk cache that
+hosted HTTP REST API, backed by a three-tier on-disk cache that
 resolves and downloads demos from
 [hub.quakeworld.nu](https://hub.quakeworld.nu) on demand.
 
@@ -116,10 +116,21 @@ the access log for analytics. Common labels: `mcp-claude-desktop`,
 Under `-cache-dir`:
 
 ```
-mvd/<sha[:2]>/<sha>.mvd.gz             # tier 1 — raw bytes from hub
-results/v<N>/<sha[:2]>/<sha>.gob       # tier 2 — parsed *Result, per schema version
-index/games/<gameId>.txt               # gameId → sha map
+mvd/<sha[:2]>/<sha>.mvd.gz                    # tier 1 — raw bytes from hub
+results/v<N>/<sha[:2]>/<sha>.gob              # tier 2 — parsed *Result, per schema version
+artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob    # tier 3 — lazy artifacts (los, shot-streams)
+index/games/<gameId>.txt                      # gameId → sha map
 ```
+
+Tier 3 holds the lazily-materialised artifacts (`los`; `shot-streams` =
+projectiles + beams + nails + the rebuilt Shots/Aim, one variant) as side-gobs
+so a lazy compute — the multi-second LOS raycast or the full MVD re-parse —
+survives a process restart or an LRU eviction: after the base `Result` is
+served from tier 2, `/los` and `/shots|/aim|/streams/*` splice the artifact
+from disk instead of recomputing (closing F8b). The effective version `EV` is
+the schema version, so a schema bump invalidates tier 3 exactly like tier 2;
+stale versions are simply never read. Per-node effective versions arrive with
+the DAG manifest work if node versions ever diverge from the schema.
 
 A 4-on-4 demo typically occupies ~3–7 MB in tier 1 and ~3–10 MB in
 tier 2. There is no automatic eviction yet — a size-capped store / GC

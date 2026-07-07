@@ -32,21 +32,26 @@ type Streams struct {
 	// LOSComputed records whether the (lazy) line-of-sight pass has run on
 	// this in-memory Result, so a caller (web overlay, -include los, the
 	// mvd-api /los endpoint) computes it on demand exactly once and does not
-	// retry on maps that genuinely have no LOS (no BSP). It latches only for
-	// the lifetime of this Result value — LOS lives only in memory. The API's
-	// gob cache is written once at parse (before any LOS pass) and never
-	// re-encoded (mvd-api/internal/democache/cache.go), so this flag never
-	// persists as true: a Result re-decoded from the gob starts with
-	// LOSComputed=false and recomputes on the next /los request. Excluded from
-	// JSON (`json:"-"`): consumers read presence/absence of PlayerStream.LOS
-	// itself, and the goldens stay agnostic to it. See analyzer.ComputeLOS.
+	// retry on maps that genuinely have no LOS (no BSP). It latches for the
+	// lifetime of this Result value. The API's tier-2 gob is written once at
+	// parse (before any LOS pass), so a Result re-decoded from it starts with
+	// LOSComputed=false; but the API persists the computed LOS separately in
+	// its tier-3 artifact cache (mvd-api/internal/democache), so the /los pass
+	// is not re-run after a restart or eviction — the warm request splices the
+	// cached intervals and re-sets this latch. Excluded from JSON (`json:"-"`):
+	// consumers read presence/absence of PlayerStream.LOS itself, and the
+	// goldens stay agnostic to it. See analyzer.ComputeLOS and the "los" lazy
+	// artifact (analyzer/materialize.go).
 	LOSComputed bool `json:"-"`
 
 	// ShotStreamsComputed / NailsComputed latch the opt-in spatial weapon-fire
 	// streams the same way LOSComputed latches LOS: the API builds them on
 	// demand (a re-parse, since unlike LOS they cannot be recomputed from the
 	// lean cached Result) and sets the flag so later requests reuse the work.
-	// JSON-excluded — clients read presence/absence of the streams themselves.
+	// Like LOS, the built streams are persisted in the API's tier-3 artifact
+	// cache ("shot-streams"), so a warm process splices them from disk rather
+	// than re-parsing. JSON-excluded — clients read presence/absence of the
+	// streams themselves.
 	ShotStreamsComputed bool `json:"-"`
 	NailsComputed       bool `json:"-"`
 }

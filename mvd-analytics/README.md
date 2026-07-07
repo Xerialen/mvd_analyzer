@@ -204,8 +204,13 @@ of debt a later stage removes.
 
 Dump the graph with `qw-analyze -graph mermaid` (a tier-grouped
 flowchart) or `-graph json` (`{nodes, edges}`); neither needs a demo. The
-heavy lazy passes (`ComputeLOS`, the shot/nail stream re-parse) run
-out-of-band and are not DAG nodes yet.
+two heavy lazy passes — `los` (`ComputeLOS`) and `shot-streams` (the
+shot/nail stream re-parse plus the rebuilt Shots/Aim, one variant) — are
+DAG nodes too, marked `lazy` and shown in a fourth graph tier. They do not
+run in the default parse (they stay out of the eager execution order); they
+are materialised on demand through the `LazyArtifact` hooks
+(`analyzer/materialize.go`), which back mvd-api's per-artifact tier-3 disk
+cache so a lazy compute survives a process restart or an LRU eviction.
 
 ### CoreOutputs shape
 
@@ -750,9 +755,10 @@ below.
 **It is computed lazily — NOT during the default parse.** LOS is the heaviest
 position-derived pass (N² pairs × samples × rays) and has no in-pipeline
 consumer, so the registry does not run it; callers invoke `ComputeLOS` on
-demand. It is idempotent (the first call sets `Streams.LOSComputed`, which the
-mvd-api persists in its gob cache so a demo's LOS is computed at most once).
-The three consumers:
+demand. It is idempotent (the first call sets `Streams.LOSComputed`). mvd-api
+persists the computed intervals in its tier-3 artifact cache (the `los` lazy
+artifact), so a demo's LOS is computed at most once even across process
+restarts and cache evictions. The three consumers:
 
 - **Web map overlay** — the **LOS** button calls the WASM `computeLineOfSight()`
   export (via the worker) on first toggle and caches the result client-side.
