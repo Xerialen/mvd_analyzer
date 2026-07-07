@@ -21,10 +21,12 @@ import (
 func runServe(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	var (
-		addr      = fs.String("addr", ":8080", "listen address")
-		cacheDir  = fs.String("cache-dir", democache.DefaultRoot(), "on-disk cache root")
-		mapsDir   = fs.String("maps-dir", "", "directory of per-map geometry JSON for /v1/maps/{map}/geometry; empty disables the endpoint")
-		logFormat = fs.String("log-format", "text", "access log format: text | json")
+		addr          = fs.String("addr", ":8080", "listen address")
+		cacheDir      = fs.String("cache-dir", democache.DefaultRoot(), "on-disk cache root")
+		cacheMaxBytes = fs.Int64("cache-max-bytes", 20<<30, "cache disk budget in bytes (tiers 1-3); background GC evicts oldest files when exceeded; 0 disables GC")
+		maxParses     = fs.Int("max-parses", 0, "max concurrent demo download+parse operations (0 = max(1, NumCPU/2))")
+		mapsDir       = fs.String("maps-dir", "", "directory of per-map geometry JSON for /v1/maps/{map}/geometry; empty disables the endpoint")
+		logFormat     = fs.String("log-format", "text", "access log format: text | json")
 	)
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -32,6 +34,10 @@ func runServe(args []string) error {
 
 	logger := newLogger(*logFormat)
 	cache := democache.New(*cacheDir, hubfetch.NewClient())
+	cache.MaxBytes = *cacheMaxBytes
+	cache.MaxParses = *maxParses
+	cache.Logger = logger
+	cache.CleanupOnStartup()
 	handler := newRouter(cache, logger, *mapsDir)
 
 	srv := &http.Server{
@@ -43,7 +49,8 @@ func runServe(args []string) error {
 	}
 
 	logger.Info("mvd-api starting",
-		"addr", *addr, "cacheDir", *cacheDir, "mapsDir", *mapsDir, "schemaVersion", result.CurrentSchemaVersion)
+		"addr", *addr, "cacheDir", *cacheDir, "cacheMaxBytes", *cacheMaxBytes,
+		"maxParses", cache.MaxParses, "mapsDir", *mapsDir, "schemaVersion", result.CurrentSchemaVersion)
 
 	errCh := make(chan error, 1)
 	go func() {

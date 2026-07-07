@@ -15,7 +15,12 @@
 // served from tier 2, EnsureLOS splices the artifact from tier 3 instead of
 // recomputing it (PLAN-api F8b). Like tier 2 it lives under a version-keyed
 // path (the effective version EV = CurrentSchemaVersion), so a stale version
-// is simply never read; there is no GC (a hosting-prep phase).
+// is simply never read.
+//
+// All three tiers are bounded by an optional byte budget (Cache.MaxBytes):
+// a background sweep (gc.go) evicts oldest-mtime-first, with mtime bumped on
+// every hit as the recency signal. Startup cleanup removes version trees and
+// artifact gobs orphaned by schema/format bumps (CleanupOnStartup).
 //
 // The spatial weapon-fire streams (projectiles/beams/nails) used to be a
 // second lazy artifact ("shot-streams") behind a full re-parse, but phase 12
@@ -36,8 +41,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/hubfetch"
@@ -95,10 +103,31 @@ type Cache struct {
 	MemoryLRU int
 	Parse     ParseFunc
 
+	// MaxBytes is the tier-1 + tier-2 + tier-3 disk budget. When exceeded, a
+	// background sweep (maybeGC) evicts oldest-mtime-first down to it.
+	// <= 0 disables eviction (local dev default via New; serve.go sets it).
+	MaxBytes int64
+	// MaxParses bounds concurrent cold download+parse operations. <= 0 →
+	// max(1, NumCPU/2), resolved in ensureInit.
+	MaxParses int
+	// Logger receives GC lines; nil → slog.Default().
+	Logger *slog.Logger
+
 	once         sync.Once
 	mem          *resultLRU
 	inflight     sync.Map // sha → *inflightEntry
 	lastResolved sync.Map // sha → *hubfetch.GameInfo (drained by loadResult)
+
+	// parseSem is a counting semaphore (buffered channel) bounding the
+	// number of concurrent hub-download+full-parse operations — the
+	// expensive cold path. The per-SHA singleflight already dedupes requests
+	// for the *same* demo; this caps a storm of *distinct* cold demos from
+	// spawning unbounded parallel parses. Cache hits never touch it.
+	parseSem chan struct{}
+
+	// gcRunning guards maybeGC so at most one background sweep runs at a
+	// time; concurrent triggers after tier writes are dropped, not queued.
+	gcRunning atomic.Bool
 
 	// losLocks serializes the on-demand LOS materialisation per SHA, so a
 	// raycast for demo B does not queue behind demo A's, and two callers for
@@ -123,8 +152,75 @@ func (c *Cache) ensureInit() {
 		if c.MemoryLRU <= 0 {
 			c.MemoryLRU = 4
 		}
+		if c.MaxParses <= 0 {
+			c.MaxParses = runtime.NumCPU() / 2
+			if c.MaxParses < 1 {
+				c.MaxParses = 1
+			}
+		}
+		c.parseSem = make(chan struct{}, c.MaxParses)
 		c.mem = newResultLRU(c.MemoryLRU)
 	})
+}
+
+// log returns the configured logger or the process default.
+func (c *Cache) log() *slog.Logger {
+	if c.Logger != nil {
+		return c.Logger
+	}
+	return slog.Default()
+}
+
+// touch bumps a cache file's mtime so the GC's oldest-first eviction treats
+// it as recently used. atime is deliberately not used for LRU: most
+// filesystems mount relatime/noatime, so read access does not reliably
+// advance atime — an explicit mtime bump on every hit is the portable
+// signal. Errors (a concurrently-evicted file) are ignored.
+func touch(path string) {
+	now := time.Now()
+	_ = os.Chtimes(path, now, now)
+}
+
+// acquireParse blocks until a parse slot is free, honouring ctx while
+// queued. Cancellation is respected only *while waiting* for the slot — once
+// acquired, the parse itself runs to completion (the singleflight shares one
+// computation across every same-SHA waiter; see GetResult). Distinct demos
+// have distinct SHAs, so a cancel here only affects the cancelling client's
+// own fan-out, never an unrelated demo.
+func (c *Cache) acquireParse(ctx context.Context) (func(), error) {
+	select {
+	case c.parseSem <- struct{}{}:
+		return func() { <-c.parseSem }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// maybeGC launches a background sweep when the budget may be exceeded. It
+// never blocks the request path: it fires after a tier write, guarded so
+// only one sweep runs at a time.
+func (c *Cache) maybeGC() {
+	if c.MaxBytes <= 0 {
+		return
+	}
+	if !c.gcRunning.CompareAndSwap(false, true) {
+		return
+	}
+	go func() {
+		defer c.gcRunning.Store(false)
+		SweepToBudget(c.Root, c.MaxBytes, c.log())
+	}()
+}
+
+// CleanupOnStartup removes tier-2 trees orphaned by past schema/format
+// bumps, deletes stale-version tier-3 artifact gobs, clears stale
+// atomic-write temp files, and enforces the byte budget once. Call before
+// serving.
+func (c *Cache) CleanupOnStartup() {
+	c.ensureInit()
+	CleanOldVersionTrees(c.Root, result.CurrentSchemaVersion, c.log())
+	CleanStaleArtifacts(c.Root, c.log())
+	SweepToBudget(c.Root, c.MaxBytes, c.log())
 }
 
 // GetResult resolves the demo, fetches/parses/caches as needed, and
@@ -213,23 +309,40 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 		stashed = v.(*hubfetch.GameInfo)
 	}
 
+	rp := resultPath(c.Root, result.CurrentSchemaVersion, sha)
+	mp := mvdPath(c.Root, sha)
+
 	if r := c.mem.get(sha); r != nil {
+		// Keep both on-disk tiers hot so an actively-queried demo is not the
+		// GC's eviction target even while it lives only in the mem LRU.
+		touch(rp)
+		touch(mp)
 		meta.FromCache = true
 		return r, meta, nil
 	}
 
-	rp := resultPath(c.Root, result.CurrentSchemaVersion, sha)
 	if data, err := os.ReadFile(rp); err == nil {
 		if r, decErr := decodeResult(data); decErr == nil {
+			touch(rp)
+			touch(mp)
 			c.mem.put(sha, r)
 			meta.FromCache = true
 			return r, meta, nil
 		}
 	}
 
-	mp := mvdPath(c.Root, sha)
+	// Past the mem + tier-2 hits: everything below either reparses cached
+	// tier-1 bytes or downloads then parses — the expensive cold path. Bound
+	// its concurrency (F15); cache hits above never reach here.
+	release, err := c.acquireParse(ctx)
+	if err != nil {
+		return nil, CacheMeta{}, err
+	}
+	defer release()
+
 	var mvdBytes []byte
 	if data, err := os.ReadFile(mp); err == nil {
+		touch(mp)
 		mvdBytes = data
 		meta.FromMVDTier = true
 	} else {
@@ -254,6 +367,7 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 			return nil, CacheMeta{}, fmt.Errorf("write tier-1: %w", err)
 		}
 		mvdBytes = data
+		c.maybeGC()
 	}
 
 	filename := fmt.Sprintf("%s.mvd.gz", sha)
@@ -262,7 +376,9 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 		return nil, CacheMeta{}, fmt.Errorf("parse: %w", err)
 	}
 	if data, err := encodeResult(r); err == nil {
-		_ = writeFileAtomic(rp, data, 0o644)
+		if writeErr := writeFileAtomic(rp, data, 0o644); writeErr == nil {
+			c.maybeGC()
+		}
 	}
 	c.mem.put(sha, r)
 	return r, meta, nil
@@ -294,11 +410,20 @@ func (c *Cache) EnsureLOS(ctx context.Context, id DemoID) (*result.Result, Cache
 
 	art := mustLazyArtifact("los")
 	if art.Computed(res) {
+		// Keep the on-disk artifact hot for the GC even when the latch on the
+		// in-memory Result short-circuits the disk read.
+		touch(artifactPath(c.Root, art.Name(), sha))
 		return res, meta, nil
 	}
 	if c.tier3Load(sha, art, res) {
 		return res, meta, nil
 	}
+	// The raycast below is deliberately NOT bounded by parseSem: it is
+	// per-SHA-serialised (losLocks) but unbounded across distinct demos.
+	// Acquiring parseSem here while holding losLocks[sha] would interleave
+	// two lock families (cold parses hold parseSem without losLocks) —
+	// safe today but easy to regress; flagged for phase 14 instead of
+	// wrapped speculatively (see PLAN-api F15 follow-up in the phase report).
 	if err := art.Build(res, analyzer.MaterializeDeps{}); err != nil {
 		return nil, meta, fmt.Errorf("compute los: %w", err)
 	}
@@ -322,7 +447,8 @@ func mustLazyArtifact(name string) *analyzer.LazyArtifact {
 // failure (corrupt or drifted gob) is slog-warned and also treated as a miss,
 // so the caller recomputes rather than serving mismatched data.
 func (c *Cache) tier3Load(sha string, art *analyzer.LazyArtifact, res *result.Result) bool {
-	data, err := os.ReadFile(artifactPath(c.Root, art.Name(), sha))
+	ap := artifactPath(c.Root, art.Name(), sha)
+	data, err := os.ReadFile(ap)
 	if err != nil {
 		return false
 	}
@@ -330,6 +456,7 @@ func (c *Cache) tier3Load(sha string, art *analyzer.LazyArtifact, res *result.Re
 		slog.Warn("tier-3 artifact discarded", "artifact", art.Name(), "sha", sha, "err", err)
 		return false
 	}
+	touch(ap)
 	return true
 }
 
@@ -348,7 +475,9 @@ func (c *Cache) tier3Store(sha string, art *analyzer.LazyArtifact, res *result.R
 	}
 	if err := writeFileAtomic(artifactPath(c.Root, art.Name(), sha), data, 0o644); err != nil {
 		slog.Warn("tier-3 artifact write failed", "artifact", art.Name(), "sha", sha, "err", err)
+		return
 	}
+	c.maybeGC()
 }
 
 func (c *Cache) resolveDownloadInfo(id DemoID, stashed *hubfetch.GameInfo) (*hubfetch.GameInfo, error) {

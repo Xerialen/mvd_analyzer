@@ -6,12 +6,16 @@
 //
 //	mvd-api [flags]
 //	mvd-api version
+//	mvd-api cache stats [-cache-dir DIR]
+//	mvd-api cache prune [-cache-dir DIR] [-max-bytes N | -older-than 30d | -all]
 //
 // Flags:
 //
-//	-addr        listen address (default ":8080")
-//	-cache-dir   on-disk cache root (default $XDG_CACHE_HOME/qw-mvd or ~/.cache/qw-mvd)
-//	-log-format  text | json (default "text")
+//	-addr             listen address (default ":8080")
+//	-cache-dir        on-disk cache root (default $XDG_CACHE_HOME/qw-mvd or ~/.cache/qw-mvd)
+//	-cache-max-bytes  cache disk budget in bytes; background GC evicts when over (0 disables)
+//	-max-parses       max concurrent download+parse operations (0 = max(1, NumCPU/2))
+//	-log-format       text | json (default "text")
 //
 // See mvd-api/README.md for the endpoint surface.
 package main
@@ -29,6 +33,13 @@ func main() {
 			"tag":       GitTag,
 			"buildDate": BuildDate,
 		})
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "cache" {
+		if err := runCache(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 	if err := runServe(os.Args[1:]); err != nil {
