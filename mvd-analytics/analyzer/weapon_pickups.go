@@ -500,10 +500,13 @@ func (a *WeaponPickupsAnalyzer) Finalize(result *Result) error {
 		nextDeath := findNextAfter(deathsBySlot[p.pickerSlot], p.time)
 
 		pickerID := a.identityAt(p.pickerSlot, msTime(p.time))
+		// Born-correct team labels: the roster rewrites a duel participant's
+		// team (picker and dropper) to their own name. Formerly the
+		// normalizeDuelTeams weapon-pickups block.
 		entry := WeaponPickup{
 			Time:          msTime(p.time),
 			Player:        pickerID.Name,
-			Team:          pickerID.Team,
+			Team:          a.core.TeamFor(pickerID.Name, pickerID.Team),
 			Weapon:        p.weapon,
 			Source:        p.source,
 			HadBefore:     p.hadBefore,
@@ -517,7 +520,7 @@ func (a *WeaponPickupsAnalyzer) Finalize(result *Result) error {
 			if dropper := a.ctx.Players[p.dropperSlot]; dropper != nil {
 				dropperID := a.identityAt(p.dropperSlot, msTime(p.dropTime))
 				entry.Dropper = dropperID.Name
-				entry.DropperTeam = dropperID.Team
+				entry.DropperTeam = a.core.TeamFor(dropperID.Name, dropperID.Team)
 			}
 		}
 		out = append(out, entry)

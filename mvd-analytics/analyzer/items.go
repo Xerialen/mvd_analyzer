@@ -1353,7 +1353,9 @@ func (a *ItemAnalyzer) resolveAttributions(it *itemEntity) {
 		// get relabelled with whoever later took their old slot.
 		id := ResolveSlotAt(a.co, a.ctx.Players, pa.slot, it.phases[i].TakenAt)
 		it.phases[i].TakenBy = id.Name
-		it.phases[i].Team = id.Team
+		// Born-correct team label: the roster rewrites a duel participant's team
+		// to their own name. Formerly the normalizeDuelTeams items block.
+		it.phases[i].Team = a.co.TeamFor(id.Name, id.Team)
 	}
 }
 

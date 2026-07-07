@@ -138,32 +138,47 @@ func TestRebuildDuelMatch_FromDemoInfo(t *testing.T) {
 	}
 }
 
-// Pickup / shot data carries the raw userinfo team stamped at analyzer
-// Finalize time; the duel pass must re-point all of it at the synthetic
-// name-per-player teams or the frontend's team-keyed pickup aggregation
-// buckets everything under stale colour strings.
-func TestNormalizeDuelTeams_PickupAndShotTeamsRewritten(t *testing.T) {
+// Pickup / stream / message producers stamp raw userinfo teams and then apply
+// the roster label via co.TeamFor. This is the seam that replaced the per-
+// section normalizeDuelTeams pickup/item/backpack/message rewrites: a tracked
+// participant relabels to their own name, a non-participant (spectator, open
+// phase) keeps its raw team. Producers whose player key isn't a participant
+// name (or is empty) pass through unchanged.
+func TestRoster_TeamForRelabelsParticipants(t *testing.T) {
+	di := &DemoInfoResult{
+		Players: []DemoInfoPlayer{
+			{Name: "alice", Team: "green"},
+			{Name: "bob", Team: ""},
+		},
+	}
+	r := newRoster(di)
+	if !r.Duel() {
+		t.Fatalf("two demoinfo players should be a duel")
+	}
+	cases := []struct {
+		name, raw, want string
+	}{
+		{"alice", "green", "alice"}, // picker/dropper participant → own name
+		{"bob", "", "bob"},          // teamless participant → own name
+		{"", "", ""},                // open phase (no owner) → untouched
+		{"speccer", "obs", "obs"},   // non-participant spectator chat → raw team
+	}
+	for _, c := range cases {
+		if got := r.TeamFor(c.name, c.raw); got != c.want {
+			t.Errorf("TeamFor(%q,%q) = %q, want %q", c.name, c.raw, got, c.want)
+		}
+	}
+}
+
+// Shots team labels are still rewritten by normalizeDuelTeams until the shots
+// producer migrates (block h). A participant's raw team relabels to their name.
+func TestNormalizeDuelTeams_ShotTeamsRewritten(t *testing.T) {
 	r := &Result{
 		DemoInfo: &DemoInfoResult{
 			Players: []DemoInfoPlayer{
 				{Name: "alice", Team: "green"},
 				{Name: "bob", Team: ""},
 			},
-		},
-		Items: &ItemsResult{Items: []ItemTimeline{
-			{Kind: "ra", Phases: []ItemPhase{
-				{TakenAt: 1000, TakenBy: "alice", Team: "green"},
-				{TakenAt: 2000, TakenBy: "bob", Team: ""},
-				{AvailableFrom: 3000}, // open phase — untouched
-			}},
-		}},
-		WeaponPickups: []WeaponPickup{
-			{Player: "alice", Team: "green", Weapon: "rl", Source: "world"},
-			{Player: "bob", Team: "", Weapon: "rl", Source: "backpack",
-				Dropper: "alice", DropperTeam: "green"},
-		},
-		Backpacks: []BackpackDrop{
-			{Player: "alice", Team: "green", Weapon: "rl"},
 		},
 		Shots: &ShotsResult{
 			Shots:    []Shot{{Player: "bob", Team: "", Weapon: "sg"}},
@@ -172,23 +187,6 @@ func TestNormalizeDuelTeams_PickupAndShotTeamsRewritten(t *testing.T) {
 	}
 	normalizeDuelTeams(r, newRoster(r.DemoInfo))
 
-	phases := r.Items.Items[0].Phases
-	if phases[0].Team != "alice" || phases[1].Team != "bob" {
-		t.Errorf("item phase teams = %q/%q, want alice/bob", phases[0].Team, phases[1].Team)
-	}
-	if phases[2].Team != "" {
-		t.Errorf("open phase team = %q, want untouched empty", phases[2].Team)
-	}
-	if r.WeaponPickups[0].Team != "alice" {
-		t.Errorf("weaponPickups[0].Team = %q, want alice", r.WeaponPickups[0].Team)
-	}
-	if r.WeaponPickups[1].Team != "bob" || r.WeaponPickups[1].DropperTeam != "alice" {
-		t.Errorf("weaponPickups[1] teams = %q/%q, want bob/alice",
-			r.WeaponPickups[1].Team, r.WeaponPickups[1].DropperTeam)
-	}
-	if r.Backpacks[0].Team != "alice" {
-		t.Errorf("backpacks[0].Team = %q, want alice", r.Backpacks[0].Team)
-	}
 	if r.Shots.Shots[0].Team != "bob" || r.Shots.ByPlayer[0].Team != "alice" {
 		t.Errorf("shot teams = %q/%q, want bob/alice",
 			r.Shots.Shots[0].Team, r.Shots.ByPlayer[0].Team)

@@ -81,14 +81,14 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	// Derived consumers / independent peers.
 	"metadata":         {name: "metadata", tier: "derived"},
 	"match":            {name: "match", tier: "derived", requires: []string{"demoinfo"}},
-	"messages":         {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo"}},
+	"messages":         {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo", "roster"}},
 	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}},
-	"items":            {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
+	"items":            {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}},
 	"damage":           {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
 	"shots":            {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline"}},
 	"map_entities":     {name: "map-entities", tier: "derived"},
-	"backpacks":        {name: "backpacks", tier: "derived", requires: []string{"clock"}},
-	"weaponPickups":    {name: "weapon-pickups", tier: "derived", requires: []string{"clock", "identity", "frag"}},
+	"backpacks":        {name: "backpacks", tier: "derived", requires: []string{"clock", "roster"}},
+	"weaponPickups":    {name: "weapon-pickups", tier: "derived", requires: []string{"clock", "identity", "frag", "roster"}},
 }
 
 // postNodeMeta declares the DAG edges for each post-processor, keyed by
