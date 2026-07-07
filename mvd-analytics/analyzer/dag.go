@@ -297,6 +297,23 @@ func validateDAG(specs []nodeSpec) error {
 // Assumes validateDAG has passed (every Requires has a unique provider);
 // a remaining unschedulable node means a cycle, which is reported by name.
 func topoSortDAG(specs []nodeSpec) ([]nodeSpec, error) {
+	// Production tie-break: min registration index. Because registration
+	// order is itself a valid topological order, this reproduces it exactly.
+	return topoSortDAGTieBreak(specs, func(i, j int) bool {
+		return specs[i].regIndex < specs[j].regIndex
+	})
+}
+
+// topoSortDAGTieBreak is topoSortDAG with a caller-supplied tie-break:
+// among the ready (indegree-zero) nodes it schedules the one for which
+// prefer(i, j) reports i should come before every other ready j. All
+// declared edges are still respected, so every output is a valid
+// topological order regardless of the tie-break. The seam exists so
+// TestOrderIndependence can drive K seeded-random valid orders through
+// analyzeSource and prove the Result is schedule-free (and, continuously,
+// that the declared edge list is complete). Production always passes the
+// regIndex comparator via topoSortDAG.
+func topoSortDAGTieBreak(specs []nodeSpec, prefer func(i, j int) bool) ([]nodeSpec, error) {
 	n := len(specs)
 	provider := make(map[string]int, n*2)
 	for i, s := range specs {
@@ -328,7 +345,7 @@ func topoSortDAG(specs []nodeSpec) ([]nodeSpec, error) {
 			if done[i] || indeg[i] != 0 {
 				continue
 			}
-			if best == -1 || specs[i].regIndex < specs[best].regIndex {
+			if best == -1 || prefer(i, best) {
 				best = i
 			}
 		}
@@ -357,6 +374,9 @@ func topoSortDAG(specs []nodeSpec) ([]nodeSpec, error) {
 // (topo == registration), so driving from the sorted list is
 // byte-identical to the legacy slice iteration.
 func (r *Registry) execOrder() []nodeSpec {
+	if r.orderOverride != nil {
+		return r.orderOverride // test-only injected valid topo order
+	}
 	if r.nodes != nil {
 		return r.nodes
 	}
