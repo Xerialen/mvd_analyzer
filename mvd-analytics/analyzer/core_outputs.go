@@ -77,6 +77,14 @@ type CoreOutputs struct {
 	// registries / unit tests) — MatchStartMs / ToMatch are nil-safe and
 	// resolve to demo time in that case.
 	Clock *Clock
+
+	// Roster is the canonical player/team table with the duel (player-name-as-
+	// team) rewrite folded in (see roster.go). Produced by RosterAnalyzer, the
+	// last core node, so it sees the fully-populated DemoInfo. Every producer
+	// reads TeamFor to stamp final team labels at emission, replacing the old
+	// whole-Result normalizeDuelTeams rewrite. Nil when the roster analyser was
+	// not registered — TeamFor / Duel are nil-safe and pass raw teams through.
+	Roster *Roster
 }
 
 // MatchStartMs returns the demo→match shift published on the Clock, or 0 when

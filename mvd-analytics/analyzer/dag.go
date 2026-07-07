@@ -76,6 +76,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"demoinfo": {name: "demoinfo", tier: "core"},
 	"identity": {name: "identity", tier: "core", requires: []string{"demoinfo"}},
 	"frag":     {name: "frag", tier: "core", requires: []string{"clock", "demoinfo", "identity"}},
+	"roster":   {name: "roster", tier: "core", requires: []string{"demoinfo"}},
 
 	// Derived consumers / independent peers.
 	"metadata":         {name: "metadata", tier: "derived"},

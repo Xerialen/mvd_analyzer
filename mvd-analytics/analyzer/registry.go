@@ -328,6 +328,11 @@ func NewDefaultRegistry() *Registry {
 	// session table the discrete + stream outputs resolve against.
 	r.RegisterCore(NewIdentityAnalyzer())
 	r.RegisterCore(NewFragAnalyzer())
+	// Roster runs last in the core tier: its PopulateCore reads the fully
+	// populated co.DemoInfo (produced by demoinfo, above) to publish the
+	// canonical player/team table with the duel rewrite folded in, which every
+	// derived producer reads to stamp final team labels at emission.
+	r.RegisterCore(NewRosterAnalyzer())
 
 	// Derived: every other analyser. They consume CoreOutputs (via
 	// UseCoreOutputs) or are independent peers, and they never write

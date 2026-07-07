@@ -14,7 +14,7 @@ import (
 // is what makes Stage 1 a structurally-enforced zero-behaviour-change.
 var registrationOrder = []string{
 	// core
-	"clock", "demoinfo", "identity", "frag",
+	"clock", "demoinfo", "identity", "frag", "roster",
 	// derived
 	"metadata", "match", "messages", "timeline", "items", "damage",
 	"shots", "map-entities", "backpacks", "weapon-pickups",
