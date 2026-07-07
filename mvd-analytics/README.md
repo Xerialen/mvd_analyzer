@@ -653,82 +653,15 @@ not total acquisitions.
 
 ## Writing a new analyzer
 
-Implement the `analyzer.Analyzer` interface. Each analyzer writes
-its slice of `result.Result` directly from `Finalize`:
-
-```go
-type MyAnalyzer struct {
-    ctx *analyzer.Context
-}
-
-func (a *MyAnalyzer) Name() string { return "my" }
-
-func (a *MyAnalyzer) Init(ctx *analyzer.Context) error {
-    a.ctx = ctx
-    return nil
-}
-
-func (a *MyAnalyzer) OnEvent(ev events.Event) error {
-    switch e := ev.(type) {
-    case *events.PrintEvent:
-        _ = e
-    }
-    return nil
-}
-
-func (a *MyAnalyzer) Finalize(result *analyzer.Result) error {
-    result.My = &MyResult{ /* ... */ }
-    return nil
-}
-```
-
-If your analyzer needs to read another analyzer's output (frag entries,
-demoinfo player table, …), implement `CoreConsumer`. The registry
-hands you the running `*CoreOutputs` immediately before your `Finalize`
-runs:
-
-```go
-type MyAnalyzer struct {
-    ctx  *analyzer.Context
-    core *analyzer.CoreOutputs
-}
-
-func (a *MyAnalyzer) UseCoreOutputs(co *analyzer.CoreOutputs) {
-    a.core = co
-}
-```
-
-If your analyzer *produces* a field that other analyzers will consume,
-implement `CoreProducer`. The registry calls `PopulateCore` after your
-`Finalize` so analysers registered later in the pipeline see your
-output:
-
-```go
-func (a *MyAnalyzer) PopulateCore(co *analyzer.CoreOutputs) {
-    co.MyOutput = a.computed
-}
-```
-
-Then add the type to `result/` and register the analyzer. Choose
-`RegisterCore` for producers (anything implementing `CoreProducer`) and
-`RegisterDerived` for everything else:
-
-```go
-reg := analyzer.NewDefaultRegistry()
-reg.RegisterDerived(&MyAnalyzer{})
-```
-
-Core analysers finalize before any derived analyser. Within each slice
-registration order is preserved, so a later core entry can read a
-field populated by an earlier core entry (e.g. Frag reads `co.Names`
-produced by DemoInfo).
-
-If your analyzer is a post-pass that operates on the assembled Result
-(not on the event stream), register it via
-`reg.RegisterPostProcessor(func(*Result, *CoreOutputs))` instead.
-Built-ins like `recoverTelefragTeamkills` and `BuildLocGraph` are wired
-this way (see `analyzer/postprocess.go`);
-declare the new node's edges in `analyzer/dag.go` in the same change.
+See **[WRITING_AN_ANALYZER.md](WRITING_AN_ANALYZER.md)** — the end-to-end
+walkthrough: choosing inputs (raw events vs artifacts, with the
+`CoreOutputs` field → producing-node table), the `Analyzer` /
+`CoreConsumer` / `CoreProducer` interfaces, **declaring the node's edges
+in `analyzer/dag.go`** (mandatory — an undeclared analyzer panics at
+startup), eager vs lazy registration, and the schema/docs/tests
+checklist. The short version: implement the interface, add a `nodeMeta`
+entry with your `requires`, register anywhere (order is inventory, the
+DAG schedules), run `make artifacts-md`, `make test`.
 
 ## Loc files
 

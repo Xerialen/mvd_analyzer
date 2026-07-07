@@ -18,7 +18,8 @@ import "github.com/mvd-analyzer/mvd-reader/events"
 //
 // Adding a field here is the right place when an analyser's Finalize
 // would otherwise need to peek into another analyser's intermediate
-// state.
+// state. Keep the field → producing-node table in
+// WRITING_AN_ANALYZER.md §1 in sync when you do.
 type CoreOutputs struct {
 	// DemoInfo is the parsed KTX demoinfo JSON, populated from the
 	// demoinfo analyser's Finalize. Nil when the demo has no demoinfo
@@ -26,9 +27,9 @@ type CoreOutputs struct {
 	DemoInfo *DemoInfoResult
 
 	// Names resolves a display-name string back to its demoinfo team.
-	// Built once from DemoInfo so callers don't each rebuild their own
-	// nameToTeam map. Nil-safe: TeamForName returns "" when the table
-	// itself is nil.
+	// Produced by the demoinfo node (PopulateCore) alongside DemoInfo, so
+	// callers don't each rebuild their own nameToTeam map. Nil-safe:
+	// TeamForName returns "" when the table itself is nil.
 	Names *NameTable
 
 	// FragEntries is the canonical frag-event log emitted by the frag
@@ -38,13 +39,15 @@ type CoreOutputs struct {
 	FragEntries []FragEntry
 
 	// VictimNamedTeamkills are teamkill obituaries that name only the
-	// victim ("X was telefragged by his teammate"). The killer is the
+	// victim ("X was telefragged by his teammate"). Produced by the frag
+	// node alongside FragEntries. The killer is the
 	// generic "teammate", so they never enter FragEntries; the
 	// recoverTelefragTeamkills post-processor recovers the killer from
 	// position co-location + the teamkiller's -1 frag-delta.
 	VictimNamedTeamkills []FragEntry
 
-	// Slots is the per-slot resolved player view: Name is the demoinfo
+	// Slots is the per-slot resolved player view, produced by the
+	// demoinfo node (PopulateCore): Name is the demoinfo
 	// display name when the slot matches a demoinfo entry (via login or
 	// name join), otherwise the userinfo name from ctx.Players[slot].
 	// Team is the userinfo team (the demoinfo team override only kicks
