@@ -131,6 +131,15 @@ should cache aggressively and send `If-None-Match: "<etag>"` for a cheap
 `304`. A schema bump changes the ETag suffix and invalidates client
 caches automatically.
 
+Two families carry a **different ETag shape**:
+
+- The generic artifact endpoint (§4.17b) uses a **finer per-artifact** form
+  `"<sha>-<name>@v<schemaVersion>"` (e.g. `"abc…-frag@v49"`), so a client can
+  revalidate one artifact independently.
+- The binary-static endpoints `/v1/artifacts` and `/v1/graph` (§4.17) depend
+  only on the schema version, so their ETag is `"artifacts-v<n>"` /
+  `"graph-v<n>"` (no sha).
+
 ### 2.4 Errors
 
 Non-2xx responses use a stable envelope:
@@ -146,6 +155,7 @@ Non-2xx responses use a stable envelope:
 | 400 | `missing_param` | required param absent (e.g. `time` on `/state-at`) |
 | 404 | `demo_not_found` | hub has no row for this gameId |
 | 404 | `map_unavailable` | no entity corpus / geometry for this map (`/v1/maps/{map}/…`) |
+| 404 | `artifact_unknown` | no servable artifact of that name (`/v1/demos/{id}/artifacts/{name}`; see §4.17) |
 | 422 | `demoinfo_unavailable` | non-KTX server or aborted match |
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
@@ -723,6 +733,102 @@ UIs that have a map name from `/overview` or a match listing.
   `-maps-dir`; `404 map_unavailable` when unset or the map is missing.
   **REST-only — not an MCP tool** (the payload is large, up to tens of
   MB). Immutable cache + ETag; send `If-None-Match` for a 304.
+
+### 4.17 The artifact surface — `GET /v1/artifacts`, `/v1/graph`
+
+The analytics pipeline is an explicit DAG of **artifacts** (per-demo,
+parameter-free, cacheable results — `frags`, `damage`, `los`, …). These two
+endpoints expose the DAG itself; §4.17b serves any artifact generically. They
+carry **no demo** and are static per binary, so their ETag is keyed only on the
+schema version (`"artifacts-v<n>"` / `"graph-v<n>"`).
+
+**`GET /v1/artifacts`** — the manifest: one entry per DAG node. `resultKey` is
+the top-level Result JSON key the artifact lands under (`""` for internal
+pseudo-artifacts like `clock`/`roster` that are not served); `servable` is true
+when §4.17b can serve it (it has a `resultKey`, or it is one of the two lazy
+artifacts); `cost` is `heavy` for the two lazy passes (`los`, `shot-streams`)
+and `light` otherwise. The authoritative catalog (with descriptions) is the
+generated [`mvd-analytics/ARTIFACTS.md`](../mvd-analytics/ARTIFACTS.md).
+
+```jsonc
+{ "schemaVersion": 49, "artifacts": [
+  { "name": "clock", "tier": "core", "requires": null, "provides": ["clock"],
+    "mutates": false, "lazy": false, "cost": "light", "resultKey": "",
+    "servable": false, "description": "Match clock — match start/end, pauses, …" },
+  { "name": "demoinfo", "tier": "core", "requires": null, "provides": ["demoinfo"],
+    "mutates": false, "lazy": false, "cost": "light", "resultKey": "demoInfo",
+    "servable": true, "description": "KTX demoinfo scoreboard blob: …" },
+  // …
+  { "name": "shot-streams", "tier": "lazy", "requires": ["timeline","shots"],
+    "provides": ["shot-streams"], "mutates": false, "lazy": true, "cost": "heavy",
+    "resultKey": "", "servable": true, "description": "Spatial weapon-fire streams …" }
+] }
+```
+
+**`GET /v1/graph`** — the DAG as JSON: `{ nodes:[…], edges:[…] }`. Each node
+carries the manifest fields (`cost`, `resultKey`, `lazy`, `tier`, `mutates`);
+each edge is `{ from, to, artifact }` (the provider → consumer link for one
+required artifact). For a frontend "how does this connect" panel.
+
+```jsonc
+{ "nodes": [
+    { "name": "demoinfo", "requires": null, "provides": ["demoinfo"],
+      "mutates": false, "lazy": false, "tier": "core", "cost": "light",
+      "resultKey": "demoInfo" }, … ],
+  "edges": [ { "from": "demoinfo", "to": "identity", "artifact": "demoinfo" }, … ] }
+```
+
+### 4.17b `GET /v1/demos/{id}/artifacts/{name}` — the generic accessor
+
+Materialise and serve any **servable** artifact by name (the DAG node name from
+the manifest — e.g. `frag`, `damage`, `loc-graph`, `los`, `shot-streams`). This
+is a thin generic accessor, not a filtered view: the curated endpoints (§4.5 ff.)
+remain the ergonomic surface with their `players`/`weapon`/window params. Use
+this to reach an artifact that has no curated endpoint, or to enumerate the
+surface programmatically from the manifest.
+
+- **No query parameters.** Parameterised reads are views (§4.8–4.13); any query
+  param is a `400 invalid_param`.
+- **Closed registry.** `name` must be a servable artifact or you get
+  `404 artifact_unknown` — this includes internal nodes (`clock`, `roster`,
+  `identity`, the post-processor pseudo-artifacts). No user input reaches the
+  filesystem beyond the validated name.
+- **ETag** is the finer per-artifact form `"<sha>-<name>@v<n>"`.
+
+**Eager artifacts** serve their Result section under its `resultKey`, applying
+the same 422-vs-200 rule as the curated endpoints (an object-shaped section the
+demo lacks → `422 <section>_unavailable`; a list-shaped / always-computable
+section → `200` with a possibly-empty body):
+
+```jsonc
+// GET /v1/demos/{id}/artifacts/frag   → {"frags": FragResult}
+{ "frags": { "totalFrags": 43, "byPlayer": { … },
+    "frags": [ { "time": 13183, "killer": "GRID", "victim": "Evil's kid", "weapon": "rl" }, … ] } }
+```
+
+> Note: `frag` → `{"frags": …}`, `demoinfo` → `{"demoInfo": …}` — the body key is
+> the artifact's `resultKey`, not the node name. The `shots`/`aim` sections here
+> are the **lean** eager sections; the stream-enriched blocks come from the
+> `shot-streams` artifact below (or the curated `/shots`, `/aim`).
+
+**Lazy artifacts** (`los`, `shot-streams`) are materialised on demand exactly
+like `/los` and `/shots|/aim|/streams/*` (first request computes, then it is
+cached; `shot-streams` carries the `X-Shot-Streams: unavailable` degrade of
+§4.5c). `los` serves the same body as `/los`; `shot-streams` serves the streams
+plus the enriched shots/aim in one envelope:
+
+```jsonc
+// GET /v1/demos/{id}/artifacts/los          → identical to GET …/los
+{ "players": [ { "name": "Evil's kid", "los": [ … ], "pvs": [ … ] }, … ] }
+
+// GET /v1/demos/{id}/artifacts/shot-streams → the whole lazy unit
+{ "projectiles": { "w": ["rl","gl",…], "s":[…], "e":[…], "sx":[…], … },
+  "beams": { … }, "nails": { … },
+  "shots": ShotsResult, "aim": AimResult }   // any field null when the demo has none
+```
+
+Per-deployment disabling of `Heavy`-cost artifacts (plan §7) is **deferred** —
+there is no config knob yet; `los`/`shot-streams` are always reachable.
 
 ---
 

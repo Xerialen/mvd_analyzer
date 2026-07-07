@@ -49,7 +49,10 @@ Send `If-None-Match` to get a cheap 304. The stream-enriched endpoints
 (`/shots`, `/aim`, `/streams/*`) additionally set `X-Shot-Streams:
 unavailable` (+ `Cache-Control: no-store`) in the rare case the tier-1 MVD
 bytes were evicted and the streams could not be rebuilt — the body is then
-the lean data (see API.md §4.5c).
+the lean data (see API.md §4.5c). The generic artifact endpoint uses a finer
+ETag `"<sha>-<name>@v<n>"`, and the static `/v1/artifacts` and `/v1/graph`
+key their ETag on the schema version alone (`"artifacts-v<n>"` /
+`"graph-v<n>"`).
 
 | Method | Path | Query params | 200 body |
 |---|---|---|---|
@@ -82,6 +85,9 @@ the lean data (see API.md §4.5c).
 | GET | `/v1/demos/{id}/airgibs` | — | `[]result.AirgibEvent` (Key Moments: direct rocket hits on airborne victims, height-sorted; empty without the map BSP) |
 | GET | `/v1/maps/{map}/entities` | `types`, `kinds` | `result.MapEntitiesResult` (static layout by map name, no demo needed) |
 | GET | `/v1/maps/{map}/geometry` | — | `mapgeom.MapRegions` floor-polygon JSON (needs `-maps-dir`; REST-only) |
+| GET | `/v1/artifacts` | — | `{schemaVersion, artifacts:[…]}` — the DAG manifest (name, tier, cost, lazy, requires/provides, resultKey, servable); static, ETag `"artifacts-v<n>"` (API.md §4.17) |
+| GET | `/v1/graph` | — | `{nodes:[…], edges:[…]}` — the analyzer DAG as JSON; static, ETag `"graph-v<n>"` |
+| GET | `/v1/demos/{id}/artifacts/{name}` | — (params rejected) | the named servable artifact's section (generic accessor; closed registry, `404 artifact_unknown`; per-artifact ETag `"<sha>-<name>@v<n>"`) |
 
 ### Details → [`API.md`](API.md)
 

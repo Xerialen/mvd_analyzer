@@ -139,10 +139,12 @@ make build-all-platforms                    # cross-compile both mvd-api and mvd
 
 #### Tool surface
 
-Twenty-one tools — one for discovery, two for cache control + curated
+Twenty-three tools — one for discovery, two for cache control + curated
 summary, the high-level Result-section pass-throughs (KTX demoinfo,
 metadata, frags, damage, loc-graph, chat, backpacks, items, map entities,
-weapon-pickups), and six for the view query layer:
+weapon-pickups), six for the view query layer, and two generic
+DAG-artifact tools (`listArtifacts` + `getArtifact`) that reach any
+servable artifact by name:
 
 | Tool | Backing |
 |---|---|
@@ -170,6 +172,9 @@ weapon-pickups), and six for the view query layer:
 | `getStateAt(demoId, time, fields, …)` | `mvd-api` `/state-at` |
 | `getLocTrails(demoId, minDwellMs, …)` | `mvd-api` `/loc-trails` |
 | `getRegionControl(demoId, windowMs)` | `mvd-api` `/region-control` |
+| **Generic DAG artifacts** | |
+| `listArtifacts()` | `mvd-api` `GET /v1/artifacts` (the DAG manifest) |
+| `getArtifact(demoId, name)` | `mvd-api` `GET /v1/demos/{id}/artifacts/{name}` (any servable artifact by name) |
 
 **Full schemas live in three places:**
 

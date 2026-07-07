@@ -30,7 +30,7 @@ mvd-mcp version
 
 ## Tool surface
 
-Twenty-one tools. Inputs are typed Go structs with JSON-Schema inference
+Twenty-three tools. Inputs are typed Go structs with JSON-Schema inference
 (this file); outputs are passed through as opaque JSON — see
 [`../mvd-api/README.md`](../mvd-api/README.md) for the response shape
 of each per-demo endpoint, and
@@ -61,9 +61,27 @@ vocabulary, and the reducer registry.
 | `getLocTrails` | `mvd-api` `GET /v1/demos/{id}/loc-trails` |
 | `getLocTable` | `mvd-api` `GET /v1/demos/{id}/loc-table` |
 | `getRegionControl` | `mvd-api` `GET /v1/demos/{id}/region-control` |
+| `listArtifacts` | `mvd-api` `GET /v1/artifacts` |
+| `getArtifact` | `mvd-api` `GET /v1/demos/{id}/artifacts/{name}` |
 
 `demoId` is the string returned by `loadDemo` (`sha:HEX`) or any
 `gameId:NNNN` reference.
+
+### Curated tools vs. the generic artifact pair
+
+The first twenty-one tools are **curated**: each wraps one analytics
+section with a hand-written description and (where useful)
+`players`/`weapon`/window filters — that ergonomics is the product
+surface, and it stays. The last two are the **generic** DAG accessor:
+`listArtifacts` returns the pipeline manifest (every artifact's name,
+tier, cost, `resultKey`, and whether it is `servable`), and `getArtifact`
+fetches one servable artifact by name. This is how the automatic API
+surface (plan §7) is realized here: a **new** analytics artifact becomes
+reachable through `getArtifact` with **zero** new hand-written tools,
+while the common sections keep their rich curated tools. Prefer the
+curated tool when one exists (it filters and documents); reach for
+`getArtifact` for artifacts that have no dedicated tool. `getArtifact`
+takes no filters — parameterised reads are the curated view tools.
 
 Tool errors come back as MCP `isError: true` results with the
 upstream error message in `TextContent`. The model can read them and
@@ -368,6 +386,28 @@ Output: `result.RegionControlResult`. Errors with
 region layout. See RESULT_SCHEMA.md for the encoding of
 `bucketStates` (per-region one-char-per-bucket string) and `stats`
 (match-aggregate percentages).
+
+#### `listArtifacts({})`
+
+No parameters. Output: the DAG manifest
+`{ schemaVersion, artifacts: [{ name, tier, cost, lazy, requires,
+provides, mutates, resultKey, servable, description }, …] }`. Static per
+schema version. The authoritative catalog is the generated
+[`../mvd-analytics/ARTIFACTS.md`](../mvd-analytics/ARTIFACTS.md). Call
+this to discover artifacts beyond the curated tools.
+
+#### `getArtifact({demoId, name})`
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `demoId` | `string` (required) | — | — |
+| `name`   | `string` (required) | — | Artifact name from `listArtifacts` (e.g. `frag`, `damage`, `loc-graph`, `los`, `shot-streams`). Must be `servable`. |
+
+Output: the artifact's Result section under its `resultKey` (e.g.
+`name: "frag"` → `{ "frags": … }`). `los` / `shot-streams` are
+materialised on demand (first call may be slow). No filters — for
+filtered reads use the curated tools. Errors with `artifact_unknown`
+(HTTP 404) for an unknown or non-servable name.
 
 ### Why search bypasses mvd-api
 

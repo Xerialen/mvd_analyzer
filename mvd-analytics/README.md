@@ -212,6 +212,18 @@ are materialised on demand through the `LazyArtifact` hooks
 (`analyzer/materialize.go`), which back mvd-api's per-artifact tier-3 disk
 cache so a lazy compute survives a process restart or an LRU eviction.
 
+**The artifact catalog** — [`ARTIFACTS.md`](ARTIFACTS.md) — is the
+one document a contributor reads to add an analytic: every node's name,
+tier, cost, `resultKey`, dependency edges, and a one-line description,
+generated from the DAG metadata (`analyzer.ArtifactManifest`). It is
+**generated** (`make artifacts-md` / `qw-analyze -artifacts-md`) and a
+drift test keeps it current, so don't hand-edit it. mvd-api serves the
+same manifest at `GET /v1/artifacts` and any servable artifact at
+`GET /v1/demos/{id}/artifacts/{name}` (see [`../mvd-api/API.md`](../mvd-api/API.md)
+§4.17); an artifact with a `resultKey` (or either lazy artifact) becomes
+reachable there — and via the mvd-mcp `getArtifact` tool — automatically,
+no per-artifact endpoint or tool to hand-write.
+
 ### CoreOutputs shape
 
 ```go

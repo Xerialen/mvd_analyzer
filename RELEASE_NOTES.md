@@ -7,6 +7,28 @@ detail.
 
 ## 2026-07-07
 
+- **API: automatic artifact surface — the DAG is now self-describing and
+  generically servable (additive endpoints, no schema bump).** The analyzer
+  DAG is exposed as data (`analyzer.ArtifactManifest`), and mvd-api gains three
+  additive routes: `GET /v1/artifacts` (the manifest — every node's name, tier,
+  cost, `lazy`, requires/provides, `resultKey`, `servable`, description; static,
+  ETag `"artifacts-v<n>"`), `GET /v1/graph` (the DAG as `{nodes,edges}`, static),
+  and `GET /v1/demos/{id}/artifacts/{name}` — a generic accessor that
+  materialises and serves any servable artifact by name. The generic endpoint is
+  a closed registry (unknown/internal names → `404 artifact_unknown`; no user
+  input reaches the filesystem beyond the validated name), accepts **no** query
+  params (parameterised reads stay the view endpoints → `400 invalid_param`), and
+  carries a finer per-artifact ETag `"<sha>-<name>@v<n>"`; eager artifacts reuse
+  the curated 422-vs-200 availability convention, the two lazy artifacts route
+  through `EnsureLOS`/`EnsureShotStreams` (same degrade + bodies as `/los`,
+  `/shots`). mvd-mcp gains two matching tools — `listArtifacts` and
+  `getArtifact` — so a **new** analytics artifact becomes reachable everywhere
+  with zero new hand-written endpoints or tools; the curated tools/endpoints stay
+  the ergonomic surface and are byte-unchanged. New generated catalog
+  [`mvd-analytics/ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md)
+  (`make artifacts-md`, drift-tested). Per-deployment Heavy-disable knob deferred.
+  No schema bump.
+
 - **API: lazy artifacts (LOS, shot-streams) now persist across restarts and
   cache evictions — new tier-3 per-artifact cache (no schema change).** The two
   hand-rolled lazy passes are generalised into the DAG engine as `lazy` nodes
