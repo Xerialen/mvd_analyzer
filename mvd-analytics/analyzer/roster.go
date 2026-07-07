@@ -126,12 +126,32 @@ func (a *RosterAnalyzer) Init(ctx *Context) error { return nil }
 
 func (a *RosterAnalyzer) OnEvent(event events.Event) error { return nil }
 
-// Finalize is a no-op: the roster writes nothing of its own to Result.
+// Finalize is a no-op: the roster writes nothing of its own to Result. The
+// DemoInfo team rewrite is applied in PopulateCore (co.DemoInfo is the same
+// pointer demoinfo.Finalize wrote to result.DemoInfo).
 func (a *RosterAnalyzer) Finalize(result *Result) error { return nil }
 
 // PopulateCore builds and publishes the Roster from the demoinfo the demoinfo
-// analyser produced earlier in the core phase. Runs before any derived Finalize
-// or post-processor, so every producer sees a complete Roster.
+// analyser produced earlier in the core phase, and applies the duel rewrite to
+// the DemoInfo team labels it owns. Runs before any derived Finalize or
+// post-processor, so every producer sees a complete Roster and a duel-rewritten
+// DemoInfo.
 func (a *RosterAnalyzer) PopulateCore(co *CoreOutputs) {
-	co.Roster = newRoster(co.DemoInfo)
+	r := newRoster(co.DemoInfo)
+	co.Roster = r
+
+	// DemoInfo team rewrite (the old normalizeDuelTeams DemoInfo block). In a
+	// duel each player's team becomes their own name and DemoInfo.Teams is
+	// rebuilt as the one-player-per-team layout in player order. The NameTable
+	// (built from the raw teams earlier in demoinfo.PopulateCore) is left
+	// untouched, so producers still resolve raw teams and apply the roster label
+	// on top.
+	if r.isDuel && co.DemoInfo != nil {
+		for i := range co.DemoInfo.Players {
+			co.DemoInfo.Players[i].Team = co.DemoInfo.Players[i].Name
+		}
+		teams := make([]string, len(r.order))
+		copy(teams, r.order)
+		co.DemoInfo.Teams = teams
+	}
 }

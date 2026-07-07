@@ -33,84 +33,25 @@ package analyzer
 
 // normalizeDuelTeams rewrites teams to player-name-per-player if the
 // match is a 1v1. Call this after all analyzers have finalized and
-// populated `result`.
-func normalizeDuelTeams(result *Result) {
-	if !isDuelResult(result) {
+// populated `result`. The duel verdict and participant set come from the
+// roster (the core-tier table), so this shares one source of truth with
+// the producers that already stamp final labels at birth.
+//
+// The DemoInfo team rewrite (RosterAnalyzer.PopulateCore) and the
+// Match.Players participant rebuild (MatchAnalyzer.Finalize) have already
+// been migrated to the analyzers that own those results; this post-processor
+// carries only the sections not yet migrated to born-correct labels.
+func normalizeDuelTeams(result *Result, r *Roster) {
+	if !r.Duel() {
 		return
 	}
 
-	// Build the slot/name → synthetic team map. For 1v1 this is literally
-	// `name → name`, but keeping the indirection makes the rewrite loops
-	// below trivially extend to 1vN if we ever need it.
+	// Build the name → synthetic team map from the roster's participants. For
+	// 1v1 this is literally `name → name`, but keeping the indirection makes
+	// the rewrite loops below trivially extend to 1vN if we ever need it.
 	nameToTeam := map[string]string{}
-
-	if result.DemoInfo != nil {
-		for i := range result.DemoInfo.Players {
-			p := &result.DemoInfo.Players[i]
-			nameToTeam[p.Name] = p.Name
-			p.Team = p.Name
-		}
-		// Rebuild the DemoInfo.Teams list so it reflects the synthetic
-		// one-player-per-team layout. Order follows the player array.
-		teams := make([]string, 0, len(result.DemoInfo.Players))
-		for _, p := range result.DemoInfo.Players {
-			teams = append(teams, p.Name)
-		}
-		result.DemoInfo.Teams = teams
-	}
-
-	if result.Match != nil {
-		// MatchAnalyzer rejects players whose parser-side state looks
-		// like a spectator (empty team, no svc_updatefrags events) —
-		// that's how frogbots drop out of match.Players even though
-		// they played the whole demo. In duel mode we trust
-		// demoInfo.players as the source of truth for match
-		// participants (it's KTX's end-of-match snapshot and always
-		// includes every player it tracked stats for) and reconstruct
-		// match.Players from it, merging in any per-player frag count
-		// that MatchAnalyzer had already tracked.
-		existing := map[string]PlayerStat{}
-		for _, p := range result.Match.Players {
-			existing[p.Name] = p
-		}
-		rebuilt := make([]PlayerStat, 0, len(existing))
-		if result.DemoInfo != nil && len(result.DemoInfo.Players) > 0 {
-			for _, dp := range result.DemoInfo.Players {
-				ps, ok := existing[dp.Name]
-				if !ok {
-					ps = PlayerStat{Name: dp.Name}
-				}
-				ps.Team = dp.Name
-				if dp.Stats != nil {
-					ps.Frags = dp.Stats.Frags
-				}
-				rebuilt = append(rebuilt, ps)
-				if _, ok := nameToTeam[dp.Name]; !ok {
-					nameToTeam[dp.Name] = dp.Name
-				}
-			}
-		} else {
-			// No demoInfo to cross-check against — fall back to the
-			// MatchAnalyzer's original list, just rewriting teams.
-			for _, p := range result.Match.Players {
-				p.Team = p.Name
-				rebuilt = append(rebuilt, p)
-				if _, ok := nameToTeam[p.Name]; !ok {
-					nameToTeam[p.Name] = p.Name
-				}
-			}
-		}
-		result.Match.Players = rebuilt
-
-		// Rebuild match.Teams from the merged player list.
-		teams := make([]TeamStat, 0, len(result.Match.Players))
-		for _, p := range result.Match.Players {
-			teams = append(teams, TeamStat{
-				Name:  p.Name,
-				Frags: p.Frags,
-			})
-		}
-		result.Match.Teams = teams
+	for _, name := range r.Participants() {
+		nameToTeam[name] = name
 	}
 
 	// Rewrite per-stream team labels. Bots that played without a real

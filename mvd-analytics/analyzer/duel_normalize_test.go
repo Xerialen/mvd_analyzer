@@ -58,60 +58,64 @@ func TestIsDuelResult(t *testing.T) {
 	}
 }
 
-func TestNormalizeDuelTeams_DemoInfoRewrite(t *testing.T) {
-	r := &Result{
-		DemoInfo: &DemoInfoResult{
-			Teams: []string{"green", "kis"},
-			Players: []DemoInfoPlayer{
-				{Name: "alice", Team: "green"},
-				{Name: "bob", Team: "kis"},
-			},
+// The DemoInfo team rewrite moved from normalizeDuelTeams into
+// RosterAnalyzer.PopulateCore (the analyzer that owns DemoInfo). It must
+// stamp the synthetic one-player-per-team layout on a 1v1's DemoInfo.
+func TestRoster_DemoInfoRewrite(t *testing.T) {
+	di := &DemoInfoResult{
+		Teams: []string{"green", "kis"},
+		Players: []DemoInfoPlayer{
+			{Name: "alice", Team: "green"},
+			{Name: "bob", Team: "kis"},
 		},
 	}
-	normalizeDuelTeams(r)
+	co := &CoreOutputs{DemoInfo: di}
+	(&RosterAnalyzer{}).PopulateCore(co)
 
-	if len(r.DemoInfo.Players) != 2 {
-		t.Fatalf("expected 2 players, got %d", len(r.DemoInfo.Players))
+	if !co.Roster.Duel() {
+		t.Fatalf("two demoinfo players should be a duel")
 	}
-	for _, p := range r.DemoInfo.Players {
+	if len(di.Players) != 2 {
+		t.Fatalf("expected 2 players, got %d", len(di.Players))
+	}
+	for _, p := range di.Players {
 		if p.Team != p.Name {
 			t.Errorf("player %q has team %q, want %q", p.Name, p.Team, p.Name)
 		}
 	}
-	if len(r.DemoInfo.Teams) != 2 || r.DemoInfo.Teams[0] != "alice" || r.DemoInfo.Teams[1] != "bob" {
-		t.Errorf("DemoInfo.Teams = %v, want [alice bob]", r.DemoInfo.Teams)
+	if len(di.Teams) != 2 || di.Teams[0] != "alice" || di.Teams[1] != "bob" {
+		t.Errorf("DemoInfo.Teams = %v, want [alice bob]", di.Teams)
 	}
 }
 
-func TestNormalizeDuelTeams_MatchRebuildFromDemoInfo(t *testing.T) {
-	// Regression test: the LGC-vs-bot scenario where MatchAnalyzer dropped
-	// the bot entirely because its team was "" and it had no per-slot
-	// frag tracking. The normalizer should reconstruct the participant
-	// list from demoInfo so both players appear in match.players.
-	r := &Result{
-		DemoInfo: &DemoInfoResult{
-			Players: []DemoInfoPlayer{
-				{Name: "chr1s", Team: "blue",
-					Stats: &DemoInfoStats{Frags: 223, Kills: 150, Deaths: 15}},
-				{Name: "/ bro", Team: "",
-					Stats: &DemoInfoStats{Frags: 72, Kills: 15, Deaths: 39}},
-			},
-		},
-		Match: &MatchResult{
-			// MatchAnalyzer only saw chr1s — bot was filtered out.
-			Players: []PlayerStat{
-				{Name: "chr1s", Team: "blue", Frags: 223},
-			},
-			Teams: []TeamStat{{Name: "blue", Frags: 223}},
+// The Match.Players participant rebuild moved from normalizeDuelTeams into
+// MatchAnalyzer.Finalize (rebuildDuelMatch). Regression: the LGC-vs-bot
+// scenario where MatchAnalyzer dropped the bot entirely because its team was
+// "" and it had no per-slot frag tracking — the demoinfo-authoritative merge
+// must reconstruct both participants.
+func TestRebuildDuelMatch_FromDemoInfo(t *testing.T) {
+	di := &DemoInfoResult{
+		Players: []DemoInfoPlayer{
+			{Name: "chr1s", Team: "blue",
+				Stats: &DemoInfoStats{Frags: 223, Kills: 150, Deaths: 15}},
+			{Name: "/ bro", Team: "",
+				Stats: &DemoInfoStats{Frags: 72, Kills: 15, Deaths: 39}},
 		},
 	}
-	normalizeDuelTeams(r)
+	mr := &MatchResult{
+		// MatchAnalyzer only saw chr1s — bot was filtered out.
+		Players: []PlayerStat{
+			{Name: "chr1s", Team: "blue", Frags: 223},
+		},
+		Teams: []TeamStat{{Name: "blue", Frags: 223}},
+	}
+	rebuildDuelMatch(mr, di)
 
-	if len(r.Match.Players) != 2 {
-		t.Fatalf("match.Players after normalize: got %d players, want 2", len(r.Match.Players))
+	if len(mr.Players) != 2 {
+		t.Fatalf("match.Players after rebuild: got %d players, want 2", len(mr.Players))
 	}
 	names := map[string]PlayerStat{}
-	for _, p := range r.Match.Players {
+	for _, p := range mr.Players {
 		names[p.Name] = p
 	}
 	chr1s, ok := names["chr1s"]
@@ -129,8 +133,8 @@ func TestNormalizeDuelTeams_MatchRebuildFromDemoInfo(t *testing.T) {
 		t.Errorf("bro = %+v, want team=/ bro frags=72", bro)
 	}
 
-	if len(r.Match.Teams) != 2 {
-		t.Errorf("match.Teams has %d teams, want 2: %+v", len(r.Match.Teams), r.Match.Teams)
+	if len(mr.Teams) != 2 {
+		t.Errorf("match.Teams has %d teams, want 2: %+v", len(mr.Teams), mr.Teams)
 	}
 }
 
@@ -166,7 +170,7 @@ func TestNormalizeDuelTeams_PickupAndShotTeamsRewritten(t *testing.T) {
 			ByPlayer: []PlayerShots{{Player: "alice", Team: "green"}},
 		},
 	}
-	normalizeDuelTeams(r)
+	normalizeDuelTeams(r, newRoster(r.DemoInfo))
 
 	phases := r.Items.Items[0].Phases
 	if phases[0].Team != "alice" || phases[1].Team != "bob" {
@@ -222,7 +226,7 @@ func TestNormalizeDuelTeams_VictimKindsReclassified(t *testing.T) {
 			},
 		},
 	}
-	normalizeDuelTeams(r)
+	normalizeDuelTeams(r, newRoster(r.DemoInfo))
 
 	if r.Shots.Shots[0].VictimKinds != nil {
 		t.Errorf("all-enemy kinds should fold to omitted, got %v", r.Shots.Shots[0].VictimKinds)
@@ -242,26 +246,33 @@ func TestNormalizeDuelTeams_VictimKindsReclassified(t *testing.T) {
 	}
 }
 
-func TestNormalizeDuelTeams_NoOpForTeamMatches(t *testing.T) {
-	// 4 players → not a duel → normalizer should leave everything alone.
-	r := &Result{
-		DemoInfo: &DemoInfoResult{
-			Teams: []string{"red", "blue"},
-			Players: []DemoInfoPlayer{
-				{Name: "a", Team: "red"},
-				{Name: "b", Team: "red"},
-				{Name: "c", Team: "blue"},
-				{Name: "d", Team: "blue"},
-			},
+func TestRoster_NoOpForTeamMatches(t *testing.T) {
+	// 4 players → not a duel → roster leaves DemoInfo untouched, and TeamFor
+	// passes raw teams through.
+	di := &DemoInfoResult{
+		Teams: []string{"red", "blue"},
+		Players: []DemoInfoPlayer{
+			{Name: "a", Team: "red"},
+			{Name: "b", Team: "red"},
+			{Name: "c", Team: "blue"},
+			{Name: "d", Team: "blue"},
 		},
 	}
-	normalizeDuelTeams(r)
-	if r.DemoInfo.Teams[0] != "red" || r.DemoInfo.Teams[1] != "blue" {
-		t.Errorf("team names should not be rewritten for 4-player match: %v", r.DemoInfo.Teams)
+	co := &CoreOutputs{DemoInfo: di}
+	(&RosterAnalyzer{}).PopulateCore(co)
+
+	if co.Roster.Duel() {
+		t.Fatalf("4-player match must not be a duel")
 	}
-	for _, p := range r.DemoInfo.Players {
+	if di.Teams[0] != "red" || di.Teams[1] != "blue" {
+		t.Errorf("team names should not be rewritten for 4-player match: %v", di.Teams)
+	}
+	for _, p := range di.Players {
 		if p.Team == p.Name {
 			t.Errorf("player %q team rewritten to name in non-duel match", p.Name)
+		}
+		if got := co.Roster.TeamFor(p.Name, p.Team); got != p.Team {
+			t.Errorf("TeamFor(%q,%q)=%q, want raw team passthrough", p.Name, p.Team, got)
 		}
 	}
 }

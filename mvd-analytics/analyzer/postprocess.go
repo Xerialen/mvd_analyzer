@@ -15,8 +15,8 @@ import "github.com/mvd-analyzer/mvd-analytics/view"
 
 // duelTeamNormalize is the post-processor wrapper around
 // normalizeDuelTeams (defined in duel_normalize.go).
-func duelTeamNormalize(res *Result, _ *CoreOutputs) {
-	normalizeDuelTeams(res)
+func duelTeamNormalize(res *Result, co *CoreOutputs) {
+	normalizeDuelTeams(res, co.Roster)
 }
 
 // scoreboardStatsPost fills MatchResult.Players[].Kills/Deaths from the
