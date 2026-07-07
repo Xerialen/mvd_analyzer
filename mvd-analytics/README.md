@@ -251,7 +251,6 @@ flowchart TB
   end
   subgraph lazy["lazy (materialised on demand)"]
     los["los"]
-    shot_streams["shot-streams"]
   end
   clock -->|"clock"| backpacks
   clock -->|"clock"| damage
@@ -299,27 +298,29 @@ flowchart TB
   roster -->|"roster"| timeline
   roster -->|"roster"| weapon_pickups
   shots -->|"shots"| aim
-  shots -->|"shots"| shot_streams
   timeline -->|"timeline"| aim
   timeline -->|"timeline"| airgibs
   timeline -->|"timeline"| frags_final
   timeline -->|"timeline"| loc_graph
   timeline -->|"timeline"| los
   timeline -->|"timeline"| region_control
-  timeline -->|"timeline"| shot_streams
   timeline -->|"timeline"| shots
+
 ```
 <!-- dag-mermaid:end -->
 
 Dump the graph with `qw-analyze -graph mermaid` (a tier-grouped
 flowchart) or `-graph json` (`{nodes, edges}`); neither needs a demo. The
-two heavy lazy passes — `los` (`ComputeLOS`) and `shot-streams` (the
-shot/nail stream re-parse plus the rebuilt Shots/Aim, one variant) — are
-DAG nodes too, marked `lazy` and shown in a fourth graph tier. They do not
-run in the default parse (they stay out of the eager execution order); they
-are materialised on demand through the `LazyArtifact` hooks
-(`analyzer/materialize.go`), which back mvd-api's per-artifact tier-3 disk
-cache so a lazy compute survives a process restart or an LRU eviction.
+one heavy lazy pass — `los` (`ComputeLOS`, the per-player line-of-sight /
+PVS raycast) — is a DAG node too, marked `lazy` and shown in a fourth graph
+tier. It does not run in the default parse (it stays out of the eager
+execution order); it is materialised on demand through the `LazyArtifact`
+hooks (`analyzer/materialize.go`), which back mvd-api's per-artifact tier-3
+disk cache so the compute survives a process restart or an LRU eviction.
+(The spatial weapon-fire streams were a second lazy pass until phase 12
+folded them into the eager parse behind the `Registry.BuildShotStreams` /
+`BuildNails` flags — on for mvd-api and the WASM build, off for the default
+CLI parse; see `RESULT_SCHEMA.md` §Streams.)
 
 **The artifact catalog** — [`ARTIFACTS.md`](ARTIFACTS.md) — is the
 one document a contributor reads to add an analytic: every node's name,
@@ -329,7 +330,7 @@ generated from the DAG metadata (`analyzer.ArtifactManifest`). It is
 drift test keeps it current, so don't hand-edit it. mvd-api serves the
 same manifest at `GET /v1/artifacts` and any servable artifact at
 `GET /v1/demos/{id}/artifacts/{name}` (see [`../mvd-api/API.md`](../mvd-api/API.md)
-§4.17); an artifact with a `resultKey` (or either lazy artifact) becomes
+§4.17); an artifact with a `resultKey` (or the lazy `los` artifact) becomes
 reachable there — and via the mvd-mcp `getArtifact` tool — automatically,
 no per-artifact endpoint or tool to hand-write.
 

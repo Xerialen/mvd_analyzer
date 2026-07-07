@@ -200,7 +200,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "getArtifact",
-		Description: "Fetch one servable analytics artifact for a demo by its manifest name (from listArtifacts), e.g. frag, damage, loc-graph, los, shot-streams. Returns the artifact's Result section under its resultKey (los/shot-streams are materialised on demand; the first call may be slow). Takes no filters — for filtered/parameterised reads use the curated tools (getFrags players=..., getBuckets windowMs=..., etc.). Unknown or non-servable names error.",
+		Description: "Fetch one servable analytics artifact for a demo by its manifest name (from listArtifacts), e.g. frag, damage, loc-graph, los. Returns the artifact's Result section under its resultKey (los is materialised on demand; the first call may be slow). Takes no filters — for filtered/parameterised reads use the curated tools (getFrags players=..., getBuckets windowMs=..., etc.). Unknown or non-servable names error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetArtifactInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetArtifact(ctx, in)
 		return toolResult(out, err)

@@ -801,20 +801,25 @@ state, loc trails) are computed on demand from this storage by the
 | Players | `players` | []PlayerStream |
 | Global | `global` | GlobalStream |
 | Movers | `movers` | []MoverStream (brush-model lifts/doors/plats/trains; `omitempty`) |
-| Projectiles | `projectiles` | *ProjectileStreams (rocket/grenade flights; opt-in, `omitempty`) |
-| Beams | `beams` | *BeamStreams (LG bolts; opt-in, `omitempty`) |
-| Nails | `nails` | *ProjectileStreams (ng/sng spike flights; opt-in, `omitempty`) |
+| Projectiles | `projectiles` | *ProjectileStreams (rocket/grenade flights; `omitempty`) |
+| Beams | `beams` | *BeamStreams (LG bolts; `omitempty`) |
+| Nails | `nails` | *ProjectileStreams (ng/sng spike flights; `omitempty`) |
 
 `projectiles`, `beams` and `nails` are the spatial weapon-fire streams for the
-map view (schema v40). They are **opt-in** — built only when requested
-(`qw-analyze -include projectiles,beams`; the WASM map build) — because they
-are sizeable (thousands of beams/nails in a team game). All are columnar
-(parallel arrays, one entry per flight / bolt), times match-relative ms.
+map view (schema v40). They are sizeable (thousands of beams/nails in a team
+game), so whether they are built depends on the consumer: the **CLI** builds
+them only when requested (`qw-analyze -include projectiles,beams,nails`) to keep
+the default output and golden corpus lean; **mvd-api** builds all of them on
+every parse (the always-full cache — the +3–4% parse cost is worth deleting the
+old lazy re-parse); and the **WASM web build** builds all three
+(projectiles/beams/nails) so the map overlay and Aim tab are complete in the
+browser with no extra download. All are columnar (parallel arrays, one entry per
+flight / bolt), times match-relative ms.
 
-`nails` is its **own** request (`qw-analyze -include nails`), separate from the
-others, because nails are the highest volume. Enabling it also turns on
-ng/sng → damage linking (the same `-include nails` decodes spike packet
-entities / `svc_nails`, brackets each nail flight, and links it to its fire).
+Building `nails` (via `-include nails` on the CLI, or automatically under
+mvd-api / the WASM build) also turns on ng/sng → damage linking (it decodes
+spike packet entities / `svc_nails`, brackets each nail flight, and links it to
+its fire).
 The `nails` stream reuses the `ProjectileStreams` shape with `Weapon` =
 `"nail"` (svc_nails is untyped; ng vs sng is resolved from the damage type,
 not the model).

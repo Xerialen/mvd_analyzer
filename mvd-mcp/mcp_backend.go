@@ -208,7 +208,7 @@ type ListArtifactsInput struct{}
 // are the curated view tools).
 type GetArtifactInput struct {
 	DemoID string `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Name   string `json:"name" jsonschema:"artifact name from listArtifacts (e.g. frag, damage, loc-graph, los, shot-streams). Only 'servable' artifacts are reachable"`
+	Name   string `json:"name" jsonschema:"artifact name from listArtifacts (e.g. frag, damage, loc-graph, los). Only 'servable' artifacts are reachable"`
 }
 
 // SearchGamesInput hits hub.quakeworld.nu's Supabase directly — not

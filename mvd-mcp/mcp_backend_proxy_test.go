@@ -332,12 +332,12 @@ func TestProxy_GetArtifact(t *testing.T) {
 	b := newProxyBackend(srv.URL, "", 5*time.Second)
 
 	// Happy path: the body comes back under the artifact name's key.
-	out, err := b.GetArtifact(context.Background(), GetArtifactInput{DemoID: "gameId:42", Name: "shot-streams"})
+	out, err := b.GetArtifact(context.Background(), GetArtifactInput{DemoID: "gameId:42", Name: "los"})
 	if err != nil {
 		t.Fatalf("GetArtifact: %v", err)
 	}
-	if _, ok := out.(map[string]any)["shot-streams"]; !ok {
-		t.Errorf("expected shot-streams key, got %v", out)
+	if _, ok := out.(map[string]any)["los"]; !ok {
+		t.Errorf("expected los key, got %v", out)
 	}
 
 	// Unknown name → the mvd-api 404 surfaces as a proxyError.

@@ -401,10 +401,10 @@ this to discover artifacts beyond the curated tools.
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId` | `string` (required) | — | — |
-| `name`   | `string` (required) | — | Artifact name from `listArtifacts` (e.g. `frag`, `damage`, `loc-graph`, `los`, `shot-streams`). Must be `servable`. |
+| `name`   | `string` (required) | — | Artifact name from `listArtifacts` (e.g. `frag`, `damage`, `loc-graph`, `los`). Must be `servable`. |
 
 Output: the artifact's Result section under its `resultKey` (e.g.
-`name: "frag"` → `{ "frags": … }`). `los` / `shot-streams` are
+`name: "frag"` → `{ "frags": … }`). `los` is
 materialised on demand (first call may be slow). No filters — for
 filtered reads use the curated tools. Errors with `artifact_unknown`
 (HTTP 404) for an unknown or non-servable name.
