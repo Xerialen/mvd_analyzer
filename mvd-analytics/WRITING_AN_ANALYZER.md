@@ -30,8 +30,9 @@ Two kinds of input exist, and the choice shapes everything:
 
 Artifacts arrive two ways at Finalize time:
 
-**(a) `CoreOutputs` fields** — typed state from the core tier, handed to
-you via the `CoreConsumer` hook. The field → producing node map:
+**(a) `CoreOutputs` fields** — typed state published by producer nodes
+(today all in the core tier, but any analyzer tier can publish — see §2),
+handed to you via the `CoreConsumer` hook. The field → producing node map:
 
 | `co.` field | Produced by node | What it is |
 |---|---|---|
@@ -108,10 +109,22 @@ Conventions that matter:
 - **Absent ≠ error.** A demo without your signal leaves your section nil
   (`omitempty`); return an error only for real failures (it lands in
   `result.Errors`, sorted deterministically, and the run continues).
-- If your node *produces* state that other nodes should consume, put a
-  typed field on `CoreOutputs` and implement `CoreProducer`
-  (`PopulateCore` runs right after your Finalize). Register it in the
-  core tier and add the field to the table above.
+- If your node *produces* state that other nodes should consume, there
+  are two channels, and both work from **any** analyzer tier — the
+  engine applies the hooks identically to core and derived nodes, and
+  ordering comes from declared edges, not from the tier:
+  1. **A typed `CoreOutputs` field** + `CoreProducer` (`PopulateCore`
+     runs right after your Finalize; consumers finalized later see it).
+     Add the field to the table above. The core tier is the *convention*
+     for canonical state-reconstruction everyone consumes
+     (demoinfo/identity/frag/clock/roster); a derived producer is
+     legitimate when the audience is narrower.
+  2. **Your `result.*` section**, read by later nodes — the existing
+     derived→post pattern (`aim` reads `res.Shots`/`res.Streams`).
+  Either way the contract is the same: every consumer must declare
+  `requires: ["your-node"]` — that edge, not tier or registration order,
+  is what guarantees you ran first (and the shuffle test will catch a
+  consumer that forgets).
 - Determinism: iterate maps via sorted keys before emitting anything —
   the golden corpus pins your output byte-for-byte.
 
