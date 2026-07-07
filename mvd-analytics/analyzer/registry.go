@@ -4,6 +4,7 @@ import (
 	"io"
 	"reflect"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -50,6 +51,13 @@ type Registry struct {
 	// executes in registration order (see execOrder). See dag.go.
 	specs []nodeSpec
 	nodes []nodeSpec
+
+	// orderOverride, when non-nil, forces analyzeSource to drive execution
+	// (both the event pass and Finalize/post) from this node list instead
+	// of the derived topological order. It is a test-only seam used by
+	// TestOrderIndependence to feed a shuffled but still-valid topological
+	// order; production never sets it. Not part of any public API.
+	orderOverride []nodeSpec
 
 	// BuildShotStreams opts into the spatial weapon-fire streams
 	// (Streams.Projectiles / Streams.Beams) for the map view. Off by
@@ -300,7 +308,35 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 		}
 	}
 
+	canonicalizeErrors(result.Errors)
 	return result, nil
+}
+
+// canonicalizeErrors sorts Result.Errors into a schedule-independent
+// order. The three sinks (event-pass stream abort, per-node Finalize
+// failures, the region-control post-processor) all *append* during
+// execution, so their array order is the execution order — two valid
+// topological schedules would otherwise emit differently-ordered arrays
+// for the same demo, breaking the "output is a pure function of the demo"
+// property (enforced by TestOrderIndependence). Errors are diagnostics,
+// not data, so this is not a schema change.
+//
+// Rule (simplest correct one): the stream-abort entry, if present, sorts
+// first — it reports a truncated parse, the signal a consumer most needs
+// up front — and the remaining node/post errors sort lexicographically.
+func canonicalizeErrors(errs []string) {
+	if len(errs) < 2 {
+		return
+	}
+	const abortPrefix = "event stream aborted: "
+	sort.SliceStable(errs, func(i, j int) bool {
+		ai := strings.HasPrefix(errs[i], abortPrefix)
+		aj := strings.HasPrefix(errs[j], abortPrefix)
+		if ai != aj {
+			return ai // abort entry first
+		}
+		return errs[i] < errs[j]
+	})
 }
 
 // NewDefaultRegistry creates a registry with all default analyzers,
