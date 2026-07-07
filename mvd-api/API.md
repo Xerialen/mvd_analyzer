@@ -140,6 +140,13 @@ Two families carry a **different ETag shape**:
   only on the schema version, so their ETag is `"artifacts-v<n>"` /
   `"graph-v<n>"` (no sha).
 
+`POST /v1/demos/{id}` (the warm-up call) is a non-cacheable action: it
+returns `X-Cache` / `X-Schema-Version` but **no** `Cache-Control` / `ETag`.
+Error responses carry `Cache-Control: no-store` and no `ETag`.
+
+Every response — success or error — also carries `X-Request-Id: <hex>`,
+a per-request id echoed in the server access log (see §2.4).
+
 ### 2.4 Errors
 
 Non-2xx responses use a stable envelope:
@@ -166,7 +173,15 @@ Non-2xx responses use a stable envelope:
 | 422 | `region_control_unavailable` | no region-control layout for this map |
 | 422 | `airgibs_unavailable` | no timeline analysis (BSP-less maps return `[]`, not this) |
 | 502 | `hub_upstream` | network / 5xx from the hub |
-| 500 | `internal` / `panic` | unexpected |
+| 500 | `internal` | unexpected server error (see below) |
+
+**5xx bodies are generic.** A `500 internal` never echoes the underlying
+error text (it can embed local cache paths or upstream URLs). The body is a
+fixed message plus the request id — `"internal server error (request id
+<hex>)"` — and the real error is logged server-side keyed by that same
+`X-Request-Id`. Quote the id when reporting a problem. `4xx` messages stay
+specific and safe (they're user-actionable and path-free). The former
+`panic` code is gone: a handler panic is now a plain `500 internal`.
 
 (Schema v36 folded the former `view_error` code into `invalid_param`: a
 bad query parameter is one error class regardless of whether it failed
@@ -189,6 +204,22 @@ None. Data is public and read-only. The optional
 `Authorization: Bearer <label>` header (or `?label=`) is **not
 validated** — it's a non-secret source tag for the access log
 (`web-community`, `cli-script`, …).
+
+### 2.6 CORS (browser clients)
+
+The API is CORS-enabled for any origin — it's read-only and
+unauthenticated, so `*` is safe:
+
+```
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: ETag, X-Cache, X-Schema-Version, X-Request-Id
+```
+
+`Expose-Headers` is what lets browser JS actually read those response
+headers (notably `ETag`, for conditional GETs). Preflight `OPTIONS` on any
+path returns `204` with `Access-Control-Allow-Methods: GET, POST, OPTIONS`,
+`Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match`,
+and `Access-Control-Max-Age`. Preflight needs no auth.
 
 ---
 

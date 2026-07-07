@@ -12,20 +12,37 @@ binary).
 ## Usage
 
 ```
-mvd-api [-addr ADDR] [-cache-dir PATH] [-log-format text|json]
+mvd-api [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json]
 mvd-api version
+mvd-api cache stats [-cache-dir PATH]
+mvd-api cache prune [-cache-dir PATH] [-max-bytes N | -older-than 30d | -all]
 ```
 
 | Flag | Default | Description |
 |---|---|---|
-| `-addr`        | `:8080`                                 | Listen address |
-| `-cache-dir`   | `$XDG_CACHE_HOME/qw-mvd` or `~/.cache/qw-mvd` | On-disk cache root |
-| `-maps-dir`    | _(empty)_                               | Directory of per-map geometry JSON for `/v1/maps/{map}/geometry`; empty disables that endpoint (ship `dist/maps/` next to the binary to enable) |
-| `-log-format`  | `text`                                  | Access log format: `text` or `json` |
+| `-addr`             | `:8080`                                 | Listen address |
+| `-cache-dir`        | `$XDG_CACHE_HOME/qw-mvd` or `~/.cache/qw-mvd` | On-disk cache root |
+| `-cache-max-bytes`  | `21474836480` (20 GiB)                  | Disk budget for cache tiers 1–3; a background sweep evicts the oldest files (by mtime) when exceeded. `0` disables GC |
+| `-max-parses`       | `max(1, NumCPU/2)`                      | Max concurrent demo download+parse operations (bounds the expensive cold path; cache hits are unbounded) |
+| `-maps-dir`         | _(empty)_                               | Directory of per-map geometry JSON for `/v1/maps/{map}/geometry`; empty disables that endpoint (ship `dist/maps/` next to the binary to enable) |
+| `-log-format`       | `text`                                  | Access log format: `text` or `json` |
 
 Schema bumps in `mvd-analytics` invalidate the parsed-`Result` tier
 but keep the raw-MVD tier — the next access re-parses without
-re-downloading from the hub.
+re-downloading from the hub. On startup, tier-2 trees and tier-3
+artifact gobs left by past schema/format versions are deleted and the
+disk budget is enforced once.
+
+### Cache ops subcommands
+
+- `mvd-api cache stats` — per-tier file counts and bytes, plus the
+  current schema tree vs any orphaned `results/*` version trees.
+- `mvd-api cache prune` — reclaim disk without touching a running
+  server. Exactly one of: `-max-bytes N` (evict oldest to fit `N`
+  bytes, same sweep as the online GC), `-older-than 30d` (drop tier
+  files older than the given age; accepts `d`/`w`/`h`/…), `-all`
+  (wipe all three tiers, keep the gameId index). Orphaned version
+  trees and stale artifact gobs are always removed first.
 
 ## REST endpoints
 
@@ -45,7 +62,12 @@ All paths under the base URL (default `http://localhost:8080`). The
 Successful 2xx responses set `Cache-Control: public, max-age=86400,
 immutable`, `X-Schema-Version: <n>`, `X-Cache: HIT|WARM|MISS`, and
 `ETag: "<sha>-v<n>"` (where `<n>` is the current `CurrentSchemaVersion`).
-Send `If-None-Match` to get a cheap 304. The stream endpoints (`/shots`,
+Send `If-None-Match` to get a cheap 304. `POST /v1/demos/{id}` (the
+warm-up call) is not a cacheable resource: it carries `X-Cache` /
+`X-Schema-Version` but no `Cache-Control` / `ETag`. Every response also
+carries `X-Request-Id` (a per-request id echoed in the access log; a 500
+body cites it instead of internal error detail) and permissive CORS
+headers (see API.md §2.6). The stream endpoints (`/shots`,
 `/aim`, `/streams/*`) are plain reads off the always-full base parse (phase 12
 bakes the projectile/beam/nail streams into every cached Result), so they carry
 the same immutable headers as everything else — the old `X-Shot-Streams:
@@ -144,15 +166,23 @@ side-gob so its multi-second raycast survives a process restart or an LRU
 eviction: after the base `Result` is served from tier 2, `/los` splices the
 artifact from disk instead of recomputing (closing F8b). The effective version
 `EV` is the schema version, so a schema bump invalidates tier 3 exactly like
-tier 2; stale versions are simply never read. Orphaned `shot-streams@*.gob`
-side-gobs written by pre-phase-12 processes are **inert** — nothing resolves the
-`shot-streams` artifact anymore, so they are never read; a size-capped GC (the
-hosting-prep phase) will reap them. Per-node effective versions arrive with the
-DAG manifest work if node versions ever diverge from the schema.
+tier 2; stale versions are simply never read. Startup cleanup deletes any
+artifact gob whose `@v<EV>.gob` suffix is not current — including the
+`shot-streams@*.gob` side-gobs orphaned when phase 12 retired that artifact.
+Per-node effective versions arrive with the DAG manifest work if node versions
+ever diverge from the schema.
 
 A 4-on-4 demo typically occupies ~3–7 MB in tier 1 and ~3–10 MB in
-tier 2. There is no automatic eviction yet — a size-capped store / GC
-is planned as part of the hosting-prep work.
+tier 2. When the tier-1 + tier-2 + tier-3 total exceeds
+`-cache-max-bytes`, a background sweep evicts the oldest files first
+(ordered by mtime, which is bumped on every cache hit — atime is
+unreliable on relatime/noatime mounts). Each file is an independent
+eviction unit and every unit is reconstructible: dropping a tier-2 gob
+triggers a reparse from the retained MVD; dropping a tier-1 MVD still
+serves everything from its always-full gob; dropping a tier-3 artifact
+recomputes on the next `/los`. The gameId index is never evicted.
+Inspect and reclaim with the `cache stats` / `cache prune` subcommands
+above.
 
 ## Smoke tests
 

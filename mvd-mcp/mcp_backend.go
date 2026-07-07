@@ -159,7 +159,7 @@ type GetLocGraphInput struct {
 }
 
 // GetChatInput filters /v1/demos/{id}/chat by player, time window,
-// and chat kind (`say` / `teamsay`).
+// and chat kind (`chat` / `teamsay`).
 type GetChatInput struct {
 	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`

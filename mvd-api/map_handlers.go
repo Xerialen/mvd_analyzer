@@ -68,12 +68,32 @@ func (s *server) handleMapGeometry(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+// csvSetLower splits a comma-separated value into a set, trimming and
+// lowercasing each token — for filters matched against canonical lowercase
+// tokens (entity types, item kinds, categories) where the caller's case
+// shouldn't matter.
+func csvSetLower(v string) map[string]bool {
+	if v == "" {
+		return nil
+	}
+	out := map[string]bool{}
+	for _, p := range strings.Split(v, ",") {
+		p = strings.TrimSpace(strings.ToLower(p))
+		if p != "" {
+			out[p] = true
+		}
+	}
+	return out
+}
+
 // filterMapEntities applies optional types= / kinds= filters, returning
-// the input unchanged when neither is present.
+// the input unchanged when neither is present. Both param names resolve
+// case-insensitively (ciGet) so the API.md case-insensitivity promise holds
+// for /v1/maps/{map}/entities (?Types= works, not just ?types=).
 func filterMapEntities(in *result.MapEntitiesResult, r *http.Request) *result.MapEntitiesResult {
 	q := r.URL.Query()
-	typeSet := csvSetLower(q.Get("types"))
-	kindSet := csvSetLower(q.Get("kinds"))
+	typeSet := csvSetLower(ciGet(q, "types"))
+	kindSet := csvSetLower(ciGet(q, "kinds"))
 	if len(typeSet) == 0 && len(kindSet) == 0 {
 		return in
 	}

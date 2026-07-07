@@ -484,23 +484,6 @@ func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
-// csvSetLower is csvSet with each token lowercased — for filters
-// matched against canonical lowercase tokens (item names, kinds,
-// categories) where the caller's case shouldn't matter.
-func csvSetLower(v string) map[string]bool {
-	if v == "" {
-		return nil
-	}
-	out := map[string]bool{}
-	for _, p := range strings.Split(v, ",") {
-		p = strings.TrimSpace(strings.ToLower(p))
-		if p != "" {
-			out[p] = true
-		}
-	}
-	return out
-}
-
 func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {

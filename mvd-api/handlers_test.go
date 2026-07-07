@@ -1194,3 +1194,32 @@ func TestUnavailable_NoETag(t *testing.T) {
 		}
 	}
 }
+
+// TestLOS_NoStreams pins the nit: a demo with Streams == nil must return
+// {"players":[]}, not {"players":null} — on both the curated /los and the
+// generic /artifacts/los route (they share losBody).
+func TestLOS_NoStreams(t *testing.T) {
+	store := &fakeStore{byID: map[string]*result.Result{
+		"gameId:42": {SchemaVersion: result.CurrentSchemaVersion}, // no Streams
+	}}
+	srv := newTestServer(t, store)
+	defer srv.Close()
+
+	for _, path := range []string{"/v1/demos/gameId:42/los", "/v1/demos/gameId:42/artifacts/los"} {
+		body, status := getRaw(t, srv.URL+path)
+		if status != 200 {
+			t.Fatalf("GET %s: status = %d; want 200 (body=%s)", path, status, body)
+		}
+		var out struct {
+			Players *[]any `json:"players"`
+		}
+		if err := json.Unmarshal(body, &out); err != nil {
+			t.Fatalf("GET %s: decode: %v", path, err)
+		}
+		if out.Players == nil {
+			t.Errorf("GET %s: players is null; want []", path)
+		} else if len(*out.Players) != 0 {
+			t.Errorf("GET %s: players = %v; want empty", path, *out.Players)
+		}
+	}
+}

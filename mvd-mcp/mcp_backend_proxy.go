@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -140,12 +139,13 @@ func (p *proxyBackend) do(ctx context.Context, method, path string, query url.Va
 
 func shouldRetry(resp *http.Response, err error) bool {
 	if err != nil {
+		// Retry any transport error except a caller-driven cancel/timeout: a
+		// retry there would just race the same dead deadline. We deliberately
+		// do not distinguish net.Error from other errors — a non-net error out
+		// of http.Client.Do (e.g. a redirect-policy or body-read failure) is
+		// still worth one more attempt, and the retry budget is small.
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return false
-		}
-		var netErr net.Error
-		if errors.As(err, &netErr) {
-			return true
 		}
 		return true
 	}

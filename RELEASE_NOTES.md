@@ -25,6 +25,42 @@ detail.
 
 ## 2026-07-07
 
+- **mvd-api hosting-prep hardening (no schema change; transport/ops
+  hardening).** Prerequisites for exposing the API publicly; nothing in
+  the analytics output changes.
+  - **Cache quota + GC.** New `-cache-max-bytes` (default 20 GiB; `0`
+    disables). A background sweep evicts the oldest tier-1 MVDs, tier-2
+    gobs and tier-3 artifact gobs (ordered by mtime, bumped on every
+    cache hit — atime is unreliable on relatime/noatime mounts) once the
+    disk budget is exceeded, never blocking the request path. Startup
+    deletes tier-2 trees orphaned by past schema/format bumps (including
+    legacy suffix-less `v<N>` trees), stale-version tier-3 gobs (also the
+    retired `shot-streams@*` ones), and stale atomic-write temp files.
+    New `mvd-api cache stats` and `mvd-api cache prune [-max-bytes |
+    -older-than | -all]` ops subcommands.
+  - **Parse throttle.** New `-max-parses` (default `max(1, NumCPU/2)`): a
+    semaphore bounds concurrent demo download+parse operations so a storm
+    of distinct cold demos can't spawn unbounded parallel parses. Cache
+    hits are unaffected; rate limiting proper arrives with API keys.
+  - **Capped hub reads.** Demo downloads (CDN and `demo_source_url`) are
+    read through a 64 MiB `io.LimitReader`, so a broken or hostile
+    upstream can't OOM the process; over-cap responses are upstream
+    errors (`502`), never `404`.
+  - **CORS.** Permissive `Access-Control-Allow-Origin: *` with
+    `Expose-Headers` (ETag/X-Cache/X-Schema-Version/X-Request-Id) and
+    `OPTIONS` preflight, so browser clients on any origin can call the
+    API (API.md §2.6).
+  - **Error hygiene.** Every response carries `X-Request-Id`; `5xx`
+    bodies are now a generic message + that id (the real error, which can
+    embed cache paths / upstream URLs, goes to the server log only) —
+    covering the curated endpoints, the generic artifact endpoint, and
+    panics (the `panic` error code folds into `internal`). `4xx` messages
+    stay specific. Also: `POST /v1/demos/{id}` no longer carries
+    `Cache-Control`/`ETag`; error bodies no longer carry a stray `ETag`;
+    `/los` and `/artifacts/los` return `{"players":[]}` (not `null`) when
+    a demo has no streams; `/v1/maps/{map}/entities` now honours
+    case-insensitive `types`/`kinds` param names.
+
 - **API: the spatial weapon-fire streams are now built on every parse instead
   of behind a lazy re-parse (no schema bump, response bodies unchanged).**
   mvd-api parses each demo with `BuildShotStreams`+`BuildNails` on
