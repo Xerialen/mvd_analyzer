@@ -65,6 +65,19 @@ func cannedAPI(t *testing.T, recordAuth *string) *httptest.Server {
 	mux.HandleFunc("GET /v1/demos/{id}/weapon-pickups", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`[]`))
 	})
+	// Stage-4 generic artifact surface.
+	mux.HandleFunc("GET /v1/artifacts", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"schemaVersion":49,"artifacts":[{"name":"frag","servable":true,"resultKey":"frags"}]}`))
+	})
+	mux.HandleFunc("GET /v1/demos/{id}/artifacts/{name}", func(w http.ResponseWriter, r *http.Request) {
+		name := r.PathValue("name")
+		if name == "bogus" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":{"code":"artifact_unknown","message":"no servable artifact"}}`))
+			return
+		}
+		fmt.Fprintf(w, `{%q:{"ok":true}}`, name)
+	})
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -295,6 +308,63 @@ func TestProxy_GetBackpacks_WeaponCSV(t *testing.T) {
 	vals, _ := url.ParseQuery(seenQuery)
 	if vals.Get("weapon") != "rl,lg" {
 		t.Errorf("weapon=%q; want rl,lg (CSV set)", vals.Get("weapon"))
+	}
+}
+
+func TestProxy_ListArtifacts(t *testing.T) {
+	srv := cannedAPI(t, nil)
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	out, err := b.ListArtifacts(context.Background(), ListArtifactsInput{})
+	if err != nil {
+		t.Fatalf("ListArtifacts: %v", err)
+	}
+	m, ok := out.(map[string]any)
+	if !ok {
+		t.Fatalf("expected object, got %T", out)
+	}
+	if _, ok := m["artifacts"].([]any); !ok {
+		t.Errorf("missing artifacts array: %v", m)
+	}
+}
+
+func TestProxy_GetArtifact(t *testing.T) {
+	srv := cannedAPI(t, nil)
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	// Happy path: the body comes back under the artifact name's key.
+	out, err := b.GetArtifact(context.Background(), GetArtifactInput{DemoID: "gameId:42", Name: "shot-streams"})
+	if err != nil {
+		t.Fatalf("GetArtifact: %v", err)
+	}
+	if _, ok := out.(map[string]any)["shot-streams"]; !ok {
+		t.Errorf("expected shot-streams key, got %v", out)
+	}
+
+	// Unknown name → the mvd-api 404 surfaces as a proxyError.
+	if _, err := b.GetArtifact(context.Background(), GetArtifactInput{DemoID: "gameId:42", Name: "bogus"}); err == nil {
+		t.Error("expected error for unknown artifact")
+	}
+}
+
+// A malformed artifact name (path-splice / traversal) is rejected before any
+// HTTP call, like the demoId validation (F5).
+func TestProxy_GetArtifact_NameValidation(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	for _, name := range []string{"", "../secrets", "frag/../x", "Frag", "a b", "frags?x=1"} {
+		if _, err := b.GetArtifact(ctx, GetArtifactInput{DemoID: "gameId:42", Name: name}); err == nil {
+			t.Errorf("GetArtifact(name=%q): expected validation error", name)
+		}
+	}
+	if hits != 0 {
+		t.Errorf("invalid names reached the backend %d times; want 0", hits)
 	}
 }
 

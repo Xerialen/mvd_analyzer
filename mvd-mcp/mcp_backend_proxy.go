@@ -21,6 +21,12 @@ import (
 // it can be spliced into a proxy URL path.
 var demoIDRe = regexp.MustCompile(`^(gameId:\d+|sha:[0-9a-fA-F]{64})$`)
 
+// artifactNameRe accepts the kebab-case artifact names the DAG uses
+// (lowercase letters, digits, hyphens). Validated before splicing into the
+// proxy path so a malformed name can't reroute the request; the mvd-api
+// closed registry does the authoritative "is this servable" check (404).
+var artifactNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+
 // demoPath builds the "/v1/demos/<id><suffix>" proxy path for a
 // model-supplied demoID. It validates the id against the canonical forms
 // and PathEscapes it, so a malicious or malformed id (e.g.
@@ -476,6 +482,24 @@ func (p *proxyBackend) GetLocTrails(ctx context.Context, in GetLocTrailsInput) (
 
 func (p *proxyBackend) GetLocTable(ctx context.Context, in GetLocTableInput) (any, error) {
 	path, err := demoPath(in.DemoID, "/loc-table")
+	if err != nil {
+		return nil, err
+	}
+	return p.fetchOpaque(ctx, "GET", path, nil)
+}
+
+func (p *proxyBackend) ListArtifacts(ctx context.Context, _ ListArtifactsInput) (any, error) {
+	return p.fetchOpaque(ctx, "GET", "/v1/artifacts", nil)
+}
+
+func (p *proxyBackend) GetArtifact(ctx context.Context, in GetArtifactInput) (any, error) {
+	if in.Name == "" {
+		return nil, errors.New("name required")
+	}
+	if !artifactNameRe.MatchString(in.Name) {
+		return nil, fmt.Errorf("invalid artifact name %q", in.Name)
+	}
+	path, err := demoPath(in.DemoID, "/artifacts/"+url.PathEscape(in.Name))
 	if err != nil {
 		return nil, err
 	}

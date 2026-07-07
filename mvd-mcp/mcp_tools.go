@@ -184,6 +184,27 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 		out, err := b.GetRegionControl(ctx, in)
 		return toolResult(out, err)
 	})
+
+	// Generic DAG-artifact tools (Stage 4). The curated tools above stay the
+	// product surface — their hand-written descriptions and filter params give
+	// each section rich ergonomics. These two add a generic escape hatch: any
+	// NEW servable artifact becomes reachable via getArtifact with ZERO new
+	// hand-written tools. Discover names + shapes with listArtifacts first.
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "listArtifacts",
+		Description: "List every analytics artifact the pipeline can produce (the DAG manifest): name, tier, cost (light/heavy), lazy flag, requires/provides edges, and the resultKey it lands under. 'servable' artifacts are fetchable with getArtifact. Static per schema version. Use this to discover analytics beyond the curated tools; for the common sections prefer the dedicated tools (getFrags, getDamage, getAim, ...) which offer filters and richer descriptions.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in ListArtifactsInput) (*mcp.CallToolResult, any, error) {
+		out, err := b.ListArtifacts(ctx, in)
+		return toolResult(out, err)
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "getArtifact",
+		Description: "Fetch one servable analytics artifact for a demo by its manifest name (from listArtifacts), e.g. frag, damage, loc-graph, los, shot-streams. Returns the artifact's Result section under its resultKey (los/shot-streams are materialised on demand; the first call may be slow). Takes no filters — for filtered/parameterised reads use the curated tools (getFrags players=..., getBuckets windowMs=..., etc.). Unknown or non-servable names error.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetArtifactInput) (*mcp.CallToolResult, any, error) {
+		out, err := b.GetArtifact(ctx, in)
+		return toolResult(out, err)
+	})
 }
 
 // toolResult adapts (Out, error) to the SDK's tool-handler return

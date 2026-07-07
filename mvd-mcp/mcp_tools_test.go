@@ -90,6 +90,17 @@ func (f *fakeBackend) GetMapEntitiesByMap(_ context.Context, _ GetMapEntitiesByM
 func (f *fakeBackend) GetWeaponPickups(_ context.Context, _ GetWeaponPickupsInput) (any, error) {
 	return []any{}, nil
 }
+func (f *fakeBackend) ListArtifacts(_ context.Context, _ ListArtifactsInput) (any, error) {
+	return map[string]any{"schemaVersion": 49, "artifacts": []any{
+		map[string]any{"name": "frag", "servable": true, "resultKey": "frags"},
+	}}, nil
+}
+func (f *fakeBackend) GetArtifact(_ context.Context, in GetArtifactInput) (any, error) {
+	if in.Name == "" {
+		return nil, errors.New("name required")
+	}
+	return map[string]any{in.Name: map[string]any{}}, nil
+}
 
 // fakeSearcher is the default no-op searcher for backend-focused tests.
 type fakeSearcher struct {
@@ -163,6 +174,7 @@ func TestMCP_ListTools(t *testing.T) {
 		"getBackpacks", "getItems", "getMapEntitiesByMap", "getWeaponPickups",
 		"getBuckets", "getEvents", "getStreamSlice", "getStateAt",
 		"getLocTrails", "getLocTable", "getRegionControl",
+		"listArtifacts", "getArtifact",
 	}
 	got := map[string]bool{}
 	for _, tool := range res.Tools {
