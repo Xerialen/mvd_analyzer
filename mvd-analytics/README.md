@@ -196,11 +196,12 @@ and **derives the execution order** from it via a deterministic
 topological sort (Kahn's algorithm, ties broken by registration index).
 `analyzeSource` then drives Init / event-pass / Finalize / post-processing
 from that sorted node list, so the ordering can no longer silently drift
-from the declared dependencies. The derived order is identical to the
-historical registration order by construction (a test asserts this), so
-this is a zero-behaviour-change refactor. Post-processors still mutate the
-`Result` in place — each node is flagged `Mutates` as a temporary marker
-of debt a later stage removes.
+from the declared dependencies. Registration order is inventory only —
+the tie-break keeps the default schedule stable, but any valid
+topological order produces byte-identical output (see below), so a new
+node can be registered anywhere as long as its edges are declared.
+Post-processors still mutate the `Result` in place — each node is
+flagged `Mutates` as a temporary marker of debt a later stage removes.
 
 **Output is schedule-independent, and tested.** The Result is a pure
 function of the demo: any valid topological order of the DAG produces

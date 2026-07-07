@@ -9,9 +9,10 @@ import "fmt"
 // and derives a deterministic execution order from it instead of relying
 // on hand-ordered registration slices.
 //
-// Stage 1 is a zero-behaviour-change refactor: the derived topological
-// order is asserted (dag_test.go) to be byte-identical to today's
-// registration order, so the Result is unchanged. Post-processors still
+// The execution order is derived purely from the declared edges; the
+// output is a pure function of the demo under ANY valid topological
+// order (TestOrderIndependence), so registration order is inventory,
+// not a correctness mechanism. Post-processors still
 // mutate the assembled Result in place — every one is flagged
 // Mutates:true as a temporary marker of the debt Stage 2 (the clock /
 // roster refactor) removes.
@@ -200,8 +201,10 @@ func specFromMeta(m nodeMeta, regIndex int, a Analyzer, p ResultPostProcessor) n
 
 // collectSpecs wraps every registered analyzer and post-processor in a
 // nodeSpec, assigning regIndex in registration order (core, then derived,
-// then post-processors). The regIndex is the topo sort's tie-break, so
-// the derived order provably reproduces registration order (dag_test.go).
+// then post-processors). The regIndex is the topo sort's tie-break — an
+// arbitrary deterministic default kept for stable -graph output, log
+// readability and comparable PhaseTimings; output is identical under any
+// valid order (TestOrderIndependence).
 func (r *Registry) collectSpecs() []nodeSpec {
 	specs := make([]nodeSpec, 0, len(r.core)+len(r.derived)+len(r.postProcessors))
 	idx := 0
@@ -288,17 +291,17 @@ func validateDAG(specs []nodeSpec) error {
 }
 
 // topoSortDAG orders specs by Kahn's algorithm, breaking ties by
-// registration index. Because the registration order is itself a valid
-// topological order, the min-regIndex tie-break provably reproduces it
-// exactly while still verifying the declared edges are consistent with
-// it. The scan is index-based (no map iteration on the ordering path), so
+// registration index — an arbitrary deterministic tie-break (any valid
+// order yields identical output; see TestOrderIndependence). Determinism
+// is kept only so the default schedule, -graph output and PhaseTimings
+// stay stable run-to-run. The scan is index-based (no map iteration on the ordering path), so
 // the output is deterministic regardless of GOMAXPROCS / map seed.
 //
 // Assumes validateDAG has passed (every Requires has a unique provider);
 // a remaining unschedulable node means a cycle, which is reported by name.
 func topoSortDAG(specs []nodeSpec) ([]nodeSpec, error) {
 	// Production tie-break: min registration index. Because registration
-	// order is itself a valid topological order, this reproduces it exactly.
+	// order is used as the tie-break among ready nodes.
 	return topoSortDAGTieBreak(specs, func(i, j int) bool {
 		return specs[i].regIndex < specs[j].regIndex
 	})
@@ -370,9 +373,8 @@ func topoSortDAGTieBreak(specs []nodeSpec, prefer func(i, j int) bool) ([]nodeSp
 // execOrder returns the node list analyzeSource drives execution from:
 // the validated topological order for a default registry, or the raw
 // registration order for a hand-built one (NewRegistry + Register*),
-// which has no declared graph. The two coincide for the default registry
-// (topo == registration), so driving from the sorted list is
-// byte-identical to the legacy slice iteration.
+// which has no declared graph. Which valid order runs is immaterial to
+// the output (TestOrderIndependence).
 func (r *Registry) execOrder() []nodeSpec {
 	if r.orderOverride != nil {
 		return r.orderOverride // test-only injected valid topo order

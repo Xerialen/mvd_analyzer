@@ -386,14 +386,15 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterDerived(NewBackpackAnalyzer())
 	r.RegisterDerived(NewWeaponPickupsAnalyzer())
 
-	// Post-processors run in registration order on the assembled Result.
-	// Timestamps are already match-relative and the demo-start anchor is
-	// already written (every producer converts against co.Clock at Finalize),
-	// and team labels are already born correct (every producer converts against
-	// co.Roster at Finalize), so there is no longer a whole-Result time rebase
-	// or duel team rewrite here. Order still matters: telefrag-teamkill recovery
-	// runs first (it appends to the frag log the scoreboard then reads); locgraph
-	// and regionControl last.
+	// Post-processors operate on the assembled Result. Registration order
+	// here is INVENTORY, not scheduling: execution order is derived from the
+	// declared edges in dag.go, and any valid order produces byte-identical
+	// output (TestOrderIndependence) — e.g. telefrag-teamkill recovery runs
+	// before scoreboard-stats because the edge says so, not because of this
+	// list. Register new nodes wherever reads naturally; declare their edges
+	// in dag.go. Timestamps arrive match-relative and team labels born-final
+	// (co.Clock / co.Roster at each producer's Finalize), so there is no
+	// whole-Result rebase or duel rewrite here.
 	r.RegisterPostProcessor(recoverTelefragTeamkills)
 	// Line of sight is NOT a default post-processor — it is the heaviest
 	// position-derived pass and has no in-pipeline consumer, so it is computed
@@ -408,13 +409,12 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterPostProcessor(locGraphPost)
 	r.RegisterPostProcessor(regionControlPost)
 
-	// Make the pipeline's dependency DAG explicit: declare each node's
-	// Requires/Provides (dag.go), validate the wiring, and derive the
-	// execution order from it. The derived order equals this registration
-	// order by construction (dag_test.go), so behaviour is unchanged — the
-	// DAG turns silent mis-ordering into a startup panic. Panics on a
-	// wiring bug (a programmer error); a test asserts the default graph is
-	// valid so it can never ship.
+	// Declare each node's Requires/Provides (dag.go), validate the wiring,
+	// and derive the execution order from it — the DAG turns silent
+	// mis-ordering into a startup panic, and the output is identical under
+	// any valid order (TestOrderIndependence). Panics on a wiring bug (a
+	// programmer error); a test asserts the default graph is valid so it
+	// can never ship.
 	r.buildGraph()
 	return r
 }

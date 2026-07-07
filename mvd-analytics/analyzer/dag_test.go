@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-// registrationOrder is the canonical node order the default pipeline has
-// always run in: the core slice, then the derived slice, then the
-// post-processor slice, as registered in NewDefaultRegistry. The DAG's
-// derived topological order must equal this exactly (decision 4) — that
-// is what makes Stage 1 a structurally-enforced zero-behaviour-change.
+// registrationOrder is the expected node INVENTORY (used as a set by
+// TestDAGNodeInventory; the sequence shown is the default tie-break order
+// for readability). Since phase 10 the sequence is not a correctness
+// property — TestOrderIndependence proves any valid topological order
+// produces identical output.
 var registrationOrder = []string{
 	// core
 	"clock", "demoinfo", "identity", "frag", "roster",
@@ -44,18 +44,35 @@ func TestDefaultDAGValidates(t *testing.T) {
 	}
 }
 
-// TestDAGTopoOrderMatchesRegistration is the load-bearing Stage-1 check:
-// the topological order the engine derives is byte-identical to the
-// hand-ordered registration order (core, derived, post). If this passes,
-// driving execution from the DAG cannot change the Result.
-func TestDAGTopoOrderMatchesRegistration(t *testing.T) {
+// TestDAGNodeInventory pins the default registry's node SET (membership,
+// not sequence). The Stage-1 predecessor of this test asserted the derived
+// topological order equalled the registration order byte-for-byte — the
+// zero-behaviour-change certificate the initial DAG conversion needed. That
+// constraint is retired: TestOrderIndependence proves ANY valid order
+// yields identical output, so the registration list is inventory only and
+// a new node may be registered anywhere. What still matters is that the
+// expected node set (and with it ARTIFACTS.md / the manifest) is updated
+// deliberately when nodes are added or removed — which is what this
+// membership check makes explicit.
+func TestDAGNodeInventory(t *testing.T) {
 	r := NewDefaultRegistry()
 
-	if got := nodeNames(r.specs); !reflect.DeepEqual(got, registrationOrder) {
-		t.Fatalf("registration order drifted from expected:\n got:  %v\n want: %v", got, registrationOrder)
+	want := map[string]bool{}
+	for _, n := range registrationOrder {
+		want[n] = true
 	}
-	if got := nodeNames(r.nodes); !reflect.DeepEqual(got, registrationOrder) {
-		t.Fatalf("topological order != registration order:\n got:  %v\n want: %v", got, registrationOrder)
+	got := map[string]bool{}
+	for _, n := range nodeNames(r.specs) {
+		if got[n] {
+			t.Fatalf("duplicate node %q in registry", n)
+		}
+		got[n] = true
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("node set drifted:\n got:  %v\n want: %v", nodeNames(r.specs), registrationOrder)
+	}
+	if len(r.nodes) != len(r.specs) {
+		t.Fatalf("topo order lost nodes: %d != %d", len(r.nodes), len(r.specs))
 	}
 }
 
