@@ -7,6 +7,37 @@ detail.
 
 ## 2026-07-07
 
+- **API: the spatial weapon-fire streams are now built on every parse instead
+  of behind a lazy re-parse (no schema bump, response bodies unchanged).**
+  mvd-api parses each demo with `BuildShotStreams`+`BuildNails` on
+  (`internal/democache` `defaultParse`), so the projectile/beam/nail streams and
+  the stream-enriched `shots`/`aim` blocks are baked into the cached `Result`.
+  This costs ~+3–4% parse time and ~+5% cache size and **deletes** the lazy
+  `shot-streams` artifact, its full second parse on first request (2.4–5 s), the
+  two-state Shots/Aim, the degrade path, and the shipped caching bug it caused.
+  Behavioural notes for callers:
+  - **`/shots`, `/aim`, `/streams/{projectiles,beams,nails}` no longer pay a
+    second parse on the first request** — they are plain reads off the base
+    Result. Their bodies are byte-identical to before for a warm enriched demo
+    (mvd-api has served the enriched bodies on every request since phase 5.3).
+  - **The `X-Shot-Streams: unavailable` degrade header (and its
+    `Cache-Control: no-store`) is removed.** There is no rebuild that can fail on
+    evicted bytes anymore. Callers that sniffed the header should stop.
+  - **Local API caches re-parse each demo once.** The tier-2 path gained an
+    internal cache-format suffix (`results/v<N>f2/…`, `resultCacheFormat` in
+    `internal/democache/paths.go`) so lean pre-phase-12 gobs are never served as
+    full; they are ignored and re-parsed on next touch. No schema bump — the
+    ETag stays `"<sha>-v49"`. Stale `shot-streams@*.gob` tier-3 side-gobs are
+    inert until the hosting-prep GC reaps them.
+  - `los` is untouched: it stays a genuinely lazy tier-3 artifact (its ~2.5 s
+    raycast has no in-pipeline consumer). The generic artifact endpoint, the DAG
+    manifest, `-graph`, `ARTIFACTS.md`, and the mvd-mcp `getArtifact` vocabulary
+    drop `shot-streams` (now 22 nodes, 1 lazy).
+- **Web: the WASM parse now also builds nails (`BuildNails`), so the nail map
+  overlay lights up automatically and the Aim tab gains ng/sng rows** (generic
+  `shots`/`hits`/`hit %` columns — nail accuracy is approximate, so no
+  direct/splash split). Adds ~+3–4% to the in-browser parse, no extra download.
+
 - **Internal: the two fix-up post-processors now produce named FINAL
   artifacts instead of anonymously patching an earlier node (DAG contract
   clarification, no schema bump, byte-identical output).** Telefrag-teamkill
