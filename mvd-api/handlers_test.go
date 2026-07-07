@@ -277,8 +277,12 @@ func TestLoad(t *testing.T) {
 	if resp.Header.Get("X-Schema-Version") != fmt.Sprintf("%d", result.CurrentSchemaVersion) {
 		t.Errorf("X-Schema-Version = %q, want %d", resp.Header.Get("X-Schema-Version"), result.CurrentSchemaVersion)
 	}
-	if resp.Header.Get("ETag") == "" {
-		t.Errorf("ETag missing")
+	// A POST is not a cacheable resource: no ETag / Cache-Control (nit).
+	if got := resp.Header.Get("ETag"); got != "" {
+		t.Errorf("POST must not carry ETag, got %q", got)
+	}
+	if got := resp.Header.Get("Cache-Control"); got != "" {
+		t.Errorf("POST must not carry Cache-Control, got %q", got)
 	}
 	body, _ := io.ReadAll(resp.Body)
 	var m map[string]any
@@ -1043,5 +1047,150 @@ func TestDamage_FullAndFilters(t *testing.T) {
 	sw := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapon=stomp", 200)
 	if st, _ := sw["stomps"].([]any); len(st) != 1 {
 		t.Errorf("weapon=stomp stomps = %d, want 1", len(st))
+	}
+}
+
+// --- CORS (F17) ---
+
+func TestCORS_Preflight(t *testing.T) {
+	srv := newTestServer(t, storeWithStub())
+	defer srv.Close()
+
+	paths := []string{
+		"/v1/demos/gameId:42/overview",
+		"/v1/maps/dm6/entities",
+		"/v1/demos/gameId:42/artifacts/frag",
+	}
+	for _, path := range paths {
+		req, _ := http.NewRequest(http.MethodOptions, srv.URL+path, nil)
+		req.Header.Set("Origin", "https://example.com")
+		req.Header.Set("Access-Control-Request-Method", "GET")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("OPTIONS %s: %v", path, err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("OPTIONS %s: status %d; want 204", path, resp.StatusCode)
+		}
+		if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "*" {
+			t.Errorf("OPTIONS %s: Allow-Origin = %q; want *", path, got)
+		}
+		if got := resp.Header.Get("Access-Control-Allow-Methods"); !strings.Contains(got, "GET") {
+			t.Errorf("OPTIONS %s: Allow-Methods = %q; want it to include GET", path, got)
+		}
+		if got := resp.Header.Get("Access-Control-Allow-Headers"); !strings.Contains(got, "Authorization") {
+			t.Errorf("OPTIONS %s: Allow-Headers = %q; want it to include Authorization", path, got)
+		}
+		if resp.Header.Get("Access-Control-Max-Age") == "" {
+			t.Errorf("OPTIONS %s: missing Access-Control-Max-Age", path)
+		}
+	}
+}
+
+func TestCORS_ActualGET(t *testing.T) {
+	srv := newTestServer(t, storeWithStub())
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/v1/demos/gameId:42/overview", nil)
+	req.Header.Set("Origin", "https://example.com")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Errorf("Allow-Origin = %q; want *", got)
+	}
+	expose := resp.Header.Get("Access-Control-Expose-Headers")
+	for _, h := range []string{"ETag", "X-Cache", "X-Schema-Version", "X-Request-Id"} {
+		if !strings.Contains(expose, h) {
+			t.Errorf("Expose-Headers %q missing %q", expose, h)
+		}
+	}
+}
+
+// --- 5xx hygiene + request id (F19) ---
+
+func TestInternalError_GenericBodyWithRequestID(t *testing.T) {
+	// An unclassified store error must not leak its text (it can embed cache
+	// paths / upstream URLs); the client gets a generic body + the request id
+	// and the real error goes to the log only.
+	const secret = "write tier-1: /home/ops/.cache/qw-mvd/mvd/ab/deadbeef.mvd.gz: no space left"
+	srv := newTestServer(t, &fakeStore{err: errors.New(secret)})
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/v1/demos/gameId:42/overview")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("status %d; want 500 (body=%s)", resp.StatusCode, string(body))
+	}
+	id := resp.Header.Get("X-Request-Id")
+	if id == "" {
+		t.Errorf("missing X-Request-Id header")
+	}
+	if strings.Contains(string(body), secret) || strings.Contains(string(body), "/home/ops") {
+		t.Errorf("500 body leaked internal error text: %s", string(body))
+	}
+	if id != "" && !strings.Contains(string(body), id) {
+		t.Errorf("500 body %q does not cite request id %q", string(body), id)
+	}
+}
+
+// TestInternalError_ArtifactRoute pins the same hygiene on the generic
+// artifact surface: a lazy-artifact store failure serves the generic 500,
+// not the underlying error text.
+func TestInternalError_ArtifactRoute(t *testing.T) {
+	const secret = "compute los: bsp mmap failed at /var/lib/mvd/maps/dm3.bsp"
+	srv := newTestServer(t, &fakeStore{err: errors.New(secret)})
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/v1/demos/gameId:42/artifacts/los")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("status %d; want 500 (body=%s)", resp.StatusCode, string(body))
+	}
+	if strings.Contains(string(body), "/var/lib/mvd") {
+		t.Errorf("artifact 500 body leaked internal error text: %s", string(body))
+	}
+	if id := resp.Header.Get("X-Request-Id"); id == "" || !strings.Contains(string(body), id) {
+		t.Errorf("artifact 500 body %q does not cite request id %q", string(body), id)
+	}
+}
+
+// TestUnavailable_NoETag pins the nit: a 422 error body must not carry the
+// ETag that setCacheHeaders / setArtifactCacheHeaders set on the success
+// path before the availability check runs (writeError strips it). Covers
+// both the curated endpoint and the generic artifact endpoint.
+func TestUnavailable_NoETag(t *testing.T) {
+	store := &fakeStore{byID: map[string]*result.Result{
+		"gameId:42": {SchemaVersion: result.CurrentSchemaVersion}, // no DemoInfo → 422
+	}}
+	srv := newTestServer(t, store)
+	defer srv.Close()
+
+	for _, path := range []string{"/v1/demos/gameId:42/demoinfo", "/v1/demos/gameId:42/artifacts/demoinfo"} {
+		resp, err := http.Get(srv.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != 422 {
+			t.Fatalf("GET %s: status = %d; want 422", path, resp.StatusCode)
+		}
+		if got := resp.Header.Get("ETag"); got != "" {
+			t.Errorf("GET %s: 422 response must not carry ETag, got %q", path, got)
+		}
+		if got := resp.Header.Get("Cache-Control"); got != "no-store" {
+			t.Errorf("GET %s: 422 Cache-Control = %q; want no-store", path, got)
+		}
 	}
 }

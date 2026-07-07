@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -39,12 +38,37 @@ type errorEnvelope struct {
 	Error httpError `json:"error"`
 }
 
-// writeError emits the error envelope and the appropriate status.
+// writeError emits the error envelope and the appropriate status. It also
+// strips any ETag a success-path header helper may have set before the
+// error was decided (setCacheHeaders/setArtifactCacheHeaders run in
+// resolveDemo / handleArtifact before the availability check that can 422):
+// an ETag on an error body is misleading, and no-store already disables
+// caching.
 func writeError(w http.ResponseWriter, status int, code, msg string) {
+	w.Header().Del("ETag")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(errorEnvelope{Error: httpError{Code: code, Message: msg}})
+}
+
+// genericInternalMsg is the client-facing body for any 5xx: no cache paths
+// or upstream URLs, just the request id so an operator can find the real
+// error in the server log (F19).
+func genericInternalMsg(id string) string {
+	if id == "" {
+		return "internal server error"
+	}
+	return "internal server error (request id " + id + ")"
+}
+
+// writeInternal logs the real error against the request id and returns the
+// generic 5xx body — the single 500 path for the handler layer (F19).
+func (s *server) writeInternal(w http.ResponseWriter, r *http.Request, err error) {
+	id := requestID(r.Context())
+	s.logger.Error("internal error",
+		"request_id", id, "method", r.Method, "path", r.URL.Path, "err", err.Error())
+	writeError(w, http.StatusInternalServerError, "internal", genericInternalMsg(id))
 }
 
 // writeJSON emits a JSON body with the standard cache headers (set by
@@ -67,7 +91,7 @@ func (s *server) resolveDemo(w http.ResponseWriter, r *http.Request) (*result.Re
 	}
 	res, meta, err := s.store.GetResult(r.Context(), id)
 	if err != nil {
-		mapStoreError(w, err)
+		s.mapStoreError(w, r, err)
 		return nil, democache.CacheMeta{}, false
 	}
 	setCacheHeaders(w, meta)
@@ -90,7 +114,11 @@ func revalidated(w http.ResponseWriter, r *http.Request, meta democache.CacheMet
 	return false
 }
 
-func mapStoreError(w http.ResponseWriter, err error) {
+// mapStoreError maps a democache error to its HTTP status. The 4xx/502
+// branches carry the specific (user-actionable, path-free) message; only
+// the unclassified default is a 5xx, where the real error goes to the log
+// and the client gets the generic request-id body (F19).
+func (s *server) mapStoreError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, democache.ErrInvalidDemoID):
 		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
@@ -99,7 +127,7 @@ func mapStoreError(w http.ResponseWriter, err error) {
 	case errors.Is(err, democache.ErrHubUpstream):
 		writeError(w, http.StatusBadGateway, "hub_upstream", err.Error())
 	default:
-		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		s.writeInternal(w, r, err)
 	}
 }
 
@@ -108,12 +136,12 @@ func mapStoreError(w http.ResponseWriter, err error) {
 // and anything else to 500. This is the HTTP face of the R3 rule —
 // object-shaped sections that require a capability return 422 when it's
 // absent; always-computable / list sections return 200 with an empty body.
-func writeUnavailable(w http.ResponseWriter, err error, code, msg string) {
+func (s *server) writeUnavailable(w http.ResponseWriter, r *http.Request, err error, code, msg string) {
 	if errors.Is(err, view.ErrUnavailable) {
 		writeError(w, http.StatusUnprocessableEntity, code, msg)
 		return
 	}
-	writeError(w, http.StatusInternalServerError, "internal", err.Error())
+	s.writeInternal(w, r, err)
 }
 
 // writeInvalidParam writes the 400 invalid_param envelope for a non-nil
@@ -128,17 +156,22 @@ func writeInvalidParam(w http.ResponseWriter, err error) bool {
 	return true
 }
 
+// cacheState is the X-Cache value for the tier that served meta.
+func cacheState(meta democache.CacheMeta) string {
+	switch {
+	case meta.FromCache:
+		return "HIT"
+	case meta.FromMVDTier:
+		return "WARM"
+	default:
+		return "MISS"
+	}
+}
+
 func setCacheHeaders(w http.ResponseWriter, meta democache.CacheMeta) {
 	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
 	w.Header().Set("X-Schema-Version", fmt.Sprintf("%d", meta.SchemaVersion))
-	switch {
-	case meta.FromCache:
-		w.Header().Set("X-Cache", "HIT")
-	case meta.FromMVDTier:
-		w.Header().Set("X-Cache", "WARM")
-	default:
-		w.Header().Set("X-Cache", "MISS")
-	}
+	w.Header().Set("X-Cache", cacheState(meta))
 	w.Header().Set("ETag", fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion))
 }
 
@@ -170,10 +203,14 @@ func (s *server) handleLoad(w http.ResponseWriter, r *http.Request) {
 	}
 	_, meta, err := s.store.GetResult(r.Context(), id)
 	if err != nil {
-		mapStoreError(w, err)
+		s.mapStoreError(w, r, err)
 		return
 	}
-	setCacheHeaders(w, meta)
+	// A POST is not a cacheable resource: no Cache-Control/ETag here (they'd
+	// be meaningless-to-misleading on the warm-up call). Keep the informational
+	// tier + schema headers.
+	w.Header().Set("X-Schema-Version", fmt.Sprintf("%d", meta.SchemaVersion))
+	w.Header().Set("X-Cache", cacheState(meta))
 	writeJSON(w, http.StatusOK, map[string]any{
 		"demoId":        "sha:" + meta.SHA256,
 		"sha256":        meta.SHA256,
@@ -200,7 +237,7 @@ func (s *server) handleMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 	md, err := view.Metadata(res)
 	if err != nil {
-		writeUnavailable(w, err, "metadata_unavailable",
+		s.writeUnavailable(w, r, err, "metadata_unavailable",
 			"this demo has no metadata (no fullserverinfo / no countdown centerprint)")
 		return
 	}
@@ -217,7 +254,7 @@ func (s *server) handleLocGraph(w http.ResponseWriter, r *http.Request) {
 	}
 	lg, err := view.LocGraph(res)
 	if err != nil {
-		writeUnavailable(w, err, "locgraph_unavailable",
+		s.writeUnavailable(w, r, err, "locgraph_unavailable",
 			"this demo has no loc graph (probably no position track was emitted)")
 		return
 	}
@@ -245,7 +282,7 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 		Weapons: parseCSV(ciGet(q, "weapon")),
 	})
 	if err != nil {
-		writeUnavailable(w, err, "frags_unavailable", "this demo has no frag log")
+		s.writeUnavailable(w, r, err, "frags_unavailable", "this demo has no frag log")
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -273,7 +310,7 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 		Weapons: parseCSV(ciGet(q, "weapon")),
 	})
 	if err != nil {
-		writeUnavailable(w, err, "damage_unavailable",
+		s.writeUnavailable(w, r, err, "damage_unavailable",
 			"this demo has no damage data (no KTX mvdhidden_dmgdone stream)")
 		return
 	}
@@ -296,7 +333,7 @@ func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
 	}
 	sh, err := view.Shots(res)
 	if err != nil {
-		writeUnavailable(w, err, "shots_unavailable",
+		s.writeUnavailable(w, r, err, "shots_unavailable",
 			"this demo has no shot data (no weapon fires decoded)")
 		return
 	}
@@ -318,7 +355,7 @@ func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
 	}
 	am, err := view.Aim(res)
 	if err != nil {
-		writeUnavailable(w, err, "aim_unavailable",
+		s.writeUnavailable(w, r, err, "aim_unavailable",
 			"this demo has no aim data (needs shots + position/view streams)")
 		return
 	}
@@ -366,7 +403,7 @@ func (s *server) handleDemoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	di, err := view.DemoInfo(res)
 	if err != nil {
-		writeUnavailable(w, err, "demoinfo_unavailable",
+		s.writeUnavailable(w, r, err, "demoinfo_unavailable",
 			"this demo has no KTX demoinfo block (likely non-KTX or pre-match abort)")
 		return
 	}
@@ -590,7 +627,7 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 	}
 	res, meta, err := s.store.EnsureLOS(r.Context(), id)
 	if err != nil {
-		mapStoreError(w, err)
+		s.mapStoreError(w, r, err)
 		return
 	}
 	setCacheHeaders(w, meta)
@@ -611,7 +648,7 @@ func losBody(res *result.Result) any {
 	}
 	out := struct {
 		Players []losPlayer `json:"players"`
-	}{}
+	}{Players: []losPlayer{}} // never null: the doc + API.md promise a players array
 	if res.Streams != nil {
 		out.Players = make([]losPlayer, len(res.Streams.Players))
 		for i := range res.Streams.Players {
@@ -719,7 +756,7 @@ func (s *server) handleRegionControl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := view.RegionControlAvailable(res); err != nil {
-		writeUnavailable(w, err, "region_control_unavailable", "this demo has no region-control layout")
+		s.writeUnavailable(w, r, err, "region_control_unavailable", "this demo has no region-control layout")
 		return
 	}
 	p := newQP(r.URL.Query())
@@ -750,24 +787,9 @@ func (s *server) handleAirgibs(w http.ResponseWriter, r *http.Request) {
 	}
 	airgibs, err := view.Airgibs(res)
 	if err != nil {
-		writeUnavailable(w, err, "airgibs_unavailable",
+		s.writeUnavailable(w, r, err, "airgibs_unavailable",
 			"this demo has no timeline analysis")
 		return
 	}
 	writeJSON(w, http.StatusOK, airgibs)
-}
-
-// recoverMiddleware turns a panic into a 500 + slog error line so a
-// single buggy handler can't take down the server.
-func recoverMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if rec := recover(); rec != nil {
-				logger.Error("panic in handler",
-					"method", r.Method, "path", r.URL.Path, "panic", rec)
-				writeError(w, http.StatusInternalServerError, "panic", fmt.Sprintf("%v", rec))
-			}
-		}()
-		next.ServeHTTP(w, r)
-	})
 }
