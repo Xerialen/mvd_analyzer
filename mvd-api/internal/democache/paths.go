@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
 // DefaultRoot returns the conventional on-disk cache root.
@@ -40,4 +42,21 @@ func resultPath(root string, schemaVersion int, sha string) string {
 //	<root>/index/games/<gameId>.txt
 func gameIndexPath(root string, gameID int) string {
 	return filepath.Join(root, "index", "games", fmt.Sprintf("%d.txt", gameID))
+}
+
+// artifactPath returns the on-disk path for tier-3 (a lazily-materialised
+// artifact side-gob: "los", "shot-streams"), keyed by the artifact's
+// effective version so a stale version is simply never read.
+//
+//	<root>/artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob
+//
+// With only two artifacts and no per-node Version field yet, the effective
+// version EV is pragmatically result.CurrentSchemaVersion: the artifacts are
+// derived from the v-N parse, so a schema bump must invalidate them exactly
+// as it invalidates tier 2. Per-node effective versions (hash of the node's
+// Version + its Requires') arrive with Stage 4's manifest if node versions
+// ever diverge from the schema (PLAN-improve-analytics.md §3.5).
+func artifactPath(root, name, sha string) string {
+	return filepath.Join(root, "artifacts", sha[:2], sha,
+		fmt.Sprintf("%s@v%d.gob", name, result.CurrentSchemaVersion))
 }

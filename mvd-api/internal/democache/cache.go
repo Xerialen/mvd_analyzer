@@ -1,13 +1,22 @@
-// Package democache is a two-tier disk cache for QuakeWorld demos.
+// Package democache is a three-tier disk cache for QuakeWorld demos.
 //
 //	tier 1: raw MVD bytes (gzip), keyed by SHA-256          → mvd/<sha[:2]>/<sha>.mvd.gz
 //	tier 2: parsed *result.Result (gob), keyed by SHA + ver → results/v<N>/<sha[:2]>/<sha>.gob
+//	tier 3: lazy artifact side-gobs, keyed by SHA + EV       → artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob
 //
 // A schema bump invalidates tier 2 only — tier 1 survives, so the next
 // access reparses from the cached bytes without re-fetching from
 // hub.quakeworld.nu. An in-process LRU (default size 4) sits in front
 // of tier 2 to absorb the gob-decode cost during a session of related
 // queries.
+//
+// Tier 3 holds the lazily-materialised artifacts (los, shot-streams) so a
+// lazy compute — the ~10s LOS raycast or the full MVD re-parse — survives a
+// process restart or an LRU eviction: after the base Result is served from
+// tier 2, EnsureLOS / EnsureShotStreams splice the artifact from tier 3
+// instead of recomputing it (PLAN-api F8b). Like tier 2 it lives under a
+// version-keyed path (the effective version EV = CurrentSchemaVersion), so a
+// stale version is simply never read; there is no GC (a hosting-prep phase).
 //
 // The cache is consumed by mvd-api (the REST host); it is not part of
 // the public mvd-analytics API.
@@ -18,6 +27,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"sync"
@@ -82,10 +92,13 @@ type Cache struct {
 	inflight     sync.Map // sha → *inflightEntry
 	lastResolved sync.Map // sha → *hubfetch.GameInfo (drained by loadResult)
 
-	// shotLocks serializes the on-demand shot-stream rebuild per SHA, so a
-	// rebuild for demo B does not queue behind demo A's multi-second
-	// re-parse (EnsureShotStreams).
+	// shotLocks / losLocks serialize the on-demand lazy-artifact
+	// materialisation per SHA, so a build for demo B does not queue behind
+	// demo A's multi-second work (the shot-stream re-parse; the LOS raycast),
+	// and two callers for one demo cannot both compute and race the splice
+	// onto the shared Result. The need-check sits inside the lock (no TOCTOU).
 	shotLocks KeyedMutex
+	losLocks  KeyedMutex
 }
 
 // New constructs a Cache rooted at the given directory.
@@ -259,7 +272,9 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 // (RL/GL direct/splash, the LG whiff split, ng/sng linking + accuracy)
 // only exist in the enriched parse, so /shots and /aim serve complete
 // data. The ShotStreamsComputed / NailsComputed latches make repeat
-// requests free.
+// requests free within a process; the tier-3 artifact cache (below) makes
+// them free across restarts and LRU evictions too — a warm process splices
+// the streams from disk instead of re-parsing (PLAN-api F8b).
 //
 // There is deliberately only ONE variant (F12): nails used to be a
 // separate opt-in latch, which made /shots and /aim bodies depend on
@@ -292,45 +307,126 @@ func (c *Cache) EnsureShotStreams(ctx context.Context, id DemoID) (*result.Resul
 	unlock := c.shotLocks.Lock(sha)
 	defer unlock()
 
-	if res.Streams.ShotStreamsComputed && res.Streams.NailsComputed {
+	art := mustLazyArtifact("shot-streams")
+	if art.Computed(res) {
+		return res, meta, nil
+	}
+	// Tier-3 warm path: splice the artifact from disk without a re-parse. A
+	// hit here works even after the tier-1 bytes were evicted — that is the
+	// F8b win (no re-parse, no degrade). A corrupt/partial gob is treated as a
+	// miss (tier3Load slog-warns and returns false).
+	if c.tier3Load(sha, art, res) {
 		return res, meta, nil
 	}
 
 	mvdBytes, err := os.ReadFile(mvdPath(c.Root, sha))
 	if err != nil {
-		// The tier-1 bytes are gone (evicted after the base Result was
-		// cached), so the opt-in streams cannot be rebuilt. Surface the lean
-		// Result rather than failing the request, but flag the degrade so the
-		// handler signals it instead of serving silently-incomplete data
-		// (the "surface authoritative data" rule).
+		// The tier-1 bytes are gone (evicted after the base Result was cached)
+		// and there is no tier-3 artifact, so the opt-in streams cannot be
+		// rebuilt. Surface the lean Result rather than failing the request, but
+		// flag the degrade so the handler signals it instead of serving
+		// silently-incomplete data (the "surface authoritative data" rule).
 		meta.ShotStreamsUnavailable = true
 		return res, meta, nil
 	}
 
-	reg := analyzer.NewDefaultRegistry()
-	// One rebuild builds everything (see the one-variant rationale above);
-	// the grafted Shots/Aim blocks below carry their stream-derived parts
-	// only when the pipeline saw the streams.
-	reg.BuildShotStreams = true
-	reg.BuildNails = true
-	built, err := reg.AnalyzeReader(bytes.NewReader(mvdBytes), fmt.Sprintf("%s.mvd.gz", sha))
-	if err != nil {
+	// One rebuild builds everything (the single F12 variant): the re-parse
+	// runs BuildShotStreams+BuildNails, and the artifact's Build grafts the
+	// streams plus the rebuilt Shots/Aim onto res and latches.
+	deps := analyzer.MaterializeDeps{Reparse: func() (*result.Result, error) {
+		reg := analyzer.NewDefaultRegistry()
+		reg.BuildShotStreams = true
+		reg.BuildNails = true
+		return reg.AnalyzeReader(bytes.NewReader(mvdBytes), fmt.Sprintf("%s.mvd.gz", sha))
+	}}
+	if err := art.Build(res, deps); err != nil {
 		return nil, meta, fmt.Errorf("rebuild shot streams: %w", err)
 	}
-	if built.Streams != nil {
-		res.Streams.Projectiles = built.Streams.Projectiles
-		res.Streams.Beams = built.Streams.Beams
-		res.Streams.ShotStreamsComputed = true
-		res.Streams.Nails = built.Streams.Nails
-		res.Streams.NailsComputed = true
-	}
-	if built.Shots != nil {
-		res.Shots = built.Shots
-	}
-	if built.Aim != nil {
-		res.Aim = built.Aim
-	}
+	c.tier3Store(sha, art, res)
 	return res, meta, nil
+}
+
+// EnsureLOS returns the demo's Result with the per-player line-of-sight / PVS
+// interval sets materialised (Streams.Players[].LOS/PVS). LOS is the heaviest
+// position-derived pass and has no in-pipeline consumer, so it is computed on
+// demand: latch check → tier-3 load+splice → else compute (analyzer.ComputeLOS,
+// which loads its own visibility BSP) → write tier-3. Unlike shot-streams it
+// needs no raw bytes, so there is no degrade — a map with no provisioned BSP
+// computes to an empty LOS, latches, and is cached as such (computed once).
+//
+// Serialised per SHA (losLocks) with the need-check inside the lock, so /los
+// for demo B does not queue behind demo A's raycast and two callers for one
+// demo cannot race the splice onto the shared Result.
+func (c *Cache) EnsureLOS(ctx context.Context, id DemoID) (*result.Result, CacheMeta, error) {
+	res, meta, err := c.GetResult(ctx, id)
+	if err != nil {
+		return nil, meta, err
+	}
+	if res.Streams == nil {
+		return res, meta, nil
+	}
+
+	sha := meta.SHA256
+	unlock := c.losLocks.Lock(sha)
+	defer unlock()
+
+	art := mustLazyArtifact("los")
+	if art.Computed(res) {
+		return res, meta, nil
+	}
+	if c.tier3Load(sha, art, res) {
+		return res, meta, nil
+	}
+	if err := art.Build(res, analyzer.MaterializeDeps{}); err != nil {
+		return nil, meta, fmt.Errorf("compute los: %w", err)
+	}
+	c.tier3Store(sha, art, res)
+	return res, meta, nil
+}
+
+// mustLazyArtifact resolves a lazy artifact by name, panicking on an unknown
+// name — the names are compile-time constants in this package, so a miss is a
+// programmer error, not a runtime condition.
+func mustLazyArtifact(name string) *analyzer.LazyArtifact {
+	art, ok := analyzer.LazyArtifactByName(name)
+	if !ok {
+		panic("democache: unknown lazy artifact " + name)
+	}
+	return art
+}
+
+// tier3Load splices the named artifact from disk onto res and reports whether
+// it did (the latch is now set). A read miss is a plain false; a decode/splice
+// failure (corrupt or drifted gob) is slog-warned and also treated as a miss,
+// so the caller recomputes rather than serving mismatched data.
+func (c *Cache) tier3Load(sha string, art *analyzer.LazyArtifact, res *result.Result) bool {
+	data, err := os.ReadFile(artifactPath(c.Root, art.Name(), sha))
+	if err != nil {
+		return false
+	}
+	if err := art.DecodeTier3(res, data); err != nil {
+		slog.Warn("tier-3 artifact discarded", "artifact", art.Name(), "sha", sha, "err", err)
+		return false
+	}
+	return true
+}
+
+// tier3Store writes the freshly-built artifact to disk (atomic write). Write
+// failures are non-fatal: the artifact stays on the in-memory Result for this
+// process, and the next process recomputes. Nothing to persist (ok=false) is a
+// silent no-op.
+func (c *Cache) tier3Store(sha string, art *analyzer.LazyArtifact, res *result.Result) {
+	data, ok, err := art.EncodeTier3(res)
+	if err != nil {
+		slog.Warn("tier-3 artifact encode failed", "artifact", art.Name(), "sha", sha, "err", err)
+		return
+	}
+	if !ok {
+		return
+	}
+	if err := writeFileAtomic(artifactPath(c.Root, art.Name(), sha), data, 0o644); err != nil {
+		slog.Warn("tier-3 artifact write failed", "artifact", art.Name(), "sha", sha, "err", err)
+	}
 }
 
 func (c *Cache) resolveDownloadInfo(id DemoID, stashed *hubfetch.GameInfo) (*hubfetch.GameInfo, error) {

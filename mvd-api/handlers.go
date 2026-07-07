@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
 	"github.com/mvd-analyzer/mvd-api/internal/democache"
@@ -26,6 +25,11 @@ type demoStore interface {
 	// serializes the rebuild per demo SHA internally, so no server-wide lock
 	// is needed.
 	EnsureShotStreams(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
+	// EnsureLOS returns the Result with the per-player line-of-sight / PVS
+	// interval sets materialised (the lazy raycast pass), serialising the
+	// compute per demo SHA internally. Like EnsureShotStreams it persists the
+	// result to the tier-3 cache so a restart/eviction does not recompute.
+	EnsureLOS(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
 }
 
 // httpError carries the wire-format error body.
@@ -574,22 +578,28 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 // handleLOS: GET /v1/demos/{id}/los — per-player line-of-sight intervals.
 //
 // Line of sight is the heaviest position-derived pass and has no other
-// consumer, so it is computed lazily: the first request for a demo triggers
-// the raycast pass and caches it on the in-memory Result (ComputeLOS is
-// idempotent via Streams.LOSComputed), so later requests are free. The on-disk
-// gob stays lean — LOS is never baked into it. Returns 200 with a players
-// array; los is omitted for a player with no sightlines and empty for every
-// player on a map with no provisioned BSP.
+// consumer, so it is computed lazily via EnsureLOS: the first request for a
+// demo triggers the raycast pass (serialised per SHA in the cache) and writes
+// the result to the tier-3 artifact cache, so later requests — and later
+// processes, after a restart or an LRU eviction — splice it from disk instead
+// of recomputing. The tier-2 gob stays lean — LOS is never baked into it.
+// Returns 200 with a players array; los is omitted for a player with no
+// sightlines and empty for every player on a map with no provisioned BSP.
 func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
-	res, meta, ok := s.resolveDemo(w, r)
-	if !ok {
+	id, err := democache.ParseDemoID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
 		return
 	}
-	// Per-SHA lock: concurrent /los for one demo serialize on the shared
-	// Result, but /los for a different demo does not queue behind it.
-	unlock := s.losLocks.Lock(meta.SHA256)
-	analyzer.ComputeLOS(res)
-	unlock()
+	res, meta, err := s.store.EnsureLOS(r.Context(), id)
+	if err != nil {
+		mapStoreError(w, err)
+		return
+	}
+	setCacheHeaders(w, meta)
+	if revalidated(w, r, meta) {
+		return
+	}
 
 	type losPlayer struct {
 		Name string            `json:"name"`
