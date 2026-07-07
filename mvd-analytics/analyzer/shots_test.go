@@ -439,6 +439,66 @@ func TestShots_VictimKindClassification(t *testing.T) {
 	}
 }
 
+// TestShots_DuelSharedTeamBornEnemy ports the old normalizeDuelTeams
+// VictimKinds reclassification to the born-correct seam: in a 1v1 where both
+// players share a non-empty colour team, victimKindOf classifies the opponent
+// hit as enemy (not team) at birth, so the kinds fold to the omitted wire form
+// and the per-weapon bucket lands in EnemyHits — never TeamHits. The emitted
+// team labels are the players' own names (the roster rewrite). The corpus has
+// no shared-colour duel, so this unit test is the referee.
+func TestShots_DuelSharedTeamBornEnemy(t *testing.T) {
+	a := NewShotsAnalyzer()
+	ctx := &Context{}
+	_ = a.Init(ctx)
+	a.timing.Started = true
+	a.core = &CoreOutputs{
+		Slots: map[int]SlotInfo{
+			3: {Name: "alice", Team: "red"},
+			0: {Name: "bob", Team: "red"}, // same colour team → would be "team" pre-duel
+		},
+		Roster: newRoster(&DemoInfoResult{Players: []DemoInfoPlayer{
+			{Name: "alice", Team: "red"}, {Name: "bob", Team: "red"},
+		}}),
+	}
+
+	// alice (slot 3) shotguns bob (slot 0).
+	_ = a.OnEvent(weaponSound(4, "weapons/guncock.wav", 1000))
+	_ = a.OnEvent(&events.DamageEvent{Attacker: 3, Victim: 0, DeathType: mvd.DtSG, Damage: 20, Time: 1.0})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+
+	if len(r.Shots.Shots) != 1 {
+		t.Fatalf("shots = %d, want 1", len(r.Shots.Shots))
+	}
+	s := r.Shots.Shots[0]
+	if s.Team != "alice" {
+		t.Errorf("shot team = %q, want alice (born-correct duel label)", s.Team)
+	}
+	if !s.Hit || s.VictimKinds != nil {
+		t.Errorf("shot = %+v, want hit with kinds omitted (shared-team duel hit is enemy)", s)
+	}
+
+	var bp *PlayerShots
+	for i := range r.Shots.ByPlayer {
+		if r.Shots.ByPlayer[i].Player == "alice" {
+			bp = &r.Shots.ByPlayer[i]
+		}
+	}
+	if bp == nil {
+		t.Fatalf("no ByPlayer entry for alice")
+	}
+	if bp.Team != "alice" {
+		t.Errorf("byPlayer team = %q, want alice", bp.Team)
+	}
+	if len(bp.ByWeapon) != 1 || bp.ByWeapon[0].Weapon != "sg" {
+		t.Fatalf("byWeapon = %+v, want one sg entry", bp.ByWeapon)
+	}
+	if sg := bp.ByWeapon[0]; sg.EnemyHits != 1 || sg.TeamHits != 0 {
+		t.Errorf("sg buckets = %+v, want enemyHits=1 teamHits=0", sg)
+	}
+}
+
 // TestShots_WarmupGating keeps warmup fires in the stream but excludes them
 // from the match-time ByPlayer aggregate.
 func TestShots_WarmupGating(t *testing.T) {

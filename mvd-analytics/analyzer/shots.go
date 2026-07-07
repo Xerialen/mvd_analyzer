@@ -279,7 +279,17 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 
 	sort.SliceStable(a.shots, func(i, j int) bool { return a.shots[i].tMs < a.shots[j].tMs })
 
-	// 1. Resolve each fire's shooter identity.
+	// In a 1v1 any non-self victim is an enemy by definition, but two duelers
+	// sharing a non-empty colour team would classify every opponent hit as
+	// "team" — folding those hits out of the enemy buckets and mislabelling
+	// VictimKinds. Classify duel-aware at birth (the same test the roster used)
+	// so the kinds and per-weapon buckets are born correct, replacing the old
+	// normalizeDuelTeams VictimKinds flip + TeamHits fold.
+	duel := a.core.IsDuel()
+
+	// 1. Resolve each fire's shooter identity. team stays the raw resolved team
+	//    here so victimKindOf's non-duel team comparison works; the emitted
+	//    label applies the roster rewrite below.
 	for i := range a.shots {
 		s := &a.shots[i]
 		id := a.resolveAt(s.slot, s.tMs)
@@ -292,7 +302,7 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		if s.name == "" || !s.hitscan {
 			continue
 		}
-		if v, k := a.linkHitscan(dmgBySlot[s.slot], s); len(v) > 0 {
+		if v, k := a.linkHitscan(dmgBySlot[s.slot], s, duel); len(v) > 0 {
 			s.hit, s.victims, s.victimKinds = true, v, k
 		}
 	}
@@ -300,8 +310,8 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 	// 3. Projectiles: bracket each rocket/grenade flight back to its
 	//    launching fire (by muzzle) and forward to its impact damage. Nail
 	//    flights (opt-in) link the same way for ng/sng.
-	a.linkProjectiles(a.projectiles, dmgBySlot)
-	a.linkProjectiles(a.nailFlights, dmgBySlot)
+	a.linkProjectiles(a.projectiles, dmgBySlot, duel)
+	a.linkProjectiles(a.nailFlights, dmgBySlot, duel)
 
 	// 4. Emit the stream + match-time aggregates from the resolved state.
 	out := &ShotsResult{}
@@ -312,8 +322,11 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		if s.name == "" {
 			continue // can't attribute the fire to a known player
 		}
+		// Born-correct team label: the roster rewrites a duel participant's team
+		// to their own name (replacing the old normalizeDuelTeams shots block).
+		team := a.core.TeamFor(s.name, s.team)
 		out.Shots = append(out.Shots, Shot{
-			Time: s.tMs, Player: s.name, Team: s.team,
+			Time: s.tMs, Player: s.name, Team: team,
 			Weapon: s.weapon, Source: s.source, Hit: s.hit, Victims: s.victims,
 			VictimKinds: emitKinds(s.victimKinds),
 			Warmup:      !s.inMatch,
@@ -323,7 +336,7 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		}
 		ag := aggByName[s.name]
 		if ag == nil {
-			ag = &shotAgg{team: s.team, weapons: make(map[string]*weaponAgg)}
+			ag = &shotAgg{team: team, weapons: make(map[string]*weaponAgg)}
 			aggByName[s.name] = ag
 			aggOrder = append(aggOrder, s.name)
 		}
@@ -442,7 +455,7 @@ func (a *ShotsAnalyzer) buildSpatialStreams(result *Result) {
 // A "nail" flight is weapon-agnostic (svc_nails does not tag ng vs sng), so it
 // matches either ng or sng fires and the matched fire's weapon drives the
 // impact lookup.
-func (a *ShotsAnalyzer) linkProjectiles(flights []rawProjectile, dmgBySlot map[int][]*rawShotDmg) {
+func (a *ShotsAnalyzer) linkProjectiles(flights []rawProjectile, dmgBySlot map[int][]*rawShotDmg, duel bool) {
 	if len(flights) == 0 {
 		return
 	}
@@ -479,7 +492,7 @@ func (a *ShotsAnalyzer) linkProjectiles(flights []rawProjectile, dmgBySlot map[i
 			if id := a.resolveAt(d.victim, d.tMs); id.Name != "" && !seen[id.Name] {
 				seen[id.Name] = true
 				victims = append(victims, id.Name)
-				kinds = append(kinds, victimKindOf(best.slot, best.team, d.victim, id.Team))
+				kinds = append(kinds, victimKindOf(best.slot, best.team, d.victim, id.Team, duel))
 			}
 		}
 		if len(victims) > 0 {
@@ -521,7 +534,7 @@ func flightMatchesFire(kind, w string) bool {
 // same attacker slot, same weapon, within the same server frame — and each
 // victim's class relative to the shooter (parallel slices). Each matched
 // damage record is consumed so a later shot cannot reclaim it.
-func (a *ShotsAnalyzer) linkHitscan(dmgs []*rawShotDmg, s *rawShot) (victims, kinds []string) {
+func (a *ShotsAnalyzer) linkHitscan(dmgs []*rawShotDmg, s *rawShot, duel bool) (victims, kinds []string) {
 	seen := make(map[string]bool)
 	for _, d := range dmgs {
 		if d.used || d.weapon != s.weapon {
@@ -534,7 +547,7 @@ func (a *ShotsAnalyzer) linkHitscan(dmgs []*rawShotDmg, s *rawShot) (victims, ki
 		if id := a.resolveAt(d.victim, d.tMs); id.Name != "" && !seen[id.Name] {
 			seen[id.Name] = true
 			victims = append(victims, id.Name)
-			kinds = append(kinds, victimKindOf(s.slot, s.team, d.victim, id.Team))
+			kinds = append(kinds, victimKindOf(s.slot, s.team, d.victim, id.Team, duel))
 		}
 	}
 	return victims, kinds
@@ -543,12 +556,15 @@ func (a *ShotsAnalyzer) linkHitscan(dmgs []*rawShotDmg, s *rawShot) (victims, ki
 // victimKindOf classifies a damage victim relative to the shooter, mirroring
 // the damage layer's isSelf/isTeam semantics (damage.go): "self" when the
 // victim is the shooter's own wire slot, "team" when both teams are non-empty
-// and equal, else "enemy".
-func victimKindOf(shooterSlot int, shooterTeam string, victimSlot int, victimTeam string) string {
+// and equal, else "enemy". In a duel there is no team damage — any non-self
+// victim is an enemy — so the "team" branch is suppressed, mirroring damage.go's
+// duel-aware IsTeam classification and keeping the per-weapon buckets and
+// VictimKinds born correct.
+func victimKindOf(shooterSlot int, shooterTeam string, victimSlot int, victimTeam string, duel bool) string {
 	switch {
 	case victimSlot == shooterSlot:
 		return "self"
-	case shooterTeam != "" && victimTeam != "" && shooterTeam == victimTeam:
+	case !duel && shooterTeam != "" && victimTeam != "" && shooterTeam == victimTeam:
 		return "team"
 	default:
 		return "enemy"

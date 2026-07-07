@@ -45,88 +45,13 @@ func normalizeDuelTeams(result *Result, r *Roster) {
 	if !r.Duel() {
 		return
 	}
-
-	// Build the name → synthetic team map from the roster's participants. For
-	// 1v1 this is literally `name → name`, but keeping the indirection makes
-	// the rewrite loops below trivially extend to 1vN if we ever need it.
-	nameToTeam := map[string]string{}
-	for _, name := range r.Participants() {
-		nameToTeam[name] = name
-	}
-
-	// Rewrite chat / frag event team labels in messages so the timeline
-	// chat pane paints them under the synthetic team colour.
-	if result.Messages != nil {
-		for i := range result.Messages.Events {
-			e := &result.Messages.Events[i]
-			if t, ok := nameToTeam[e.Player]; ok {
-				e.Team = t
-			}
-		}
-	}
-
-	// Rewrite shot-stream team labels. aimPost runs after this
-	// post-processor and derives its per-player teams from Shots, so
-	// fixing the stream here also fixes Aim.Players[].Team.
-	if result.Shots != nil {
-		for i := range result.Shots.Shots {
-			s := &result.Shots.Shots[i]
-			if t, ok := nameToTeam[s.Player]; ok {
-				s.Team = t
-			}
-		}
-		for i := range result.Shots.ByPlayer {
-			p := &result.Shots.ByPlayer[i]
-			if t, ok := nameToTeam[p.Player]; ok {
-				p.Team = t
-			}
-		}
-
-		// Correct victim classification. victimKindOf compares the raw
-		// userinfo team strings at analyzer time, so a duel where both
-		// players happen to share a non-empty colour team classifies
-		// every hit on the opponent as "team". In a 1v1 any non-self
-		// victim is by definition an enemy — flip those, restoring the
-		// all-enemy-omitted wire convention (emitKinds) where the flip
-		// leaves no informative kind. aimPost reads VictimKinds after
-		// this pass, so the Aim enemy/team splits follow. (Damage has no
-		// equivalent rewrite here: DamageAnalyzer classifies IsTeam
-		// duel-aware at birth — isDuelResult in damage.go Finalize — so
-		// its events, aggregates and matrix are already enemy-labelled.)
-		for i := range result.Shots.Shots {
-			s := &result.Shots.Shots[i]
-			if s.VictimKinds == nil {
-				continue
-			}
-			informative := false
-			for j, k := range s.VictimKinds {
-				if k == "team" {
-					s.VictimKinds[j] = "enemy"
-				}
-				if s.VictimKinds[j] != "enemy" {
-					informative = true
-				}
-			}
-			if !informative {
-				s.VictimKinds = nil
-			}
-		}
-		// The per-weapon hit buckets count fires, not victims, but a
-		// duel has exactly one opponent pair and victimKindOf is
-		// deterministic per pair — so per shooter either every
-		// opponent hit landed in TeamHits (shared colour team) or
-		// every one landed in EnemyHits, never both. Folding TeamHits
-		// into EnemyHits is therefore exact, not an approximation.
-		for i := range result.Shots.ByPlayer {
-			bw := result.Shots.ByPlayer[i].ByWeapon
-			for j := range bw {
-				if bw[j].TeamHits > 0 {
-					bw[j].EnemyHits += bw[j].TeamHits
-					bw[j].TeamHits = 0
-				}
-			}
-		}
-	}
+	// Every duel team label is now stamped at birth by the producers reading
+	// co.Roster (roster → DemoInfo; match → Match.Players; timeline → streams
+	// and events; messages, items, weapon pickups, backpacks and shots →
+	// their own records, including shots' duel-aware VictimKinds). This
+	// post-processor no longer rewrites anything; it is deleted once the DAG's
+	// teams:final barrier retires.
+	_ = result
 }
 
 // isDuelResult returns true when the match is a 1v1, using the number
