@@ -84,7 +84,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"messages":         {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo", "roster"}},
 	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}},
 	"items":            {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}},
-	"damage":           {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity"}},
+	"damage":           {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}},
 	"shots":            {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline", "roster"}},
 	"map_entities":     {name: "map-entities", tier: "derived"},
 	"backpacks":        {name: "backpacks", tier: "derived", requires: []string{"clock", "roster"}},

@@ -241,11 +241,14 @@ func TestDamageAnalyzer_DuelSharedTeamClassifiedEnemy(t *testing.T) {
 		return a, &Result{}
 	}
 
-	// Duel: DemoInfo lists exactly the two participants.
+	// Duel: DemoInfo lists exactly the two participants, so the roster
+	// classifies the match as a 1v1 (the born-correct duel verdict damage now
+	// reads from co.Roster instead of isDuelResult(result)).
 	a, res := build()
 	res.DemoInfo = &DemoInfoResult{Players: []DemoInfoPlayer{
 		{Name: "alpha", Team: "green"}, {Name: "bravo", Team: "green"},
 	}}
+	a.core.Roster = newRoster(res.DemoInfo)
 	if err := a.Finalize(res); err != nil {
 		t.Fatal(err)
 	}
@@ -270,6 +273,7 @@ func TestDamageAnalyzer_DuelSharedTeamClassifiedEnemy(t *testing.T) {
 	res2.DemoInfo = &DemoInfoResult{Players: []DemoInfoPlayer{
 		{Name: "alpha", Team: "green"}, {Name: "bravo", Team: "green"}, {Name: "charlie", Team: "red"},
 	}}
+	a2.core.Roster = newRoster(res2.DemoInfo)
 	if err := a2.Finalize(res2); err != nil {
 		t.Fatal(err)
 	}
