@@ -42,6 +42,13 @@ type nodeSpec struct {
 	tier     string   // "core" | "derived" | "post" | "lazy" — export grouping only
 	regIndex int      // registration position; the deterministic topo tie-break
 
+	// Stage-4 manifest metadata (surfaced by ArtifactManifest / -graph json /
+	// ARTIFACTS.md). These describe the node as a servable artifact; they do
+	// not affect scheduling.
+	resultKey string // top-level Result JSON key the artifact lands in ("" = pseudo/internal, not served)
+	cost      string // "light" (default) | "heavy" — advisory for API gating / docs
+	desc      string // one-sentence contributor-facing description
+
 	analyzer Analyzer            // set for analyzer (event-tier) nodes
 	post     ResultPostProcessor // set for post-processor nodes
 }
@@ -57,6 +64,13 @@ type nodeMeta struct {
 	requires []string
 	provides []string
 	mutates  bool
+
+	// Stage-4 manifest metadata — see nodeSpec's like-named fields. cost is
+	// "" for every eager node (defaulted to "light" in specFromMeta); the two
+	// heavy passes are the lazy nodes, which set it directly.
+	resultKey string
+	cost      string
+	desc      string
 }
 
 // analyzerNodeMeta declares the DAG edges for each analyzer, keyed by its
@@ -74,23 +88,38 @@ type nodeMeta struct {
 // map_entities and match carry no timestamps and do not.
 var analyzerNodeMeta = map[string]nodeMeta{
 	// Core producers.
-	"clock":    {name: "clock", tier: "core"},
-	"demoinfo": {name: "demoinfo", tier: "core"},
-	"identity": {name: "identity", tier: "core", requires: []string{"demoinfo"}},
-	"frag":     {name: "frag", tier: "core", requires: []string{"clock", "demoinfo", "identity"}},
-	"roster":   {name: "roster", tier: "core", requires: []string{"demoinfo"}},
+	"clock": {name: "clock", tier: "core",
+		desc: "Match clock — match start/end, pauses, and the demo-start wall-clock anchor every timestamped producer converts against."},
+	"demoinfo": {name: "demoinfo", tier: "core", resultKey: "demoInfo",
+		desc: "KTX demoinfo scoreboard blob: per-player weapon accuracy, kills, deaths, damage, sprees, and item pickup counts, verbatim from the server."},
+	"identity": {name: "identity", tier: "core", requires: []string{"demoinfo"},
+		desc: "Player identity sessions — the slot→name/userid/team resolution every downstream producer reads."},
+	"frag": {name: "frag", tier: "core", requires: []string{"clock", "demoinfo", "identity"}, resultKey: "frags",
+		desc: "Frag aggregates and the full chronological kill log with weapon, suicide, and team-kill flags."},
+	"roster": {name: "roster", tier: "core", requires: []string{"demoinfo"},
+		desc: "Canonical player roster with team labels (duel player-as-team rewrite applied), read by every team-aware producer."},
 
 	// Derived consumers / independent peers.
-	"metadata":         {name: "metadata", tier: "derived"},
-	"match":            {name: "match", tier: "derived", requires: []string{"demoinfo"}},
-	"messages":         {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo", "roster"}},
-	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}},
-	"items":            {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}},
-	"damage":           {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}},
-	"shots":            {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline", "roster"}},
-	"map_entities":     {name: "map-entities", tier: "derived"},
-	"backpacks":        {name: "backpacks", tier: "derived", requires: []string{"clock", "roster"}},
-	"weaponPickups":    {name: "weapon-pickups", tier: "derived", requires: []string{"clock", "identity", "frag", "roster"}},
+	"metadata": {name: "metadata", tier: "derived", resultKey: "metadata",
+		desc: "Server cvars and parsed KTX match settings (mode, timelimit, antilag, midair, instagib, ...)."},
+	"match": {name: "match", tier: "derived", requires: []string{"demoinfo"}, resultKey: "match",
+		desc: "Match summary: map, mode, duration, and the corrected per-player scoreboard."},
+	"messages": {name: "messages", tier: "derived", requires: []string{"clock", "demoinfo", "roster"}, resultKey: "messages",
+		desc: "Chat, teamsay, and other match print messages with markup-stripped text."},
+	"timelineAnalysis": {name: "timeline", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}, resultKey: "timelineAnalysis",
+		desc: "Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container."},
+	"items": {name: "items", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}, resultKey: "items",
+		desc: "Per-item pickup/respawn timeline with world position and nearest loc."},
+	"damage": {name: "damage", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "roster"}, resultKey: "damage",
+		desc: "Per-hit damage from the KTX stream: totals, matrix, per-weapon, EWep buckets, telefrags, stomps, and the scoreboard cross-check."},
+	"shots": {name: "shots", tier: "derived", requires: []string{"clock", "demoinfo", "identity", "timeline", "roster"}, resultKey: "shots",
+		desc: "Per-fire weapon stream with per-player accuracy aggregates and the KTX cross-check (stream-derived splits need the shot-streams artifact)."},
+	"map_entities": {name: "map-entities", tier: "derived", resultKey: "mapEntities",
+		desc: "The map's static designed entity layout (item spawns, spawnpoints, teleporters) resolved from the embedded BSP corpus."},
+	"backpacks": {name: "backpacks", tier: "derived", requires: []string{"clock", "roster"}, resultKey: "backpacks",
+		desc: "RL/LG backpack drops from KTX drop hints, with dropper, weapon, origin, and the ent number joining to weapon pickups."},
+	"weaponPickups": {name: "weapon-pickups", tier: "derived", requires: []string{"clock", "identity", "frag", "roster"}, resultKey: "weaponPickups",
+		desc: "Slot-weapon acquisitions (world spawners and backpacks) with kills-before-next-death effectiveness."},
 }
 
 // postNodeMeta declares the DAG edges for each post-processor, keyed by
@@ -113,26 +142,34 @@ var postNodeMeta = map[string]nodeMeta{
 	"recoverTelefragTeamkills": {
 		name: "recover-telefrag-teamkills", tier: "post", mutates: true,
 		requires: []string{"clock", "demoinfo", "frag", "timeline"},
+		desc:     "Recovers victim-named telefrag team-kills into the frag log.",
 	},
 	"aimPost": {
 		name: "aim", tier: "post", mutates: true,
-		requires: []string{"shots", "timeline", "damage"},
+		requires:  []string{"shots", "timeline", "damage"},
+		resultKey: "aim",
+		desc:      "Per-player aim analysis: per-weapon effectiveness, crosshair-error samples, and the LG ramp series (full splits need the shot-streams artifact).",
 	},
 	"airgibsPost": {
 		name: "airgibs", tier: "post", mutates: true,
 		requires: []string{"demoinfo", "frag", "timeline", "damage"},
+		desc:     "Folds the Key-Moments airgib list into the timeline (direct enemy rocket hits on airborne victims above the height threshold).",
 	},
 	"scoreboardStatsPost": {
 		name: "scoreboard-stats", tier: "post", mutates: true,
 		requires: []string{"match", "frag", "recover-telefrag-teamkills"},
+		desc:     "Folds corrected kills/deaths/suicides into the match scoreboard.",
 	},
 	"locGraphPost": {
 		name: "loc-graph", tier: "post", mutates: true,
-		requires: []string{"timeline", "demoinfo"},
+		requires:  []string{"timeline", "demoinfo"},
+		resultKey: "locGraph",
+		desc:      "Per-map loc adjacency graph with directed transition weights derived from player movement.",
 	},
 	"regionControlPost": {
 		name: "region-control", tier: "post", mutates: true,
 		requires: []string{"timeline", "match", "demoinfo"},
+		desc:     "Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact).",
 	},
 }
 
@@ -142,15 +179,22 @@ func specFromMeta(m nodeMeta, regIndex int, a Analyzer, p ResultPostProcessor) n
 	provides := make([]string, 0, 1+len(m.provides))
 	provides = append(provides, m.name)
 	provides = append(provides, m.provides...)
+	cost := m.cost
+	if cost == "" {
+		cost = costLight // every eager node is light; the heavy passes are lazy
+	}
 	return nodeSpec{
-		Name:     m.name,
-		Requires: m.requires,
-		Provides: provides,
-		Mutates:  m.mutates,
-		tier:     m.tier,
-		regIndex: regIndex,
-		analyzer: a,
-		post:     p,
+		Name:      m.name,
+		Requires:  m.requires,
+		Provides:  provides,
+		Mutates:   m.mutates,
+		tier:      m.tier,
+		regIndex:  regIndex,
+		resultKey: m.resultKey,
+		cost:      cost,
+		desc:      m.desc,
+		analyzer:  a,
+		post:      p,
 	}
 }
 

@@ -134,6 +134,8 @@ var losArtifact = &LazyArtifact{
 		Provides: []string{"los"},
 		Lazy:     true,
 		tier:     "lazy",
+		cost:     costHeavy,
+		desc:     "Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand.",
 	},
 	computed: func(res *result.Result) bool {
 		return res.Streams != nil && res.Streams.LOSComputed
@@ -221,6 +223,8 @@ var shotStreamsArtifact = &LazyArtifact{
 		Provides: []string{"shot-streams"},
 		Lazy:     true,
 		tier:     "lazy",
+		cost:     costHeavy,
+		desc:     "Spatial weapon-fire streams (projectile, beam, nail flights) plus the stream-enriched shots and aim blocks, rebuilt from the demo bytes on demand.",
 	},
 	computed: func(res *result.Result) bool {
 		return res.Streams != nil && res.Streams.ShotStreamsComputed && res.Streams.NailsComputed

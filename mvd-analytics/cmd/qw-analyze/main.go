@@ -82,6 +82,7 @@ func main() {
 	includeTeam := flag.Bool("include-team", false, "emit per-team aggregates on -view buckets")
 	includeStr := flag.String("include", "", "comma-separated extras for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity; los (line-of-sight + pvs potential-visibility intervals, computed on request); projectiles, beams (spatial rocket/grenade-flight and LG-beam streams for the map); nails (ng/sng nail tracking — links ng/sng fires to damage + nail map stream; high volume)")
 	graphFmt := flag.String("graph", "", "print the analyzer dependency graph (mermaid | json) and exit; no demo argument needed")
+	artifactsMD := flag.Bool("artifacts-md", false, "print the generated artifact catalog (ARTIFACTS.md) and exit; no demo argument needed")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
@@ -97,6 +98,14 @@ func main() {
 			os.Exit(2)
 		}
 		fmt.Println(out)
+		return
+	}
+
+	// -artifacts-md regenerates the committed artifact catalog and exits; it
+	// needs no demo (the manifest is static per binary). `make artifacts-md`
+	// redirects this into mvd-analytics/ARTIFACTS.md.
+	if *artifactsMD {
+		fmt.Print(analyzer.ArtifactsMarkdown())
 		return
 	}
 

@@ -41,12 +41,14 @@ func providerIndex(specs []nodeSpec) map[string]string {
 }
 
 type graphNodeJSON struct {
-	Name     string   `json:"name"`
-	Requires []string `json:"requires"`
-	Provides []string `json:"provides"`
-	Mutates  bool     `json:"mutates"`
-	Lazy     bool     `json:"lazy"`
-	Tier     string   `json:"tier"`
+	Name      string   `json:"name"`
+	Requires  []string `json:"requires"`
+	Provides  []string `json:"provides"`
+	Mutates   bool     `json:"mutates"`
+	Lazy      bool     `json:"lazy"`
+	Tier      string   `json:"tier"`
+	Cost      string   `json:"cost"`
+	ResultKey string   `json:"resultKey"`
 }
 
 type graphEdgeJSON struct {
@@ -68,12 +70,14 @@ func renderGraphJSON(specs []nodeSpec) (string, error) {
 	}
 	for _, s := range specs {
 		g.Nodes = append(g.Nodes, graphNodeJSON{
-			Name:     s.Name,
-			Requires: append([]string(nil), s.Requires...),
-			Provides: append([]string(nil), s.Provides...),
-			Mutates:  s.Mutates,
-			Lazy:     s.Lazy,
-			Tier:     s.tier,
+			Name:      s.Name,
+			Requires:  append([]string(nil), s.Requires...),
+			Provides:  append([]string(nil), s.Provides...),
+			Mutates:   s.Mutates,
+			Lazy:      s.Lazy,
+			Tier:      s.tier,
+			Cost:      s.cost,
+			ResultKey: s.resultKey,
 		})
 		for _, req := range s.Requires {
 			if from, ok := provider[req]; ok {
