@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -112,5 +113,44 @@ func TestArtifactsMarkdownCommittedIsCurrent(t *testing.T) {
 	}
 	if string(committed) != ArtifactsMarkdown() {
 		t.Fatalf("%s is stale — run `make artifacts-md` and commit the result", path)
+	}
+}
+
+// TestReadmeMermaidCurrent pins the DAG diagram embedded in
+// mvd-analytics/README.md (between the dag-mermaid markers) to
+// ExportGraph("mermaid"), so the rendered picture cannot drift from the
+// declared graph — the same lock-step guarantee ARTIFACTS.md has.
+func TestReadmeMermaidCurrent(t *testing.T) {
+	const path = "../README.md"
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	s := string(raw)
+	const begin = "<!-- dag-mermaid:begin"
+	const end = "<!-- dag-mermaid:end -->"
+	i := strings.Index(s, begin)
+	j := strings.Index(s, end)
+	if i < 0 || j < 0 || j < i {
+		t.Fatalf("%s: dag-mermaid markers missing or malformed", path)
+	}
+	block := s[i:j]
+	fence1 := strings.Index(block, "```mermaid\n")
+	if fence1 < 0 {
+		t.Fatalf("%s: no ```mermaid fence inside the markers", path)
+	}
+	block = block[fence1+len("```mermaid\n"):]
+	fence2 := strings.Index(block, "```")
+	if fence2 < 0 {
+		t.Fatalf("%s: unterminated mermaid fence", path)
+	}
+	embedded := strings.TrimRight(block[:fence2], "\n")
+
+	want, err := ExportGraph("mermaid")
+	if err != nil {
+		t.Fatalf("ExportGraph: %v", err)
+	}
+	if embedded != strings.TrimRight(want, "\n") {
+		t.Fatalf("%s dag-mermaid block is stale — re-embed the output of `qw-analyze -graph mermaid`", path)
 	}
 }
