@@ -1,0 +1,37 @@
+{{define "key.html"}}{{template "head" .}}
+<h1>Your API key</h1>
+<p class="muted">Signed in as <strong>{{.DiscordName}}</strong>.</p>
+
+{{if .HasKey}}
+<div class="panel">
+  <h2 style="margin-top:0">Current key</h2>
+  <dl>
+    <dt>Identifier</dt><dd><code>{{.HashPrefix}}</code></dd>
+    <dt>Created</dt><dd>{{.Created}}</dd>
+  </dl>
+  <p class="muted">
+    The full key was shown only once, when it was created. If you have lost it,
+    generate a new one below.
+  </p>
+</div>
+
+<div class="panel warn">
+  <p><strong>Regenerating revokes your current key.</strong> Any app or script
+  still using the old key will stop working immediately.</p>
+  <form method="POST" action="/portal/key">
+    <button class="btn danger" type="submit">Regenerate key</button>
+  </form>
+</div>
+{{else}}
+<div class="panel">
+  <p>You do not have an API key yet.</p>
+  <form method="POST" action="/portal/key">
+    <button class="btn" type="submit">Generate key</button>
+  </form>
+</div>
+{{end}}
+
+<form method="POST" action="/portal/logout">
+  <button class="btn secondary" type="submit">Sign out</button>
+</form>
+{{template "foot" .}}{{end}}

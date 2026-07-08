@@ -16,6 +16,7 @@ import (
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-api/internal/authkeys"
 	"github.com/mvd-analyzer/mvd-api/internal/democache"
+	"github.com/mvd-analyzer/mvd-api/internal/portal"
 )
 
 // runServe starts the HTTP REST server. Blocks until SIGINT/SIGTERM.
@@ -33,6 +34,8 @@ func runServe(args []string) error {
 		burstUser     = fs.Int("burst-user", 20, "per-key burst (bucket size) for portal (user) keys")
 		rateService   = fs.Float64("rate-service", 50, "per-key sustained request rate (req/s) for service keys (e.g. mvd-web)")
 		burstService  = fs.Int("burst-service", 200, "per-key burst (bucket size) for service keys")
+		enablePortal  = fs.Bool("portal", false, "enable the Discord key portal at /portal (requires -auth-dir and the DISCORD_CLIENT_ID/DISCORD_CLIENT_SECRET/PORTAL_COOKIE_SECRET env vars); off = no /portal routes")
+		portalBaseURL = fs.String("portal-base-url", "", "public origin for the portal, e.g. https://qw.example.com; used to build the OAuth redirect_uri and links (required with -portal)")
 	)
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -63,7 +66,35 @@ func runServe(args []string) error {
 			logger: logger,
 		}
 	}
-	handler := newRouter(cache, logger, *mapsDir, auth)
+	// Portal is off unless -portal is set. It issues into the SAME auth store
+	// the middleware validates against, so it REQUIRES -auth-dir. The Discord
+	// credentials and cookie HMAC secret arrive via ENV, never flags (flags
+	// show in `ps` — a secret in a flag is a leak). A misconfigured portal must
+	// refuse to boot, not run half-open (PLAN-hosting D5).
+	var portalHandler *portal.Portal
+	if *enablePortal {
+		// A nil store here (no -auth-dir) is the "requires -auth-dir" config
+		// error, which NewConfig rejects. Pass the interface as an explicit nil
+		// (not a typed-nil *authkeys.Store, which would read as non-nil).
+		var store portal.KeyStore
+		if auth != nil {
+			store = auth.store
+		}
+		cfg, err := portal.NewConfig(
+			*portalBaseURL,
+			os.Getenv("DISCORD_CLIENT_ID"),
+			os.Getenv("DISCORD_CLIENT_SECRET"),
+			[]byte(os.Getenv("PORTAL_COOKIE_SECRET")),
+			store,
+			logger,
+		)
+		if err != nil {
+			return fmt.Errorf("portal: %w", err)
+		}
+		portalHandler = portal.New(cfg)
+	}
+
+	handler := newRouter(cache, logger, *mapsDir, auth, portalHandler)
 
 	srv := &http.Server{
 		Addr:         *addr,

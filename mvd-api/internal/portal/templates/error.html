@@ -1,0 +1,9 @@
+{{define "error.html"}}{{template "head" .}}
+<h1>Something went wrong</h1>
+<div class="panel">
+  <p>{{.Message}}</p>
+</div>
+<p>
+  <a class="btn" href="/portal">Back to start</a>
+</p>
+{{template "foot" .}}{{end}}

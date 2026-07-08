@@ -1,0 +1,27 @@
+{{define "landing.html"}}{{template "head" .}}
+<h1>QuakeWorld MVD Analytics API</h1>
+<p>
+  This service parses QuakeWorld <code>.mvd</code> demos into structured
+  analytics — frags, damage, weapon accuracy, positions, region control and
+  more — over a JSON REST API.
+</p>
+<p class="muted">
+  Access requires an API key. Sign in with Discord to get one; it takes a few
+  seconds and no email or server membership is requested — only your Discord
+  username and id.
+</p>
+
+<div class="panel">
+  <a class="btn" href="/portal/login">Sign in with Discord</a>
+</div>
+
+<h2>Using the API</h2>
+<p class="muted">
+  Send your key as a bearer token:
+</p>
+<code>Authorization: Bearer qwmvd_…</code>
+<p class="muted" style="margin-top:1rem">
+  See the <a href="https://github.com/">API documentation</a> for the endpoint
+  surface, parameters and response shapes.
+</p>
+{{template "foot" .}}{{end}}

@@ -3,6 +3,8 @@ package main
 import (
 	"log/slog"
 	"net/http"
+
+	"github.com/mvd-analyzer/mvd-api/internal/portal"
 )
 
 // server bundles the per-request dependencies.
@@ -19,10 +21,20 @@ type server struct {
 // newRouter returns an http.Handler with every endpoint registered.
 // Logging + panic recovery wrap the mux. auth may be nil (no-auth /
 // localhost mode); when non-nil the auth + rate-limit middleware is inserted
-// between accessLog and recover.
-func newRouter(store demoStore, logger *slog.Logger, mapsDir string, auth *authenticator) http.Handler {
+// between accessLog and recover. p may be nil (portal disabled); when non-nil
+// its /portal routes are registered on the mux (and are auth-exempt, so they
+// are reachable without an API key even in auth mode — see authExempt).
+func newRouter(store demoStore, logger *slog.Logger, mapsDir string, auth *authenticator, p *portal.Portal) http.Handler {
 	s := &server{store: store, logger: logger, mapsDir: mapsDir}
 	mux := http.NewServeMux()
+
+	// Portal routes are registered ONLY when -portal is set (p != nil). When
+	// off, /portal is not a route at all — it 404s — so today's behaviour is
+	// unchanged. When on, the routes sit under the phase-14 /portal exemption
+	// and do their own Discord-cookie auth.
+	if p != nil {
+		p.Register(mux)
+	}
 
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
