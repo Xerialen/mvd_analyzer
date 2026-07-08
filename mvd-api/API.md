@@ -231,8 +231,12 @@ Authorization: Bearer qwmvd_<...>
   `429 rate_limited` + `Retry-After: <seconds>`. Two classes exist: normal
   (portal) keys and looser `service` keys (issued to first-party apps).
 
-Get a key from the portal (once deployed) or ask the operator for a service
-key.
+**Getting a key.** On a deployment that runs with `-portal`, a user signs in
+with Discord at **`https://<host>/portal`** and self-services one key (sign in
+→ *Generate key* → copy it once). Regenerating revokes the old key. First-party
+apps get a `service` key from the operator instead (the `keys` CLI). See
+[mvd-api/README.md — "The Discord key portal"](README.md#the-discord-key-portal-getting-a-key)
+for the full flow. The portal is off unless the operator enables it.
 
 ### 2.6 CORS (browser clients)
 

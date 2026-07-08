@@ -22,6 +22,11 @@
 //	-auth-dir         keys.json dir; when set, /v1/* requires an API key (empty = no auth)
 //	-rate-user        per-key req/s for portal keys (default 5); -burst-user (default 20)
 //	-rate-service     per-key req/s for service keys (default 50); -burst-service (default 200)
+//	-portal           enable the Discord key portal at /portal (requires -auth-dir + env)
+//	-portal-base-url  public origin for the portal, e.g. https://qw.example.com
+//
+// The portal's secrets come from the environment, never flags:
+// DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, PORTAL_COOKIE_SECRET (>= 16 bytes).
 //
 // See mvd-api/README.md for the endpoint surface.
 package main

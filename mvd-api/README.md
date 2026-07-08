@@ -12,7 +12,7 @@ binary).
 ## Usage
 
 ```
-mvd-api [serve] [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json] [-auth-dir DIR]
+mvd-api [serve] [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json] [-auth-dir DIR] [-portal -portal-base-url URL]
 mvd-api version
 mvd-api cache stats [-cache-dir PATH]
 mvd-api cache prune [-cache-dir PATH] [-max-bytes N | -older-than 30d | -all]
@@ -34,6 +34,21 @@ mvd-api keys list   -auth-dir DIR
 | `-burst-user`       | `20`                                    | Auth mode: per-key burst (token-bucket size) for user keys |
 | `-rate-service`     | `50`                                    | Auth mode: per-key sustained request rate (req/s) for `service` keys (e.g. the first-party web app) |
 | `-burst-service`    | `200`                                   | Auth mode: per-key burst for service keys |
+| `-portal`           | `false`                                 | Enable the Discord key portal at `/portal` (users self-service their own key). **Off = no `/portal` routes at all.** Requires `-auth-dir` **and** the three env vars below; see "The Discord key portal" |
+| `-portal-base-url`  | _(empty)_                               | Public origin of the deployment, e.g. `https://qw.example.com`. Used to build the OAuth `redirect_uri` (`<base>/portal/callback`) and absolute links. Required with `-portal` |
+
+The portal's secrets are supplied via **environment variables, never
+flags** (a flag value is visible in `ps`):
+
+| Env var | Description |
+|---|---|
+| `DISCORD_CLIENT_ID`     | Discord application's OAuth2 client id |
+| `DISCORD_CLIENT_SECRET` | Discord application's OAuth2 client secret |
+| `PORTAL_COOKIE_SECRET`  | HMAC key for the session/state cookies. **≥ 16 bytes** (32 recommended); the server refuses to start if it is shorter |
+
+With `-portal` set, the server **refuses to start** if `-auth-dir`,
+`-portal-base-url`, or any of the three env vars is missing — a
+misconfigured portal never runs half-open.
 
 Running the server is the default action — bare flags (or an explicit
 `serve`) start it. A positional first argument that isn't a known
@@ -89,6 +104,44 @@ no running server needed):
   hash.
 
 A user can self-check a key with `GET /v1/auth/check` (`204` live, `401` not).
+
+### The Discord key portal (getting a key)
+
+The `keys` CLI is for the operator (and for issuing `service` keys). For
+end users, the optional **portal** lets them get their own key by signing
+in with Discord — no operator in the loop.
+
+Enable it with `-portal -portal-base-url https://<domain>` plus the three
+env vars above; it also requires `-auth-dir` (the portal issues into the
+same `keys.json` the auth middleware validates against). When `-portal` is
+**not** set, none of the `/portal` routes exist (a request to `/portal`
+404s) and the server is unchanged.
+
+Flow (all under `/portal`, exempt from API-key auth — they use their own
+Discord-cookie session, not a Bearer key):
+
+- `GET /portal` — landing page describing the service, with a
+  "Sign in with Discord" button.
+- `GET /portal/login` → 302 to Discord's consent screen (OAuth2 scope
+  **`identify` only** — no email, no guild access).
+- `GET /portal/callback` — Discord redirects here; the portal verifies the
+  OAuth `state` (CSRF double-submit), exchanges the code, reads the user's
+  Discord id + username, and sets a **1-hour HMAC-signed session cookie**.
+- `GET /portal/key` — shows the user's current key **status** (hash prefix
+  + created date) and a generate / regenerate button.
+- `POST /portal/key` — issues a key and shows the **full key exactly once**
+  (regenerating **revokes** the previous one — one active key per user).
+- `POST /portal/logout` — clears the session cookie.
+
+The session and state cookies are `HttpOnly`, `Secure`, `SameSite=Lax`,
+`Path=/portal`. The full key is only ever shown on the issue response, and
+only its SHA-256 hash is stored — the same guarantee as the CLI.
+
+**Operator prerequisite:** create a Discord application (Developer Portal →
+OAuth2), note the client id + secret, and register the redirect URI
+`https://<domain>/portal/callback` (add `http://localhost:8080/portal/callback`
+as a second URI for local testing). See `deploy/` (phase 16b) for the
+systemd `EnvironmentFile` that carries the secrets machine-side.
 
 ## REST endpoints
 

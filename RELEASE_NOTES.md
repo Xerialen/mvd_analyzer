@@ -7,6 +7,34 @@ detail.
 
 ## 2026-07-08
 
+- **mvd-api Discord key portal + key-store cross-process lock (no schema
+  change; transport/auth layer).** Optional, off by default — nothing changes
+  for existing localhost users, and analytics output is untouched.
+  - **The portal (`internal/portal`).** With `-portal -portal-base-url URL`
+    (plus `-auth-dir` and the `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` /
+    `PORTAL_COOKIE_SECRET` env vars), the server serves a one-page portal at
+    `/portal` where a user signs in with Discord (OAuth2 scope `identify` only)
+    and self-services one API key. `POST /portal/key` shows the full key once
+    and revokes any prior key for that user. Without `-portal`, the `/portal`
+    routes are not registered at all (they 404) and the server is unchanged.
+  - **Session security.** The only server-trusted state is a 1-hour
+    HMAC-SHA256-signed session cookie (no server-side store); the OAuth `state`
+    nonce is double-submitted against a signed cookie (CSRF); all cookies are
+    `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/portal`. The Discord username
+    is HTML-escaped (`html/template`), and neither the cookie secret nor the
+    Discord client secret ever reaches a log line, error body, or page. The
+    portal adds **no new dependencies** (stdlib `net/http` OAuth, `crypto/hmac`,
+    `html/template`, `embed`).
+  - **Key store cross-process lock.** `internal/authkeys` mutations
+    (`Issue`/`Revoke`) now take a cross-process `flock` and reload `keys.json`
+    under the lock before writing, so the portal (issuing inside the live
+    server) and a concurrent `keys` CLI can no longer clobber each other's
+    writes. Reads stay lock-free. A new `ActiveByDiscordID` accessor backs the
+    portal's key-status display.
+  - **Deferred (manual, needs an operator-provisioned Discord app):** the
+    end-to-end run against the real Discord OAuth flow. CI proves the flow with
+    an httptest Discord stub.
+
 - **mvd-api API keys + auth middleware (no schema change; transport/auth
   layer).** Optional, off by default — nothing changes for existing localhost
   users, and analytics output is untouched.
