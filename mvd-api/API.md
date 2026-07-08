@@ -798,6 +798,14 @@ UIs that have a map name from `/overview` or a match listing.
   **REST-only — not an MCP tool** (the payload is large, up to tens of
   MB). Immutable cache + ETag; send `If-None-Match` for a 304.
 
+> **MCP tool coverage.** `/los`, `/shots`, `/streams/{projectiles,beams,nails}`,
+> and `/airgibs` are reachable over REST (and, when the MCP server runs, over
+> HTTP with a `Bearer` key) but have **no dedicated MCP tool** yet — like
+> `/geometry` above, they are omitted from the tool surface for now. `/los` is
+> still reachable through the generic `getArtifact` tool (`name=los`). See
+> `mvd-mcp/README.md` for the full MCP tool list; adding first-class tools for
+> these is deferred.
+
 ### 4.17 The artifact surface — `GET /v1/artifacts`, `/v1/graph`
 
 The analytics pipeline is an explicit DAG of **artifacts** (per-demo,

@@ -17,7 +17,6 @@ After=network-online.target mvd-api.service
 Wants=network-online.target
 # Best-effort: prefer mvd-api up first, but mvd-mcp tolerates a cold API
 # (the per-request auth check simply 401s until the API is reachable).
-After=mvd-api.service
 
 [Service]
 Type=simple

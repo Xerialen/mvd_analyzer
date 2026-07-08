@@ -19,7 +19,9 @@
 	# --- MCP streamable HTTP --------------------------------------------
 	# mvd-mcp serves the handler at exactly /mcp (and /mcp/); the path is
 	# passed through unchanged (no strip), matching mcp_http.go's mcpPath.
-	# /healthz on the MCP server is also under :8081 for probes.
+	# The MCP server's own /healthz is NOT proxied here (only /mcp* is);
+	# probe it directly on localhost:8081/healthz from the host. Public
+	# /healthz below routes to mvd-api.
 	handle /mcp* {
 		reverse_proxy localhost:8081 {
 			# Overwrite XFF with the direct client IP Caddy observed, so a

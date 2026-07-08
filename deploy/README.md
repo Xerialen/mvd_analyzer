@@ -38,10 +38,13 @@ See PLAN-hosting.md → **"Operator prerequisites"**. In short:
 On a build host with the Go toolchain:
 
 ```sh
-make build          # produces dist/mvd-api and dist/mvd-mcp
+make build-bin      # produces dist/mvd-api and dist/mvd-mcp
 ```
 
-(or `make build-linux` for cross-compiled `dist/mvd-*-linux-amd64`.)
+(`make build` builds only the WASM web frontend, not the server binaries.)
+To cross-compile Linux binaries on another OS, use
+`make build-api-linux build-mcp-linux` (or `make build-all-platforms`),
+which emit `dist/mvd-api-linux-amd64` and `dist/mvd-mcp-linux-amd64`.
 
 ## 2. Place binaries and create the account
 
