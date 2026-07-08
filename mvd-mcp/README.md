@@ -74,7 +74,7 @@ section with a hand-written description and (where useful)
 `players`/`weapon`/window filters — that ergonomics is the product
 surface, and it stays. The last two are the **generic** DAG accessor:
 `listArtifacts` returns the pipeline manifest (every artifact's name,
-tier, cost, `resultKey`, and whether it is `servable`), and `getArtifact`
+cost, `resultKey`, and whether it is `servable`), and `getArtifact`
 fetches one servable artifact by name. This is how the automatic API
 surface (plan §7) is realized here: a **new** analytics artifact becomes
 reachable through `getArtifact` with **zero** new hand-written tools,

@@ -3,7 +3,7 @@ package analyzer
 import "github.com/mvd-analyzer/mvd-reader/events"
 
 // Roster is the canonical player/team table with the duel (player-name-as-team)
-// rewrite folded in. It is produced once by RosterAnalyzer (the last core node)
+// rewrite folded in. It is produced once by RosterAnalyzer (a CoreProducer)
 // from co.DemoInfo and published on CoreOutputs, so every producer labels teams
 // correctly AT BIRTH instead of a whole-Result rewrite fixing them afterwards.
 //
@@ -67,8 +67,10 @@ func newRoster(di *DemoInfoResult) *Roster {
 // isDuelResult covered via its match-players fallback. A no-op when the demoinfo
 // already decided the verdict (demoDecided) or the count isn't two, so a real
 // team game whose demoinfo happens to be absent is never misclassified. Called
-// from MatchAnalyzer.Finalize, which runs before every label-emitting derived
-// producer, so the promoted verdict propagates to all of them.
+// from MatchAnalyzer.Finalize; it mutates the shared co.Roster in place, so a
+// label-emitting producer that finalizes later picks up the promoted verdict.
+// (This fallback only fires on non-KTX demos with no demoinfo; on the KTX
+// corpus demoDecided is always set, so it is a no-op.)
 func (r *Roster) noteMatchParticipants(names []string) {
 	if r == nil || r.demoDecided || len(names) != 2 {
 		return
@@ -110,11 +112,12 @@ func (r *Roster) Participants() []string {
 	return r.order
 }
 
-// RosterAnalyzer is the core-tier node that produces the Roster. It collects no
-// events — the duel verdict and participant set come entirely from co.DemoInfo,
-// available by the time this (the last core node) populates. It writes nothing
-// to Result directly except the in-place duel rewrite of the DemoInfo team
-// labels it owns; every other producer reads the published Roster at Finalize.
+// RosterAnalyzer is the CoreProducer node that produces the Roster. It collects
+// no events — the duel verdict and participant set come entirely from
+// co.DemoInfo, which its `requires` edge on "demoinfo" guarantees is populated
+// first. It writes nothing to Result directly except the in-place duel rewrite
+// of the DemoInfo team labels it owns; every other producer reads the published
+// Roster at Finalize.
 type RosterAnalyzer struct{}
 
 // NewRosterAnalyzer creates the roster analyzer.
@@ -132,10 +135,11 @@ func (a *RosterAnalyzer) OnEvent(event events.Event) error { return nil }
 func (a *RosterAnalyzer) Finalize(result *Result) error { return nil }
 
 // PopulateCore builds and publishes the Roster from the demoinfo the demoinfo
-// analyser produced earlier in the core phase, and applies the duel rewrite to
-// the DemoInfo team labels it owns. Runs before any derived Finalize or
-// post-processor, so every producer sees a complete Roster and a duel-rewritten
-// DemoInfo.
+// analyser produced (roster's `requires` edge on "demoinfo" schedules it
+// first), and applies the duel rewrite to the DemoInfo team labels it owns.
+// Every team-labelling producer declares a `requires` edge on "roster", so the
+// DAG schedules them after this and each sees a complete Roster and a
+// duel-rewritten DemoInfo.
 func (a *RosterAnalyzer) PopulateCore(co *CoreOutputs) {
 	r := newRoster(co.DemoInfo)
 	co.Roster = r

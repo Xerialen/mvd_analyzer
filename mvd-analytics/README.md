@@ -148,7 +148,7 @@ The only ordering guarantee is per-edge: a `CoreConsumer`'s declared
 `requires` edge forces its producer's `PopulateCore` to run earlier in
 the topological order, so the field is present when the consumer's
 `Finalize` runs. For example `frag` reads `co.Names` because it declares
-an edge on `demoinfo` — the edge, not a hardcoded "core phase", is what
+an edge on `demoinfo` — the edge, not a hardcoded phase, is what
 puts `demoinfo`'s `PopulateCore` first. Two nodes with no edge between
 them may finalise in either order; `TestOrderIndependence` proves the
 output doesn't care.

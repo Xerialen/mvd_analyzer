@@ -8,9 +8,9 @@ import (
 )
 
 // Clock is the match-relative time base every producer converts to at
-// Finalize. It is produced once by ClockAnalyzer (the first core node) from
-// the same MatchTimingDetector state the timeline runs, plus the pause and
-// wall-clock-anchor inputs.
+// Finalize. It is produced once by ClockAnalyzer (a CoreProducer with no
+// dependencies, so scheduled early) from the same MatchTimingDetector state
+// the timeline runs, plus the pause and wall-clock-anchor inputs.
 //
 // Publishing it on CoreOutputs replaces the old whole-Result
 // normalizeMatchRelativeTimes rebase: instead of stamping every timestamp on
@@ -62,7 +62,7 @@ func (c *Clock) ToMatch(t int32) int32 {
 	return t - c.MatchStartMs
 }
 
-// ClockAnalyzer is the core-tier node that produces the Clock. It owns a
+// ClockAnalyzer is the CoreProducer node that produces the Clock. It owns a
 // MatchTimingDetector (the same state machine the timeline gates on), the
 // pause-sample collection, the mvdhidden 0x000B demo-start anchor, and the
 // serverinfo `epoch` fallback — every input the match-relative epoch and the
@@ -132,8 +132,9 @@ func (a *ClockAnalyzer) OnEvent(event events.Event) error {
 // Streams.Global) from the published Clock.
 func (a *ClockAnalyzer) Finalize(result *Result) error { return nil }
 
-// PopulateCore publishes the Clock. Runs in the core phase before any derived
-// Finalize or post-processor, so every producer sees a complete Clock.
+// PopulateCore publishes the Clock. Every node that stamps match-relative
+// timestamps declares a `requires` edge on "clock", so the DAG schedules this
+// before them and every such producer sees a complete Clock.
 func (a *ClockAnalyzer) PopulateCore(co *CoreOutputs) {
 	// Effective match end: the explicit detector end, or the latest in-match
 	// position sample when the demo was cut before intermission (F13). This

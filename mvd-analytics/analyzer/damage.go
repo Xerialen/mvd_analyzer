@@ -103,7 +103,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// duelers sharing a non-empty colour team would classify every hit as
 	// IsTeam — silently emptying airgibs, zeroing the aim enemy splits and
 	// contradicting the duel-classified Shots.VictimKinds (F20). Read the duel
-	// verdict from the roster (the core-tier table every producer shares), so
+	// verdict from the roster (the shared CoreOutputs table every producer reads), so
 	// the victim-weapon buckets and the matrix are built once, correctly,
 	// instead of being rebuilt after the fact.
 	duel := a.core.IsDuel()
