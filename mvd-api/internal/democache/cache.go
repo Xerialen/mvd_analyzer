@@ -79,6 +79,15 @@ type CacheMeta struct {
 // Injectable so tests don't need a real demo on disk.
 type ParseFunc func(ctx context.Context, mvdBytes []byte, filename string) (*result.Result, error)
 
+// BuildLOSFunc materialises the los artifact onto res in place. Injectable
+// (mirroring ParseFunc) so a test can prove the raycast goes through the
+// parse-semaphore acquire without a real BSP. Default: art.Build.
+type BuildLOSFunc func(art *analyzer.LazyArtifact, res *result.Result) error
+
+func defaultBuildLOS(art *analyzer.LazyArtifact, res *result.Result) error {
+	return art.Build(res, analyzer.MaterializeDeps{})
+}
+
 // defaultParse runs the standard analyzer pipeline with the spatial
 // weapon-fire streams and nails built (BuildShotStreams+BuildNails). Since
 // phase 12 the mvd-api cache is always-full: the +3–4% parse cost and ~+5%
@@ -102,6 +111,7 @@ type Cache struct {
 	Hub       *hubfetch.Client
 	MemoryLRU int
 	Parse     ParseFunc
+	BuildLOS  BuildLOSFunc // nil → defaultBuildLOS (art.Build)
 
 	// MaxBytes is the tier-1 + tier-2 + tier-3 disk budget. When exceeded, a
 	// background sweep (maybeGC) evicts oldest-mtime-first down to it.
@@ -119,10 +129,11 @@ type Cache struct {
 	lastResolved sync.Map // sha → *hubfetch.GameInfo (drained by loadResult)
 
 	// parseSem is a counting semaphore (buffered channel) bounding the
-	// number of concurrent hub-download+full-parse operations — the
-	// expensive cold path. The per-SHA singleflight already dedupes requests
-	// for the *same* demo; this caps a storm of *distinct* cold demos from
-	// spawning unbounded parallel parses. Cache hits never touch it.
+	// number of concurrent heavy cold operations — a hub-download+full-parse
+	// (loadResult) or an on-demand LOS raycast (EnsureLOS). The per-SHA
+	// singleflight / losLocks already dedupe requests for the *same* demo;
+	// this caps a storm of *distinct* cold demos from spawning unbounded
+	// parallel heavy work. Cache hits never touch it.
 	parseSem chan struct{}
 
 	// gcRunning guards maybeGC so at most one background sweep runs at a
@@ -148,6 +159,9 @@ func (c *Cache) ensureInit() {
 	c.once.Do(func() {
 		if c.Parse == nil {
 			c.Parse = defaultParse
+		}
+		if c.BuildLOS == nil {
+			c.BuildLOS = defaultBuildLOS
 		}
 		if c.MemoryLRU <= 0 {
 			c.MemoryLRU = 4
@@ -181,12 +195,12 @@ func touch(path string) {
 	_ = os.Chtimes(path, now, now)
 }
 
-// acquireParse blocks until a parse slot is free, honouring ctx while
-// queued. Cancellation is respected only *while waiting* for the slot — once
-// acquired, the parse itself runs to completion (the singleflight shares one
-// computation across every same-SHA waiter; see GetResult). Distinct demos
-// have distinct SHAs, so a cancel here only affects the cancelling client's
-// own fan-out, never an unrelated demo.
+// acquireParse blocks until a heavy-operation slot is free, honouring ctx
+// while queued. Cancellation is respected only *while waiting* for the slot —
+// once acquired, the parse/raycast itself runs to completion (the
+// singleflight / losLock shares one computation across every same-SHA
+// waiter). Distinct demos have distinct SHAs, so a cancel here only affects
+// the cancelling client's own fan-out, never an unrelated demo.
 func (c *Cache) acquireParse(ctx context.Context) (func(), error) {
 	select {
 	case c.parseSem <- struct{}{}:
@@ -196,13 +210,12 @@ func (c *Cache) acquireParse(ctx context.Context) (func(), error) {
 	}
 }
 
-// maybeGC launches a background sweep when the budget may be exceeded. It
-// never blocks the request path: it fires after a tier write, guarded so
-// only one sweep runs at a time.
+// maybeGC launches a background sweep after a tier write, guarded so only one
+// sweep runs at a time; it never blocks the request path. It runs even when
+// eviction is disabled (MaxBytes <= 0): SweepToBudget still reaps stale
+// atomic-write temp files in that mode, so a crashed writer's leftovers are
+// cleaned online, not only at the next startup.
 func (c *Cache) maybeGC() {
-	if c.MaxBytes <= 0 {
-		return
-	}
 	if !c.gcRunning.CompareAndSwap(false, true) {
 		return
 	}
@@ -218,8 +231,8 @@ func (c *Cache) maybeGC() {
 // serving.
 func (c *Cache) CleanupOnStartup() {
 	c.ensureInit()
-	CleanOldVersionTrees(c.Root, result.CurrentSchemaVersion, c.log())
-	CleanStaleArtifacts(c.Root, c.log())
+	CleanOldVersionTrees(c.Root, result.CurrentSchemaVersion, false, c.log())
+	CleanStaleArtifacts(c.Root, false, c.log())
 	SweepToBudget(c.Root, c.MaxBytes, c.log())
 }
 
@@ -394,7 +407,9 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 //
 // Serialised per SHA (losLocks) with the need-check inside the lock, so /los
 // for demo B does not queue behind demo A's raycast and two callers for one
-// demo cannot race the splice onto the shared Result.
+// demo cannot race the splice onto the shared Result. The raycast itself
+// (the ~2.5s heavy compute) is additionally bounded across distinct demos by
+// the same parse semaphore as the cold parse — see the acquire below.
 func (c *Cache) EnsureLOS(ctx context.Context, id DemoID) (*result.Result, CacheMeta, error) {
 	res, meta, err := c.GetResult(ctx, id)
 	if err != nil {
@@ -418,13 +433,31 @@ func (c *Cache) EnsureLOS(ctx context.Context, id DemoID) (*result.Result, Cache
 	if c.tier3Load(sha, art, res) {
 		return res, meta, nil
 	}
-	// The raycast below is deliberately NOT bounded by parseSem: it is
-	// per-SHA-serialised (losLocks) but unbounded across distinct demos.
-	// Acquiring parseSem here while holding losLocks[sha] would interleave
-	// two lock families (cold parses hold parseSem without losLocks) —
-	// safe today but easy to regress; flagged for phase 14 instead of
-	// wrapped speculatively (see PLAN-api F15 follow-up in the phase report).
-	if err := art.Build(res, analyzer.MaterializeDeps{}); err != nil {
+
+	// The raycast (~2.5s + BSP load) is per-SHA-serialised by losLocks but
+	// otherwise unbounded across distinct demos — an unauthenticated
+	// CPU-exhaustion path (N cold /los = N parallel raycasts), which is what
+	// F15's semaphore exists to close. Bound it with the SAME parse semaphore
+	// as the cold parse: one "max concurrent heavy cold operations" knob.
+	//
+	// Deadlock-free: by here EnsureLOS's own GetResult has fully released
+	// parseSem (loadResult acquires and releases it around the parse, never
+	// holding it across the return), so no goroutine holds parseSem while
+	// taking a losLock. losLocks are per-SHA, so two raycast holders never
+	// contend on the same losLock; and a cold parse waits on parseSem but
+	// never on any losLock. No wait-cycle can form.
+	//
+	// Ordering matters: the losLock and the need-checks above run WITHOUT a
+	// semaphore slot, so same-SHA callers dedupe on the losLock cheaply and
+	// never occupy a slot while blocked. The semaphore is acquired only around
+	// Build, so it bounds exactly the genuine distinct-demo raycasts.
+	release, err := c.acquireParse(ctx)
+	if err != nil {
+		return nil, meta, err
+	}
+	defer release()
+
+	if err := c.BuildLOS(art, res); err != nil {
 		return nil, meta, fmt.Errorf("compute los: %w", err)
 	}
 	c.tier3Store(sha, art, res)

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 )
 
@@ -118,6 +119,116 @@ func TestParseSemaphore_RespectsCtxCancellationWhileQueued(t *testing.T) {
 
 	if got := bParses.Load(); got != 0 {
 		t.Errorf("B parsed %d times; a cancelled queued request must not acquire the slot", got)
+	}
+	close(releaseA)
+}
+
+// TestParseSemaphore_BoundsConcurrentLOSRaycasts proves the on-demand LOS
+// raycast in EnsureLOS goes through the same parse-semaphore acquire as the
+// cold parse: N concurrent /los for N distinct cold demos never run more than
+// MaxParses raycasts in parallel. The injectable BuildLOS hook stands in for
+// the real (BSP-backed) raycast so the test needs no map data.
+func TestParseSemaphore_BoundsConcurrentLOSRaycasts(t *testing.T) {
+	hub := newFakeHub()
+	defer hub.Close()
+
+	const N = 8
+	ids := make([]DemoID, N)
+	for i := 0; i < N; i++ {
+		content := fmt.Sprintf("los-demo-%d-bytes", i)
+		sha := sha256Hex([]byte(content))
+		hub.addGame(2000+i, sha, content)
+		ids[i] = DemoID{Kind: "gameId", GameID: 2000 + i}
+	}
+
+	c := New(t.TempDir(), hub.hubClient())
+	c.Parse = streamsWithPlayers // Result with a Streams block, no BSP
+	c.MaxParses = 2
+
+	var cur, peak atomic.Int32
+	c.BuildLOS = func(art *analyzer.LazyArtifact, res *result.Result) error {
+		n := cur.Add(1)
+		for {
+			p := peak.Load()
+			if n <= p || peak.CompareAndSwap(p, n) {
+				break
+			}
+		}
+		time.Sleep(30 * time.Millisecond)
+		cur.Add(-1)
+		return art.Build(res, analyzer.MaterializeDeps{})
+	}
+
+	var wg sync.WaitGroup
+	for _, id := range ids {
+		wg.Add(1)
+		go func(id DemoID) {
+			defer wg.Done()
+			if _, _, err := c.EnsureLOS(context.Background(), id); err != nil {
+				t.Errorf("EnsureLOS(%v): %v", id, err)
+			}
+		}(id)
+	}
+	wg.Wait()
+
+	if got := peak.Load(); got > 2 {
+		t.Errorf("peak concurrent LOS raycasts = %d; want <= MaxParses (2)", got)
+	}
+}
+
+// TestParseSemaphore_LOSRespectsCtxCancellationWhileQueued proves a /los
+// caller waiting for a raycast slot returns with the ctx error and never
+// runs Build, when cancelled while queued.
+func TestParseSemaphore_LOSRespectsCtxCancellationWhileQueued(t *testing.T) {
+	hub := newFakeHub()
+	defer hub.Close()
+
+	contentA, contentB := "los-A-bytes", "los-B-bytes"
+	shaA, shaB := sha256Hex([]byte(contentA)), sha256Hex([]byte(contentB))
+	hub.addGame(1, shaA, contentA)
+	hub.addGame(2, shaB, contentB)
+
+	c := New(t.TempDir(), hub.hubClient())
+	c.Parse = streamsWithPlayers
+	c.MaxParses = 1 // one slot; A's raycast holds it, B must queue
+
+	started := make(chan struct{})
+	releaseA := make(chan struct{})
+	var bBuilds atomic.Int32
+	c.BuildLOS = func(art *analyzer.LazyArtifact, res *result.Result) error {
+		switch res.FilePath {
+		case shaA + ".mvd.gz":
+			close(started)
+			<-releaseA
+		case shaB + ".mvd.gz":
+			bBuilds.Add(1) // must never run: B is cancelled while queued
+		}
+		return art.Build(res, analyzer.MaterializeDeps{})
+	}
+
+	go func() { _, _, _ = c.EnsureLOS(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
+	<-started // A now occupies the only raycast slot
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() {
+		_, _, err := c.EnsureLOS(ctx, DemoID{Kind: "gameId", GameID: 2})
+		errCh <- err
+	}()
+
+	time.Sleep(30 * time.Millisecond) // let B reach the semaphore wait
+	cancel()
+
+	select {
+	case err := <-errCh:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("cancelled EnsureLOS err = %v; want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("cancelled EnsureLOS did not return; ctx not honoured while queued")
+	}
+	if got := bBuilds.Load(); got != 0 {
+		t.Errorf("B raycast ran %d times; a cancelled queued request must not acquire the slot", got)
 	}
 	close(releaseA)
 }
