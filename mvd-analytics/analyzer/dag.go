@@ -19,8 +19,8 @@ import "fmt"
 //
 // The out-of-band lazy pass ComputeLOS (los.go) is modelled as a lazy DAG node
 // since Stage 3 (materialize.go): a nodeSpec with Lazy:true, registered in
-// lazyArtifacts rather than in the eager core/derived/post slices. It does NOT
-// enter analyzeSource's execution order (r.specs / r.nodes stay the 21 eager
+// lazyArtifacts rather than in the eager analyzer / post-processor slices. It
+// does NOT enter analyzeSource's execution order (r.specs / r.nodes stay the 21 eager
 // nodes), so the eager bundle and the golden corpus are unchanged; it appears
 // in -graph output marked lazy and is materialised on demand through the
 // LazyArtifact hooks (mvd-api's per-artifact tier-3 cache). (The spatial
@@ -215,26 +215,18 @@ func specFromMeta(m nodeMeta, regIndex int, a Analyzer, p ResultPostProcessor) n
 }
 
 // collectSpecs wraps every registered analyzer and post-processor in a
-// nodeSpec, assigning regIndex in registration order (core, then derived,
-// then post-processors). The regIndex is the topo sort's tie-break — an
+// nodeSpec, assigning regIndex in registration order (analyzers, then
+// post-processors). The regIndex is the topo sort's tie-break — an
 // arbitrary deterministic default kept for stable -graph output, log
 // readability and comparable PhaseTimings; output is identical under any
 // valid order (TestOrderIndependence).
 func (r *Registry) collectSpecs() []nodeSpec {
-	specs := make([]nodeSpec, 0, len(r.core)+len(r.derived)+len(r.postProcessors))
+	specs := make([]nodeSpec, 0, len(r.analyzers)+len(r.postProcessors))
 	idx := 0
-	for _, a := range r.core {
+	for _, a := range r.analyzers {
 		m, ok := analyzerNodeMeta[a.Name()]
 		if !ok {
-			panic(fmt.Sprintf("dag: core analyzer %q has no node metadata", a.Name()))
-		}
-		specs = append(specs, specFromMeta(m, idx, a, nil))
-		idx++
-	}
-	for _, a := range r.derived {
-		m, ok := analyzerNodeMeta[a.Name()]
-		if !ok {
-			panic(fmt.Sprintf("dag: derived analyzer %q has no node metadata", a.Name()))
+			panic(fmt.Sprintf("dag: analyzer %q has no node metadata", a.Name()))
 		}
 		specs = append(specs, specFromMeta(m, idx, a, nil))
 		idx++
@@ -397,12 +389,9 @@ func (r *Registry) execOrder() []nodeSpec {
 	if r.nodes != nil {
 		return r.nodes
 	}
-	specs := make([]nodeSpec, 0, len(r.core)+len(r.derived)+len(r.postProcessors))
-	for _, a := range r.core {
+	specs := make([]nodeSpec, 0, len(r.analyzers)+len(r.postProcessors))
+	for _, a := range r.analyzers {
 		specs = append(specs, nodeSpec{Name: a.Name(), tier: "core", analyzer: a})
-	}
-	for _, a := range r.derived {
-		specs = append(specs, nodeSpec{Name: a.Name(), tier: "derived", analyzer: a})
 	}
 	for _, p := range r.postProcessors {
 		specs = append(specs, nodeSpec{Name: postProcName(p), tier: "post", post: p})

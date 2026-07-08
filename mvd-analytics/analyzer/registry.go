@@ -27,20 +27,19 @@ type PhaseTiming struct {
 // parameters individual analyzers read; callers may mutate it before
 // analyzing to override defaults for a single run.
 type Registry struct {
-	// core analysers are the state-reconstruction tier by convention:
-	// they populate CoreOutputs (DemoInfo, NameTable, FragEntries, …)
-	// that most other analysers consume. The slice is a grouping label
-	// (and the default tie-break position), not an ordering mechanism —
-	// what guarantees a producer runs before its consumers is the
-	// consumers' declared edges in dag.go.
-	core []Analyzer
+	// analyzers are the event-reading nodes: each sees Init / OnEvent over
+	// the event stream and then Finalize. Some publish CoreOutputs
+	// (DemoInfo, NameTable, FragEntries, …) via the CoreProducer interface;
+	// others consume them via CoreConsumer or are independent peers.
+	// Membership here is inventory, not an ordering mechanism — what
+	// guarantees a producer runs before its consumers is the consumers'
+	// declared edges in dag.go.
+	analyzers []Analyzer
 
-	// derived analysers consume CoreOutputs (or are independent
-	// peers) and produce their own slice of Result. They never write
-	// to CoreOutputs; their own Finalize results stay local to the
-	// Result they populate.
-	derived []Analyzer
-
+	// postProcessors are the non-event nodes: they run only in the finalize
+	// pass, reading already-produced artifacts (and CoreOutputs) off the
+	// assembled Result and refining it in place. They are ordered, like
+	// everything else, by their declared edges — not by being "last".
 	postProcessors []ResultPostProcessor
 	Config         *config.Config
 
@@ -79,11 +78,13 @@ type Registry struct {
 	PhaseTimings []PhaseTiming
 }
 
-// ResultPostProcessor mutates the assembled Result after every
-// analyser has finalised. Examples: time normalisation (rebase to
-// match-relative), duel-mode team rewrites, locgraph synthesis from
-// timeline buckets. The function receives CoreOutputs so it can read
-// demoinfo / name tables / frag log without re-deriving them.
+// ResultPostProcessor is a non-event node: it runs in the finalize pass,
+// reading already-produced artifacts off the assembled Result (and the
+// CoreOutputs bundle, so it can reach demoinfo / name tables / frag log
+// without re-deriving them) and refining the Result in place. Examples:
+// telefrag team-kill recovery, aim analysis, locgraph synthesis from the
+// timeline. It declares Requires/Provides edges in dag.go exactly like an
+// analyzer node; only the absence of an event pass distinguishes it.
 type ResultPostProcessor func(result *Result, co *CoreOutputs)
 
 // postProcName resolves a post-processor's function name for timing
@@ -108,46 +109,30 @@ func NewRegistry() *Registry {
 	return &Registry{Config: config.Default()}
 }
 
-// Register is a backwards-compatible alias for RegisterDerived. Most
-// analysers are derived (they consume CoreOutputs or are independent
-// peers); use RegisterCore explicitly when an analyser populates
-// CoreOutputs via the CoreProducer interface.
+// Register adds an event-reading analyzer node. Whether it publishes
+// CoreOutputs (CoreProducer), consumes them (CoreConsumer), or does
+// neither is a property of the concrete type, not of how it is registered;
+// execution order comes entirely from the node's declared edges in dag.go,
+// so a producer and its consumers may be registered in any order.
 func (r *Registry) Register(a Analyzer) {
-	r.RegisterDerived(a)
+	r.analyzers = append(r.analyzers, a)
 }
 
-// RegisterCore adds an analyser to the core (state-reconstruction)
-// grouping — the convention for CoreProducers whose CoreOutputs fields
-// most of the pipeline consumes. The tier does not order execution:
-// consumers see a producer's fields because their dag.go Requires edge
-// schedules the producer first (a CoreProducer in the derived slice
-// works identically).
-func (r *Registry) RegisterCore(a Analyzer) {
-	r.core = append(r.core, a)
-}
-
-// RegisterDerived adds an analyser that consumes CoreOutputs (or is
-// independent of it). Its declared edges — not the slice — determine
-// which producers are guaranteed to have finalised first.
-func (r *Registry) RegisterDerived(a Analyzer) {
-	r.derived = append(r.derived, a)
-}
-
-// RegisterPostProcessor adds a Result post-processor. Its declared
-// edges order it after the sections it reads; under the default
-// tie-break all post-processors run after every analyser.
 // SetRegionsOverride threads a caller-supplied region definition list
 // down to whatever TimelineAnalyzer is registered. Used by the CLI's
 // -regions flag and by tests pinning specific region layouts. Pass nil
 // to clear. No-op when no TimelineAnalyzer is registered.
 func (r *Registry) SetRegionsOverride(regs []config.MapRegionOverride) {
-	for _, a := range r.derived {
+	for _, a := range r.analyzers {
 		if ta, ok := a.(*TimelineAnalyzer); ok {
 			ta.SetRegionsOverride(regs)
 		}
 	}
 }
 
+// RegisterPostProcessor adds a non-event post-processor node. Its declared
+// edges (dag.go) place it after the artifacts it reads; there is no "runs
+// last" guarantee beyond what those edges express.
 func (r *Registry) RegisterPostProcessor(p ResultPostProcessor) {
 	r.postProcessors = append(r.postProcessors, p)
 }
@@ -346,43 +331,43 @@ func canonicalizeErrors(errs []string) {
 func NewDefaultRegistry() *Registry {
 	r := NewRegistry()
 
-	// Core: the producers that downstream analysers read via
-	// CoreOutputs. Clock runs first — it has no core dependencies and
-	// publishes co.Clock (the match-relative time base) that every
-	// producer converts against at Finalize, replacing the old
+	// The event-reading analyzers. Registration order is inventory, not
+	// scheduling: the DAG orders every node by its declared edges (dag.go),
+	// so the sequence below is only a stable default tie-break. The
+	// per-node comments record why each producer's data is ready when its
+	// consumers read it — but it is the declared edge, not the position in
+	// this list, that guarantees it.
+	//
+	// Clock publishes co.Clock (the match-relative time base) that every
+	// timestamped producer converts against at Finalize, replacing the old
 	// whole-Result time rebase.
-	r.RegisterCore(NewClockAnalyzer())
-	// DemoInfo runs next so co.{DemoInfo,Names,Slots} are populated
-	// before Frag's Finalize re-evaluates teamkills against co.Names.
-	r.RegisterCore(NewDemoInfoAnalyzer())
-	// Identity runs right after demoinfo: its PopulateCore reads
-	// ctx.DemoInfo (set by demoinfo's Finalize) to fold reconnect
-	// sessions into canonical identities, and publishes the per-slot
-	// session table the discrete + stream outputs resolve against.
-	r.RegisterCore(NewIdentityAnalyzer())
-	r.RegisterCore(NewFragAnalyzer())
-	// Roster runs last in the core tier: its PopulateCore reads the fully
-	// populated co.DemoInfo (produced by demoinfo, above) to publish the
-	// canonical player/team table with the duel rewrite folded in, which every
-	// derived producer reads to stamp final team labels at emission.
-	r.RegisterCore(NewRosterAnalyzer())
+	r.Register(NewClockAnalyzer())
+	// DemoInfo publishes co.{DemoInfo,Names,Slots}; Frag re-evaluates
+	// teamkills against co.Names.
+	r.Register(NewDemoInfoAnalyzer())
+	// Identity's PopulateCore reads ctx.DemoInfo (set by demoinfo's
+	// Finalize) to fold reconnect sessions into canonical identities, and
+	// publishes the per-slot session table the discrete + stream outputs
+	// resolve against.
+	r.Register(NewIdentityAnalyzer())
+	r.Register(NewFragAnalyzer())
+	// Roster's PopulateCore reads the fully populated co.DemoInfo to publish
+	// the canonical player/team table with the duel rewrite folded in, which
+	// every team-aware producer reads to stamp final team labels at emission.
+	r.Register(NewRosterAnalyzer())
 
-	// Derived: every other analyser. They consume CoreOutputs (via
-	// UseCoreOutputs) or are independent peers, and they never write
-	// to CoreOutputs themselves. Order within the derived slice is
-	// preserved but no derived analyser depends on another's output.
-	r.RegisterDerived(NewMetadataAnalyzer())
-	r.RegisterDerived(NewMatchAnalyzer())
-	r.RegisterDerived(NewMessagesAnalyzer())
+	r.Register(NewMetadataAnalyzer())
+	r.Register(NewMatchAnalyzer())
+	r.Register(NewMessagesAnalyzer())
 	ta := NewTimelineAnalyzer()
 	ta.SetBlipThresholdMs(r.Config.LocGraph.BlipThresholdMs)
-	r.RegisterDerived(ta)
-	r.RegisterDerived(NewItemAnalyzer())
-	r.RegisterDerived(NewDamageAnalyzer())
-	r.RegisterDerived(NewShotsAnalyzer())
-	r.RegisterDerived(NewMapEntitiesAnalyzer())
-	r.RegisterDerived(NewBackpackAnalyzer())
-	r.RegisterDerived(NewWeaponPickupsAnalyzer())
+	r.Register(ta)
+	r.Register(NewItemAnalyzer())
+	r.Register(NewDamageAnalyzer())
+	r.Register(NewShotsAnalyzer())
+	r.Register(NewMapEntitiesAnalyzer())
+	r.Register(NewBackpackAnalyzer())
+	r.Register(NewWeaponPickupsAnalyzer())
 
 	// Post-processors operate on the assembled Result. Registration order
 	// here is INVENTORY, not scheduling: execution order is derived from the
