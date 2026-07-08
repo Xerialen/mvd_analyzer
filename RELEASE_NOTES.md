@@ -39,9 +39,13 @@ detail.
     New `mvd-api cache stats` and `mvd-api cache prune [-max-bytes |
     -older-than | -all]` ops subcommands.
   - **Parse throttle.** New `-max-parses` (default `max(1, NumCPU/2)`): a
-    semaphore bounds concurrent demo download+parse operations so a storm
-    of distinct cold demos can't spawn unbounded parallel parses. Cache
-    hits are unaffected; rate limiting proper arrives with API keys.
+    semaphore bounds concurrent heavy cold operations so a storm of
+    distinct cold demos can't spawn unbounded parallel work. It covers
+    both the cold download+parse and the on-demand LOS raycast (no schema
+    change), closing the unauthenticated-CPU-exhaustion path on
+    `/los`/`/artifacts/los`. Cache hits are unaffected; rate limiting
+    proper arrives with API keys. `cache prune` gains `-dry-run` and
+    rejects the silent no-op `-max-bytes 0`.
   - **Capped hub reads.** Demo downloads (CDN and `demo_source_url`) are
     read through a 64 MiB `io.LimitReader`, so a broken or hostile
     upstream can't OOM the process; over-cap responses are upstream

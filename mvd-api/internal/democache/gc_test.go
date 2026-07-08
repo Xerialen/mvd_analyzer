@@ -84,6 +84,27 @@ func TestSweepToBudget_EvictsOldestFirstAndExemptsIndex(t *testing.T) {
 	}
 }
 
+func TestSweepToBudget_DryRunDeletesNothing(t *testing.T) {
+	root := t.TempDir()
+	now := time.Now()
+	ver := result.CurrentSchemaVersion
+	paths := []string{
+		mvdPath(root, "aa"+repeat("0", 62)),
+		resultPath(root, ver, "ab"+repeat("0", 62)),
+		artifactPath(root, "los", "ac"+repeat("0", 62)),
+	}
+	for i, p := range paths {
+		writeFileWithMtime(t, p, 100, now.Add(-time.Duration(i+1)*time.Minute))
+	}
+	// Budget forces eviction, but dry-run must leave every file in place.
+	SweepToBudgetDryRun(root, 1, true, quietLogger())
+	for _, p := range paths {
+		if !exists(p) {
+			t.Errorf("dry-run must not delete %s", p)
+		}
+	}
+}
+
 func TestSweepToBudget_UnderBudgetNoOp(t *testing.T) {
 	root := t.TempDir()
 	p := mvdPath(root, "ba"+repeat("0", 62))
@@ -135,7 +156,7 @@ func TestCleanOldVersionTrees(t *testing.T) {
 	stray := filepath.Join(resultsRoot(root), "notes", "readme.txt")
 	writeFileWithMtime(t, stray, 10, now)
 
-	CleanOldVersionTrees(root, cur, quietLogger())
+	CleanOldVersionTrees(root, cur, false, quietLogger())
 
 	if !exists(curFile) {
 		t.Errorf("current schema tree must be kept")
@@ -167,7 +188,7 @@ func TestCleanStaleArtifacts(t *testing.T) {
 	writeFileWithMtime(t, staleVer, 10, now)
 	writeFileWithMtime(t, retired, 10, now)
 
-	CleanStaleArtifacts(root, quietLogger())
+	CleanStaleArtifacts(root, false, quietLogger())
 
 	if !exists(current) {
 		t.Errorf("current-version artifact must be kept")

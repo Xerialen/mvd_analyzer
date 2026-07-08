@@ -61,13 +61,15 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string) http.Handle
 	mux.HandleFunc("GET /v1/maps/{map}/entities", s.handleMapEntitiesByMap)
 	mux.HandleFunc("GET /v1/maps/{map}/geometry", s.handleMapGeometry)
 
-	// Middleware order (outer → inner): CORS answers preflight and stamps
-	// Allow-Origin on every response (incl. panics); request-id sets the id
-	// in ctx + header so both the access log and the recover 500 can cite it;
-	// access log records the final status with that id; recover catches
-	// handler panics closest to the mux so the request is still logged.
-	return corsMiddleware(
-		requestIDMiddleware(
+	// Middleware order (outer → inner): request-id runs first so every
+	// response — including a CORS preflight short-circuit — carries an
+	// X-Request-Id; CORS then answers preflight and stamps Allow-Origin on
+	// every response (incl. panics); access log records the final status with
+	// that id; recover catches handler panics closest to the mux so the
+	// request is still logged. (CORS stays outside auth in phase 14 so
+	// preflight is never auth-blocked.)
+	return requestIDMiddleware(
+		corsMiddleware(
 			accessLogMiddleware(logger,
 				recoverMiddleware(logger, mux))))
 }

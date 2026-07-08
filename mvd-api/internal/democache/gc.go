@@ -127,6 +127,24 @@ func versionComponent(resultsDir, p string) string {
 	return ""
 }
 
+// removeFile deletes path (or, under dryRun, only logs that it would). It
+// reports whether the file's bytes are reclaimed (true on a real delete, and
+// true under dryRun since the byte accounting is what the operator wants to
+// see; false only on a real delete error other than not-exist).
+func removeFile(dryRun bool, f cacheFile, action string, logger *slog.Logger) bool {
+	if dryRun {
+		logger.Info("cache prune: WOULD remove", "action", action, "path", f.path, "bytes", f.size)
+		return true
+	}
+	if err := os.Remove(f.path); err != nil {
+		if !os.IsNotExist(err) {
+			logger.Warn("cache prune: remove failed", "action", action, "path", f.path, "err", err)
+		}
+		return false
+	}
+	return true
+}
+
 // cleanTemps removes atomic-write temp files older than staleTempAge. A
 // fresh temp is an in-flight writer's, so it is left in place.
 func cleanTemps(temps []cacheFile, logger *slog.Logger) {
@@ -160,12 +178,25 @@ func cleanTemps(temps []cacheFile, logger *slog.Logger) {
 // another goroutine already opened only drops the directory entry; the open
 // fd keeps the bytes alive until closed, so an in-flight reader never
 // faults on a file this sweep removes.
+//
+// The online GC and startup call this directly (never dry-run); the CLI
+// routes through SweepToBudgetDryRun.
 func SweepToBudget(root string, maxBytes int64, logger *slog.Logger) {
+	SweepToBudgetDryRun(root, maxBytes, false, logger)
+}
+
+// SweepToBudgetDryRun is SweepToBudget with a dry-run switch: when dryRun is
+// true it logs exactly which files it would evict (and their bytes) and
+// removes nothing. Temp cleanup is skipped entirely under dryRun (it is a
+// separate janitorial concern, not part of the previewed budget action).
+func SweepToBudgetDryRun(root string, maxBytes int64, dryRun bool, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	sc := scanCache(root)
-	cleanTemps(sc.temps, logger)
+	if !dryRun {
+		cleanTemps(sc.temps, logger)
+	}
 	if maxBytes <= 0 {
 		return
 	}
@@ -191,17 +222,14 @@ func SweepToBudget(root string, maxBytes int64, logger *slog.Logger) {
 		if total <= maxBytes {
 			break
 		}
-		if err := os.Remove(f.path); err != nil {
-			if !os.IsNotExist(err) {
-				logger.Warn("cache gc: remove failed", "path", f.path, "err", err)
-			}
+		if !removeFile(dryRun, f, "evict-to-budget", logger) {
 			continue
 		}
 		total -= f.size
 		freed += f.size
 		removed++
 	}
-	logger.Info("cache gc swept",
+	logger.Info("cache gc swept", "dry_run", dryRun,
 		"removed", removed, "freed_bytes", freed,
 		"remaining_bytes", total, "budget_bytes", maxBytes)
 }
@@ -209,12 +237,14 @@ func SweepToBudget(root string, maxBytes int64, logger *slog.Logger) {
 // PruneOlderThan removes tier-1, tier-2 and tier-3 files whose mtime is
 // older than age, and cleans stale temps. CLI-only (`cache prune
 // -older-than`); the index subtree is exempt, same as SweepToBudget.
-func PruneOlderThan(root string, age time.Duration, logger *slog.Logger) {
+func PruneOlderThan(root string, age time.Duration, dryRun bool, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	sc := scanCache(root)
-	cleanTemps(sc.temps, logger)
+	if !dryRun {
+		cleanTemps(sc.temps, logger)
+	}
 	cutoff := time.Now().Add(-age)
 
 	evictable := append(append(append([]cacheFile(nil), sc.tier1...), sc.tier2...), sc.tier3...)
@@ -224,25 +254,33 @@ func PruneOlderThan(root string, age time.Duration, logger *slog.Logger) {
 		if !f.mtime.Before(cutoff) {
 			continue
 		}
-		if err := os.Remove(f.path); err != nil {
-			if !os.IsNotExist(err) {
-				logger.Warn("cache prune: remove failed", "path", f.path, "err", err)
-			}
+		if !removeFile(dryRun, f, "prune-older-than", logger) {
 			continue
 		}
 		freed += f.size
 		removed++
 	}
-	logger.Info("cache pruned by age",
+	logger.Info("cache pruned by age", "dry_run", dryRun,
 		"removed", removed, "freed_bytes", freed, "older_than", age.String())
 }
 
 // PruneAll removes all three cache tiers (mvd/, results/, artifacts/)
 // wholesale, keeping only the small gameId index so a re-warm skips the hub
 // re-resolve. CLI-only (`cache prune -all`).
-func PruneAll(root string, logger *slog.Logger) {
+func PruneAll(root string, dryRun bool, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
+	}
+	if dryRun {
+		sc := scanCache(root)
+		var bytes int64
+		for _, f := range append(append(append([]cacheFile(nil), sc.tier1...), sc.tier2...), sc.tier3...) {
+			bytes += f.size
+		}
+		logger.Info("cache prune -all: WOULD remove all tiers",
+			"tier1_files", len(sc.tier1), "tier2_files", len(sc.tier2),
+			"tier3_files", len(sc.tier3), "total_bytes", bytes)
+		return
 	}
 	for _, dir := range []string{mvdRoot(root), resultsRoot(root), artifactsRoot(root)} {
 		if err := os.RemoveAll(dir); err != nil {
@@ -256,8 +294,9 @@ func PruneAll(root string, logger *slog.Logger) {
 // not the current schema+format version's (resultsVersionName), reclaiming
 // the disk a schema or cache-format bump orphans — including the legacy
 // suffix-less v<N> trees written before the format suffix existed. Only
-// directories matching the version-name shape are ever removed.
-func CleanOldVersionTrees(root string, currentVersion int, logger *slog.Logger) {
+// directories matching the version-name shape are ever removed. Under dryRun
+// it logs what it would remove and deletes nothing.
+func CleanOldVersionTrees(root string, currentVersion int, dryRun bool, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -272,6 +311,10 @@ func CleanOldVersionTrees(root string, currentVersion int, logger *slog.Logger) 
 			continue
 		}
 		p := filepath.Join(resDir, e.Name())
+		if dryRun {
+			logger.Info("cache prune: WOULD remove orphaned schema tree", "path", p, "kept", keep)
+			continue
+		}
 		if err := os.RemoveAll(p); err != nil {
 			logger.Warn("cache gc: remove orphaned schema tree failed", "path", p, "err", err)
 			continue
@@ -286,8 +329,8 @@ func CleanOldVersionTrees(root string, currentVersion int, logger *slog.Logger) 
 // (artifactPath points at the current-version name), so it is pure garbage —
 // this reaps both old-version los gobs after a schema bump and the
 // shot-streams@* gobs orphaned when phase 12 retired that artifact. Temp
-// files are left to cleanTemps.
-func CleanStaleArtifacts(root string, logger *slog.Logger) {
+// files are left to cleanTemps. Under dryRun it logs and deletes nothing.
+func CleanStaleArtifacts(root string, dryRun bool, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -295,6 +338,10 @@ func CleanStaleArtifacts(root string, logger *slog.Logger) {
 	var removed int
 	walkRegular(artifactsRoot(root), func(p string, _ int64, _ time.Time) {
 		if isTempName(p) || strings.HasSuffix(filepath.Base(p), keep) {
+			return
+		}
+		if dryRun {
+			logger.Info("cache prune: WOULD remove stale artifact", "path", p)
 			return
 		}
 		if err := os.Remove(p); err != nil {

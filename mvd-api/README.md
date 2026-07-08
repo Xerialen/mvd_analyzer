@@ -22,8 +22,8 @@ mvd-api cache prune [-cache-dir PATH] [-max-bytes N | -older-than 30d | -all]
 |---|---|---|
 | `-addr`             | `:8080`                                 | Listen address |
 | `-cache-dir`        | `$XDG_CACHE_HOME/qw-mvd` or `~/.cache/qw-mvd` | On-disk cache root |
-| `-cache-max-bytes`  | `21474836480` (20 GiB)                  | Disk budget for cache tiers 1–3; a background sweep evicts the oldest files (by mtime) when exceeded. `0` disables GC |
-| `-max-parses`       | `max(1, NumCPU/2)`                      | Max concurrent demo download+parse operations (bounds the expensive cold path; cache hits are unbounded) |
+| `-cache-max-bytes`  | `21474836480` (20 GiB)                  | Disk budget for cache tiers 1–3; a background sweep evicts the oldest files (by mtime) when exceeded. `0` disables eviction (stale atomic-write temp files are still reaped) |
+| `-max-parses`       | `max(1, NumCPU/2)`                      | Max concurrent heavy cold operations — a demo download+parse or an on-demand LOS raycast (both bounded by one semaphore; cache hits are unbounded) |
 | `-maps-dir`         | _(empty)_                               | Directory of per-map geometry JSON for `/v1/maps/{map}/geometry`; empty disables that endpoint (ship `dist/maps/` next to the binary to enable) |
 | `-log-format`       | `text`                                  | Access log format: `text` or `json` |
 
@@ -39,10 +39,12 @@ disk budget is enforced once.
   current schema tree vs any orphaned `results/*` version trees.
 - `mvd-api cache prune` — reclaim disk without touching a running
   server. Exactly one of: `-max-bytes N` (evict oldest to fit `N`
-  bytes, same sweep as the online GC), `-older-than 30d` (drop tier
-  files older than the given age; accepts `d`/`w`/`h`/…), `-all`
-  (wipe all three tiers, keep the gameId index). Orphaned version
-  trees and stale artifact gobs are always removed first.
+  bytes, same sweep as the online GC; `N` must be `> 0` — use `-all`
+  to wipe everything), `-older-than 30d` (drop tier files older than
+  the given age; accepts `d`/`w`/`h`/…), `-all` (wipe all three tiers,
+  keep the gameId index). Add `-dry-run` to log exactly what would be
+  removed and delete nothing. Orphaned version trees and stale
+  artifact gobs are always removed first.
 
 ## REST endpoints
 

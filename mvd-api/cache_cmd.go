@@ -66,9 +66,10 @@ func runCacheStats(args []string) error {
 func runCachePrune(args []string) error {
 	fs := flag.NewFlagSet("cache prune", flag.ContinueOnError)
 	cacheDir := fs.String("cache-dir", democache.DefaultRoot(), "on-disk cache root")
-	maxBytes := fs.Int64("max-bytes", -1, "evict oldest files until tiers fit this many bytes")
+	maxBytes := fs.Int64("max-bytes", -1, "evict oldest files until tiers fit this many bytes (use -all to wipe everything)")
 	olderThan := fs.String("older-than", "", "remove files older than this age (e.g. 30d, 720h)")
 	all := fs.Bool("all", false, "remove all cache tiers (mvd/ + results/ + artifacts/); keeps the gameId index")
+	dryRun := fs.Bool("dry-run", false, "log exactly what would be removed and delete nothing")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -87,24 +88,30 @@ func runCachePrune(args []string) error {
 	if actions != 1 {
 		return fmt.Errorf("choose exactly one of -max-bytes, -older-than, -all")
 	}
+	// -max-bytes 0 would select the sweep but evict nothing (0 disables the
+	// budget) — a silent no-op that reads like "wipe the cache". Reject it and
+	// point at the real wipe.
+	if *maxBytes == 0 {
+		return fmt.Errorf("-max-bytes 0 evicts nothing; use -all to wipe everything")
+	}
 
 	logger := newLogger("text")
 	// Orphaned schema trees and stale-version artifact gobs are reclaimable
 	// regardless of the chosen action.
-	democache.CleanOldVersionTrees(*cacheDir, result.CurrentSchemaVersion, logger)
-	democache.CleanStaleArtifacts(*cacheDir, logger)
+	democache.CleanOldVersionTrees(*cacheDir, result.CurrentSchemaVersion, *dryRun, logger)
+	democache.CleanStaleArtifacts(*cacheDir, *dryRun, logger)
 
 	switch {
 	case *all:
-		democache.PruneAll(*cacheDir, logger)
-	case *maxBytes >= 0:
-		democache.SweepToBudget(*cacheDir, *maxBytes, logger)
+		democache.PruneAll(*cacheDir, *dryRun, logger)
+	case *maxBytes > 0:
+		democache.SweepToBudgetDryRun(*cacheDir, *maxBytes, *dryRun, logger)
 	case *olderThan != "":
 		age, err := parseAge(*olderThan)
 		if err != nil {
 			return err
 		}
-		democache.PruneOlderThan(*cacheDir, age, logger)
+		democache.PruneOlderThan(*cacheDir, age, *dryRun, logger)
 	}
 	return nil
 }

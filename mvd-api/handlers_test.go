@@ -1085,6 +1085,11 @@ func TestCORS_Preflight(t *testing.T) {
 		if resp.Header.Get("Access-Control-Max-Age") == "" {
 			t.Errorf("OPTIONS %s: missing Access-Control-Max-Age", path)
 		}
+		// requestID now wraps outside CORS, so even a preflight short-circuit
+		// carries an id (FIX 4).
+		if resp.Header.Get("X-Request-Id") == "" {
+			t.Errorf("OPTIONS %s: preflight missing X-Request-Id", path)
+		}
 	}
 }
 
