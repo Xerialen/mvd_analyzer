@@ -29,7 +29,7 @@ The repo is a Go workspace (`go.work`) binding five sibling modules:
 | [mvd-reader](mvd-reader/README.md)       | `mvd-reader/`       | Event schema + MVD source (Layer 1)               |
 | [mvd-analytics](mvd-analytics/README.md) | `mvd-analytics/`    | Analysis pipeline + Result schema + view API (L2) |
 | [mvd-api](mvd-api/README.md)             | `mvd-api/`          | HTTP REST server on top of `mvd-analytics/view`   |
-| [mvd-mcp](mvd-mcp/README.md)             | `mvd-mcp/`          | Distributable stdio MCP shim that talks to mvd-api |
+| [mvd-mcp](mvd-mcp/README.md)             | `mvd-mcp/`          | MCP shim that talks to mvd-api — stdio (local) or streamable HTTP (hosted) |
 | [mvd-web](mvd-web/README.md)             | `mvd-web/`          | Browser UI + WASM glue (Layer 3)                  |
 
 Each module has its own `go.mod`, is tested in isolation, and can be extracted
@@ -50,12 +50,15 @@ grow on its own timeline. Today's concrete shape:
   into bucketed timelines, event lists, point-in-time state, and loc trails.
   Analytics never peeks at MVD bytes; it consumes events.
 - **Layer 3 consumers** read `Result` or call `view/` and produce something
-  user-facing. There are four today:
+  user-facing. When hosted, the service presents **four surfaces** — REST,
+  MCP over stdio, MCP over HTTP, and the web UI:
   - `mvd-analytics/cmd/qw-analyze` — offline CLI (one demo → JSON / md / events).
-  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed Result, lazy artifacts).
-  - `mvd-mcp` — tiny stdio MCP shim that forwards every tool call to a
-    running `mvd-api`. Distributable as a small `.exe` for Claude Desktop /
-    Cursor / Claude Code.
+  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed
+    Result, lazy artifacts). Optionally API-key-gated with a Discord key portal.
+  - `mvd-mcp` — MCP shim that forwards every tool call to a running `mvd-api`.
+    Two transports: **stdio** (a small `.exe` for Claude Desktop / Cursor /
+    Claude Code) and **streamable HTTP** (`-http`, for hosting with per-request
+    API-key auth). See [`deploy/`](deploy/README.md) for the hosted layout.
   - `mvd-web` — browser UI compiled to WASM.
 
 ## Quick start

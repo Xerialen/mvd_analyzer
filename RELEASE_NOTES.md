@@ -7,6 +7,30 @@ detail.
 
 ## 2026-07-08
 
+- **mvd-mcp over streamable HTTP + deploy templates (no schema change;
+  transport/auth layer).** The MCP shim gains a hosted mode; stdio is unchanged.
+  - **`mvd-mcp -http ADDR`.** Serves MCP over streamable HTTP (go-sdk
+    `NewStreamableHTTPHandler`, Stateless) instead of stdio, for hosting the
+    service publicly. Empty `-http` keeps today's stdio behaviour byte-identical;
+    the two transports are mutually exclusive. No new dependencies.
+  - **Per-request API-key auth.** Every MCP request must carry
+    `Authorization: Bearer qwmvd_…`. An outer gate validates the key against
+    `mvd-api`'s `GET /v1/auth/check` (fail-closed; `401` + `WWW-Authenticate:
+    Bearer` otherwise) — this single gate also protects the `searchGames` tool,
+    which bypasses `mvd-api`. On success the key is forwarded on every proxied
+    REST call, so `mvd-api` stays the single point of validation; a key revoked
+    mid-session stops working on the next call. `-label` is ignored in HTTP
+    mode. The handler is mounted at `/mcp` (and `/mcp/`), with an
+    unauthenticated `GET /healthz`.
+  - **Deploy templates (`deploy/`).** A `Caddyfile` (TLS, `/mcp*` → mvd-mcp,
+    rest → mvd-api, real-client-IP `X-Forwarded-For`), `mvd-api.service` /
+    `mvd-mcp.service` systemd units (hardened, secrets via `EnvironmentFile`),
+    and a provisioning `README.md` runbook with a smoke-test checklist. Tracked
+    templates, not run by CI.
+  - **Documented omission.** `/los`, `/shots`, `/streams/*`, and `/airgibs`
+    still have no curated MCP tool (adding them is deferred); noted in the
+    mvd-mcp README.
+
 - **mvd-api Discord key portal + key-store cross-process lock (no schema
   change; transport/auth layer).** Optional, off by default — nothing changes
   for existing localhost users, and analytics output is untouched.

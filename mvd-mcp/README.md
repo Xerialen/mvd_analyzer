@@ -1,9 +1,17 @@
-# mvd-mcp — stdio MCP shim for QuakeWorld demo analytics
+# mvd-mcp — MCP shim for QuakeWorld demo analytics
 
-`mvd-mcp` is a small (~5 MB) stdio MCP server that forwards every tool
-call as an HTTP request to a running [`mvd-api`](../mvd-api/README.md).
-It carries no analytics code of its own — the binary is a wire-protocol
+`mvd-mcp` is a small (~5 MB) MCP server that forwards every tool call as
+an HTTP request to a running [`mvd-api`](../mvd-api/README.md). It
+carries no analytics code of its own — the binary is a wire-protocol
 shim, and the response shapes are owned by `mvd-api`.
+
+It has two transports:
+
+- **stdio** (default) — one process per client, launched by the client
+  (Claude Desktop, Cursor, Claude Code). This is the local mode.
+- **streamable HTTP** (`-http ADDR`) — a long-lived server for hosted
+  use, with per-request API-key auth. See
+  [Hosted / HTTP mode](#hosted--http-mode) below.
 
 Why split it from `mvd-api`?
 
@@ -18,14 +26,16 @@ Why split it from `mvd-api`?
 ## Usage
 
 ```
-mvd-mcp -api URL [-label TAG] [-timeout SECONDS]
+mvd-mcp -api URL [-label TAG] [-timeout SECONDS]       # stdio (default)
+mvd-mcp -http ADDR -api URL [-timeout SECONDS]         # streamable HTTP
 mvd-mcp version
 ```
 
 | Flag | Default | Description |
 |---|---|---|
 | `-api`      | (required) | Base URL of a running `mvd-api` (e.g. `https://mvd-api.example.com` or `http://localhost:8080`) |
-| `-label`    | `""`        | Non-secret request-source tag forwarded as `Authorization: Bearer <label>`. Used for access-log analytics on the API side. |
+| `-http`     | `""`        | Serve MCP over streamable HTTP on `ADDR` (e.g. `:8081`) instead of stdio. See [Hosted / HTTP mode](#hosted--http-mode). Mutually exclusive with stdio. |
+| `-label`    | `""`        | **stdio only.** Non-secret request-source tag forwarded as `Authorization: Bearer <label>`. Used for access-log analytics on the API side. Ignored in `-http` mode (each request carries its own key). |
 | `-timeout`  | `60`        | Per-request HTTP timeout in seconds |
 
 ## Tool surface
@@ -86,6 +96,79 @@ takes no filters — parameterised reads are the curated view tools.
 Tool errors come back as MCP `isError: true` results with the
 upstream error message in `TextContent`. The model can read them and
 recover (e.g. by calling `loadDemo` first).
+
+### REST endpoints without an MCP tool
+
+A few `mvd-api` REST endpoints have **no** curated MCP tool yet:
+`/los`, `/shots`, `/streams/*`, and `/airgibs`. This asymmetry is
+deliberate for now — those views are large or specialised, and adding
+tools is deferred (they can still be fetched at the REST layer, and
+`/los` is reachable generically via `getArtifact name=los`). See
+[`../mvd-api/API.md`](../mvd-api/API.md) for the full endpoint list.
+
+## Hosted / HTTP mode
+
+`mvd-mcp -http :8081 -api http://localhost:8080` serves MCP over
+**streamable HTTP** instead of stdio, for hosting the service on the
+public internet. This is the transport a remote client (Claude Code
+`--transport http`, or any streamable-HTTP MCP client) connects to.
+
+### Auth model
+
+Every MCP request must carry an API key:
+
+```
+Authorization: Bearer qwmvd_…
+```
+
+The key is issued by the Discord portal on the `mvd-api` host (see
+[`../mvd-api/README.md`](../mvd-api/README.md)). mvd-mcp validates it on
+each request against `mvd-api`'s `GET /v1/auth/check` and, on success,
+**forwards the same key** on every proxied REST call — so `mvd-api`
+stays the single point of key validation. A request with a missing or
+invalid key gets `401` with `WWW-Authenticate: Bearer`; the same gate
+also protects the `searchGames` tool, which otherwise bypasses
+`mvd-api`. A key revoked mid-session stops working on the next call.
+
+`-label` has no effect in HTTP mode (the per-request `Authorization`
+supersedes it); mvd-mcp logs a warning if it is set.
+
+The server also exposes an unauthenticated `GET /healthz` for liveness
+probes. The MCP handler is mounted at `/mcp` (and `/mcp/`).
+
+### Client config
+
+Claude Code:
+
+```sh
+claude mcp add --transport http mvd https://<domain>/mcp \
+    --header "Authorization: Bearer qwmvd_…"
+```
+
+JSON config form (e.g. `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "mvd": {
+      "url": "https://<domain>/mcp",
+      "headers": { "Authorization": "Bearer qwmvd_…" }
+    }
+  }
+}
+```
+
+For the full deployment (Caddy TLS, systemd units, provisioning runbook)
+see [`../deploy/README.md`](../deploy/README.md).
+
+### stdio vs. HTTP
+
+| | stdio (default) | HTTP (`-http`) |
+|---|---|---|
+| Transport | stdin/stdout | streamable HTTP |
+| Lifecycle | one process per client | one long-lived server |
+| Auth | `-label` (non-secret tag) | per-request `Authorization: Bearer` key |
+| Use | local (Desktop/Cursor/Code) | hosted / remote |
 
 ### Input schemas
 

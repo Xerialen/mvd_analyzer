@@ -1,0 +1,54 @@
+# systemd unit for mvd-mcp (MCP over streamable HTTP).
+#
+# The shim proxies to a running mvd-api on localhost; it holds no secrets
+# and no key store — every MCP request carries its own Authorization key,
+# which mvd-mcp validates against mvd-api and forwards on each proxied call
+# (PLAN-hosting D7). So it needs no EnvironmentFile.
+#
+# EDIT before use: User=/Group=, the ExecStart binary path, and -api if
+# mvd-api does not listen on :8080.
+#
+# Install: copy to /etc/systemd/system/mvd-mcp.service, then
+#   systemctl daemon-reload && systemctl enable --now mvd-mcp
+
+[Unit]
+Description=mvd-mcp — MCP streamable-HTTP server (proxies to mvd-api)
+After=network-online.target mvd-api.service
+Wants=network-online.target
+# Best-effort: prefer mvd-api up first, but mvd-mcp tolerates a cold API
+# (the per-request auth check simply 401s until the API is reachable).
+After=mvd-api.service
+
+[Service]
+Type=simple
+User=mvd
+Group=mvd
+WorkingDirectory=/opt/mvd
+
+# -http binds the MCP server; -api points at the local REST API. Caddy
+# routes /mcp* here (deploy/Caddyfile). The listen port MUST match that.
+ExecStart=/opt/mvd/bin/mvd-mcp \
+    -http :8081 \
+    -api http://localhost:8080
+
+Restart=on-failure
+RestartSec=2s
+
+# --- Hardening --------------------------------------------------------------
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+# The shim writes nothing to disk.
+ProtectClock=true
+
+[Install]
+WantedBy=multi-user.target

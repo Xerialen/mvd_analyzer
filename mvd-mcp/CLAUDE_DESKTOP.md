@@ -1,8 +1,16 @@
 # MCP client integration
 
-`mvd-mcp` is a stdio MCP server that forwards every tool call over
-HTTP to a running `mvd-api`. Wire it into Claude Desktop, Claude Code,
-Cursor, or any other MCP client.
+`mvd-mcp` forwards every tool call over HTTP to a running `mvd-api`.
+There are two ways to connect a client:
+
+- **Local stdio binary** — you run `mvd-mcp` (a small binary) and the
+  client launches it over stdio. This is the bulk of this guide.
+- **Hosted HTTP URL** — you point the client at a hosted
+  `https://<domain>/mcp` endpoint with an API key, and run **no** local
+  binary. See [Hosted HTTP mode](#hosted-http-mode-no-local-binary).
+
+Wire either into Claude Desktop, Claude Code, Cursor, or any other MCP
+client.
 
 ## Where to get the binary
 
@@ -123,6 +131,42 @@ to `.claude/settings.local.json`:
 
 The same `.mcp.json` shape works; consult your client's docs for the
 config file path.
+
+## Hosted HTTP mode (no local binary)
+
+When the operator runs `mvd-mcp -http` behind a public domain (see
+[`../deploy/README.md`](../deploy/README.md)), a client can connect
+straight to the URL — no local `mvd-mcp` binary to install. You need an
+API key (`qwmvd_…`) from the portal at `https://<domain>/portal`.
+
+**Claude Code (CLI):**
+
+```bash
+claude mcp add --transport http mvd https://<domain>/mcp \
+    --header "Authorization: Bearer qwmvd_…"
+```
+
+**`.mcp.json` / other HTTP-capable clients:**
+
+```json
+{
+  "mcpServers": {
+    "mvd": {
+      "url": "https://<domain>/mcp",
+      "headers": { "Authorization": "Bearer qwmvd_…" }
+    }
+  }
+}
+```
+
+The key is sent on every request; the hosted server validates it and
+rejects a missing/invalid key with `401`. See the
+[Hosted / HTTP mode](README.md#hosted--http-mode) section of the README
+for the auth model.
+
+> Claude Desktop's stable config schema is stdio-oriented; if your
+> Desktop build does not yet support a remote HTTP MCP server, use the
+> local stdio binary above pointed at the hosted `mvd-api` instead.
 
 ## Smoke test
 
