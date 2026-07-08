@@ -28,6 +28,38 @@ const mcpPath = "/mcp"
 // steady-state cost a single round trip on a warm connection.
 const authCheckTimeout = 10 * time.Second
 
+// newStreamableHandler builds the MCP streamable-HTTP handler with the options
+// this server requires behind a reverse proxy. Shared by runHTTP and the tests
+// so both exercise the same configuration.
+//
+// Stateless: each POST is self-contained (no Mcp-Session-Id continuity), the
+// natural fit for a shim that holds no per-session state — getServer runs per
+// request, so per-request auth is automatic. The SDK rejects GET (standalone
+// SSE) with 405 in this mode; MCP clients fall back to request/response POSTs,
+// which is all the proxy needs.
+//
+// CrossOriginProtection is deliberately left off (nil): the server sits behind
+// Caddy on a real TLS domain, MCP clients are non-browser, and the bearer-key
+// gate — not an Origin check — is the security boundary.
+//
+// DisableLocalhostProtection is REQUIRED for a proxied deployment. The SDK's
+// DNS-rebinding guard rejects any request that arrives over the loopback
+// interface with a non-loopback Host header — and a reverse proxy (Caddy)
+// forwards every request over loopback (localhost:8081) while preserving the
+// public Host (e.g. "example.com"), so without this every proxied call 403s
+// "invalid Host header". That guard protects a *local* dev server reached
+// directly by a browser; this HTTP mode is designed to run behind a trusted
+// proxy with its own key gate, so the guard is the wrong fit. (If you ever
+// expose -http directly to browsers without a proxy, re-enable it and set a
+// Host allowlist instead.)
+func newStreamableHandler(getServer func(*http.Request) *mcp.Server, logger *slog.Logger) *mcp.StreamableHTTPHandler {
+	return mcp.NewStreamableHTTPHandler(getServer, &mcp.StreamableHTTPOptions{
+		Stateless:                  true,
+		DisableLocalhostProtection: true,
+		Logger:                     logger,
+	})
+}
+
 // runHTTP serves MCP over streamable HTTP on addr, proxying to the mvd-api at
 // apiURL. Each request must carry `Authorization: Bearer <key>`; the outer
 // gate validates it against mvd-api /v1/auth/check, and getServer forwards the
@@ -58,21 +90,7 @@ func runHTTP(addr, apiURL string, timeout time.Duration, logger *slog.Logger) er
 		return newMCPServer(backend, search)
 	}
 
-	// Stateless: each POST is self-contained (no Mcp-Session-Id continuity),
-	// which is the natural fit for a shim that holds no per-session state and
-	// sits behind a proxy — getServer runs per request, so per-request auth is
-	// automatic. The SDK rejects GET (standalone SSE) with 405 in this mode; MCP
-	// clients fall back to request/response POSTs, which is all the proxy needs.
-	//
-	// CrossOriginProtection is deliberately left off (nil): the server sits
-	// behind Caddy on a real TLS domain, MCP clients are non-browser, and the
-	// bearer-key gate — not an Origin check — is the security boundary. The
-	// SDK's localhost DNS-rebinding guard still applies automatically when bound
-	// to a loopback address; in production the bind is behind Caddy.
-	handler := mcp.NewStreamableHTTPHandler(getServer, &mcp.StreamableHTTPOptions{
-		Stateless: true,
-		Logger:    logger,
-	})
+	handler := newStreamableHandler(getServer, logger)
 
 	mux := http.NewServeMux()
 	// Serve both "/mcp" and "/mcp/" so a client that appends a slash still hits

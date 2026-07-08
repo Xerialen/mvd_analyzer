@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -88,10 +89,7 @@ func newMCPTestServer(t *testing.T) (*httptest.Server, *stubAPI) {
 		backend := newProxyBackend(apiSrv.URL, bearerToken(r), 5*time.Second)
 		return newMCPServer(backend, search)
 	}
-	handler := mcp.NewStreamableHTTPHandler(getServer, &mcp.StreamableHTTPOptions{
-		Stateless: true,
-		Logger:    logger,
-	})
+	handler := newStreamableHandler(getServer, logger)
 
 	mux := http.NewServeMux()
 	mux.Handle(mcpPath, gate.wrap(handler))
@@ -247,6 +245,37 @@ func TestHTTP_Healthz(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("healthz status = %d; want 200", resp.StatusCode)
+	}
+}
+
+// TestHTTP_NonLoopbackHostAccepted proves a proxy-forwarded request is not
+// rejected by the SDK's DNS-rebinding guard: the connection arrives over
+// loopback (httptest listens on 127.0.0.1, exactly as Caddy reaches the
+// backend) while the Host header is the public domain. Without
+// DisableLocalhostProtection (set in newStreamableHandler) this returns
+// 403 "invalid Host header" — the exact failure seen behind Caddy in
+// production. With it, the initialize succeeds.
+func TestHTTP_NonLoopbackHostAccepted(t *testing.T) {
+	srv, _ := newMCPTestServer(t)
+
+	body := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"1"}}}`
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+mcpPath, strings.NewReader(body))
+	req.Host = "mvdanalyzer.example.com" // non-loopback, as a reverse proxy forwards it
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+goodKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("raw POST: %v", err)
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode == http.StatusForbidden || strings.Contains(string(rb), "invalid Host header") {
+		t.Fatalf("non-loopback Host rejected (localhost guard not disabled): status=%d body=%s", resp.StatusCode, rb)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("initialize with non-loopback Host: status=%d body=%s", resp.StatusCode, rb)
 	}
 }
 
