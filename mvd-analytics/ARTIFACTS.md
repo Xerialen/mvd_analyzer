@@ -6,29 +6,29 @@ Every node in the analytics DAG, as declared in [`analyzer/dag.go`](analyzer/dag
 
 **Servable** artifacts are reachable at `GET /v1/demos/{id}/artifacts/{name}` (and via the mvd-mcp `getArtifact` tool). Eager servable artifacts land in the Result JSON under **resultKey**; the lazy artifact (`los`) is materialised on demand. Non-servable nodes (`clock`, `roster`, `identity`, and the in-place post-processors) are internal — they have no standalone Result key.
 
-| Artifact | Tier | Cost | Lazy | resultKey | Requires | Provides | Description |
-|---|---|---|---|---|---|---|---|
-| `clock` | core | light | no | — | — | `clock` | Match clock — match start/end, pauses, and the demo-start wall-clock anchor every timestamped producer converts against. |
-| `demoinfo` | core | light | no | `demoInfo` | — | `demoinfo` | KTX demoinfo scoreboard blob: per-player weapon accuracy, kills, deaths, damage, sprees, and item pickup counts, verbatim from the server. |
-| `identity` | core | light | no | — | `demoinfo` | `identity` | Player identity sessions — the slot→name/userid/team resolution every downstream producer reads. |
-| `frag` | core | light | no | `frags` | `clock`, `demoinfo`, `identity` | `frag` | Raw frag aggregates and the chronological kill log (weapon, suicide, team-kill flags). In-pipeline consumers wanting the telefrag-recovered log require `frags:final`; the served `frags` key is final by serve time since all nodes run. |
-| `roster` | core | light | no | — | `demoinfo` | `roster` | Canonical player roster with team labels (duel player-as-team rewrite applied), read by every team-aware producer. |
-| `metadata` | derived | light | no | `metadata` | — | `metadata` | Server cvars and parsed KTX match settings (mode, timelimit, antilag, midair, instagib, ...). |
-| `match` | derived | light | no | `match` | `demoinfo` | `match` | Match summary: map, mode, duration, and the per-player scoreboard. In-pipeline consumers wanting the frag-log-corrected kills/deaths/suicides require `match:final`; the served `match` key is corrected by serve time since all nodes run. |
-| `messages` | derived | light | no | `messages` | `clock`, `demoinfo`, `roster` | `messages` | Chat, teamsay, and other match print messages with markup-stripped text. |
-| `timeline` | derived | light | no | `timelineAnalysis` | `clock`, `demoinfo`, `identity`, `frag`, `roster` | `timeline` | Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container. |
-| `items` | derived | light | no | `items` | `clock`, `demoinfo`, `identity`, `roster` | `items` | Per-item pickup/respawn timeline with world position and nearest loc. |
-| `damage` | derived | light | no | `damage` | `clock`, `demoinfo`, `identity`, `roster` | `damage` | Per-hit damage from the KTX stream: totals, matrix, per-weapon, EWep buckets, telefrags, stomps, and the scoreboard cross-check. |
-| `shots` | derived | light | no | `shots` | `clock`, `demoinfo`, `identity`, `timeline`, `roster` | `shots` | Per-fire weapon stream with per-player accuracy aggregates and the KTX cross-check. Stream-derived splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build). |
-| `map-entities` | derived | light | no | `mapEntities` | — | `map-entities` | The map's static designed entity layout (item spawns, spawnpoints, teleporters) resolved from the embedded BSP corpus. |
-| `backpacks` | derived | light | no | `backpacks` | `clock`, `roster` | `backpacks` | RL/LG backpack drops from KTX drop hints, with dropper, weapon, origin, and the ent number joining to weapon pickups. |
-| `weapon-pickups` | derived | light | no | `weaponPickups` | `clock`, `identity`, `frag`, `roster` | `weapon-pickups` | Slot-weapon acquisitions (world spawners and backpacks) with kills-before-next-death effectiveness. |
-| `frags-final` | post | light | no | — | `clock`, `demoinfo`, `frag`, `timeline` | `frags-final`, `frags:final` | Final frag log: appends recovered victim-named telefrag team-kills to the raw `frag` log; publishes `frags:final` for in-pipeline consumers. |
-| `aim` | post | light | no | `aim` | `shots`, `timeline`, `damage` | `aim` | Per-player aim analysis: per-weapon effectiveness, crosshair-error samples, and the LG ramp series. Full splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build). |
-| `airgibs` | post | light | no | — | `demoinfo`, `frag`, `timeline`, `damage` | `airgibs` | Folds the Key-Moments airgib list into the timeline (direct enemy rocket hits on airborne victims above the height threshold). |
-| `match-final` | post | light | no | — | `match`, `frags:final` | `match-final`, `match:final` | Final match scoreboard: folds frag-log-corrected kills/deaths/suicides into `match`; publishes `match:final` for in-pipeline consumers. |
-| `loc-graph` | post | light | no | `locGraph` | `timeline`, `demoinfo` | `loc-graph` | Per-map loc adjacency graph with directed transition weights derived from player movement. |
-| `region-control` | post | light | no | — | `timeline`, `match`, `demoinfo` | `region-control` | Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact). |
-| `los` | lazy | heavy | yes | — | `timeline`, `demoinfo` | `los` | Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand. |
+| Artifact | Cost | Lazy | resultKey | Requires | Provides | Description |
+|---|---|---|---|---|---|---|
+| `clock` | light | no | — | — | `clock` | Match clock — match start/end, pauses, and the demo-start wall-clock anchor every timestamped producer converts against. |
+| `demoinfo` | light | no | `demoInfo` | — | `demoinfo` | KTX demoinfo scoreboard blob: per-player weapon accuracy, kills, deaths, damage, sprees, and item pickup counts, verbatim from the server. |
+| `identity` | light | no | — | `demoinfo` | `identity` | Player identity sessions — the slot→name/userid/team resolution every downstream producer reads. |
+| `frag` | light | no | `frags` | `clock`, `demoinfo`, `identity` | `frag` | Raw frag aggregates and the chronological kill log (weapon, suicide, team-kill flags). In-pipeline consumers wanting the telefrag-recovered log require `frags:final`; the served `frags` key is final by serve time since all nodes run. |
+| `roster` | light | no | — | `demoinfo` | `roster` | Canonical player roster with team labels (duel player-as-team rewrite applied), read by every team-aware producer. |
+| `metadata` | light | no | `metadata` | — | `metadata` | Server cvars and parsed KTX match settings (mode, timelimit, antilag, midair, instagib, ...). |
+| `match` | light | no | `match` | `demoinfo` | `match` | Match summary: map, mode, duration, and the per-player scoreboard. In-pipeline consumers wanting the frag-log-corrected kills/deaths/suicides require `match:final`; the served `match` key is corrected by serve time since all nodes run. |
+| `messages` | light | no | `messages` | `clock`, `demoinfo`, `roster` | `messages` | Chat, teamsay, and other match print messages with markup-stripped text. |
+| `timeline` | light | no | `timelineAnalysis` | `clock`, `demoinfo`, `identity`, `frag`, `roster` | `timeline` | Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container. |
+| `items` | light | no | `items` | `clock`, `demoinfo`, `identity`, `roster` | `items` | Per-item pickup/respawn timeline with world position and nearest loc. |
+| `damage` | light | no | `damage` | `clock`, `demoinfo`, `identity`, `roster` | `damage` | Per-hit damage from the KTX stream: totals, matrix, per-weapon, EWep buckets, telefrags, stomps, and the scoreboard cross-check. |
+| `shots` | light | no | `shots` | `clock`, `demoinfo`, `identity`, `timeline`, `roster` | `shots` | Per-fire weapon stream with per-player accuracy aggregates and the KTX cross-check. Stream-derived splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build). |
+| `map-entities` | light | no | `mapEntities` | — | `map-entities` | The map's static designed entity layout (item spawns, spawnpoints, teleporters) resolved from the embedded BSP corpus. |
+| `backpacks` | light | no | `backpacks` | `clock`, `roster` | `backpacks` | RL/LG backpack drops from KTX drop hints, with dropper, weapon, origin, and the ent number joining to weapon pickups. |
+| `weapon-pickups` | light | no | `weaponPickups` | `clock`, `identity`, `frag`, `roster` | `weapon-pickups` | Slot-weapon acquisitions (world spawners and backpacks) with kills-before-next-death effectiveness. |
+| `frags-final` | light | no | — | `clock`, `demoinfo`, `frag`, `timeline` | `frags-final`, `frags:final` | Final frag log: appends recovered victim-named telefrag team-kills to the raw `frag` log; publishes `frags:final` for in-pipeline consumers. |
+| `aim` | light | no | `aim` | `shots`, `timeline`, `damage` | `aim` | Per-player aim analysis: per-weapon effectiveness, crosshair-error samples, and the LG ramp series. Full splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build). |
+| `airgibs` | light | no | — | `demoinfo`, `frag`, `timeline`, `damage` | `airgibs` | Folds the Key-Moments airgib list into the timeline (direct enemy rocket hits on airborne victims above the height threshold). |
+| `match-final` | light | no | — | `match`, `frags:final` | `match-final`, `match:final` | Final match scoreboard: folds frag-log-corrected kills/deaths/suicides into `match`; publishes `match:final` for in-pipeline consumers. |
+| `loc-graph` | light | no | `locGraph` | `timeline`, `demoinfo` | `loc-graph` | Per-map loc adjacency graph with directed transition weights derived from player movement. |
+| `region-control` | light | no | — | `timeline`, `match`, `demoinfo` | `region-control` | Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact). |
+| `los` | heavy | yes | — | `timeline`, `demoinfo` | `los` | Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand. |
 
 Generated at schema version 49.

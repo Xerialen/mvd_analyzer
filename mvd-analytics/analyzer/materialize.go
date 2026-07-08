@@ -126,7 +126,6 @@ var losArtifact = &LazyArtifact{
 		Requires: []string{"timeline", "demoinfo"},
 		Provides: []string{"los"},
 		Lazy:     true,
-		tier:     "lazy",
 		cost:     costHeavy,
 		desc:     "Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand.",
 	},

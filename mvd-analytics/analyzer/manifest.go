@@ -9,7 +9,7 @@ import (
 
 // This file exposes the analyzer DAG as an API-facing manifest (Stage 4 of
 // PLAN-improve-analytics.md §5/§7). ArtifactManifest returns every node —
-// eager and lazy — as plain data: name, tier, dependency edges, cost, and
+// eager and lazy — as plain data: name, dependency edges, cost, and
 // the top-level Result JSON key its artifact lands in. mvd-api serves it at
 // GET /v1/artifacts and resolves the generic per-artifact endpoint through
 // it (a closed registry: no user input reaches the filesystem beyond a name
@@ -27,7 +27,6 @@ const (
 // ArtifactMeta is one DAG node's public manifest entry.
 type ArtifactMeta struct {
 	Name        string   `json:"name"`
-	Tier        string   `json:"tier"`        // "core" | "derived" | "post" | "lazy"
 	Requires    []string `json:"requires"`    // artifact names this node reads
 	Provides    []string `json:"provides"`    // artifact names this node writes (includes Name)
 	Mutates     bool     `json:"mutates"`     // true for the in-place post-processors (Stage-2 debt)
@@ -44,7 +43,6 @@ type ArtifactMeta struct {
 func metaFromSpec(s nodeSpec) ArtifactMeta {
 	return ArtifactMeta{
 		Name:        s.Name,
-		Tier:        s.tier,
 		Requires:    append([]string(nil), s.Requires...),
 		Provides:    append([]string(nil), s.Provides...),
 		Mutates:     s.Mutates,
@@ -103,12 +101,11 @@ func ArtifactsMarkdown() string {
 	b.WriteString("is materialised on demand. Non-servable nodes (`clock`, `roster`, `identity`, and ")
 	b.WriteString("the in-place post-processors) are internal — they have no standalone Result key.\n\n")
 
-	b.WriteString("| Artifact | Tier | Cost | Lazy | resultKey | Requires | Provides | Description |\n")
-	b.WriteString("|---|---|---|---|---|---|---|---|\n")
+	b.WriteString("| Artifact | Cost | Lazy | resultKey | Requires | Provides | Description |\n")
+	b.WriteString("|---|---|---|---|---|---|---|\n")
 	for _, m := range ArtifactManifest() {
-		fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s | %s | %s | %s |\n",
+		fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s | %s | %s |\n",
 			m.Name,
-			m.Tier,
 			m.Cost,
 			yesNo(m.Lazy),
 			codeOrDash(m.ResultKey),

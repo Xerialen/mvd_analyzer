@@ -71,7 +71,7 @@ var eagerArtifacts = map[string]eagerArtifact{
 }
 
 // handleArtifactsManifest: GET /v1/artifacts — the manifest of every DAG node
-// (name, tier, requires, provides, mutates, lazy, cost, resultKey, servable,
+// (name, requires, provides, mutates, lazy, cost, resultKey, servable,
 // description). Static per binary; ETag keyed on the schema version.
 func (s *server) handleArtifactsManifest(w http.ResponseWriter, r *http.Request) {
 	s.writeStaticCacheHeaders(w, "artifacts")
