@@ -7,6 +7,8 @@ detail.
 
 ## 2026-07-08
 
+- **Fix: cold demo loads failed with a 502 `hub_upstream` hash mismatch.** The hub's `demo_sha256` is the hash of the *uncompressed* `.mvd`, but the CDN serves gzip and the phase-3 integrity check hashed the gzipped download — so every un-cached `loadDemo`/`POST /v1/demos/{id}` was rejected. The check now authenticates the *decompressed* content (or a raw `.mvd` fallback) against `demo_sha256`; corruption is still rejected. mvd-api change; redeploy it.
+
 - **mvd-mcp: array/map tool filters fixed (`players`, `fields`, `types`, `weapon`, `items`, `kinds`, `reducers`).** jsonschema-go reflected every nilable slice/map to a `["null", X]` type union; some MCP clients coerce a union to a string, silently disabling those filters. Tool input schemas now advertise a plain `{"type":"array"}`/`{"type":"object"}` (null stripped). No API/output change; rebuild+redeploy `mvd-mcp` and reconnect the client to pick up the new schemas.
 
 - **mvd-mcp over streamable HTTP + deploy templates (no schema change;
