@@ -381,15 +381,48 @@ same manifest at `GET /v1/artifacts` and any servable artifact at
 reachable there — and via the mvd-mcp `getArtifact` tool — automatically,
 no per-artifact endpoint or tool to hand-write.
 
+### How nodes pass data downstream: two channels
+
+A node hands data to later nodes through one of two channels, and it
+helps to keep them straight:
+
+1. **`result.*` sections — the serialized output.** Each node's `Finalize`
+   writes its own slice of the `Result` (`frag` → `result.Frags`, `shots`
+   → `result.Shots`, …). That JSON *is* the pipeline's product, and a later
+   node may read an earlier section as input — e.g. the `aim`
+   post-processor reads `result.Shots` + `result.Streams` + `result.Damage`.
+   Every field is in the wire schema ([RESULT_SCHEMA.md](RESULT_SCHEMA.md)).
+
+2. **`CoreOutputs` — internal typed shared state.** A small bundle of
+   canonical, cross-cutting state that many nodes need. Producers publish
+   into it via `PopulateCore` (the `CoreProducer` hook); consumers read it
+   via `UseCoreOutputs` (the `CoreConsumer` hook) just before their own
+   `Finalize`. It's a plain Go struct with ergonomic typed helpers
+   (`co.TeamFor(name, raw)`, `co.SlotIdentityAt(slot, t)`) — no JSON
+   round-trip. Some of it is *also* a `result.*` section the producer wrote
+   (the KTX `DemoInfo` blob, the frag log); much of it is **internal-only**
+   and never serialized (the match `Clock`, the name/team tables, the
+   reconnect-unified identity `Sessions`, the duel-aware `Roster`).
+
+The rule of thumb: if downstream needs it *and the user should see it*,
+it's a `result.*` section; if it's internal machinery several nodes share
+(especially typed helpers that aren't wire data), it's a `CoreOutputs`
+field. Either way, ordering is the same — the consumer declares a
+`requires` edge on the producing node and the DAG schedules the producer
+first (§"The dependency DAG").
+
 ### CoreOutputs shape
 
 ```go
 type CoreOutputs struct {
-    DemoInfo    *DemoInfoResult            // KTX JSON metadata
-    Names       *NameTable                 // exact + normalized name → team
-    Slots       map[int]SlotInfo           // per-slot resolved display name + team (final occupant)
-    Sessions    map[int][]ResolvedSession  // per-slot, time-sorted, reconnect-unified occupancies
-    FragEntries []FragEntry                // canonical frag log
+    Clock                *Clock                     // match-relative time base (co.Clock.ToMatch); internal-only
+    DemoInfo             *DemoInfoResult            // KTX scoreboard blob — also the result.DemoInfo section
+    Names                *NameTable                 // exact + normalized name → team; internal-only
+    Slots                map[int]SlotInfo           // per-slot final occupant (prefer SlotIdentityAt); internal-only
+    Sessions             map[int][]ResolvedSession  // per-slot, reconnect-unified occupancies; internal-only
+    FragEntries          []FragEntry                // canonical raw frag log — feeds the result.Frags section
+    VictimNamedTeamkills []FragEntry                // victim-only teamkill obituaries (input to frags-final); internal-only
+    Roster               *Roster                    // duel-aware team table (co.TeamFor); internal-only
 }
 ```
 
