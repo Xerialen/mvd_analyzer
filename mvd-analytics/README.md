@@ -27,16 +27,22 @@ that downstream consumers render, summarise, or feed to an agent.
 - `analyzer/` — the `Analyzer` interface, the read-only event/userinfo
   `Context`, the typed `CoreOutputs` bundle that producer analysers
   populate for downstream consumers, and the `Registry` that drives a
-  run. `NewDefaultRegistry()` wires up the production analysers split
-  into two phases: **core** (`demoinfo`, `identity`, `frag` — the
-  producers that fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
-  `messages`, `timeline`, `items`, `damage`, `shots`, `backpacks`, `weapon_pickups`)
-  finalise after, with `CoreOutputs` already populated. Seven default
-  result post-processors run last (victim-named teamkill recovery, time
-  normalisation, duel team rewrite, **aim analysis**, scoreboard
-  kills/deaths/suicides correction, locgraph synthesis, region-control
-  classification) — see `postprocess.go` and `aim.go`
-  and `teamkill_telefrag.go`.
+  run. `NewDefaultRegistry()` wires up the production analysers and
+  post-processors and **derives their execution order from a declared
+  dependency DAG** (`dag.go`), not a hand-ordered phase list. By
+  convention the nodes fall into three tiers — **core** (`clock`,
+  `demoinfo`, `identity`, `frag`, `roster` — the `CoreProducer`s that
+  fill `CoreOutputs`), **derived** (`metadata`, `match`, `messages`,
+  `timeline`, `items`, `damage`, `shots`, `map_entities`, `backpacks`,
+  `weapon_pickups`), and six result **post-processors** (victim-named
+  teamkill recovery → `frags:final`, **aim analysis**, airgib detection,
+  scoreboard kills/deaths/suicides correction → `match:final`, locgraph
+  synthesis, region-control classification). The tiers are readability
+  only; the topological sort of the declared edges is what orders the run
+  (see "Pipeline architecture" below). Timestamps and team labels are
+  born correct in each producer's Finalize, so the old whole-Result time
+  rebase and duel team rewrite are gone. See `aim.go`, `airgibs.go`,
+  `postprocess.go`, and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
   `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
   `StateAt`, `LocTrails`, `RegionControl`) read `result.Streams` and
@@ -100,48 +106,53 @@ that downstream consumers render, summarise, or feed to an agent.
 
 ## Pipeline architecture
 
-A run flows through three concentric loops over a single pass of the
-event stream, then a post-pass on the assembled `Result`:
+A run makes one pass over the event stream, then a finalize/post pass
+over the assembled `Result`. Init, the event pass, and the finalize pass
+all iterate the **same node list** — `execOrder()`, the DAG's topological
+order (`dag.go`, `registry.go`) — not separate core/derived/post loops.
+The core → derived → post grouping you see in the sorted list is how the
+registration-index tie-break happens to lay the topologically valid order
+out; it is a readability property, **not** a coded phase sequence, and any
+valid order yields identical output (see "The dependency DAG" below).
 
 ```
-  events.Source ──▶ Init (core, then derived)
-                    │
-                    ▼
-            ┌─ for each event ─────────────────────────┐
-            │   registry sets ctx.{ServerData,         │
-            │     Players, FragsBySlot} from event     │
-            │   for a in core    : a.OnEvent(event)    │
-            │   for a in derived : a.OnEvent(event)    │
-            └──────────────────────────────────────────┘
-                    │
-                    ▼
-            ┌─ Phase 1: Finalize core ────────────────┐
-            │   demoinfo.Finalize → result.DemoInfo   │
-            │   demoinfo.PopulateCore →               │
-            │     co.{DemoInfo, Names, Slots}         │
-            │   frag.UseCoreOutputs(co) // reads Names│
-            │   frag.Finalize → result.Frags          │
-            │   frag.PopulateCore → co.FragEntries    │
-            └─────────────────────────────────────────┘
-                    │
-                    ▼
-            ┌─ Phase 2: Finalize derived ─────────────┐
-            │   each derived analyser:                │
-            │     a.UseCoreOutputs(co)  // optional   │
-            │     a.Finalize(result)                  │
-            │   (no analyser writes to co here)       │
-            └─────────────────────────────────────────┘
-                    │
-                    ▼
-            ┌─ Result post-processors ─────────────────┐
-            │   recoverTelefragTeamkills(result)       │
-            │   aimPost(result)                        │
-            │   buildLocGraphPost(result)  …           │
-            └──────────────────────────────────────────┘
-                    │
-                    ▼
-                 *Result
+  events.Source
+        │
+        ▼
+  nodes := r.execOrder()          // DAG topological order (dag.go)
+        │
+        ▼
+  Init:   for n in nodes: n.analyzer.Init(ctx)
+        │
+        ▼
+  ┌─ for each event ──────────────────────────────────┐
+  │   ctx.{ServerData, Players} updated from event     │
+  │   for n in nodes: n.analyzer.OnEvent(event)        │
+  └────────────────────────────────────────────────────┘
+        │
+        ▼
+  ┌─ Finalize + post, one pass over nodes ────────────┐
+  │   for n in nodes:                                  │
+  │     analyzer node →                                │
+  │        UseCoreOutputs(co)   // if CoreConsumer     │
+  │        Finalize(result)                            │
+  │        PopulateCore(co)     // if CoreProducer     │
+  │     post-processor node →                          │
+  │        post(result, co)                            │
+  └────────────────────────────────────────────────────┘
+        │
+        ▼
+     *Result
 ```
+
+The only ordering guarantee is per-edge: a `CoreConsumer`'s declared
+`requires` edge forces its producer's `PopulateCore` to run earlier in
+the topological order, so the field is present when the consumer's
+`Finalize` runs. For example `frag` reads `co.Names` because it declares
+an edge on `demoinfo` — the edge, not a hardcoded "core phase", is what
+puts `demoinfo`'s `PopulateCore` first. Two nodes with no edge between
+them may finalise in either order; `TestOrderIndependence` proves the
+output doesn't care.
 
 Each run records per-phase wall-clock durations (init, event pass, every
 analyzer's `Finalize`, every post-processor) into `Registry.PhaseTimings`
