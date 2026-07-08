@@ -212,6 +212,17 @@ func TestExportGraph(t *testing.T) {
 		t.Errorf("mermaid missing lazy node:\n%s", mermaid)
 	}
 
+	// Node kinds are styled: post-processors get the `post` class, the lazy
+	// node the `lazy` class; analyzers are unmarked.
+	for _, want := range []string{"classDef post ", "classDef lazy ", "class los lazy;"} {
+		if !strings.Contains(mermaid, want) {
+			t.Errorf("mermaid missing %q:\n%s", want, mermaid)
+		}
+	}
+	if !strings.Contains(mermaid, "frags_final") || !strings.Contains(mermaid, " post;") {
+		t.Errorf("mermaid should mark post-processor nodes with the post class:\n%s", mermaid)
+	}
+
 	if _, err := ExportGraph("dot"); err == nil {
 		t.Fatal("expected error for unsupported format 'dot'")
 	}

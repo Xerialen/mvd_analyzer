@@ -13,8 +13,9 @@ import (
 // (los — materialised on demand, not in the eager bundle),
 // and needs no demo. Supported formats:
 //
-//	"mermaid" — a flowchart TB grouped into DAG-depth layers; lazy nodes
-//	            carry a dashed outline.
+//	"mermaid" — a flowchart TB grouped into DAG-depth layers. Post-processor
+//	            nodes carry a coloured border and the lazy node a dashed one;
+//	            unmarked nodes are event-reading analyzers.
 //	"json"    — {nodes:[{name,requires,provides,mutates,lazy,depth}], edges:[{from,to,artifact}]}.
 //
 // It is the single exported entry point the qw-analyze -graph flag needs.
@@ -194,14 +195,24 @@ func renderGraphMermaid(specs []nodeSpec) string {
 		fmt.Fprintf(&b, "  %s -->|\"%s\"| %s\n", mermaidID(e.from), e.artifact, mermaidID(e.to))
 	}
 
-	// Mark lazy nodes (materialised on demand, not in the eager parse) with
-	// a dashed outline so the one behavioral distinction the depth layers
-	// don't show stays visible.
-	var lazy []string
+	// Mark the node kinds the depth layers don't show — the one behavioral
+	// axis besides depth. Post-processors (no event pass; they only refine
+	// the assembled Result) get a coloured border; the lazy node
+	// (materialised on demand) a dashed one. Unmarked nodes are event-reading
+	// analyzers, so the styling doubles as "which nodes read the event
+	// stream": the plain ones do, the marked ones don't.
+	var post, lazy []string
 	for _, s := range specs {
-		if s.Lazy {
+		switch {
+		case s.Lazy:
 			lazy = append(lazy, mermaidID(s.Name))
+		case s.post != nil:
+			post = append(post, mermaidID(s.Name))
 		}
+	}
+	if len(post) > 0 {
+		b.WriteString("  classDef post stroke:#d9730d,stroke-width:2px;\n")
+		fmt.Fprintf(&b, "  class %s post;\n", strings.Join(post, ","))
 	}
 	if len(lazy) > 0 {
 		b.WriteString("  classDef lazy stroke-dasharray:4 3;\n")
