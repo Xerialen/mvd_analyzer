@@ -177,14 +177,13 @@ func TestExportGraph(t *testing.T) {
 
 	// The lazy node appears, marked lazy; the eager nodes are not lazy.
 	lazySeen := map[string]bool{}
+	depthByName := map[string]int{}
 	for _, n := range g.Nodes {
+		depthByName[n.Name] = n.Depth
 		switch n.Name {
 		case "los":
 			if !n.Lazy {
 				t.Errorf("node %q should be marked lazy", n.Name)
-			}
-			if n.Tier != "lazy" {
-				t.Errorf("node %q tier = %q, want lazy", n.Name, n.Tier)
 			}
 			lazySeen[n.Name] = true
 		default:
@@ -195,6 +194,18 @@ func TestExportGraph(t *testing.T) {
 	}
 	if !lazySeen["los"] {
 		t.Fatalf("expected los lazy node in graph, saw %v", lazySeen)
+	}
+
+	// Depth is the display layering: roots (no in-graph requirements) sit at
+	// 0, and a node with dependencies sits deeper than all of them.
+	if depthByName["clock"] != 0 || depthByName["demoinfo"] != 0 {
+		t.Errorf("root nodes should be depth 0: clock=%d demoinfo=%d", depthByName["clock"], depthByName["demoinfo"])
+	}
+	if depthByName["frag"] <= depthByName["demoinfo"] {
+		t.Errorf("frag (requires demoinfo) should sit deeper than demoinfo: frag=%d demoinfo=%d", depthByName["frag"], depthByName["demoinfo"])
+	}
+	if depthByName["los"] == 0 {
+		t.Errorf("los (requires demoinfo, timeline) should not be depth 0")
 	}
 	// The lazy node's Requires resolve to eager providers (edges into it).
 	if !strings.Contains(mermaid, "los") {

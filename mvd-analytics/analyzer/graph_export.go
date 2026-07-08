@@ -13,8 +13,9 @@ import (
 // (los — materialised on demand, not in the eager bundle),
 // and needs no demo. Supported formats:
 //
-//	"mermaid" — a flowchart TB grouped into core / derived / post / lazy tiers.
-//	"json"    — {nodes:[{name,requires,provides,mutates,lazy,tier}], edges:[{from,to,artifact}]}.
+//	"mermaid" — a flowchart TB grouped into DAG-depth layers; lazy nodes
+//	            carry a dashed outline.
+//	"json"    — {nodes:[{name,requires,provides,mutates,lazy,depth}], edges:[{from,to,artifact}]}.
 //
 // It is the single exported entry point the qw-analyze -graph flag needs.
 func ExportGraph(format string) (string, error) {
@@ -46,9 +47,45 @@ type graphNodeJSON struct {
 	Provides  []string `json:"provides"`
 	Mutates   bool     `json:"mutates"`
 	Lazy      bool     `json:"lazy"`
-	Tier      string   `json:"tier"`
+	Depth     int      `json:"depth"`
 	Cost      string   `json:"cost"`
 	ResultKey string   `json:"resultKey"`
+}
+
+// nodeDepth returns each node's longest-path depth in the DAG: 0 for a
+// node whose requirements have no in-graph provider (a root), else
+// 1 + the max depth of its requirements' providers. The graph is acyclic
+// (validateDAG), so the memoised recursion terminates. This is a display
+// grouping only — the execution order is topoSortDAG, not this layering.
+func nodeDepth(specs []nodeSpec) map[string]int {
+	provider := providerIndex(specs)
+	byName := make(map[string]nodeSpec, len(specs))
+	for _, s := range specs {
+		byName[s.Name] = s
+	}
+	depth := make(map[string]int, len(specs))
+	var visit func(name string) int
+	visit = func(name string) int {
+		if d, ok := depth[name]; ok {
+			return d
+		}
+		d := 0
+		for _, req := range byName[name].Requires {
+			from, ok := provider[req]
+			if !ok || from == name {
+				continue
+			}
+			if pd := visit(from) + 1; pd > d {
+				d = pd
+			}
+		}
+		depth[name] = d
+		return d
+	}
+	for _, s := range specs {
+		visit(s.Name)
+	}
+	return depth
 }
 
 type graphEdgeJSON struct {
@@ -64,6 +101,7 @@ type graphJSON struct {
 
 func renderGraphJSON(specs []nodeSpec) (string, error) {
 	provider := providerIndex(specs)
+	depth := nodeDepth(specs)
 	g := graphJSON{
 		Nodes: make([]graphNodeJSON, 0, len(specs)),
 		Edges: make([]graphEdgeJSON, 0),
@@ -75,7 +113,7 @@ func renderGraphJSON(specs []nodeSpec) (string, error) {
 			Provides:  append([]string(nil), s.Provides...),
 			Mutates:   s.Mutates,
 			Lazy:      s.Lazy,
-			Tier:      s.tier,
+			Depth:     depth[s.Name],
 			Cost:      s.cost,
 			ResultKey: s.resultKey,
 		})
@@ -101,22 +139,32 @@ func mermaidID(name string) string {
 
 func renderGraphMermaid(specs []nodeSpec) string {
 	provider := providerIndex(specs)
+	depth := nodeDepth(specs)
+	maxDepth := 0
+	for _, d := range depth {
+		if d > maxDepth {
+			maxDepth = d
+		}
+	}
 
 	var b strings.Builder
 	b.WriteString("flowchart TB\n")
 
-	tiers := []struct{ id, label string }{
-		{"core", "core (state reconstruction)"},
-		{"derived", "derived (finalize)"},
-		{"post", "post-processors (in-place Result mutation)"},
-		{"lazy", "lazy (materialised on demand)"},
-	}
-	for _, t := range tiers {
-		fmt.Fprintf(&b, "  subgraph %s[\"%s\"]\n", t.id, t.label)
+	// Group nodes into subgraphs by DAG depth (dependency layers). Nodes
+	// keep their registration order within a layer for stable output. This
+	// is a readability grouping, not the execution order (topoSortDAG).
+	for d := 0; d <= maxDepth; d++ {
+		var atDepth []nodeSpec
 		for _, s := range specs {
-			if s.tier != t.id {
-				continue
+			if depth[s.Name] == d {
+				atDepth = append(atDepth, s)
 			}
+		}
+		if len(atDepth) == 0 {
+			continue
+		}
+		fmt.Fprintf(&b, "  subgraph d%d[\"depth %d\"]\n", d, d)
+		for _, s := range atDepth {
 			fmt.Fprintf(&b, "    %s[\"%s\"]\n", mermaidID(s.Name), s.Name)
 		}
 		b.WriteString("  end\n")
@@ -143,6 +191,20 @@ func renderGraphMermaid(specs []nodeSpec) string {
 	})
 	for _, e := range edges {
 		fmt.Fprintf(&b, "  %s -->|\"%s\"| %s\n", mermaidID(e.from), e.artifact, mermaidID(e.to))
+	}
+
+	// Mark lazy nodes (materialised on demand, not in the eager parse) with
+	// a dashed outline so the one behavioral distinction the depth layers
+	// don't show stays visible.
+	var lazy []string
+	for _, s := range specs {
+		if s.Lazy {
+			lazy = append(lazy, mermaidID(s.Name))
+		}
+	}
+	if len(lazy) > 0 {
+		b.WriteString("  classDef lazy stroke-dasharray:4 3;\n")
+		fmt.Fprintf(&b, "  class %s lazy;\n", strings.Join(lazy, ","))
 	}
 	return b.String()
 }
