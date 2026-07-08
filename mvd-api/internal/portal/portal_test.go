@@ -202,13 +202,22 @@ func TestFullFlow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
 	if resp.StatusCode != http.StatusFound || resp.Header.Get("Location") != "/portal/key" {
+		resp.Body.Close()
 		t.Fatalf("callback = %d %q; want 302 /portal/key", resp.StatusCode, resp.Header.Get("Location"))
 	}
 	if !d.gotTokenRequest {
+		resp.Body.Close()
 		t.Fatal("token endpoint was not hit on a valid callback")
 	}
+	// The one-shot state cookie must be cleared by the callback (Set-Cookie with
+	// a negative Max-Age), and it must be emitted despite the 302 — a Set-Cookie
+	// after the redirect header would be dropped.
+	if !stateCookieCleared(resp) {
+		resp.Body.Close()
+		t.Error("callback did not clear the state cookie")
+	}
+	resp.Body.Close()
 
 	// Key page: no key yet.
 	body := getBody(t, client, srv.URL+"/portal/key")
@@ -524,6 +533,16 @@ func extractKey(t *testing.T, body string) string {
 		end = len(rest)
 	}
 	return rest[:end]
+}
+
+// stateCookieCleared reports whether resp deletes the state cookie (Max-Age<0).
+func stateCookieCleared(resp *http.Response) bool {
+	for _, c := range resp.Cookies() {
+		if c.Name == stateCookie && c.MaxAge < 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func flipFirstByte(s string) string {

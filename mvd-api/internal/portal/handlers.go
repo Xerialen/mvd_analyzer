@@ -34,8 +34,11 @@ func (p *Portal) handleLogin(w http.ResponseWriter, r *http.Request) {
 // or an absent cookie is rejected with 400 BEFORE any token exchange — a forged
 // callback (attacker's code, victim's browser) never reaches Discord.
 func (p *Portal) handleCallback(w http.ResponseWriter, r *http.Request) {
-	// Clear the one-shot state cookie regardless of outcome.
-	defer p.clearStateCookie(w)
+	// Clear the one-shot state cookie regardless of outcome. This must be a
+	// Set-Cookie header emitted BEFORE any body/redirect write (a header set
+	// after WriteHeader is silently dropped), so do it up front — reading the
+	// request cookie below is independent of this response header.
+	p.clearStateCookie(w)
 
 	if derr := r.URL.Query().Get("error"); derr != "" {
 		// User denied consent, or Discord rejected the request. Not our error.
