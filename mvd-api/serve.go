@@ -89,7 +89,8 @@ func runServe(args []string) error {
 			logger,
 		)
 		if err != nil {
-			return fmt.Errorf("portal: %w", err)
+			// NewConfig errors are already prefixed "portal: " — don't double it.
+			return err
 		}
 		portalHandler = portal.New(cfg)
 	}

@@ -133,9 +133,15 @@ Discord-cookie session, not a Bearer key):
   (regenerating **revokes** the previous one — one active key per user).
 - `POST /portal/logout` — clears the session cookie.
 
-The session and state cookies are `HttpOnly`, `Secure`, `SameSite=Lax`,
-`Path=/portal`. The full key is only ever shown on the issue response, and
-only its SHA-256 hash is stored — the same guarantee as the CLI.
+The session and state cookies are `HttpOnly`, `SameSite=Lax`, `Path=/portal`.
+Their `Secure` flag follows the `-portal-base-url` scheme: an **`https`** base
+URL (production, the norm) ⇒ `Secure` cookies; an **`http`** base URL (local
+development only) ⇒ non-`Secure` cookies, because a browser refuses to send a
+`Secure` cookie over plain http, which would otherwise break the localhost dev
+flow. The server logs a startup warning whenever cookies are non-`Secure`;
+never run a public deployment on an `http` base URL. The full key is only ever
+shown on the issue response, and only its SHA-256 hash is stored — the same
+guarantee as the CLI.
 
 **Operator prerequisite:** create a Discord application (Developer Portal →
 OAuth2), note the client id + secret, and register the redirect URI

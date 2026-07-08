@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -58,6 +59,42 @@ func TestNewConfigValidation(t *testing.T) {
 			}
 			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 				t.Fatalf("err = %v; want containing %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// TestSecureCookieFromScheme pins that the cookie Secure flag follows the base
+// URL scheme: https ⇒ Secure (production), http ⇒ not Secure (local dev, so the
+// browser will actually send the cookie over plain http). A schemeless/other
+// base URL fails safe to Secure.
+func TestSecureCookieFromScheme(t *testing.T) {
+	cases := []struct {
+		baseURL    string
+		wantSecure bool
+	}{
+		{"https://qw.example.com", true},
+		{"http://localhost:8080", false},
+		{"https://localhost:8080", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.baseURL, func(t *testing.T) {
+			cfg, err := NewConfig(tc.baseURL, "cid", "csec",
+				[]byte("0123456789abcdef"), fakeStore{}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.SecureCookies != tc.wantSecure {
+				t.Errorf("SecureCookies = %v; want %v", cfg.SecureCookies, tc.wantSecure)
+			}
+			p := New(cfg)
+			c := p.cookie("x", "v", 3600)
+			if c.Secure != tc.wantSecure {
+				t.Errorf("cookie.Secure = %v; want %v", c.Secure, tc.wantSecure)
+			}
+			// SameSite/HttpOnly/Path are unconditional.
+			if !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || c.Path != cookiePath {
+				t.Errorf("cookie attributes wrong: %+v", c)
 			}
 		})
 	}

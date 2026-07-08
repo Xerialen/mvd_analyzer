@@ -72,6 +72,13 @@ type Config struct {
 	// DiscordBaseURL overrides the Discord host for tests (httptest stub).
 	// Empty uses defaultDiscordBase.
 	DiscordBaseURL string
+	// SecureCookies is derived by NewConfig from the base URL scheme: true for
+	// an https base URL (production, the norm), false for http (local dev). A
+	// browser will NOT send a Secure cookie over plain http, so an http base
+	// URL — e.g. the documented http://localhost:8080 dev redirect — requires
+	// non-Secure cookies for the flow to work at all. New() warns at startup
+	// when this is false so a production http misconfig is visible.
+	SecureCookies bool
 }
 
 // minCookieSecretLen is the floor on PORTAL_COOKIE_SECRET length. 16 bytes
@@ -81,13 +88,14 @@ const minCookieSecretLen = 16
 
 // Portal is the HTTP handler for the /portal surface.
 type Portal struct {
-	baseURL      string
-	clientID     string
-	clientSecret string
-	cookieSecret []byte
-	store        KeyStore
-	logger       *slog.Logger
-	discordBase  string
+	baseURL       string
+	clientID      string
+	clientSecret  string
+	cookieSecret  []byte
+	store         KeyStore
+	logger        *slog.Logger
+	discordBase   string
+	secureCookies bool
 
 	// now and randState are injection points for tests (deterministic expiry
 	// and state). Nil-valued fields fall back to the real implementations.
@@ -115,16 +123,22 @@ func NewConfig(baseURL, clientID, clientSecret string, cookieSecret []byte, stor
 	case len(cookieSecret) < minCookieSecretLen:
 		return Config{}, fmt.Errorf("portal: PORTAL_COOKIE_SECRET must be at least %d bytes", minCookieSecretLen)
 	}
-	if _, err := url.Parse(baseURL); err != nil {
+	u, err := url.Parse(baseURL)
+	if err != nil {
 		return Config{}, fmt.Errorf("portal: -portal-base-url invalid: %w", err)
 	}
+	// Cookies are Secure iff the base URL is https. A malformed/empty scheme
+	// (already rejected above for empty; url.Parse tolerates schemeless) fails
+	// safe to Secure — only an explicit http:// base URL disables it.
+	secure := u.Scheme != "http"
 	return Config{
-		BaseURL:      strings.TrimRight(baseURL, "/"),
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		CookieSecret: cookieSecret,
-		Store:        store,
-		Logger:       logger,
+		BaseURL:       strings.TrimRight(baseURL, "/"),
+		ClientID:      clientID,
+		ClientSecret:  clientSecret,
+		CookieSecret:  cookieSecret,
+		Store:         store,
+		Logger:        logger,
+		SecureCookies: secure,
 	}, nil
 }
 
@@ -139,17 +153,25 @@ func New(c Config) *Portal {
 		base = defaultDiscordBase
 	}
 	p := &Portal{
-		baseURL:      strings.TrimRight(c.BaseURL, "/"),
-		clientID:     c.ClientID,
-		clientSecret: c.ClientSecret,
-		cookieSecret: c.CookieSecret,
-		store:        c.Store,
-		logger:       logger,
-		discordBase:  strings.TrimRight(base, "/"),
-		now:          time.Now,
-		httpClient:   &http.Client{Timeout: 10 * time.Second},
+		baseURL:       strings.TrimRight(c.BaseURL, "/"),
+		clientID:      c.ClientID,
+		clientSecret:  c.ClientSecret,
+		cookieSecret:  c.CookieSecret,
+		store:         c.Store,
+		logger:        logger,
+		discordBase:   strings.TrimRight(base, "/"),
+		secureCookies: c.SecureCookies,
+		now:           time.Now,
+		httpClient:    &http.Client{Timeout: 10 * time.Second},
 	}
 	p.randState = randNonce
+	// A non-Secure cookie config means an http base URL — acceptable for local
+	// development only (a browser refuses to send a Secure cookie over http).
+	// Surface it loudly so it is never mistaken for a valid production setup.
+	if !p.secureCookies {
+		logger.Warn("portal cookies are NOT Secure because -portal-base-url is http:// — use this only for local development, never in production",
+			"baseURL", p.baseURL)
+	}
 	return p
 }
 

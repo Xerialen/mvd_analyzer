@@ -52,7 +52,12 @@ func (p *Portal) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	gotState := r.URL.Query().Get("state")
-	// Constant-time-ish: states are single-use nonces, but compare fully.
+	// A plain != is fine here: wantState came from a cookie whose HMAC was
+	// already verified in constant time (readStateCookie), and the nonce is a
+	// 256-bit unguessable value — there is no secret to leak by a timing-varying
+	// string compare. Note: the OAuth code's single-use property is enforced by
+	// Discord (it single-uses the `code` at exchange time), not by this nonce,
+	// so this compare guards CSRF, not replay.
 	if gotState == "" || gotState != wantState {
 		p.clientError(w, http.StatusBadRequest, "Sign-in state mismatch. Please start again.")
 		return

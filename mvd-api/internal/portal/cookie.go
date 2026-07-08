@@ -114,7 +114,9 @@ func (p *Portal) readSession(r *http.Request) (session, error) {
 	return s, nil
 }
 
-// clearSessionCookie expires the session cookie (Max-Age<0 deletes it).
+// clearSessionCookie expires the session cookie. A negative Max-Age is
+// serialised by net/http as the literal `Max-Age=0` on the wire, a valid cookie
+// deletion directive.
 func (p *Portal) clearSessionCookie(w http.ResponseWriter) {
 	c := p.cookie(sessionCookie, "", -1)
 	http.SetCookie(w, c)
@@ -149,8 +151,13 @@ func (p *Portal) clearStateCookie(w http.ResponseWriter) {
 // cookie shares (D5):
 //
 //   - HttpOnly: JS cannot read it (defence against XSS session theft).
-//   - Secure: sent only over HTTPS (the deploy target; harmless on localhost
-//     dev over http where the browser still stores it for same-site).
+//   - Secure: set when the base URL is https (production, the norm). It is
+//     disabled ONLY for an http base URL (local dev), because a browser refuses
+//     to SEND a Secure cookie over plain http — so the documented
+//     http://localhost dev redirect could otherwise never receive the session/
+//     state cookie. Such a config must never be used in production; the server
+//     logs a startup warning when it happens (see New). p.secureCookies carries
+//     the decision.
 //   - SameSite=Lax: the browser withholds the cookie on cross-site POSTs, which
 //     is what protects POST /portal/key and /portal/logout from CSRF. (The
 //     OAuth flow is a top-level GET navigation, which Lax DOES send — so the
@@ -164,7 +171,7 @@ func (p *Portal) cookie(name, value string, maxAge int) *http.Cookie {
 		Path:     cookiePath,
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   p.secureCookies,
 		SameSite: http.SameSiteLaxMode,
 	}
 }

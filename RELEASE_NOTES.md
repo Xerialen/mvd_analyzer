@@ -24,7 +24,10 @@ detail.
     is HTML-escaped (`html/template`), and neither the cookie secret nor the
     Discord client secret ever reaches a log line, error body, or page. The
     portal adds **no new dependencies** (stdlib `net/http` OAuth, `crypto/hmac`,
-    `html/template`, `embed`).
+    `html/template`, `embed`). Cookie `Secure` follows the `-portal-base-url`
+    scheme — `https` ⇒ Secure (production), `http` ⇒ non-Secure (local dev
+    only, since a browser will not send a Secure cookie over http); the server
+    logs a startup warning whenever cookies are non-Secure.
   - **Key store cross-process lock.** `internal/authkeys` mutations
     (`Issue`/`Revoke`) now take a cross-process `flock` and reload `keys.json`
     under the lock before writing, so the portal (issuing inside the live
