@@ -64,6 +64,20 @@ func (r Record) HashPrefix() string {
 }
 
 // Store is a concurrency-safe key store backed by keys.json under dir.
+//
+// Two layers of locking guard it. The in-process RWMutex (mu) serialises
+// goroutines within one process. A cross-process advisory file lock (flock on
+// dir/keys.json) serialises MUTATIONS across independent processes — the live
+// server's portal and an operator's `keys` CLI can both hold a *Store on the
+// same dir at once, and without the flock the loser of a concurrent
+// read-modify-write would silently clobber the winner's key. Every mutation
+// (Issue/Revoke) takes the flock, RELOADS keys.json from disk under it (so it
+// applies its change to the latest on-disk state, not a possibly-stale
+// in-memory map), applies, writes atomically, then releases. Reads (Lookup/
+// List) take only the RWMutex: they tolerate a slightly stale map (a key
+// issued by another process a moment ago authenticates once this process next
+// mutates-and-reloads, or is reopened), which is acceptable and keeps the hot
+// auth path flock-free.
 type Store struct {
 	dir  string
 	path string
@@ -96,26 +110,40 @@ func Open(dir string) (*Store, error) {
 		path: filepath.Join(dir, keysFileName),
 		recs: make(map[string]Record),
 	}
+	if err := s.reloadLocked(); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// reloadLocked replaces s.recs with the current on-disk contents of keys.json.
+// A missing file resets to an empty store (matching first-run Open). The caller
+// must hold s.mu for write; mutations additionally hold the cross-process flock
+// so the reload observes the latest committed state before applying a change.
+func (s *Store) reloadLocked() error {
 	data, err := os.ReadFile(s.path)
 	if errors.Is(err, os.ErrNotExist) {
-		return s, nil
+		s.recs = make(map[string]Record)
+		return nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("authkeys: read %s: %w", s.path, err)
+		return fmt.Errorf("authkeys: read %s: %w", s.path, err)
 	}
 	var recs []Record
 	if len(data) > 0 {
 		if err := json.Unmarshal(data, &recs); err != nil {
-			return nil, fmt.Errorf("authkeys: parse %s: %w", s.path, err)
+			return fmt.Errorf("authkeys: parse %s: %w", s.path, err)
 		}
 	}
+	m := make(map[string]Record, len(recs))
 	for _, r := range recs {
 		if r.KeyHash == "" {
 			continue
 		}
-		s.recs[r.KeyHash] = r
+		m[r.KeyHash] = r
 	}
-	return s, nil
+	s.recs = m
+	return nil
 }
 
 // hashKey returns the lowercase hex SHA-256 of the plaintext key — the value
@@ -159,6 +187,20 @@ func (s *Store) Issue(discordID, discordName string, service bool, note string) 
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	unlock, err := s.flockLocked()
+	if err != nil {
+		return "", Record{}, err
+	}
+	defer unlock()
+
+	// Apply the mutation to the LATEST on-disk state, not a stale in-memory
+	// map: another process (the CLI, or another server worker) may have issued
+	// or revoked since we last wrote. reloadLocked runs under the flock so no
+	// concurrent mutation can slip between the reload and the write.
+	if err := s.reloadLocked(); err != nil {
+		return "", Record{}, err
+	}
 
 	// Enforce one-active-key-per-Discord-user (D4). Service keys are ops-
 	// issued and not portal-bound, so an empty discordID never collides.
@@ -231,6 +273,18 @@ func (s *Store) Revoke(byKey, byHash, byDiscordID string) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	unlock, err := s.flockLocked()
+	if err != nil {
+		return 0, err
+	}
+	defer unlock()
+
+	// Reload under the flock so we revoke against the latest on-disk state (see
+	// Issue for why).
+	if err := s.reloadLocked(); err != nil {
+		return 0, err
+	}
+
 	now := time.Now().UTC().Format(time.RFC3339)
 	n := 0
 	for hash, rec := range s.recs {
@@ -274,6 +328,30 @@ func (s *Store) List() []Record {
 		return out[i].KeyHash < out[j].KeyHash
 	})
 	return out
+}
+
+// ActiveByDiscordID returns the current active record for a Discord user and
+// true, or a zero Record and false if the user has no active key. Used by the
+// portal to show a signed-in user their key STATUS (hash prefix + created
+// date) without exposing the key, which is unrecoverable. The record carries
+// only the hash, never a key.
+//
+// This is a read: it takes only the RWMutex, so it can observe a map that is
+// slightly stale relative to another process's just-committed Issue (see the
+// Store doc). That is acceptable for a status display — the mutating POST
+// /portal/key path reloads under the flock and is authoritative.
+func (s *Store) ActiveByDiscordID(discordID string) (Record, bool) {
+	if discordID == "" {
+		return Record{}, false
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, r := range s.recs {
+		if r.DiscordID == discordID && r.Active() {
+			return r, true
+		}
+	}
+	return Record{}, false
 }
 
 // saveLocked serialises the in-memory map to keys.json atomically. Caller

@@ -219,6 +219,68 @@ func TestOpenRejectsCorruptFile(t *testing.T) {
 	}
 }
 
+// TestCrossProcessIssueNoLostWrite pins the phase-15 cross-process guard: two
+// INDEPENDENT Store instances on one dir (modelling the live server's portal
+// and a separate `keys` CLI process, each with its own in-memory map) issuing
+// concurrently must both survive. Without the flock + reload-under-lock, the
+// two whole-file read-modify-writes race and the loser's key is clobbered off
+// disk. With it, every issued key is present in a freshly reopened store and
+// authenticates.
+func TestCrossProcessIssueNoLostWrite(t *testing.T) {
+	dir := t.TempDir()
+
+	const perStore = 20
+	stores := 4
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var issued []string
+
+	for si := 0; si < stores; si++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Each goroutine opens its OWN Store on the shared dir — a distinct
+			// in-memory map, as a separate process would have. The flock is the
+			// only thing serialising their writes.
+			s, err := Open(dir)
+			if err != nil {
+				t.Errorf("open: %v", err)
+				return
+			}
+			for j := 0; j < perStore; j++ {
+				key, _, err := s.Issue("", "", true, "svc")
+				if err != nil {
+					t.Errorf("issue: %v", err)
+					return
+				}
+				mu.Lock()
+				issued = append(issued, key)
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+
+	if want := stores * perStore; len(issued) != want {
+		t.Fatalf("issued %d keys; want %d", len(issued), want)
+	}
+
+	// Reopen fresh (loads the final on-disk state) and confirm EVERY key
+	// survived the concurrent writes.
+	final, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(final.List()); got != len(issued) {
+		t.Fatalf("on-disk store holds %d keys; want %d (lost write)", got, len(issued))
+	}
+	for _, key := range issued {
+		if _, err := final.Lookup(key); err != nil {
+			t.Fatalf("issued key lost across concurrent writes: %v", err)
+		}
+	}
+}
+
 // TestConcurrentIssueLookup exercises the mutex under -race.
 func TestConcurrentIssueLookup(t *testing.T) {
 	s, err := Open(t.TempDir())
