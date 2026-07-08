@@ -14,6 +14,7 @@ import (
 
 	"github.com/mvd-analyzer/mvd-analytics/hubfetch"
 	"github.com/mvd-analyzer/mvd-analytics/result"
+	"github.com/mvd-analyzer/mvd-api/internal/authkeys"
 	"github.com/mvd-analyzer/mvd-api/internal/democache"
 )
 
@@ -27,6 +28,11 @@ func runServe(args []string) error {
 		maxParses     = fs.Int("max-parses", 0, "max concurrent heavy cold operations (demo download+parse or LOS raycast) (0 = max(1, NumCPU/2))")
 		mapsDir       = fs.String("maps-dir", "", "directory of per-map geometry JSON for /v1/maps/{map}/geometry; empty disables the endpoint")
 		logFormat     = fs.String("log-format", "text", "access log format: text | json")
+		authDir       = fs.String("auth-dir", "", "directory holding keys.json; when set, /v1/* and POST /v1/demos/{id} require an API key. Empty = no auth (localhost mode)")
+		rateUser      = fs.Float64("rate-user", 5, "per-key sustained request rate (req/s) for portal (user) keys")
+		burstUser     = fs.Int("burst-user", 20, "per-key burst (bucket size) for portal (user) keys")
+		rateService   = fs.Float64("rate-service", 50, "per-key sustained request rate (req/s) for service keys (e.g. mvd-web)")
+		burstService  = fs.Int("burst-service", 200, "per-key burst (bucket size) for service keys")
 	)
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -38,7 +44,26 @@ func runServe(args []string) error {
 	cache.MaxParses = *maxParses
 	cache.Logger = logger
 	cache.CleanupOnStartup()
-	handler := newRouter(cache, logger, *mapsDir)
+
+	// Auth is off unless -auth-dir is set. When on, the store is loaded and
+	// the auth + per-key rate-limit middleware is inserted into the chain
+	// (PLAN-hosting D8). Off keeps today's localhost behaviour byte-identical.
+	var auth *authenticator
+	if *authDir != "" {
+		store, err := authkeys.Open(*authDir)
+		if err != nil {
+			return fmt.Errorf("auth store: %w", err)
+		}
+		auth = &authenticator{
+			store: store,
+			limiter: newKeyLimiter(
+				rateClass{rate: *rateUser, burst: *burstUser},
+				rateClass{rate: *rateService, burst: *burstService},
+			),
+			logger: logger,
+		}
+	}
+	handler := newRouter(cache, logger, *mapsDir, auth)
 
 	srv := &http.Server{
 		Addr:         *addr,
@@ -50,7 +75,8 @@ func runServe(args []string) error {
 
 	logger.Info("mvd-api starting",
 		"addr", *addr, "cacheDir", *cacheDir, "cacheMaxBytes", *cacheMaxBytes,
-		"maxParses", cache.MaxParses, "mapsDir", *mapsDir, "schemaVersion", result.CurrentSchemaVersion)
+		"maxParses", cache.MaxParses, "mapsDir", *mapsDir, "authEnabled", auth != nil,
+		"schemaVersion", result.CurrentSchemaVersion)
 
 	errCh := make(chan error, 1)
 	go func() {

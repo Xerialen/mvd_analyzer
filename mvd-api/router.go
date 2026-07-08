@@ -17,13 +17,16 @@ type server struct {
 }
 
 // newRouter returns an http.Handler with every endpoint registered.
-// Logging + panic recovery wrap the mux.
-func newRouter(store demoStore, logger *slog.Logger, mapsDir string) http.Handler {
+// Logging + panic recovery wrap the mux. auth may be nil (no-auth /
+// localhost mode); when non-nil the auth + rate-limit middleware is inserted
+// between accessLog and recover.
+func newRouter(store demoStore, logger *slog.Logger, mapsDir string, auth *authenticator) http.Handler {
 	s := &server{store: store, logger: logger, mapsDir: mapsDir}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
+	mux.HandleFunc("GET /v1/auth/check", s.handleAuthCheck)
 
 	// Automatic DAG surface (Stage 4): the artifact manifest, the generic
 	// per-artifact endpoint, and the graph as JSON.
@@ -65,11 +68,21 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string) http.Handle
 	// response — including a CORS preflight short-circuit — carries an
 	// X-Request-Id; CORS then answers preflight and stamps Allow-Origin on
 	// every response (incl. panics); access log records the final status with
-	// that id; recover catches handler panics closest to the mux so the
-	// request is still logged. (CORS stays outside auth in phase 14 so
-	// preflight is never auth-blocked.)
+	// that id (and seeds the reqInfo auth writes its identity into); auth
+	// validates the key + rate-limits; recover catches handler panics closest
+	// to the mux so the request is still logged.
+	//
+	// Chain: requestID → cors → accessLog → auth → recover → mux.
+	//
+	// auth sits INSIDE cors so an OPTIONS preflight is answered (204, no key)
+	// before auth runs, and INSIDE accessLog so 401s/429s are logged. When
+	// auth is nil (localhost mode) it is omitted entirely and the chain is
+	// byte-identical to before phase 14.
+	inner := http.Handler(recoverMiddleware(logger, mux))
+	if auth != nil {
+		inner = auth.middleware(inner)
+	}
 	return requestIDMiddleware(
 		corsMiddleware(
-			accessLogMiddleware(logger,
-				recoverMiddleware(logger, mux))))
+			accessLogMiddleware(logger, inner)))
 }

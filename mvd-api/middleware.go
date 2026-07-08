@@ -14,7 +14,37 @@ import (
 // ctxKey is the private type for this package's context values.
 type ctxKey int
 
-const requestIDKey ctxKey = iota
+const (
+	requestIDKey ctxKey = iota
+	reqInfoKey
+)
+
+// reqInfo is a small mutable per-request scratch that inner middleware fills
+// in and the outer accessLog reads after the handler returns. It exists to
+// bridge a context-propagation gap: a middleware that does r =
+// r.WithContext(...) mutates only its own *http.Request, so the outer
+// accessLog (which wraps auth) never sees a value auth set on its copy. By
+// stashing a *reqInfo pointer in the context *before* calling next, auth can
+// write through the pointer and accessLog reads the same struct.
+type reqInfo struct {
+	// identity is the non-secret access-log label in auth mode: the key's
+	// note / Discord name / hash-prefix. Never the key or the full hash.
+	identity string
+	// authApplied is set by authMiddleware when it runs. It tells accessLog
+	// the request went through auth, so accessLog must NOT fall back to
+	// requestLabel(r) (which returns the raw Bearer — the secret key in this
+	// mode) when identity is empty (an unauthenticated 401).
+	authApplied bool
+}
+
+// reqInfoFrom returns the request's *reqInfo, or nil if accessLog did not run
+// (e.g. in a unit test that exercises a bare handler).
+func reqInfoFrom(ctx context.Context) *reqInfo {
+	if v, ok := ctx.Value(reqInfoKey).(*reqInfo); ok {
+		return v
+	}
+	return nil
+}
 
 // requestID returns the per-request id set by requestIDMiddleware, or "".
 func requestID(ctx context.Context) string {
@@ -106,14 +136,38 @@ func (rr *responseRecorder) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// accessLogMiddleware emits one structured line per request. The
-// optional Bearer label (or ?label= query param) is captured for
-// request-source analytics — it's not a secret and is never validated.
+// accessLogMiddleware emits one structured line per request.
+//
+// The `label` field is the request's identity. Its source depends on the
+// mode, and the distinction is security-critical:
+//
+//   - No-auth (localhost) mode: the label is the non-secret Bearer *label* or
+//     ?label= param (requestLabel) — a traffic-source hint that is never
+//     validated and carries no secret.
+//   - Auth mode: the Bearer value IS the secret API key and must never be
+//     logged. authMiddleware (which this wraps) writes a safe identity — the
+//     key's note / Discord name / hash-prefix — into the shared *reqInfo, and
+//     we log that instead. requestLabel is NOT consulted in auth mode.
+//
+// The *reqInfo is seeded here, before next runs, so the inner auth middleware
+// can fill it in through the pointer (see reqInfo's doc for why a plain
+// context value would not propagate outward).
 func accessLogMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		info := &reqInfo{}
+		r = r.WithContext(context.WithValue(r.Context(), reqInfoKey, info))
 		rr := &responseRecorder{ResponseWriter: w}
 		next.ServeHTTP(rr, r)
+
+		// In auth mode `info.identity` is set (possibly to "" for an
+		// unauthenticated 401, which is correct — we have no identity and
+		// must not fall back to the raw Bearer). In no-auth mode auth never
+		// ran, so info.identity is "" and we use the non-secret label.
+		label := info.identity
+		if label == "" && !info.authApplied {
+			label = requestLabel(r)
+		}
 
 		logger.Info("request",
 			"method", r.Method,
@@ -122,7 +176,7 @@ func accessLogMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
 			"bytes", rr.bytes,
 			"latency_ms", time.Since(start).Milliseconds(),
 			"remote", clientIP(r),
-			"label", requestLabel(r),
+			"label", label,
 			"cache", w.Header().Get("X-Cache"),
 			"request_id", requestID(r.Context()),
 		)
@@ -147,6 +201,11 @@ func clientIP(r *http.Request) string {
 // requestLabel extracts the non-secret traffic-source label from
 // Authorization: Bearer <label> or ?label=<label>. Returns "" when
 // neither is set.
+//
+// This is only consulted in NO-AUTH (localhost) mode. In auth mode the Bearer
+// value is the secret API key and must never be logged — accessLog uses the
+// safe identity authMiddleware writes into reqInfo instead (see
+// accessLogMiddleware).
 func requestLabel(r *http.Request) string {
 	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 		return strings.TrimSpace(strings.TrimPrefix(auth, "Bearer "))
