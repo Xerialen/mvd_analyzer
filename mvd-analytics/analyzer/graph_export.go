@@ -55,8 +55,9 @@ type graphNodeJSON struct {
 // nodeDepth returns each node's longest-path depth in the DAG: 0 for a
 // node whose requirements have no in-graph provider (a root), else
 // 1 + the max depth of its requirements' providers. The graph is acyclic
-// (validateDAG), so the memoised recursion terminates. This is a display
-// grouping only — the execution order is topoSortDAG, not this layering.
+// (topoSortDAG panics in buildGraph otherwise), so the memoised recursion
+// terminates. This is a display grouping only — the execution order is
+// topoSortDAG, not this layering.
 func nodeDepth(specs []nodeSpec) map[string]int {
 	provider := providerIndex(specs)
 	byName := make(map[string]nodeSpec, len(specs))
