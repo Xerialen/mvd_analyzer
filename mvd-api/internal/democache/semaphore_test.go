@@ -95,7 +95,8 @@ func TestParseSemaphore_RespectsCtxCancellationWhileQueued(t *testing.T) {
 	c.Parse = parse
 	c.MaxParses = 1 // one slot; A holds it, B must queue
 
-	go func() { _, _, _ = c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
+	aDone := make(chan struct{})
+	go func() { defer close(aDone); _, _, _ = c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
 	<-started // A now occupies the only parse slot
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -121,6 +122,7 @@ func TestParseSemaphore_RespectsCtxCancellationWhileQueued(t *testing.T) {
 		t.Errorf("B parsed %d times; a cancelled queued request must not acquire the slot", got)
 	}
 	close(releaseA)
+	<-aDone // let A finish its parse+tier-2 write before TempDir cleanup runs
 }
 
 // TestParseSemaphore_BoundsConcurrentLOSRaycasts proves the on-demand LOS
