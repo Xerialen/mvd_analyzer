@@ -132,8 +132,8 @@ func ResolveKDLog(res *result.Result, r io.Reader) (*result.Decisions, error) {
 // resolver holds the per-demo lookup tables for the KDLOG -> vocabulary join.
 type resolver struct {
 	dec      *result.Decisions
-	slotName map[int]string            // demo slot -> canonical stream name
-	slotTeam map[string]string         // name -> team
+	slotName map[int]string    // demo slot -> canonical stream name
+	slotTeam map[string]string // name -> team
 	streams  map[string]*result.PlayerStream
 	locTable []string
 	itemsEnt map[int]*result.ItemTimeline // server entNum -> item

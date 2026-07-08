@@ -26,11 +26,11 @@ type Decisions struct {
 
 // DecisionRecord is one decision by one player.
 type DecisionRecord struct {
-	T      int32  `json:"t"`              // match-relative ms
-	Player string `json:"player"`         // canonical stream name (join key)
+	T      int32  `json:"t"`      // match-relative ms
+	Player string `json:"player"` // canonical stream name (join key)
 	Team   string `json:"team,omitempty"`
-	Slot   int    `json:"slot"`           // demo player slot (KDLOG ed-1)
-	Type   string `json:"type"`           // "goal" | "enemy" | "evade" | "play"
+	Slot   int    `json:"slot"` // demo player slot (KDLOG ed-1)
+	Type   string `json:"type"` // "goal" | "enemy" | "evade" | "play"
 
 	// Where the decider stood when deciding.
 	X   float32 `json:"x"`

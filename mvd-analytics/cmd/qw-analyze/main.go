@@ -38,8 +38,8 @@ import (
 	"time"
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
-	"github.com/mvd-analyzer/mvd-analytics/decisions"
 	"github.com/mvd-analyzer/mvd-analytics/config"
+	"github.com/mvd-analyzer/mvd-analytics/decisions"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
 	mvdsource "github.com/mvd-analyzer/mvd-reader/source/mvd"
@@ -48,17 +48,17 @@ import (
 // viewOptions bundles every flag that's meaningful only for the
 // non-full views. Parsed once in main().
 type viewOptions struct {
-	view       string
-	bucketDur  time.Duration
-	fields     []string
-	reducers   map[string]string
-	from, to   time.Duration
-	players    []string
-	eventTypes []string
-	minDwell   time.Duration
-	timeAt     time.Duration
+	view        string
+	bucketDur   time.Duration
+	fields      []string
+	reducers    map[string]string
+	from, to    time.Duration
+	players     []string
+	eventTypes  []string
+	minDwell    time.Duration
+	timeAt      time.Duration
 	includeTeam bool
-	include    map[string]bool // -include positions etc. for -view full
+	include     map[string]bool // -include positions etc. for -view full
 
 	decisionLog    string // -decision-log: KDLOG sidecar to resolve (schema v38)
 	inferDecisions bool   // -infer-decisions: pickup-anchored inference (schema v38)
@@ -626,8 +626,8 @@ func splitCSV(s string) []string {
 // returned pointer's []string accumulates one entry per occurrence.
 type stringList []string
 
-func (s *stringList) String() string         { return strings.Join(*s, ",") }
-func (s *stringList) Set(v string) error     { *s = append(*s, v); return nil }
+func (s *stringList) String() string     { return strings.Join(*s, ",") }
+func (s *stringList) Set(v string) error { *s = append(*s, v); return nil }
 func stringListFlag(name, usage string) *stringList {
 	var sl stringList
 	flag.Var(&sl, name, usage)

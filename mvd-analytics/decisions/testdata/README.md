@@ -8,9 +8,11 @@ A verbatim excerpt of a **real** mvdsv + KTX `server.log` from a
 `kbot-0.28.0-dials` run (2026-07-06) on the `komodobots2-bv1` bench — not
 hand-typed, every byte from an actual server run.
 
-Byte-identical to KomodoBench's `tests/fixtures/golden-server.log`
-(SHA256 `3fdfa752588972d68d64b7fb6fe9170be2a9b87c539e088ae84a61b0886cdebe`);
-both repos share the same fixture bytes by design.
+The same KDLOG lines as KomodoBench's `tests/fixtures/golden-server.log`,
+from the same run — both repos share the fixture by design. Line endings are
+normalized to LF here (SHA256 `2b15992b8f3646156e0d3edb7f79115156ad56a41f27f5fcbb2619016cf091e5`);
+KomodoBench's copy is still CRLF, so its bytes differ only by the `\r` — a
+cosmetic follow-up on that side.
 
 ## Why it exists
 
