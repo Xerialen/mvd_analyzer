@@ -206,7 +206,8 @@ func TestParseSemaphore_LOSRespectsCtxCancellationWhileQueued(t *testing.T) {
 		return art.Build(res, analyzer.MaterializeDeps{})
 	}
 
-	go func() { _, _, _ = c.EnsureLOS(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
+	aDone := make(chan struct{})
+	go func() { defer close(aDone); _, _, _ = c.EnsureLOS(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
 	<-started // A now occupies the only raycast slot
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -231,4 +232,5 @@ func TestParseSemaphore_LOSRespectsCtxCancellationWhileQueued(t *testing.T) {
 		t.Errorf("B raycast ran %d times; a cancelled queued request must not acquire the slot", got)
 	}
 	close(releaseA)
+	<-aDone // let A finish its Build+tier3Store write before TempDir cleanup runs
 }
