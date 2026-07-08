@@ -186,10 +186,10 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 
 	// Execution is driven by the DAG's topological node order (dag.go).
 	// For the default registry this is the validated topo sort; for a
-	// hand-built one it falls back to registration order. Either way all
-	// analyzer nodes precede all post-processor nodes, and core precedes
-	// derived, so the phase structure below is identical to the previous
-	// hand-ordered slices.
+	// hand-built one it falls back to registration order. The three passes
+	// below (Init, event, Finalize+post) each iterate this one node list;
+	// only n.analyzer vs n.post — not any tier — decides what each pass does
+	// with a node.
 	nodes := r.execOrder()
 
 	initStart := time.Now()
