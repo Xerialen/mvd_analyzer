@@ -144,7 +144,19 @@ identical output (see "The dependency DAG" below).
      *Result
 ```
 
-The only ordering guarantee is per-edge: a `CoreConsumer`'s declared
+The two passes have very different ordering semantics, and it's worth
+being explicit about it. The **event pass is an order-free fan-out**: each
+event is handed to every analyzer's `OnEvent`, which accumulates that
+analyzer's own state independently. No analyzer reads another's output
+here — `CoreOutputs` doesn't exist yet — so the order the analyzers are
+visited in is immaterial. The DAG's topological order governs only the
+**single Finalize+post pass** at the end, where a producer's
+`PopulateCore` must run before a consumer reads it. (Mnemonic: `OnEvent`
+*accumulates* — N times, unordered; `Finalize` *combines* — once,
+edge-ordered. That's why shuffling the node order can't change the
+output.)
+
+The Finalize ordering guarantee is per-edge: a `CoreConsumer`'s declared
 `requires` edge forces its producer's `PopulateCore` to run earlier in
 the topological order, so the field is present when the consumer's
 `Finalize` runs. For example `frag` reads `co.Names` because it declares

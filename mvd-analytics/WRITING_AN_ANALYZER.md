@@ -14,6 +14,20 @@ docs. Order of registration does not matter — the engine schedules from
 your declared edges, and the test suite proves output is identical under
 any valid order.
 
+**How your node runs.** A node is one of three kinds, sharing one
+interface. Most are **analyzers**: during the event pass your `OnEvent` is
+called once per event to **accumulate** your own state (a counter, a
+running list). That pass is an order-free fan-out — no analyzer reads
+another's output there (`CoreOutputs` doesn't exist yet), so the order
+analyzers are visited in is immaterial. Then, *once*, your `Finalize`
+**combines** everything into your `Result` section; this is where you read
+other nodes' artifacts, and the DAG schedules it after every node you
+`requires`. A **post-processor** skips the event pass and only refines the
+already-assembled `Result` at the end. A **lazy** node (§4) is computed on
+demand from the finished `Result`. Mnemonic: `OnEvent` accumulates (N
+times, unordered); `Finalize` combines (once, edge-ordered) — which is
+exactly why shuffling the schedule can't change the output.
+
 ## 1. Decide your inputs
 
 Two kinds of input exist, and the choice shapes everything:
@@ -49,9 +63,17 @@ The nil-safe helpers (`co.MatchStartMs()`, `co.TeamFor(...)`,
 `co.Clock.ToMatch(...)`) tolerate a missing producer, so unit tests can
 build a bare `CoreOutputs` without wiring the whole producer set.
 
-**(b) `result.*` sections** — a post-processor node reads sections earlier
-nodes wrote (e.g. `aim` reads `res.Shots` + `res.Streams` + `res.Damage`).
+**(b) `result.*` sections** — read a section an earlier node wrote to the
+`Result` (e.g. `aim` reads `res.Shots` + `res.Streams` + `res.Damage`).
 `ARTIFACTS.md`'s `resultKey` column maps artifact → JSON section.
+
+The two channels differ in kind: `CoreOutputs` is **internal typed state**
+passed producer→consumer in-process (helpers like `co.TeamFor`, some of it
+never serialized), while `result.*` **is the wire output** — the JSON a
+consumer ultimately receives. Rule of thumb: shared internal machinery →
+`CoreOutputs`; user-visible output → a `result.*` section (see README
+§"How nodes pass data downstream"). Either way, ordering is the same: you
+declare a `requires` edge and the DAG runs the producer first.
 
 **The `:final` rule.** Two artifacts are refined after birth: the frag
 log (`frags-final` appends recovered telefrag teamkills) and the match
@@ -173,16 +195,22 @@ catalog and manifest text) and, if it writes a Result section, the
 ## 4. Eager or lazy?
 
 Default is **eager**: your node runs in the single shared pass/finalize
-and its section ships in every Result. Register a **lazy** artifact
-instead only when the compute is genuinely heavy *derived* work with no
-default consumer — the bar is `los` (~2.5 s of raycasts). Lazy nodes
-implement the `LazyArtifact` hooks in `analyzer/materialize.go`
-(build + tier-3 gob encode/decode + latch) and inherit on-demand
-materialisation, per-SHA locking, disk persistence across restarts, the
-generic REST endpoint, and the MCP tool. What laziness is *not* for:
-skipping event-reading work — every collector rides the one parse, and
-"lazy" parse-level data means re-parsing (we deleted exactly that
-machinery in phase 12; don't reintroduce it).
+and its section ships in every Result. A **lazy** artifact is the third
+kind of node — neither an event-reading analyzer nor an eager
+post-processor. It is computed **on demand from the already-assembled
+`Result`** (e.g. `los` raycasts over the position tracks already in
+`Streams`) and then cached. Reach for it only when the compute is
+genuinely heavy *derived* work with no default consumer — the bar is `los`
+(~2.5 s of raycasts). Lazy nodes implement the `LazyArtifact` hooks in
+`analyzer/materialize.go` (build + tier-3 gob encode/decode + latch) and
+inherit on-demand materialisation, per-SHA locking, disk persistence
+across restarts, the generic REST endpoint, and the MCP tool.
+
+**A lazy node never re-reads the demo.** It works on the finished
+`Result`, not the event stream. If your computation needs wire-level data,
+that data has to be collected in the one shared parse (eagerly) — a "lazy"
+node that re-parses is the anti-pattern we deleted in phase 12 (the
+spatial weapon-fire streams), so don't reintroduce it.
 
 ## 5. The checklist before you commit
 
