@@ -174,6 +174,51 @@ func TestRevokeByDiscordID(t *testing.T) {
 	}
 }
 
+// TestStorePermissions pins that the store dir is 0700 and keys.json is 0600
+// after Open+Issue, even when Open is pointed at a pre-existing loose dir
+// (covers the MkdirAll-doesn't-tighten hazard).
+func TestStorePermissions(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "auth")
+	// Pre-create it world-listable; Open must tighten it.
+	if err := os.Mkdir(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.Issue("1", "u", false, "n"); err != nil {
+		t.Fatal(err)
+	}
+	di, err := os.Stat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if perm := di.Mode().Perm(); perm != 0o700 {
+		t.Errorf("auth dir perm = %o; want 700", perm)
+	}
+	fi, err := os.Stat(filepath.Join(dir, keysFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if perm := fi.Mode().Perm(); perm != 0o600 {
+		t.Errorf("keys.json perm = %o; want 600", perm)
+	}
+}
+
+// TestOpenRejectsCorruptFile pins the loud-failure behaviour: a malformed
+// keys.json must error out of Open, never silently present as an empty store
+// (which would lock every user out without a trace).
+func TestOpenRejectsCorruptFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, keysFileName), []byte("{ this is not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(dir); err == nil {
+		t.Error("Open on a corrupt keys.json should return an error, not a silent empty store")
+	}
+}
+
 // TestConcurrentIssueLookup exercises the mutex under -race.
 func TestConcurrentIssueLookup(t *testing.T) {
 	s, err := Open(t.TempDir())

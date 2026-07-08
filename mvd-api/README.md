@@ -12,7 +12,7 @@ binary).
 ## Usage
 
 ```
-mvd-api [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json] [-auth-dir DIR]
+mvd-api [serve] [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json] [-auth-dir DIR]
 mvd-api version
 mvd-api cache stats [-cache-dir PATH]
 mvd-api cache prune [-cache-dir PATH] [-max-bytes N | -older-than 30d | -all]
@@ -34,6 +34,12 @@ mvd-api keys list   -auth-dir DIR
 | `-burst-user`       | `20`                                    | Auth mode: per-key burst (token-bucket size) for user keys |
 | `-rate-service`     | `50`                                    | Auth mode: per-key sustained request rate (req/s) for `service` keys (e.g. the first-party web app) |
 | `-burst-service`    | `200`                                   | Auth mode: per-key burst for service keys |
+
+Running the server is the default action — bare flags (or an explicit
+`serve`) start it. A positional first argument that isn't a known
+subcommand (`version`, `cache`, `keys`) is rejected with a usage error
+rather than silently starting a server (so `mvd-api serv` is a clear
+error, not a boot).
 
 Schema bumps in `mvd-analytics` invalidate the parsed-`Result` tier
 but keep the raw-MVD tier — the next access re-parses without

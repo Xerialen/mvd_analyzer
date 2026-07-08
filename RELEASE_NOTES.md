@@ -35,6 +35,12 @@ detail.
   - **Secret safety.** In auth mode the raw key is never logged — the access
     log's identity becomes the key's note / Discord name / hash-prefix. The
     `401`/`429` bodies are generic and leak nothing about key state.
+  - **Hardening.** `-auth-dir` is force-tightened to `0700` on open (so a
+    pre-existing loose dir can't leave key metadata world-listable), a corrupt
+    `keys.json` fails loudly at startup rather than presenting an empty store,
+    auth exemptions are path-cleaned (no `/portal/..`-style traversal past the
+    key gate), and an unknown top-level subcommand now errors instead of
+    silently booting a server (`serve` is still the default).
 
 - **Analytics pipeline: the core/derived/post-processor "tiers" are collapsed
   into one task model (no schema bump, `Result` byte-identical).** The tiers

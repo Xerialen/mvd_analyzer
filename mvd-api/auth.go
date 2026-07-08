@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -20,18 +21,25 @@ type authenticator struct {
 	logger  *slog.Logger
 }
 
-// authExempt reports whether a path may be reached without a key. Everything
-// under /v1/ (and POST /v1/demos/{id}) requires a key; these are the carve-
-// outs: liveness, the build stamp, and the (reserved) portal prefix. The
-// portal (phase 15) does its own Discord-cookie auth, so it must not sit
+// authExempt reports whether a request path may be reached without a key.
+// Everything under /v1/ (and POST /v1/demos/{id}) requires a key; these are
+// the carve-outs: liveness, the build stamp, and the (reserved) portal prefix.
+// The portal (phase 15) does its own Discord-cookie auth, so it must not sit
 // behind the API-key gate. Note /v1/auth/check is deliberately NOT exempt —
 // it is the check itself.
-func authExempt(path string) bool {
-	switch path {
+//
+// The path is path.Clean'd first so a traversal like /portal/../v1/auth/check
+// cannot be smuggled past the prefix test: it resolves to /v1/auth/check and
+// is NOT exempt. (ServeMux would 307 the raw path to its cleaned form and
+// never serve protected content keyless anyway, so this is defence-in-depth,
+// but an auth exemption must be airtight.)
+func authExempt(rawPath string) bool {
+	p := path.Clean(rawPath)
+	switch p {
 	case "/healthz", "/v1/version":
 		return true
 	}
-	return strings.HasPrefix(path, "/portal/") || path == "/portal"
+	return p == "/portal" || strings.HasPrefix(p, "/portal/")
 }
 
 // bearerToken returns the raw token from an "Authorization: Bearer <token>"

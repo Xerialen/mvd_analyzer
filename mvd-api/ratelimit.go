@@ -98,3 +98,12 @@ func (l *keyLimiter) allow(keyHash string, service bool) (bool, time.Duration) {
 	l.mu.Unlock()
 	return b.allow(l.nowFn())
 }
+
+// numBuckets reports how many per-key buckets exist. Used by tests to pin the
+// DoS-guard invariant that unknown (401'd) keys never allocate a bucket — the
+// limiter map must not be growable by unauthenticated traffic.
+func (l *keyLimiter) numBuckets() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.buckets)
+}

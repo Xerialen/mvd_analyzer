@@ -30,32 +30,65 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
+const usage = "usage: mvd-api [flags] | version | cache <stats|prune> | keys <issue|revoke|list>"
+
+// dispatch resolves args (os.Args[1:]) to a subcommand. The default is
+// "serve" — when args are empty or the first arg is a flag (starts with "-").
+// A first arg that is a positional (does not start with "-") must be a known
+// subcommand; anything else returns ok=false so a typo'd subcommand
+// ("mvd-api serv") is rejected loudly instead of silently booting a server.
+func dispatch(args []string) (cmd string, ok bool) {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		return "serve", true
+	}
+	switch args[0] {
+	case "serve", "version", "cache", "keys":
+		return args[0], true
+	default:
+		return args[0], false
+	}
+}
+
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "version" {
+	args := os.Args[1:]
+	cmd, ok := dispatch(args)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "mvd-api: unknown subcommand %q\n%s\n", args[0], usage)
+		os.Exit(1)
+	}
+
+	switch cmd {
+	case "version":
 		_ = json.NewEncoder(os.Stdout).Encode(map[string]string{
 			"hash":      GitHash,
 			"tag":       GitTag,
 			"buildDate": BuildDate,
 		})
 		return
-	}
-	if len(os.Args) > 1 && os.Args[1] == "cache" {
-		if err := runCache(os.Args[2:]); err != nil {
+	case "cache":
+		if err := runCache(args[1:]); err != nil {
+			fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	case "keys":
+		if err := runKeys(args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
 			os.Exit(1)
 		}
 		return
 	}
-	if len(os.Args) > 1 && os.Args[1] == "keys" {
-		if err := runKeys(os.Args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
-			os.Exit(1)
-		}
-		return
+
+	// serve. An explicit "serve" positional consumes the arg; flags-as-args
+	// pass through unchanged.
+	serveArgs := args
+	if len(args) > 0 && args[0] == "serve" {
+		serveArgs = args[1:]
 	}
-	if err := runServe(os.Args[1:]); err != nil {
+	if err := runServe(serveArgs); err != nil {
 		fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
 		os.Exit(1)
 	}

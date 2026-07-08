@@ -84,6 +84,13 @@ func Open(dir string) (*Store, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("authkeys: mkdir %s: %w", dir, err)
 	}
+	// MkdirAll does not tighten a pre-existing dir, so an operator pointing
+	// -auth-dir at an existing 0755/0777 dir would leave the key metadata
+	// world-listable (keys.json is 0600, so no secret leaks, but the listing
+	// and per-key metadata would be exposed). Force it to 0700.
+	if err := os.Chmod(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("authkeys: chmod %s: %w", dir, err)
+	}
 	s := &Store{
 		dir:  dir,
 		path: filepath.Join(dir, keysFileName),

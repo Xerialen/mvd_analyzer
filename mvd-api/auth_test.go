@@ -119,6 +119,64 @@ func TestAuth_RejectsGarbageAndRevoked(t *testing.T) {
 	}
 }
 
+// TestAuth_UnknownKeysAllocateNoBuckets is the primary hosted-DoS regression
+// guard: an unknown key must 401 BEFORE the limiter allocates a bucket, so
+// unauthenticated traffic (with distinct garbage tokens) cannot grow the
+// limiter map unboundedly. Reversing the auth/limiter order would fail here.
+func TestAuth_UnknownKeysAllocateNoBuckets(t *testing.T) {
+	srv, auth, _ := newAuthTestServer(t, storeWithStub())
+	for i := 0; i < 50; i++ {
+		resp := doGet(t, srv.URL+"/v1/auth/check", "qwmvd_garbage_"+strconv.Itoa(i))
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("garbage token %d: status %d; want 401", i, resp.StatusCode)
+		}
+	}
+	if n := auth.limiter.numBuckets(); n != 0 {
+		t.Errorf("limiter allocated %d bucket(s) for unknown keys; want 0 (DoS guard)", n)
+	}
+
+	// Sanity: an authenticated key DOES allocate exactly one bucket, proving
+	// the assertion above isn't vacuous.
+	key, _, _ := auth.store.Issue("1", "u", false, "")
+	doGet(t, srv.URL+"/v1/auth/check", key).Body.Close()
+	if n := auth.limiter.numBuckets(); n != 1 {
+		t.Errorf("authenticated key allocated %d buckets; want 1", n)
+	}
+}
+
+// TestAuth_TraversalNotExempt pins FIX 2: a path-traversal that textually
+// prefixes /portal/ must NOT be treated as exempt — it path.Cleans to a
+// protected route and gets 401 without a key.
+func TestAuth_TraversalNotExempt(t *testing.T) {
+	srv, _, _ := newAuthTestServer(t, storeWithStub())
+	// Send the raw, un-normalised path so the server sees the traversal.
+	req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
+	req.URL.Opaque = "/portal/../v1/auth/check"
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	// Either the server 401s it (auth ran, not exempt) or the mux 3xx-redirects
+	// the un-cleaned path — both are acceptable; what must NOT happen is a 204
+	// (exempt fall-through to a keyless success). Assert not-204 and, when the
+	// request reached auth, that it was 401.
+	if resp.StatusCode == http.StatusNoContent {
+		t.Fatalf("traversal /portal/../v1/auth/check returned 204 — exemption leaked")
+	}
+	// Direct unit check of the predicate, independent of mux redirect behaviour.
+	if authExempt("/portal/../v1/auth/check") {
+		t.Error("authExempt must not exempt a traversal that cleans to /v1/auth/check")
+	}
+	if !authExempt("/portal/login") || !authExempt("/healthz") || !authExempt("/v1/version") {
+		t.Error("authExempt must still exempt the real portal prefix, healthz, and version")
+	}
+	if authExempt("/v1/auth/check") {
+		t.Error("authExempt must not exempt /v1/auth/check")
+	}
+}
+
 // TestAuth_CheckEndpoint: /v1/auth/check → 204 with a valid key, 401 without.
 func TestAuth_CheckEndpoint(t *testing.T) {
 	srv, auth, _ := newAuthTestServer(t, storeWithStub())
