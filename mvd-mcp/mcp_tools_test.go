@@ -8,8 +8,57 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// TestInputSchemasHaveNoNullUnions guards the array/map filter params against
+// the jsonschema-go regression that broke them in production: a nilable Go
+// slice/map reflects to a ["null", X] type union, which several MCP clients
+// coerce to a string, silently disabling filters like players/fields/weapon.
+// addTool/stripNullTypes collapse those unions; this pins the result.
+func TestInputSchemasHaveNoNullUnions(t *testing.T) {
+	for name, s := range map[string]*jsonschema.Schema{
+		"getBuckets":       inputSchema[GetBucketsInput](), // players, fields, reducers(map)
+		"getEvents":        inputSchema[GetEventsInput](),  // players, types
+		"getFrags":         inputSchema[GetFragsInput](),   // players, weapon
+		"getItems":         inputSchema[GetItemsInput](),   // items, players, kinds
+		"getWeaponPickups": inputSchema[GetWeaponPickupsInput](),
+	} {
+		assertNoNullTypes(t, name, s)
+	}
+
+	// Spot-check the concrete shape: players is a plain array of strings.
+	pl := inputSchema[GetEventsInput]().Properties["players"]
+	if pl == nil || pl.Type != "array" || len(pl.Types) != 0 || pl.Items == nil || pl.Items.Type != "string" {
+		t.Errorf("getEvents.players is not a clean string array: %+v", pl)
+	}
+	// The reducers map is a plain object.
+	if r := inputSchema[GetBucketsInput]().Properties["reducers"]; r == nil || r.Type != "object" || len(r.Types) != 0 {
+		t.Errorf("getBuckets.reducers is not a clean object: %+v", r)
+	}
+}
+
+func assertNoNullTypes(t *testing.T, path string, s *jsonschema.Schema) {
+	t.Helper()
+	if s == nil {
+		return
+	}
+	for _, tp := range s.Types {
+		if tp == "null" {
+			t.Errorf("%s: schema still carries a \"null\" type union: %v", path, s.Types)
+		}
+	}
+	for k, p := range s.Properties {
+		assertNoNullTypes(t, path+"."+k, p)
+	}
+	assertNoNullTypes(t, path+".items", s.Items)
+	assertNoNullTypes(t, path+".additionalProperties", s.AdditionalProperties)
+	for i, p := range s.PrefixItems {
+		assertNoNullTypes(t, path+".prefixItems", p)
+		_ = i
+	}
+}
 
 // fakeBackend implements MCPBackend with canned responses, so the
 // tool-registration tests don't need an HTTP server.
