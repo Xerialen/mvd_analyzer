@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,12 +26,13 @@ func corpusDemo(t *testing.T) (sha string, bytes []byte) {
 	return hex.EncodeToString(sum[:]), b
 }
 
-// TestEnsureShotStreams re-parses a real demo to build the opt-in spatial
-// streams on demand in ONE variant — projectiles, beams and nails together
-// (F12: a separate nails latch made /shots and /aim bodies depend on
-// request history under an immutable ETag) — latches everything, and
-// serves repeat requests from the same Result.
-func TestEnsureShotStreams(t *testing.T) {
+// TestColdParseBuildsEnrichedStreams: since phase 12 the API cache parse is
+// always-full (defaultParse sets BuildShotStreams+BuildNails), so a single cold
+// GetResult produces an enriched Result — the spatial weapon-fire streams are
+// present and their latches are set — with no second parse and no
+// EnsureShotStreams. This is the deleted lazy path's behaviour folded into the
+// base parse; /shots, /aim and /streams/* read it straight off the Result.
+func TestColdParseBuildsEnrichedStreams(t *testing.T) {
 	sha, demo := corpusDemo(t)
 	root := t.TempDir()
 	mp := mvdPath(root, sha)
@@ -41,35 +43,29 @@ func TestEnsureShotStreams(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := New(root, nil)
+	c := New(root, nil) // real defaultParse (always-full)
 	id := DemoID{Kind: "sha256", SHA: sha}
-	ctx := context.Background()
 
-	// First request builds and latches everything in one rebuild.
-	res, _, err := c.EnsureShotStreams(ctx, id)
+	res, _, err := c.GetResult(context.Background(), id)
 	if err != nil {
-		t.Fatalf("EnsureShotStreams: %v", err)
+		t.Fatalf("GetResult: %v", err)
 	}
 	if res.Streams == nil || res.Streams.Projectiles == nil {
-		t.Fatal("first request did not build the projectile stream")
+		t.Fatal("cold parse did not build the projectile stream")
 	}
 	if !res.Streams.ShotStreamsComputed {
-		t.Error("ShotStreamsComputed not latched")
+		t.Error("ShotStreamsComputed not latched by the always-full parse")
 	}
 	if !res.Streams.NailsComputed {
-		t.Error("NailsComputed not latched — the one-variant rebuild must build nails too (F12)")
+		t.Error("NailsComputed not latched by the always-full parse")
 	}
-
-	// The rebuilt Shots/Aim ride along, carrying the stream-derived blocks
-	// the lean parse cannot compute: with projectiles linked every RL/GL
-	// fire splits into direct+splash+missed == shots, and with beams every
-	// missed LG fire is classified (blocked+miss+far+unresolved == misses).
-	// In the lean parse those fields are all zero, so the sums cannot match.
-	// (The corpus demo is schloss — no LG on the map — so RL/GL carries the
-	// check and the LG branch is exercised only if the demo changes.)
+	// The enriched Shots/Aim ride along on the base Result — no re-parse.
 	if res.Shots == nil || res.Aim == nil {
-		t.Fatalf("Shots/Aim not grafted: shots=%v aim=%v", res.Shots != nil, res.Aim != nil)
+		t.Fatalf("Shots/Aim absent: shots=%v aim=%v", res.Shots != nil, res.Aim != nil)
 	}
+	// The stream-derived aim splits are present (they only exist in the
+	// enriched parse): with projectiles linked, RL/GL fires split into
+	// direct+splash+missed == shots.
 	streamDerived := false
 	for _, pa := range res.Aim.Players {
 		for _, wa := range pa.Weapons {
@@ -83,72 +79,62 @@ func TestEnsureShotStreams(t *testing.T) {
 					t.Errorf("%s %s: direct+splash+missed = %d; want shots = %d",
 						pa.Player, wa.Weapon, got, wa.Shots)
 				}
-			case "lg":
-				streamDerived = true
-				if got := wa.Blocked + wa.Miss + wa.OutOfRange + wa.Unresolved; got != wa.Shots-wa.Hits {
-					t.Errorf("%s lg whiffs: blocked+miss+far+unresolved = %d; want shots-hits = %d",
-						pa.Player, got, wa.Shots-wa.Hits)
-				}
 			}
 		}
 	}
 	if !streamDerived {
-		t.Error("no RL/GL/LG fires in corpus demo — stream-derived aim graft not exercised")
-	}
-
-	// Repeat request: same cached Result pointer, no rebuild.
-	res2, _, err := c.EnsureShotStreams(ctx, id)
-	if err != nil {
-		t.Fatalf("EnsureShotStreams repeat: %v", err)
-	}
-	if res2 != res {
-		t.Error("expected the cached Result pointer to be reused")
+		t.Error("no RL/GL fires in corpus demo — stream-derived aim graft not exercised")
 	}
 }
 
-// TestEnsureShotStreams_MissingTier1_FlagsUnavailable covers the quiet-degrade
-// path: when the tier-1 MVD bytes are gone (evicted after the base Result was
-// cached), EnsureShotStreams serves the lean Result and sets
-// CacheMeta.ShotStreamsUnavailable so the handlers can signal the degrade
-// (X-Shot-Streams: unavailable) instead of serving silently-incomplete data.
-// The flag is per-call meta, never persisted, so it cannot stick once the
-// bytes are back.
-func TestEnsureShotStreams_MissingTier1_FlagsUnavailable(t *testing.T) {
+// oldFormatResultPath is the pre-phase-12 (format-1) tier-2 path: the
+// suffix-less `results/v<N>/…` layout. Old lean gobs live here and must never
+// be read after the resultCacheFormat bump.
+func oldFormatResultPath(root string, schemaVersion int, sha string) string {
+	return filepath.Join(root, "results", fmt.Sprintf("v%d", schemaVersion), sha[:2], sha+".gob")
+}
+
+// TestLeanGobFormatMigration: a tier-2 gob written at the OLD (format-1) path
+// is ignored — GetResult re-parses from the tier-1 bytes and writes the new
+// (format-2) path — so a lean pre-phase-12 gob is never served as if it were
+// the always-full Result. This is the whole point of the resultCacheFormat
+// bump (paths.go): no schema change, but old caches re-parse once.
+func TestLeanGobFormatMigration(t *testing.T) {
 	hub := newFakeHub()
 	defer hub.Close()
 	hub.addGame(42, testSHA, testMVD)
 
-	c, root := newTestCache(t, hub.hubClient(), &stubParser{})
-	// The stub parse must yield a Streams block (EnsureShotStreams returns
-	// early on Streams == nil) with the latches unset, so the rebuild is
-	// attempted and hits the missing tier-1 file.
-	c.Parse = func(_ context.Context, _ []byte, filename string) (*result.Result, error) {
-		return &result.Result{
-			SchemaVersion: result.CurrentSchemaVersion,
-			FilePath:      filename,
-			Streams:       &result.Streams{},
-		}, nil
-	}
+	parser := &stubParser{}
+	c, root := newTestCache(t, hub.hubClient(), parser)
 	ctx := context.Background()
-	id := DemoID{Kind: "gameId", GameID: 42}
+	id := DemoID{Kind: "sha256", SHA: testSHA}
 
-	// Cold fetch caches the Result in memory and the bytes at tier 1.
-	if _, _, err := c.GetResult(ctx, id); err != nil {
+	// Seed tier-1 bytes and a "poisoned" lean gob at the OLD path — a Result a
+	// format-2 reader must never surface (its marker proves which path served).
+	_ = os.MkdirAll(filepath.Dir(mvdPath(root, testSHA)), 0o755)
+	if err := os.WriteFile(mvdPath(root, testSHA), []byte(testMVD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	poison := &result.Result{SchemaVersion: result.CurrentSchemaVersion, Errors: []string{"OLD-FORMAT-GOB"}}
+	data, err := encodeResult(poison)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeFileAtomic(oldFormatResultPath(root, result.CurrentSchemaVersion, testSHA), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	res, _, err := c.GetResult(ctx, id)
+	if err != nil {
 		t.Fatalf("GetResult: %v", err)
 	}
-	// Simulate tier-1 eviction.
-	if err := os.Remove(mvdPath(root, testSHA)); err != nil {
-		t.Fatalf("remove tier-1: %v", err)
+	// The old-path gob was ignored: the stub parser ran instead.
+	if parser.calls.Load() != 1 {
+		t.Errorf("parser calls = %d; want 1 (old-format gob must be re-parsed, not served)", parser.calls.Load())
 	}
-
-	res, meta, err := c.EnsureShotStreams(ctx, id)
-	if err != nil {
-		t.Fatalf("EnsureShotStreams: %v", err)
+	if len(res.Errors) == 1 && res.Errors[0] == "OLD-FORMAT-GOB" {
+		t.Error("served the lean old-format gob; want the re-parsed Result")
 	}
-	if !meta.ShotStreamsUnavailable {
-		t.Error("meta.ShotStreamsUnavailable = false; want true when tier-1 bytes are gone")
-	}
-	if res.Streams.ShotStreamsComputed {
-		t.Error("ShotStreamsComputed latched without a rebuild")
-	}
+	// The re-parse persisted to the NEW (format-2) path.
+	mustExist(t, resultPath(root, result.CurrentSchemaVersion, testSHA), "tier-2 at the new format path")
 }

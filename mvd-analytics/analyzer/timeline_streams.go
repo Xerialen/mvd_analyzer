@@ -568,7 +568,11 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 			continue // phantom identity with no recorded play (e.g. a vacated slot's new occupant who never played)
 		}
 		uniqName := disambiguatePlayerName(g.name, g.repSlot, nameCounts)
-		streams.Players = append(streams.Players, merged.toPlayerStream(uniqName, g.team))
+		// Born-correct team label: in a 1v1 the roster rewrites a participant's
+		// team to their own name (keyed on the resolved display name), replacing
+		// the old normalizeDuelTeams stream rewrite.
+		team := a.core.TeamFor(g.name, g.team)
+		streams.Players = append(streams.Players, merged.toPlayerStream(uniqName, team))
 	}
 	if len(streams.Players) == 0 {
 		return nil

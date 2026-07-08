@@ -1062,9 +1062,9 @@ function displayResults(result) {
     displayMatchSettings(result.metadata?.matchSettings);
     displayServerInfo(result.metadata?.serverInfo);
 
-    // Duel-mode styling: the Go-side `normalizeDuelTeams` pass has
-    // already rewritten every team reference to the player's name for
-    // 1v1 demos. Now collapse the redundant "Per Team" panels and the
+    // Duel-mode styling: the Go-side `roster` core node has already
+    // stamped every team reference as the player's name for 1v1 demos
+    // (born-correct). Now collapse the redundant "Per Team" panels and the
     // Teams summary box in the UI so the viewer only sees the per-player
     // tables. Detected by checking whether every player's team equals
     // their own name (a property only true after the Go-side rewrite).
@@ -1386,10 +1386,10 @@ function displayPlayerStats(players) {
 // Everything else (the per-player scoreboard, weapon stats, item
 // pickups) still renders normally.
 //
-// Detection: the Go `normalizeDuelTeams` pass rewrites every participant
-// team field to their own name for duels (and only for exactly-2-player
-// matches — see isDuelResult in duel_normalize.go), so we can detect duel
-// mode reliably by checking whether the two demoInfo players each have
+// Detection: the Go `roster` core node stamps every participant team field
+// as their own name for duels (and only for exactly-2-player matches — see
+// newRoster in analyzer/roster.go), so we can detect duel mode reliably by
+// checking whether the two demoInfo players each have
 // `team === name`. This avoids depending on the metadata mode string, which
 // can be "duel" / "1on1" / "LGC" / "Hoony" / missing entirely depending on
 // the server flavour.
@@ -10900,8 +10900,14 @@ const AIM_TABLE_COLS = {
     ssg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
     rl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
     gl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
+    // Nails (web parse only — the WASM build turns on BuildNails). Nail
+    // accuracy is approximate (svc_nails fires in bursts, one damage credited
+    // per pull), so ng/sng show only the generic shots/hits/hitPct counters —
+    // no direct/splash/pellet split, which nails don't carry.
+    ng: ['shots', 'hits', 'hitPct'],
+    sng: ['shots', 'hits', 'hitPct'],
 };
-const AIM_WEAPON_ORDER = ['lg', 'sg', 'ssg', 'rl', 'gl'];
+const AIM_WEAPON_ORDER = ['lg', 'sg', 'ssg', 'rl', 'gl', 'ng', 'sng'];
 
 // aimWeaponView projects a WeaponAim onto the active victim filter so the
 // AIM_COL cell functions stay bucket-agnostic. The analyzer emits the enemy

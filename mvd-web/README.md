@@ -477,9 +477,12 @@ dot interpolated along its spawn→despawn segment at the current time
 from muzzle to impact, flashed for ~60 ms around its instant. Both are
 columnar parallel-array streams; absent (e.g. a non-WASM result that
 didn't build them) is a graceful no-op. Nails (`streams.nails`, small
-yellow dots) render the same way when present, but are **off by default**
-even in the web build — they are the highest-volume stream and a separate
-opt-in. Code: `drawProjectiles` / `drawBeams` / `drawFlightDots`.
+yellow dots) render the same way and are now built by the web parse too
+(`BuildNails` in `cmd/wasm/main.go`, added alongside `BuildShotStreams`):
+the map overlay lights up automatically and the Aim tab's ng/sng blocks
+fill in. Nails are the highest-volume stream but add only ~3–4% to the
+parse, all in browser memory (no extra download). Code: `drawProjectiles`
+/ `drawBeams` / `drawFlightDots`.
 
 **Liquids** — version-4 geometry also carries `liquids` (water/slime/lava
 volume meshes). Rendered as a shaded, depth-sorted translucent solid

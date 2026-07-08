@@ -5,8 +5,184 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-08
+
+- **Analytics pipeline: the core/derived/post-processor "tiers" are collapsed
+  into one task model (no schema bump, `Result` byte-identical).** The tiers
+  were a pre-DAG remnant — once the topological sort over declared
+  `Requires`/`Provides` edges took over ordering, the tier label no longer
+  drove anything. `RegisterCore`/`RegisterDerived` merge into a single
+  `Register`; every node is now just a task with declared edges, differing only
+  in whether it reads events (analyzer) or only refines the assembled `Result`
+  (post-processor), plus the one lazy node (`los`). API-visible changes, both
+  in the DAG-introspection surface only (not demo analytics):
+  - `GET /v1/artifacts` manifest entries **no longer carry `tier`** — the only
+    real distinction it conflated (lazy vs eager) is already the `lazy` flag.
+  - `GET /v1/graph` nodes **replace `tier` with `depth`** (the node's layer in
+    the dependency DAG), and `qw-analyze -graph mermaid` now groups nodes into
+    depth layers instead of tier subgraphs (`los` marked with a dashed outline).
+  - `ARTIFACTS.md` drops its `Tier` column (regenerated).
+
+## 2026-07-07
+
+- **API: the spatial weapon-fire streams are now built on every parse instead
+  of behind a lazy re-parse (no schema bump, response bodies unchanged).**
+  mvd-api parses each demo with `BuildShotStreams`+`BuildNails` on
+  (`internal/democache` `defaultParse`), so the projectile/beam/nail streams and
+  the stream-enriched `shots`/`aim` blocks are baked into the cached `Result`.
+  This costs ~+3–4% parse time and ~+5% cache size and **deletes** the lazy
+  `shot-streams` artifact, its full second parse on first request (2.4–5 s), the
+  two-state Shots/Aim, the degrade path, and the shipped caching bug it caused.
+  Behavioural notes for callers:
+  - **`/shots`, `/aim`, `/streams/{projectiles,beams,nails}` no longer pay a
+    second parse on the first request** — they are plain reads off the base
+    Result. Their bodies are byte-identical to before for a warm enriched demo
+    (mvd-api has served the enriched bodies on every request since phase 5.3).
+  - **The `X-Shot-Streams: unavailable` degrade header (and its
+    `Cache-Control: no-store`) is removed.** There is no rebuild that can fail on
+    evicted bytes anymore. Callers that sniffed the header should stop.
+  - **Local API caches re-parse each demo once.** The tier-2 path gained an
+    internal cache-format suffix (`results/v<N>f2/…`, `resultCacheFormat` in
+    `internal/democache/paths.go`) so lean pre-phase-12 gobs are never served as
+    full; they are ignored and re-parsed on next touch. No schema bump — the
+    ETag stays `"<sha>-v49"`. Stale `shot-streams@*.gob` tier-3 side-gobs are
+    inert until the hosting-prep GC reaps them.
+  - `los` is untouched: it stays a genuinely lazy tier-3 artifact (its ~2.5 s
+    raycast has no in-pipeline consumer). The generic artifact endpoint, the DAG
+    manifest, `-graph`, `ARTIFACTS.md`, and the mvd-mcp `getArtifact` vocabulary
+    drop `shot-streams` (now 22 nodes, 1 lazy).
+- **Web: the WASM parse now also builds nails (`BuildNails`), so the nail map
+  overlay lights up automatically and the Aim tab gains ng/sng rows** (generic
+  `shots`/`hits`/`hit %` columns — nail accuracy is approximate, so no
+  direct/splash split). Adds ~+3–4% to the in-browser parse, no extra download.
+
+- **Internal: the two fix-up post-processors now produce named FINAL
+  artifacts instead of anonymously patching an earlier node (DAG contract
+  clarification, no schema bump, byte-identical output).** Telefrag-teamkill
+  recovery (node renamed `recover-telefrag-teamkills` → **`frags-final`**,
+  publishing artifact **`frags:final`**) still appends the recovered kills to
+  the raw `frag` log; scoreboard-stats (node renamed `scoreboard-stats` →
+  **`match-final`**, publishing **`match:final`**) still folds the corrected
+  kills/deaths/suicides into `match`. The win is the dependency vocabulary:
+  `match-final` now **requires `frags:final`** (not the raw `frag`), so any
+  future in-pipeline consumer of the recovered log or corrected scoreboard
+  binds it by the semantic `:final` name and can never silently get the
+  pre-fix-up value. The raw `frag` / `match` nodes keep their served
+  `frags` / `match` resultKeys (the JSON is final by serve time since all
+  nodes run); the `timeline` node deliberately stays a consumer of the RAW
+  `frag` log (streaks / kill events are built pre-recovery, matching every
+  golden). Both fix-ups still write in place, so both keep `Mutates:true` —
+  the `:final` artifact name is what disambiguates *which* value. Regenerated
+  [`ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md) and the README DAG diagram; the
+  `/v1/artifacts`, `/v1/graph`, and `-graph` surfaces (unmerged phase branches
+  only) show the new names. No Result/schema change.
+
+- **Internal: analyzer output is now a tested pure function of the demo
+  (order-independence hardening, no schema bump).** The pipeline is an
+  explicit DAG (`analyzer/dag.go`) executed in a topological order whose
+  tie-break froze the legacy registration order; that made order-freedom a
+  believed-but-unenforced property. It is now enforced: `Result.Errors`
+  (previously appended in execution order — stream abort, then per-node
+  Finalize / post-processor failures) is canonicalised at the end of
+  `analyzeSource` (stream-abort entry first, then lexicographic), and a new
+  `TestOrderIndependence` runs representative corpus demos under the default
+  order plus seeded-random valid topological orders and asserts the
+  marshalled Result is byte-identical — which also continuously verifies the
+  declared edge list is complete (an undeclared cross-node read shows up as
+  a byte diff). An opt-in `TestPhaseTimingsReport` (`MVDA_TIMINGS=1`)
+  aggregates per-node timings and reports the DAG critical path vs the
+  serial Finalize+post tail. Diagnostics only; goldens are unchanged.
+
+- **API: automatic artifact surface — the DAG is now self-describing and
+  generically servable (additive endpoints, no schema bump).** The analyzer
+  DAG is exposed as data (`analyzer.ArtifactManifest`), and mvd-api gains three
+  additive routes: `GET /v1/artifacts` (the manifest — every node's name, tier,
+  cost, `lazy`, requires/provides, `resultKey`, `servable`, description; static,
+  ETag `"artifacts-v<n>"`), `GET /v1/graph` (the DAG as `{nodes,edges}`, static),
+  and `GET /v1/demos/{id}/artifacts/{name}` — a generic accessor that
+  materialises and serves any servable artifact by name. The generic endpoint is
+  a closed registry (unknown/internal names → `404 artifact_unknown`; no user
+  input reaches the filesystem beyond the validated name), accepts **no** query
+  params (parameterised reads stay the view endpoints → `400 invalid_param`), and
+  carries a finer per-artifact ETag `"<sha>-<name>@v<n>"`; eager artifacts reuse
+  the curated 422-vs-200 availability convention, the two lazy artifacts route
+  through `EnsureLOS`/`EnsureShotStreams` (same degrade + bodies as `/los`,
+  `/shots`). mvd-mcp gains two matching tools — `listArtifacts` and
+  `getArtifact` — so a **new** analytics artifact becomes reachable everywhere
+  with zero new hand-written endpoints or tools; the curated tools/endpoints stay
+  the ergonomic surface and are byte-unchanged. New generated catalog
+  [`mvd-analytics/ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md)
+  (`make artifacts-md`, drift-tested). Per-deployment Heavy-disable knob deferred.
+  No schema bump.
+
+- **API: lazy artifacts (LOS, shot-streams) now persist across restarts and
+  cache evictions — new tier-3 per-artifact cache (no schema change).** The two
+  hand-rolled lazy passes are generalised into the DAG engine as `lazy` nodes
+  (`los`, `shot-streams`), registered by name behind one `LazyArtifact`
+  registry (`analyzer/materialize.go`) and shown in a fourth `-graph` tier.
+  mvd-api gains a third cache tier — `artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob`
+  — so a lazy compute (the multi-second LOS raycast, or the full MVD re-parse
+  behind `/shots`, `/aim`, `/streams/*`) is written to disk on first request
+  and spliced back on later ones, surviving a process restart or an LRU
+  eviction (closes API follow-up F8b). Both `EnsureLOS` (new) and
+  `EnsureShotStreams` run one generic flow: latch → tier-3 load → else compute
+  → write tier-3, serialised per demo SHA. The F12 single-variant shot-stream
+  rebuild and the `X-Shot-Streams: unavailable` degrade are preserved exactly
+  — the degrade now fires only when *both* the tier-3 artifact and the tier-1
+  bytes are absent. `/los`, `/shots`, `/aim`, `/streams/*` are byte-identical
+  from a client's view (status, bodies, ETags, `X-Cache`). `EV` is the current
+  schema version, so a schema bump invalidates tier 3 exactly like tier 2. No
+  schema bump.
+
+- **Analytics: team labels born correct; the whole-Result duel rewrite is
+  gone (no schema change, byte-identical output).** A new `roster` core
+  node (the last core node) owns the canonical player/team table with the
+  duel (player-name-as-team) rewrite folded in: it publishes the duel
+  verdict, the participant set, and `TeamFor(name, rawTeam)`. Every
+  producer stamps its final team label through `co.TeamFor` at emission —
+  streams, timeline events, messages, item/weapon/backpack pickups, and
+  the shot fire log (whose victim-kind classification is now duel-aware at
+  birth, so the shared-colour-team enemy/team fold happens once, correctly,
+  instead of being reclassified afterwards). The two result-restructuring
+  duties move to the analyzers that own those results: the DemoInfo team
+  rewrite into `RosterAnalyzer`, and the `Match.Players` participant
+  rebuild — including the demoinfo-authoritative merge that recovers a
+  teamless frogbot the spectator gate drops — into `MatchAnalyzer`. The
+  `normalizeDuelTeams` post-processor (which had to enumerate every
+  team-labelled field by hand and grew four more sections in v45/v46) and
+  the `isDuelResult` helper are deleted; `DamageAnalyzer` reads the duel
+  verdict from the roster it already used at birth. The `teams:final` DAG
+  barrier retires with it. Verified byte-identical on the golden corpus
+  (the three 1on1 goldens are the referees); the shared-colour and bot
+  duels the corpus lacks are pinned by ported unit tests.
+
 ## 2026-07-06
 
+- **Analytics: timestamps born match-relative; the whole-Result time
+  rebase is gone (no schema change, byte-identical output).** A new
+  `clock` core node owns the match time base (match start/end, demo
+  offset, pauses, wall-clock anchor — absorbing the old
+  demo-start-anchor pass). Every producer converts demo-clock ms to
+  match-relative ms against `co.Clock` in its own Finalize, so the
+  `normalizeMatchRelativeTimes` post-processor — which had to enumerate
+  every timestamped field by hand and silently missed newly added ones
+  (the v48 killEvents bug) — is deleted, along with
+  `deriveDemoStartAnchor`. The `epoch:match` DAG barrier retires with
+  it. Verified byte-identical on the golden corpus and on off-corpus
+  demos including pause-carrying and reconnect demos.
+- **Analytics pipeline: explicit dependency DAG + `qw-analyze -graph`
+  (no schema change).** The analyzer/post-processor execution order was
+  previously implicit — four different mechanisms expressed ordering and
+  only one was checked, so a wrong registration order was a silent data
+  bug. Each node now declares the artifacts it Requires and Provides
+  (`mvd-analytics/analyzer/dag.go`); `NewDefaultRegistry` validates the
+  wiring at construction (every dependency has exactly one provider, no
+  cycles — a typo panics with a message naming the offending artifact and
+  node) and derives the execution order from it with a deterministic
+  topological sort. The derived order is byte-identical to the historical
+  registration order (asserted by a structural test), so the `Result` is
+  unchanged. New `qw-analyze -graph mermaid` / `-graph json` prints the
+  pipeline DAG (nodes, edges, tiers) without needing a demo.
 - **Web Aim Stats: LG Unresolved column, accurate hover on narrow
   layouts, DYaw sign docs (no schema change).**
   - The LG table gains an `Unresolved` column (whiffs no beam matched), so

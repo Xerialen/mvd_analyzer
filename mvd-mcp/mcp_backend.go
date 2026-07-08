@@ -28,6 +28,8 @@ type MCPBackend interface {
 	GetLocTrails(ctx context.Context, in GetLocTrailsInput) (any, error)
 	GetLocTable(ctx context.Context, in GetLocTableInput) (any, error)
 	GetRegionControl(ctx context.Context, in GetRegionControlInput) (any, error)
+	ListArtifacts(ctx context.Context, in ListArtifactsInput) (any, error)
+	GetArtifact(ctx context.Context, in GetArtifactInput) (any, error)
 }
 
 // --- Tool input/output structs ---
@@ -195,6 +197,18 @@ type GetWeaponPickupsInput struct {
 	Players []string `json:"players,omitempty" jsonschema:"restrict to picks by these names"`
 	Weapon  []string `json:"weapon,omitempty" jsonschema:"weapon codes: rl, lg, gl, ssg, sng, ng"`
 	Source  string   `json:"source,omitempty" jsonschema:"'world' (spawner) or 'backpack' (RL/LG drop)"`
+}
+
+// ListArtifactsInput has no parameters — the artifact manifest is static
+// per binary. It exists so the tool has a (empty) input schema.
+type ListArtifactsInput struct{}
+
+// GetArtifactInput addresses one servable artifact by DAG node name on a
+// demo. The generic endpoint takes no other parameters (parameterised reads
+// are the curated view tools).
+type GetArtifactInput struct {
+	DemoID string `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Name   string `json:"name" jsonschema:"artifact name from listArtifacts (e.g. frag, damage, loc-graph, los). Only 'servable' artifacts are reachable"`
 }
 
 // SearchGamesInput hits hub.quakeworld.nu's Supabase directly — not

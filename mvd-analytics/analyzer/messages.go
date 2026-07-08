@@ -257,8 +257,24 @@ func (a *MessagesAnalyzer) Finalize(result *Result) error {
 		}
 	}
 
+	// Born-correct team labels: in a 1v1 a participant's team becomes their own
+	// name. Non-participant (spectator) chat keeps its raw team — TeamFor only
+	// rewrites tracked participants. Formerly the normalizeDuelTeams messages
+	// block.
+	for i := range a.events {
+		ev := &a.events[i]
+		ev.Team = a.core.TeamFor(ev.Player, ev.Team)
+	}
+
 	result.Messages = &MessagesResult{
 		Events: a.events,
+	}
+
+	// Born-correct timestamps: rebase chat/message times to the match clock.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range result.Messages.Events {
+			result.Messages.Events[i].Time -= ms
+		}
 	}
 	return nil
 }

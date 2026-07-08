@@ -20,6 +20,8 @@ The docs that matter, in priority order:
 | [`mvd-reader/README.md`](mvd-reader/README.md) | Layer 1: event table + derivation notes, Source implementation guide |
 | [`mvd-analytics/README.md`](mvd-analytics/README.md) | Layer 2: registered analyzers, Result schema, how to add an analyzer, MH / items semantics |
 | [`mvd-analytics/RESULT_SCHEMA.md`](mvd-analytics/RESULT_SCHEMA.md) | **Authoritative** field-level reference for the Result JSON + view shapes, field vocabulary, reducer registry, time units. The single source of truth for response *shapes*. |
+| [`mvd-analytics/ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md) | Generated DAG artifact catalog (`make artifacts-md`) — never hand-edit; a drift test pins it to the code. |
+| [`mvd-analytics/WRITING_AN_ANALYZER.md`](mvd-analytics/WRITING_AN_ANALYZER.md) | Contributor tutorial: add an analyzer end-to-end (inputs, interfaces, dag.go node declaration, eager vs lazy, checklist). |
 | [`mvd-api/README.md`](mvd-api/README.md) | REST host: flags, cache layout, endpoint quick-index, build |
 | [`mvd-api/API.md`](mvd-api/API.md) | HTTP integration reference for frontends/tools: per-endpoint params + semantics + units + recipes. Cross-links RESULT_SCHEMA.md for shapes (does not restate them). |
 | [`mvd-web/README.md`](mvd-web/README.md) | Layer 3: build targets, dist/ layout, map-tab overlay behaviour, loc corpus fetch |

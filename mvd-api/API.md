@@ -131,6 +131,15 @@ should cache aggressively and send `If-None-Match: "<etag>"` for a cheap
 `304`. A schema bump changes the ETag suffix and invalidates client
 caches automatically.
 
+Two families carry a **different ETag shape**:
+
+- The generic artifact endpoint (§4.17b) uses a **finer per-artifact** form
+  `"<sha>-<name>@v<schemaVersion>"` (e.g. `"abc…-frag@v49"`), so a client can
+  revalidate one artifact independently.
+- The binary-static endpoints `/v1/artifacts` and `/v1/graph` (§4.17) depend
+  only on the schema version, so their ETag is `"artifacts-v<n>"` /
+  `"graph-v<n>"` (no sha).
+
 ### 2.4 Errors
 
 Non-2xx responses use a stable envelope:
@@ -146,6 +155,7 @@ Non-2xx responses use a stable envelope:
 | 400 | `missing_param` | required param absent (e.g. `time` on `/state-at`) |
 | 404 | `demo_not_found` | hub has no row for this gameId |
 | 404 | `map_unavailable` | no entity corpus / geometry for this map (`/v1/maps/{map}/…`) |
+| 404 | `artifact_unknown` | no servable artifact of that name (`/v1/demos/{id}/artifacts/{name}`; see §4.17) |
 | 422 | `demoinfo_unavailable` | non-KTX server or aborted match |
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
@@ -343,20 +353,18 @@ nearest-crosshair enemy alive at the fire time (a heuristic in team games).
 Shape: `result.AimResult` →
 [RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).
 
-**Availability:** served from the stream-enriched parse (like the
-`/streams/*` endpoints — the first request re-parses the demo with the
-projectile/beam streams on, then it is cached), so the stream-derived
-weapon blocks are always present. 422 (`aim_unavailable`) when the demo has
-no shots/position data.
+**Availability:** served from the always-full base parse. mvd-api parses every
+demo with the projectile/beam/nail streams built (since phase 12 — the +3–4%
+parse cost buys the enriched blocks on every request, which is what this
+endpoint has effectively served since phase 5.3), so the stream-derived weapon
+blocks are always present with no second parse. 422 (`aim_unavailable`) when the
+demo has no shots/position data.
 
-**Degrade signal (`/shots`, `/aim`, `/streams/*`).** Rebuilding the streams
-needs the cached tier-1 MVD bytes. In the rare case those have been evicted
-after the base result was cached, the endpoint serves the **lean** data
-(stream-derived parts absent) rather than failing, and marks it with the
-response header **`X-Shot-Streams: unavailable`** plus `Cache-Control:
-no-store`. A client that needs the full data can detect the header and retry
-after a fresh `POST /v1/demos/{id}` (loadDemo re-fetches the bytes). The
-normal, bytes-present response never carries this header.
+> **Removed in phase 12:** the `X-Shot-Streams: unavailable` degrade header and
+> its `Cache-Control: no-store`. There is no longer a lazy stream rebuild that
+> can fail on evicted bytes — the streams are in the base parse — so `/shots`,
+> `/aim` and `/streams/*` never emit that header. Callers that sniffed it should
+> stop; the normal immutable cache headers always apply.
 
 ### 4.5d `GET /v1/demos/{id}/shots`
 
@@ -368,16 +376,15 @@ all-enemy), and a `warmup` flag on out-of-match fires; `byPlayer` —
 match-time per-weapon counts, hitscan accuracy and the
 `enemyHits`/`teamHits`/`selfHits` victim-class buckets (overlapping — a
 multi-victim fire counts in each); `reconciliation` — the cross-check
-against KTX's authoritative `acc.attacks`. Served from the same
-stream-enriched parse as `/aim`, so rl/gl fires carry their
-projectile-linked hits.
+against KTX's authoritative `acc.attacks`. Served from the same always-full
+base parse as `/aim`, so rl/gl fires carry their projectile-linked hits and
+ng/sng fires their nail-linked ones.
 
 | param | meaning |
 |---|---|
 | `nails` | deprecated, accepted and ignored. ng/sng fires were always in the stream; their flight-linking + accuracy (formerly gated on this param) is now always included, because a latch-dependent body under an immutable ETag broke HTTP caching. |
 
-422 (`shots_unavailable`) when the demo has no shot data. The
-`X-Shot-Streams: unavailable` degrade header (§4.5c) applies here too.
+422 (`shots_unavailable`) when the demo has no shot data.
 
 ### 4.6 `GET /v1/demos/{id}/loc-graph`
 
@@ -550,10 +557,12 @@ B. `o` indexes the `players` array. Both share shape (`{o, iv}`) and gating.
 
 LOS/PVS are **computed lazily** by one pass: it is the heaviest position-derived
 pass, so it is not in the default parse — the **first** request for a demo runs
-it (a few seconds on a large 4on4) and caches the result in memory, so later
-requests are free. BSP-backed maps only; on a map with no BSP every player's
-`los` and `pvs` are omitted. View direction is not considered (geometric
-visibility, not FOV).
+it (a few seconds on a large 4on4) and writes the result to the tier-3 artifact
+cache, so later requests — and later processes, after a restart or an LRU
+eviction — splice it from disk instead of recomputing. BSP-backed maps only; on
+a map with no BSP every player's `los` and `pvs` are omitted (and that empty
+result is itself cached, so the pass runs at most once). View direction is not
+considered (geometric visibility, not FOV).
 
 ```jsonc
 { "players": [
@@ -570,30 +579,28 @@ visibility, not FOV).
 
 ### 4.11c `GET /v1/demos/{id}/streams/{projectiles|beams|nails}`
 
-Three endpoints serving the opt-in **spatial weapon-fire streams** for the map
-view (schema v40), each requested independently:
+Three endpoints serving the **spatial weapon-fire streams** for the map view
+(schema v40), each read independently:
 
 - `/streams/projectiles` → `{ "projectiles": ProjectileStreams | null }` —
   every rocket/grenade flight as a spawn→despawn segment + times.
 - `/streams/beams` → `{ "beams": BeamStreams | null }` — every LG
   `TE_LIGHTNING2` bolt as a muzzle→impact segment + time.
 - `/streams/nails` → `{ "nails": ProjectileStreams | null }` — ng/sng spike
-  flights (`Weapon` == `"nail"`). Highest volume; a **separate** request.
+  flights (`Weapon` == `"nail"`). Highest volume.
 
 No params. All columnar (parallel arrays), times **match-relative
 milliseconds**. Shapes are in
 [RESULT_SCHEMA.md → ProjectileStreams / BeamStreams](../mvd-analytics/RESULT_SCHEMA.md#projectilestreams-streamsprojectiles).
 The body field is `null` when the demo has none (e.g. no LG → `beams: null`).
 
-Like `/los`, these are **built on demand** — they are off in the default parse
-to keep the cache lean, and (unlike LOS) cannot be recomputed from the cached
-Result, so the **first** request re-parses the demo with the build flags on (a
-few seconds on a large 4on4) and caches the streams in memory; later requests
-are free. One rebuild builds projectiles, beams and nails together — a
-single variant, so every response body stays a pure function of its URL
-under the immutable cache headers. The on-disk gob stays lean. If the tier-1 bytes are gone and the streams cannot be
-rebuilt, the body field is `null` and the response carries `X-Shot-Streams:
-unavailable` (§4.5c).
+All three are built by the **always-full base parse** (since phase 12 — mvd-api
+turns on `BuildShotStreams`+`BuildNails` on every parse, at a +3–4% parse cost),
+so these are plain reads off the cached Result: no re-parse, no first-request
+latency, and no degrade. (Phase 12 deleted the old lazy `shot-streams` re-parse,
+its tier-3 side-gob, and the `X-Shot-Streams: unavailable` header — served
+bodies are unchanged because mvd-api enriched them on every request since phase
+5.3.)
 
 ```jsonc
 // GET /streams/projectiles
@@ -718,6 +725,100 @@ UIs that have a map name from `/overview` or a match listing.
   `-maps-dir`; `404 map_unavailable` when unset or the map is missing.
   **REST-only — not an MCP tool** (the payload is large, up to tens of
   MB). Immutable cache + ETag; send `If-None-Match` for a 304.
+
+### 4.17 The artifact surface — `GET /v1/artifacts`, `/v1/graph`
+
+The analytics pipeline is an explicit DAG of **artifacts** (per-demo,
+parameter-free, cacheable results — `frags`, `damage`, `los`, …). These two
+endpoints expose the DAG itself; §4.17b serves any artifact generically. They
+carry **no demo** and are static per binary, so their ETag is keyed only on the
+schema version (`"artifacts-v<n>"` / `"graph-v<n>"`).
+
+**`GET /v1/artifacts`** — the manifest: one entry per DAG node. `resultKey` is
+the top-level Result JSON key the artifact lands under (`""` for internal
+pseudo-artifacts like `clock`/`roster` that are not served); `servable` is true
+when §4.17b can serve it (it has a `resultKey`, or it is the lazy `los`
+artifact); `cost` is `heavy` for the lazy `los` pass and `light` otherwise. The
+authoritative catalog (with descriptions) is the generated
+[`mvd-analytics/ARTIFACTS.md`](../mvd-analytics/ARTIFACTS.md).
+
+```jsonc
+{ "schemaVersion": 49, "artifacts": [
+  { "name": "clock", "requires": null, "provides": ["clock"],
+    "mutates": false, "lazy": false, "cost": "light", "resultKey": "",
+    "servable": false, "description": "Match clock — match start/end, pauses, …" },
+  { "name": "demoinfo", "requires": null, "provides": ["demoinfo"],
+    "mutates": false, "lazy": false, "cost": "light", "resultKey": "demoInfo",
+    "servable": true, "description": "KTX demoinfo scoreboard blob: …" },
+  // …
+  { "name": "los", "requires": ["timeline","demoinfo"],
+    "provides": ["los"], "mutates": false, "lazy": true, "cost": "heavy",
+    "resultKey": "", "servable": true, "description": "Per-player line-of-sight …" }
+] }
+```
+
+**`GET /v1/graph`** — the DAG as JSON: `{ nodes:[…], edges:[…] }`. Each node
+carries the manifest fields (`cost`, `resultKey`, `lazy`, `mutates`) plus
+`depth` (its layer in the dependency DAG — 0 for a root, deeper for nodes
+with dependencies); each edge is `{ from, to, artifact }` (the provider →
+consumer link for one required artifact). For a frontend "how does this
+connect" panel.
+
+```jsonc
+{ "nodes": [
+    { "name": "demoinfo", "requires": null, "provides": ["demoinfo"],
+      "mutates": false, "lazy": false, "depth": 0, "cost": "light",
+      "resultKey": "demoInfo" }, … ],
+  "edges": [ { "from": "demoinfo", "to": "identity", "artifact": "demoinfo" }, … ] }
+```
+
+### 4.17b `GET /v1/demos/{id}/artifacts/{name}` — the generic accessor
+
+Materialise and serve any **servable** artifact by name (the DAG node name from
+the manifest — e.g. `frag`, `damage`, `loc-graph`, `los`). This
+is a thin generic accessor, not a filtered view: the curated endpoints (§4.5 ff.)
+remain the ergonomic surface with their `players`/`weapon`/window params. Use
+this to reach an artifact that has no curated endpoint, or to enumerate the
+surface programmatically from the manifest.
+
+- **No query parameters.** Parameterised reads are views (§4.8–4.13); any query
+  param is a `400 invalid_param`.
+- **Closed registry.** `name` must be a servable artifact or you get
+  `404 artifact_unknown` — this includes internal nodes (`clock`, `roster`,
+  `identity`, the post-processor pseudo-artifacts). No user input reaches the
+  filesystem beyond the validated name.
+- **ETag** is the finer per-artifact form `"<sha>-<name>@v<n>"`.
+
+**Eager artifacts** serve their Result section under its `resultKey`, applying
+the same 422-vs-200 rule as the curated endpoints (an object-shaped section the
+demo lacks → `422 <section>_unavailable`; a list-shaped / always-computable
+section → `200` with a possibly-empty body):
+
+```jsonc
+// GET /v1/demos/{id}/artifacts/frag   → {"frags": FragResult}
+{ "frags": { "totalFrags": 43, "byPlayer": { … },
+    "frags": [ { "time": 13183, "killer": "GRID", "victim": "Evil's kid", "weapon": "rl" }, … ] } }
+```
+
+> Note: `frag` → `{"frags": …}`, `demoinfo` → `{"demoInfo": …}` — the body key is
+> the artifact's `resultKey`, not the node name. The `shots`/`aim` sections here
+> are already stream-enriched: the base parse is always-full (phase 12), so the
+> projectile/beam/nail-derived splits are on every Result.
+
+**Lazy artifact** `los` is materialised on demand exactly like `/los` (first
+request computes, then it is cached) and serves the same body:
+
+```jsonc
+// GET /v1/demos/{id}/artifacts/los          → identical to GET …/los
+{ "players": [ { "name": "Evil's kid", "los": [ … ], "pvs": [ … ] }, … ] }
+```
+
+The spatial weapon-fire streams are **not** a separate lazy artifact anymore
+(phase 12 folded them into the always-full base parse); read them via
+`/streams/{projectiles,beams,nails}` (§4.11c) or the enriched `/shots`, `/aim`.
+
+Per-deployment disabling of `Heavy`-cost artifacts (plan §7) is **deferred** —
+there is no config knob yet; `los` is always reachable.
 
 ---
 

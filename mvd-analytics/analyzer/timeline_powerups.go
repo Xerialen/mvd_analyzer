@@ -76,6 +76,7 @@ func (a *TimelineAnalyzer) createPowerupEvent(slot int, powerupType string, star
 	// (startTime), so a quad/pent/ring run picked up before a reconnect
 	// is credited to the right player.
 	event.PlayerName, event.Team = a.resolveAt(slot, startTime)
+	event.Team = a.core.TeamFor(event.PlayerName, event.Team)
 	if event.PlayerUserID == 0 {
 		if player := a.ctx.Players[slot]; player != nil && player.UserID != 0 {
 			event.PlayerUserID = player.UserID

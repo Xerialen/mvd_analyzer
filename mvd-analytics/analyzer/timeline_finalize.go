@@ -81,10 +81,9 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// killEvents below. A duel player with an empty userinfo/demoinfo
 	// team (gameId 224758: iddQd) resolves to team "" for the whole
 	// match; team-gating silently dropped every one of their events, and
-	// the duel post-processor could only paper over FragEvents by
-	// re-synthesising them from obituaries. Team stays best-effort: ""
-	// when unresolvable, rewritten to the player's name by
-	// normalizeDuelTeams in 1v1s.
+	// the duel path could only paper over FragEvents by re-synthesising them
+	// from obituaries. Team stays best-effort: "" when unresolvable, rewritten
+	// to the player's name by the roster (co.TeamFor) in 1v1s.
 	fragEvents := make([]TimelineFragEvent, 0, len(a.rawFrags))
 	for _, raw := range a.rawFrags {
 		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
@@ -93,7 +92,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			fragEvents = append(fragEvents, TimelineFragEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
-				Team:   team,
+				Team:   a.core.TeamFor(playerName, team),
 				Delta:  raw.Delta,
 			})
 		}
@@ -111,7 +110,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			deathEvents = append(deathEvents, TimelineDeathEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
-				Team:   team,
+				Team:   a.core.TeamFor(playerName, team),
 			})
 		}
 	}
@@ -141,7 +140,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		killEvents = append(killEvents, TimelineKillEvent{
 			Time:   fe.Time,
 			Player: fe.Killer,
-			Team:   team,
+			Team:   a.core.TeamFor(fe.Killer, team),
 		})
 	}
 
@@ -303,19 +302,17 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		// As of schema v23 the demo/wall-clock anchor lives on Streams.Global —
 		// it describes how to map a stream's match time to wall-clock time, so
 		// it belongs next to the match window rather than in TimelineAnalysis.
-
-		// Wall-clock anchor. The mvdhidden 0x000B block is the millisecond-
-		// accurate source; when it is absent, deriveDemoStartAnchor fills these
-		// from the whole-second serverinfo `epoch` cvar in post-processing.
-		if a.demoStartFromHidden {
-			result.Streams.Global.DemoStartUnixMs = a.demoStartUnixMs
-			result.Streams.Global.DemoStartAccuracyMs = 1
+		// The clock owns both the anchor (0x000B ms / serverinfo `epoch` secs)
+		// and the coalesced pauses; the timeline writes them here because it
+		// owns Streams.Global. AtMs is demo-relative at this point; rebaseToMatch
+		// (below) shifts it, and Global.MatchStart/MatchEnd/DemoOffset, once the
+		// match-start shift is applied.
+		if a.core != nil && a.core.Clock != nil {
+			clk := a.core.Clock
+			result.Streams.Global.DemoStartUnixMs = clk.DemoStartUnixMs
+			result.Streams.Global.DemoStartAccuracyMs = clk.DemoStartAccuracyMs
+			result.Streams.Global.Pauses = append([]TimelinePause(nil), clk.Pauses...)
 		}
-
-		// Coalesce paused_duration samples into per-pause segments. AtMs is
-		// demo-relative here; normalizeMatchRelativeTimes rebases it (and sets
-		// Global.DemoOffset) once the match-start shift is known.
-		result.Streams.Global.Pauses = coalescePauses(a.rawPauses)
 	}
 
 	// Region control: detect regions + resolve team labels. The
@@ -375,7 +372,172 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			result.TimelineAnalysis.RegionControl = regionControl
 		}
 	}
+
+	// Born-correct timestamps: rebase every timeline-owned time field from the
+	// demo clock to match-relative, using the shift the clock published. This
+	// replaces the timeline's share of the old normalizeMatchRelativeTimes
+	// rebase; it runs here so the timeline's own artifacts leave Finalize
+	// already on the match clock (no post-hoc whole-Result pass).
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		a.rebaseToMatch(result, ms)
+	}
+
+	// Duel: synthesise the frag-score timeline for a participant who never
+	// emitted svc_updatefrags (a frogbot) and so is absent from the frag-update
+	// stream above, sourcing their entries from the obituary-based frag log
+	// (result.Frags, which captures bots and humans identically). Runs after the
+	// rebase so both the existing FragEvents and the frag log are on the match
+	// clock. Formerly the normalizeDuelTeams FragEvents block.
+	a.synthesizeDuelFragEvents(result)
 	return nil
+}
+
+// synthesizeDuelFragEvents fills in a duel participant's frag-score timeline
+// from the obituary frag log when they never appeared as a killer in the
+// svc_updatefrags-derived FragEvents (the frogbot case). No-op outside duel
+// mode or when the frag log is empty. The synthesised entries carry team ==
+// name (the duel label) and are merged by time so consumers assuming a
+// monotonic slice keep working.
+func (a *TimelineAnalyzer) synthesizeDuelFragEvents(result *Result) {
+	if !a.core.IsDuel() || result.TimelineAnalysis == nil ||
+		result.Frags == nil || len(result.Frags.Frags) == 0 {
+		return
+	}
+	ta := result.TimelineAnalysis
+
+	existingPlayers := make(map[string]bool)
+	for _, fe := range ta.FragEvents {
+		existingPlayers[fe.Player] = true
+	}
+	missing := make(map[string]bool)
+	for _, name := range a.core.Roster.Participants() {
+		if !existingPlayers[name] {
+			missing[name] = true
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+
+	synthesised := make([]TimelineFragEvent, 0)
+	for _, fr := range result.Frags.Frags {
+		if fr.Killer == "" || !missing[fr.Killer] {
+			continue
+		}
+		delta := 1
+		if fr.IsSuicide || fr.IsTeamKill {
+			delta = -1
+		}
+		synthesised = append(synthesised, TimelineFragEvent{
+			Time:   fr.Time,
+			Player: fr.Killer,
+			Team:   fr.Killer, // duel: team == name
+			Delta:  delta,
+		})
+	}
+	if len(synthesised) > 0 {
+		ta.FragEvents = mergeFragEventsByTime(ta.FragEvents, synthesised)
+	}
+}
+
+// mergeFragEventsByTime merges two already-sorted TimelineFragEvent slices into
+// a single time-ordered slice. Used by synthesizeDuelFragEvents to splice the
+// obituary-sourced frogbot entries back into the existing frag-update series.
+func mergeFragEventsByTime(a, b []TimelineFragEvent) []TimelineFragEvent {
+	out := make([]TimelineFragEvent, 0, len(a)+len(b))
+	i, j := 0, 0
+	for i < len(a) && j < len(b) {
+		if a[i].Time <= b[j].Time {
+			out = append(out, a[i])
+			i++
+		} else {
+			out = append(out, b[j])
+			j++
+		}
+	}
+	out = append(out, a[i:]...)
+	out = append(out, b[j:]...)
+	return out
+}
+
+// rebaseToMatch shifts every timeline-owned timestamp in result from the demo
+// clock to match-relative (t' = t - matchStartMs), dropping warmup samples the
+// same way the old normalizeMatchRelativeTimes did. Only the timeline's own
+// artifacts are touched: the TimelineAnalysis event streams, Streams.Global's
+// match window / offset / pauses, and each player's + mover's stream. Shots'
+// spatial streams (Projectiles/Beams/Nails) are rebased by the shots node,
+// which produces them. Called only when a match start was detected (ms > 0),
+// mirroring the old rebase's early return.
+func (a *TimelineAnalyzer) rebaseToMatch(result *Result, matchStartMs int32) {
+	if ta := result.TimelineAnalysis; ta != nil {
+		for i := range ta.FragEvents {
+			ta.FragEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.DeathEvents {
+			ta.DeathEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.KillEvents {
+			ta.KillEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.PowerupEvents {
+			ta.PowerupEvents[i].Time -= matchStartMs
+			ta.PowerupEvents[i].EndTime -= matchStartMs
+		}
+		for i := range ta.FragStreaks {
+			ta.FragStreaks[i].Time -= matchStartMs
+			ta.FragStreaks[i].EndTime -= matchStartMs
+		}
+	}
+
+	streams := result.Streams
+	if streams == nil {
+		return
+	}
+	// The match-window + wall-clock anchors on Streams.Global also rebase.
+	streams.Global.MatchStart -= matchStartMs
+	streams.Global.MatchEnd -= matchStartMs
+	if streams.Global.MatchStart < 0 {
+		streams.Global.MatchStart = 0
+	}
+	// Record the demo→match offset and rebase pause anchors to match time.
+	// AtMs only — DurationMs is a span, not a timestamp. Pauses during the
+	// countdown go negative; keep them, they still consume wall time the
+	// mapping must account for. DemoStartUnixMs is NOT shifted (it anchors
+	// demo open, not match start).
+	streams.Global.DemoOffset = matchStartMs
+	for i := range streams.Global.Pauses {
+		streams.Global.Pauses[i].AtMs -= matchStartMs
+	}
+	for pi := range streams.Players {
+		p := &streams.Players[pi]
+		p.Health = shiftAndFilterChangeI16(p.Health, matchStartMs)
+		p.Armor = shiftAndFilterChangeI16(p.Armor, matchStartMs)
+		p.ArmorType = shiftAndFilterChangeStr(p.ArmorType, matchStartMs)
+		p.Loc = shiftAndFilterChangeI16(p.Loc, matchStartMs)
+		p.Shells = shiftAndFilterChangeI16(p.Shells, matchStartMs)
+		p.Nails = shiftAndFilterChangeI16(p.Nails, matchStartMs)
+		p.Rockets = shiftAndFilterChangeI16(p.Rockets, matchStartMs)
+		p.Cells = shiftAndFilterChangeI16(p.Cells, matchStartMs)
+
+		p.RL = shiftAndFilterIntervals(p.RL, matchStartMs)
+		p.LG = shiftAndFilterIntervals(p.LG, matchStartMs)
+		p.GL = shiftAndFilterIntervals(p.GL, matchStartMs)
+		p.SSG = shiftAndFilterIntervals(p.SSG, matchStartMs)
+		p.SNG = shiftAndFilterIntervals(p.SNG, matchStartMs)
+		p.Quad = shiftAndFilterIntervals(p.Quad, matchStartMs)
+		p.Pent = shiftAndFilterIntervals(p.Pent, matchStartMs)
+		p.Ring = shiftAndFilterIntervals(p.Ring, matchStartMs)
+
+		p.Spawns = shiftAndFilterInts(p.Spawns, matchStartMs)
+		p.Deaths = shiftAndFilterInts(p.Deaths, matchStartMs)
+
+		if p.Position != nil {
+			shiftAndFilterPosition(p.Position, matchStartMs)
+		}
+	}
+	for mi := range streams.Movers {
+		shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
+	}
 }
 
 // pauseCoalesceGapSec separates one pause from the next. mvdsv emits a
@@ -391,7 +553,7 @@ const pauseCoalesceGapSec = 0.5
 // segment per pause. AtMs is the frozen game time the pause sits at (the latest
 // sample time in the run — the plateau the demo clock holds while paused);
 // DurationMs is the summed real wall-clock time of the run. Times are
-// demo-relative here; normalizeMatchRelativeTimes rebases AtMs to match time.
+// demo-relative here; rebaseToMatch (this file) rebases AtMs to match time.
 func coalescePauses(samples []pauseSample) []TimelinePause {
 	if len(samples) == 0 {
 		return nil

@@ -159,7 +159,74 @@ func (a *MatchAnalyzer) Finalize(result *Result) error {
 	}
 
 	result.Match = mr
+
+	// Duel: rebuild the participant list and team labels around the
+	// player-name-per-player layout the roster owns. This is the old
+	// normalizeDuelTeams Match block, moved here so match.Players is born
+	// correct — and, importantly, so the demoinfo-authoritative participant
+	// merge recovers players the spectator gate above dropped (a frogbot with
+	// team "" and no svc_updatefrags), which demoinfo lists but this Finalize
+	// filtered out.
+	if a.core != nil && a.core.Roster != nil {
+		r := a.core.Roster
+		// No usable demoinfo: let a 2-participant match decide the duel verdict,
+		// the case the old isDuelResult covered via its match-players fallback.
+		// Runs before every label-emitting derived producer, so the verdict
+		// propagates.
+		if a.core.DemoInfo == nil || len(a.core.DemoInfo.Players) == 0 {
+			names := make([]string, 0, len(mr.Players))
+			for _, p := range mr.Players {
+				names = append(names, p.Name)
+			}
+			r.noteMatchParticipants(names)
+		}
+		if r.Duel() {
+			rebuildDuelMatch(mr, a.core.DemoInfo)
+		}
+	}
 	return nil
+}
+
+// rebuildDuelMatch reconstructs MatchResult.Players and .Teams for a 1v1 around
+// the synthetic one-player-per-team layout (team == the player's own name).
+//
+// When demoinfo is present it is the source of truth for participants — its
+// end-of-match snapshot always lists every player it tracked stats for, so this
+// recovers a participant the Finalize spectator gate dropped (a teamless
+// frogbot) while merging in any per-player frag count already tracked. With no
+// demoinfo it falls back to the existing two-player list, just relabelling
+// teams. Mirrors the old normalizeDuelTeams Match block exactly.
+func rebuildDuelMatch(mr *MatchResult, di *DemoInfoResult) {
+	existing := make(map[string]PlayerStat, len(mr.Players))
+	for _, p := range mr.Players {
+		existing[p.Name] = p
+	}
+	rebuilt := make([]PlayerStat, 0, len(existing))
+	if di != nil && len(di.Players) > 0 {
+		for _, dp := range di.Players {
+			ps, ok := existing[dp.Name]
+			if !ok {
+				ps = PlayerStat{Name: dp.Name}
+			}
+			ps.Team = dp.Name
+			if dp.Stats != nil {
+				ps.Frags = dp.Stats.Frags
+			}
+			rebuilt = append(rebuilt, ps)
+		}
+	} else {
+		for _, p := range mr.Players {
+			p.Team = p.Name
+			rebuilt = append(rebuilt, p)
+		}
+	}
+	mr.Players = rebuilt
+
+	teams := make([]TeamStat, 0, len(mr.Players))
+	for _, p := range mr.Players {
+		teams = append(teams, TeamStat{Name: p.Name, Frags: p.Frags})
+	}
+	mr.Teams = teams
 }
 
 // isSpectatorTeam returns true if the team name indicates a spectator

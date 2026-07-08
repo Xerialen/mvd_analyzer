@@ -29,12 +29,17 @@ import (
 // does not transmit backpack contents as wire-level entity state.
 type BackpackAnalyzer struct {
 	ctx       *Context
+	core      *CoreOutputs
 	playerPos map[int][3]float32 // slot -> last-known origin (for drop origin)
 	drops     []BackpackDrop
 	mapName   string
 	locFinder *locvis.Finder
 	timing    MatchTimingDetector
 }
+
+// UseCoreOutputs wires CoreOutputs so Finalize can read the clock (co.Clock)
+// to rebase drop times to the match-relative origin.
+func (a *BackpackAnalyzer) UseCoreOutputs(co *CoreOutputs) { a.core = co }
 
 // IT_* bit values for the //ktx drop ItemFlags argument, mirroring
 // ktx/src/items.c:2738 where the hint is emitted.
@@ -140,6 +145,19 @@ func (a *BackpackAnalyzer) Finalize(result *Result) error {
 			a.drops[i].Loc = a.locFinder.FindNearest(a.drops[i].Origin[0], a.drops[i].Origin[1], a.drops[i].Origin[2])
 		}
 	}
+	// Born-correct team labels: the roster rewrites a duel participant's team
+	// to their own name (keyed on the dropper name stamped in handleHint).
+	// Formerly the normalizeDuelTeams backpacks block.
+	for i := range a.drops {
+		a.drops[i].Team = a.core.TeamFor(a.drops[i].Player, a.drops[i].Team)
+	}
 	result.Backpacks = a.drops
+
+	// Born-correct timestamps: rebase drop times to the match clock.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range result.Backpacks {
+			result.Backpacks[i].Time -= ms
+		}
+	}
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
 	"github.com/mvd-analyzer/mvd-api/internal/democache"
@@ -19,13 +18,15 @@ import (
 // Tests inject a fake.
 type demoStore interface {
 	GetResult(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
-	// EnsureShotStreams returns the Result with the opt-in spatial weapon-fire
-	// streams built (projectiles + beams + nails — one variant, so response
-	// bodies stay a pure function of the URL under the immutable cache
-	// headers), re-parsing the cached MVD bytes on first request. It
-	// serializes the rebuild per demo SHA internally, so no server-wide lock
-	// is needed.
-	EnsureShotStreams(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
+	// EnsureLOS returns the Result with the per-player line-of-sight / PVS
+	// interval sets materialised (the lazy raycast pass), serialising the
+	// compute per demo SHA internally. It persists the result to the tier-3
+	// cache so a restart/eviction does not recompute.
+	//
+	// (There is no EnsureShotStreams: since phase 12 the spatial weapon-fire
+	// streams are baked into the always-full GetResult parse, so /shots, /aim
+	// and /streams/* read them straight off the base Result.)
+	EnsureLOS(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error)
 }
 
 // httpError carries the wire-format error body.
@@ -79,7 +80,7 @@ func (s *server) resolveDemo(w http.ResponseWriter, r *http.Request) (*result.Re
 // revalidated writes a cheap 304 (and reports true) when the request's
 // If-None-Match matches meta's ETag. setCacheHeaders must have run first
 // so the ETag header is already set. This is the shared conditional-GET
-// tail of resolveDemo and resolveShotStreams.
+// tail of resolveDemo and the /los handler.
 func revalidated(w http.ResponseWriter, r *http.Request, meta democache.CacheMeta) bool {
 	etag := fmt.Sprintf(`"%s-v%d"`, meta.SHA256, meta.SchemaVersion)
 	if match := r.Header.Get("If-None-Match"); match != "" && strings.Contains(match, etag) {
@@ -282,14 +283,14 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 // handleShots: GET /v1/demos/{id}/shots — the per-fire weapon stream
 // (result.Shots): every detected fire with time/player/weapon/source, hit +
 // victims where linkable, per-player match-time aggregates, and the KTX
-// reconciliation cross-check. Served from the stream-enriched parse (like
-// /aim, built on first request), so rl/gl fires carry their
-// projectile-linked hits and ng/sng fires their nail-linked ones. The
-// former `nails` opt-in param is accepted and ignored: it made the body
-// depend on latch state under an immutable ETag (F12), and ng/sng fires
-// were always in the stream anyway — only their linking was gated.
+// reconciliation cross-check. Served from the always-full base parse (like
+// /aim), so rl/gl fires carry their projectile-linked hits and ng/sng fires
+// their nail-linked ones — the streams are baked into every cached Result
+// since phase 12, so this is a plain resolveDemo read (no re-parse, no
+// degrade). The former `nails` opt-in param is accepted and ignored: ng/sng
+// fires were always in the stream — only their linking was gated.
 func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r)
+	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
@@ -307,11 +308,11 @@ func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
 // direct/splash, the LG near/blocked/out-of-range whiff split), columnar
 // crosshair-error samples (hitscan), and the LG ramp series.
 //
-// Served from the stream-enriched parse (EnsureShotStreams — built on first
-// request like the /streams/* endpoints, then cached) so the projectile/
-// beam-derived weapon blocks are always present.
+// Served from the always-full base parse (the projectile/beam/nail streams are
+// baked into every cached Result since phase 12), so the stream-derived weapon
+// blocks are always present — a plain resolveDemo read.
 func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r)
+	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
@@ -574,23 +575,35 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 // handleLOS: GET /v1/demos/{id}/los — per-player line-of-sight intervals.
 //
 // Line of sight is the heaviest position-derived pass and has no other
-// consumer, so it is computed lazily: the first request for a demo triggers
-// the raycast pass and caches it on the in-memory Result (ComputeLOS is
-// idempotent via Streams.LOSComputed), so later requests are free. The on-disk
-// gob stays lean — LOS is never baked into it. Returns 200 with a players
-// array; los is omitted for a player with no sightlines and empty for every
-// player on a map with no provisioned BSP.
+// consumer, so it is computed lazily via EnsureLOS: the first request for a
+// demo triggers the raycast pass (serialised per SHA in the cache) and writes
+// the result to the tier-3 artifact cache, so later requests — and later
+// processes, after a restart or an LRU eviction — splice it from disk instead
+// of recomputing. The tier-2 gob stays lean — LOS is never baked into it.
+// Returns 200 with a players array; los is omitted for a player with no
+// sightlines and empty for every player on a map with no provisioned BSP.
 func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
-	res, meta, ok := s.resolveDemo(w, r)
-	if !ok {
+	id, err := democache.ParseDemoID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
 		return
 	}
-	// Per-SHA lock: concurrent /los for one demo serialize on the shared
-	// Result, but /los for a different demo does not queue behind it.
-	unlock := s.losLocks.Lock(meta.SHA256)
-	analyzer.ComputeLOS(res)
-	unlock()
+	res, meta, err := s.store.EnsureLOS(r.Context(), id)
+	if err != nil {
+		mapStoreError(w, err)
+		return
+	}
+	setCacheHeaders(w, meta)
+	if revalidated(w, r, meta) {
+		return
+	}
+	writeJSON(w, http.StatusOK, losBody(res))
+}
 
+// losBody is the /los (and `los` artifact) response body: per-player LOS/PVS
+// interval sets. Shared so the curated endpoint and the generic artifact
+// endpoint never fork the shape.
+func losBody(res *result.Result) any {
 	type losPlayer struct {
 		Name string            `json:"name"`
 		LOS  []result.LosTrack `json:"los,omitempty"`
@@ -607,44 +620,15 @@ func (s *server) handleLOS(w http.ResponseWriter, r *http.Request) {
 			out.Players[i].PVS = res.Streams.Players[i].PVS
 		}
 	}
-	writeJSON(w, http.StatusOK, out)
+	return out
 }
 
-// resolveShotStreams mirrors resolveDemo but routes through EnsureShotStreams
-// so the requested spatial weapon-fire streams are built — a one-time
-// re-parse of the cached MVD bytes, since they are opt-in and not in the lean
-// default Result. EnsureShotStreams serializes the rebuild per demo SHA
-// internally (see cache.shotLocks), so no server-wide lock is held here.
-func (s *server) resolveShotStreams(w http.ResponseWriter, r *http.Request) (*result.Result, bool) {
-	id, err := democache.ParseDemoID(r.PathValue("id"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_demo_id", err.Error())
-		return nil, false
-	}
-	res, meta, err := s.store.EnsureShotStreams(r.Context(), id)
-	if err != nil {
-		mapStoreError(w, err)
-		return nil, false
-	}
-	setCacheHeaders(w, meta)
-	if meta.ShotStreamsUnavailable {
-		// The tier-1 bytes were gone, so the stream-derived parts are absent.
-		// Flag the degrade and don't let clients cache the incomplete body as
-		// immutable (see API.md §4.5c/4.5d/4.11c). Set before revalidated so a
-		// 304 still carries the marker.
-		w.Header().Set("X-Shot-Streams", "unavailable")
-		w.Header().Set("Cache-Control", "no-store")
-	}
-	if revalidated(w, r, meta) {
-		return nil, false
-	}
-	return res, true
-}
-
-// handleProjectiles serves the rocket/grenade flight stream (opt-in; built on
-// first request). Body is {"projectiles": ...}, null when the demo has none.
+// handleProjectiles serves the rocket/grenade flight stream. Body is
+// {"projectiles": ...}, null when the demo has none. The streams are baked
+// into the always-full base parse (phase 12), so this is a plain resolveDemo
+// read.
 func (s *server) handleProjectiles(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r)
+	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
@@ -657,9 +641,9 @@ func (s *server) handleProjectiles(w http.ResponseWriter, r *http.Request) {
 	}{pr})
 }
 
-// handleBeams serves the LG bolt stream (opt-in; built on first request).
+// handleBeams serves the LG bolt stream (from the always-full base parse).
 func (s *server) handleBeams(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r)
+	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
@@ -672,10 +656,10 @@ func (s *server) handleBeams(w http.ResponseWriter, r *http.Request) {
 	}{bm})
 }
 
-// handleNails serves the ng/sng nail-flight stream (opt-in, highest volume;
-// built on first request, separate from projectiles/beams).
+// handleNails serves the ng/sng nail-flight stream (highest volume; from the
+// always-full base parse).
 func (s *server) handleNails(w http.ResponseWriter, r *http.Request) {
-	res, ok := s.resolveShotStreams(w, r)
+	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}

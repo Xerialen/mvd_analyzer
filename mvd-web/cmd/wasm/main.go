@@ -48,11 +48,14 @@ func analyze(this js.Value, args []js.Value) interface{} {
 	}
 	defer reader.Close()
 
-	// Run analysis pipeline. The map view renders rocket/grenade flights and
-	// LG beams, so build the spatial shot streams here — the result stays in
-	// browser memory (no extra download), unlike the CLI/API which gate them.
+	// Run analysis pipeline. The map view renders rocket/grenade flights, LG
+	// beams and nail flights, so build the spatial shot streams AND nails here
+	// — the result stays in browser memory (no extra download). Nails add only
+	// ~3–4% parse time and also turn on ng/sng → damage linking, so the Aim
+	// tab's ng/sng blocks fill in. The default CLI registry stays lean.
 	registry := analyzer.NewDefaultRegistry()
 	registry.BuildShotStreams = true
+	registry.BuildNails = true
 	res, err := registry.AnalyzeReader(reader, filename)
 	if err != nil {
 		return errorJSON(err.Error())

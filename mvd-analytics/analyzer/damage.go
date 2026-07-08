@@ -102,12 +102,11 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// In a 1v1 any non-self hit is enemy damage by definition, but two
 	// duelers sharing a non-empty colour team would classify every hit as
 	// IsTeam — silently emptying airgibs, zeroing the aim enemy splits and
-	// contradicting the duel-normalized Shots.VictimKinds (F20). DemoInfo
-	// (core tier) and Match (registered before damage) are final by now, so
-	// classify at birth with the same duel test normalizeDuelTeams uses —
-	// exact, because the victim-weapon buckets and the matrix are then
-	// built once, correctly, instead of being rebuilt after the fact.
-	duel := isDuelResult(result)
+	// contradicting the duel-classified Shots.VictimKinds (F20). Read the duel
+	// verdict from the roster (the shared CoreOutputs table every producer reads), so
+	// the victim-weapon buckets and the matrix are built once, correctly,
+	// instead of being rebuilt after the fact.
+	duel := a.core.IsDuel()
 
 	for _, d := range a.raw {
 		isWorld := d.attacker < 0
@@ -218,6 +217,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	out.Scoreboard = a.reconcile(out.ByPlayer)
 
 	result.Damage = out
+
+	// Born-correct timestamps: rebase the damage log to the match clock. Only
+	// Events carries a rebased timestamp (Telefrags/Stomps Time stayed on the
+	// demo clock under the old rebase too; preserve that). Identity resolution
+	// above used the demo-time d.tMs, so this runs last.
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		for i := range out.Events {
+			out.Events[i].Time -= ms
+		}
+	}
 	return nil
 }
 

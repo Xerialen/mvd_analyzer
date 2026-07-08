@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-api/internal/democache"
 )
@@ -38,10 +39,16 @@ func (f *fakeStore) GetResult(_ context.Context, id democache.DemoID) (*result.R
 	}, nil
 }
 
-// EnsureShotStreams returns the stored Result as-is — fakes pre-populate any
-// streams they want to assert on; there is no re-parse without real bytes.
-func (f *fakeStore) EnsureShotStreams(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error) {
-	return f.GetResult(ctx, id)
+// EnsureLOS runs the (idempotent) LOS pass on the stored Result, mirroring the
+// real store: a BSP-less stub computes to empty and latches Streams.LOSComputed
+// so a second /los request is a no-op.
+func (f *fakeStore) EnsureLOS(ctx context.Context, id democache.DemoID) (*result.Result, democache.CacheMeta, error) {
+	res, meta, err := f.GetResult(ctx, id)
+	if err != nil {
+		return nil, meta, err
+	}
+	analyzer.ComputeLOS(res)
+	return res, meta, nil
 }
 
 // stubResult builds a minimal but well-formed *Result so handlers

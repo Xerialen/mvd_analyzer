@@ -1,7 +1,7 @@
 # mvd-api — REST host for QuakeWorld demo analytics
 
 `mvd-api` exposes [`mvd-analytics/view`](../mvd-analytics/view) as a
-hosted HTTP REST API, backed by a two-tier on-disk cache that
+hosted HTTP REST API, backed by a three-tier on-disk cache that
 resolves and downloads demos from
 [hub.quakeworld.nu](https://hub.quakeworld.nu) on demand.
 
@@ -45,11 +45,14 @@ All paths under the base URL (default `http://localhost:8080`). The
 Successful 2xx responses set `Cache-Control: public, max-age=86400,
 immutable`, `X-Schema-Version: <n>`, `X-Cache: HIT|WARM|MISS`, and
 `ETag: "<sha>-v<n>"` (where `<n>` is the current `CurrentSchemaVersion`).
-Send `If-None-Match` to get a cheap 304. The stream-enriched endpoints
-(`/shots`, `/aim`, `/streams/*`) additionally set `X-Shot-Streams:
-unavailable` (+ `Cache-Control: no-store`) in the rare case the tier-1 MVD
-bytes were evicted and the streams could not be rebuilt — the body is then
-the lean data (see API.md §4.5c).
+Send `If-None-Match` to get a cheap 304. The stream endpoints (`/shots`,
+`/aim`, `/streams/*`) are plain reads off the always-full base parse (phase 12
+bakes the projectile/beam/nail streams into every cached Result), so they carry
+the same immutable headers as everything else — the old `X-Shot-Streams:
+unavailable` degrade header is gone. The generic artifact endpoint uses a finer
+ETag `"<sha>-<name>@v<n>"`, and the static `/v1/artifacts` and `/v1/graph`
+key their ETag on the schema version alone (`"artifacts-v<n>"` /
+`"graph-v<n>"`).
 
 | Method | Path | Query params | 200 body |
 |---|---|---|---|
@@ -61,8 +64,8 @@ the lean data (see API.md §4.5c).
 | GET | `/v1/demos/{id}/metadata` | — | `result.MetadataResult` (full fullserverinfo cvars + KTX match settings: timelimit, fraglimit, spawnmodel, antilag, midair, instagib, …) |
 | GET | `/v1/demos/{id}/frags` | `players`, `weapon` | `result.FragResult` (totalFrags + byPlayer + byWeapon + full kill log) |
 | GET | `/v1/demos/{id}/damage` | `players`, `weapon` | `result.DamageResult` (per-hit damage log + byPlayer/byWeapon/matrix + EWep victim-weapon buckets + KTX-scoreboard cross-check; unbound/overkill amounts) |
-| GET | `/v1/demos/{id}/shots` | — | `result.ShotsResult` (per-fire stream with linked hits/victims + per-player aggregates + KTX cross-check; stream-enriched parse on first request) |
-| GET | `/v1/demos/{id}/aim` | — | `result.AimResult` (per-player per-weapon effectiveness + crosshair-error samples (hitscan) + LG ramp; stream-enriched parse on first request, so RL/GL direct/splash + the LG whiff split are always present) |
+| GET | `/v1/demos/{id}/shots` | — | `result.ShotsResult` (per-fire stream with linked hits/victims + per-player aggregates + KTX cross-check; from the always-full base parse) |
+| GET | `/v1/demos/{id}/aim` | — | `result.AimResult` (per-player per-weapon effectiveness + crosshair-error samples (hitscan) + LG ramp; from the always-full base parse, so RL/GL direct/splash + the LG whiff split are always present) |
 | GET | `/v1/demos/{id}/loc-graph` | — | `result.LocGraphResult` (per-map loc adjacency + edge weights) |
 | GET | `/v1/demos/{id}/chat` | `from`, `to`, `players`, `types` | `[]result.MatchEvent` (chat + teamsay only; types defaults to both) |
 | GET | `/v1/demos/{id}/backpacks` | `players`, `weapon` | `[]result.BackpackDrop` (RL/LG drops via `//ktx drop`) |
@@ -73,15 +76,18 @@ the lean data (see API.md §4.5c).
 | GET | `/v1/demos/{id}/stream-slice` | `from`, `to`, `players`, `fields`, `loc` | `view.StreamSliceView` |
 | GET | `/v1/demos/{id}/state-at` | `time` (required), `players`, `fields`, `loc` | `view.StateAtView` |
 | GET | `/v1/demos/{id}/los` | — | `{ "players": [{ "name", "los":[{ "o", "iv":[{ "s","e" }] }] }] }` — line of sight, **computed lazily on first request** (BSP-backed maps only) |
-| GET | `/v1/demos/{id}/streams/projectiles` | — | `{ "projectiles": ProjectileStreams\|null }` — rocket/grenade flights, **built on demand** (opt-in map overlay) |
-| GET | `/v1/demos/{id}/streams/beams` | — | `{ "beams": BeamStreams\|null }` — LG bolts, **built on demand** |
-| GET | `/v1/demos/{id}/streams/nails` | — | `{ "nails": ProjectileStreams\|null }` — ng/sng spike flights, **built on demand** (separate, highest volume) |
+| GET | `/v1/demos/{id}/streams/projectiles` | — | `{ "projectiles": ProjectileStreams\|null }` — rocket/grenade flights, from the always-full base parse |
+| GET | `/v1/demos/{id}/streams/beams` | — | `{ "beams": BeamStreams\|null }` — LG bolts, from the always-full base parse |
+| GET | `/v1/demos/{id}/streams/nails` | — | `{ "nails": ProjectileStreams\|null }` — ng/sng spike flights, from the always-full base parse |
 | GET | `/v1/demos/{id}/loc-trails` | `from`, `to`, `players`, `minDwellMs`, `loc` | `view.LocTrailsView` |
 | GET | `/v1/demos/{id}/loc-table` | — | `{ "locTable": []string }` (decoder for `loc=index`; index 0 = "" no-loc) |
 | GET | `/v1/demos/{id}/region-control` | `windowMs` | `result.RegionControlResult` |
 | GET | `/v1/demos/{id}/airgibs` | — | `[]result.AirgibEvent` (Key Moments: direct rocket hits on airborne victims, height-sorted; empty without the map BSP) |
 | GET | `/v1/maps/{map}/entities` | `types`, `kinds` | `result.MapEntitiesResult` (static layout by map name, no demo needed) |
 | GET | `/v1/maps/{map}/geometry` | — | `mapgeom.MapRegions` floor-polygon JSON (needs `-maps-dir`; REST-only) |
+| GET | `/v1/artifacts` | — | `{schemaVersion, artifacts:[…]}` — the DAG manifest (name, cost, lazy, requires/provides, resultKey, servable); static, ETag `"artifacts-v<n>"` (API.md §4.17) |
+| GET | `/v1/graph` | — | `{nodes:[…], edges:[…]}` — the analyzer DAG as JSON; static, ETag `"graph-v<n>"` |
+| GET | `/v1/demos/{id}/artifacts/{name}` | — (params rejected) | the named servable artifact's section (generic accessor; closed registry, `404 artifact_unknown`; per-artifact ETag `"<sha>-<name>@v<n>"`) |
 
 ### Details → [`API.md`](API.md)
 
@@ -116,10 +122,33 @@ the access log for analytics. Common labels: `mcp-claude-desktop`,
 Under `-cache-dir`:
 
 ```
-mvd/<sha[:2]>/<sha>.mvd.gz             # tier 1 — raw bytes from hub
-results/v<N>/<sha[:2]>/<sha>.gob       # tier 2 — parsed *Result, per schema version
-index/games/<gameId>.txt               # gameId → sha map
+mvd/<sha[:2]>/<sha>.mvd.gz                    # tier 1 — raw bytes from hub
+results/v<N>f<F>/<sha[:2]>/<sha>.gob          # tier 2 — parsed *Result, per schema version + cache format
+artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob    # tier 3 — lazy artifacts (los)
+index/games/<gameId>.txt                      # gameId → sha map
 ```
+
+Tier 2 is keyed by the schema version **and** an internal cache-format
+generation `f<F>` (`resultCacheFormat` in `internal/democache/paths.go`). The
+format counter, independent of the wire schema, invalidates the tier when *what*
+the cache stores changes without a JSON-shape change. Phase 12 bumped it to `f2`
+because the parse became **always-full** — the projectile/beam/nail streams and
+the enriched shots/aim are now baked into every cached `Result` — so pre-phase-12
+lean `results/v<N>/…` gobs (format 1) are simply never read and get re-parsed
+once on next touch. Served bodies are byte-identical (mvd-api enriched `/shots`
+and `/aim` on every request since phase 5.3), so this is a cache-locality bump,
+not a schema bump: the ETag stays `"<sha>-v<n>"`.
+
+Tier 3 holds the lazily-materialised `los` artifact (per-player LOS/PVS) as a
+side-gob so its multi-second raycast survives a process restart or an LRU
+eviction: after the base `Result` is served from tier 2, `/los` splices the
+artifact from disk instead of recomputing (closing F8b). The effective version
+`EV` is the schema version, so a schema bump invalidates tier 3 exactly like
+tier 2; stale versions are simply never read. Orphaned `shot-streams@*.gob`
+side-gobs written by pre-phase-12 processes are **inert** — nothing resolves the
+`shot-streams` artifact anymore, so they are never read; a size-capped GC (the
+hosting-prep phase) will reap them. Per-node effective versions arrive with the
+DAG manifest work if node versions ever diverge from the schema.
 
 A 4-on-4 demo typically occupies ~3–7 MB in tier 1 and ~3–10 MB in
 tier 2. There is no automatic eviction yet — a size-capped store / GC

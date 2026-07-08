@@ -9,16 +9,17 @@ import "github.com/mvd-analyzer/mvd-reader/events"
 // and read by the next, with no compile-time guarantee that the
 // writer ran first.
 //
-// The registry builds this struct incrementally as core analysers
-// finalize, then calls UseCoreOutputs on every analyser that
-// implements CoreConsumer just before its own Finalize runs. Two-phase
-// in spirit (core finishes its writes, derived starts its reads), but
-// the registration order still drives the actual sequencing — there
-// is no separate "phase 1 / phase 2" loop today.
+// The registry builds this struct incrementally: each CoreProducer
+// publishes via PopulateCore right after its own Finalize, and every
+// CoreConsumer receives the running struct just before its Finalize.
+// A consumer may rely only on the fields whose producers its declared
+// dag.go edges schedule first — the edges, not tiers or registration
+// order, drive the sequencing.
 //
 // Adding a field here is the right place when an analyser's Finalize
 // would otherwise need to peek into another analyser's intermediate
-// state.
+// state. Keep the field → producing-node table in
+// WRITING_AN_ANALYZER.md §1 in sync when you do.
 type CoreOutputs struct {
 	// DemoInfo is the parsed KTX demoinfo JSON, populated from the
 	// demoinfo analyser's Finalize. Nil when the demo has no demoinfo
@@ -26,9 +27,9 @@ type CoreOutputs struct {
 	DemoInfo *DemoInfoResult
 
 	// Names resolves a display-name string back to its demoinfo team.
-	// Built once from DemoInfo so callers don't each rebuild their own
-	// nameToTeam map. Nil-safe: TeamForName returns "" when the table
-	// itself is nil.
+	// Produced by the demoinfo node (PopulateCore) alongside DemoInfo, so
+	// callers don't each rebuild their own nameToTeam map. Nil-safe:
+	// TeamForName returns "" when the table itself is nil.
 	Names *NameTable
 
 	// FragEntries is the canonical frag-event log emitted by the frag
@@ -38,13 +39,15 @@ type CoreOutputs struct {
 	FragEntries []FragEntry
 
 	// VictimNamedTeamkills are teamkill obituaries that name only the
-	// victim ("X was telefragged by his teammate"). The killer is the
+	// victim ("X was telefragged by his teammate"). Produced by the frag
+	// node alongside FragEntries. The killer is the
 	// generic "teammate", so they never enter FragEntries; the
 	// recoverTelefragTeamkills post-processor recovers the killer from
 	// position co-location + the teamkiller's -1 frag-delta.
 	VictimNamedTeamkills []FragEntry
 
-	// Slots is the per-slot resolved player view: Name is the demoinfo
+	// Slots is the per-slot resolved player view, produced by the
+	// demoinfo node (PopulateCore): Name is the demoinfo
 	// display name when the slot matches a demoinfo entry (via login or
 	// name join), otherwise the userinfo name from ctx.Players[slot].
 	// Team is the userinfo team (the demoinfo team override only kicks
@@ -70,6 +73,52 @@ type CoreOutputs struct {
 	// canonical identity (cross-reconnect-unified) that owned the slot
 	// during it. Nil when the identity analyser was not registered.
 	Sessions map[int][]ResolvedSession
+
+	// Clock is the match-relative time base every producer converts to at
+	// Finalize (see clock.go). Produced by ClockAnalyzer (a CoreProducer with
+	// no dependencies). Nil when the clock analyser was not registered (hand-built
+	// registries / unit tests) — MatchStartMs / ToMatch are nil-safe and
+	// resolve to demo time in that case.
+	Clock *Clock
+
+	// Roster is the canonical player/team table with the duel (player-name-as-
+	// team) rewrite folded in (see roster.go). Produced by RosterAnalyzer, whose
+	// `requires` edge on "demoinfo" means it sees the fully-populated DemoInfo.
+	// Every producer reads TeamFor to stamp final team labels at emission,
+	// replacing the old whole-Result normalizeDuelTeams rewrite. Nil when the
+	// roster analyser was
+	// not registered — TeamFor / Duel are nil-safe and pass raw teams through.
+	Roster *Roster
+}
+
+// MatchStartMs returns the demo→match shift published on the Clock, or 0 when
+// no clock is wired or no match start was detected. Nil-safe for the several
+// unit tests that build a CoreOutputs without a clock.
+func (co *CoreOutputs) MatchStartMs() int32 {
+	if co == nil || co.Clock == nil {
+		return 0
+	}
+	return co.Clock.MatchStartMs
+}
+
+// TeamFor returns the final team label a producer should stamp for a record it
+// attributes to name: the player's own name in a 1v1 (born-correct duel
+// rewrite), else rawTeam unchanged. Nil-safe on co and its Roster, so producers
+// call it uniformly whether or not a roster is wired.
+func (co *CoreOutputs) TeamFor(name, rawTeam string) string {
+	if co == nil {
+		return rawTeam
+	}
+	return co.Roster.TeamFor(name, rawTeam)
+}
+
+// IsDuel reports whether the roster classified the match as a 1v1. Nil-safe on
+// co and its Roster.
+func (co *CoreOutputs) IsDuel() bool {
+	if co == nil {
+		return false
+	}
+	return co.Roster.Duel()
 }
 
 // ResolvedSession is one contiguous occupancy of a wire slot, resolved

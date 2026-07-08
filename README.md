@@ -52,7 +52,7 @@ grow on its own timeline. Today's concrete shape:
 - **Layer 3 consumers** read `Result` or call `view/` and produce something
   user-facing. There are four today:
   - `mvd-analytics/cmd/qw-analyze` — offline CLI (one demo → JSON / md / events).
-  - `mvd-api` — hosted REST API + two-tier on-disk cache.
+  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed Result, lazy artifacts).
   - `mvd-mcp` — tiny stdio MCP shim that forwards every tool call to a
     running `mvd-api`. Distributable as a small `.exe` for Claude Desktop /
     Cursor / Claude Code.
@@ -139,10 +139,12 @@ make build-all-platforms                    # cross-compile both mvd-api and mvd
 
 #### Tool surface
 
-Twenty-one tools — one for discovery, two for cache control + curated
+Twenty-three tools — one for discovery, two for cache control + curated
 summary, the high-level Result-section pass-throughs (KTX demoinfo,
 metadata, frags, damage, loc-graph, chat, backpacks, items, map entities,
-weapon-pickups), and six for the view query layer:
+weapon-pickups), six for the view query layer, and two generic
+DAG-artifact tools (`listArtifacts` + `getArtifact`) that reach any
+servable artifact by name:
 
 | Tool | Backing |
 |---|---|
@@ -170,6 +172,9 @@ weapon-pickups), and six for the view query layer:
 | `getStateAt(demoId, time, fields, …)` | `mvd-api` `/state-at` |
 | `getLocTrails(demoId, minDwellMs, …)` | `mvd-api` `/loc-trails` |
 | `getRegionControl(demoId, windowMs)` | `mvd-api` `/region-control` |
+| **Generic DAG artifacts** | |
+| `listArtifacts()` | `mvd-api` `GET /v1/artifacts` (the DAG manifest) |
+| `getArtifact(demoId, name)` | `mvd-api` `GET /v1/demos/{id}/artifacts/{name}` (any servable artifact by name) |
 
 **Full schemas live in three places:**
 
@@ -247,7 +252,7 @@ score?", "who played?"), the agent should stop there — no
   `demoId`: fetch bytes, parse, cache, serve view analytics."
 - **`loadDemo` / `get*`** go through `mvd-api`, which talks to the
   hub only to download `.mvd.gz` bytes (the rest comes from its
-  two-tier on-disk cache).
+  three-tier on-disk cache: raw bytes, parsed Result, lazy artifacts).
 - `mvd-web` (the browser UI) uses the same Supabase search path
   directly — both consumers behave identically against the hub.
 
@@ -634,6 +639,7 @@ mvd-analyzer/
 - [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md) — MVD binary format spec with ezQuake references
 - [mvd-analytics/README.md](mvd-analytics/README.md) — pipeline, how to add an analyzer, Result schema
 - [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) — Result JSON schema reference (every field, every section)
+- [mvd-analytics/WRITING_AN_ANALYZER.md](mvd-analytics/WRITING_AN_ANALYZER.md) — tutorial: write and register your own analyzer (DAG node declaration, eager vs lazy, checklist)
 - [mvd-api/README.md](mvd-api/README.md) — REST endpoint table, cache layout, smoke tests
 - [mvd-mcp/README.md](mvd-mcp/README.md) — stdio MCP shim, distribution
 - [mvd-mcp/CLAUDE_DESKTOP.md](mvd-mcp/CLAUDE_DESKTOP.md) — Claude Desktop / Claude Code config snippets

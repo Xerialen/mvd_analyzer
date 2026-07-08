@@ -552,7 +552,7 @@ package result
 //     again: those kills were mislabeled `gl` with a phantom "2 scoops of X"
 //     killer; now `ssg` with the real killer name.
 //   - match.players/match.teams no longer drop players who finished on
-//     exactly 0 frags (surface-authoritative-data); and isDuelResult trusts
+//     exactly 0 frags (surface-authoritative-data); and duel detection trusts
 //     demoInfo.players as authoritative, so a 2on2 in which two players end
 //     on 0 frags is no longer misclassified as a duel and team-renamed.
 //     Paired reader fix so spectators don't leak in instead: the full

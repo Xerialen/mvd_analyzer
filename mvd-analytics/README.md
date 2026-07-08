@@ -27,16 +27,21 @@ that downstream consumers render, summarise, or feed to an agent.
 - `analyzer/` — the `Analyzer` interface, the read-only event/userinfo
   `Context`, the typed `CoreOutputs` bundle that producer analysers
   populate for downstream consumers, and the `Registry` that drives a
-  run. `NewDefaultRegistry()` wires up the production analysers split
-  into two phases: **core** (`demoinfo`, `identity`, `frag` — the
-  producers that fill `CoreOutputs`) finalise first; **derived** (`metadata`, `match`,
-  `messages`, `timeline`, `items`, `damage`, `shots`, `backpacks`, `weapon_pickups`)
-  finalise after, with `CoreOutputs` already populated. Seven default
-  result post-processors run last (victim-named teamkill recovery, time
-  normalisation, duel team rewrite, **aim analysis**, scoreboard
-  kills/deaths/suicides correction, locgraph synthesis, region-control
-  classification) — see `postprocess.go` and `aim.go`
-  and `teamkill_telefrag.go`.
+  run. `NewDefaultRegistry()` wires up the production nodes and **derives
+  their execution order from a declared dependency DAG** (`dag.go`), not a
+  hand-ordered phase list. Every node is a task with declared
+  `Requires`/`Provides` edges; nodes differ only in whether they read the
+  event stream (analyzers — 15 of them, five of which publish
+  `CoreOutputs`) or only refine the assembled `Result` (six
+  post-processors: victim-named teamkill recovery → `frags:final`, **aim
+  analysis**, airgib detection, scoreboard kills/deaths/suicides
+  correction → `match:final`, locgraph synthesis, region-control
+  classification), plus one lazy node (`los`). There is no tier that
+  orders the run — the topological sort of the declared edges does (see
+  "Pipeline architecture" and "The nodes" below). Timestamps and team
+  labels are born correct in each producer's Finalize, so the old
+  whole-Result time rebase and duel team rewrite are gone. See `aim.go`,
+  `airgibs.go`, `postprocess.go`, and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
   `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
   `StateAt`, `LocTrails`, `RegionControl`) read `result.Streams` and
@@ -100,48 +105,65 @@ that downstream consumers render, summarise, or feed to an agent.
 
 ## Pipeline architecture
 
-A run flows through three concentric loops over a single pass of the
-event stream, then a post-pass on the assembled `Result`:
+A run makes one pass over the event stream, then a finalize/post pass
+over the assembled `Result`. Init, the event pass, and the finalize pass
+all iterate the **same node list** — `execOrder()`, the DAG's topological
+order (`dag.go`, `registry.go`). There are no separate per-kind loops: a
+single pass over the sorted nodes runs each one, and only whether a node
+reads events (analyzer) or only refines the `Result` (post-processor)
+decides what each pass does with it. Any valid topological order yields
+identical output (see "The dependency DAG" below).
 
 ```
-  events.Source ──▶ Init (core, then derived)
-                    │
-                    ▼
-            ┌─ for each event ─────────────────────────┐
-            │   registry sets ctx.{ServerData,         │
-            │     Players, FragsBySlot} from event     │
-            │   for a in core    : a.OnEvent(event)    │
-            │   for a in derived : a.OnEvent(event)    │
-            └──────────────────────────────────────────┘
-                    │
-                    ▼
-            ┌─ Phase 1: Finalize core ────────────────┐
-            │   demoinfo.Finalize → result.DemoInfo   │
-            │   demoinfo.PopulateCore →               │
-            │     co.{DemoInfo, Names, Slots}         │
-            │   frag.UseCoreOutputs(co) // reads Names│
-            │   frag.Finalize → result.Frags          │
-            │   frag.PopulateCore → co.FragEntries    │
-            └─────────────────────────────────────────┘
-                    │
-                    ▼
-            ┌─ Phase 2: Finalize derived ─────────────┐
-            │   each derived analyser:                │
-            │     a.UseCoreOutputs(co)  // optional   │
-            │     a.Finalize(result)                  │
-            │   (no analyser writes to co here)       │
-            └─────────────────────────────────────────┘
-                    │
-                    ▼
-            ┌─ Result post-processors ─────────────────┐
-            │   normalizeMatchRelativeTimes(result)    │
-            │   normalizeDuelTeams(result)             │
-            │   buildLocGraphPost(result)              │
-            └──────────────────────────────────────────┘
-                    │
-                    ▼
-                 *Result
+  events.Source
+        │
+        ▼
+  nodes := r.execOrder()          // DAG topological order (dag.go)
+        │
+        ▼
+  Init:   for n in nodes: n.analyzer.Init(ctx)
+        │
+        ▼
+  ┌─ for each event ──────────────────────────────────┐
+  │   ctx.{ServerData, Players} updated from event     │
+  │   for n in nodes: n.analyzer.OnEvent(event)        │
+  └────────────────────────────────────────────────────┘
+        │
+        ▼
+  ┌─ Finalize + post, one pass over nodes ────────────┐
+  │   for n in nodes:                                  │
+  │     analyzer node →                                │
+  │        UseCoreOutputs(co)   // if CoreConsumer     │
+  │        Finalize(result)                            │
+  │        PopulateCore(co)     // if CoreProducer     │
+  │     post-processor node →                          │
+  │        post(result, co)                            │
+  └────────────────────────────────────────────────────┘
+        │
+        ▼
+     *Result
 ```
+
+The two passes have very different ordering semantics, and it's worth
+being explicit about it. The **event pass is an order-free fan-out**: each
+event is handed to every analyzer's `OnEvent`, which accumulates that
+analyzer's own state independently. No analyzer reads another's output
+here — `CoreOutputs` doesn't exist yet — so the order the analyzers are
+visited in is immaterial. The DAG's topological order governs only the
+**single Finalize+post pass** at the end, where a producer's
+`PopulateCore` must run before a consumer reads it. (Mnemonic: `OnEvent`
+*accumulates* — N times, unordered; `Finalize` *combines* — once,
+edge-ordered. That's why shuffling the node order can't change the
+output.)
+
+The Finalize ordering guarantee is per-edge: a `CoreConsumer`'s declared
+`requires` edge forces its producer's `PopulateCore` to run earlier in
+the topological order, so the field is present when the consumer's
+`Finalize` runs. For example `frag` reads `co.Names` because it declares
+an edge on `demoinfo` — the edge, not a hardcoded phase, is what
+puts `demoinfo`'s `PopulateCore` first. Two nodes with no edge between
+them may finalise in either order; `TestOrderIndependence` proves the
+output doesn't care.
 
 Each run records per-phase wall-clock durations (init, event pass, every
 analyzer's `Finalize`, every post-processor) into `Registry.PhaseTimings`
@@ -150,44 +172,275 @@ for instrumentation. It is repopulated on each `Analyze*` call and is
 the browser console (see `mvd-web/README.md`). CLI/API callers can ignore
 it.
 
-### What goes where
+### The nodes
 
-| Slice | Default analysers | Why |
-|---|---|---|
-| **Core** | [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md) | Implement `CoreProducer`. Everything they emit (`DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`) is the canonical input some derived analyser consumes during its own Finalize. |
-| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. `shots` derives a per-shot weapon-fire stream from `svc_sound` fire sounds (+ LG `TE_LIGHTNING2` beams), links hitscan fires to same-frame damage, classifies each linked victim enemy/team/self, and reconciles counts against `co.DemoInfo` accuracy. |
-| **Post-processors** | `recoverTelefragTeamkills`, `normalizeMatchRelativeTimes`, `duelTeamNormalize`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order matters within the slice (telefrag recovery runs before time normalisation so positions/frag-events/obituaries share the demo-relative clock; `scoreboardStatsPost` copies the frag-log-corrected kills/deaths/suicides onto `match.players`, joining on the final display name after teamkill recovery; time normalisation must run before locgraph). |
+Every node is a **task**: it declares the artifacts it **Requires** and
+**Provides**, and the DAG schedules it (see "The dependency DAG" below).
+There is no tier that orders execution — nodes differ only in two
+capabilities.
 
-Each analyser has a one-page README in `analyzer/` covering what it
-consumes / produces, key algorithm steps, and known limitations. Read
-those before adding a new analyser or chasing a data-quality issue
-specific to one of them.
+**Event-reading (analyzers).** Each sees `Init` / `OnEvent` over the event
+stream, then `Finalize`. A handful implement `CoreProducer` and publish
+the shared `CoreOutputs` bundle: `clock` (the match time base — start/end,
+demo offset, pauses, wall-clock anchor), [`demoinfo`](analyzer/demoinfo.md)
+(`DemoInfo` / `Names` / `Slots`), [`identity`](analyzer/identity.md)
+(reconnect-unified `Sessions`), [`frag`](analyzer/frag.md) (`FragEntries`),
+and `roster` (the canonical player/team table with the duel
+player-name-as-team rewrite folded in — the duel verdict, participant set,
+and `TeamFor(name, rawTeam)`). The rest either implement `CoreConsumer` to
+read those fields — [`metadata`](analyzer/metadata.md),
+[`match`](analyzer/match.md), [`messages`](analyzer/messages.md),
+[`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`,
+`shots`, [`backpacks`](analyzer/backpacks.md),
+[`weapon_pickups`](analyzer/weapon_pickups.md) — or are independent peers
+like `map_entities` (loads the static `mapents` corpus by map name). Every
+producer converts demo-clock ms to match-relative ms against `co.Clock`
+and every team label through `co.TeamFor` in its own `Finalize`, so
+timestamps and team labels are **born correct** — there is no post-hoc
+whole-Result rebase or duel rewrite.
 
-### Why the split
+**Non-event (post-processors).** These run only in the finalize pass,
+refining the assembled `Result` from artifacts other nodes already
+produced: `recoverTelefragTeamkills`, `aimPost`, `airgibsPost`,
+`scoreboardStatsPost`, `locGraphPost`, `regionControlPost`. Two publish a
+**named final artifact** rather than anonymously patching an earlier
+node's output: `recoverTelefragTeamkills` is node `frags-final`, which
+appends recovered telefrag team-kills to the raw `frag` log and publishes
+`frags:final`; `scoreboardStatsPost` is node `match-final`, which folds the
+corrected kills/deaths/suicides into `match` and publishes `match:final`.
+Because `match-final` *requires* `frags:final` (not the raw `frag`), an
+in-pipeline consumer of the recovered log binds it by the semantic name
+and can never silently get the pre-fix-up value. Both still write in place
+into a section their raw producer created, so both carry `Mutates:true` —
+the `:final` name is what disambiguates *which* value.
 
-The two-phase ordering exists so cross-analyser dependencies are
-expressed as types, not registration discipline. Before the cleanup,
-adding a derived analyser that read `ctx.FragEntries` only worked if
-the author knew to register it after `frag` — there was no compile-time
-guard. Now the contract is:
+One further node, `los`, is **lazy**: materialised on demand rather than in
+the eager parse (see "The dependency DAG").
 
-- Anything you write into `CoreOutputs` requires `CoreProducer` and
-  `RegisterCore`. The slice is small by design.
-- Anything you read from `CoreOutputs` requires `CoreConsumer`. The
-  registry guarantees `co` is fully populated before any derived
-  Finalize runs.
-- Anything that operates on the assembled `Result` is a
-  `ResultPostProcessor`, not an analyser.
+The contract for adding one:
+
+- Anything you write into `CoreOutputs` implements `CoreProducer`; anything
+  you read from it implements `CoreConsumer` and declares a `requires`
+  edge on each field's producer — that edge, not any tier or registration
+  order, is what guarantees the field is populated when your `Finalize`
+  runs.
+- Anything that only refines the assembled `Result` is a
+  `ResultPostProcessor`, not an analyzer.
+
+Each node has a one-page README in `analyzer/` covering what it consumes /
+produces, key algorithm steps, and known limitations. Read those before
+adding a node or chasing a data-quality issue specific to one of them.
+
+### The dependency DAG (explicit ordering)
+
+Execution order comes from the declared edges, not registration order.
+Each analyzer and post-processor is wrapped in an internal `nodeSpec`
+(`analyzer/dag.go`) that declares the artifacts it **Requires** and
+**Provides** — the CoreOutputs edges (`demoinfo → identity → frag`, the
+`co.*` reads), the hidden `timeline → shots` container edge, the
+post-processor `result.*` reads, and the refined-artifact names
+(`frags:final`, `match:final`) consumers use to depend on the finished
+value rather than the raw one.
+
+At `NewDefaultRegistry` construction the engine **validates** the wiring
+(every `Requires` has exactly one provider; no cycles — a typo or a
+missing provider panics with a message naming the artifact and the node)
+and **derives the execution order** from it via a deterministic
+topological sort (Kahn's algorithm, ties broken by registration index).
+`analyzeSource` then drives Init / event-pass / Finalize / post-processing
+from that sorted node list, so the ordering can no longer silently drift
+from the declared dependencies. Registration order is inventory only —
+the tie-break keeps the default schedule stable, but any valid
+topological order produces byte-identical output (see below), so a new
+node can be registered anywhere as long as its edges are declared.
+Post-processors still mutate the `Result` in place — each node is
+flagged `Mutates` as a temporary marker of debt a later stage removes.
+
+**Output is schedule-independent, and tested.** The Result is a pure
+function of the demo: any valid topological order of the DAG produces
+byte-identical JSON. `TestOrderIndependence` (analyzer package) enforces
+this by running representative corpus demos under the default order and
+several seeded-random valid orders and asserting the marshalled Result is
+identical — which also continuously proves the declared edge list is
+complete, since any undeclared cross-node read surfaces as a byte diff.
+To profile where the tail spends its time, run the opt-in per-node timing
+report: `MVDA_TIMINGS=1 go test ./mvd-analytics/analyzer -run
+TestPhaseTimingsReport -v` (prints a mean/max table plus the parse-vs-tail
+and DAG critical-path breakdown).
+
+The current graph (rendered by GitHub; regenerate with
+`qw-analyze -graph mermaid` — a test fails if this block drifts from the
+code):
+
+<!-- dag-mermaid:begin — generated by qw-analyze -graph mermaid; do not hand-edit -->
+```mermaid
+flowchart TB
+  subgraph d0["depth 0"]
+    clock["clock"]
+    demoinfo["demoinfo"]
+    metadata["metadata"]
+    map_entities["map-entities"]
+  end
+  subgraph d1["depth 1"]
+    identity["identity"]
+    roster["roster"]
+    match["match"]
+  end
+  subgraph d2["depth 2"]
+    frag["frag"]
+    messages["messages"]
+    items["items"]
+    damage["damage"]
+    backpacks["backpacks"]
+  end
+  subgraph d3["depth 3"]
+    timeline["timeline"]
+    weapon_pickups["weapon-pickups"]
+  end
+  subgraph d4["depth 4"]
+    shots["shots"]
+    frags_final["frags-final"]
+    airgibs["airgibs"]
+    loc_graph["loc-graph"]
+    region_control["region-control"]
+    los["los"]
+  end
+  subgraph d5["depth 5"]
+    aim["aim"]
+    match_final["match-final"]
+  end
+  clock -->|"clock"| backpacks
+  clock -->|"clock"| damage
+  clock -->|"clock"| frag
+  clock -->|"clock"| frags_final
+  clock -->|"clock"| items
+  clock -->|"clock"| messages
+  clock -->|"clock"| shots
+  clock -->|"clock"| timeline
+  clock -->|"clock"| weapon_pickups
+  damage -->|"damage"| aim
+  damage -->|"damage"| airgibs
+  demoinfo -->|"demoinfo"| airgibs
+  demoinfo -->|"demoinfo"| damage
+  demoinfo -->|"demoinfo"| frag
+  demoinfo -->|"demoinfo"| frags_final
+  demoinfo -->|"demoinfo"| identity
+  demoinfo -->|"demoinfo"| items
+  demoinfo -->|"demoinfo"| loc_graph
+  demoinfo -->|"demoinfo"| los
+  demoinfo -->|"demoinfo"| match
+  demoinfo -->|"demoinfo"| messages
+  demoinfo -->|"demoinfo"| region_control
+  demoinfo -->|"demoinfo"| roster
+  demoinfo -->|"demoinfo"| shots
+  demoinfo -->|"demoinfo"| timeline
+  frag -->|"frag"| airgibs
+  frag -->|"frag"| frags_final
+  frag -->|"frag"| timeline
+  frag -->|"frag"| weapon_pickups
+  frags_final -->|"frags:final"| match_final
+  identity -->|"identity"| damage
+  identity -->|"identity"| frag
+  identity -->|"identity"| items
+  identity -->|"identity"| shots
+  identity -->|"identity"| timeline
+  identity -->|"identity"| weapon_pickups
+  match -->|"match"| match_final
+  match -->|"match"| region_control
+  roster -->|"roster"| backpacks
+  roster -->|"roster"| damage
+  roster -->|"roster"| items
+  roster -->|"roster"| messages
+  roster -->|"roster"| shots
+  roster -->|"roster"| timeline
+  roster -->|"roster"| weapon_pickups
+  shots -->|"shots"| aim
+  timeline -->|"timeline"| aim
+  timeline -->|"timeline"| airgibs
+  timeline -->|"timeline"| frags_final
+  timeline -->|"timeline"| loc_graph
+  timeline -->|"timeline"| los
+  timeline -->|"timeline"| region_control
+  timeline -->|"timeline"| shots
+  classDef post stroke:#2563eb,stroke-width:4px;
+  class frags_final,aim,airgibs,match_final,loc_graph,region_control post;
+  classDef lazy stroke-dasharray:4 3;
+  class los lazy;
+```
+<!-- dag-mermaid:end -->
+
+Dump the graph with `qw-analyze -graph mermaid` (a flowchart grouped into
+DAG-depth layers) or `-graph json` (`{nodes, edges}`, each node carrying
+its `depth`); neither needs a demo. The mermaid encodes the one node
+distinction depth doesn't — whether a node reads the event stream:
+**unmarked** nodes are event-reading analyzers; a **thick blue border**
+marks the six post-processors (no event pass — they only refine the
+assembled `Result`); a **dashed border** marks the lazy node. The one heavy lazy
+pass — `los` (`ComputeLOS`, the per-player line-of-sight / PVS raycast) —
+is a DAG node too. It does not run in the default parse (it stays out of
+the eager
+execution order); it is materialised on demand through the `LazyArtifact`
+hooks (`analyzer/materialize.go`), which back mvd-api's per-artifact tier-3
+disk cache so the compute survives a process restart or an LRU eviction.
+(The spatial weapon-fire streams were a second lazy pass until phase 12
+folded them into the eager parse behind the `Registry.BuildShotStreams` /
+`BuildNails` flags — on for mvd-api and the WASM build, off for the default
+CLI parse; see `RESULT_SCHEMA.md` §Streams.)
+
+**The artifact catalog** — [`ARTIFACTS.md`](ARTIFACTS.md) — is the
+one document a contributor reads to add an analytic: every node's name,
+cost, `resultKey`, dependency edges, and a one-line description,
+generated from the DAG metadata (`analyzer.ArtifactManifest`). It is
+**generated** (`make artifacts-md` / `qw-analyze -artifacts-md`) and a
+drift test keeps it current, so don't hand-edit it. mvd-api serves the
+same manifest at `GET /v1/artifacts` and any servable artifact at
+`GET /v1/demos/{id}/artifacts/{name}` (see [`../mvd-api/API.md`](../mvd-api/API.md)
+§4.17); an artifact with a `resultKey` (or the lazy `los` artifact) becomes
+reachable there — and via the mvd-mcp `getArtifact` tool — automatically,
+no per-artifact endpoint or tool to hand-write.
+
+### How nodes pass data downstream: two channels
+
+A node hands data to later nodes through one of two channels, and it
+helps to keep them straight:
+
+1. **`result.*` sections — the serialized output.** Each node's `Finalize`
+   writes its own slice of the `Result` (`frag` → `result.Frags`, `shots`
+   → `result.Shots`, …). That JSON *is* the pipeline's product, and a later
+   node may read an earlier section as input — e.g. the `aim`
+   post-processor reads `result.Shots` + `result.Streams` + `result.Damage`.
+   Every field is in the wire schema ([RESULT_SCHEMA.md](RESULT_SCHEMA.md)).
+
+2. **`CoreOutputs` — internal typed shared state.** A small bundle of
+   canonical, cross-cutting state that many nodes need. Producers publish
+   into it via `PopulateCore` (the `CoreProducer` hook); consumers read it
+   via `UseCoreOutputs` (the `CoreConsumer` hook) just before their own
+   `Finalize`. It's a plain Go struct with ergonomic typed helpers
+   (`co.TeamFor(name, raw)`, `co.SlotIdentityAt(slot, t)`) — no JSON
+   round-trip. Some of it is *also* a `result.*` section the producer wrote
+   (the KTX `DemoInfo` blob, the frag log); much of it is **internal-only**
+   and never serialized (the match `Clock`, the name/team tables, the
+   reconnect-unified identity `Sessions`, the duel-aware `Roster`).
+
+The rule of thumb: if downstream needs it *and the user should see it*,
+it's a `result.*` section; if it's internal machinery several nodes share
+(especially typed helpers that aren't wire data), it's a `CoreOutputs`
+field. Either way, ordering is the same — the consumer declares a
+`requires` edge on the producing node and the DAG schedules the producer
+first (§"The dependency DAG").
 
 ### CoreOutputs shape
 
 ```go
 type CoreOutputs struct {
-    DemoInfo    *DemoInfoResult            // KTX JSON metadata
-    Names       *NameTable                 // exact + normalized name → team
-    Slots       map[int]SlotInfo           // per-slot resolved display name + team (final occupant)
-    Sessions    map[int][]ResolvedSession  // per-slot, time-sorted, reconnect-unified occupancies
-    FragEntries []FragEntry                // canonical frag log
+    Clock                *Clock                     // match-relative time base (co.Clock.ToMatch); internal-only
+    DemoInfo             *DemoInfoResult            // KTX scoreboard blob — also the result.DemoInfo section
+    Names                *NameTable                 // exact + normalized name → team; internal-only
+    Slots                map[int]SlotInfo           // per-slot final occupant (prefer SlotIdentityAt); internal-only
+    Sessions             map[int][]ResolvedSession  // per-slot, reconnect-unified occupancies; internal-only
+    FragEntries          []FragEntry                // canonical raw frag log — feeds the result.Frags section
+    VictimNamedTeamkills []FragEntry                // victim-only teamkill obituaries (input to frags-final); internal-only
+    Roster               *Roster                    // duel-aware team table (co.TeamFor); internal-only
 }
 ```
 
@@ -498,81 +751,15 @@ not total acquisitions.
 
 ## Writing a new analyzer
 
-Implement the `analyzer.Analyzer` interface. Each analyzer writes
-its slice of `result.Result` directly from `Finalize`:
-
-```go
-type MyAnalyzer struct {
-    ctx *analyzer.Context
-}
-
-func (a *MyAnalyzer) Name() string { return "my" }
-
-func (a *MyAnalyzer) Init(ctx *analyzer.Context) error {
-    a.ctx = ctx
-    return nil
-}
-
-func (a *MyAnalyzer) OnEvent(ev events.Event) error {
-    switch e := ev.(type) {
-    case *events.PrintEvent:
-        _ = e
-    }
-    return nil
-}
-
-func (a *MyAnalyzer) Finalize(result *analyzer.Result) error {
-    result.My = &MyResult{ /* ... */ }
-    return nil
-}
-```
-
-If your analyzer needs to read another analyzer's output (frag entries,
-demoinfo player table, …), implement `CoreConsumer`. The registry
-hands you the running `*CoreOutputs` immediately before your `Finalize`
-runs:
-
-```go
-type MyAnalyzer struct {
-    ctx  *analyzer.Context
-    core *analyzer.CoreOutputs
-}
-
-func (a *MyAnalyzer) UseCoreOutputs(co *analyzer.CoreOutputs) {
-    a.core = co
-}
-```
-
-If your analyzer *produces* a field that other analyzers will consume,
-implement `CoreProducer`. The registry calls `PopulateCore` after your
-`Finalize` so analysers registered later in the pipeline see your
-output:
-
-```go
-func (a *MyAnalyzer) PopulateCore(co *analyzer.CoreOutputs) {
-    co.MyOutput = a.computed
-}
-```
-
-Then add the type to `result/` and register the analyzer. Choose
-`RegisterCore` for producers (anything implementing `CoreProducer`) and
-`RegisterDerived` for everything else:
-
-```go
-reg := analyzer.NewDefaultRegistry()
-reg.RegisterDerived(&MyAnalyzer{})
-```
-
-Core analysers finalize before any derived analyser. Within each slice
-registration order is preserved, so a later core entry can read a
-field populated by an earlier core entry (e.g. Frag reads `co.Names`
-produced by DemoInfo).
-
-If your analyzer is a post-pass that operates on the assembled Result
-(not on the event stream), register it via
-`reg.RegisterPostProcessor(func(*Result, *CoreOutputs))` instead.
-Built-ins like `normalizeMatchRelativeTimes`, `normalizeDuelTeams`,
-and `BuildLocGraph` are wired this way (see `analyzer/postprocess.go`).
+See **[WRITING_AN_ANALYZER.md](WRITING_AN_ANALYZER.md)** — the end-to-end
+walkthrough: choosing inputs (raw events vs artifacts, with the
+`CoreOutputs` field → producing-node table), the `Analyzer` /
+`CoreConsumer` / `CoreProducer` interfaces, **declaring the node's edges
+in `analyzer/dag.go`** (mandatory — an undeclared analyzer panics at
+startup), eager vs lazy registration, and the schema/docs/tests
+checklist. The short version: implement the interface, add a `nodeMeta`
+entry with your `requires`, register anywhere (order is inventory, the
+DAG schedules), run `make artifacts-md`, `make test`.
 
 ## Loc files
 
@@ -721,9 +908,10 @@ below.
 **It is computed lazily — NOT during the default parse.** LOS is the heaviest
 position-derived pass (N² pairs × samples × rays) and has no in-pipeline
 consumer, so the registry does not run it; callers invoke `ComputeLOS` on
-demand. It is idempotent (the first call sets `Streams.LOSComputed`, which the
-mvd-api persists in its gob cache so a demo's LOS is computed at most once).
-The three consumers:
+demand. It is idempotent (the first call sets `Streams.LOSComputed`). mvd-api
+persists the computed intervals in its tier-3 artifact cache (the `los` lazy
+artifact), so a demo's LOS is computed at most once even across process
+restarts and cache evictions. The three consumers:
 
 - **Web map overlay** — the **LOS** button calls the WASM `computeLineOfSight()`
   export (via the worker) on first toggle and caches the result client-side.
