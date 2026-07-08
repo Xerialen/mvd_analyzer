@@ -367,14 +367,15 @@ func (c *Cache) loadResult(ctx context.Context, sha string, id DemoID) (*result.
 		if err != nil {
 			return nil, CacheMeta{}, fmt.Errorf("%w: %v", ErrHubUpstream, err)
 		}
-		// Verify the downloaded bytes hash to the SHA that keys everything:
-		// the tier-1/tier-2 path, the sha: public address, and the ETag. A
-		// corrupted CDN object or a wrong demo_source_url would otherwise
-		// poison the cache permanently under this sha and make every
-		// "immutable" promise built on it false. Reject and do not cache on
-		// mismatch. (One hash per cold download — negligible.)
-		if got := sha256Hex(data); got != sha {
-			return nil, CacheMeta{}, fmt.Errorf("%w: downloaded bytes hash to %s, expected %s", ErrHubUpstream, got, sha)
+		// Authenticate the download against the SHA that keys everything: the
+		// tier-1/tier-2 path, the sha: public address, and the ETag. The hub's
+		// demo_sha256 is the hash of the UNCOMPRESSED .mvd, while the CDN serves
+		// gzip — so we verify the decompressed content, not the raw gzip bytes
+		// (whose hash is non-deterministic and differs). A corrupted/wrong
+		// object authenticates as neither the raw nor the decompressed content
+		// and is rejected, so it can't poison the cache under this sha.
+		if !authenticatesToSHA(data, sha) {
+			return nil, CacheMeta{}, fmt.Errorf("%w: downloaded bytes do not authenticate against expected sha %s", ErrHubUpstream, sha)
 		}
 		if err := writeFileAtomic(mp, data, 0o644); err != nil {
 			return nil, CacheMeta{}, fmt.Errorf("write tier-1: %w", err)

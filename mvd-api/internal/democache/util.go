@@ -2,10 +2,12 @@ package democache
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -25,6 +27,38 @@ func isValidSHA(s string) bool { return shaRe.MatchString(s) }
 func sha256Hex(b []byte) string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
+
+// maxDemoUncompressed caps the decompressed size the integrity check will
+// materialise from a gzip download, so a decompression bomb can't OOM the
+// process (the download itself is already capped in hubfetch). Demos are a
+// few MB; this is very generous headroom.
+const maxDemoUncompressed = 512 << 20
+
+// authenticatesToSHA reports whether the downloaded demo bytes authenticate
+// against the hub's demo_sha256 (`want`).
+//
+// The hub's demo_sha256 is the SHA-256 of the UNCOMPRESSED .mvd content, not
+// of the gzip that the CDN serves (a gzip's own hash is non-deterministic —
+// mtime/OS header, compressor differences). So the CDN download (gzip) is
+// authenticated by decompressing it and hashing the content. The
+// demo_source_url fallback can already be a raw .mvd, so a direct match is
+// also accepted. A genuinely corrupt/wrong object matches neither and is
+// rejected — preserving the phase-3 anti-cache-poisoning guarantee.
+func authenticatesToSHA(data []byte, want string) bool {
+	if sha256Hex(data) == want { // already-uncompressed (e.g. source .mvd)
+		return true
+	}
+	gz, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return false // not gzip and the raw hash didn't match
+	}
+	defer gz.Close()
+	raw, err := io.ReadAll(io.LimitReader(gz, maxDemoUncompressed+1))
+	if err != nil || int64(len(raw)) > maxDemoUncompressed {
+		return false
+	}
+	return sha256Hex(raw) == want
 }
 
 // ParseDemoID parses URL-style identifiers used by the qw-mvd REST
