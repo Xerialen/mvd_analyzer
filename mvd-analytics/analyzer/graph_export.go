@@ -211,7 +211,7 @@ func renderGraphMermaid(specs []nodeSpec) string {
 		}
 	}
 	if len(post) > 0 {
-		b.WriteString("  classDef post stroke:#d9730d,stroke-width:2px;\n")
+		b.WriteString("  classDef post stroke:#2563eb,stroke-width:4px;\n")
 		fmt.Fprintf(&b, "  class %s post;\n", strings.Join(post, ","))
 	}
 	if len(lazy) > 0 {

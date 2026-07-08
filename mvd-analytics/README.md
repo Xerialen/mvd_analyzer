@@ -350,7 +350,7 @@ flowchart TB
   timeline -->|"timeline"| los
   timeline -->|"timeline"| region_control
   timeline -->|"timeline"| shots
-  classDef post stroke:#d9730d,stroke-width:2px;
+  classDef post stroke:#2563eb,stroke-width:4px;
   class frags_final,aim,airgibs,match_final,loc_graph,region_control post;
   classDef lazy stroke-dasharray:4 3;
   class los lazy;
@@ -361,9 +361,9 @@ Dump the graph with `qw-analyze -graph mermaid` (a flowchart grouped into
 DAG-depth layers) or `-graph json` (`{nodes, edges}`, each node carrying
 its `depth`); neither needs a demo. The mermaid encodes the one node
 distinction depth doesn't — whether a node reads the event stream:
-**unmarked** nodes are event-reading analyzers; a **coloured border** marks
-the six post-processors (no event pass — they only refine the assembled
-`Result`); a **dashed border** marks the lazy node. The one heavy lazy
+**unmarked** nodes are event-reading analyzers; a **thick blue border**
+marks the six post-processors (no event pass — they only refine the
+assembled `Result`); a **dashed border** marks the lazy node. The one heavy lazy
 pass — `los` (`ComputeLOS`, the per-player line-of-sight / PVS raycast) —
 is a DAG node too. It does not run in the default parse (it stays out of
 the eager
