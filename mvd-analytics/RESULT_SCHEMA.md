@@ -1237,6 +1237,14 @@ reference: `result/decisions.go`.
 TimelineAnalysis gains `playerSlots` (name -> demo slot), the KDLOG edict
 join key.
 
+The KDLOG emit format — the `KDLOG_ANCHOR` line (`emitter=/dlog=`) and the
+goal/enemy/evade record grammars — is pinned against real C brain output by the
+golden test `decisions/kdlog_golden_test.go`, which runs a verbatim mvdsv+KTX
+`server.log` excerpt (`testdata/golden-server.log`) through `ResolveKDLog`. The
+play/dial grammar is pinned on the KomodoBench side, where those records are
+consumed; both repos share the same fixture bytes, so each grammar is exercised
+where it is actually parsed.
+
 ## Cross-references / join keys
 
 - `weaponPickups[i].backpackEnt` ↔ `backpacks[j].entNum` —
