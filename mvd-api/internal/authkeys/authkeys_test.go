@@ -281,6 +281,41 @@ func TestCrossProcessIssueNoLostWrite(t *testing.T) {
 	}
 }
 
+// TestRevokeRollsBackOnSaveFailure pins that a Revoke whose disk write fails
+// leaves the in-memory map unchanged — a still-active key must keep
+// authenticating in-process, symmetric with Issue's rollback. We force
+// saveLocked to fail by making the store dir unwritable after issuing.
+func TestRevokeRollsBackOnSaveFailure(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root: dir perms do not block writes")
+	}
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, _, err := s.Issue("42", "carol", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Make the dir unwritable so the atomic temp-file create in saveLocked
+	// fails. (The flock file already exists, so flock still succeeds.)
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+
+	if _, err := s.Revoke(key, "", ""); err == nil {
+		t.Fatal("expected Revoke to fail when the dir is unwritable")
+	}
+	// The key must STILL authenticate in-process: the failed save rolled the
+	// revocation back.
+	if _, err := s.Lookup(key); err != nil {
+		t.Errorf("key wrongly revoked in memory after a failed save: %v", err)
+	}
+}
+
 // TestConcurrentIssueLookup exercises the mutex under -race.
 func TestConcurrentIssueLookup(t *testing.T) {
 	s, err := Open(t.TempDir())

@@ -286,6 +286,11 @@ func (s *Store) Revoke(byKey, byHash, byDiscordID string) (int, error) {
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
+	// Snapshot the records we are about to mutate so a saveLocked failure can
+	// roll the in-memory map back to its pre-Revoke state — otherwise an
+	// in-process Lookup would wrongly reject a key still active on disk until
+	// the next reload-under-lock repaired it. Mirrors Issue's rollback.
+	prev := make(map[string]Record)
 	n := 0
 	for hash, rec := range s.recs {
 		match := false
@@ -296,6 +301,7 @@ func (s *Store) Revoke(byKey, byHash, byDiscordID string) (int, error) {
 			match = rec.DiscordID == byDiscordID
 		}
 		if match && rec.Active() {
+			prev[hash] = rec // pre-mutation copy (Record is a value type)
 			rec.Revoked = now
 			s.recs[hash] = rec
 			n++
@@ -305,6 +311,9 @@ func (s *Store) Revoke(byKey, byHash, byDiscordID string) (int, error) {
 		return 0, nil
 	}
 	if err := s.saveLocked(); err != nil {
+		for hash, rec := range prev {
+			s.recs[hash] = rec // keep memory and disk consistent
+		}
 		return 0, err
 	}
 	return n, nil
