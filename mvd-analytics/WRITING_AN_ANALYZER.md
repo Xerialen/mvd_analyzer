@@ -31,7 +31,7 @@ Two kinds of input exist, and the choice shapes everything:
 Artifacts arrive two ways at Finalize time:
 
 **(a) `CoreOutputs` fields** — typed state published by producer nodes
-(today all in the core tier, but any analyzer tier can publish — see §2),
+(any analyzer node can publish via the `CoreProducer` hook — see §2),
 handed to you via the `CoreConsumer` hook. The field → producing node map:
 
 | `co.` field | Produced by node | What it is |
@@ -47,9 +47,9 @@ handed to you via the `CoreConsumer` hook. The field → producing node map:
 
 The nil-safe helpers (`co.MatchStartMs()`, `co.TeamFor(...)`,
 `co.Clock.ToMatch(...)`) tolerate a missing producer, so unit tests can
-build a bare `CoreOutputs` without wiring the whole core tier.
+build a bare `CoreOutputs` without wiring the whole producer set.
 
-**(b) `result.*` sections** — a post-tier node reads sections earlier
+**(b) `result.*` sections** — a post-processor node reads sections earlier
 nodes wrote (e.g. `aim` reads `res.Shots` + `res.Streams` + `res.Damage`).
 `ARTIFACTS.md`'s `resultKey` column maps artifact → JSON section.
 
@@ -110,21 +110,21 @@ Conventions that matter:
   (`omitempty`); return an error only for real failures (it lands in
   `result.Errors`, sorted deterministically, and the run continues).
 - If your node *produces* state that other nodes should consume, there
-  are two channels, and both work from **any** analyzer tier — the
-  engine applies the hooks identically to core and derived nodes, and
-  ordering comes from declared edges, not from the tier:
+  are two channels — the engine applies the hooks identically to every
+  node, and ordering comes from declared edges, not from what kind of node
+  you are:
   1. **A typed `CoreOutputs` field** + `CoreProducer` (`PopulateCore`
      runs right after your Finalize; consumers finalized later see it).
-     Add the field to the table above. The core tier is the *convention*
+     Add the field to the table above. `CoreOutputs` is the *convention*
      for canonical state-reconstruction everyone consumes
-     (demoinfo/identity/frag/clock/roster); a derived producer is
-     legitimate when the audience is narrower.
-  2. **Your `result.*` section**, read by later nodes — the existing
-     derived→post pattern (`aim` reads `res.Shots`/`res.Streams`).
+     (demoinfo/identity/frag/clock/roster), but any node may publish into
+     it when the audience is narrower.
+  2. **Your `result.*` section**, read by later nodes — the pattern a
+     post-processor uses (`aim` reads `res.Shots`/`res.Streams`).
   Either way the contract is the same: every consumer must declare
-  `requires: ["your-node"]` — that edge, not tier or registration order,
-  is what guarantees you ran first (and the shuffle test will catch a
-  consumer that forgets).
+  `requires: ["your-node"]` — that edge, not registration order, is what
+  guarantees you ran first (and the shuffle test will catch a consumer
+  that forgets).
 - Determinism: iterate maps via sorted keys before emitting anything —
   the golden corpus pins your output byte-for-byte.
 
@@ -136,7 +136,7 @@ Add one entry, keyed by your `Name()`:
 
 ```go
 // in analyzerNodeMeta:
-"killpace": {name: "kill-pace", tier: "derived",
+"killpace": {name: "kill-pace",
 	requires: []string{"clock", "frag"}},
 ```
 
@@ -151,7 +151,7 @@ Add one entry, keyed by your `Name()`:
   inventory, not ordering:
 
 ```go
-r.RegisterDerived(NewKillPaceAnalyzer())
+r.Register(NewKillPaceAnalyzer())
 ```
 
 What the machinery now checks for you:
@@ -180,7 +180,7 @@ implement the `LazyArtifact` hooks in `analyzer/materialize.go`
 (build + tier-3 gob encode/decode + latch) and inherit on-demand
 materialisation, per-SHA locking, disk persistence across restarts, the
 generic REST endpoint, and the MCP tool. What laziness is *not* for:
-skipping event-tier work — every collector rides the one parse, and
+skipping event-reading work — every collector rides the one parse, and
 "lazy" parse-level data means re-parsing (we deleted exactly that
 machinery in phase 12; don't reintroduce it).
 

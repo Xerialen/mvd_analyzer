@@ -744,28 +744,30 @@ authoritative catalog (with descriptions) is the generated
 
 ```jsonc
 { "schemaVersion": 49, "artifacts": [
-  { "name": "clock", "tier": "core", "requires": null, "provides": ["clock"],
+  { "name": "clock", "requires": null, "provides": ["clock"],
     "mutates": false, "lazy": false, "cost": "light", "resultKey": "",
     "servable": false, "description": "Match clock — match start/end, pauses, …" },
-  { "name": "demoinfo", "tier": "core", "requires": null, "provides": ["demoinfo"],
+  { "name": "demoinfo", "requires": null, "provides": ["demoinfo"],
     "mutates": false, "lazy": false, "cost": "light", "resultKey": "demoInfo",
     "servable": true, "description": "KTX demoinfo scoreboard blob: …" },
   // …
-  { "name": "los", "tier": "lazy", "requires": ["timeline","demoinfo"],
+  { "name": "los", "requires": ["timeline","demoinfo"],
     "provides": ["los"], "mutates": false, "lazy": true, "cost": "heavy",
     "resultKey": "", "servable": true, "description": "Per-player line-of-sight …" }
 ] }
 ```
 
 **`GET /v1/graph`** — the DAG as JSON: `{ nodes:[…], edges:[…] }`. Each node
-carries the manifest fields (`cost`, `resultKey`, `lazy`, `tier`, `mutates`);
-each edge is `{ from, to, artifact }` (the provider → consumer link for one
-required artifact). For a frontend "how does this connect" panel.
+carries the manifest fields (`cost`, `resultKey`, `lazy`, `mutates`) plus
+`depth` (its layer in the dependency DAG — 0 for a root, deeper for nodes
+with dependencies); each edge is `{ from, to, artifact }` (the provider →
+consumer link for one required artifact). For a frontend "how does this
+connect" panel.
 
 ```jsonc
 { "nodes": [
     { "name": "demoinfo", "requires": null, "provides": ["demoinfo"],
-      "mutates": false, "lazy": false, "tier": "core", "cost": "light",
+      "mutates": false, "lazy": false, "depth": 0, "cost": "light",
       "resultKey": "demoInfo" }, … ],
   "edges": [ { "from": "demoinfo", "to": "identity", "artifact": "demoinfo" }, … ] }
 ```

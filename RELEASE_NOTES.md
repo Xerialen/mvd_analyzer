@@ -5,6 +5,24 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-08
+
+- **Analytics pipeline: the core/derived/post-processor "tiers" are collapsed
+  into one task model (no schema bump, `Result` byte-identical).** The tiers
+  were a pre-DAG remnant — once the topological sort over declared
+  `Requires`/`Provides` edges took over ordering, the tier label no longer
+  drove anything. `RegisterCore`/`RegisterDerived` merge into a single
+  `Register`; every node is now just a task with declared edges, differing only
+  in whether it reads events (analyzer) or only refines the assembled `Result`
+  (post-processor), plus the one lazy node (`los`). API-visible changes, both
+  in the DAG-introspection surface only (not demo analytics):
+  - `GET /v1/artifacts` manifest entries **no longer carry `tier`** — the only
+    real distinction it conflated (lazy vs eager) is already the `lazy` flag.
+  - `GET /v1/graph` nodes **replace `tier` with `depth`** (the node's layer in
+    the dependency DAG), and `qw-analyze -graph mermaid` now groups nodes into
+    depth layers instead of tier subgraphs (`los` marked with a dashed outline).
+  - `ARTIFACTS.md` drops its `Tier` column (regenerated).
+
 ## 2026-07-07
 
 - **API: the spatial weapon-fire streams are now built on every parse instead

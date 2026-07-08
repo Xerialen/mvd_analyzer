@@ -27,22 +27,21 @@ that downstream consumers render, summarise, or feed to an agent.
 - `analyzer/` — the `Analyzer` interface, the read-only event/userinfo
   `Context`, the typed `CoreOutputs` bundle that producer analysers
   populate for downstream consumers, and the `Registry` that drives a
-  run. `NewDefaultRegistry()` wires up the production analysers and
-  post-processors and **derives their execution order from a declared
-  dependency DAG** (`dag.go`), not a hand-ordered phase list. By
-  convention the nodes fall into three tiers — **core** (`clock`,
-  `demoinfo`, `identity`, `frag`, `roster` — the `CoreProducer`s that
-  fill `CoreOutputs`), **derived** (`metadata`, `match`, `messages`,
-  `timeline`, `items`, `damage`, `shots`, `map_entities`, `backpacks`,
-  `weapon_pickups`), and six result **post-processors** (victim-named
-  teamkill recovery → `frags:final`, **aim analysis**, airgib detection,
-  scoreboard kills/deaths/suicides correction → `match:final`, locgraph
-  synthesis, region-control classification). The tiers are readability
-  only; the topological sort of the declared edges is what orders the run
-  (see "Pipeline architecture" below). Timestamps and team labels are
-  born correct in each producer's Finalize, so the old whole-Result time
-  rebase and duel team rewrite are gone. See `aim.go`, `airgibs.go`,
-  `postprocess.go`, and `teamkill_telefrag.go`.
+  run. `NewDefaultRegistry()` wires up the production nodes and **derives
+  their execution order from a declared dependency DAG** (`dag.go`), not a
+  hand-ordered phase list. Every node is a task with declared
+  `Requires`/`Provides` edges; nodes differ only in whether they read the
+  event stream (analyzers — 15 of them, five of which publish
+  `CoreOutputs`) or only refine the assembled `Result` (six
+  post-processors: victim-named teamkill recovery → `frags:final`, **aim
+  analysis**, airgib detection, scoreboard kills/deaths/suicides
+  correction → `match:final`, locgraph synthesis, region-control
+  classification), plus one lazy node (`los`). There is no tier that
+  orders the run — the topological sort of the declared edges does (see
+  "Pipeline architecture" and "The nodes" below). Timestamps and team
+  labels are born correct in each producer's Finalize, so the old
+  whole-Result time rebase and duel team rewrite are gone. See `aim.go`,
+  `airgibs.go`, `postprocess.go`, and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
   `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
   `StateAt`, `LocTrails`, `RegionControl`) read `result.Streams` and
@@ -109,11 +108,11 @@ that downstream consumers render, summarise, or feed to an agent.
 A run makes one pass over the event stream, then a finalize/post pass
 over the assembled `Result`. Init, the event pass, and the finalize pass
 all iterate the **same node list** — `execOrder()`, the DAG's topological
-order (`dag.go`, `registry.go`) — not separate core/derived/post loops.
-The core → derived → post grouping you see in the sorted list is how the
-registration-index tie-break happens to lay the topologically valid order
-out; it is a readability property, **not** a coded phase sequence, and any
-valid order yields identical output (see "The dependency DAG" below).
+order (`dag.go`, `registry.go`). There are no separate per-kind loops: a
+single pass over the sorted nodes runs each one, and only whether a node
+reads events (analyzer) or only refines the `Result` (post-processor)
+decides what each pass does with it. Any valid topological order yields
+identical output (see "The dependency DAG" below).
 
 ```
   events.Source
@@ -161,39 +160,69 @@ for instrumentation. It is repopulated on each `Analyze*` call and is
 the browser console (see `mvd-web/README.md`). CLI/API callers can ignore
 it.
 
-### What goes where
+### The nodes
 
-| Slice | Default analysers | Why |
-|---|---|---|
-| **Core** | `clock`, [`demoinfo`](analyzer/demoinfo.md), [`identity`](analyzer/identity.md), [`frag`](analyzer/frag.md), `roster` | Implement `CoreProducer`. Everything they emit (`Clock`, `DemoInfo`, `Names`, `Slots`, `Sessions`, `FragEntries`, `Roster`) is the canonical input some derived analyser consumes during its own Finalize. `clock` owns the match time base: match start/end, demo offset, pauses, and the wall-clock anchor. `roster` (last core node) owns the canonical player/team table with the duel (player-name-as-team) rewrite folded in: it publishes the duel verdict, the participant set, and `TeamFor(name, rawTeam)`. Every producer converts demo-clock ms to match-relative ms against `co.Clock`, and every team label through `co.TeamFor`, in its own Finalize — timestamps and team labels are **born correct**; there is no post-hoc whole-Result rebase or duel rewrite. |
-| **Derived** | [`metadata`](analyzer/metadata.md), [`match`](analyzer/match.md), [`messages`](analyzer/messages.md), [`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`, `map_entities`, [`backpacks`](analyzer/backpacks.md), [`weapon_pickups`](analyzer/weapon_pickups.md) | Either implement `CoreConsumer` (read `co.*`) or are independent peers. They never write to `CoreOutputs`. `map_entities` loads the static `mapents` corpus by map name. `damage` reconstructs per-hit damage from the KTX `mvdhidden_dmgdone` stream and reads `co.DemoInfo` for the scoreboard cross-check. `shots` derives a per-shot weapon-fire stream from `svc_sound` fire sounds (+ LG `TE_LIGHTNING2` beams), links hitscan fires to same-frame damage, classifies each linked victim enemy/team/self, and reconciles counts against `co.DemoInfo` accuracy. |
-| **Post-processors** | `recoverTelefragTeamkills`, `aimPost`, `airgibsPost`, `scoreboardStatsPost`, `locGraphPost`, `regionControlPost` | Operate on the assembled `Result` after every Finalize has run. Order is derived from the declared DAG (`dag.go`). The two fix-ups now produce **named final artifacts** rather than anonymously patching an earlier node's output: `recoverTelefragTeamkills` is node `frags-final`, which appends the recovered telefrag team-kills to the raw `frag` log and publishes `frags:final`; `scoreboardStatsPost` is node `match-final`, which folds the corrected kills/deaths/suicides into `match` and publishes `match:final`. `match-final` *requires* `frags:final` (not the raw `frag`), so an in-pipeline consumer of the recovered log binds it by the semantic name and can never silently get the pre-fix-up value. Both still write in place into a section their raw producer created, so both stay `Mutates:true` — the `:final` name is what disambiguates *which* value. Timestamps are already match-relative and team labels already final when these run (see the `clock` and `roster` core nodes) — the whole-Result time rebase and duel team rewrite are gone. |
+Every node is a **task**: it declares the artifacts it **Requires** and
+**Provides**, and the DAG schedules it (see "The dependency DAG" below).
+There is no tier that orders execution — nodes differ only in two
+capabilities.
 
-Each analyser has a one-page README in `analyzer/` covering what it
-consumes / produces, key algorithm steps, and known limitations. Read
-those before adding a new analyser or chasing a data-quality issue
-specific to one of them.
+**Event-reading (analyzers).** Each sees `Init` / `OnEvent` over the event
+stream, then `Finalize`. A handful implement `CoreProducer` and publish
+the shared `CoreOutputs` bundle: `clock` (the match time base — start/end,
+demo offset, pauses, wall-clock anchor), [`demoinfo`](analyzer/demoinfo.md)
+(`DemoInfo` / `Names` / `Slots`), [`identity`](analyzer/identity.md)
+(reconnect-unified `Sessions`), [`frag`](analyzer/frag.md) (`FragEntries`),
+and `roster` (the canonical player/team table with the duel
+player-name-as-team rewrite folded in — the duel verdict, participant set,
+and `TeamFor(name, rawTeam)`). The rest either implement `CoreConsumer` to
+read those fields — [`metadata`](analyzer/metadata.md),
+[`match`](analyzer/match.md), [`messages`](analyzer/messages.md),
+[`timeline`](analyzer/timeline.md), [`items`](analyzer/items.md), `damage`,
+`shots`, [`backpacks`](analyzer/backpacks.md),
+[`weapon_pickups`](analyzer/weapon_pickups.md) — or are independent peers
+like `map_entities` (loads the static `mapents` corpus by map name). Every
+producer converts demo-clock ms to match-relative ms against `co.Clock`
+and every team label through `co.TeamFor` in its own `Finalize`, so
+timestamps and team labels are **born correct** — there is no post-hoc
+whole-Result rebase or duel rewrite.
 
-### Why the split
+**Non-event (post-processors).** These run only in the finalize pass,
+refining the assembled `Result` from artifacts other nodes already
+produced: `recoverTelefragTeamkills`, `aimPost`, `airgibsPost`,
+`scoreboardStatsPost`, `locGraphPost`, `regionControlPost`. Two publish a
+**named final artifact** rather than anonymously patching an earlier
+node's output: `recoverTelefragTeamkills` is node `frags-final`, which
+appends recovered telefrag team-kills to the raw `frag` log and publishes
+`frags:final`; `scoreboardStatsPost` is node `match-final`, which folds the
+corrected kills/deaths/suicides into `match` and publishes `match:final`.
+Because `match-final` *requires* `frags:final` (not the raw `frag`), an
+in-pipeline consumer of the recovered log binds it by the semantic name
+and can never silently get the pre-fix-up value. Both still write in place
+into a section their raw producer created, so both carry `Mutates:true` —
+the `:final` name is what disambiguates *which* value.
 
-The core/derived/post grouping is convention and readability, not an
-ordering mechanism — execution order comes from each node's declared
-edges (`analyzer/dag.go`), and any valid order produces identical
-output. The contract is:
+One further node, `los`, is **lazy**: materialised on demand rather than in
+the eager parse (see "The dependency DAG").
 
-- Anything you write into `CoreOutputs` implements `CoreProducer`
-  (conventionally registered core when most of the pipeline consumes
-  it — but the hook works from any tier).
-- Anything you read from `CoreOutputs` implements `CoreConsumer` and
-  declares a `requires` edge on each field's producer — that edge is
-  what guarantees the field is populated when your Finalize runs.
-- Anything that operates on the assembled `Result` is a
-  `ResultPostProcessor`, not an analyser.
+The contract for adding one:
+
+- Anything you write into `CoreOutputs` implements `CoreProducer`; anything
+  you read from it implements `CoreConsumer` and declares a `requires`
+  edge on each field's producer — that edge, not any tier or registration
+  order, is what guarantees the field is populated when your `Finalize`
+  runs.
+- Anything that only refines the assembled `Result` is a
+  `ResultPostProcessor`, not an analyzer.
+
+Each node has a one-page README in `analyzer/` covering what it consumes /
+produces, key algorithm steps, and known limitations. Read those before
+adding a node or chasing a data-quality issue specific to one of them.
 
 ### The dependency DAG (explicit ordering)
 
-The pipeline order is no longer just registration discipline. Each
-analyser and post-processor is wrapped in an internal `nodeSpec`
+Execution order comes from the declared edges, not registration order.
+Each analyzer and post-processor is wrapped in an internal `nodeSpec`
 (`analyzer/dag.go`) that declares the artifacts it **Requires** and
 **Provides** — the CoreOutputs edges (`demoinfo → identity → frag`, the
 `co.*` reads), the hidden `timeline → shots` container edge, the
@@ -326,11 +355,12 @@ flowchart TB
 ```
 <!-- dag-mermaid:end -->
 
-Dump the graph with `qw-analyze -graph mermaid` (a tier-grouped
-flowchart) or `-graph json` (`{nodes, edges}`); neither needs a demo. The
-one heavy lazy pass — `los` (`ComputeLOS`, the per-player line-of-sight /
-PVS raycast) — is a DAG node too, marked `lazy` and shown in a fourth graph
-tier. It does not run in the default parse (it stays out of the eager
+Dump the graph with `qw-analyze -graph mermaid` (a flowchart grouped into
+DAG-depth layers) or `-graph json` (`{nodes, edges}`, each node carrying
+its `depth`); neither needs a demo. The one heavy lazy pass — `los`
+(`ComputeLOS`, the per-player line-of-sight / PVS raycast) — is a DAG node
+too, marked `lazy` (a dashed outline in the mermaid). It does not run in
+the default parse (it stays out of the eager
 execution order); it is materialised on demand through the `LazyArtifact`
 hooks (`analyzer/materialize.go`), which back mvd-api's per-artifact tier-3
 disk cache so the compute survives a process restart or an LRU eviction.
@@ -341,7 +371,7 @@ CLI parse; see `RESULT_SCHEMA.md` §Streams.)
 
 **The artifact catalog** — [`ARTIFACTS.md`](ARTIFACTS.md) — is the
 one document a contributor reads to add an analytic: every node's name,
-tier, cost, `resultKey`, dependency edges, and a one-line description,
+cost, `resultKey`, dependency edges, and a one-line description,
 generated from the DAG metadata (`analyzer.ArtifactManifest`). It is
 **generated** (`make artifacts-md` / `qw-analyze -artifacts-md`) and a
 drift test keeps it current, so don't hand-edit it. mvd-api serves the

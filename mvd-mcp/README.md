@@ -390,7 +390,7 @@ region layout. See RESULT_SCHEMA.md for the encoding of
 #### `listArtifacts({})`
 
 No parameters. Output: the DAG manifest
-`{ schemaVersion, artifacts: [{ name, tier, cost, lazy, requires,
+`{ schemaVersion, artifacts: [{ name, cost, lazy, requires,
 provides, mutates, resultKey, servable, description }, …] }`. Static per
 schema version. The authoritative catalog is the generated
 [`../mvd-analytics/ARTIFACTS.md`](../mvd-analytics/ARTIFACTS.md). Call
