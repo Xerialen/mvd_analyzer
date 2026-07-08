@@ -7,6 +7,8 @@ detail.
 
 ## 2026-07-08
 
+- **mvd-mcp: array/map tool filters fixed (`players`, `fields`, `types`, `weapon`, `items`, `kinds`, `reducers`).** jsonschema-go reflected every nilable slice/map to a `["null", X]` type union; some MCP clients coerce a union to a string, silently disabling those filters. Tool input schemas now advertise a plain `{"type":"array"}`/`{"type":"object"}` (null stripped). No API/output change; rebuild+redeploy `mvd-mcp` and reconnect the client to pick up the new schemas.
+
 - **mvd-mcp over streamable HTTP + deploy templates (no schema change;
   transport/auth layer).** The MCP shim gains a hosted mode; stdio is unchanged.
   - **`mvd-mcp -http ADDR`.** Serves MCP over streamable HTTP (go-sdk
