@@ -39,6 +39,7 @@ import (
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 	"github.com/mvd-analyzer/mvd-analytics/config"
+	"github.com/mvd-analyzer/mvd-analytics/decisions"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 	"github.com/mvd-analyzer/mvd-analytics/view"
 	mvdsource "github.com/mvd-analyzer/mvd-reader/source/mvd"
@@ -47,17 +48,20 @@ import (
 // viewOptions bundles every flag that's meaningful only for the
 // non-full views. Parsed once in main().
 type viewOptions struct {
-	view       string
-	bucketDur  time.Duration
-	fields     []string
-	reducers   map[string]string
-	from, to   time.Duration
-	players    []string
-	eventTypes []string
-	minDwell   time.Duration
-	timeAt     time.Duration
+	view        string
+	bucketDur   time.Duration
+	fields      []string
+	reducers    map[string]string
+	from, to    time.Duration
+	players     []string
+	eventTypes  []string
+	minDwell    time.Duration
+	timeAt      time.Duration
 	includeTeam bool
-	include    map[string]bool // -include positions etc. for -view full
+	include     map[string]bool // -include positions etc. for -view full
+
+	decisionLog    string // -decision-log: KDLOG sidecar to resolve (schema v38)
+	inferDecisions bool   // -infer-decisions: pickup-anchored inference (schema v38)
 }
 
 func main() {
@@ -79,6 +83,8 @@ func main() {
 	timeStr := flag.String("time", "", "time for -view state-at (required)")
 	includeTeam := flag.Bool("include-team", false, "emit per-team aggregates on -view buckets")
 	includeStr := flag.String("include", "", "comma-separated position-track columns for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity")
+	decisionLog := flag.String("decision-log", "", "path to a server log with KDLOG lines (Komodobot kbot-0.23.0-dlog+); resolved into the decisions section (-format json, full view)")
+	inferDecisions := flag.Bool("infer-decisions", false, "reverse-engineer pickup-anchored goal decisions from the demo alone into the decisions section (ignored when -decision-log is given)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
@@ -107,6 +113,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "qw-analyze:", err)
 		os.Exit(2)
 	}
+
+	vopts.decisionLog = *decisionLog
+	vopts.inferDecisions = *inferDecisions
 
 	if *bulk || *outDir != "" {
 		if *outDir == "" {
@@ -237,6 +246,17 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 	res, err := reg.AnalyzeSource(src, filepath.Base(path))
 	if err != nil {
 		return err
+	}
+
+	// Decisions (schema v38): resolve the KDLOG sidecar, or infer from the
+	// demo alone, BEFORE stripping position columns — the resolver reads the
+	// in-memory loc/position streams.
+	if vopts != nil && vopts.decisionLog != "" {
+		if err := decisions.AttachKDLog(res, vopts.decisionLog); err != nil {
+			res.Errors = append(res.Errors, err.Error())
+		}
+	} else if vopts != nil && vopts.inferDecisions {
+		decisions.AttachInferred(res)
 	}
 
 	// Position-track columns are opt-in: by default strip the whole
@@ -606,8 +626,8 @@ func splitCSV(s string) []string {
 // returned pointer's []string accumulates one entry per occurrence.
 type stringList []string
 
-func (s *stringList) String() string         { return strings.Join(*s, ",") }
-func (s *stringList) Set(v string) error     { *s = append(*s, v); return nil }
+func (s *stringList) String() string     { return strings.Join(*s, ",") }
+func (s *stringList) Set(v string) error { *s = append(*s, v); return nil }
 func stringListFlag(name, usage string) *stringList {
 	var sl stringList
 	flag.Var(&sl, name, usage)

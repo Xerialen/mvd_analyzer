@@ -1208,6 +1208,43 @@ dropTime }`. `kills` is the kills-before-next-death effectiveness
 metric (only non-zero on first acquisition in a life — redundant grabs
 stay listed as zero-kill entries so denial labelling still works).
 
+## Decisions (`decisions`) — schema v38
+
+Tactical-decision section: what a player DECIDED, joined into the analyzer's
+canonical vocabulary. Absent unless qw-analyze ran with `-decision-log
+<server.log>` (source `"kdlog"`: Komodobot KDLOG telemetry resolved against
+this demo) or `-infer-decisions` (source `"inferred"`: pickup-anchored
+reverse-engineering from the demo alone). Both sources share the record
+shape so bot-logged and human-inferred decisions compare 1:1. Full field
+reference: `result/decisions.go`.
+
+- `source`, `emitterVersion`, `dlogLevel`, `errors[]` (parse/resolve
+  problems; never fatal).
+- `records[]`: `t` (int32 ms match-relative), `player`/`team`/`slot`,
+  `type` (`goal` | `enemy` | `evade` | `play`), decider `x/y/z` + `loc`
+  (from the player's own PVS-attributed position stream), `state`
+  (field-code snapshot: h/a/at/aw, rl/lg/gl/ssg/sng, q/pe/r, sh/nl/rk/cl),
+  `trigger`.
+- `type=goal`: `chosen` / `prim` / `candidates[]` — each a goal in item
+  vocabulary (`kind`/`name`/`loc` via ItemTimeline join; `player` for
+  player goals; `cls`/`entNum`/`marker` raw identities; `desire`,
+  `travelMs`, `score` from the brain).
+- `type=enemy`: `target`, `targetLoc`, `dist`.
+- `type=evade`: `on`.
+- `type=play`: `play`/`lane`/`phase`/`detail` (gapjump state machine).
+- `confidence` marks inferred records (0..1].
+
+TimelineAnalysis gains `playerSlots` (name -> demo slot), the KDLOG edict
+join key.
+
+The KDLOG emit format — the `KDLOG_ANCHOR` line (`emitter=/dlog=`) and the
+goal/enemy/evade record grammars — is pinned against real C brain output by the
+golden test `decisions/kdlog_golden_test.go`, which runs a verbatim mvdsv+KTX
+`server.log` excerpt (`testdata/golden-server.log`) through `ResolveKDLog`. The
+play/dial grammar is pinned on the KomodoBench side, where those records are
+consumed; both repos share the same fixture bytes, so each grammar is exercised
+where it is actually parsed.
+
 ## Cross-references / join keys
 
 - `weaponPickups[i].backpackEnt` ↔ `backpacks[j].entNum` —
@@ -1251,6 +1288,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v38 | `decisions` section added: the tactical-decision layer — what a player DECIDED, resolved into the analyzer's canonical vocabulary. Present only when `qw-analyze` ran with `-decision-log <server.log>` (source `"kdlog"`: Komodobot KDLOG telemetry joined against the demo) or `-infer-decisions` (source `"inferred"`: pickup-anchored reverse-engineering from the demo alone); both share the record shape so bot-logged and human-inferred decisions compare 1:1. Carries `source`/`emitterVersion`/`dlogLevel`/`errors[]` plus `records[]` (`type` ∈ `goal`/`enemy`/`evade`/`play`). `timelineAnalysis` gains `playerSlots` (name → demo slot), the KDLOG edict join key. Additive (`omitempty`); absent unless a decision source ran. Full field reference: the Decisions section above + `result/decisions.go`. The KDLOG emit format is golden-pinned by `decisions/kdlog_golden_test.go`. |
 | v37 | `streams.players[].activeWeapon` (`w`, `[]ChangeI16`) added: the raw `STAT_ACTIVEWEAPON` id (the wielded weapon's IT_ bit) as a sparse change stream dedup'd against last value, mirroring the Armor stat path. Recorded raw with **no** upper-bound clamp (unlike Health/Armor, since `IT_AXE` = 4096 exceeds the armor cap). Additive (`omitempty`); absent when the source carried no active-weapon stat. Also registered as the `w` query field (buckets / state-at / stream-slice). |
 | v36 | `MatchResult` drops the dead `startTime` / `endTime` fields. After the match-relative time normalization `startTime` was always 0 (already `omitempty`, so absent from JSON) and `endTime` always equalled `duration`; both duplicated `streams.global.matchStart` / `matchEnd`. The `endTime` key disappears from the `match` object — read `duration` for match length, or `streams.global` for the match window. Breaking removal (not additive). |
 | v35 | `streams` gains `movers[]` (`MoverStream`): the pose timeline of every tracked brush-model entity (lift, door, plat, train). Each carries `ent` (entity number), `sub` (the `*N` brush-model index, matching the corpus `SubModelMesh` id), and index-aligned `t`/`x`/`y`/`z`/`vis` columns — the mover sits at `(x,y,z)[i]` at `t[i]` ms and is drawn when `vis[i]`. Origins are `float32` (exact ⅛-unit wire values). The first entry is clamped to `t = 0` carrying the match-start pose so a parked mover (only wire state predates the match) still has one. Additive (`omitempty`); absent when the demo has no movers. The same internal tracks already drive the v27 floor-height pass. |

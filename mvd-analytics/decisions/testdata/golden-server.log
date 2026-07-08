@@ -1,0 +1,22 @@
+// (excerpt) real mvdsv+KTX server.log, run kbot-0.28.0-dials 2026-07-06 --
+// verbatim lines copied from komodobots2-bv1 bench; trimmed for size. The
+// point is REAL brain emit: if the C format drifts, the golden test breaks.
+server console noise line (ignored by both parsers)
+[2026-07-06 23:49:45] [kbot] slot=2 name=hib version=kbot-0.28.0-dials.d-adh05-tl20
+[2026-07-06 23:49:45] [kbot] slot=3 name=dag version=kbot-0.28.0-dials.d-adh05-tl20
+[2026-07-06 23:49:45] [kbot] slot=4 name=Angua version=kbot-0.28.0-dials.d-adh05-tl20
+[2026-07-06 23:49:45] [kbot] slot=5 name=Rock version=kbot-0.28.0-dials.d-adh05-tl20
+[2026-07-06 23:49:45] [kbot-config] ws=70 rockets=3 cells=15
+[2026-07-06 23:49:45] [kbot] frame active slot=2 name=hib version=kbot-0.28.0-dials.d-adh05-tl20 time=12.485497
+[2026-07-06 23:49:45] [kbot] frame active slot=3 name=dag version=kbot-0.28.0-dials.d-adh05-tl20 time=12.485497
+[2026-07-06 23:49:48] KDLOG_ANCHOR v=1 emitter=kbot-0.28.0-dials.d-adh05-tl20 map=dm3 level_time=15.508 match_start=15.500 dlog=1
+[2026-07-06 23:49:48] KDLOG t=0.019 ed=2 type=goal trig=relocate m=42 h=100 a=0 it=4353 aw=1 sh=25 nl=0 rk=0 cl=0 pos=-880.0,-232.0,-16.0 chosen=cls=item_artifact_invisibility;ied=144;org=240.0,-32.0,56.0;m=65;des=300.00;tt=2.89;sc=1030.886 c1=cls=item_artifact_invisibility;ied=144;org=240.0,-32.0,56.0;m=65;des=300.00;tt=2.89;sc=1030.886 c2=cls=item_armorInv;ied=123;org=256.0,-704.0,304.0;m=54;des=400.00;tt=12.74;sc=389.088 c3=cls=item_armor2;ied=79;org=1232.0,-904.0,-48.0;m=10;des=300.00;tt=11.84;sc=323.411 c4=cls=item_health;ied=53;org=564.0,-48.0,-192.0;m=3;des=100.00;tt=4.04;sc=287.346
+[2026-07-06 23:49:48] KDLOG t=0.019 ed=2 type=enemy ted=9 dist=194 m=42 h=100 a=0 it=4353 aw=1 sh=25 nl=0 rk=0 cl=0 pos=-880.0,-232.0,-16.0
+[2026-07-07 00:03:57] KDLOG t=848.846 ed=5 type=evade on=1 h=100 a=150 it=20769 aw=1 sh=100 nl=200 rk=33 cl=45 pos=659.1,384.0,56.0
+[2026-07-06 23:49:50] KDLOG t=1.930 ed=5 type=play play=gapjump lane=dial phase=adhere detail=cat=5;mult=1.15 h=52 a=0 it=4353 aw=1 sh=23 nl=0 rk=0 cl=0 pos=464.5,447.1,75.1
+[2026-07-06 23:49:50] KDLOG t=2.039 ed=2 type=play play=gapjump lane=dial phase=adhere detail=cat=5;mult=1.15 h=52 a=0 it=4353 aw=1 sh=23 nl=0 rk=0 cl=0 pos=-668.1,-590.1,-16.0
+[2026-07-06 23:49:48] KDLOG t=0.008 ed=2 type=play play=gapjump lane=weap phase=sgdown h=100 a=0 it=4353 aw=1 sh=25 nl=0 rk=0 cl=0 pos=-880.0,-232.0,-15.0
+[2026-07-06 23:49:49] KDLOG t=1.165 ed=5 type=play play=gapjump lane=weap phase=finish h=52 a=0 it=4353 aw=1 sh=23 nl=0 rk=0 cl=0 pos=529.2,644.4,56.0
+[2026-07-06 23:51:33] KDLOG t=105.031 ed=4 type=play play=gapjump lane=harvest phase=hold-ambush h=112 a=150 it=86305 aw=1 sh=100 nl=130 rk=9 cl=0 pos=1295.9,508.2,60.0
+[2026-07-06 23:53:54] KDLOG t=246.025 ed=3 type=play play=gapjump lane=harvest phase=guard detail=quadwindow h=28 a=0 it=4385 aw=1 sh=100 nl=200 rk=42 cl=17 pos=692.3,418.0,56.0
+another non-KDLOG console line
