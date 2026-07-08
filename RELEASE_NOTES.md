@@ -7,6 +7,35 @@ detail.
 
 ## 2026-07-08
 
+- **mvd-api API keys + auth middleware (no schema change; transport/auth
+  layer).** Optional, off by default — nothing changes for existing localhost
+  users, and analytics output is untouched.
+  - **Two modes.** Without `-auth-dir` the server is unauthenticated, exactly
+    as before (the `Authorization: Bearer <label>` value stays a non-secret
+    access-log tag). With `-auth-dir DIR`, every `/v1/*` route and
+    `POST /v1/demos/{id}` requires `Authorization: Bearer qwmvd_…`; missing /
+    invalid / revoked keys get a generic `401` + `WWW-Authenticate: Bearer`.
+    Exempt: `/healthz`, `/v1/version`, `/portal/*`, and `OPTIONS` preflight
+    (CORS answers preflight before auth, so browsers are unaffected).
+  - **Key store.** New `internal/authkeys`: one atomic-written `keys.json`
+    holding only SHA-256 hashes of keys (`qwmvd_` + 32 random bytes,
+    base64url). The plaintext key is shown once at issuance and never
+    persisted; lookups are constant-time hash compares. One active key per
+    Discord user (re-issuing revokes the prior one).
+  - **`keys` CLI.** `mvd-api keys issue|revoke|list -auth-dir DIR` manages the
+    store directly; `list` shows hash prefixes + metadata, never a full key or
+    hash.
+  - **Per-key rate limiting.** Token bucket per key hash (stdlib, no new
+    dependency), split into `user` and looser `service` classes
+    (`-rate-user`/`-burst-user`, `-rate-service`/`-burst-service`); over-limit
+    → `429` + `Retry-After`. This closes the rate-limit half of the F15
+    throttle by keying on the validated API key rather than the spoofable IP.
+  - **`GET /v1/auth/check`** → `204` for a live key, `401` otherwise (key
+    self-test; also the MCP-HTTP pre-validation hook).
+  - **Secret safety.** In auth mode the raw key is never logged — the access
+    log's identity becomes the key's note / Discord name / hash-prefix. The
+    `401`/`429` bodies are generic and leak nothing about key state.
+
 - **Analytics pipeline: the core/derived/post-processor "tiers" are collapsed
   into one task model (no schema bump, `Result` byte-identical).** The tiers
   were a pre-DAG remnant — once the topological sort over declared

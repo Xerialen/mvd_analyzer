@@ -160,6 +160,8 @@ Non-2xx responses use a stable envelope:
 | 400 | `invalid_demo_id` | malformed `{id}` |
 | 400 | `invalid_param` | malformed **or rejected** query parameter — bad number, malformed `reducers` pair, unknown `loc`/`layout` token, unknown `fields` code, or unknown reducer name |
 | 400 | `missing_param` | required param absent (e.g. `time` on `/state-at`) |
+| 401 | `unauthorized` | **auth mode only** — missing / invalid / revoked API key on a protected route. Carries `WWW-Authenticate: Bearer`. The body is deliberately generic and never says whether the key was absent vs revoked (see §2.5). |
+| 429 | `rate_limited` | **auth mode only** — per-key rate limit exceeded. Carries `Retry-After: <seconds>`; wait that long and retry (see §2.5). |
 | 404 | `demo_not_found` | hub has no row for this gameId |
 | 404 | `map_unavailable` | no entity corpus / geometry for this map (`/v1/maps/{map}/…`) |
 | 404 | `artifact_unknown` | no servable artifact of that name (`/v1/demos/{id}/artifacts/{name}`; see §4.17) |
@@ -200,10 +202,37 @@ when there's nothing, never `422`.
 
 ### 2.5 Authentication
 
-None. Data is public and read-only. The optional
-`Authorization: Bearer <label>` header (or `?label=`) is **not
-validated** — it's a non-secret source tag for the access log
-(`web-community`, `cli-script`, …).
+mvd-api runs in one of two modes, chosen by the operator's `-auth-dir` flag.
+
+**No-auth (localhost) mode — the default.** No key is required. The optional
+`Authorization: Bearer <label>` header (or `?label=`) is **not validated** —
+it's a non-secret source tag for the access log (`web-community`,
+`cli-script`, …). This is the historical behaviour and is unchanged.
+
+**Keyed (hosted) mode.** When the operator runs with `-auth-dir DIR`, every
+route under `/v1/` — plus `POST /v1/demos/{id}` — requires an API key:
+
+```
+Authorization: Bearer qwmvd_<...>
+```
+
+- Keys look like `qwmvd_` followed by a URL-safe base64 blob. **The key is a
+  secret** — treat it like a password: send it only over HTTPS, never put it
+  in a URL, a query string, or a public repo. The server stores only a hash;
+  a lost key cannot be recovered, only re-issued.
+- Missing, malformed, or revoked keys get `401 unauthorized` with
+  `WWW-Authenticate: Bearer`. The body never distinguishes those cases.
+- Exempt from the key requirement: `GET /healthz`, `GET /v1/version`, the
+  `/portal/*` prefix (its own sign-in), and any `OPTIONS` preflight.
+- **`GET /v1/auth/check`** → `204 No Content` for a live key, `401` otherwise.
+  Use it to test a key without side effects:
+  `curl -sSD- -o/dev/null -H "Authorization: Bearer qwmvd_…" https://host/v1/auth/check`.
+- Requests are rate-limited **per key** (not per IP). Over the limit →
+  `429 rate_limited` + `Retry-After: <seconds>`. Two classes exist: normal
+  (portal) keys and looser `service` keys (issued to first-party apps).
+
+Get a key from the portal (once deployed) or ask the operator for a service
+key.
 
 ### 2.6 CORS (browser clients)
 
@@ -220,6 +249,14 @@ headers (notably `ETag`, for conditional GETs). Preflight `OPTIONS` on any
 path returns `204` with `Access-Control-Allow-Methods: GET, POST, OPTIONS`,
 `Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match`,
 and `Access-Control-Max-Age`. Preflight needs no auth.
+
+**CORS + auth interaction.** In keyed mode, CORS still runs *outside* the
+auth check, so an `OPTIONS` preflight is answered (`204`, no key) before auth
+is consulted — a browser's automatic preflight never fails on the missing
+`Authorization` header. The actual `GET`/`POST` that follows still needs the
+key. `Access-Control-Allow-Origin: *` and a credentialed `Authorization`
+header coexist because the key travels as a plain header, not a cookie (the
+CORS credentials mode that `*` forbids applies to cookies, not bearer tokens).
 
 ---
 

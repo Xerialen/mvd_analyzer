@@ -12,10 +12,13 @@ binary).
 ## Usage
 
 ```
-mvd-api [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json]
+mvd-api [-addr ADDR] [-cache-dir PATH] [-cache-max-bytes N] [-max-parses N] [-log-format text|json] [-auth-dir DIR]
 mvd-api version
 mvd-api cache stats [-cache-dir PATH]
 mvd-api cache prune [-cache-dir PATH] [-max-bytes N | -older-than 30d | -all]
+mvd-api keys issue  -auth-dir DIR [-service] [-note S] [-discord-id ID] [-discord-name N]
+mvd-api keys revoke -auth-dir DIR (-key K | -hash H | -discord-id ID)
+mvd-api keys list   -auth-dir DIR
 ```
 
 | Flag | Default | Description |
@@ -26,6 +29,11 @@ mvd-api cache prune [-cache-dir PATH] [-max-bytes N | -older-than 30d | -all]
 | `-max-parses`       | `max(1, NumCPU/2)`                      | Max concurrent heavy cold operations — a demo download+parse or an on-demand LOS raycast (both bounded by one semaphore; cache hits are unbounded) |
 | `-maps-dir`         | _(empty)_                               | Directory of per-map geometry JSON for `/v1/maps/{map}/geometry`; empty disables that endpoint (ship `dist/maps/` next to the binary to enable) |
 | `-log-format`       | `text`                                  | Access log format: `text` or `json` |
+| `-auth-dir`         | _(empty)_                               | Directory holding `keys.json`. **Empty = no auth** (localhost mode; today's behaviour). When set, `/v1/*` and `POST /v1/demos/{id}` require an `Authorization: Bearer qwmvd_…` key; see "Running authenticated vs local" below |
+| `-rate-user`        | `5`                                     | Auth mode: per-key sustained request rate (req/s) for portal (user) keys |
+| `-burst-user`       | `20`                                    | Auth mode: per-key burst (token-bucket size) for user keys |
+| `-rate-service`     | `50`                                    | Auth mode: per-key sustained request rate (req/s) for `service` keys (e.g. the first-party web app) |
+| `-burst-service`    | `200`                                   | Auth mode: per-key burst for service keys |
 
 Schema bumps in `mvd-analytics` invalidate the parsed-`Result` tier
 but keep the raw-MVD tier — the next access re-parses without
@@ -45,6 +53,36 @@ disk budget is enforced once.
   keep the gameId index). Add `-dry-run` to log exactly what would be
   removed and delete nothing. Orphaned version trees and stale
   artifact gobs are always removed first.
+
+### Running authenticated vs local
+
+By default (`-auth-dir` empty) the server is **unauthenticated** — exactly
+today's localhost behaviour, byte-for-byte. Anyone who can reach the port can
+call it, and the optional `Authorization: Bearer <label>` is a non-secret
+traffic tag only (see [Authentication](#authentication)). Run it this way
+behind your own firewall / for local tooling.
+
+For **public hosting**, set `-auth-dir DIR`. The server loads `DIR/keys.json`
+(created empty if absent) and then requires a key on every `/v1/*` route and
+on `POST /v1/demos/{id}`. Exempt: `/healthz`, `/v1/version`, `/portal/*`, and
+`OPTIONS` preflight. Rate limiting is **per key**, split into a `user` class
+and a looser `service` class (the four `-rate-*`/`-burst-*` flags above).
+
+Keys are managed with the `keys` subcommands (they edit `keys.json` directly —
+no running server needed):
+
+- `mvd-api keys issue -auth-dir DIR [-service] [-note S] [-discord-id ID] [-discord-name N]`
+  — mint a key. **The full key is printed once, to stdout, and is never
+  recoverable** (only its SHA-256 hash is stored). `-service` marks it for the
+  looser rate class. Issuing for a `-discord-id` that already has a key
+  **revokes the old one** (one active key per Discord user).
+- `mvd-api keys revoke -auth-dir DIR (-key K | -hash H | -discord-id ID)`
+  — revoke by full key, key hash, or every active key of a Discord user.
+- `mvd-api keys list -auth-dir DIR` — hash **prefix** + metadata
+  (status, created, revoked, discord, note). Never prints a full key or full
+  hash.
+
+A user can self-check a key with `GET /v1/auth/check` (`204` live, `401` not).
 
 ## REST endpoints
 
@@ -135,11 +173,24 @@ The full HTTP reference lives in [`API.md`](API.md):
 
 ## Authentication
 
-There is none. The data is public and read-only. The optional
-`Authorization: Bearer <label>` header (or `?label=` query param) is
-**not validated** — it's a non-secret request-source tag captured in
-the access log for analytics. Common labels: `mcp-claude-desktop`,
-`web-community`, `cli-script`.
+Two modes, chosen by `-auth-dir` (see
+[Running authenticated vs local](#running-authenticated-vs-local)).
+
+**No-auth (localhost) mode — default, `-auth-dir` empty.** There is no
+authentication. The data is public and read-only. The optional
+`Authorization: Bearer <label>` header (or `?label=` query param) is **not
+validated** — it's a non-secret request-source tag captured in the access log
+for analytics. Common labels: `mcp-claude-desktop`, `web-community`,
+`cli-script`. This paragraph applies **only** to this mode.
+
+**Keyed (hosted) mode — `-auth-dir DIR` set.** `/v1/*` and
+`POST /v1/demos/{id}` require `Authorization: Bearer qwmvd_…`. Here the Bearer
+value **is a secret key**, not a label — it is validated against the store and
+**never logged** (the access-log identity becomes the key's note / Discord
+name / hash-prefix instead). Missing/invalid/revoked → `401`; per-key rate
+limit exceeded → `429 + Retry-After`. Exempt paths, key issuance, and the
+`/v1/auth/check` self-test are described above and in
+[`API.md` §2.5](API.md).
 
 ## Cache layout
 

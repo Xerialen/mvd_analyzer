@@ -8,6 +8,9 @@
 //	mvd-api version
 //	mvd-api cache stats [-cache-dir DIR]
 //	mvd-api cache prune [-cache-dir DIR] [-max-bytes N | -older-than 30d | -all]
+//	mvd-api keys issue  -auth-dir DIR [-service] [-note S] [-discord-id ID] [-discord-name N]
+//	mvd-api keys revoke -auth-dir DIR (-key K | -hash H | -discord-id ID)
+//	mvd-api keys list   -auth-dir DIR
 //
 // Flags:
 //
@@ -16,6 +19,9 @@
 //	-cache-max-bytes  cache disk budget in bytes; background GC evicts when over (0 disables)
 //	-max-parses       max concurrent download+parse operations (0 = max(1, NumCPU/2))
 //	-log-format       text | json (default "text")
+//	-auth-dir         keys.json dir; when set, /v1/* requires an API key (empty = no auth)
+//	-rate-user        per-key req/s for portal keys (default 5); -burst-user (default 20)
+//	-rate-service     per-key req/s for service keys (default 50); -burst-service (default 200)
 //
 // See mvd-api/README.md for the endpoint surface.
 package main
@@ -37,6 +43,13 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "cache" {
 		if err := runCache(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "keys" {
+		if err := runKeys(os.Args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "mvd-api: %v\n", err)
 			os.Exit(1)
 		}
