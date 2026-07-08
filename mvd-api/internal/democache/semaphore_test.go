@@ -96,7 +96,10 @@ func TestParseSemaphore_RespectsCtxCancellationWhileQueued(t *testing.T) {
 	c.MaxParses = 1 // one slot; A holds it, B must queue
 
 	aDone := make(chan struct{})
-	go func() { defer close(aDone); _, _, _ = c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
+	go func() {
+		defer close(aDone)
+		_, _, _ = c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 1})
+	}()
 	<-started // A now occupies the only parse slot
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -209,7 +212,10 @@ func TestParseSemaphore_LOSRespectsCtxCancellationWhileQueued(t *testing.T) {
 	}
 
 	aDone := make(chan struct{})
-	go func() { defer close(aDone); _, _, _ = c.EnsureLOS(context.Background(), DemoID{Kind: "gameId", GameID: 1}) }()
+	go func() {
+		defer close(aDone)
+		_, _, _ = c.EnsureLOS(context.Background(), DemoID{Kind: "gameId", GameID: 1})
+	}()
 	<-started // A now occupies the only raycast slot
 
 	ctx, cancel := context.WithCancel(context.Background())
