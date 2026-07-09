@@ -312,7 +312,7 @@ keyed on the **victim's** inventory. Amounts are **unbound** (include
 overkill; a telefrag reports 9999), so totals run higher than the KTX
 scoreboard — see `scoreboard` for the cross-check.
 
-#### `getAim({demoId})`
+#### `getAim({demoId, players?, startTime?, endTime?, summary?})`
 
 Per-player aim analysis. Start with `players[].weapons` (per-weapon
 shots/hits, SG/SSG pellet stats + full/partial/miss fires, RL/GL
@@ -322,9 +322,22 @@ the hitbox edge, with hit + attributed target) and `lgRamp` (per-LG-cell
 hit vs ms since the shaft opened) blocks are large — reach for them only
 when per-shot detail is needed.
 
+**`summary: true` is the recommended default** — it returns just the compact
+per-player `weapons` aggregates and drops the large per-fire `crosshair` +
+`lgRamp` sample arrays, which otherwise dominate the payload and can overflow
+context.
+
 | Param | Type | Description |
 |---|---|---|
 | `demoId` | `string` (required) | — |
+| `players` | `string[]` | scope to these shooters. With no time window, selects their **match-wide** aim; with a window, restricts the recompute. |
+| `startTime` | `float` | window start, match-relative **seconds**. Setting a window **recomputes** aim over the shots in it, so every figure (weapons, crosshair, lgRamp) scopes to the window. |
+| `endTime` | `float` | window end, match-relative seconds. |
+| `summary` | `bool` | return only the `weapons` aggregates, dropping the per-fire `crosshair`/`lgRamp` arrays. |
+
+With no time window the **stored** match-wide aim is served (no recompute);
+`players`/`summary` still apply. The `shots`/`damage` inputs aim derives from
+are already match-only, so aim never includes warmup / post-match fires.
 
 Output: `result.AimResult` — see
 [RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).

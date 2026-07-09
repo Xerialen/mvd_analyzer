@@ -378,12 +378,35 @@ func (s *server) handleShots(w http.ResponseWriter, r *http.Request) {
 // Served from the always-full base parse (the projectile/beam/nail streams are
 // baked into every cached Result since phase 12), so the stream-derived weapon
 // blocks are always present — a plain resolveDemo read.
+//
+// Optional filters narrow the response. With no time window the stored aim is
+// returned (players= selects named shooters' match-wide aim); a from/to window
+// recomputes aim over the shots in that window so every figure scopes to it.
+// summary drops the big per-fire crosshair + lgRamp blocks — the recommended
+// way to avoid overflowing an LLM context.
+//
+// Query params:
+//
+//	players  csv   — scope to these shooters
+//	from     float — window start, match-relative seconds (0 = no bound)
+//	to       float — window end, match-relative seconds (0 = no bound)
+//	summary  bool  — return only the per-player weapons aggregates
 func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	am, err := view.Aim(res)
+	p := newQP(r.URL.Query())
+	opts := view.AimOptions{
+		Players: p.CSV("players"),
+		From:    p.Float("from", 0),
+		To:      p.Float("to", 0),
+		Summary: p.Bool("summary"),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	am, err := view.Aim(res, opts)
 	if err != nil {
 		s.writeUnavailable(w, r, err, "aim_unavailable",
 			"this demo has no aim data (needs shots + position/view streams)")

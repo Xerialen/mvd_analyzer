@@ -160,9 +160,16 @@ type GetDamageInput struct {
 	Summary   bool     `json:"summary,omitempty" jsonschema:"return only aggregates, dropping the big per-hit damage log (avoids overflowing context)"`
 }
 
-// GetAimInput identifies a demo for its per-player aim analysis.
+// GetAimInput identifies a demo for its per-player aim analysis, with optional
+// player / time-window scoping and a summary switch. With no time window the
+// stored aim is served (players= selects named shooters' match-wide aim); a
+// startTime/endTime window recomputes aim over the shots in that window.
 type GetAimInput struct {
-	DemoID string `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Players   []string `json:"players,omitempty" jsonschema:"scope to these shooters (players[].player); with no time window this selects their match-wide aim, with a window it restricts the recompute"`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds; setting a window recomputes aim over the shots in it so every figure (weapons, crosshair, lgRamp) scopes to the window"`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
+	Summary   bool     `json:"summary,omitempty" jsonschema:"return only the compact per-player weapons aggregates, dropping the large per-fire crosshair + lgRamp sample arrays — the recommended way to avoid overflowing context"`
 }
 
 // GetLocGraphInput identifies a demo for its per-loc adjacency graph.

@@ -374,10 +374,20 @@ only — never used to adjust the detected stream.
 
 ## AimResult (`aim`)
 
-Defined in `result/aim.go`. Per-player aim analysis derived as a
-post-processor (`analyzer/aim.go`) from `Shots` + `Streams` (interpolated
-position/view at fire time via `PositionTrack.SampleAt`) + `Damage` + the LG
-`Streams.Beams`. Experimental and additive — it never modifies its inputs.
+Defined in `result/aim.go`. Per-player aim analysis derived from `Shots` +
+`Streams` (interpolated position/view at fire time via
+`PositionTrack.SampleAt`) + `Damage` + the LG `Streams.Beams`. The computation
+lives in package `aimcore` (`aimcore.Compute`), called by the analyzer
+post-processor (`analyzer/aim.go`) to fill the stored `res.Aim` once, and by
+the view layer (`view.Aim`) for filtered/windowed variants — see below.
+Experimental and additive — it never modifies its inputs.
+
+**Filtering (`/aim`, `getAim`).** No schema change; a query-layer concern.
+With no time window the **stored** `res.Aim` is served (a `players` filter
+selects named shooters' match-wide aim; `summary` drops the `crosshair` +
+`lgRamp` sample blocks). A `from`/`to` window (match-relative seconds)
+**recomputes** aim over the shots in the window via `aimcore.Compute`, so every
+field scopes to the window consistently. See mvd-api API.md §4.5c.
 
 Geometry: the shot traces from the weapon **muzzle** (origin + 16, the LG/SG
 fire origin) toward the enemy **hull center** (origin + 4, the −24..+32 box

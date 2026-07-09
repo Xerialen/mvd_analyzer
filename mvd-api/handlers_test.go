@@ -828,6 +828,99 @@ func TestAim_Unavailable(t *testing.T) {
 	}
 }
 
+// aimParamsFixture is TestAim's result with a second player and the raw
+// Shots/Streams the windowed recompute reads.
+func aimParamsFixture() *result.Result {
+	track := func(name string, x float64) result.PlayerStream {
+		return result.PlayerStream{
+			Name: name,
+			Position: &result.PositionTrack{
+				T: []int32{0, 5000}, X: []float32{float32(x), float32(x)},
+				Y: []float32{0, 0}, Z: []float32{0, 0}, VP: []int16{0, 0}, VYa: []int16{0, 0},
+			},
+		}
+	}
+	return &result.Result{
+		SchemaVersion: result.CurrentSchemaVersion,
+		Shots: &result.ShotsResult{
+			Shots: []result.Shot{
+				{Time: 1000, Player: "bps", Weapon: "lg", Hit: false},
+				{Time: 20000, Player: "bps", Weapon: "lg", Hit: true},
+			},
+			ByPlayer: []result.PlayerShots{{Player: "bps"}, {Player: "milton"}},
+		},
+		Streams: &result.Streams{Players: []result.PlayerStream{track("bps", 0), track("milton", 1000)}},
+		Aim: &result.AimResult{Players: []result.PlayerAim{
+			{
+				Player: "bps", Team: "blue", Mode: "duel",
+				Weapons:   []result.WeaponAim{{Weapon: "lg", Shots: 2, Hits: 1}},
+				Crosshair: &result.CrosshairSamples{T: []int32{1000, 20000}, Weapon: []string{"lg", "lg"}},
+				LGRamp:    &result.LGRampSamples{Since: []int32{0, 0}},
+			},
+			{
+				Player: "milton", Team: "red", Mode: "duel",
+				Weapons:   []result.WeaponAim{{Weapon: "sg", Shots: 3}},
+				Crosshair: &result.CrosshairSamples{T: []int32{500}},
+			},
+		}},
+	}
+}
+
+// TestAimParams exercises the summary / players / from / malformed-from query
+// params on the aim endpoint.
+func TestAimParams(t *testing.T) {
+	srv := newTestServer(t, &fakeStore{byID: map[string]*result.Result{"gameId:42": aimParamsFixture()}})
+	defer srv.Close()
+
+	// summary drops the crosshair + lgRamp blocks, keeps weapons.
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/aim?summary=1", 200)
+	players, _ := resp["players"].([]any)
+	if len(players) != 2 {
+		t.Fatalf("summary players = %d, want 2 (%v)", len(players), resp)
+	}
+	p0, _ := players[0].(map[string]any)
+	if _, hasCH := p0["crosshair"]; hasCH {
+		t.Errorf("summary kept crosshair block: %v", p0)
+	}
+	if _, hasRamp := p0["lgRamp"]; hasRamp {
+		t.Errorf("summary kept lgRamp block: %v", p0)
+	}
+	if _, hasW := p0["weapons"]; !hasW {
+		t.Errorf("summary dropped weapons: %v", p0)
+	}
+
+	// players=bps (no window) selects the stored bps aim only.
+	resp = getJSON(t, srv.URL+"/v1/demos/gameId:42/aim?players=bps", 200)
+	players, _ = resp["players"].([]any)
+	if len(players) != 1 {
+		t.Fatalf("players=bps returned %d players, want 1", len(players))
+	}
+	if p, _ := players[0].(map[string]any); p["player"] != "bps" {
+		t.Errorf("players=bps returned %v, want bps", p["player"])
+	}
+
+	// from=15 recomputes: only bps's t=20s lg fire survives → 1 shot.
+	resp = getJSON(t, srv.URL+"/v1/demos/gameId:42/aim?from=15", 200)
+	players, _ = resp["players"].([]any)
+	if len(players) != 1 {
+		t.Fatalf("from=15 returned %d players, want 1 (only bps fired in window)", len(players))
+	}
+	p, _ := players[0].(map[string]any)
+	weapons, _ := p["weapons"].([]any)
+	if len(weapons) != 1 {
+		t.Fatalf("from=15 bps weapons = %v, want 1 row", p["weapons"])
+	}
+	if w, _ := weapons[0].(map[string]any); w["shots"] != float64(1) {
+		t.Errorf("from=15 windowed lg shots = %v, want 1", w["shots"])
+	}
+
+	// malformed from is a clean 400 invalid_param.
+	body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/aim?from=banana")
+	if status != 400 {
+		t.Errorf("from=banana: status = %d, want 400 (body=%s)", status, string(body))
+	}
+}
+
 func TestChat_All(t *testing.T) {
 	srv := newTestServer(t, storeWithStub())
 	defer srv.Close()

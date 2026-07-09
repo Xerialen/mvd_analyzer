@@ -55,6 +55,27 @@ detail.
     exception** (pre-game talk is kept). This makes it impossible for a
     consumer to accidentally mix warmup data into match analytics.
 
+- **`getAim` (`/aim`): `players` / `from` / `to` / `summary` filters (no schema
+  change).** The aim endpoint and its MCP tool used to return everything
+  (~70 KB), overflowing an LLM context. New query-layer filters, consistent
+  with the frag/damage discipline above:
+  - **`summary`** (bool) — return only the compact per-player `weapons`
+    aggregates, dropping the large per-fire `crosshair` + `lgRamp` sample
+    arrays. The overflow fix; recommended default for the MCP tool.
+  - **`players`** (csv) — scope to named shooters. With no time window this
+    selects their **match-wide** stored aim (same as `getFrags?players=`).
+  - **`from` / `to`** (REST; `startTime` / `endTime` on the MCP tool) —
+    match-relative **seconds**. Setting a window **recomputes** aim over the
+    shots in it, so every figure (weapons accuracy, RL/GL direct/splash, LG
+    ramp, crosshair samples) scopes to the window consistently. With no window
+    the stored aim is returned unchanged (no recompute).
+  - **Refactor: the aim computation core moved to package `aimcore`**
+    (`aimcore.Compute`), imported by both the analyzer (fills `res.Aim` once)
+    and the view layer (windowed variants) without an import cycle. The stored
+    aim is **byte-identical** to before (goldens unchanged) — the extraction
+    preserved behaviour exactly. No schema bump (`CurrentSchemaVersion` stays
+    50); the `AimResult` struct is untouched.
+
 ## 2026-07-08
 
 - **Fix: cold demo loads failed with a 502 `hub_upstream` hash mismatch.** The hub's `demo_sha256` is the hash of the *uncompressed* `.mvd`, but the CDN serves gzip and the phase-3 integrity check hashed the gzipped download — so every un-cached `loadDemo`/`POST /v1/demos/{id}` was rejected. The check now authenticates the *decompressed* content (or a raw `.mvd` fallback) against `demo_sha256`; corruption is still rejected. mvd-api change; redeploy it.

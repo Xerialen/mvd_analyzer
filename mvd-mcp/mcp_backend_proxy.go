@@ -334,7 +334,12 @@ func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) 
 	if err != nil {
 		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", path, nil)
+	q := query{}
+	q.csv("players", in.Players)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.boolean("summary", in.Summary)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error) {

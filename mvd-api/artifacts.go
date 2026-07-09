@@ -53,7 +53,7 @@ var eagerArtifacts = map[string]eagerArtifact{
 		code: "damage_unavailable", msg: "this demo has no damage data (no KTX mvdhidden_dmgdone stream)"},
 	"shots": {extract: func(r *result.Result) (any, error) { return view.Shots(r) },
 		code: "shots_unavailable", msg: "this demo has no shot data (no weapon fires decoded)"},
-	"aim": {extract: func(r *result.Result) (any, error) { return view.Aim(r) },
+	"aim": {extract: func(r *result.Result) (any, error) { return view.Aim(r, view.AimOptions{}) },
 		code: "aim_unavailable", msg: "this demo has no aim data (needs shots + position/view streams)"},
 	"loc-graph": {extract: func(r *result.Result) (any, error) { return view.LocGraph(r) },
 		code: "locgraph_unavailable", msg: "this demo has no loc graph (probably no position track was emitted)"},

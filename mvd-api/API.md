@@ -453,7 +453,7 @@ kill itself still appears in `/frags` and as a `frag` event.
 
 ### 4.5c `GET /v1/demos/{id}/aim`
 
-No params. Per-player aim analysis (`result.Aim`): the `weapons` array
+Per-player aim analysis (`result.Aim`): the `weapons` array
 (per-weapon shots/hits, SG/SSG pellet stats + full/partial/miss, RL/GL
 direct/splash/missed, the LG miss/blocked/out-of-range whiff split, plus
 `enemy`/`team`/`self` per-victim-class counter slices — emitted only when a
@@ -468,6 +468,28 @@ connects). `mode` is `"duel"` (exact target) or
 nearest-crosshair enemy alive at the fire time (a heuristic in team games).
 Shape: `result.AimResult` →
 [RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).
+
+| param | meaning |
+|---|---|
+| `summary` | bool — drop the big per-fire `crosshair` + `lgRamp` sample blocks on each player, keeping `player`/`team`/`mode`/`weapons`. The recommended way to avoid overflowing an LLM context (the sample arrays dominate the payload). |
+| `players` | csv — scope to these shooters. With no time window this selects their **match-wide** stored aim (exactly as `/frags?players=` selects a player's match-wide totals). |
+| `from`, `to` | float — window start / end, match-relative **seconds** (0 = no bound). |
+
+**Filtering semantics.** Aim is derived from the `shots` and `damage` streams,
+which are already **match-only** at the source, so aim never sees warmup /
+post-match fires. Two paths, mirroring `/frags` and `/damage`:
+
+- **No time window** (`from`=`to`=0): the **stored** aim is returned unchanged
+  (byte-identical to the analyzer's output); `players` selects named shooters,
+  `summary` drops the sample blocks. No recompute.
+- **Time window set** (`from` or `to` non-zero): aim is **recomputed over the
+  shots in `[from,to]`** (and the named players) — every figure (weapons
+  accuracy, RL/GL direct/splash, LG ramp, crosshair samples) scopes to the
+  window consistently, so the aggregates never disagree with the samples. The
+  seconds→ms conversion rounds to the nearest ms (`0.29s`→`290ms`).
+
+`summary` is orthogonal — it trims the sample blocks off whichever result was
+produced. Malformed `from`/`to` → 400 `invalid_param`.
 
 **Availability:** served from the always-full base parse. mvd-api parses every
 demo with the projectile/beam/nail streams built (since phase 12 — the +3–4%

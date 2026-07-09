@@ -1,6 +1,9 @@
 package view
 
-import "github.com/mvd-analyzer/mvd-analytics/result"
+import (
+	"github.com/mvd-analyzer/mvd-analytics/aimcore"
+	"github.com/mvd-analyzer/mvd-analytics/result"
+)
 
 // This file adds the object-shaped "section accessor" half of the R3
 // availability rule (see sections.go for ErrUnavailable and the
@@ -48,13 +51,91 @@ func Shots(r *result.Result) (*result.ShotsResult, error) {
 	return r.Shots, nil
 }
 
-// Aim returns the per-player aim analysis, or ErrUnavailable when the
-// demo has no shots + position/view streams to derive it from.
-func Aim(r *result.Result) (*result.AimResult, error) {
+// AimOptions filters the per-player aim analysis. Empty fields mean "no
+// filter". From/To are match-relative SECONDS (0 disables that bound),
+// matching getFrags/getDamage.
+type AimOptions struct {
+	Players []string // scope to these shooters (case-sensitive)
+	From    float64  // window start, match-relative seconds (0 = no bound)
+	To      float64  // window end, match-relative seconds (0 = no bound)
+	Summary bool     // drop the big Crosshair + LGRamp sample blocks per player
+}
+
+// Aim returns the per-player aim analysis, optionally narrowed, or
+// ErrUnavailable when the demo has no shots + position/view streams to
+// derive it from.
+//
+// Aim is derived from shots, so filtering mirrors the frags/damage discipline:
+//
+//   - NO TIME WINDOW (from==0 AND to==0): use the STORED res.Aim (computed once
+//     by the analyzer) — no recompute. A players filter selects the named
+//     players' stored PlayerAim (their match-wide aim, exactly as frags
+//     players-only selects a player's match-wide totals). Summary alone still
+//     takes this path; it only drops the sample blocks.
+//
+//   - TIME WINDOW SET (from!=0 OR to!=0): RECOMPUTE aim over the shots in
+//     [from,to] (and the named players) via aimcore.Compute, so every output
+//     (weapons accuracy, RL/GL direct/splash, LG ramp, crosshair samples)
+//     scopes to the window consistently.
+//
+// Summary is orthogonal: it drops Crosshair + LGRamp from whichever result was
+// produced (the overflow fix), keeping Player/Team/Mode/Weapons.
+//
+// ALIASING: the unfiltered / players-only / summary-only paths may share the
+// stored Result's PlayerAim values by reference (a read-only view) or return
+// freshly-allocated summary copies. Callers MUST NOT mutate the returned value
+// (all current callers marshal-and-discard). The windowed path returns freshly
+// computed data.
+func Aim(r *result.Result, opts AimOptions) (*result.AimResult, error) {
 	if r.Aim == nil {
 		return nil, ErrUnavailable
 	}
-	return r.Aim, nil
+	players := toSet(opts.Players)
+
+	var base *result.AimResult
+	if opts.From == 0 && opts.To == 0 {
+		// No window: reuse the stored aim, optionally selecting named players.
+		if len(players) == 0 {
+			base = r.Aim
+		} else {
+			base = &result.AimResult{}
+			for i := range r.Aim.Players {
+				if players[r.Aim.Players[i].Player] {
+					base.Players = append(base.Players, r.Aim.Players[i])
+				}
+			}
+		}
+	} else {
+		// Window set: recompute over the windowed shot slice + named players.
+		q := aimcore.Query{Players: players}
+		if opts.From != 0 {
+			from := secToMs(opts.From)
+			q.FromMs = &from
+		}
+		if opts.To != 0 {
+			to := secToMs(opts.To)
+			q.ToMs = &to
+		}
+		base = aimcore.Compute(r, q)
+		if base == nil {
+			base = &result.AimResult{}
+		}
+	}
+
+	if !opts.Summary {
+		return base, nil
+	}
+
+	// Summary: drop the big per-fire sample blocks, keep the aggregates. Copy
+	// each PlayerAim so the shared stored values are never mutated.
+	out := &result.AimResult{Players: make([]result.PlayerAim, len(base.Players))}
+	for i := range base.Players {
+		pa := base.Players[i]
+		pa.Crosshair = nil
+		pa.LGRamp = nil
+		out.Players[i] = pa
+	}
+	return out, nil
 }
 
 // Airgibs returns the Key Moments airgib list. Availability tracks the
