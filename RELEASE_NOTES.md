@@ -40,6 +40,13 @@ detail.
     Goldens regenerated: `damage.events` arrays shrink; some `aim` splits and
     `airgibs` lists shift on demos with out-of-match rocket hits. Frags are
     unaffected (they already gated at the analyzer).
+  - **Telefrags / stomps are match-only and exclude team kills.** The
+    `damage.telefrags` / `damage.stomps` arrays are likewise gated to in-match
+    at the source, and a **team** telefrag/stomp is no longer credited to the
+    attacker's `telefrags` / `stomps` counter (mirroring the team-kill
+    convention the view already applied) — so the filtered telefrag/stomp
+    counters now match the stored totals. Goldens: two demos drop
+    team/out-of-match telefrag+stomp counts; no other change.
 
 ## 2026-07-08
 

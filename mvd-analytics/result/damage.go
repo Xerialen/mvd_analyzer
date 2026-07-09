@@ -79,8 +79,8 @@ type PlayerDamage struct {
 	EnemyVsBoth int `json:"enemyVsBoth"` // victim holds both RL and LG
 	EWep        int `json:"ewep"`        // = EnemyVsLG + EnemyVsRL + EnemyVsBoth (KTX dmg_eweapon)
 
-	Telefrags int `json:"telefrags,omitempty"` // instant-kill telefrags DEALT (not damage; excluded from Given)
-	Stomps    int `json:"stomps,omitempty"`    // head-stomp kills DEALT (not damage; excluded from Given)
+	Telefrags int `json:"telefrags,omitempty"` // in-match, non-team instant-kill telefrags DEALT (not damage; excluded from Given; team telefrags are not credited, per the team-kill convention)
+	Stomps    int `json:"stomps,omitempty"`    // in-match, non-team head-stomp kills DEALT (not damage; excluded from Given)
 }
 
 // DamagePair is one attacker→victim total in the damage matrix.

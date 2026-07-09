@@ -147,8 +147,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		// kill. Keep them out of every damage figure and surface them on
 		// their own. The kill itself is still in FragResult.
 		if isTele || isStomp {
+			// Positional instant kills are match-only, like all damage output:
+			// out-of-match telefrags/stomps are dropped everywhere (of no
+			// interest, unreconcilable). Team telefrags/stomps are not credited
+			// to the attacker, mirroring the team-kill convention (and matching
+			// view.Damage's recompute).
+			if !d.inMatch {
+				continue
+			}
 			kill := PositionalKill{Time: d.tMs, Attacker: attacker, Victim: victim, IsTeam: isTeam}
-			credit := d.inMatch && !isWorld && !isSelf
+			credit := !isWorld && !isSelf && !isTeam
 			if isTele {
 				out.Telefrags = append(out.Telefrags, kill)
 				if credit {

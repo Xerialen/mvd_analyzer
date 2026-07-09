@@ -37012,8 +37012,7 @@
         "givenTeam": 345,
         "stomps": 1,
         "taken": 9924,
-        "takenEnv": 80,
-        "telefrags": 1
+        "takenEnv": 80
       },
       "nlk": {
         "byWeapon": {
@@ -37034,8 +37033,7 @@
         "givenSelf": 556,
         "givenTeam": 339,
         "taken": 9772,
-        "takenEnv": 40,
-        "telefrags": 1
+        "takenEnv": 40
       },
       "sCorp": {
         "byWeapon": {
@@ -56297,17 +56295,6 @@
       }
     ],
     "telefrags": [
-      {
-        "attacker": "doberman",
-        "isTeam": true,
-        "time": 10326,
-        "victim": "nlk"
-      },
-      {
-        "attacker": "clox",
-        "time": 10326,
-        "victim": "doberman"
-      },
       {
         "attacker": "lakso",
         "time": 359134,
