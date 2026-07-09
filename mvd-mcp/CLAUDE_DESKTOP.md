@@ -167,9 +167,25 @@ access-log identity). See the
 [Hosted / HTTP mode](README.md#hosted--http-mode) section of the README
 for the auth model.
 
-> Claude Desktop's stable config schema is stdio-oriented; if your
-> Desktop build does not yet support a remote HTTP MCP server, use the
-> local stdio binary above pointed at the hosted `mvd-api` instead.
+**Claude Desktop:** recent builds add remote servers natively via
+Settings → Connectors → *Add custom connector* → paste the `/mcp` URL.
+On builds without connectors, bridge through
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) (needs Node):
+
+```json
+{
+  "mcpServers": {
+    "mvd": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://<domain>/mcp"]
+    }
+  }
+}
+```
+
+(If the connection stalls on an SSE attempt, add `"--transport",
+"http-only"` to the args.) Alternatively, use the local stdio binary
+above pointed at a local `mvd-api`.
 
 ## Smoke test
 
