@@ -148,6 +148,12 @@ func Frags(r *result.Result, opts FragOptions) (*result.FragResult, error) {
 	// TeamKills carries omitempty, so leaving it 0 is the right shape.
 
 	if !opts.Summary {
+		if filtered == nil {
+			// Log included but the filter matched nothing: serialize as [], so
+			// null stays exclusively the summary-mode "log dropped" signal
+			// (consistent with the {} aggregates and the damage matrix).
+			filtered = []result.FragEntry{}
+		}
 		out.Frags = filtered
 	}
 	return out, nil
@@ -315,6 +321,10 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 	}
 
 	if !opts.Summary {
+		if events == nil {
+			// Same rule as Frags: an included-but-empty log is [], never null.
+			events = []result.DamageEntry{}
+		}
 		out.Events = events
 	}
 

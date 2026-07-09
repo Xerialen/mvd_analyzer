@@ -377,6 +377,20 @@ func TestDamage_MatrixPopulatedWhenFiltered(t *testing.T) {
 	}
 }
 
+func TestFilteredEmptyLogIsArrayNotNull(t *testing.T) {
+	// null log = dropped by summary; [] log = included but the filter matched
+	// nothing. A filter with no hits must serialize the log as [].
+	r := filterFixture()
+	d, _ := Damage(r, DamageOptions{Players: []string{"nobody"}})
+	if d.Events == nil {
+		t.Errorf("filtered-empty damage.events must be [], not null")
+	}
+	f, _ := Frags(r, FragOptions{Players: []string{"nobody"}})
+	if f.Frags == nil {
+		t.Errorf("filtered-empty frags.frags must be [], not null")
+	}
+}
+
 func TestDamage_TimeWindowAndWeapon(t *testing.T) {
 	r := filterFixture()
 	// weapon=rl, window [0.5,3.5]: rl events at t1000,t3000 => total 160.

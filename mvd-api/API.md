@@ -386,6 +386,9 @@ For a kill feed with obituary text, prefer `/events?types=frag`.
 - **`summary`** — `1`/`true` drops the big per-event `frags` log and returns
   only the aggregates (avoids overflowing an LLM context). Orthogonal to the
   filters: it never by itself triggers a recompute.
+- **Empty-log convention** (both `/frags` and `/damage`): `null` log =
+  deliberately dropped by `summary`; `[]` log = included but the filter
+  matched nothing. Aggregates are then `0` / `{}` / `[]`, never `null`.
 
 **Filtering semantics (changed — bug fix).** When ANY scoping filter
 (`players` OR `weapon` OR `from` OR `to`) is active, **every** aggregate
