@@ -2,6 +2,7 @@ package view
 
 import (
 	"errors"
+	"sort"
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-analytics/result"
@@ -25,53 +26,58 @@ var ErrUnavailable = errors.New("result section unavailable")
 // case-significant); weapon / item / kind tokens are matched
 // case-insensitively against their canonical lowercase form.
 
-// FragOptions filters FragResult. Empty fields mean "no filter".
+// FragOptions filters FragResult. Empty fields mean "no filter". From/To
+// are match-relative SECONDS (0 disables that bound), matching getEvents.
 type FragOptions struct {
 	Players []string // killer or victim in this set
 	Weapons []string // weapon token (rl, lg, ...); case-insensitive
+	From    float64  // window start, match-relative seconds (0 = no bound)
+	To      float64  // window end, match-relative seconds (0 = no bound)
+	Summary bool     // drop the per-event Frags log; keep only aggregates
 }
 
 // Frags returns the demo's FragResult, optionally narrowed to the named
-// players / weapons. Returns ErrUnavailable when the demo has no frag log.
+// players / weapons / time window. Returns ErrUnavailable when the demo has
+// no frag log.
+//
+// Two paths, by design:
+//
+//   - UNFILTERED (no players AND no weapon AND no from AND no to): return the
+//     STORED authoritative aggregates unchanged — byte-identical to what the
+//     analyzer produced. These are NOT a pure function of the frag log
+//     (per-player Deaths come from the protocol DeathEvent, and top-level
+//     ByWeapon counts some generic-killer obituaries the log excludes), so a
+//     recompute could not reproduce them. Summary alone still takes this path;
+//     it only drops the log.
+//
+//   - SCOPING FILTER ACTIVE (players OR weapon OR from OR to): RECOMPUTE every
+//     aggregate from the FILTERED frag log so the response is internally
+//     consistent with the entries shown. These log-sourced aggregates reflect
+//     exactly the shown entries and may differ from the authoritative
+//     unfiltered totals for reconnect / unresolved-name edge cases — that is
+//     expected and intended.
 func Frags(r *result.Result, opts FragOptions) (*result.FragResult, error) {
 	if r.Frags == nil {
 		return nil, ErrUnavailable
 	}
 	players := toSet(opts.Players)
 	weapons := toLowerSet(opts.Weapons)
-	if len(players) == 0 && len(weapons) == 0 {
+	if len(players) == 0 && len(weapons) == 0 && opts.From == 0 && opts.To == 0 {
+		if opts.Summary {
+			// Shallow copy so we can drop the log without mutating the shared
+			// stored Result; the aggregate maps stay shared by reference.
+			cp := *r.Frags
+			cp.Frags = nil
+			return &cp, nil
+		}
 		return r.Frags, nil
 	}
 
-	out := &result.FragResult{TotalFrags: r.Frags.TotalFrags}
-	if r.Frags.ByPlayer != nil {
-		out.ByPlayer = make(map[string]*result.PlayerFrags, len(r.Frags.ByPlayer))
-		for name, pf := range r.Frags.ByPlayer {
-			if len(players) > 0 && !players[name] {
-				continue
-			}
-			if len(weapons) > 0 {
-				filtered := &result.PlayerFrags{Kills: pf.Kills, Deaths: pf.Deaths, ByWeapon: map[string]int{}}
-				for wpn, n := range pf.ByWeapon {
-					if weapons[strings.ToLower(wpn)] {
-						filtered.ByWeapon[wpn] = n
-					}
-				}
-				out.ByPlayer[name] = filtered
-			} else {
-				out.ByPlayer[name] = pf
-			}
-		}
-	}
-	if r.Frags.ByWeapon != nil {
-		out.ByWeapon = make(map[string]int, len(r.Frags.ByWeapon))
-		for wpn, n := range r.Frags.ByWeapon {
-			if len(weapons) > 0 && !weapons[strings.ToLower(wpn)] {
-				continue
-			}
-			out.ByWeapon[wpn] = n
-		}
-	}
+	startMs := int32(opts.From * 1000)
+	endMs := int32(opts.To * 1000)
+
+	// Filter the log to the entries the caller asked for.
+	var filtered []result.FragEntry
 	for _, fe := range r.Frags.Frags {
 		if len(weapons) > 0 && !weapons[strings.ToLower(fe.Weapon)] {
 			continue
@@ -79,112 +85,229 @@ func Frags(r *result.Result, opts FragOptions) (*result.FragResult, error) {
 		if len(players) > 0 && !players[fe.Killer] && !players[fe.Victim] {
 			continue
 		}
-		out.Frags = append(out.Frags, fe)
+		if startMs != 0 && fe.Time < startMs {
+			continue
+		}
+		if endMs != 0 && fe.Time > endMs {
+			continue
+		}
+		filtered = append(filtered, fe)
+	}
+
+	// Recompute all aggregates from the filtered log, mirroring the frag
+	// analyzer's rules (frag.go handleObituaryPrint + Finalize):
+	//   - TotalFrags = count of log entries (includes suicides + teamkills).
+	//   - top-level ByWeapon = enemy kills only (!suicide && !teamkill).
+	//   - per-player Kills = killer==P && !suicide && !teamkill.
+	//   - per-player Deaths = victim==P (all deaths, incl. suicide/teamkill).
+	//   - per-player TeamKills = killer==P && teamkill.
+	//   - per-player ByWeapon = as Kills, split by weapon.
+	out := &result.FragResult{
+		TotalFrags: len(filtered),
+		ByWeapon:   map[string]int{},
+		ByPlayer:   map[string]*result.PlayerFrags{},
+	}
+	get := func(name string) *result.PlayerFrags {
+		if len(players) > 0 && !players[name] {
+			return nil
+		}
+		p, ok := out.ByPlayer[name]
+		if !ok {
+			p = &result.PlayerFrags{ByWeapon: map[string]int{}}
+			out.ByPlayer[name] = p
+		}
+		return p
+	}
+	for _, fe := range filtered {
+		if !fe.IsSuicide && !fe.IsTeamKill {
+			out.ByWeapon[fe.Weapon]++
+		}
+		if v := get(fe.Victim); v != nil {
+			v.Deaths++
+		}
+		if k := get(fe.Killer); k != nil {
+			switch {
+			case fe.IsTeamKill:
+				k.TeamKills++
+			case !fe.IsSuicide:
+				k.Kills++
+				k.ByWeapon[fe.Weapon]++
+			}
+		}
+	}
+	// PlayerFrags.ByWeapon has no omitempty, so it must serialize as {} not
+	// null; every player created via get() gets an allocated (possibly empty)
+	// map, matching the analyzer's eager getOrCreatePlayer allocation.
+	// TeamKills carries omitempty, so leaving it 0 is the right shape.
+
+	if !opts.Summary {
+		out.Frags = filtered
 	}
 	return out, nil
 }
 
-// DamageOptions filters DamageResult. Empty fields mean "no filter".
+// DamageOptions filters DamageResult. Empty fields mean "no filter". From/To
+// are match-relative SECONDS (0 disables that bound), matching getEvents.
 type DamageOptions struct {
 	Players []string // attacker or victim in this set
 	Weapons []string // attacker weapon token; "tele"/"stomp" select positional kills; case-insensitive
+	From    float64  // window start, match-relative seconds (0 = no bound)
+	To      float64  // window end, match-relative seconds (0 = no bound)
+	Summary bool     // drop the per-hit Events log; keep only aggregates
 }
 
 // Damage returns the demo's DamageResult, optionally narrowed to the named
-// players / weapons. Telefrags and stomps carry no weapon; a weapon filter
-// treats their implicit weapon as "tele" / "stomp". Returns ErrUnavailable
-// when the demo has no KTX mvdhidden_dmgdone stream.
+// players / weapons / time window. Telefrags and stomps carry no weapon; a
+// weapon filter treats their implicit weapon as "tele" / "stomp". Returns
+// ErrUnavailable when the demo has no KTX mvdhidden_dmgdone stream.
+//
+// Two paths, matching Frags():
+//
+//   - UNFILTERED (no players AND no weapon AND no from AND no to): return the
+//     STORED aggregates unchanged. Summary alone still takes this path; it
+//     only drops the Events log.
+//
+//   - SCOPING FILTER ACTIVE (players OR weapon OR from OR to): RECOMPUTE every
+//     aggregate (TotalDamage, ByPlayer given/taken/byWeapon/EWep buckets,
+//     ByWeapon, Matrix) from the FILTERED per-hit Events, mirroring the damage
+//     analyzer's rules. Damage aggregates are a pure function of Events, so on
+//     a fully in-match stream the recompute reproduces the stored numbers;
+//     they can differ only where the stored aggregates gate out warmup hits
+//     that the Events log (ungated) still carries.
 func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) {
 	if r.Damage == nil {
 		return nil, ErrUnavailable
 	}
 	players := toSet(opts.Players)
 	weapons := toLowerSet(opts.Weapons)
-	if len(players) == 0 && len(weapons) == 0 {
+	if len(players) == 0 && len(weapons) == 0 && opts.From == 0 && opts.To == 0 {
+		if opts.Summary {
+			cp := *r.Damage
+			cp.Events = nil
+			return &cp, nil
+		}
 		return r.Damage, nil
 	}
 
 	d := r.Damage
-	out := &result.DamageResult{TotalDamage: d.TotalDamage}
-	if d.ByPlayer != nil {
-		out.ByPlayer = make(map[string]*result.PlayerDamage, len(d.ByPlayer))
-		for name, pd := range d.ByPlayer {
-			if len(players) > 0 && !players[name] {
-				continue
-			}
-			if len(weapons) > 0 {
-				clone := *pd
-				clone.ByWeapon = map[string]int{}
-				for wpn, n := range pd.ByWeapon {
-					if weapons[strings.ToLower(wpn)] {
-						clone.ByWeapon[wpn] = n
-					}
-				}
-				out.ByPlayer[name] = &clone
-			} else {
-				out.ByPlayer[name] = pd
-			}
+	startMs := int32(opts.From * 1000)
+	endMs := int32(opts.To * 1000)
+
+	matchEvent := func(attacker, victim, weapon string, tMs int32) bool {
+		if len(weapons) > 0 && !weapons[strings.ToLower(weapon)] {
+			return false
 		}
+		if len(players) > 0 && !players[attacker] && !players[victim] {
+			return false
+		}
+		if startMs != 0 && tMs < startMs {
+			return false
+		}
+		if endMs != 0 && tMs > endMs {
+			return false
+		}
+		return true
 	}
-	if d.ByWeapon != nil {
-		out.ByWeapon = make(map[string]int, len(d.ByWeapon))
-		for wpn, n := range d.ByWeapon {
-			if len(weapons) > 0 && !weapons[strings.ToLower(wpn)] {
-				continue
-			}
-			out.ByWeapon[wpn] = n
-		}
-	}
-	for _, mp := range d.Matrix {
-		if len(players) > 0 && !players[mp.Attacker] && !players[mp.Victim] {
-			continue
-		}
-		if len(weapons) > 0 {
-			pair := result.DamagePair{Attacker: mp.Attacker, Victim: mp.Victim, ByWeapon: map[string]int{}}
-			for wpn, n := range mp.ByWeapon {
-				if weapons[strings.ToLower(wpn)] {
-					pair.ByWeapon[wpn] = n
-					pair.Damage += n
-				}
-			}
-			if pair.Damage == 0 {
-				continue
-			}
-			out.Matrix = append(out.Matrix, pair)
-		} else {
-			out.Matrix = append(out.Matrix, mp)
-		}
-	}
+
+	// Filter the per-hit log first, then recompute the aggregates from it so
+	// every figure is consistent with exactly the hits shown.
+	var events []result.DamageEntry
 	for _, de := range d.Events {
-		if len(weapons) > 0 && !weapons[strings.ToLower(de.Weapon)] {
-			continue
+		if matchEvent(de.Attacker, de.Victim, de.Weapon, de.Time) {
+			events = append(events, de)
 		}
-		if len(players) > 0 && !players[de.Attacker] && !players[de.Victim] {
-			continue
-		}
-		out.Events = append(out.Events, de)
 	}
-	// Telefrags / stomps carry no weapon; treat their implicit weapon as
-	// "tele" / "stomp" so weapon=tele|stomp retrieves them and any other
-	// weapon filter excludes them.
-	for _, tf := range d.Telefrags {
-		if len(weapons) > 0 && !weapons["tele"] {
+
+	out := &result.DamageResult{
+		ByWeapon: map[string]int{},
+		ByPlayer: map[string]*result.PlayerDamage{},
+	}
+	matrix := map[string]*result.DamagePair{}
+	getP := func(name string) *result.PlayerDamage {
+		if len(players) > 0 && !players[name] {
+			return nil
+		}
+		p, ok := out.ByPlayer[name]
+		if !ok {
+			p = &result.PlayerDamage{ByWeapon: map[string]int{}}
+			out.ByPlayer[name] = p
+		}
+		return p
+	}
+	for _, de := range events {
+		// Match-level aggregates (TotalDamage, top-level ByWeapon, Matrix) count
+		// every SHOWN hit — they describe the entries, not a player role, so
+		// they are NOT gated by the players set (a hit shown because its victim
+		// is in the set still counts its enemy pair in the matrix). Only the
+		// per-player ByPlayer map is scoped to the set, via getP.
+		out.TotalDamage += de.Damage
+		enemy := de.Attacker != "world" && !de.IsSelf && !de.IsTeam
+		if enemy {
+			out.ByWeapon[de.Weapon] += de.Damage
+			addPair(matrix, de.Attacker, de.Victim, de.Weapon, de.Damage)
+		}
+
+		if vp := getP(de.Victim); vp != nil {
+			vp.Taken += de.Damage
+			if de.IsEnv {
+				vp.TakenEnv += de.Damage
+			}
+		}
+		if de.Attacker == "world" {
+			// World-sourced hit: no attacker to credit (mirrors the analyzer's
+			// `if isWorld { continue }`; Attacker=="world" iff the wire slot
+			// was <0). Note a non-world environmental hit still credits its
+			// player attacker, matching the analyzer.
 			continue
 		}
-		if len(players) > 0 && !players[tf.Attacker] && !players[tf.Victim] {
+		if ap := getP(de.Attacker); ap != nil {
+			switch {
+			case de.IsSelf:
+				ap.GivenSelf += de.Damage
+			case de.IsTeam:
+				ap.GivenTeam += de.Damage
+			default:
+				ap.Given += de.Damage
+				ap.ByWeapon[de.Weapon] += de.Damage
+				addVictimBucket(ap, de.VictimWep, de.Damage)
+			}
+		}
+	}
+	out.Matrix = flattenDamageMatrix(matrix)
+
+	// Positional kills (telefrags/stomps) aren't in Events. Filter the stored
+	// lists directly, treating their implicit weapon as "tele"/"stomp", and
+	// recompute the per-player counts from what survives.
+	for _, tf := range d.Telefrags {
+		if !matchEvent(tf.Attacker, tf.Victim, "tele", tf.Time) {
 			continue
 		}
 		out.Telefrags = append(out.Telefrags, tf)
+		if !tf.IsTeam && tf.Attacker != "world" && tf.Attacker != tf.Victim {
+			if ap := getP(tf.Attacker); ap != nil {
+				ap.Telefrags++
+			}
+		}
 	}
 	for _, st := range d.Stomps {
-		if len(weapons) > 0 && !weapons["stomp"] {
-			continue
-		}
-		if len(players) > 0 && !players[st.Attacker] && !players[st.Victim] {
+		if !matchEvent(st.Attacker, st.Victim, "stomp", st.Time) {
 			continue
 		}
 		out.Stomps = append(out.Stomps, st)
+		if !st.IsTeam && st.Attacker != "world" && st.Attacker != st.Victim {
+			if ap := getP(st.Attacker); ap != nil {
+				ap.Stomps++
+			}
+		}
 	}
+
+	if !opts.Summary {
+		out.Events = events
+	}
+
+	// Scoreboard is a KTX end-of-match cross-check keyed by player; it has no
+	// per-event provenance to recompute, so narrow it by the players filter
+	// (as before) and pass the deltas through unchanged.
 	if d.Scoreboard != nil {
 		sb := &result.DamageReconciliation{ByPlayer: map[string]*result.DamageDelta{}}
 		for name, dd := range d.Scoreboard.ByPlayer {
@@ -196,6 +319,57 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 		out.Scoreboard = sb
 	}
 	return out, nil
+}
+
+// addPair aggregates one attacker→victim hit into the damage matrix, mirroring
+// the analyzer's addToMatrix.
+func addPair(m map[string]*result.DamagePair, attacker, victim, weapon string, dmg int) {
+	key := attacker + "\x00" + victim
+	p, ok := m[key]
+	if !ok {
+		p = &result.DamagePair{Attacker: attacker, Victim: victim, ByWeapon: map[string]int{}}
+		m[key] = p
+	}
+	p.Damage += dmg
+	p.ByWeapon[weapon] += dmg
+}
+
+// flattenDamageMatrix flattens + sorts the matrix deterministically, mirroring
+// the analyzer's flattenMatrix (attacker, then victim).
+func flattenDamageMatrix(m map[string]*result.DamagePair) []result.DamagePair {
+	out := make([]result.DamagePair, 0, len(m))
+	for _, p := range m {
+		out = append(out, *p)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Attacker != out[j].Attacker {
+			return out[i].Attacker < out[j].Attacker
+		}
+		return out[i].Victim < out[j].Victim
+	})
+	return out
+}
+
+// addVictimBucket credits enemy-given damage to the victim-weapon (EWep)
+// buckets from the hit's recorded VictimWep class, mirroring the analyzer's
+// addVictimWeaponBucket (which classifies the victim's StatItems bitfield into
+// the same "both"/"rl"/"lg"/"mid"/sg classes).
+func addVictimBucket(p *result.PlayerDamage, class string, dmg int) {
+	switch class {
+	case "both":
+		p.EnemyVsBoth += dmg
+		p.EWep += dmg
+	case "rl":
+		p.EnemyVsRL += dmg
+		p.EWep += dmg
+	case "lg":
+		p.EnemyVsLG += dmg
+		p.EWep += dmg
+	case "mid":
+		p.EnemyVsMid += dmg
+	default:
+		p.EnemyVsSG += dmg
+	}
 }
 
 // ItemOptions filters ItemsResult. Empty fields mean "no filter".

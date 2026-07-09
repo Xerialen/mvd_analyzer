@@ -2,6 +2,7 @@ package view
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/mvd-analyzer/mvd-analytics/result"
@@ -111,6 +112,282 @@ func TestWeaponPickups_Source(t *testing.T) {
 	got := WeaponPickups(r, WeaponPickupOptions{Source: "backpack"})
 	if len(got) != 1 || got[0].Source != "backpack" {
 		t.Errorf("source=backpack: got %v", got)
+	}
+}
+
+// filterFixture is a synthetic result with hand-authored frag/damage logs
+// including a suicide and a teamkill across several timestamps. The STORED
+// aggregates are deliberately NOT a recompute of the log (mimicking the real
+// pipeline, where Deaths / some ByWeapon come from other authoritative
+// sources), so a test can prove the unfiltered path returns the stored values
+// verbatim rather than recomputing.
+func filterFixture() *result.Result {
+	return &result.Result{
+		Frags: &result.FragResult{
+			// Deliberately "wrong" vs the log (e.g. bogus TotalFrags/ByWeapon)
+			// so unfiltered==stored is distinguishable from a recompute.
+			TotalFrags: 99,
+			ByWeapon:   map[string]int{"authoritative": 1},
+			ByPlayer: map[string]*result.PlayerFrags{
+				"alpha": {Kills: 42, Deaths: 7, ByWeapon: map[string]int{"rl": 42}},
+			},
+			Frags: []result.FragEntry{
+				{Time: 1000, Killer: "alpha", Victim: "bravo", Weapon: "rl"},
+				{Time: 2000, Killer: "bravo", Victim: "alpha", Weapon: "lg"},
+				{Time: 3000, Killer: "alpha", Victim: "bravo", Weapon: "rl"},
+				{Time: 4000, Killer: "alpha", Victim: "alpha", Weapon: "rl", IsSuicide: true},
+				{Time: 5000, Killer: "alpha", Victim: "charlie", Weapon: "rl", IsTeamKill: true},
+			},
+		},
+		Damage: &result.DamageResult{
+			TotalDamage: 9999, // bogus vs log, to distinguish stored from recompute
+			ByWeapon:    map[string]int{"authoritative": 1},
+			ByPlayer: map[string]*result.PlayerDamage{
+				"alpha": {Given: 999, Taken: 1, ByWeapon: map[string]int{"rl": 999}},
+			},
+			Matrix: []result.DamagePair{
+				{Attacker: "zzz", Victim: "yyy", Damage: 1, ByWeapon: map[string]int{"rl": 1}},
+			},
+			Events: []result.DamageEntry{
+				{Time: 1000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 100, VictimWep: "rl"},
+				{Time: 2000, Attacker: "bravo", Victim: "alpha", Weapon: "lg", Damage: 40, VictimWep: "lg"},
+				{Time: 3000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 60, VictimWep: "sg"},
+				{Time: 4000, Attacker: "alpha", Victim: "alpha", Weapon: "rl", Damage: 25, IsSelf: true},
+			},
+		},
+	}
+}
+
+func TestFrags_UnfilteredReturnsStored(t *testing.T) {
+	r := filterFixture()
+	out, err := Frags(r, FragOptions{})
+	if err != nil {
+		t.Fatalf("Frags: %v", err)
+	}
+	if out != r.Frags {
+		t.Fatalf("unfiltered Frags should return the stored pointer unchanged")
+	}
+	if !reflect.DeepEqual(out, r.Frags) {
+		t.Fatalf("unfiltered Frags != stored")
+	}
+}
+
+func TestFrags_SummaryNoFilterKeepsStoredAggregates(t *testing.T) {
+	r := filterFixture()
+	out, err := Frags(r, FragOptions{Summary: true})
+	if err != nil {
+		t.Fatalf("Frags: %v", err)
+	}
+	if out.Frags != nil {
+		t.Errorf("summary should drop the log, got %d entries", len(out.Frags))
+	}
+	// Aggregates must be the STORED (authoritative) ones, not a recompute.
+	if out.TotalFrags != 99 || out.ByWeapon["authoritative"] != 1 {
+		t.Errorf("summary w/o filter must keep stored aggregates, got total=%d byWeapon=%v",
+			out.TotalFrags, out.ByWeapon)
+	}
+	// The shared stored Result must not be mutated.
+	if r.Frags.Frags == nil {
+		t.Errorf("summary mutated the shared stored Result (Frags nil'd)")
+	}
+}
+
+func TestFrags_PlayerFilterRecomputes(t *testing.T) {
+	r := filterFixture()
+	out, err := Frags(r, FragOptions{Players: []string{"alpha"}})
+	if err != nil {
+		t.Fatalf("Frags: %v", err)
+	}
+	// Filtered log: every entry involves alpha (all 5). TotalFrags=5.
+	if out.TotalFrags != 5 {
+		t.Errorf("TotalFrags = %d, want 5 (recomputed from filtered log)", out.TotalFrags)
+	}
+	// ByPlayer restricted to alpha.
+	if len(out.ByPlayer) != 1 || out.ByPlayer["alpha"] == nil {
+		t.Fatalf("byPlayer = %v, want only alpha", out.ByPlayer)
+	}
+	a := out.ByPlayer["alpha"]
+	// alpha kills: t1000 rl, t3000 rl (enemy). Suicide (t4000) and teamkill
+	// (t5000) excluded from kills.
+	if a.Kills != 2 {
+		t.Errorf("alpha.Kills = %d, want 2", a.Kills)
+	}
+	// alpha deaths: victim in t2000 (killed by bravo) + t4000 suicide = 2.
+	if a.Deaths != 2 {
+		t.Errorf("alpha.Deaths = %d, want 2", a.Deaths)
+	}
+	if a.TeamKills != 1 {
+		t.Errorf("alpha.TeamKills = %d, want 1", a.TeamKills)
+	}
+	if !reflect.DeepEqual(a.ByWeapon, map[string]int{"rl": 2}) {
+		t.Errorf("alpha.ByWeapon = %v, want {rl:2}", a.ByWeapon)
+	}
+	// top-level ByWeapon: enemy kills only (excl suicide+teamkill):
+	// t1000 rl, t2000 lg, t3000 rl => rl:2, lg:1.
+	if !reflect.DeepEqual(out.ByWeapon, map[string]int{"rl": 2, "lg": 1}) {
+		t.Errorf("ByWeapon = %v, want {rl:2, lg:1}", out.ByWeapon)
+	}
+}
+
+func TestFrags_WeaponFilterRecomputes(t *testing.T) {
+	r := filterFixture()
+	out, err := Frags(r, FragOptions{Weapons: []string{"RL"}})
+	if err != nil {
+		t.Fatalf("Frags: %v", err)
+	}
+	// rl entries: t1000, t3000, t4000(suicide), t5000(teamkill) => 4 total.
+	if out.TotalFrags != 4 {
+		t.Errorf("TotalFrags = %d, want 4", out.TotalFrags)
+	}
+	// top-level ByWeapon: enemy rl kills only = t1000, t3000 => rl:2.
+	if !reflect.DeepEqual(out.ByWeapon, map[string]int{"rl": 2}) {
+		t.Errorf("ByWeapon = %v, want {rl:2}", out.ByWeapon)
+	}
+	// alpha: 2 enemy rl kills, 1 self-death (suicide), 1 teamkill.
+	a := out.ByPlayer["alpha"]
+	if a == nil || a.Kills != 2 || a.Deaths != 1 || a.TeamKills != 1 {
+		t.Errorf("alpha = %+v, want kills=2 deaths=1 tk=1", a)
+	}
+}
+
+func TestFrags_TimeWindow(t *testing.T) {
+	r := filterFixture()
+	// from-only: keep entries at t>=2.5s => t3000,t4000,t5000 (3).
+	if out, _ := Frags(r, FragOptions{From: 2.5}); out.TotalFrags != 3 {
+		t.Errorf("from=2.5: TotalFrags=%d, want 3", out.TotalFrags)
+	}
+	// to-only: keep entries at t<=2.5s => t1000,t2000 (2).
+	if out, _ := Frags(r, FragOptions{To: 2.5}); out.TotalFrags != 2 {
+		t.Errorf("to=2.5: TotalFrags=%d, want 2", out.TotalFrags)
+	}
+	// both: [1.5,4.5] => t2000,t3000,t4000 (3).
+	if out, _ := Frags(r, FragOptions{From: 1.5, To: 4.5}); out.TotalFrags != 3 {
+		t.Errorf("[1.5,4.5]: TotalFrags=%d, want 3", out.TotalFrags)
+	}
+}
+
+func TestFrags_CombinedFilters(t *testing.T) {
+	r := filterFixture()
+	// players=alpha, weapon=rl, window [0.5,3.5]: rl+alpha in [1,3.5] =>
+	// t1000, t3000 (both alpha rl enemy kills). t4000 suicide is >3.5.
+	out, _ := Frags(r, FragOptions{Players: []string{"alpha"}, Weapons: []string{"rl"}, From: 0.5, To: 3.5})
+	if out.TotalFrags != 2 {
+		t.Errorf("combined: TotalFrags=%d, want 2", out.TotalFrags)
+	}
+	a := out.ByPlayer["alpha"]
+	if a == nil || a.Kills != 2 || a.Deaths != 0 || a.TeamKills != 0 {
+		t.Errorf("combined alpha = %+v, want kills=2 deaths=0 tk=0", a)
+	}
+}
+
+func TestFrags_SummaryUnderFilterDropsLog(t *testing.T) {
+	r := filterFixture()
+	out, _ := Frags(r, FragOptions{Players: []string{"alpha"}, Summary: true})
+	if out.Frags != nil {
+		t.Errorf("summary+filter should drop the log")
+	}
+	if out.TotalFrags != 5 { // still recomputed from the filtered log
+		t.Errorf("TotalFrags=%d, want 5 (recomputed)", out.TotalFrags)
+	}
+}
+
+func TestDamage_UnfilteredReturnsStored(t *testing.T) {
+	r := filterFixture()
+	out, err := Damage(r, DamageOptions{})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out != r.Damage || !reflect.DeepEqual(out, r.Damage) {
+		t.Fatalf("unfiltered Damage should return stored unchanged")
+	}
+	// Summary w/o filter keeps stored aggregates, drops Events only.
+	so, _ := Damage(r, DamageOptions{Summary: true})
+	if so.Events != nil {
+		t.Errorf("summary should drop Events")
+	}
+	if so.TotalDamage != 9999 || so.ByWeapon["authoritative"] != 1 {
+		t.Errorf("summary must keep stored aggregates, got total=%d", so.TotalDamage)
+	}
+	if r.Damage.Events == nil {
+		t.Errorf("summary mutated the shared stored Result (Events nil'd)")
+	}
+}
+
+func TestDamage_FilteredRecomputeMatchesStoredOnCleanStream(t *testing.T) {
+	// A DamageResult whose Events are a full, in-match, self-consistent stream:
+	// recomputing aggregates from the (unfiltered-by-value) Events must equal a
+	// hand-computed authoritative set. Here we filter by a players set covering
+	// everyone so the recompute path runs but no event is dropped.
+	r := filterFixture()
+	out, err := Damage(r, DamageOptions{Players: []string{"alpha", "bravo"}})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	// Events involving alpha or bravo = all 4.
+	if len(out.Events) != 4 {
+		t.Fatalf("events = %d, want 4", len(out.Events))
+	}
+	// TotalDamage = 100+40+60+25 = 225.
+	if out.TotalDamage != 225 {
+		t.Errorf("TotalDamage = %d, want 225", out.TotalDamage)
+	}
+	// alpha: Given = 100 (t1000) + 60 (t3000) = 160; GivenSelf = 25 (t4000);
+	// Taken = 40 (from bravo) + 25 (self) = 65.
+	a := out.ByPlayer["alpha"]
+	if a.Given != 160 || a.GivenSelf != 25 || a.Taken != 65 {
+		t.Errorf("alpha = given=%d givenSelf=%d taken=%d, want 160/25/65", a.Given, a.GivenSelf, a.Taken)
+	}
+	if !reflect.DeepEqual(a.ByWeapon, map[string]int{"rl": 160}) {
+		t.Errorf("alpha.ByWeapon = %v, want {rl:160}", a.ByWeapon)
+	}
+	// alpha EWep buckets: t1000 victim rl (EnemyVsRL 100, EWep 100),
+	// t3000 victim sg (EnemyVsSG 60, no EWep). EWep=100.
+	if a.EnemyVsRL != 100 || a.EnemyVsSG != 60 || a.EWep != 100 {
+		t.Errorf("alpha buckets: rl=%d sg=%d ewep=%d, want 100/60/100", a.EnemyVsRL, a.EnemyVsSG, a.EWep)
+	}
+	// bravo: Given = 40 (t2000, victim alpha holding lg); Taken = 100+60 = 160.
+	b := out.ByPlayer["bravo"]
+	if b.Given != 40 || b.Taken != 160 {
+		t.Errorf("bravo = given=%d taken=%d, want 40/160", b.Given, b.Taken)
+	}
+	if b.EnemyVsLG != 40 || b.EWep != 40 {
+		t.Errorf("bravo buckets: lg=%d ewep=%d, want 40/40", b.EnemyVsLG, b.EWep)
+	}
+	// top-level ByWeapon: enemy dmg by weapon = rl:160 (alpha), lg:40 (bravo).
+	if !reflect.DeepEqual(out.ByWeapon, map[string]int{"rl": 160, "lg": 40}) {
+		t.Errorf("ByWeapon = %v, want {rl:160, lg:40}", out.ByWeapon)
+	}
+}
+
+func TestDamage_MatrixPopulatedWhenFiltered(t *testing.T) {
+	r := filterFixture()
+	// The QA-reported gap: filtered responses used to leave matrix null.
+	out, _ := Damage(r, DamageOptions{Players: []string{"alpha", "bravo"}})
+	if out.Matrix == nil {
+		t.Fatalf("matrix must be populated when filtered")
+	}
+	// Enemy pairs only (self-damage excluded from matrix):
+	//   alpha->bravo: 100+60 = 160 ; bravo->alpha: 40.
+	want := []result.DamagePair{
+		{Attacker: "alpha", Victim: "bravo", Damage: 160, ByWeapon: map[string]int{"rl": 160}},
+		{Attacker: "bravo", Victim: "alpha", Damage: 40, ByWeapon: map[string]int{"lg": 40}},
+	}
+	if !reflect.DeepEqual(out.Matrix, want) {
+		t.Errorf("matrix = %+v, want %+v", out.Matrix, want)
+	}
+}
+
+func TestDamage_TimeWindowAndWeapon(t *testing.T) {
+	r := filterFixture()
+	// weapon=rl, window [0.5,3.5]: rl events at t1000,t3000 => total 160.
+	out, _ := Damage(r, DamageOptions{Weapons: []string{"rl"}, From: 0.5, To: 3.5})
+	if len(out.Events) != 2 || out.TotalDamage != 160 {
+		t.Errorf("rl [0.5,3.5]: events=%d total=%d, want 2/160", len(out.Events), out.TotalDamage)
+	}
+	// to-only 1.5s: only t1000 (alpha->bravo 100).
+	out2, _ := Damage(r, DamageOptions{To: 1.5})
+	if len(out2.Events) != 1 || out2.TotalDamage != 100 {
+		t.Errorf("to=1.5: events=%d total=%d, want 1/100", len(out2.Events), out2.TotalDamage)
 	}
 }
 

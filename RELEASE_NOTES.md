@@ -5,6 +5,30 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## 2026-07-09
+
+- **`getFrags` / `getDamage` (`/frags`, `/damage`): filters now narrow ALL
+  aggregates + new `from`/`to` window + `summary` mode (no schema change).**
+  Three changes to the frag/damage endpoints and their MCP tools:
+  - **Filters narrow every aggregate (bug fix).** Previously a `players` /
+    `weapon` filter only narrowed the per-event log and the `byPlayer` keys,
+    leaving `totalFrags` / `totalDamage` / `byWeapon` / `matrix` at their
+    unfiltered values — an internally inconsistent response. Now, when any
+    scoping filter is active, every aggregate is **recomputed from the filtered
+    log** so it matches exactly the entries shown. With no filter the
+    authoritative stored totals are returned unchanged (byte-identical to
+    before) — the unfiltered path is untouched. Filtered damage responses now
+    also populate `matrix` / `events` (previously left null). Filtered
+    aggregates are log-sourced and may differ from the unfiltered totals for
+    reconnect / unresolved-name edge cases (documented in API.md §4.5/4.5b).
+  - **`from` / `to` time window** (REST; `startTime` / `endTime` on the MCP
+    tools) — match-relative **seconds**, keep only frags/hits in the window.
+  - **`summary`** — drop the big per-event log and return only the aggregates
+    (avoids overflowing an LLM context). Orthogonal to the filters.
+  View-layer only (`mvd-analytics/view/sections.go` + mvd-api handlers + mvd-mcp
+  tool inputs/proxy); no `result` schema change, no golden regen. `getAim` is
+  unchanged (separate follow-up).
+
 ## 2026-07-08
 
 - **Fix: cold demo loads failed with a 502 `hub_upstream` hash mismatch.** The hub's `demo_sha256` is the hash of the *uncompressed* `.mvd`, but the CDN serves gzip and the phase-3 integrity check hashed the gzipped download — so every un-cached `loadDemo`/`POST /v1/demos/{id}` was rejected. The check now authenticates the *decompressed* content (or a raw `.mvd` fallback) against `demo_sha256`; corruption is still rejected. mvd-api change; redeploy it.

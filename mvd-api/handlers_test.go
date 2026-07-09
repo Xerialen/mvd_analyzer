@@ -175,6 +175,88 @@ func TestShotStreamEndpoints_Absent(t *testing.T) {
 	}
 }
 
+// fragDamageStore returns a store whose demo carries a small frag + damage
+// log, for exercising the /frags and /damage filter params.
+func fragDamageStore() *fakeStore {
+	r := stubResult()
+	r.Frags = &result.FragResult{
+		TotalFrags: 2,
+		ByWeapon:   map[string]int{"rl": 2},
+		ByPlayer: map[string]*result.PlayerFrags{
+			"bps":    {Kills: 1, Deaths: 1, ByWeapon: map[string]int{"rl": 1}},
+			"milton": {Kills: 1, Deaths: 1, ByWeapon: map[string]int{"rl": 1}},
+		},
+		Frags: []result.FragEntry{
+			{Time: 10000, Killer: "bps", Victim: "milton", Weapon: "rl"},
+			{Time: 20000, Killer: "milton", Victim: "bps", Weapon: "rl"},
+		},
+	}
+	r.Damage = &result.DamageResult{
+		TotalDamage: 200,
+		ByWeapon:    map[string]int{"rl": 200},
+		ByPlayer: map[string]*result.PlayerDamage{
+			"bps":    {Given: 100, Taken: 100, ByWeapon: map[string]int{"rl": 100}},
+			"milton": {Given: 100, Taken: 100, ByWeapon: map[string]int{"rl": 100}},
+		},
+		Matrix: []result.DamagePair{
+			{Attacker: "bps", Victim: "milton", Damage: 100, ByWeapon: map[string]int{"rl": 100}},
+			{Attacker: "milton", Victim: "bps", Damage: 100, ByWeapon: map[string]int{"rl": 100}},
+		},
+		Events: []result.DamageEntry{
+			{Time: 10000, Attacker: "bps", Victim: "milton", Weapon: "rl", Damage: 100, VictimWep: "rl"},
+			{Time: 20000, Attacker: "milton", Victim: "bps", Weapon: "rl", Damage: 100, VictimWep: "rl"},
+		},
+	}
+	return &fakeStore{byID: map[string]*result.Result{"gameId:42": r}}
+}
+
+func TestFragsParams_WindowAndSummary(t *testing.T) {
+	srv := newTestServer(t, fragDamageStore())
+	defer srv.Close()
+
+	// summary drops the frags log but keeps aggregates.
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/frags?summary=1", 200)
+	if resp["frags"] != nil {
+		t.Errorf("summary should drop frags log, got %v", resp["frags"])
+	}
+	if int(resp["totalFrags"].(float64)) != 2 {
+		t.Errorf("totalFrags = %v, want 2 (stored, summary keeps authoritative)", resp["totalFrags"])
+	}
+
+	// window from=15s keeps only the t=20s frag; aggregates recompute to 1.
+	resp = getJSON(t, srv.URL+"/v1/demos/gameId:42/frags?from=15", 200)
+	if int(resp["totalFrags"].(float64)) != 1 {
+		t.Errorf("from=15: totalFrags = %v, want 1", resp["totalFrags"])
+	}
+
+	// malformed from is a clean 400 invalid_param.
+	body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/frags?from=banana")
+	if status != 400 {
+		t.Errorf("from=banana: status = %d, want 400 (body=%s)", status, string(body))
+	}
+}
+
+func TestDamageParams_MatrixWhenFiltered(t *testing.T) {
+	srv := newTestServer(t, fragDamageStore())
+	defer srv.Close()
+
+	// Filtered by a player => matrix must be populated (not null), and Events
+	// recomputed. bps is attacker/victim in both hits, so both survive.
+	resp := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?players=bps", 200)
+	if resp["matrix"] == nil {
+		t.Errorf("filtered damage must populate matrix, got null")
+	}
+	if int(resp["totalDamage"].(float64)) != 200 {
+		t.Errorf("totalDamage = %v, want 200", resp["totalDamage"])
+	}
+
+	// malformed to is a clean 400.
+	body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/damage?to=banana")
+	if status != 400 {
+		t.Errorf("to=banana: status = %d, want 400 (body=%s)", status, string(body))
+	}
+}
+
 func newTestServer(t *testing.T, store demoStore) *httptest.Server {
 	t.Helper()
 	return newTestServerMaps(t, store, "")

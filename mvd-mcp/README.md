@@ -259,9 +259,18 @@ Frag aggregates + the full kill log. Cheaper than aggregating
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| `demoId`  | `string` (required) | — | — |
-| `players` | `string[]` | all | Restrict aggregates + log to entries involving these (killer OR victim) |
-| `weapon`  | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
+| `demoId`    | `string` (required) | — | — |
+| `players`   | `string[]` | all | Restrict aggregates + log to entries involving these (killer OR victim) |
+| `weapon`    | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
+| `startTime` | `number` | match start | Window start, match-relative **seconds** (keep kills at `time ≥ startTime`) |
+| `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep kills at `time ≤ endTime`) |
+| `summary`   | `bool` | `false` | Return only aggregates, dropping the big per-event kill log |
+
+When any scoping filter (`players` / `weapon` / `startTime` / `endTime`) is
+set, **every** aggregate is recomputed from the filtered kill log (consistent
+with the entries shown); with none set the authoritative stored totals are
+returned. Filtered aggregates are log-sourced and may differ slightly from the
+unfiltered totals for reconnect / unresolved-name edge cases.
 
 Output: `result.FragResult` —
 `{ totalFrags, byPlayer: {name: {kills, deaths, byWeapon}}, byWeapon: {weapon: count}, frags: [{time, killer, victim, weapon, isSuicide, isTeamKill}, ...] }`.
@@ -275,9 +284,18 @@ time-ordered per-hit log.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| `demoId`  | `string` (required) | — | — |
-| `players` | `string[]` | all | Restrict aggregates + log to entries involving these (attacker OR victim) |
-| `weapon`  | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
+| `demoId`    | `string` (required) | — | — |
+| `players`   | `string[]` | all | Restrict aggregates + log to entries involving these (attacker OR victim) |
+| `weapon`    | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
+| `startTime` | `number` | match start | Window start, match-relative **seconds** (keep hits at `time ≥ startTime`) |
+| `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep hits at `time ≤ endTime`) |
+| `summary`   | `bool` | `false` | Return only aggregates, dropping the big per-hit damage log |
+
+When any scoping filter (`players` / `weapon` / `startTime` / `endTime`) is
+set, **every** aggregate (`totalDamage`, `byPlayer`, `byWeapon`, `matrix`) is
+recomputed from the filtered per-hit log — this also populates `matrix` /
+`events` on filtered responses (previously null). With none set the
+authoritative stored totals are returned.
 
 Output: `result.DamageResult` — `{ totalDamage, byWeapon, byPlayer: {name:
 {given, taken, givenTeam, givenSelf, takenEnv, byWeapon, enemyVsSg,

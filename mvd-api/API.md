@@ -84,7 +84,10 @@ weapon / item / kind / loc / layout tokens.
   `reducers=h=min,a=last`. Names come from the reducer registry in
   RESULT_SCHEMA.md.
 - **`from` / `to`** — match-relative **seconds**. Omit for the whole
-  match.
+  match. Honoured by `events`, `stream-slice`, `loc-trails`, `chat`,
+  `region-control`, and (schema-unchanged) `frags` / `damage`.
+- **`summary`** (`/frags`, `/damage`) — `1`/`true` drops the big per-event
+  log and returns only the aggregates.
 - **`time`** — match-relative **seconds**; **required** on `/state-at`.
 - **`windowMs`** — integer milliseconds (`/buckets`, `/region-control`).
 - **`loc`** — `name` (default) resolves loc indices to names; `index`
@@ -372,14 +375,36 @@ mode, antilag, midair, instagib, …). Shape: `result.MetadataResult` →
 
 ### 4.5 `GET /v1/demos/{id}/frags`
 
-Params: `players`, `weapon`. Total + per-player + per-weapon breakdown +
-the full chronological kill log. Shape: `result.FragResult` →
+Params: `players`, `weapon`, `from`, `to`, `summary`. Total + per-player +
+per-weapon breakdown + the full chronological kill log. Shape:
+`result.FragResult` →
 [RESULT_SCHEMA.md §FragResult](../mvd-analytics/RESULT_SCHEMA.md#fragresult-frags).
 For a kill feed with obituary text, prefer `/events?types=frag`.
 
+- **`from` / `to`** — match-relative SECONDS (float); keep only kills at
+  `time ≥ from` / `time ≤ to`. `0` disables that bound (the default).
+- **`summary`** — `1`/`true` drops the big per-event `frags` log and returns
+  only the aggregates (avoids overflowing an LLM context). Orthogonal to the
+  filters: it never by itself triggers a recompute.
+
+**Filtering semantics (changed — bug fix).** When ANY scoping filter
+(`players` OR `weapon` OR `from` OR `to`) is active, **every** aggregate
+(`totalFrags`, `byPlayer`, `byWeapon`) is **recomputed from the filtered kill
+log** so the response is internally consistent with the entries shown — not
+just the `frags` list and `byPlayer` keys as before. With **no** scoping filter
+the response is the authoritative stored totals, unchanged and byte-identical
+to prior behaviour. Recomputed (filtered) aggregates are log-sourced: they
+reflect exactly the shown entries and may differ from the authoritative
+unfiltered totals for reconnect / unresolved-name edge cases (per-player
+`deaths` in the unfiltered result come from the protocol death signal, and
+top-level `byWeapon` counts some generic-killer obituaries the log omits — so a
+filtered recompute cannot reproduce those exactly, by construction). `players`
+matches killer OR victim; `weapon` matches the kill weapon.
+
 ### 4.5b `GET /v1/demos/{id}/damage`
 
-Params: `players`, `weapon`. Per-hit damage reconstructed from the KTX
+Params: `players`, `weapon`, `from`, `to`, `summary`. Per-hit damage
+reconstructed from the KTX
 `mvdhidden_dmgdone` stream: total + per-player (`given`/`taken`/team/self,
 per-weapon, and the **EWep** victim-weapon buckets
 `enemyVsSg/enemyVsMid/enemyVsLg/enemyVsRl/enemyVsBoth` where
@@ -396,6 +421,22 @@ unbound figure with the `score*` bounded KTX figure). The `weapon` filter
 matches the **attacker's** weapon; the EWep buckets are keyed on the
 **victim's** held weapons. `players` matches attacker OR victim. For the
 raw time-ordered log alone use `/events?types=damage`.
+
+- **`from` / `to`** — match-relative SECONDS (float); keep only hits at
+  `time ≥ from` / `time ≤ to`. `0` disables that bound (the default).
+- **`summary`** — `1`/`true` drops the big per-hit `events` log and returns
+  only the aggregates. Orthogonal to the filters.
+
+**Filtering semantics (changed — bug fix).** When ANY scoping filter
+(`players` OR `weapon` OR `from` OR `to`) is active, **every** aggregate
+(`totalDamage`, `byPlayer` given/taken/byWeapon/EWep buckets, `byWeapon`,
+`matrix`) is **recomputed from the filtered per-hit log** so it is consistent
+with the entries shown. This also fixes a gap where filtered responses left
+`matrix` (and `events`) null. Damage aggregates are a pure function of the
+per-hit `events`, so on a fully in-match stream the recompute reproduces the
+stored numbers; they differ only where the stored (match-time-gated) aggregates
+exclude warmup hits that the ungated `events` log still carries. With **no**
+scoping filter the response is the authoritative stored totals, unchanged.
 
 **Positional kills** — telefrags (deathtype `tele`, the `9999` instakill
 sentinel) and stomps (deathtype `stomp`, landing on a head) — are

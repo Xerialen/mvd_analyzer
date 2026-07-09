@@ -266,21 +266,36 @@ func (s *server) handleLocGraph(w http.ResponseWriter, r *http.Request) {
 // involving the named players / weapon. Filtering lives in view.Frags so
 // REST, MCP, and WASM share one implementation.
 //
+// When any scoping filter (players / weapon / from / to) is active, ALL
+// aggregates are recomputed from the filtered kill log so they are consistent
+// with the entries shown. With no filter the authoritative stored aggregates
+// are returned unchanged.
+//
 // Query params:
 //
-//	players  csv — restrict ByPlayer keys + the Frags list to entries
-//	             where killer or victim is in the set
-//	weapon   csv — restrict ByWeapon keys + the Frags list to these weapons
+//	players  csv   — restrict aggregates + the Frags list to entries
+//	               where killer or victim is in the set
+//	weapon   csv   — restrict aggregates + the Frags list to these weapons
+//	from     float — window start, match-relative seconds (0 = no bound)
+//	to       float — window end, match-relative seconds (0 = no bound)
+//	summary  bool  — drop the per-event Frags log; return only aggregates
 func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	out, err := view.Frags(res, view.FragOptions{
-		Players: parseCSV(ciGet(q, "players")),
-		Weapons: parseCSV(ciGet(q, "weapon")),
-	})
+	p := newQP(r.URL.Query())
+	opts := view.FragOptions{
+		Players: p.CSV("players"),
+		Weapons: p.CSV("weapon"),
+		From:    p.Float("from", 0),
+		To:      p.Float("to", 0),
+		Summary: p.Bool("summary"),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	out, err := view.Frags(res, opts)
 	if err != nil {
 		s.writeUnavailable(w, r, err, "frags_unavailable", "this demo has no frag log")
 		return
@@ -293,22 +308,37 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 // buckets) + the KTX-scoreboard cross-check. Optional filters narrow all
 // views to entries involving the named players / weapon.
 //
+// When any scoping filter (players / weapon / from / to) is active, ALL
+// aggregates (totalDamage, byPlayer, byWeapon, matrix) are recomputed from the
+// filtered per-hit log so they are consistent with the entries shown. With no
+// filter the authoritative stored aggregates are returned unchanged.
+//
 // Query params:
 //
-//	players  csv — restrict ByPlayer / Matrix / Events / Scoreboard to
-//	             entries where attacker or victim is in the set
-//	weapon   csv — restrict ByWeapon keys + Matrix/Events + per-player
-//	             ByWeapon to these (attacker) weapons
+//	players  csv   — restrict aggregates / Matrix / Events / Scoreboard to
+//	               entries where attacker or victim is in the set
+//	weapon   csv   — restrict aggregates + Matrix/Events + per-player
+//	               ByWeapon to these (attacker) weapons
+//	from     float — window start, match-relative seconds (0 = no bound)
+//	to       float — window end, match-relative seconds (0 = no bound)
+//	summary  bool  — drop the per-hit Events log; return only aggregates
 func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	out, err := view.Damage(res, view.DamageOptions{
-		Players: parseCSV(ciGet(q, "players")),
-		Weapons: parseCSV(ciGet(q, "weapon")),
-	})
+	p := newQP(r.URL.Query())
+	opts := view.DamageOptions{
+		Players: p.CSV("players"),
+		Weapons: p.CSV("weapon"),
+		From:    p.Float("from", 0),
+		To:      p.Float("to", 0),
+		Summary: p.Bool("summary"),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	out, err := view.Damage(res, opts)
 	if err != nil {
 		s.writeUnavailable(w, r, err, "damage_unavailable",
 			"this demo has no damage data (no KTX mvdhidden_dmgdone stream)")

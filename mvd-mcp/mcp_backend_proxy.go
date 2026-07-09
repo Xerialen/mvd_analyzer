@@ -239,6 +239,14 @@ func (q query) str(key, val string) {
 	}
 }
 
+// boolean encodes a true flag as "1"; false stays out of the query string so
+// the REST default (false) applies.
+func (q query) boolean(key string, v bool) {
+	if v {
+		q.set(key, "1")
+	}
+}
+
 func secStr(sec float64) string { return strconv.FormatFloat(sec, 'f', -1, 64) }
 
 // --- MCPBackend impl ---
@@ -301,6 +309,9 @@ func (p *proxyBackend) GetFrags(ctx context.Context, in GetFragsInput) (any, err
 	q := query{}
 	q.csv("players", in.Players)
 	q.csv("weapon", in.Weapon)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.boolean("summary", in.Summary)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
@@ -312,6 +323,9 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	q := query{}
 	q.csv("players", in.Players)
 	q.csv("weapon", in.Weapon)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.boolean("summary", in.Summary)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 

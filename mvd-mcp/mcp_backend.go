@@ -134,18 +134,30 @@ type GetMetadataInput struct {
 	DemoID string `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 }
 
-// GetFragsInput filters /v1/demos/{id}/frags.
+// GetFragsInput filters /v1/demos/{id}/frags. When any scoping filter
+// (players / weapon / startTime / endTime) is set, every aggregate is
+// recomputed from the filtered kill log; with none set the authoritative
+// stored totals are returned.
 type GetFragsInput struct {
-	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Players []string `json:"players,omitempty" jsonschema:"restrict aggregates + kill log to entries involving these players (killer OR victim)"`
-	Weapon  []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + kill log to these weapon codes (rl, lg, gl, ssg, sng, ng, axe, sg, ...)"`
+	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Players   []string `json:"players,omitempty" jsonschema:"restrict aggregates + kill log to entries involving these players (killer OR victim)"`
+	Weapon    []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + kill log to these weapon codes (rl, lg, gl, ssg, sng, ng, axe, sg, ...)"`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (frags at or after this time)"`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (frags at or before this time)"`
+	Summary   bool     `json:"summary,omitempty" jsonschema:"return only aggregates, dropping the big per-event kill log (avoids overflowing context)"`
 }
 
-// GetDamageInput mirrors /v1/demos/{id}/damage query params.
+// GetDamageInput mirrors /v1/demos/{id}/damage query params. When any scoping
+// filter (players / weapon / startTime / endTime) is set, every aggregate is
+// recomputed from the filtered per-hit log; with none set the authoritative
+// stored totals are returned.
 type GetDamageInput struct {
-	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Players []string `json:"players,omitempty" jsonschema:"restrict aggregates + damage log to entries involving these players (attacker OR victim)"`
-	Weapon  []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + damage log to these attacker weapon codes (rl, lg, gl, ssg, sng, sg, tele, ...)"`
+	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Players   []string `json:"players,omitempty" jsonschema:"restrict aggregates + damage log to entries involving these players (attacker OR victim)"`
+	Weapon    []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + damage log to these attacker weapon codes (rl, lg, gl, ssg, sng, sg, tele, ...)"`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (hits at or after this time)"`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (hits at or before this time)"`
+	Summary   bool     `json:"summary,omitempty" jsonschema:"return only aggregates, dropping the big per-hit damage log (avoids overflowing context)"`
 }
 
 // GetAimInput identifies a demo for its per-player aim analysis.
