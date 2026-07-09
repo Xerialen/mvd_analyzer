@@ -228,6 +228,11 @@ func TestMCP_ListTools(t *testing.T) {
 	got := map[string]bool{}
 	for _, tool := range res.Tools {
 		got[tool.Name] = true
+		// Every tool is read-only (analytics, no user-facing mutation) so
+		// clients can reduce per-call approval prompts.
+		if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint {
+			t.Errorf("tool %q missing readOnlyHint annotation", tool.Name)
+		}
 	}
 	if len(got) != len(want) {
 		t.Errorf("got %d tools; want %d (names=%v)", len(got), len(want), toolNames(res.Tools))

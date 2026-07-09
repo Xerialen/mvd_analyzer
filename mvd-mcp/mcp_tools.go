@@ -221,6 +221,13 @@ func addTool[In, Out any](s *mcp.Server, t *mcp.Tool, h mcp.ToolHandlerFor[In, O
 	if t.InputSchema == nil {
 		t.InputSchema = inputSchema[In]()
 	}
+	if t.Annotations == nil {
+		// Every mvd tool reads/analyzes demos; none mutate any user-facing
+		// state (loadDemo only warms a transparent, reconstructible cache). The
+		// readOnlyHint lets clients that honor it cut the per-call approval
+		// prompt — the analytics surface is safe to run unattended.
+		t.Annotations = &mcp.ToolAnnotations{ReadOnlyHint: true}
+	}
 	mcp.AddTool(s, t, h)
 }
 
