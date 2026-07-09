@@ -428,7 +428,7 @@ any victim class without re-deriving it.
 | Mode | `mode` | string — `"duel"` or `"team"` |
 | Crosshair | `crosshair` | *CrosshairSamples (omitempty) |
 | LGRamp | `lgRamp` | *LGRampSamples (omitempty) |
-| Weapons | `weapons` | []WeaponAim (omitempty) — rich per-weapon effectiveness |
+| Weapons | `weapons` | []WeaponAim (omitempty) — rich per-weapon effectiveness. An **ordered array** (one entry per weapon the player fired), keyed by the entry's `weapon` field and sorted by a fixed weapon rank — deliberately an array, not a `{weapon: …}` object, because the order is meaningful (unlike the unordered `byWeapon` count maps on `/frags` and `/damage`, which are objects because order is irrelevant there). |
 
 ### CrosshairSamples
 
