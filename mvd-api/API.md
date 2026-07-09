@@ -869,8 +869,8 @@ UIs that have a map name from `/overview` or a match listing.
   MB). Immutable cache + ETag; send `If-None-Match` for a 304.
 
 > **MCP tool coverage.** `/los`, `/shots`, `/streams/{projectiles,beams,nails}`,
-> and `/airgibs` are reachable over REST (and, when the MCP server runs, over
-> HTTP with a `Bearer` key) but have **no dedicated MCP tool** yet — like
+> and `/airgibs` are reachable over REST (with a `Bearer` key when auth is
+> enabled) but have **no dedicated MCP tool** yet — like
 > `/geometry` above, they are omitted from the tool surface for now. `/los` is
 > still reachable through the generic `getArtifact` tool (`name=los`). See
 > `mvd-mcp/README.md` for the full MCP tool list; adding first-class tools for

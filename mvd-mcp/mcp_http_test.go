@@ -14,14 +14,18 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const goodKey = "qwmvd_goodkey"
+// serviceKey is the operator-issued key the shim itself holds (MVD_API_KEY in
+// production); userKey is a portal key a client may present per request.
+const (
+	serviceKey = "qwmvd_servicekey"
+	userKey    = "qwmvd_userkey"
+)
 
-// stubAPI is a fake mvd-api: it answers /v1/auth/check (204 for goodKey, 401
-// otherwise) and one tool endpoint (/v1/demos/{id}/overview). It records the
-// Authorization header seen on the LAST proxied overview call so a test can
-// assert the user's key was forwarded.
+// stubAPI is a fake auth-enabled mvd-api: it answers one tool endpoint
+// (/v1/demos/{id}/overview), 401ing unless the request carries a known key.
+// It records the Authorization header seen on the LAST proxied overview call
+// so a test can assert which key was forwarded.
 type stubAPI struct {
-	authChecks   atomic.Int64 // number of /v1/auth/check calls served
 	overviewAuth atomic.Value // string: Authorization on the last overview call
 }
 
@@ -33,26 +37,22 @@ func newStubAPI() *stubAPI {
 
 func (s *stubAPI) handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/auth/check", func(w http.ResponseWriter, r *http.Request) {
-		s.authChecks.Add(1)
-		if bearerToken(r) == goodKey {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		w.Header().Set("WWW-Authenticate", "Bearer")
-		w.WriteHeader(http.StatusUnauthorized)
-	})
 	mux.HandleFunc("GET /v1/demos/{id}/overview", func(w http.ResponseWriter, r *http.Request) {
 		s.overviewAuth.Store(r.Header.Get("Authorization"))
+		if k := bearerToken(r); k != serviceKey && k != userKey {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"map":"dm6","schemaVersion":49}`))
+		_, _ = w.Write([]byte(`{"map":"dm6","schemaVersion":50}`))
 	})
 	return mux
 }
 
 // bearerRoundTripper injects a fixed Authorization header on every client
-// request, which is how a hosted MCP client would carry its key.
+// request, for tests that present a per-request key.
 type bearerRoundTripper struct {
 	key  string
 	base http.RoundTripper
@@ -70,8 +70,8 @@ func bearerClient(key string) *http.Client {
 	return &http.Client{Transport: &bearerRoundTripper{key: key, base: http.DefaultTransport}}
 }
 
-// newMCPTestServer wires the real streamable handler + auth gate against the
-// stubbed mvd-api and returns an httptest.Server plus the stub for assertions.
+// newMCPTestServer wires the real streamable handler — with the same
+// key-selection logic runHTTP installs — against the stubbed mvd-api.
 func newMCPTestServer(t *testing.T) (*httptest.Server, *stubAPI) {
 	t.Helper()
 	api := newStubAPI()
@@ -80,20 +80,11 @@ func newMCPTestServer(t *testing.T) (*httptest.Server, *stubAPI) {
 
 	logger := slog.New(slog.NewTextHandler(&testWriter{t}, &slog.HandlerOptions{Level: slog.LevelError}))
 	search := &fakeSearcher{}
-	gate := &authGate{
-		apiURL: strings.TrimRight(apiSrv.URL, "/"),
-		http:   &http.Client{Timeout: authCheckTimeout},
-		logger: logger,
-	}
-	getServer := func(r *http.Request) *mcp.Server {
-		backend := newProxyBackend(apiSrv.URL, bearerToken(r), 5*time.Second)
-		return newMCPServer(backend, search)
-	}
-	handler := newStreamableHandler(getServer, logger)
+	handler := newStreamableHandler(newGetServer(apiSrv.URL, serviceKey, 5*time.Second, search), logger)
 
 	mux := http.NewServeMux()
-	mux.Handle(mcpPath, gate.wrap(handler))
-	mux.Handle(mcpPath+"/", gate.wrap(handler))
+	mux.Handle(mcpPath, handler)
+	mux.Handle(mcpPath+"/", handler)
 	mux.HandleFunc("GET /healthz", handleHealthz)
 
 	mcpSrv := httptest.NewServer(mux)
@@ -102,7 +93,7 @@ func newMCPTestServer(t *testing.T) (*httptest.Server, *stubAPI) {
 }
 
 // connectHTTP drives the real SDK client over streamable HTTP with the given
-// bearer key. err is the Initialize error (nil on success).
+// bearer key ("" = anonymous). err is the Initialize error (nil on success).
 func connectHTTP(t *testing.T, url, key string) (*mcp.ClientSession, error) {
 	t.Helper()
 	client := mcp.NewClient(&mcp.Implementation{Name: "mvd-mcp-http-test", Version: "test"}, nil)
@@ -112,7 +103,7 @@ func connectHTTP(t *testing.T, url, key string) (*mcp.ClientSession, error) {
 		// Non-browser client; we only need request/response, not the standalone
 		// SSE stream (which stateless mode rejects with 405 anyway).
 		DisableStandaloneSSE: true,
-		MaxRetries:           -1, // fail fast on a 401 rather than retrying
+		MaxRetries:           -1, // fail fast rather than retrying
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -124,15 +115,14 @@ func connectHTTP(t *testing.T, url, key string) (*mcp.ClientSession, error) {
 	return sess, nil
 }
 
-// TestHTTP_EndToEnd_ValidKey proves the full path: Initialize + ListTools +
-// CallTool(getOverview) all succeed with a good key, and the stubbed mvd-api
-// saw the USER's key forwarded on the proxied overview call.
-func TestHTTP_EndToEnd_ValidKey(t *testing.T) {
-	srv, api := newMCPTestServer(t)
-
-	sess, err := connectHTTP(t, srv.URL, goodKey)
+// callOverview runs Initialize + ListTools + CallTool(getOverview) on a fresh
+// session with the given client key and returns the Authorization the stub
+// API saw on the proxied call.
+func callOverview(t *testing.T, srv *httptest.Server, api *stubAPI, clientKey string) string {
+	t.Helper()
+	sess, err := connectHTTP(t, srv.URL, clientKey)
 	if err != nil {
-		t.Fatalf("connect with good key: %v", err)
+		t.Fatalf("connect (key=%q): %v", clientKey, err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -161,81 +151,63 @@ func TestHTTP_EndToEnd_ValidKey(t *testing.T) {
 	if out["map"] != "dm6" {
 		t.Errorf("overview map = %v; want dm6", out["map"])
 	}
-
-	// The load-bearing assertion: mvd-api saw the USER's key on the proxied call.
-	gotAuth, _ := api.overviewAuth.Load().(string)
-	if want := "Bearer " + goodKey; gotAuth != want {
-		t.Errorf("overview Authorization = %q; want %q", gotAuth, want)
-	}
-	if api.authChecks.Load() == 0 {
-		t.Errorf("auth-check gate never fired")
-	}
+	auth, _ := api.overviewAuth.Load().(string)
+	return auth
 }
 
-// TestHTTP_MissingKey_401 asserts a keyless client cannot initialize and no
-// auth-check is even attempted against mvd-api (the gate rejects on empty).
-func TestHTTP_MissingKey_401(t *testing.T) {
+// TestHTTP_Anonymous_UsesServiceKey proves the core of the no-auth MCP model:
+// a keyless client can Initialize + ListTools + CallTool, and the proxied
+// REST call reaches mvd-api carrying the shim's SERVICE key.
+func TestHTTP_Anonymous_UsesServiceKey(t *testing.T) {
 	srv, api := newMCPTestServer(t)
-
-	if _, err := connectHTTP(t, srv.URL, ""); err == nil {
-		t.Fatalf("expected connect to fail with missing key")
+	if got, want := callOverview(t, srv, api, ""), "Bearer "+serviceKey; got != want {
+		t.Errorf("overview Authorization = %q; want %q (service key)", got, want)
 	}
-	// A missing key is rejected before we ever call mvd-api.
-	if n := api.authChecks.Load(); n != 0 {
-		t.Errorf("auth-check called %d times for missing key; want 0", n)
-	}
-	// Sanity: the gate returns a 401 to a raw POST as well.
-	assertRawPOST401(t, srv.URL, "")
 }
 
-// TestHTTP_BadKey_401 asserts a bad key is rejected at init; the gate DID call
-// mvd-api (which answered 401), and no tool ran.
-func TestHTTP_BadKey_401(t *testing.T) {
+// TestHTTP_ClientKey_Overrides proves a client presenting its own qwmvd_ key
+// has THAT key forwarded upstream instead of the service key.
+func TestHTTP_ClientKey_Overrides(t *testing.T) {
 	srv, api := newMCPTestServer(t)
-
-	if _, err := connectHTTP(t, srv.URL, "qwmvd_wrong"); err == nil {
-		t.Fatalf("expected connect to fail with bad key")
-	}
-	if n := api.authChecks.Load(); n == 0 {
-		t.Errorf("auth-check gate never fired for bad key; want >=1")
-	}
-	// No overview call could have happened.
-	if a, _ := api.overviewAuth.Load().(string); a != "" {
-		t.Errorf("overview was reached with a bad key: auth=%q", a)
+	if got, want := callOverview(t, srv, api, userKey), "Bearer "+userKey; got != want {
+		t.Errorf("overview Authorization = %q; want %q (client key)", got, want)
 	}
 }
 
-// TestHTTP_KeylessSearchBlocked proves the Supabase search tool — which does
-// NOT transit mvd-api — is unreachable without a valid key, because the OUTER
-// gate blocks the session before getServer (and thus any tool) runs.
-func TestHTTP_KeylessSearchBlocked(t *testing.T) {
+// TestHTTP_ForeignBearer_Ignored proves a non-qwmvd_ bearer (e.g. an OAuth
+// token a chat platform attaches on its own) does not break the session: it
+// is ignored and the service key is used upstream.
+func TestHTTP_ForeignBearer_Ignored(t *testing.T) {
+	srv, api := newMCPTestServer(t)
+	if got, want := callOverview(t, srv, api, "eyJhbGciOi.notaqwmvdkey"), "Bearer "+serviceKey; got != want {
+		t.Errorf("overview Authorization = %q; want %q (service key)", got, want)
+	}
+}
+
+// TestHTTP_AnonymousSearch proves the Supabase search tool — which does not
+// transit mvd-api — is callable without any Authorization header.
+func TestHTTP_AnonymousSearch(t *testing.T) {
 	srv, _ := newMCPTestServer(t)
 
-	// Even a well-formed tools/call for searchGames cannot get past init.
-	if _, err := connectHTTP(t, srv.URL, ""); err == nil {
-		t.Fatalf("expected keyless session to be rejected before search could run")
-	}
-
-	// Direct proof at the HTTP layer: a raw MCP tools/call POST for searchGames
-	// without a key gets a 401 from the gate, never reaching the handler.
-	body := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"searchGames","arguments":{}}}`
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+mcpPath, strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/event-stream")
-	resp, err := http.DefaultClient.Do(req)
+	sess, err := connectHTTP(t, srv.URL, "")
 	if err != nil {
-		t.Fatalf("raw POST: %v", err)
+		t.Fatalf("anonymous connect: %v", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Errorf("keyless searchGames POST status = %d; want 401", resp.StatusCode)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := sess.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "searchGames",
+		Arguments: map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("CallTool searchGames: %v", err)
 	}
-	if resp.Header.Get("WWW-Authenticate") != "Bearer" {
-		t.Errorf("missing WWW-Authenticate: Bearer on 401")
+	if res.IsError {
+		t.Fatalf("searchGames isError=true: %+v", res.Content)
 	}
 }
 
-// TestHTTP_Healthz asserts the liveness endpoint is unauthenticated and 200.
+// TestHTTP_Healthz asserts the liveness endpoint is 200.
 func TestHTTP_Healthz(t *testing.T) {
 	srv, _ := newMCPTestServer(t)
 	resp, err := http.Get(srv.URL + "/healthz")
@@ -263,7 +235,6 @@ func TestHTTP_NonLoopbackHostAccepted(t *testing.T) {
 	req.Host = "mvdanalyzer.example.com" // non-loopback, as a reverse proxy forwards it
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
-	req.Header.Set("Authorization", "Bearer "+goodKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -276,27 +247,6 @@ func TestHTTP_NonLoopbackHostAccepted(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("initialize with non-loopback Host: status=%d body=%s", resp.StatusCode, rb)
-	}
-}
-
-// assertRawPOST401 does a raw MCP initialize POST with the given key and
-// asserts a 401 from the gate.
-func assertRawPOST401(t *testing.T, base, key string) {
-	t.Helper()
-	body := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"1"}}}`
-	req, _ := http.NewRequest(http.MethodPost, base+mcpPath, strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/event-stream")
-	if key != "" {
-		req.Header.Set("Authorization", "Bearer "+key)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("raw POST: %v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Errorf("raw POST status = %d; want 401", resp.StatusCode)
 	}
 }
 

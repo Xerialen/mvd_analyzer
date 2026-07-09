@@ -136,14 +136,13 @@ config file path.
 
 When the operator runs `mvd-mcp -http` behind a public domain (see
 [`../deploy/README.md`](../deploy/README.md)), a client can connect
-straight to the URL — no local `mvd-mcp` binary to install. You need an
-API key (`qwmvd_…`) from the portal at `https://<domain>/portal`.
+straight to the URL — no local `mvd-mcp` binary to install, and **no API
+key**: the hosted MCP endpoint is unauthenticated.
 
 **Claude Code (CLI):**
 
 ```bash
-claude mcp add --transport http mvd https://<domain>/mcp \
-    --header "Authorization: Bearer qwmvd_…"
+claude mcp add --transport http mvd https://<domain>/mcp
 ```
 
 **`.mcp.json` / other HTTP-capable clients:**
@@ -152,15 +151,19 @@ claude mcp add --transport http mvd https://<domain>/mcp \
 {
   "mcpServers": {
     "mvd": {
-      "url": "https://<domain>/mcp",
-      "headers": { "Authorization": "Bearer qwmvd_…" }
+      "url": "https://<domain>/mcp"
     }
   }
 }
 ```
 
-The key is sent on every request; the hosted server validates it and
-rejects a missing/invalid key with `401`. See the
+**Web chat connectors** (claude.ai custom connectors and similar): add
+`https://<domain>/mcp` as the connector URL — no headers, no OAuth.
+
+If you have your own `qwmvd_…` API key (portal-issued), you *may* send it
+as `Authorization: Bearer qwmvd_…`; it is then used for your requests
+instead of the server's shared service key (own rate-limit bucket, own
+access-log identity). See the
 [Hosted / HTTP mode](README.md#hosted--http-mode) section of the README
 for the auth model.
 

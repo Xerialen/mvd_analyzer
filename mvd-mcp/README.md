@@ -10,8 +10,9 @@ It has two transports:
 - **stdio** (default) — one process per client, launched by the client
   (Claude Desktop, Cursor, Claude Code). This is the local mode.
 - **streamable HTTP** (`-http ADDR`) — a long-lived server for hosted
-  use, with per-request API-key auth. See
-  [Hosted / HTTP mode](#hosted--http-mode) below.
+  use. MCP itself is unauthenticated; the shim authenticates to mvd-api
+  with its own service key. See [Hosted / HTTP mode](#hosted--http-mode)
+  below.
 
 Why split it from `mvd-api`?
 
@@ -35,8 +36,12 @@ mvd-mcp version
 |---|---|---|
 | `-api`      | (required) | Base URL of a running `mvd-api` (e.g. `https://mvd-api.example.com` or `http://localhost:8080`) |
 | `-http`     | `""`        | Serve MCP over streamable HTTP on `ADDR` (e.g. `:8081`) instead of stdio. See [Hosted / HTTP mode](#hosted--http-mode). Mutually exclusive with stdio. |
-| `-label`    | `""`        | **stdio only.** Non-secret request-source tag forwarded as `Authorization: Bearer <label>`. Used for access-log analytics on the API side. Ignored in `-http` mode (each request carries its own key). |
+| `-label`    | `""`        | **stdio only.** Non-secret request-source tag forwarded as `Authorization: Bearer <label>`. Used for access-log analytics on the API side. Ignored in `-http` mode, and superseded by `MVD_API_KEY` when that is set. |
 | `-timeout`  | `60`        | Per-request HTTP timeout in seconds |
+
+| Env var | Description |
+|---|---|
+| `MVD_API_KEY` | API key forwarded as `Authorization: Bearer` on every proxied `mvd-api` call. Required (as an operator-issued **service** key) when the target `mvd-api` runs with `-auth-dir`; unnecessary against a local no-auth `mvd-api`. An env var, not a flag, so the secret never shows in `ps`. |
 
 ## Tool surface
 
@@ -115,34 +120,40 @@ public internet. This is the transport a remote client (Claude Code
 
 ### Auth model
 
-Every MCP request must carry an API key:
+**MCP requests need no authentication.** Requiring a per-request bearer
+key proved too cumbersome for the clients this transport exists for —
+web AI chat connectors (claude.ai, ChatGPT, …) that can't easily attach
+custom headers — and every tool is read-only over public demo data. API
+keys remain the model for the REST API, which is aimed at services and
+bulk integrations.
 
-```
-Authorization: Bearer qwmvd_…
-```
+Upstream, the shim authenticates *itself*: the operator issues one
+**service** key (`mvd-api keys issue -service -note mvd-mcp`) and hands
+it to the shim via the `MVD_API_KEY` env var. Every proxied REST call
+forwards it as `Authorization: Bearer`, so `mvd-api` keeps full key
+auth, and its per-key rate limit on that one key acts as the global
+throttle on anonymous MCP traffic.
 
-The key is issued by the Discord portal on the `mvd-api` host (see
-[`../mvd-api/README.md`](../mvd-api/README.md)). mvd-mcp validates it on
-each request against `mvd-api`'s `GET /v1/auth/check` and, on success,
-**forwards the same key** on every proxied REST call — so `mvd-api`
-stays the single point of key validation. A request with a missing or
-invalid key gets `401` with `WWW-Authenticate: Bearer`; the same gate
-also protects the `searchGames` tool, which otherwise bypasses
-`mvd-api`. A key revoked mid-session stops working on the next call.
+Two escape hatches:
 
-`-label` has no effect in HTTP mode (the per-request `Authorization`
-supersedes it); mvd-mcp logs a warning if it is set.
+- A request that **does** carry `Authorization: Bearer qwmvd_…` has that
+  key forwarded upstream instead of the service key — per-key
+  attribution and rate limiting still work for keyed clients.
+- A bearer that is *not* a `qwmvd_` key (e.g. an OAuth token a chat
+  platform attaches on its own) is ignored rather than breaking the
+  session.
 
-The server also exposes an unauthenticated `GET /healthz` for liveness
-probes. The MCP handler is mounted at `/mcp` (and `/mcp/`).
+The server also exposes a `GET /healthz` for liveness probes. The MCP
+handler is mounted at `/mcp` (and `/mcp/`).
+
+`-label` has no effect in HTTP mode; mvd-mcp logs a warning if it is set.
 
 ### Client config
 
 Claude Code:
 
 ```sh
-claude mcp add --transport http mvd https://<domain>/mcp \
-    --header "Authorization: Bearer qwmvd_…"
+claude mcp add --transport http mvd https://<domain>/mcp
 ```
 
 JSON config form (e.g. `.mcp.json`):
@@ -151,12 +162,14 @@ JSON config form (e.g. `.mcp.json`):
 {
   "mcpServers": {
     "mvd": {
-      "url": "https://<domain>/mcp",
-      "headers": { "Authorization": "Bearer qwmvd_…" }
+      "url": "https://<domain>/mcp"
     }
   }
 }
 ```
+
+Web chat connectors (claude.ai custom connectors and the like) just take
+the URL `https://<domain>/mcp` — no headers or OAuth needed.
 
 For the full deployment (Caddy TLS, systemd units, provisioning runbook)
 see [`../deploy/README.md`](../deploy/README.md).
@@ -167,7 +180,8 @@ see [`../deploy/README.md`](../deploy/README.md).
 |---|---|---|
 | Transport | stdin/stdout | streamable HTTP |
 | Lifecycle | one process per client | one long-lived server |
-| Auth | `-label` (non-secret tag) | per-request `Authorization: Bearer` key |
+| MCP auth | none (local process) | none |
+| Upstream auth | `MVD_API_KEY`, else `-label` (non-secret tag) | `MVD_API_KEY` service key; per-request `qwmvd_` bearer overrides |
 | Use | local (Desktop/Cursor/Code) | hosted / remote |
 
 ### Input schemas

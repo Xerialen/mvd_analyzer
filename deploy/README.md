@@ -20,6 +20,12 @@ mvd-mcp serves the MCP handler at exactly `/mcp` (and `/mcp/`); Caddy
 passes the path through unchanged, so there is no prefix strip to get
 wrong. Both services expose an unauthenticated `GET /healthz`.
 
+**Auth split:** the REST API requires an API key on every `/v1/*` call;
+MCP requires none — mvd-mcp holds its own operator-issued **service key**
+(`MVD_API_KEY`) and forwards it upstream, so anonymous MCP traffic is
+globally throttled by that one key's service rate class. A client that
+does present a `qwmvd_…` bearer on MCP gets that key forwarded instead.
+
 ## Operator prerequisites (you do these, not the tooling)
 
 See PLAN-hosting.md → **"Operator prerequisites"**. In short:
@@ -73,22 +79,25 @@ EOF
 sudo chmod 600 /etc/mvd/secrets.env
 ```
 
-mvd-mcp needs no secrets file — every MCP request carries its own API
-key, which mvd-mcp validates against mvd-api and forwards on each proxied
-call (D7).
+## 4. Issue the mvd-mcp service key
 
-## 4. Issue a service key for the web client (optional, phase 17+)
-
-The first-party web app gets one operator-issued **service** key (higher
-rate class). Issue it with the CLI (not the portal):
+mvd-mcp authenticates to mvd-api with one operator-issued **service**
+key (higher rate class). Issue it with the CLI (not the portal) and put
+it in `/etc/mvd/mcp.env`, which `mvd-mcp.service` reads:
 
 ```sh
 sudo -u mvd /opt/mvd/bin/mvd-api keys issue \
-    -auth-dir /opt/mvd/auth -service -note "mvd-web"
+    -auth-dir /opt/mvd/auth -service -note "mvd-mcp"
+sudo tee /etc/mvd/mcp.env >/dev/null <<'EOF'
+MVD_API_KEY=qwmvd_…
+EOF
+sudo chmod 600 /etc/mvd/mcp.env
 ```
 
-The full key is printed **once** — capture it. End users get their own
-keys from the portal at `https://<domain>/portal`.
+The full key is printed **once** — capture it. The same recipe (with
+`-note "mvd-web"`) issues the web client's key in phase 17+. End users
+who want direct REST access get their own keys from the portal at
+`https://<domain>/portal`.
 
 ## 5. Install the units and Caddy config
 
@@ -126,10 +135,11 @@ curl -sS -H "Authorization: Bearer qwmvd_…" \
      https://qw.example.com/v1/auth/check -o /dev/null -w '%{http_code}\n'   # 204
 curl -sS https://qw.example.com/v1/auth/check -o /dev/null -w '%{http_code}\n' # 401
 
-# d. MCP initialize with a key succeeds; without a key is 401 at init.
-claude mcp add --transport http mvd https://qw.example.com/mcp \
-     --header "Authorization: Bearer qwmvd_…"
+# d. MCP initialize needs NO key (the shim forwards its service key).
+claude mcp add --transport http mvd https://qw.example.com/mcp
 #    then in Claude: the mvd tools list; call getOverview on a loaded demo.
+#    If tool calls error with "unauthorized", MVD_API_KEY in
+#    /etc/mvd/mcp.env is missing/revoked — check journalctl -u mvd-mcp.
 
 # e. Rate limit: hammer past the burst (default 20 for a user key) and
 #    observe 429 + Retry-After.
@@ -143,8 +153,9 @@ done; echo    # a run of 204 then 429 once the bucket drains
 
 - **Cache growth** is bounded by `-cache-max-bytes` (background GC evicts
   oldest by mtime). Size it to the disk.
-- **A revoked key dies on the next request** — MCP sessions are not
-  pinned to a validated key beyond the current call (D7).
+- **A revoked key dies on the next request** — keys are validated by
+  mvd-api per call, never cached by the shim. Revoking the mvd-mcp
+  service key turns off all anonymous MCP tool calls at once.
 - **Logs**: both services log JSON to journald (`journalctl -u mvd-api`).
   The access log's identity is the key's note / Discord name / hash
   prefix — never the key.

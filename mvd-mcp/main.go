@@ -6,8 +6,9 @@
 // It has two transports:
 //
 //   - stdio (default): one process per client, launched by the client.
-//   - streamable HTTP (-http ADDR): a long-lived server for hosted use,
-//     with per-request API-key auth validated against mvd-api.
+//   - streamable HTTP (-http ADDR): a long-lived server for hosted use.
+//     MCP itself is unauthenticated; the shim authenticates to mvd-api
+//     with its own service key (MVD_API_KEY).
 //
 // Usage:
 //
@@ -22,14 +23,22 @@
 //	-label    stdio only: non-secret request-source tag, forwarded as Authorization: Bearer <label>
 //	-timeout  per-request HTTP timeout in seconds (default 60)
 //
+// Environment:
+//
+//	MVD_API_KEY  API key forwarded as Authorization: Bearer on every proxied
+//	             mvd-api call. Required (as an operator-issued service key)
+//	             when the target mvd-api runs with -auth-dir; an env var, not
+//	             a flag, so the secret never shows in `ps`. When set in stdio
+//	             mode it supersedes -label.
+//
 // For local MCP, run mvd-api on localhost and point -api at it:
 //
 //	mvd-api -addr :8080 &
 //	mvd-mcp -api http://localhost:8080
 //
-// In -http mode each incoming MCP request must carry
-// `Authorization: Bearer qwmvd_…`; the key is validated against
-// mvd-api's /v1/auth/check and then forwarded on every proxied call.
+// In -http mode incoming MCP requests need no Authorization header. A
+// request that does carry a `Bearer qwmvd_…` key has that key forwarded
+// upstream instead of the service key (per-key attribution).
 package main
 
 import (
@@ -83,19 +92,34 @@ func run(args []string) error {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	timeout := time.Duration(*timeoutS) * time.Second
 
-	// HTTP mode is a distinct transport; -label is meaningless there (each
-	// request carries its own Authorization: Bearer key, which supersedes any
-	// process-wide label — see D7). Warn rather than silently ignore it.
+	// The upstream credential lives in the environment, never a flag (flags
+	// show in `ps`; same rule as mvd-api's portal secrets).
+	apiKey := os.Getenv("MVD_API_KEY")
+
+	// HTTP mode is a distinct transport; -label is meaningless there (the
+	// upstream Authorization is the service key, or a caller-supplied qwmvd_
+	// bearer). Warn rather than silently ignore it.
 	if *httpAddr != "" {
 		if *label != "" {
-			logger.Warn("-label is ignored in -http mode; per-request Authorization is used instead")
+			logger.Warn("-label is ignored in -http mode; MVD_API_KEY / per-request keys are used instead")
 		}
-		return runHTTP(*httpAddr, *apiURL, timeout, logger)
+		return runHTTP(*httpAddr, *apiURL, apiKey, timeout, logger)
 	}
 
-	logger.Info("mvd-mcp starting", "api", *apiURL, "label", *label)
+	// stdio: a real key beats the non-secret label — the label only exists for
+	// access-log attribution against a no-auth (localhost) mvd-api, while the
+	// key is what an auth-enabled mvd-api requires.
+	bearer := *label
+	if apiKey != "" {
+		if *label != "" {
+			logger.Warn("both MVD_API_KEY and -label set; using the key")
+		}
+		bearer = apiKey
+	}
 
-	backend := newProxyBackend(*apiURL, *label, timeout)
+	logger.Info("mvd-mcp starting", "api", *apiURL, "label", *label, "keySet", apiKey != "")
+
+	backend := newProxyBackend(*apiURL, bearer, timeout)
 	search := newSupabaseClient(timeout)
 	srv := newMCPServer(backend, search)
 

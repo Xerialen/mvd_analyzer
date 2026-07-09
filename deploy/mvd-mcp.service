@@ -1,12 +1,15 @@
 # systemd unit for mvd-mcp (MCP over streamable HTTP).
 #
-# The shim proxies to a running mvd-api on localhost; it holds no secrets
-# and no key store — every MCP request carries its own Authorization key,
-# which mvd-mcp validates against mvd-api and forwards on each proxied call
-# (PLAN-hosting D7). So it needs no EnvironmentFile.
+# The shim proxies to a running mvd-api on localhost. MCP itself is
+# UNAUTHENTICATED (web-chat friendly); the shim authenticates to mvd-api
+# with the operator-issued service key in MVD_API_KEY (from the
+# EnvironmentFile below), forwarded on every proxied call. Issue it with:
+#   mvd-api keys issue -auth-dir /opt/mvd/auth -service -note mvd-mcp
 #
-# EDIT before use: User=/Group=, the ExecStart binary path, and -api if
-# mvd-api does not listen on :8080.
+# EDIT before use: User=/Group=, the ExecStart binary path, -api if
+# mvd-api does not listen on :8080, and put MVD_API_KEY=qwmvd_… in
+# /etc/mvd/mcp.env (root-owned, 0600). The `-` prefix makes the file
+# optional so a no-auth (localhost-mode) mvd-api needs no key at all.
 #
 # Install: copy to /etc/systemd/system/mvd-mcp.service, then
 #   systemctl daemon-reload && systemctl enable --now mvd-mcp
@@ -23,6 +26,7 @@ Type=simple
 User=mvd
 Group=mvd
 WorkingDirectory=/opt/mvd
+EnvironmentFile=-/etc/mvd/mcp.env
 
 # -http binds the MCP server; -api points at the local REST API. Caddy
 # routes /mcp* here (deploy/Caddyfile). The listen port MUST match that.

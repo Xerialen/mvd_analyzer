@@ -7,6 +7,17 @@ detail.
 
 ## 2026-07-09
 
+- **Hosted MCP is now unauthenticated (no schema change).** `mvd-mcp -http`
+  no longer requires (or validates) a per-request `Authorization` key — web AI
+  chat connectors can use the bare `/mcp` URL. The shim instead authenticates
+  itself to `mvd-api` with an operator-issued service key (`MVD_API_KEY` env
+  var), forwarded on every proxied REST call; the REST API keeps full API-key
+  auth, and that one key's service rate class throttles all anonymous MCP
+  traffic. A client that does present a `qwmvd_…` bearer gets it forwarded
+  instead (own bucket + log identity); non-`qwmvd_` bearers (e.g. platform
+  OAuth tokens) are ignored. In stdio mode `MVD_API_KEY` now also supersedes
+  `-label`, so a local shim can talk to an auth-enabled `mvd-api`.
+
 - **`getFrags` / `getDamage` (`/frags`, `/damage`): filters now narrow ALL
   aggregates + new `from`/`to` window + `summary` mode; damage output is now
   match-only (schema v50).** Changes to the frag/damage endpoints and their
