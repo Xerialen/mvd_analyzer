@@ -269,9 +269,10 @@ carrying the firing entity directly (`source:"beam"`). One beam == one LG
 attack == one cell, so LG counts match KTX `acc.attacks` exactly. Times are
 match-relative ms (same clock as `damage.events[].time`).
 
-The `shots` stream is **not** match-gated (warmup fires are kept; window by
-`time`). `byPlayer` aggregates **are** match-gated, for KTX scoreboard
-parity. To correlate aiming with fires, join a shot's `time` against the
+The `shots` stream is **match-gated** (schema v50): warmup / prewar /
+post-match fires are dropped at the source, like every analytics stream
+except chat, so the stream and the `byPlayer` aggregates are both match-only.
+To correlate aiming with fires, join a shot's `time` against the
 shooter's `streams.players[].pos` track (`vP`/`vYa` view angles, `vX/vY/vZ`
 velocity) by player + nearest `t`.
 
@@ -309,7 +310,7 @@ damage layer's `isSelf`/`isTeam` semantics: `self` = same wire slot (rl/gl
 self-splash — a rocket jump is a `hit` with the shooter as its own victim),
 `team` = same non-empty team and not self, else `enemy`. It is omitted when
 every victim is an enemy (the common case); when present it is parallel to
-`victims`. Warmup fires classify with warmup-time teams.
+`victims`.
 
 | Field | JSON key | Type | Notes |
 |---|---|---|---|
@@ -321,7 +322,6 @@ every victim is an enemy (the common case); when present it is parallel to
 | Hit | `hit` | bool (omitempty) | Fire that connected: hitscan via the same-frame damage link, rl/gl (and ng/sng with nails) via projectile linking. |
 | Victims | `victims` | []string (omitempty) | Hitscan victims hit by this fire. |
 | VictimKinds | `victimKinds` | []string (omitempty) | Per-victim class, parallel to `victims`: `enemy` \| `team` \| `self`. Omitted when all-enemy. |
-| Warmup | `warmup` | bool (omitempty) | Fired outside the match (prewar / warmup / post-match). The stream keeps it; `ByPlayer` and the aim analysis exclude it. |
 
 ### PlayerShots / WeaponShots
 
@@ -1662,7 +1662,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
-| v50 | `damage.events` is now **match-gated at the source**; no field-shape change. The per-hit `events` log previously carried out-of-match (warmup / post-match) hits while the aggregates gated them out; the analyzer now drops out-of-match hits before appending, so `events` and the aggregates are folds of the same in-match hit set. `damage.events` arrays shrink by the dropped hits. This lets the `/damage` filter's all-players recompute reproduce the stored aggregates exactly, removes the aim `[0,matchEnd]` self-window added in v49 (aim reads exactly-in-match damage), and fixes a latent bug where `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs (it iterated `events` with no gate). |
+| v50 | `damage.events` is now **match-gated at the source**; no field-shape change. The per-hit `events` log previously carried out-of-match (warmup / post-match) hits while the aggregates gated them out; the analyzer now drops out-of-match hits before appending, so `events` and the aggregates are folds of the same in-match hit set. `damage.events` arrays shrink by the dropped hits. This lets the `/damage` filter's all-players recompute reproduce the stored aggregates exactly, removes the aim `[0,matchEnd]` self-window added in v49 (aim reads exactly-in-match damage), and fixes a latent bug where `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs (it iterated `events` with no gate). The `shots` stream is now match-gated too (warmup fires dropped at the source; the `Shot.warmup` field is removed since no out-of-match shot survives), and `damage.telefrags`/`damage.stomps` arrays are match-gated with team telefrags/stomps no longer credited to the attacker counter. |
 | v49 | Aim/shots correctness fixes; no field-shape change. (1) The `aim.players[].weapons` rl/gl `direct`/`splash`/`missed` block appears on every default parse: it was gated on the opt-in `streams.projectiles` emission while the projectile linking it needs runs on every parse — it now gates on linking evidence (any linked rl/gl fire). (2) The damage records feeding aim's pellet and direct splits are windowed to match time `[0, matchEnd]`, so warmup and post-match damage no longer inflates `direct` (and deflates `splash`). (3) In a 1v1 where both players share a non-empty colour team, `damage.events[].isTeam` is no longer true for hits on the opponent: `DamageAnalyzer` classifies duel hits as enemy at birth, so the events, `given`/`givenTeam`, the matrix, `victimWep` and the EWep buckets agree with the duel-normalized `shots` victim kinds (previously airgibs came out empty and the aim enemy splits zero on such demos). (4) Shots identity resolution uses the canonical `ResolveSlotAt` chain, backfilling an empty team from the demoinfo name table (parity with damage/frags). |
 | v48 | Correctness fixes to already-emitted values; no field-shape change. (1) `timelineAnalysis.killEvents` is now on the match-relative clock and carries duel team labels, exactly like the sibling `deathEvents`/`fragEvents` (both post-processors previously skipped it): each kill `time` was ~`demoOffset` ms late and, in 1v1s, `team` was a raw colour tag instead of the player name. (2) Match-timing detection ignores `PRINT_CHAT` (level 3), so a pre-match "go!" or a mid-match "gg game over" chat line can no longer flip the match window (`streams.global.matchStart`/`matchEnd`) or freeze streams; the obituary parser likewise rejects level-3 prints. (3) The CRMod "eats 2 scoops of" super-shotgun obituary is reachable again — those kills were mislabeled `gl` with a phantom "2 scoops of X" killer, now `ssg` with the real killer. (4) `match.players`/`match.teams` no longer drop players who finished on exactly 0 frags (surface-authoritative-data), and duel detection trusts `demoInfo.players` as authoritative so a 2on2 in which two players end on 0 frags is no longer misclassified as a duel and team-renamed; a paired reader fix parses the server-set `*spectator` userinfo star key (and resets the flag on every full userinfo update, ezquake-style) so actual spectators don't leak into `match.players` in place of the removed filter. (5) Powerup interval end times use the same effective match end as the weapon intervals on demos cut before intermission. |
 | v47 | LG miss reclassification on `WeaponAim`. A miss now only counts as `blocked` / `outOfRange` when the shooter was **on target**: `blocked` = the beam stopped short of its ~600 qu max range on geometry and its extension to full range crosses a live enemy's collision hull (a would-be hit denied by the obstruction); `outOfRange` = the beam ran its full length and its extension to infinity crosses a live enemy's hull (denied by reach). Previously every short-of-max-range beam whose endpoint wasn't near an enemy was blocked (even fired into a wall with nobody behind) and every full-length beam was out of range. `nearMiss` is **removed**: with blocked detection on the beam line, the near/wide distinction among plain aim errors carried no signal — all remaining whiffs land in the lg `miss` bucket (shares the field with the sg/ssg per-pellet miss). LG invariant becomes `hits + blocked + miss + outOfRange + unresolved == shots`. Only the opt-in beam-enriched parse is affected (the split needs `streams.beams`); expect `blocked`/`outOfRange` to drop sharply and `miss` to absorb them. |

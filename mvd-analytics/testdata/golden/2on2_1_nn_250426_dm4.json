@@ -53821,14 +53821,6 @@
     },
     "shots": [
       {
-        "player": "shazam",
-        "source": "beam",
-        "team": "n n",
-        "time": -10143,
-        "warmup": true,
-        "weapon": "lg"
-      },
-      {
         "player": "stepcop",
         "source": "sound",
         "team": "n n",

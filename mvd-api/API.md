@@ -488,7 +488,8 @@ The per-fire weapon stream (`result.Shots`): `shots` — every detected fire,
 chronological, with `time` (match ms), `player`, `weapon`, `source`
 (`sound`/`beam`), `hit` + `victims` where linkable (plus
 `victimKinds` classifying each victim `enemy`/`team`/`self`, omitted when
-all-enemy), and a `warmup` flag on out-of-match fires; `byPlayer` —
+all-enemy). The `shots` stream is **match-only** (warmup / prewar /
+post-match fires are dropped at the source). `byPlayer` —
 match-time per-weapon counts, hitscan accuracy and the
 `enemyHits`/`teamHits`/`selfHits` victim-class buckets (overlapping — a
 multi-victim fire counts in each); `reconciliation` — the cross-check

@@ -47,6 +47,13 @@ detail.
     convention the view already applied) — so the filtered telefrag/stomp
     counters now match the stored totals. Goldens: two demos drop
     team/out-of-match telefrag+stomp counts; no other change.
+  - **All analytics streams are match-only now, except chat.** The `shots`
+    stream is gated to in-match at the source (warmup / prewar / post-match
+    fires dropped; the `Shot.warmup` field is removed — no out-of-match shot
+    survives). Frags, damage, telefrags/stomps, shots, positions, pickups,
+    items and backpacks are all match-only; **chat is the deliberate
+    exception** (pre-game talk is kept). This makes it impossible for a
+    consumer to accidentally mix warmup data into match analytics.
 
 ## 2026-07-08
 

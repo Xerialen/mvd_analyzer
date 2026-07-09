@@ -52,7 +52,6 @@ type Shot struct {
 	Hit         bool     `json:"hit,omitempty"`
 	Victims     []string `json:"victims,omitempty"`
 	VictimKinds []string `json:"victimKinds,omitempty"`
-	Warmup      bool     `json:"warmup,omitempty"` // fired outside the match (prewar/warmup/post)
 }
 
 // PlayerShots is one player's match-time fire counts per weapon.

@@ -93087,14 +93087,6 @@
     },
     "shots": [
       {
-        "player": "nexus",
-        "source": "sound",
-        "team": "ahoy",
-        "time": -10246,
-        "warmup": true,
-        "weapon": "rl"
-      },
-      {
         "player": "ThundeR",
         "source": "sound",
         "team": "BhB",
@@ -140025,14 +140017,6 @@
         "source": "sound",
         "team": "ahoy",
         "time": 1199994,
-        "weapon": "sng"
-      },
-      {
-        "player": "sailorman",
-        "source": "sound",
-        "team": "ahoy",
-        "time": 1200128,
-        "warmup": true,
         "weapon": "sng"
       }
     ]

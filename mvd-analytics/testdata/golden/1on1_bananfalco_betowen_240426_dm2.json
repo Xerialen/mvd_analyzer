@@ -14348,14 +14348,6 @@
         "team": "betowen",
         "time": 599285,
         "weapon": "rl"
-      },
-      {
-        "player": "banan falco",
-        "source": "sound",
-        "team": "banan falco",
-        "time": 600058,
-        "warmup": true,
-        "weapon": "rl"
       }
     ]
   },

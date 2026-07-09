@@ -93769,18 +93769,6 @@
         "player": "biggz",
         "source": "sound",
         "team": "jah",
-        "time": -9882,
-        "victims": [
-          "ocoini"
-        ],
-        "warmup": true,
-        "weapon": "gl"
-      },
-      {
-        "hit": true,
-        "player": "biggz",
-        "source": "sound",
-        "team": "jah",
         "time": 2186,
         "victims": [
           "ocoini"

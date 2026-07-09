@@ -325,15 +325,18 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		// Born-correct team label: the roster rewrites a duel participant's team
 		// to their own name (replacing the old normalizeDuelTeams shots block).
 		team := a.core.TeamFor(s.name, s.team)
+		// Match-only, like every analytics stream (except chat): warmup /
+		// prewar / post-match fires are dropped at the source so no consumer
+		// can mistake them for match data. The aggregates below are gated the
+		// same way.
+		if !s.inMatch {
+			continue
+		}
 		out.Shots = append(out.Shots, Shot{
 			Time: s.tMs, Player: s.name, Team: team,
 			Weapon: s.weapon, Source: s.source, Hit: s.hit, Victims: s.victims,
 			VictimKinds: emitKinds(s.victimKinds),
-			Warmup:      !s.inMatch,
 		})
-		if !s.inMatch {
-			continue
-		}
 		ag := aggByName[s.name]
 		if ag == nil {
 			ag = &shotAgg{team: team, weapons: make(map[string]*weaponAgg)}

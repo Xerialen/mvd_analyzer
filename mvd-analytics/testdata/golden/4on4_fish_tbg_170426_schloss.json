@@ -90596,14 +90596,6 @@
     },
     "shots": [
       {
-        "player": "nexus",
-        "source": "sound",
-        "team": "'tbg",
-        "time": -10064,
-        "warmup": true,
-        "weapon": "rl"
-      },
-      {
         "player": "gore",
         "source": "sound",
         "team": "'\u003e\u003c\u003e",
@@ -135598,18 +135590,6 @@
         "team": "'tbg",
         "time": 1199877,
         "weapon": "rl"
-      },
-      {
-        "hit": true,
-        "player": "ocoini",
-        "source": "sound",
-        "team": "'\u003e\u003c\u003e",
-        "time": 1200078,
-        "victims": [
-          "nexus"
-        ],
-        "warmup": true,
-        "weapon": "sg"
       }
     ]
   },
