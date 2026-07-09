@@ -37709,136 +37709,6 @@
     },
     "events": [
       {
-        "attacker": "Doomie",
-        "damage": 67,
-        "isSplash": true,
-        "isTeam": true,
-        "time": -10417,
-        "victim": "ThundeR",
-        "weapon": "rl"
-      },
-      {
-        "attacker": "Doomie",
-        "damage": 21,
-        "isSelf": true,
-        "isSplash": true,
-        "time": -10417,
-        "victim": "Doomie",
-        "weapon": "rl"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -10279,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -9996,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -9581,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -9374,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -9166,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -8960,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -8751,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -8544,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -8333,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -8127,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -7918,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -7710,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -7500,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
-        "attacker": "world",
-        "damage": 30,
-        "isEnv": true,
-        "time": -7289,
-        "victim": "[nW].Veggie",
-        "weapon": "lava"
-      },
-      {
         "attacker": "nexus",
         "damage": 18,
         "time": 3211,
@@ -60444,14 +60314,6 @@
         "attacker": "sailorman",
         "damage": 18,
         "time": 1199823,
-        "victim": "KreatoR",
-        "victimWep": "sg",
-        "weapon": "sng"
-      },
-      {
-        "attacker": "sailorman",
-        "damage": 18,
-        "time": 1200128,
         "victim": "KreatoR",
         "victimWep": "sg",
         "weapon": "sng"
@@ -92552,7 +92414,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "schemaVersion": 50,
   "shots": {
     "byPlayer": [
       {

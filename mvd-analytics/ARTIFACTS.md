@@ -31,4 +31,4 @@ Every node in the analytics DAG, as declared in [`analyzer/dag.go`](analyzer/dag
 | `region-control` | light | no | — | `timeline`, `match`, `demoinfo` | `region-control` | Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact). |
 | `los` | heavy | yes | — | `timeline`, `demoinfo` | `los` | Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand. |
 
-Generated at schema version 49.
+Generated at schema version 50.

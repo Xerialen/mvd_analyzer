@@ -37070,30 +37070,6 @@
     },
     "events": [
       {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -8140,
-        "victim": "lakso",
-        "weapon": "fall"
-      },
-      {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -3253,
-        "victim": "clox",
-        "weapon": "fall"
-      },
-      {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -1161,
-        "victim": "apa",
-        "weapon": "fall"
-      },
-      {
         "attacker": "nlk",
         "damage": 24,
         "time": 1025,
@@ -89042,7 +89018,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "schemaVersion": 50,
   "shots": {
     "byPlayer": [
       {

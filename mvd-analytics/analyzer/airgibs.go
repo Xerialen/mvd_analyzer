@@ -84,6 +84,9 @@ func airgibsPost(res *Result, co *CoreOutputs) {
 		}
 	}
 
+	// Damage.Events is match-gated at the source (the damage analyzer drops
+	// out-of-match hits), so this loop never sees a warmup / post-match rocket
+	// — do not reintroduce a time or in-match gate here.
 	var events []result.AirgibEvent
 	for _, d := range res.Damage.Events {
 		// Direct enemy rockets only — a rocket model striking the player.

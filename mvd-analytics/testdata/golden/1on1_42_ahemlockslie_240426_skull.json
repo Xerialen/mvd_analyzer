@@ -4696,14 +4696,6 @@
     },
     "events": [
       {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -4299,
-        "victim": "AHemlocksLie",
-        "weapon": "fall"
-      },
-      {
         "attacker": "AHemlocksLie",
         "damage": 110,
         "time": 3065,
@@ -13510,7 +13502,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 49,
+  "schemaVersion": 50,
   "shots": {
     "byPlayer": [
       {

@@ -112,16 +112,13 @@ func aimPost(res *Result, co *CoreOutputs) {
 	// (Σ damage / 4) and RL/GL direct contacts (non-splash). Aim is a
 	// match-time view — shots exclude warmup above, and the damage feeding
 	// the splits must match or a warmup direct rocket inflates Direct and
-	// deflates Splash (F19). The Damage.Events log is deliberately ungated,
-	// so window it here: post-normalize, match time is [0, MatchEnd].
-	matchEnd := res.Streams.Global.MatchEnd
+	// deflates Splash (F19). Damage.Events is match-gated at the source (the
+	// damage analyzer drops out-of-match hits), so it is exactly in-match
+	// already — no re-windowing here.
 	dmgByPlayer := make(map[string][]*dmgRec)
 	if res.Damage != nil {
 		for _, d := range res.Damage.Events {
 			if d.IsSelf || d.Attacker == "" {
-				continue
-			}
-			if d.Time < 0 || (matchEnd > 0 && d.Time > matchEnd) {
 				continue
 			}
 			dmgByPlayer[d.Attacker] = append(dmgByPlayer[d.Attacker],

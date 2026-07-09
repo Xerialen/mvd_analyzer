@@ -11,10 +11,11 @@ import (
 // analyzer: raw events are collected during OnEvent and resolved to player
 // identities in Finalize via CoreOutputs.
 //
-// Aggregates (Given/Taken/Matrix/ByWeapon/EWep buckets) are gated to
-// match time, matching KTX's scoreboard semantics so the reconciliation
-// against demoInfo.players[].dmg is meaningful. The full Events log is
-// NOT gated — warmup damage is real signal and consumers window it by time.
+// Both the aggregates (Given/Taken/Matrix/ByWeapon/EWep buckets) AND the
+// per-hit Events log are gated to match time, matching KTX's scoreboard
+// semantics so the reconciliation against demoInfo.players[].dmg is
+// meaningful. Out-of-match (warmup / post-match) damage is dropped at the
+// source — it is not exposed anywhere and consumers never need to re-window.
 type DamageAnalyzer struct {
 	ctx    *Context
 	core   *CoreOutputs
@@ -162,6 +163,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			continue
 		}
 
+		// Everything below — the per-hit Events log AND the aggregates — is
+		// match-time only. Out-of-match (warmup / post-match) damage is not
+		// exposed anywhere: it can't be reconciled against KTX's scoreboard
+		// and downstream consumers (aim splits, airgib detection) would only
+		// ever want to filter it back out. Drop it at the source so every
+		// damage figure and the Events log agree.
+		if !d.inMatch {
+			continue
+		}
+
 		vw := ""
 		if !isWorld && !isSelf && !isTeam {
 			vw = victimWeaponClass(d.victimItem)
@@ -180,10 +191,6 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			VictimWep: vw,
 		})
 
-		// Aggregates are match-time only (KTX scoreboard parity).
-		if !d.inMatch {
-			continue
-		}
 		out.TotalDamage += d.damage
 
 		// Victim's damage-taken (all sources).

@@ -42305,15 +42305,6 @@
     "events": [
       {
         "attacker": "biggz",
-        "damage": 54,
-        "isSplash": true,
-        "time": -7531,
-        "victim": "ocoini",
-        "victimWep": "both",
-        "weapon": "gl"
-      },
-      {
-        "attacker": "biggz",
         "damage": 16,
         "time": 2186,
         "victim": "ocoini",
@@ -93011,7 +93002,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "schemaVersion": 50,
   "shots": {
     "byPlayer": [
       {

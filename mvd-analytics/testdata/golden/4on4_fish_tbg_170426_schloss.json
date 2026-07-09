@@ -55437,14 +55437,6 @@
         "time": 1199890,
         "victim": "gore",
         "weapon": "rl"
-      },
-      {
-        "attacker": "ocoini",
-        "damage": 24,
-        "time": 1200078,
-        "victim": "nexus",
-        "victimWep": "sg",
-        "weapon": "sg"
       }
     ],
     "matrix": [
@@ -89960,7 +89952,7 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "schemaVersion": 50,
   "shots": {
     "byPlayer": [
       {

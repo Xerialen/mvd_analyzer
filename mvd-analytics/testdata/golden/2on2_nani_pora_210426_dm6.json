@@ -13980,14 +13980,6 @@
     },
     "events": [
       {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -3117,
-        "victim": "SS",
-        "weapon": "fall"
-      },
-      {
         "attacker": "rusti",
         "damage": 91,
         "isSplash": true,
@@ -30191,7 +30183,7 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 49,
+  "schemaVersion": 50,
   "shots": {
     "byPlayer": [
       {

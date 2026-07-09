@@ -391,6 +391,74 @@ func TestDamage_TimeWindowAndWeapon(t *testing.T) {
 	}
 }
 
+// TestDamage_AllPlayersRecomputeEqualsStored pins the source-gate invariant:
+// with Damage.Events now match-gated at the analyzer, the stored aggregates
+// ARE a pure fold of Events, so an all-players recompute (which reproduces the
+// analyzer's fold) must equal the stored aggregates EXACTLY. This is the
+// property the filter's "narrow everything" path relies on — the +420-style
+// over-count from out-of-match events in the log is gone.
+func TestDamage_AllPlayersRecomputeEqualsStored(t *testing.T) {
+	// A self-consistent DamageResult: the stored aggregates are the true fold
+	// of the (all in-match) Events, exactly as the analyzer would emit them.
+	events := []result.DamageEntry{
+		{Time: 1000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 100, VictimWep: "rl"},
+		{Time: 2000, Attacker: "bravo", Victim: "alpha", Weapon: "lg", Damage: 40, VictimWep: "lg"},
+		{Time: 3000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 60, VictimWep: "sg"},
+	}
+	stored := &result.DamageResult{
+		TotalDamage: 200,
+		ByWeapon:    map[string]int{"rl": 160, "lg": 40},
+		ByPlayer: map[string]*result.PlayerDamage{
+			"alpha": {Given: 160, Taken: 40, ByWeapon: map[string]int{"rl": 160},
+				EnemyVsRL: 100, EnemyVsSG: 60, EWep: 100},
+			"bravo": {Given: 40, Taken: 160, ByWeapon: map[string]int{"lg": 40},
+				EnemyVsLG: 40, EWep: 40},
+		},
+		Matrix: []result.DamagePair{
+			{Attacker: "alpha", Victim: "bravo", Damage: 160, ByWeapon: map[string]int{"rl": 160}},
+			{Attacker: "bravo", Victim: "alpha", Damage: 40, ByWeapon: map[string]int{"lg": 40}},
+		},
+		Events: events,
+	}
+	r := &result.Result{Damage: stored}
+
+	out, err := Damage(r, DamageOptions{Players: []string{"alpha", "bravo"}})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.TotalDamage != stored.TotalDamage {
+		t.Errorf("TotalDamage recompute=%d, stored=%d", out.TotalDamage, stored.TotalDamage)
+	}
+	if !reflect.DeepEqual(out.ByWeapon, stored.ByWeapon) {
+		t.Errorf("ByWeapon recompute=%v, stored=%v", out.ByWeapon, stored.ByWeapon)
+	}
+	if !reflect.DeepEqual(out.ByPlayer, stored.ByPlayer) {
+		t.Errorf("ByPlayer recompute=%v, stored=%v", out.ByPlayer, stored.ByPlayer)
+	}
+	if !reflect.DeepEqual(out.Matrix, stored.Matrix) {
+		t.Errorf("Matrix recompute=%v, stored=%v", out.Matrix, stored.Matrix)
+	}
+}
+
+// TestDamage_FromRoundsToNearestMs pins the seconds→ms rounding: a bound of
+// 0.29s must map to 290ms (round), not 289ms (truncate). An event at exactly
+// 290ms is then kept by from=0.29.
+func TestDamage_FromRoundsToNearestMs(t *testing.T) {
+	r := &result.Result{Damage: &result.DamageResult{
+		ByWeapon: map[string]int{}, ByPlayer: map[string]*result.PlayerDamage{},
+		Events: []result.DamageEntry{
+			{Time: 290, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 50, VictimWep: "rl"},
+		},
+	}}
+	out, err := Damage(r, DamageOptions{From: 0.29})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if len(out.Events) != 1 {
+		t.Errorf("from=0.29 dropped the t=290ms event (truncation bug): events=%d, want 1", len(out.Events))
+	}
+}
+
 func TestChat_DefaultsAndWindow(t *testing.T) {
 	r := sectionsFixture()
 	// Default types = chat,teamsay (the frag is excluded).

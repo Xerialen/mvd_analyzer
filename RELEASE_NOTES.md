@@ -8,8 +8,9 @@ detail.
 ## 2026-07-09
 
 - **`getFrags` / `getDamage` (`/frags`, `/damage`): filters now narrow ALL
-  aggregates + new `from`/`to` window + `summary` mode (no schema change).**
-  Three changes to the frag/damage endpoints and their MCP tools:
+  aggregates + new `from`/`to` window + `summary` mode; damage output is now
+  match-only (schema v50).** Changes to the frag/damage endpoints and their
+  MCP tools:
   - **Filters narrow every aggregate (bug fix).** Previously a `players` /
     `weapon` filter only narrowed the per-event log and the `byPlayer` keys,
     leaving `totalFrags` / `totalDamage` / `byWeapon` / `matrix` at their
@@ -18,16 +19,27 @@ detail.
     log** so it matches exactly the entries shown. With no filter the
     authoritative stored totals are returned unchanged (byte-identical to
     before) — the unfiltered path is untouched. Filtered damage responses now
-    also populate `matrix` / `events` (previously left null). Filtered
+    also populate `matrix` / `events` (previously left null). Filtered frag
     aggregates are log-sourced and may differ from the unfiltered totals for
     reconnect / unresolved-name edge cases (documented in API.md §4.5/4.5b).
   - **`from` / `to` time window** (REST; `startTime` / `endTime` on the MCP
     tools) — match-relative **seconds**, keep only frags/hits in the window.
+    The seconds→ms conversion now rounds to the nearest ms (`0.29s`→`290ms`),
+    not truncating.
   - **`summary`** — drop the big per-event log and return only the aggregates
     (avoids overflowing an LLM context). Orthogonal to the filters.
-  View-layer only (`mvd-analytics/view/sections.go` + mvd-api handlers + mvd-mcp
-  tool inputs/proxy); no `result` schema change, no golden regen. `getAim` is
-  unchanged (separate follow-up).
+  - **Damage output is now match-only (schema v50 bump).** The per-hit
+    `damage.events` log is **gated to in-match at the source** (the damage
+    analyzer), matching the aggregates — out-of-match (warmup / post-match)
+    hits are dropped everywhere and no longer exposed. This makes the filter's
+    all-players recompute reproduce the stored aggregates **exactly** (closing
+    a filtered over-count where the ungated log double-counted warmup hits),
+    lets the aim analysis read exactly-in-match damage (removing an approximate
+    `[0,matchEnd]` self-window), and fixes a latent bug where
+    `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs.
+    Goldens regenerated: `damage.events` arrays shrink; some `aim` splits and
+    `airgibs` lists shift on demos with out-of-match rocket hits. Frags are
+    unaffected (they already gated at the analyzer).
 
 ## 2026-07-08
 

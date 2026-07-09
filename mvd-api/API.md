@@ -427,15 +427,18 @@ raw time-ordered log alone use `/events?types=damage`.
 - **`summary`** — `1`/`true` drops the big per-hit `events` log and returns
   only the aggregates. Orthogonal to the filters.
 
-**Filtering semantics (changed — bug fix).** When ANY scoping filter
-(`players` OR `weapon` OR `from` OR `to`) is active, **every** aggregate
-(`totalDamage`, `byPlayer` given/taken/byWeapon/EWep buckets, `byWeapon`,
-`matrix`) is **recomputed from the filtered per-hit log** so it is consistent
-with the entries shown. This also fixes a gap where filtered responses left
-`matrix` (and `events`) null. Damage aggregates are a pure function of the
-per-hit `events`, so on a fully in-match stream the recompute reproduces the
-stored numbers; they differ only where the stored (match-time-gated) aggregates
-exclude warmup hits that the ungated `events` log still carries. With **no**
+**Match-only (schema v50).** The damage output — the aggregates AND the per-hit
+`events` log — is match-time only. Out-of-match (warmup / post-match) hits are
+dropped at the source and excluded everywhere; there is no way to see them.
+
+**Filtering semantics.** When ANY scoping filter (`players` OR `weapon` OR
+`from` OR `to`) is active, **every** aggregate (`totalDamage`, `byPlayer`
+given/taken/byWeapon/EWep buckets, `byWeapon`, `matrix`) is **recomputed from
+the filtered per-hit log** so it is consistent with the entries shown. This also
+fixes a gap where filtered responses left `matrix` (and `events`) null. Damage
+aggregates are a pure function of the per-hit `events`, and `events` is
+match-gated at the source, so an all-players recompute reproduces the stored
+numbers exactly (both are folds of the same in-match hit set). With **no**
 scoping filter the response is the authoritative stored totals, unchanged.
 
 **Positional kills** — telefrags (deathtype `tele`, the `9999` instakill
@@ -539,7 +542,10 @@ state events `health`, `armor`, `loc`, and per-hit `damage` are
 **excluded by default** — pass them explicitly to opt in. A `damage`
 event carries `detail{ victim, damage, weapon, isSplash?, isEnv?,
 isSelf?, isTeam?, victimWep? }`; `players` matches its attacker or
-victim. For aggregates use `/damage` instead.
+victim. `damage` events are **match-only** — out-of-match (warmup /
+post-match) hits are excluded here too (they are gated at the source, so
+this feed shows the same in-match hits as `/damage`). For aggregates use
+`/damage` instead.
 
 `telefrag` and `stomp` are also **opt-in** (the kill already appears as a
 `frag` event, so they're left out of the default feed to avoid doubling

@@ -587,7 +587,17 @@ package result
 //     re-init to 0 during intermission cannot erase the final score (the
 //     v48 removal of the 0-frag filter had surfaced these corrupted zeros
 //     as if they were real scores).
-const CurrentSchemaVersion = 49
+//
+// v50: damage.events is now match-gated at the source.
+//   - The per-hit damage.events log previously carried out-of-match (warmup /
+//     post-match) hits while the aggregates gated them out. The analyzer now
+//     drops out-of-match hits before appending to events, so the events log
+//     and the aggregates are built from the same in-match hit set. This
+//     removes the aim [0,matchEnd] self-window (v49) — aim reads exactly-in-
+//     match damage — and fixes a latent airgibs bug that counted warmup /
+//     post-match rocket airgibs (it iterated events with no gate). No field
+//     shape change; damage.events arrays shrink by the out-of-match hits.
+const CurrentSchemaVersion = 50
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

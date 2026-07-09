@@ -132,18 +132,21 @@ func TestDamageAnalyzer_EWepBucketsByVictimWeapon(t *testing.T) {
 	}
 }
 
-func TestDamageAnalyzer_AggregatesGatedToMatch(t *testing.T) {
+func TestDamageAnalyzer_OutOfMatchDroppedEverywhere(t *testing.T) {
 	a := NewDamageAnalyzer()
 	ctx := &Context{}
 	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "alpha", Team: "red"}
 	ctx.Players[1] = &events.PlayerInfo{Slot: 1, Name: "bravo", Team: "blue"}
 	_ = a.Init(ctx)
 
-	// Pre-match (warmup) hit — in Events log, excluded from aggregates.
+	// Pre-match (warmup) hit — dropped from BOTH the aggregates AND the log.
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 40, DeathType: dtSGTest, Time: 1})
 	a.OnEvent(&events.PrintEvent{Level: 2, Message: "The match has begun!\n", Time: 5})
-	// In-match hit — counts.
+	// In-match hit — counts and appears in the log.
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtSGTest, Time: 6})
+	// Post-match hit — also dropped everywhere.
+	a.OnEvent(&events.IntermissionEvent{Time: 10})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 25, DeathType: dtSGTest, Time: 11})
 
 	a.UseCoreOutputs(&CoreOutputs{Slots: map[int]SlotInfo{
 		0: {Name: "alpha", Team: "red"}, 1: {Name: "bravo", Team: "blue"},
@@ -153,10 +156,18 @@ func TestDamageAnalyzer_AggregatesGatedToMatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := res.Damage.ByPlayer["alpha"].Given; got != 60 {
-		t.Errorf("Given = %d, want 60 (warmup hit excluded from aggregates)", got)
+		t.Errorf("Given = %d, want 60 (out-of-match hits excluded from aggregates)", got)
 	}
-	if got := len(res.Damage.Events); got != 2 {
-		t.Errorf("Events = %d, want 2 (warmup hit kept in the log)", got)
+	// The events log now carries ONLY the in-match hit — the source gate.
+	if got := len(res.Damage.Events); got != 1 {
+		t.Fatalf("Events = %d, want 1 (warmup + post-match hits dropped from the log)", got)
+	}
+	if got := res.Damage.Events[0].Damage; got != 60 {
+		t.Errorf("surviving event damage = %d, want 60 (the in-match hit)", got)
+	}
+	// TotalDamage counts only the in-match hit too.
+	if res.Damage.TotalDamage != 60 {
+		t.Errorf("TotalDamage = %d, want 60", res.Damage.TotalDamage)
 	}
 }
 

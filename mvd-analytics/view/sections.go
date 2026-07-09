@@ -2,6 +2,7 @@ package view
 
 import (
 	"errors"
+	"math"
 	"sort"
 	"strings"
 
@@ -40,6 +41,12 @@ type FragOptions struct {
 // players / weapons / time window. Returns ErrUnavailable when the demo has
 // no frag log.
 //
+// ALIASING: on the unfiltered path (and the unfiltered Summary path) the
+// returned value shares the stored Result's aggregate maps/slices by
+// reference — it is a read-only view. Callers MUST NOT mutate the returned
+// FragResult or anything reachable from it (all current callers
+// marshal-and-discard). The filtered path returns freshly-allocated data.
+//
 // Two paths, by design:
 //
 //   - UNFILTERED (no players AND no weapon AND no from AND no to): return the
@@ -73,8 +80,8 @@ func Frags(r *result.Result, opts FragOptions) (*result.FragResult, error) {
 		return r.Frags, nil
 	}
 
-	startMs := int32(opts.From * 1000)
-	endMs := int32(opts.To * 1000)
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
 
 	// Filter the log to the entries the caller asked for.
 	var filtered []result.FragEntry
@@ -161,6 +168,12 @@ type DamageOptions struct {
 // weapon filter treats their implicit weapon as "tele" / "stomp". Returns
 // ErrUnavailable when the demo has no KTX mvdhidden_dmgdone stream.
 //
+// ALIASING: on the unfiltered path (and the unfiltered Summary path) the
+// returned value shares the stored Result's aggregate maps/slices by
+// reference — it is a read-only view. Callers MUST NOT mutate the returned
+// DamageResult or anything reachable from it (all current callers
+// marshal-and-discard). The filtered path returns freshly-allocated data.
+//
 // Two paths, matching Frags():
 //
 //   - UNFILTERED (no players AND no weapon AND no from AND no to): return the
@@ -170,10 +183,10 @@ type DamageOptions struct {
 //   - SCOPING FILTER ACTIVE (players OR weapon OR from OR to): RECOMPUTE every
 //     aggregate (TotalDamage, ByPlayer given/taken/byWeapon/EWep buckets,
 //     ByWeapon, Matrix) from the FILTERED per-hit Events, mirroring the damage
-//     analyzer's rules. Damage aggregates are a pure function of Events, so on
-//     a fully in-match stream the recompute reproduces the stored numbers;
-//     they can differ only where the stored aggregates gate out warmup hits
-//     that the Events log (ungated) still carries.
+//     analyzer's rules. Damage aggregates are a pure function of Events, and
+//     Events is match-gated at the source (the analyzer drops out-of-match
+//     hits), so an all-players recompute reproduces the stored numbers
+//     exactly — the two are built from the same in-match hit set.
 func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) {
 	if r.Damage == nil {
 		return nil, ErrUnavailable
@@ -190,8 +203,8 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 	}
 
 	d := r.Damage
-	startMs := int32(opts.From * 1000)
-	endMs := int32(opts.To * 1000)
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
 
 	matchEvent := func(attacker, victim, weapon string, tMs int32) bool {
 		if len(weapons) > 0 && !weapons[strings.ToLower(weapon)] {
@@ -523,6 +536,12 @@ func Chat(r *result.Result, opts ChatOptions) []result.MatchEvent {
 		out = append(out, ev)
 	}
 	return out
+}
+
+// secToMs converts a match-relative seconds bound to int32 ms, rounding to
+// the nearest ms (not truncating) so e.g. from=0.29s maps to 290ms, not 289.
+func secToMs(sec float64) int32 {
+	return int32(math.Round(sec * 1000))
 }
 
 // toSet builds a case-sensitive lookup set, trimming and dropping empties.

@@ -291,11 +291,16 @@ time-ordered per-hit log.
 | `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep hits at `time ≤ endTime`) |
 | `summary`   | `bool` | `false` | Return only aggregates, dropping the big per-hit damage log |
 
+The damage output — the aggregates AND the per-hit `events` log — is
+**match-only**: out-of-match (warmup / post-match) hits are dropped at the
+source and never appear (schema v50).
+
 When any scoping filter (`players` / `weapon` / `startTime` / `endTime`) is
 set, **every** aggregate (`totalDamage`, `byPlayer`, `byWeapon`, `matrix`) is
 recomputed from the filtered per-hit log — this also populates `matrix` /
-`events` on filtered responses (previously null). With none set the
-authoritative stored totals are returned.
+`events` on filtered responses (previously null). Because `events` is
+match-gated at the source, an all-players recompute reproduces the stored
+totals exactly. With none set the authoritative stored totals are returned.
 
 Output: `result.DamageResult` — `{ totalDamage, byWeapon, byPlayer: {name:
 {given, taken, givenTeam, givenSelf, takenEnv, byWeapon, enemyVsSg,
