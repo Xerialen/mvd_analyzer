@@ -1005,10 +1005,32 @@ section → `200` with a possibly-empty body):
     "frags": [ { "time": 13183, "killer": "GRID", "victim": "Evil's kid", "weapon": "rl" }, … ] } }
 ```
 
-> Note: `frag` → `{"frags": …}`, `demoinfo` → `{"demoInfo": …}` — the body key is
-> the artifact's `resultKey`, not the node name. The `shots`/`aim` sections here
-> are already stream-enriched: the base parse is always-full (phase 12), so the
-> projectile/beam/nail-derived splits are on every Result.
+The body key is the artifact's **`resultKey`, not the node name**, and a few
+nodes have no curated route (or vice versa). The full mapping for every
+servable artifact:
+
+| DAG node | curated route | body key (`resultKey`) | when the demo lacks it |
+|---|---|---|---|
+| `demoinfo` | `/demoinfo` | `demoInfo` | `422 demoinfo_unavailable` |
+| `frag` | `/frags` | `frags` | `422 frags_unavailable` |
+| `metadata` | `/metadata` | `metadata` | `422 metadata_unavailable` |
+| `match` | — (feeds `/overview`) | `match` | `200`, `null` body value |
+| `messages` | `/chat` (filtered view) | `messages` | `200`, `null` body value |
+| `timeline` | — (feeds `/events`, `/buckets`, `/region-control`) | `timelineAnalysis` | `200`, `null` body value |
+| `items` | `/items` (filtered view) | `items` | `200`, `null` body value |
+| `damage` | `/damage` | `damage` | `422 damage_unavailable` |
+| `shots` | `/shots` | `shots` | `422 shots_unavailable` |
+| `map-entities` | `/v1/maps/{map}/entities` (per-map form) | `mapEntities` | `200`, `null` body value |
+| `backpacks` | `/backpacks` (filtered view) | `backpacks` | `200`, `null`/`[]` |
+| `weapon-pickups` | `/weapon-pickups` (filtered view) | `weaponPickups` | `200`, `null`/`[]` |
+| `aim` | `/aim` | `aim` | `422 aim_unavailable` |
+| `loc-graph` | `/loc-graph` | `locGraph` | `422 locgraph_unavailable` |
+| `opening` | — (artifact only) | `opening` | `422 opening_unavailable` |
+| `los` | `/los` | — (serves the `/los` body, no envelope key) | `200`, empty lists |
+
+The `shots`/`aim` sections here are already stream-enriched: the base parse
+is always-full (phase 12), so the projectile/beam/nail-derived splits are on
+every Result.
 
 **Lazy artifact** `los` is materialised on demand exactly like `/los` (first
 request computes, then it is cached) and serves the same body:
