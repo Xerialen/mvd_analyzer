@@ -102,7 +102,11 @@ that downstream consumers render, summarise, or feed to an agent.
   exact map → mode → hub gameIds used, so the prune is reproducible.
 - `cmd/qw-analyze/` — CLI consumer. `qw-analyze demo.mvd` produces Result
   JSON; `-format md` produces a human summary; `-format events` dumps the
-  raw event stream; `-bulk -out-dir dir/` processes a directory.
+  raw event stream; `-bulk -out-dir dir/` processes a directory. The closed
+  `-view diagnostic-buckets -bucket 1s` view is the explicit exception to
+  match-relative analysis: it emits position-only buckets on the MVD's
+  demo-relative clock, including standby and quiet-tail time. Ordinary
+  `full` and `buckets` views remain match-gated.
 
 ## Pipeline architecture
 

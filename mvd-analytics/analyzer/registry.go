@@ -130,6 +130,17 @@ func (r *Registry) SetRegionsOverride(regs []config.MapRegionOverride) {
 	}
 }
 
+// EnableDiagnosticPositionCapture threads the explicit whole-demo position
+// mode down to the registered TimelineAnalyzer. It exists for closed
+// diagnostic views only; NewDefaultRegistry otherwise remains match-gated.
+func (r *Registry) EnableDiagnosticPositionCapture() {
+	for _, a := range r.derived {
+		if ta, ok := a.(*TimelineAnalyzer); ok {
+			ta.EnableDiagnosticPositionCapture()
+		}
+	}
+}
+
 // RegisterPostProcessor adds a non-event post-processor node. Its declared
 // edges (dag.go) place it after the artifacts it reads; there is no "runs
 // last" guarantee beyond what those edges express.

@@ -24,11 +24,16 @@ import (
 //   - timeline_streaks.go    spawn-to-death frag streak detection
 //   - timeline_regions.go    map region control auto-detection + custom defs
 type TimelineAnalyzer struct {
-	ctx           *Context
-	core          *CoreOutputs
-	playerState   map[int]*timelinePlayerState
-	playerNames   map[int]string // Slot -> player name (from UserInfoEvent)
-	playerUserIDs map[int]int    // Slot -> UserID (for Hub viewer track param)
+	ctx  *Context
+	core *CoreOutputs
+	// diagnosticPositionCapture is an explicit non-match mode used only by
+	// the CLI's diagnostic-buckets view. It records PlayerPositionEvent entity
+	// state across the whole demo. Ordinary analysis leaves this false and
+	// retains the match-only stream contract.
+	diagnosticPositionCapture bool
+	playerState               map[int]*timelinePlayerState
+	playerNames               map[int]string // Slot -> player name (from UserInfoEvent)
+	playerUserIDs             map[int]int    // Slot -> UserID (for Hub viewer track param)
 	// slotUserID is the *current* occupant's userid per slot (last valid
 	// wins, unlike playerUserIDs which pins the first). It lets
 	// onUserInfo spot a mid-match handoff so handleFragUpdate can rebase
@@ -89,6 +94,14 @@ func (a *TimelineAnalyzer) SetBlipThresholdMs(ms int) {
 // before Finalize(). Pass nil to clear and fall back to embedded.
 func (a *TimelineAnalyzer) SetRegionsOverride(regs []config.MapRegionOverride) {
 	a.regionsOverride = regs
+}
+
+// EnableDiagnosticPositionCapture opts this analyzer into demo-relative
+// position capture for diagnostics that intentionally do not represent a KTX
+// match (for example a single bot moving during standby). It must be enabled
+// before the event pass. Normal callers should leave it disabled.
+func (a *TimelineAnalyzer) EnableDiagnosticPositionCapture() {
+	a.diagnosticPositionCapture = true
 }
 
 // fragEvent tracks a frag before team assignment
@@ -231,7 +244,7 @@ func (a *TimelineAnalyzer) handlePositionUpdate(e *events.PlayerPositionEvent) {
 	// Stream emission: append every native sample (D11 asymmetry —
 	// positions don't dedup). Match-time only; warmup positions would
 	// pollute the stream with garbage.
-	if a.timing.Started && !a.timing.Ended {
+	if a.diagnosticPositionCapture || (a.timing.Started && !a.timing.Ended) {
 		state.streams.recordPosition(e.TimeMs, e.Origin[0], e.Origin[1], e.Origin[2], e.Angles[0], e.Angles[1])
 	}
 }

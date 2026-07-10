@@ -153,8 +153,22 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// fall back to the GLOBAL latest position sample (not any single
 	// player's) so every player's intervals close at the same time. posT is
 	// int32 ms (schema v8); EndTime is float64 seconds, converted here.
+	matchStart := a.timing.StartTime
 	matchEnd := a.timing.EndTime
-	if matchEnd == 0 {
+	if a.diagnosticPositionCapture {
+		// The diagnostic view has no KTX match epoch. Keep demo t=0 as the
+		// origin and make the half-open stream window include the final native
+		// entity-state sample by ending one millisecond after it.
+		matchStart = 0
+		matchEnd = 0
+		for _, state := range a.playerState {
+			if n := len(state.streams.posT); n > 0 {
+				if t := float64(state.streams.posT[n-1]+1) * 0.001; t > matchEnd {
+					matchEnd = t
+				}
+			}
+		}
+	} else if matchEnd == 0 {
 		for _, state := range a.playerState {
 			if n := len(state.streams.posT); n > 0 {
 				if t := float64(state.streams.posT[n-1]) * 0.001; t > matchEnd {
@@ -297,7 +311,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// matchEnd (and matchEndMs) were computed once above and already fed the
 	// powerup-close pass; buildStreamsResult reuses the same value so weapon
 	// and powerup intervals close consistently (F13).
-	if streams := a.buildStreamsResult(slotToName, slotToTeam, a.timing.StartTime, matchEnd); streams != nil {
+	if streams := a.buildStreamsResult(slotToName, slotToTeam, matchStart, matchEnd); streams != nil {
 		result.Streams = streams
 
 		// As of schema v23 the demo/wall-clock anchor lives on Streams.Global —
