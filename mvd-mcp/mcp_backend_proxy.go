@@ -549,7 +549,49 @@ func (p *proxyBackend) GetLocTable(ctx context.Context, in GetLocTableInput) (an
 }
 
 func (p *proxyBackend) ListArtifacts(ctx context.Context, _ ListArtifactsInput) (any, error) {
-	return p.fetchOpaque(ctx, "GET", "/v1/artifacts", nil)
+	out, err := p.fetchOpaque(ctx, "GET", "/v1/artifacts", nil)
+	if err != nil {
+		return nil, err
+	}
+	return compactArtifactManifest(out), nil
+}
+
+// compactArtifactManifest trims the REST manifest to what an MCP agent
+// can act on: fetchable artifacts and the fields that matter for
+// picking one (name, resultKey, cost, lazy, description). The
+// requires/provides/mutates edges describe pipeline wiring — the dev
+// story, told by ARTIFACTS.md and /v1/graph — and non-servable nodes
+// cannot be fetched at all, so both are noise at this surface (same
+// MCP-vs-REST split as the summary/windowMs defaults). Unexpected
+// shapes pass through untouched.
+func compactArtifactManifest(out any) any {
+	m, ok := out.(map[string]any)
+	if !ok {
+		return out
+	}
+	arts, ok := m["artifacts"].([]any)
+	if !ok {
+		return out
+	}
+	compact := make([]any, 0, len(arts))
+	for _, a := range arts {
+		row, ok := a.(map[string]any)
+		if !ok {
+			continue
+		}
+		if servable, _ := row["servable"].(bool); !servable {
+			continue
+		}
+		c := make(map[string]any, 5)
+		for _, k := range []string{"name", "resultKey", "cost", "lazy", "description"} {
+			if v, ok := row[k]; ok {
+				c[k] = v
+			}
+		}
+		compact = append(compact, c)
+	}
+	m["artifacts"] = compact
+	return m
 }
 
 func (p *proxyBackend) GetArtifact(ctx context.Context, in GetArtifactInput) (any, error) {

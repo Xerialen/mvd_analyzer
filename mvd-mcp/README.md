@@ -88,9 +88,13 @@ The first twenty-one tools are **curated**: each wraps one analytics
 section with a hand-written description and (where useful)
 `players`/`weapon`/window filters — that ergonomics is the product
 surface, and it stays. The last two are the **generic** DAG accessor:
-`listArtifacts` returns the pipeline manifest (every artifact's name,
-cost, `resultKey`, and whether it is `servable`), and `getArtifact`
-fetches one servable artifact by name. This is how the automatic API
+`listArtifacts` returns the fetchable-artifact catalog — servable
+artifacts only, trimmed to `{name, resultKey, cost, lazy, description}`
+at the MCP layer (the full DAG manifest with `requires`/`provides`
+edges and internal nodes stays on REST `/v1/artifacts` + `/v1/graph`) —
+and `getArtifact` fetches one servable artifact by name. Heed size
+notes in descriptions: `timeline` is one of the largest sections;
+prefer the windowed views (getEvents/getBuckets/getRegionControl). This is how the automatic API
 surface (plan §7) is realized here: a **new** analytics artifact becomes
 reachable through `getArtifact` with **zero** new hand-written tools,
 while the common sections keep their rich curated tools. Prefer the

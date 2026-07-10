@@ -194,7 +194,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 	// hand-written tools. Discover names + shapes with listArtifacts first.
 	addTool(s, &mcp.Tool{
 		Name:        "listArtifacts",
-		Description: "List every analytics artifact the pipeline can produce (the DAG manifest): name, cost (light/heavy), lazy flag, requires/provides edges, and the resultKey it lands under. 'servable' artifacts are fetchable with getArtifact. Static per schema version. Use this to discover analytics beyond the curated tools; for the common sections prefer the dedicated tools (getFrags, getDamage, getAim, ...) which offer filters and richer descriptions.",
+		Description: "List every FETCHABLE analytics artifact (name, resultKey, cost light/heavy, lazy flag, description) — the discovery layer for getArtifact. Trimmed at the MCP layer to servable artifacts and routing-relevant fields; the full DAG (requires/provides edges, internal nodes) lives in REST /v1/artifacts and /v1/graph. Static per schema version. For the common sections prefer the dedicated tools (getFrags, getDamage, getAim, ...) which offer filters; heed per-artifact size notes in descriptions (e.g. timeline is LARGE).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in ListArtifactsInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.ListArtifacts(ctx, in)
 		return toolResult(out, err)

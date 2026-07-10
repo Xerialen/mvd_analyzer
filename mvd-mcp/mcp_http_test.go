@@ -257,3 +257,50 @@ func (w *testWriter) Write(p []byte) (int, error) {
 	w.t.Logf("%s", strings.TrimRight(string(p), "\n"))
 	return len(p), nil
 }
+
+// TestHTTP_ErrorSurfacesAPIMessage: same guard as the in-memory
+// transport test, but through the streamable HTTP handler the hosted
+// deployment uses — a REST 4xx body must arrive verbatim in the
+// isError text content, not as an opaque protocol error.
+func TestHTTP_ErrorSurfacesAPIMessage(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":{"code":"invalid_param","message":"unknown field code loc; valid codes: li (location), h (health)"}}`))
+	}))
+	defer api.Close()
+
+	logger := slog.New(slog.NewTextHandler(&testWriter{t}, &slog.HandlerOptions{Level: slog.LevelError}))
+	handler := newStreamableHandler(newGetServer(api.URL, serviceKey, 5*time.Second, nil), logger)
+	mux := http.NewServeMux()
+	mux.Handle(mcpPath, handler)
+	mux.Handle(mcpPath+"/", handler)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	sess, err := connectHTTP(t, srv.URL, "")
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := sess.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "getStateAt",
+		Arguments: map[string]any{"demoId": "gameId:42", "time": 0.3, "fields": []string{"loc"}},
+	})
+	if err != nil {
+		t.Fatalf("CallTool must not fail at the protocol level: %v", err)
+	}
+	if !res.IsError {
+		t.Fatalf("expected isError=true, got %+v", res)
+	}
+	var text string
+	for _, c := range res.Content {
+		if tc, ok := c.(*mcp.TextContent); ok {
+			text += tc.Text
+		}
+	}
+	if !strings.Contains(text, "unknown field code loc") || !strings.Contains(text, "valid codes") {
+		t.Errorf("error text must carry the API message verbatim, got %q", text)
+	}
+}

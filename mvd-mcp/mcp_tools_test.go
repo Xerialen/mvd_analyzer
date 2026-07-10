@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -368,5 +370,44 @@ func mustDecodeStructured(t *testing.T, res *mcp.CallToolResult, out any) {
 	}
 	if err := json.Unmarshal(data, out); err != nil {
 		t.Fatalf("decode structured content into %T: %v (data=%s)", out, err, string(data))
+	}
+}
+
+// TestMCP_ErrorSurfacesAPIMessage: a REST 4xx body must reach the MCP
+// caller verbatim inside the isError text content — self-describing
+// errors (the enumerated field-code list, invalid params) are how an
+// agent recovers in one turn. Guards the full stack: real proxy
+// backend -> httptest mvd-api returning the standard error envelope ->
+// registerTools -> real go-sdk client session.
+func TestMCP_ErrorSurfacesAPIMessage(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":{"code":"invalid_param","message":"unknown field code loc; valid codes: li (location), h (health)"}}`))
+	}))
+	defer api.Close()
+	b := newProxyBackend(api.URL, "", 5*time.Second)
+	sess := testMCPSession(t, b)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := sess.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "getStateAt",
+		Arguments: map[string]any{"demoId": "gameId:42", "time": 0.3, "fields": []string{"loc"}},
+	})
+	if err != nil {
+		t.Fatalf("CallTool must not fail at the protocol level: %v", err)
+	}
+	if !res.IsError {
+		t.Fatalf("expected isError=true, got %+v", res)
+	}
+	var text string
+	for _, c := range res.Content {
+		if tc, ok := c.(*mcp.TextContent); ok {
+			text += tc.Text
+		}
+	}
+	if !strings.Contains(text, "unknown field code loc") || !strings.Contains(text, "valid codes") {
+		t.Errorf("error text must carry the API message verbatim, got %q", text)
 	}
 }

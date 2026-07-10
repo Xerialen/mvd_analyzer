@@ -7,6 +7,18 @@ detail.
 
 ## Unreleased (branch `phase-16.1`)
 
+- **listArtifacts goes routing-only at the MCP layer; timeline artifact
+  gets a size warning (no schema change).** External-review follow-ups:
+  `listArtifacts` now returns servable artifacts only, trimmed to
+  `{name, resultKey, cost, lazy, description}` — the DAG edges and
+  internal nodes stay on REST `/v1/artifacts`/`/v1/graph` where they
+  serve the dev story. The `timeline` node description now warns it is
+  one of the largest sections and points at the windowed views. The
+  reported "opaque MCP error" regression did not reproduce: two new
+  end-to-end tests (in-memory + streamable HTTP, real go-sdk client)
+  pin that REST 4xx bodies — including the enumerated field-code list —
+  arrive verbatim in the isError text.
+
 - **Friction + correctness edges (schema v52,
   [PLAN-api-usability](PLAN-api-usability.md) workstream C).**
   - **No-match-start demos are flagged, not coerced (v52):** when no

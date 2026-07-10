@@ -544,3 +544,37 @@ func TestProxy_TimeWindowsForwarded(t *testing.T) {
 		t.Errorf("region-control windowMs = %q, want the 5000 MCP default preserved", seenQuery.Get("windowMs"))
 	}
 }
+
+// TestProxy_ListArtifacts_CompactsManifest: the MCP surface trims the
+// manifest to servable artifacts and routing-relevant fields; the DAG
+// edges and internal nodes stay on REST /v1/artifacts + /v1/graph.
+func TestProxy_ListArtifacts_CompactsManifest(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"schemaVersion":52,"artifacts":[
+			{"name":"clock","servable":false,"mutates":false,"requires":[],"provides":["clock"],"cost":"light","lazy":false,"description":"internal"},
+			{"name":"opening","servable":true,"mutates":true,"requires":["timeline","items"],"provides":["opening"],"resultKey":"opening","cost":"light","lazy":false,"description":"Match opening."}
+		]}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	out, err := b.ListArtifacts(context.Background(), ListArtifactsInput{})
+	if err != nil {
+		t.Fatalf("ListArtifacts: %v", err)
+	}
+	arts := out.(map[string]any)["artifacts"].([]any)
+	if len(arts) != 1 {
+		t.Fatalf("non-servable node survived compaction: %+v", arts)
+	}
+	row := arts[0].(map[string]any)
+	if row["name"] != "opening" || row["resultKey"] != "opening" || row["description"] == nil {
+		t.Errorf("compact row missing routing fields: %+v", row)
+	}
+	for _, gone := range []string{"requires", "provides", "mutates", "servable"} {
+		if _, ok := row[gone]; ok {
+			t.Errorf("compact row still carries %q", gone)
+		}
+	}
+	if v := out.(map[string]any)["schemaVersion"]; v.(float64) != 52 {
+		t.Errorf("envelope fields must pass through, got schemaVersion=%v", v)
+	}
+}
