@@ -431,3 +431,116 @@ func TestProxy_ListEndpointsWrapped(t *testing.T) {
 		})
 	}
 }
+
+// TestProxy_SummaryDefaultsTrue: damage/aim/items default summary=1 at
+// the MCP layer (D1, PLAN-api-usability) and annotate the defaulted
+// response with a hint; an explicit summary:false suppresses both.
+func TestProxy_SummaryDefaultsTrue(t *testing.T) {
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.Query()
+		w.Write([]byte(`{"totalDamage":1}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	fv := false
+	tv := true
+	calls := []struct {
+		name string
+		call func(summary *bool) (any, error)
+	}{
+		{"damage", func(s *bool) (any, error) {
+			return b.GetDamage(context.Background(), GetDamageInput{DemoID: "gameId:42", Summary: s})
+		}},
+		{"aim", func(s *bool) (any, error) {
+			return b.GetAim(context.Background(), GetAimInput{DemoID: "gameId:42", Summary: s})
+		}},
+		{"items", func(s *bool) (any, error) {
+			return b.GetItems(context.Background(), GetItemsInput{DemoID: "gameId:42", Summary: s})
+		}},
+	}
+	for _, c := range calls {
+		// Unset -> summary=1 + hint.
+		out, err := c.call(nil)
+		if err != nil {
+			t.Fatalf("%s(nil): %v", c.name, err)
+		}
+		if seenQuery.Get("summary") != "1" {
+			t.Errorf("%s(nil): summary param = %q, want 1", c.name, seenQuery.Get("summary"))
+		}
+		if _, ok := out.(map[string]any)["hint"]; !ok {
+			t.Errorf("%s(nil): defaulted summary response missing hint", c.name)
+		}
+		// Explicit false -> no summary param, no hint.
+		out, err = c.call(&fv)
+		if err != nil {
+			t.Fatalf("%s(false): %v", c.name, err)
+		}
+		if seenQuery.Has("summary") {
+			t.Errorf("%s(false): summary param sent = %q, want absent", c.name, seenQuery.Get("summary"))
+		}
+		if _, ok := out.(map[string]any)["hint"]; ok {
+			t.Errorf("%s(false): unexpected hint on full response", c.name)
+		}
+		// Explicit true -> summary=1 but NO hint (caller knew).
+		out, err = c.call(&tv)
+		if err != nil {
+			t.Fatalf("%s(true): %v", c.name, err)
+		}
+		if seenQuery.Get("summary") != "1" {
+			t.Errorf("%s(true): summary param = %q, want 1", c.name, seenQuery.Get("summary"))
+		}
+		if _, ok := out.(map[string]any)["hint"]; ok {
+			t.Errorf("%s(true): hint added despite explicit summary", c.name)
+		}
+	}
+}
+
+// TestProxy_TimeWindowsForwarded: the new from/to params reach the REST
+// query for items / backpacks / weapon-pickups / region-control.
+func TestProxy_TimeWindowsForwarded(t *testing.T) {
+	var seenPath string
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenPath = r.URL.Path
+		seenQuery = r.URL.Query()
+		if strings.Contains(r.URL.Path, "backpacks") || strings.Contains(r.URL.Path, "weapon-pickups") {
+			w.Write([]byte(`[]`))
+			return
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	fv := false
+	if _, err := b.GetItems(ctx, GetItemsInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60, Summary: &fv}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("items window = %q..%q (%s)", seenQuery.Get("from"), seenQuery.Get("to"), seenPath)
+	}
+	if _, err := b.GetBackpacks(ctx, GetBackpacksInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("backpacks window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
+	}
+	if _, err := b.GetWeaponPickups(ctx, GetWeaponPickupsInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("weapon-pickups window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
+	}
+	if _, err := b.GetRegionControl(ctx, GetRegionControlInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("region-control window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
+	}
+	if seenQuery.Get("windowMs") != "1000" {
+		t.Errorf("region-control windowMs = %q, want the 1000 MCP default preserved", seenQuery.Get("windowMs"))
+	}
+}

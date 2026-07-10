@@ -470,16 +470,23 @@ func (s *server) handleDemoInfo(w http.ResponseWriter, r *http.Request) {
 //
 //	players  csv — restrict to drops by these dropper names
 //	weapon   csv — restrict to these weapons ("rl"/"lg"; case-insensitive)
+//	from/to  match-relative seconds — window the drop time
 func (s *server) handleBackpacks(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	writeJSON(w, http.StatusOK, view.Backpacks(res, view.BackpackOptions{
-		Players: parseCSV(ciGet(q, "players")),
-		Weapons: parseCSV(ciGet(q, "weapon")),
-	}))
+	p := newQP(r.URL.Query())
+	opts := view.BackpackOptions{
+		Players: p.CSV("players"),
+		Weapons: p.CSV("weapon"),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	writeJSON(w, http.StatusOK, view.Backpacks(res, opts))
 }
 
 // handleItems: GET /v1/demos/{id}/items — per-item pickup/respawn
@@ -502,17 +509,35 @@ func (s *server) handleBackpacks(w http.ResponseWriter, r *http.Request) {
 //
 // Phases with no TakenBy survive any players= filter (they represent
 // the item's availability state at match end / dropped runs).
+//
+//	from/to  match-relative seconds — keep phases OVERLAPPING the window
+//	         (a phase covers [availableFrom, respawnAt), open-ended when
+//	         respawnAt is 0)
+//	summary  bool — per-item take aggregates (takenCount, byPlayer,
+//	         firstTake) instead of the phase timeline; takes are counted
+//	         INSIDE the window
 func (s *server) handleItems(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	writeJSON(w, http.StatusOK, view.Items(res, view.ItemOptions{
-		Items:   parseCSV(ciGet(q, "items")),
-		Players: parseCSV(ciGet(q, "players")),
-		Kinds:   parseCSV(ciGet(q, "kinds")),
-	}))
+	p := newQP(r.URL.Query())
+	opts := view.ItemOptions{
+		Items:   p.CSV("items"),
+		Players: p.CSV("players"),
+		Kinds:   p.CSV("kinds"),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
+	}
+	summary := p.Bool("summary")
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	if summary {
+		writeJSON(w, http.StatusOK, view.ItemsSummary(res, opts))
+		return
+	}
+	writeJSON(w, http.StatusOK, view.Items(res, opts))
 }
 
 // handleWeaponPickups: GET /v1/demos/{id}/weapon-pickups — slot-weapon
@@ -524,17 +549,24 @@ func (s *server) handleItems(w http.ResponseWriter, r *http.Request) {
 //	players  csv — restrict to picks by these names
 //	weapon   csv — "rl","lg","gl","ssg","sng","ng" (case-insensitive)
 //	source   "world" | "backpack" | "unknown"
+//	from/to  match-relative seconds — window the pickup time
 func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
 		return
 	}
-	q := r.URL.Query()
-	writeJSON(w, http.StatusOK, view.WeaponPickups(res, view.WeaponPickupOptions{
-		Players: parseCSV(ciGet(q, "players")),
-		Weapons: parseCSV(ciGet(q, "weapon")),
-		Source:  ciGet(q, "source"),
-	}))
+	p := newQP(r.URL.Query())
+	opts := view.WeaponPickupOptions{
+		Players: p.CSV("players"),
+		Weapons: p.CSV("weapon"),
+		Source:  ciGet(r.URL.Query(), "source"),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
+	}
+	if writeInvalidParam(w, p.Err()) {
+		return
+	}
+	writeJSON(w, http.StatusOK, view.WeaponPickups(res, opts))
 }
 
 func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {

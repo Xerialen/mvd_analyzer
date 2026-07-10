@@ -400,6 +400,8 @@ type ItemOptions struct {
 	Items   []string // instance Name ("ya_1") or kind token ("ya"); case-insensitive
 	Players []string // keep only phases TakenBy one of these (case-sensitive)
 	Kinds   []string // item category (armor, mega, ...) or raw kind; case-insensitive
+	From    float64  // window start, match-relative seconds (0 = no bound)
+	To      float64  // window end, match-relative seconds (0 = no bound)
 }
 
 // Items returns the demo's per-item pickup/respawn timeline, optionally
@@ -407,6 +409,13 @@ type ItemOptions struct {
 // source, so this is always available — an absent section yields an empty
 // list, never ErrUnavailable. Phases with no TakenBy survive a players
 // filter (they represent the item's availability state).
+//
+// The From/To window keeps phases that OVERLAP it: a phase covers
+// [availableFrom, respawnAt), open-ended when respawnAt is 0 (item
+// still up, or taken and not yet back). Overlap — not take-in-window —
+// so the response still tells the item's state across the whole window;
+// the summary shape (ItemsSummary) is the one that counts takes inside
+// the window.
 func Items(r *result.Result, opts ItemOptions) *result.ItemsResult {
 	if r.Items == nil {
 		return &result.ItemsResult{Items: []result.ItemTimeline{}}
@@ -414,8 +423,23 @@ func Items(r *result.Result, opts ItemOptions) *result.ItemsResult {
 	itemSet := toLowerSet(opts.Items)
 	players := toSet(opts.Players)
 	kindSet := toLowerSet(opts.Kinds)
-	if len(itemSet) == 0 && len(players) == 0 && len(kindSet) == 0 {
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
+	if len(itemSet) == 0 && len(players) == 0 && len(kindSet) == 0 && startMs == 0 && endMs == 0 {
 		return r.Items
+	}
+
+	keepPhase := func(ph result.ItemPhase) bool {
+		if len(players) > 0 && ph.TakenBy != "" && !players[ph.TakenBy] {
+			return false
+		}
+		if endMs > 0 && ph.AvailableFrom >= endMs {
+			return false
+		}
+		if startMs > 0 && ph.RespawnAt != 0 && ph.RespawnAt <= startMs {
+			return false
+		}
+		return true
 	}
 
 	out := &result.ItemsResult{Items: make([]result.ItemTimeline, 0, len(r.Items.Items))}
@@ -426,21 +450,85 @@ func Items(r *result.Result, opts ItemOptions) *result.ItemsResult {
 		if len(kindSet) > 0 && !kindSet[it.Category()] && !kindSet[strings.ToLower(it.Kind)] {
 			continue
 		}
-		if len(players) > 0 {
-			kept := it
-			kept.Phases = make([]result.ItemPhase, 0, len(it.Phases))
-			for _, ph := range it.Phases {
-				if ph.TakenBy == "" || players[ph.TakenBy] {
-					kept.Phases = append(kept.Phases, ph)
-				}
-			}
-			if len(kept.Phases) == 0 {
-				continue
-			}
-			out.Items = append(out.Items, kept)
+		if len(players) == 0 && startMs == 0 && endMs == 0 {
+			out.Items = append(out.Items, it)
 			continue
 		}
-		out.Items = append(out.Items, it)
+		kept := it
+		kept.Phases = make([]result.ItemPhase, 0, len(it.Phases))
+		for _, ph := range it.Phases {
+			if keepPhase(ph) {
+				kept.Phases = append(kept.Phases, ph)
+			}
+		}
+		if len(kept.Phases) == 0 {
+			continue
+		}
+		out.Items = append(out.Items, kept)
+	}
+	return out
+}
+
+// ItemsSummaryView is the summary=true shape of /items: per-item take
+// aggregates instead of the full phase timeline. Cheap enough to be the
+// MCP-layer default (PLAN-api-usability D1).
+type ItemsSummaryView struct {
+	Items []ItemSummary `json:"items"`
+}
+
+// ItemSummary aggregates one spawner's takes. Counted takes are the
+// attributed-or-timed ones whose TakenAt falls INSIDE the From/To
+// window (unlike the full timeline, which keeps overlapping phases).
+type ItemSummary struct {
+	Name       string         `json:"name"`
+	Kind       string         `json:"kind"`
+	EntNum     int            `json:"entNum"`
+	Loc        string         `json:"loc,omitempty"`
+	TakenCount int            `json:"takenCount"`
+	ByPlayer   map[string]int `json:"byPlayer,omitempty"`
+	FirstTake  *ItemTake      `json:"firstTake,omitempty"`
+}
+
+// ItemTake is one take: t in match-relative seconds (view surface unit).
+type ItemTake struct {
+	T       float64 `json:"t"`
+	TakenBy string  `json:"takenBy,omitempty"`
+	Team    string  `json:"team,omitempty"`
+}
+
+// ItemsSummary reduces the (filtered) item timelines to per-item take
+// counts, a by-player split, and the first take in the window. Items
+// that match the identity filters survive with TakenCount 0 when
+// nothing took them in the window (their availability is still signal).
+func ItemsSummary(r *result.Result, opts ItemOptions) *ItemsSummaryView {
+	filtered := Items(r, opts)
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
+	out := &ItemsSummaryView{Items: make([]ItemSummary, 0, len(filtered.Items))}
+	for _, it := range filtered.Items {
+		s := ItemSummary{Name: it.Name, Kind: it.Kind, EntNum: it.EntNum, Loc: it.Loc}
+		for _, ph := range it.Phases {
+			if ph.TakenAt == 0 && ph.TakenBy == "" {
+				continue // untaken availability phase
+			}
+			if startMs > 0 && ph.TakenAt < startMs {
+				continue
+			}
+			if endMs > 0 && ph.TakenAt >= endMs {
+				continue
+			}
+			s.TakenCount++
+			if ph.TakenBy != "" {
+				if s.ByPlayer == nil {
+					s.ByPlayer = make(map[string]int)
+				}
+				s.ByPlayer[ph.TakenBy]++
+			}
+			if s.FirstTake == nil || secs(ph.TakenAt) < s.FirstTake.T {
+				s.FirstTake = &ItemTake{T: secs(ph.TakenAt), TakenBy: ph.TakenBy, Team: ph.Team}
+			}
+		}
+		out.Items = append(out.Items, s)
 	}
 	return out
 }
@@ -450,10 +538,13 @@ func Items(r *result.Result, opts ItemOptions) *result.ItemsResult {
 type BackpackOptions struct {
 	Players []string // dropper name (case-sensitive)
 	Weapons []string // "rl"/"lg"; case-insensitive (CSV — multiple accepted)
+	From    float64  // window start, match-relative seconds (0 = no bound)
+	To      float64  // window end, match-relative seconds (0 = no bound)
 }
 
 // Backpacks returns the demo's RL/LG backpack drops, optionally filtered.
-// Always available; an empty list when the demo has none.
+// Always available; an empty list when the demo has none. From/To window
+// the drop time.
 func Backpacks(r *result.Result, opts BackpackOptions) []result.BackpackDrop {
 	out := []result.BackpackDrop{}
 	if len(r.Backpacks) == 0 {
@@ -461,11 +552,16 @@ func Backpacks(r *result.Result, opts BackpackOptions) []result.BackpackDrop {
 	}
 	players := toSet(opts.Players)
 	weapons := toLowerSet(opts.Weapons)
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
 	for _, b := range r.Backpacks {
 		if len(players) > 0 && !players[b.Player] {
 			continue
 		}
 		if len(weapons) > 0 && !weapons[strings.ToLower(b.Weapon)] {
+			continue
+		}
+		if (startMs > 0 && b.Time < startMs) || (endMs > 0 && b.Time > endMs) {
 			continue
 		}
 		out = append(out, b)
@@ -479,10 +575,13 @@ type WeaponPickupOptions struct {
 	Players []string // picker name (case-sensitive)
 	Weapons []string // weapon token; case-insensitive
 	Source  string   // "world" | "backpack"; case-insensitive
+	From    float64  // window start, match-relative seconds (0 = no bound)
+	To      float64  // window end, match-relative seconds (0 = no bound)
 }
 
 // WeaponPickups returns the demo's slot-weapon acquisitions, optionally
 // filtered. Always available; an empty list when the demo has none.
+// From/To window the pickup time.
 func WeaponPickups(r *result.Result, opts WeaponPickupOptions) []result.WeaponPickup {
 	out := []result.WeaponPickup{}
 	if len(r.WeaponPickups) == 0 {
@@ -491,6 +590,8 @@ func WeaponPickups(r *result.Result, opts WeaponPickupOptions) []result.WeaponPi
 	players := toSet(opts.Players)
 	weapons := toLowerSet(opts.Weapons)
 	source := strings.ToLower(strings.TrimSpace(opts.Source))
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
 	for _, wp := range r.WeaponPickups {
 		if len(players) > 0 && !players[wp.Player] {
 			continue
@@ -499,6 +600,9 @@ func WeaponPickups(r *result.Result, opts WeaponPickupOptions) []result.WeaponPi
 			continue
 		}
 		if source != "" && wp.Source != source {
+			continue
+		}
+		if (startMs > 0 && wp.Time < startMs) || (endMs > 0 && wp.Time > endMs) {
 			continue
 		}
 		out = append(out, wp)
@@ -552,6 +656,15 @@ func Chat(r *result.Result, opts ChatOptions) []result.MatchEvent {
 // the nearest ms (not truncating) so e.g. from=0.29s maps to 290ms, not 289.
 func secToMs(sec float64) int32 {
 	return int32(math.Round(sec * 1000))
+}
+
+// secs converts int32 ms to the view surface's float64 seconds.
+// Division (not `*0.001`) matters: IEEE division is correctly rounded,
+// so the result is the double nearest to the decimal value and JSON
+// prints "13.155" — multiplying by the inexact 0.001 can land one ulp
+// off and print "13.155000000000001" (PLAN-api-usability D8).
+func secs(ms int32) float64 {
+	return float64(ms) / 1000
 }
 
 // toSet builds a case-sensitive lookup set, trimming and dropping empties.

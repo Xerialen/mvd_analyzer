@@ -1576,6 +1576,15 @@ same instant. A consumer asking "is this item up at time T" always
 gets "up" for such weapons; the closed phases still carry
 `takenBy`/`team` for pickup counting.
 
+**Summary shape** (`/items?summary=true`, `view.ItemsSummary`): per-item
+take aggregates instead of the phase timeline —
+`{ items: [{ name, kind, entNum, loc?, takenCount, byPlayer?: {name: n},
+firstTake?: { t, takenBy?, team? } }] }` with `t` in match-relative
+**seconds** (view surface unit). With a `from`/`to` window, the full
+timeline keeps phases **overlapping** the window while the summary
+counts takes **inside** it; identity-filtered items survive with
+`takenCount: 0` when nothing took them in the window.
+
 For the map's **designed** static layout (all spawns + teleporters /
 spawnpoints / buttons, independent of what happened this match), see
 [MapEntitiesResult](#mapentitiesresult-mapentities).

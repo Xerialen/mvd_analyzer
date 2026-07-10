@@ -119,8 +119,10 @@ type GetLocTableInput struct {
 
 // GetRegionControlInput mirrors /v1/demos/{id}/region-control query params.
 type GetRegionControlInput struct {
-	DemoID   string `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	WindowMs int    `json:"windowMs,omitempty" jsonschema:"bucket size for per-region state strings; default 1000 (1 s) — finer resolution multiplies the bucketStates string length"`
+	DemoID    string  `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	WindowMs  int     `json:"windowMs,omitempty" jsonschema:"bucket size for per-region state strings; default 1000 (1 s) — finer resolution multiplies the bucketStates string length"`
+	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
+	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }
 
 // GetDemoInfoInput identifies a demo for the KTX demoinfo blob.
@@ -157,7 +159,7 @@ type GetDamageInput struct {
 	Weapon    []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + damage log to these attacker weapon codes (rl, lg, gl, ssg, sng, sg, tele, ...)"`
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (hits at or after this time)"`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (hits at or before this time)"`
-	Summary   bool     `json:"summary,omitempty" jsonschema:"return only aggregates, dropping the big per-hit damage log (avoids overflowing context)"`
+	Summary   *bool    `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): aggregates only, the big per-hit damage log dropped. Pass false for the full log."`
 }
 
 // GetAimInput identifies a demo for its per-player aim analysis, with optional
@@ -169,7 +171,7 @@ type GetAimInput struct {
 	Players   []string `json:"players,omitempty" jsonschema:"scope to these shooters (players[].player); with no time window this selects their match-wide aim, with a window it restricts the recompute"`
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds; setting a window recomputes aim over the shots in it so every figure (weapons, crosshair, lgRamp) scopes to the window"`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
-	Summary   bool     `json:"summary,omitempty" jsonschema:"return only the compact per-player weapons aggregates, dropping the large per-fire crosshair + lgRamp sample arrays — the recommended way to avoid overflowing context"`
+	Summary   *bool    `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): only the compact per-player weapons aggregates, the large per-fire crosshair + lgRamp sample arrays dropped. Pass false for the full arrays."`
 }
 
 // GetLocGraphInput identifies a demo for its per-loc adjacency graph.
@@ -192,6 +194,8 @@ type GetBackpacksInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players []string `json:"players,omitempty" jsonschema:"restrict to drops by these dropper names"`
 	Weapon  []string `json:"weapon,omitempty" jsonschema:"restrict to these dropped-weapon codes (rl, lg); empty = both. Forwarded as a CSV set, matching REST /backpacks"`
+	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (drops at or after this time)"`
+	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }
 
 // GetItemsInput filters /v1/demos/{id}/items.
@@ -200,6 +204,9 @@ type GetItemsInput struct {
 	Items   []string `json:"items,omitempty" jsonschema:"item name or kind token (case-insensitive). A kind matches every instance of a type (YA → ya_1, ya_2; RA; MH; Quad; Pent; Ring; RL; LG; GL; SSG; SNG; NG); a suffixed name matches one instance (ya_1)."`
 	Players []string `json:"players,omitempty" jsonschema:"restrict phases to those taken by these player names (phases with no TakenBy survive)"`
 	Kinds   []string `json:"kinds,omitempty" jsonschema:"item category (case-insensitive): armor, mega, health, powerup, weapon, ammo. A raw kind token (ra, quad, rl, ...) is also accepted."`
+	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds. Timeline mode keeps phases OVERLAPPING the window; summary mode counts takes INSIDE it"`
+	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (e.g. endTime:60 = the opening minute)"`
+	Summary   *bool   `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): per-item take aggregates {takenCount, byPlayer, firstTake} instead of the full phase timeline. Pass false for every phase (available/taken/respawn cycles)."`
 }
 
 // GetMapEntitiesByMapInput addresses the static layout by map name
@@ -216,6 +223,8 @@ type GetWeaponPickupsInput struct {
 	Players []string `json:"players,omitempty" jsonschema:"restrict to picks by these names"`
 	Weapon  []string `json:"weapon,omitempty" jsonschema:"weapon codes: rl, lg, gl, ssg, sng, ng"`
 	Source  string   `json:"source,omitempty" jsonschema:"'world' (spawner) or 'backpack' (RL/LG drop)"`
+	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (pickups at or after this time)"`
+	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }
 
 // ListArtifactsInput has no parameters — the artifact manifest is static
@@ -244,4 +253,5 @@ type SearchGamesInput struct {
 	To       string   `json:"to,omitempty"       jsonschema:"ISO date upper bound, inclusive (YYYY-MM-DD)"`
 	Limit    int      `json:"limit,omitempty"    jsonschema:"max rows (default 20, capped at 100)"`
 	Offset   int      `json:"offset,omitempty"   jsonschema:"pagination offset"`
+	Roster   bool     `json:"roster,omitempty"   jsonschema:"true = verbatim hub rows with full roster detail (per-player ping, color arrays, name_color). Default = compact rows: players projected to {name, team, frags}"`
 }

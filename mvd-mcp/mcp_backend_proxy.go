@@ -225,6 +225,31 @@ func (q query) seconds(key string, sec float64) {
 	}
 }
 
+// summaryDefaultTrue resolves the MCP-layer summary default (D1,
+// PLAN-api-usability): a caller who says nothing gets summary=true —
+// token-lean by default; REST keeps its full-log default. Returns the
+// resolved value plus whether it was defaulted (a defaulted summary
+// response gets a hint so agents can self-serve the full data).
+func summaryDefaultTrue(v *bool) (val, defaulted bool) {
+	if v == nil {
+		return true, true
+	}
+	return *v, false
+}
+
+// withSummaryHint annotates a summary-by-default response with how to
+// get the dropped detail. Only fires when the caller didn't ask for the
+// summary explicitly, and only on object bodies.
+func withSummaryHint(out any, add bool, dropped string) any {
+	if !add {
+		return out
+	}
+	if m, ok := out.(map[string]any); ok {
+		m["hint"] = "summary=true is the MCP default; pass summary:false for " + dropped
+	}
+	return out
+}
+
 // intv encodes a non-zero integer.
 func (q query) intv(key string, n int) {
 	if n != 0 {
@@ -325,8 +350,10 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	q.csv("weapon", in.Weapon)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
-	q.boolean("summary", in.Summary)
-	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the per-hit events log"), err
 }
 
 func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) {
@@ -338,8 +365,10 @@ func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) 
 	q.csv("players", in.Players)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
-	q.boolean("summary", in.Summary)
-	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the per-fire crosshair + lgRamp arrays"), err
 }
 
 func (p *proxyBackend) GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error) {
@@ -371,6 +400,8 @@ func (p *proxyBackend) GetBackpacks(ctx context.Context, in GetBackpacksInput) (
 	q := query{}
 	q.csv("players", in.Players)
 	q.csv("weapon", in.Weapon)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
 	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "backpacks")
 }
 
@@ -383,7 +414,12 @@ func (p *proxyBackend) GetItems(ctx context.Context, in GetItemsInput) (any, err
 	q.csv("items", in.Items)
 	q.csv("players", in.Players)
 	q.csv("kinds", in.Kinds)
-	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the full phase timeline"), err
 }
 
 func (p *proxyBackend) GetMapEntitiesByMap(ctx context.Context, in GetMapEntitiesByMapInput) (any, error) {
@@ -405,6 +441,8 @@ func (p *proxyBackend) GetWeaponPickups(ctx context.Context, in GetWeaponPickups
 	q.csv("players", in.Players)
 	q.csv("weapon", in.Weapon)
 	q.str("source", in.Source)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
 	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "pickups")
 }
 
@@ -539,5 +577,7 @@ func (p *proxyBackend) GetRegionControl(ctx context.Context, in GetRegionControl
 	}
 	q := query{}
 	q.intv("windowMs", windowMs)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }

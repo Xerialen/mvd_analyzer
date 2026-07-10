@@ -541,11 +541,21 @@ combat-posture weights). Shape: `result.LocGraphResult` →
 
 KTX-hint-derived item analytics:
 
-- **`/backpacks`** (`players`, `weapon`) — RL/LG drops. `[]result.BackpackDrop`.
-- **`/items`** (`items`, `players`, `kinds`) — per-item pickup/respawn
-  timeline. `result.ItemsResult`.
-- **`/weapon-pickups`** (`players`, `weapon`, `source`) — slot-weapon
-  acquisitions with kills-before-next-death; joins to backpacks via
+- **`/backpacks`** (`players`, `weapon`, `from`, `to`) — RL/LG drops,
+  the window on drop time. `[]result.BackpackDrop`.
+- **`/items`** (`items`, `players`, `kinds`, `from`, `to`, `summary`) —
+  per-item pickup/respawn timeline. `result.ItemsResult`. The `from`/`to`
+  window keeps phases **overlapping** it (a phase covers
+  `[availableFrom, respawnAt)`, open-ended when `respawnAt` is 0), so
+  the item's state across the window stays visible. `summary=true`
+  returns per-item take aggregates instead —
+  `{items:[{name, kind, entNum, loc?, takenCount, byPlayer?, firstTake?}]}`
+  with takes counted **inside** the window and `firstTake` =
+  `{t (seconds), takenBy?, team?}` — the cheap shape for "who took what
+  / who took X first" (and the MCP-layer default for `getItems`).
+- **`/weapon-pickups`** (`players`, `weapon`, `source`, `from`, `to`) —
+  slot-weapon acquisitions with kills-before-next-death, the window on
+  pickup time; joins to backpacks via
   `backpackEnt`. `[]result.WeaponPickup`. `source` is
   `world`/`backpack`/`unknown` (schema v46: weapon-stay demos carry
   synthesized `inferred` entries; `unknown` = a grant with no weapon

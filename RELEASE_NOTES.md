@@ -7,6 +7,31 @@ detail.
 
 ## Unreleased (branch `phase-16.1`)
 
+- **Filter + summary pass over the item/pickup endpoints and MCP-layer
+  token-lean defaults (no schema change,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream B).**
+  - `/items` gains `from`/`to` (keeps phases **overlapping** the window)
+    and `summary=true` (per-item `{takenCount, byPlayer, firstTake}`
+    with takes counted **inside** the window) — "who took X in the
+    opening minute" no longer fetches the full-match phase timeline.
+    `/backpacks` and `/weapon-pickups` gain `from`/`to` on the
+    drop/pickup time. The MCP proxy now forwards `startTime`/`endTime`
+    for `getRegionControl` (REST already accepted them; the proxy
+    silently dropped them).
+  - **MCP defaults diverge from REST toward token-lean (D1):**
+    `getDamage`, `getAim`, and `getItems` now default `summary: true`
+    at the MCP layer only — REST keeps full logs by default. A
+    defaulted summary response carries a `hint` field telling the agent
+    to pass `summary: false` for the dropped detail. Precedent: the
+    proxy's existing `windowMs` 50→1000 override.
+  - **`searchGames` goes compact and paginates honestly:** rows now
+    project each roster entry to `{name, team, frags}` (the verbatim
+    hub rows — per-player ping, color arrays, name_color — return with
+    `roster: true`), and the response gains `total` (all matching rows,
+    via PostgREST `count=exact`) alongside the page-local `count`.
+    Tool descriptions now also document that `loadDemo` is optional
+    (analysis tools auto-load `gameId:N` on first use).
+
 - **The match opening becomes first-class (schema v51,
   [PLAN-api-usability](PLAN-api-usability.md) workstream A).** Three
   related changes driven by the first real hosted-MCP agent session

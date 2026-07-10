@@ -485,3 +485,99 @@ func TestChat_DefaultsAndWindow(t *testing.T) {
 		t.Errorf("window [15,100]: got %v", got)
 	}
 }
+
+func itemsFixture() *result.Result {
+	return &result.Result{Items: &result.ItemsResult{Items: []result.ItemTimeline{
+		{
+			Name: "ya_1", Kind: "ya", EntNum: 42, Loc: "tower",
+			Phases: []result.ItemPhase{
+				{AvailableFrom: 0, TakenAt: 5000, TakenBy: "p1", Team: "red", RespawnAt: 25000},
+				{AvailableFrom: 25000, TakenAt: 30000, TakenBy: "p2", Team: "blue", RespawnAt: 50000},
+				{AvailableFrom: 50000, TakenAt: 90000, TakenBy: "p1", Team: "red", RespawnAt: 110000},
+				{AvailableFrom: 110000},
+			},
+		},
+		{
+			Name: "quad", Kind: "quad", EntNum: 43,
+			Phases: []result.ItemPhase{
+				{AvailableFrom: 0, TakenAt: 62000, TakenBy: "p2", Team: "blue"},
+			},
+		},
+	}}}
+}
+
+// TestItems_Window: phases OVERLAPPING [from,to] survive; an open-ended
+// phase (respawnAt 0) overlaps any later window.
+func TestItems_Window(t *testing.T) {
+	v := Items(itemsFixture(), ItemOptions{From: 26, To: 60})
+	if len(v.Items) != 2 {
+		t.Fatalf("items = %d, want 2", len(v.Items))
+	}
+	ya := v.Items[0]
+	// Phase[0] ends (respawns) at 25s < from=26 → dropped. Phase[1]
+	// [25,50) and phase[2] [50,110) overlap. Phase[3] starts at 110 ≥
+	// to=60 → dropped.
+	if len(ya.Phases) != 2 || ya.Phases[0].TakenAt != 30000 || ya.Phases[1].TakenAt != 90000 {
+		t.Fatalf("ya phases = %+v", ya.Phases)
+	}
+	// quad's single phase is open-ended (never respawned) → overlaps.
+	if len(v.Items[1].Phases) != 1 {
+		t.Fatalf("quad phases = %+v", v.Items[1].Phases)
+	}
+}
+
+// TestItemsSummary_CountsInsideWindow: the summary counts takes INSIDE
+// the window (not overlap), keeps zero-take items, and firstTake is the
+// earliest counted take.
+func TestItemsSummary_CountsInsideWindow(t *testing.T) {
+	s := ItemsSummary(itemsFixture(), ItemOptions{To: 60})
+	if len(s.Items) != 2 {
+		t.Fatalf("items = %d, want 2", len(s.Items))
+	}
+	ya := s.Items[0]
+	if ya.TakenCount != 2 { // takes at 5s and 30s; the 90s take is outside
+		t.Errorf("ya takenCount = %d, want 2", ya.TakenCount)
+	}
+	if ya.ByPlayer["p1"] != 1 || ya.ByPlayer["p2"] != 1 {
+		t.Errorf("ya byPlayer = %+v", ya.ByPlayer)
+	}
+	if ya.FirstTake == nil || ya.FirstTake.T != 5.0 || ya.FirstTake.TakenBy != "p1" {
+		t.Errorf("ya firstTake = %+v", ya.FirstTake)
+	}
+	quad := s.Items[1]
+	if quad.TakenCount != 0 || quad.FirstTake != nil {
+		t.Errorf("quad (taken at 62s, outside to=60) = %+v", quad)
+	}
+}
+
+func TestItemsSummary_FullMatch(t *testing.T) {
+	s := ItemsSummary(itemsFixture(), ItemOptions{})
+	if s.Items[0].TakenCount != 3 {
+		t.Errorf("ya takenCount = %d, want 3", s.Items[0].TakenCount)
+	}
+	if s.Items[1].FirstTake == nil || s.Items[1].FirstTake.T != 62.0 {
+		t.Errorf("quad firstTake = %+v", s.Items[1].FirstTake)
+	}
+}
+
+func TestBackpacks_Window(t *testing.T) {
+	r := &result.Result{Backpacks: []result.BackpackDrop{
+		{Time: 5000, Player: "p1", Weapon: "rl"},
+		{Time: 65000, Player: "p2", Weapon: "lg"},
+	}}
+	out := Backpacks(r, BackpackOptions{From: 10, To: 70})
+	if len(out) != 1 || out[0].Player != "p2" {
+		t.Fatalf("windowed backpacks = %+v", out)
+	}
+}
+
+func TestWeaponPickups_Window(t *testing.T) {
+	r := &result.Result{WeaponPickups: []result.WeaponPickup{
+		{Time: 5000, Player: "p1", Weapon: "rl", Source: "world"},
+		{Time: 65000, Player: "p2", Weapon: "rl", Source: "backpack"},
+	}}
+	out := WeaponPickups(r, WeaponPickupOptions{To: 60})
+	if len(out) != 1 || out[0].Player != "p1" {
+		t.Fatalf("windowed pickups = %+v", out)
+	}
+}

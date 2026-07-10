@@ -206,16 +206,22 @@ All fields optional; an empty filter returns the most recent matches.
 | `to`       | `string`   | — | ISO date upper bound, inclusive (YYYY-MM-DD) |
 | `limit`    | `int`      | 20 | Max rows; capped at 100 |
 | `offset`   | `int`      | 0 | Pagination offset |
+| `roster`   | `bool`     | `false` | `true` = verbatim hub rows with full roster detail (per-player `ping`, `color` arrays, `name_color`, `team_color`, `is_bot`). Default = compact rows: `players` projected to `{name, team, frags}`. |
 
-Output: `{ limit, offset, count, games: [hub_row, ...] }`. The hub
-row is the Supabase `v1_games` projection
-(`id, timestamp, mode, matchtag, map, teams, players, demo_sha256,
-demo_source_url`).
+Output: `{ limit, offset, count, total?, games: [row, ...] }`. `count`
+is the rows in THIS page; `total` is all matching rows (from the
+PostgREST `count=exact` preference — omitted if the hub doesn't report
+it). Page with `limit`/`offset` until `offset+count >= total`. Row
+fields: `id, timestamp, mode, matchtag, map, teams, players,
+demo_sha256, demo_source_url` (`players` compacted unless
+`roster: true`).
 
 #### `loadDemo({gameId | sha256})`
 
 Warms `mvd-api`'s cache for the demo and returns the canonical
-`demoId` (`sha:HEX`). Idempotent.
+`demoId` (`sha:HEX`). Idempotent — and **optional**: every analysis
+tool accepts `gameId:N` directly and auto-loads on first use; loadDemo
+just front-loads the parse cost.
 
 | Param | Type | Description |
 |---|---|---|
@@ -303,7 +309,7 @@ time-ordered per-hit log.
 | `weapon`    | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
 | `startTime` | `number` | match start | Window start, match-relative **seconds** (keep hits at `time ≥ startTime`) |
 | `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep hits at `time ≤ endTime`) |
-| `summary`   | `bool` | `false` | Return only aggregates, dropping the big per-hit damage log |
+| `summary`   | `bool` | **`true`** (MCP-only default) | Aggregates only, the big per-hit damage log dropped. Pass `false` for the full log (REST `/damage` defaults to the full log; the defaulted MCP response carries a `hint` field saying how to opt out). |
 
 The damage output — the aggregates AND the per-hit `events` log — is
 **match-only**: out-of-match (warmup / post-match) hits are dropped at the
@@ -336,10 +342,12 @@ the hitbox edge, with hit + attributed target) and `lgRamp` (per-LG-cell
 hit vs ms since the shaft opened) blocks are large — reach for them only
 when per-shot detail is needed.
 
-**`summary: true` is the recommended default** — it returns just the compact
+**`summary: true` is the MCP-layer default** — it returns just the compact
 per-player `weapons` aggregates and drops the large per-fire `crosshair` +
 `lgRamp` sample arrays, which otherwise dominate the payload and can overflow
-context.
+context. Pass `summary: false` for the full arrays (REST `/aim` defaults to
+the full shape; the defaulted MCP response carries a `hint` field saying how
+to opt out).
 
 | Param | Type | Description |
 |---|---|---|
@@ -347,7 +355,7 @@ context.
 | `players` | `string[]` | scope to these shooters. With no time window, selects their **match-wide** aim; with a window, restricts the recompute. |
 | `startTime` | `float` | window start, match-relative **seconds**. Setting a window **recomputes** aim over the shots in it, so every figure (weapons, crosshair, lgRamp) scopes to the window. |
 | `endTime` | `float` | window end, match-relative seconds. |
-| `summary` | `bool` | return only the `weapons` aggregates, dropping the per-fire `crosshair`/`lgRamp` arrays. |
+| `summary` | `bool` | **default `true` (MCP-only)**: only the `weapons` aggregates, the per-fire `crosshair`/`lgRamp` arrays dropped. Pass `false` for the full arrays. |
 
 With no time window the **stored** match-wide aim is served (no recompute);
 `players`/`summary` still apply. The `shots`/`damage` inputs aim derives from
@@ -396,6 +404,7 @@ structuredContent must be a JSON object.)
 | `demoId`  | `string` (required) | — | — |
 | `players` | `string[]` | all | Restrict to drops by these dropper names |
 | `weapon`  | `string[]` | both | Dropped-weapon codes (`rl`, `lg`); forwarded as a CSV set, matching REST `/backpacks` |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the drop time |
 
 Output: `{ backpacks: []result.BackpackDrop }` — each entry has `time`,
 `player` (dropper), `team`, `weapon` (`rl`/`lg`), `origin` (XYZ), `loc`
@@ -411,8 +420,15 @@ Output: `{ backpacks: []result.BackpackDrop }` — each entry has `time`,
 | `items`   | `string[]` | all | Item name or kind token, case-insensitive. A kind matches every instance of a type (`YA` → `ya_1`, `ya_2`; `RA`; `MH`; `Quad`; `Pent`; `Ring`; `RL`; `LG`; `GL`; `SSG`; `SNG`; `NG`); a suffixed name matches one instance (`ya_1`). |
 | `players` | `string[]` | all | Restrict phases to those taken by these names; phases with no `takenBy` survive |
 | `kinds`   | `string[]` | all | Category, case-insensitive: `armor`, `mega`, `health`, `powerup`, `weapon`, `ammo`. A raw kind token (`ra`, `quad`, …) also matches. |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**. Timeline mode keeps phases **overlapping** the window; summary mode counts takes **inside** it. `endTime: 60` = the opening minute. |
+| `summary` | `bool` | **`true`** (MCP-only default) | Per-item take aggregates `{takenCount, byPlayer, firstTake}` instead of the full phase timeline. Pass `false` for every phase (REST `/items` defaults to the timeline; the defaulted MCP response carries a `hint` field saying how to opt out). |
 
-Output: `result.ItemsResult` —
+Summary output: `{ items: [{ name, kind, entNum, loc?, takenCount,
+byPlayer?: {name: n}, firstTake?: { t, takenBy?, team? } }] }` — `t` in
+match-relative seconds. The one-call shape for "who took which YA, and
+who got there first".
+
+Timeline output (`summary: false`): `result.ItemsResult` —
 `{ items: [{ name, kind, entNum, x, y, z, loc, phases: [...] }, ...] }`.
 `name` is unique per item (suffixed when a map has several of a kind:
 `ya_1`, `ya_2`, `mh_1`); `kind` is the raw token (`ra`/`ya`/`mh`/`quad`/
@@ -427,6 +443,7 @@ Output: `result.ItemsResult` —
 | `players` | `string[]` | all | Restrict to picks by these names |
 | `weapon`  | `string[]` | all | `rl`, `lg`, `gl`, `ssg`, `sng`, `ng` |
 | `source`  | `string`   | both | `world` (spawner) or `backpack` (RL/LG drop) |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the pickup time |
 
 Output: `{ pickups: []result.WeaponPickup }` — each entry has `time`,
 `player`, `team`, `weapon`, `source`, `hadBefore`, `kills` (before
@@ -507,12 +524,13 @@ intervals to membership; position to nearest sample.
 Output: `view.LocTrailsView` —
 `{ players: [{ name, sequence: [{ s, e, loc }, …] }, …] }`.
 
-#### `getRegionControl({demoId, windowMs})`
+#### `getRegionControl({demoId, windowMs?, startTime?, endTime?})`
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`   | `string` (required) | — | — |
 | `windowMs` | `int` | **1000** (MCP default) | Bucket size for the per-region state strings. Same MCP-vs-REST split as `getBuckets`: REST default is 50, MCP proxy injects 1000 to keep `bucketStates` lengths manageable. |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the bucket range |
 
 Output: `result.RegionControlResult`. Errors with
 `region_control_unavailable` (HTTP 422) if the demo's map has no
