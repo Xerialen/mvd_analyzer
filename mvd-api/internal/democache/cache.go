@@ -197,10 +197,22 @@ func touch(path string) {
 
 // acquireParse blocks until a heavy-operation slot is free, honouring ctx
 // while queued. Cancellation is respected only *while waiting* for the slot —
-// once acquired, the parse/raycast itself runs to completion (the
-// singleflight / losLock shares one computation across every same-SHA
-// waiter). Distinct demos have distinct SHAs, so a cancel here only affects
-// the cancelling client's own fan-out, never an unrelated demo.
+// once acquired, the parse/raycast itself runs to completion.
+//
+// Whether honouring ctx here is safe depends on the caller:
+//
+//   - EnsureLOS passes the LIVE ctx. Its raycast is serialised per SHA by
+//     losLocks but each caller runs its own body and gets its own error, so a
+//     cancel while queued affects only the cancelling client — that is the
+//     desired behaviour (a client that walked away frees its slot promptly).
+//   - loadResult runs inside the per-SHA singleflight, whose error is SHARED
+//     with every co-waiter, so it must NOT let a caller's cancel surface here.
+//     GetResult therefore hands loadResult a context.WithoutCancel ctx, whose
+//     Done() never fires — this select simply takes the sending branch once a
+//     slot is free. See GetResult.
+//
+// Distinct demos have distinct SHAs, so a cancel here never affects an
+// unrelated demo either way.
 func (c *Cache) acquireParse(ctx context.Context) (func(), error) {
 	select {
 	case c.parseSem <- struct{}{}:
@@ -243,9 +255,14 @@ func (c *Cache) CleanupOnStartup() {
 // demoStore interface the API handlers use), but a cold GetResult runs
 // its hub download and parse *to completion even if ctx is cancelled*:
 // the per-SHA singleflight shares one computation across every waiter, so
-// honoring the first caller's cancellation would poison all the others.
-// Cancellation is therefore deliberately not threaded into the hub client
-// or ParseFunc; ctx is passed through unused (see defaultParse).
+// honoring the first caller's cancellation would poison all the others —
+// including the parse-semaphore wait in loadResult, whose context.Canceled
+// would otherwise become the shared inflight error and 500 every innocent
+// co-waiter (mapStoreError has no Canceled case). Cancellation is therefore
+// stripped from the ctx threaded into loadResult (context.WithoutCancel
+// below), and not threaded into the hub client or ParseFunc either (see
+// defaultParse). The independent EnsureLOS raycast keeps the live ctx — its
+// per-SHA work is not singleflight-shared, so cancelling it poisons no one.
 func (c *Cache) GetResult(ctx context.Context, id DemoID) (*result.Result, CacheMeta, error) {
 	c.ensureInit()
 
@@ -264,7 +281,13 @@ func (c *Cache) GetResult(ctx context.Context, id DemoID) (*result.Result, Cache
 	}
 
 	return c.getOrCompute(sha, func() (*result.Result, CacheMeta, error) {
-		return c.loadResult(ctx, sha, id)
+		// The cold load runs inside the per-SHA singleflight, so its error is
+		// shared with every co-waiter. Strip the caller's cancellation (and
+		// deadline) from the ctx it threads — notably the parse-semaphore wait
+		// in acquireParse — so one caller's cancel can never become the shared
+		// inflight error that 500s the others. WithoutCancel preserves ctx
+		// values while making Done() never fire (go1.25).
+		return c.loadResult(context.WithoutCancel(ctx), sha, id)
 	})
 }
 
