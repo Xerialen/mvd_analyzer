@@ -32,8 +32,13 @@ EnvironmentFile=/etc/mvd/secrets.env
 # -auth-dir enables API-key auth; -portal enables the Discord portal (needs
 # the three env vars above). Tune -cache-max-bytes / -max-parses to the box;
 # -rate-*/-burst-* set the per-key token buckets (user vs service class).
+#
+# -addr binds loopback ONLY: Caddy is the sole public surface and must run
+# on this same box (its XFF rewrite assumes direct backend access is
+# impossible). Bind a LAN/all-interfaces address (e.g. :8080) only if you
+# know why — a public bind lets callers spoof X-Forwarded-For past Caddy.
 ExecStart=/opt/mvd/bin/mvd-api serve \
-    -addr :8080 \
+    -addr 127.0.0.1:8080 \
     -cache-dir /opt/mvd/cache \
     -cache-max-bytes 21474836480 \
     -max-parses 2 \
