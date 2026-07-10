@@ -288,8 +288,8 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 	opts := view.FragOptions{
 		Players: p.CSV("players"),
 		Weapons: p.CSV("weapon"),
-		From:    p.Float("from", 0),
-		To:      p.Float("to", 0),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
 		Summary: p.Bool("summary"),
 	}
 	if writeInvalidParam(w, p.Err()) {
@@ -331,8 +331,8 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	opts := view.DamageOptions{
 		Players: p.CSV("players"),
 		Weapons: p.CSV("weapon"),
-		From:    p.Float("from", 0),
-		To:      p.Float("to", 0),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
 		Summary: p.Bool("summary"),
 	}
 	if writeInvalidParam(w, p.Err()) {
@@ -399,8 +399,8 @@ func (s *server) handleAim(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.AimOptions{
 		Players: p.CSV("players"),
-		From:    p.Float("from", 0),
-		To:      p.Float("to", 0),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
 		Summary: p.Bool("summary"),
 	}
 	if writeInvalidParam(w, p.Err()) {
@@ -435,8 +435,8 @@ func (s *server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 	p := newQP(r.URL.Query())
 	opts := view.ChatOptions{
-		From:    p.Float("from", 0),
-		To:      p.Float("to", 0),
+		From:    p.Sec("from", 0),
+		To:      p.Sec("to", 0),
 		Players: p.CSV("players"),
 		Types:   p.CSV("types"),
 	}
@@ -545,8 +545,8 @@ func (s *server) handleBuckets(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.BucketsOptions{
 		WindowMs:    p.Int("windowMs", 50),
-		StartTime:   p.Float("from", 0),
-		EndTime:     p.Float("to", 0),
+		StartTime:   p.Sec("from", 0),
+		EndTime:     p.Sec("to", 0),
 		Players:     p.CSV("players"),
 		Fields:      p.CSV("fields"),
 		Reducers:    p.Reducers("reducers"),
@@ -579,8 +579,8 @@ func (s *server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	p := newQP(r.URL.Query())
 	filter := view.EventsFilter{
-		StartTime: p.Float("from", 0),
-		EndTime:   p.Float("to", 0),
+		StartTime: p.Sec("from", 0),
+		EndTime:   p.Sec("to", 0),
 		Players:   p.CSV("players"),
 		Types:     p.CSV("types"),
 		LocIndex:  p.LocIndex(),
@@ -602,8 +602,8 @@ func (s *server) handleStreamSlice(w http.ResponseWriter, r *http.Request) {
 	}
 	p := newQP(r.URL.Query())
 	opts := view.StreamSliceOptions{
-		StartTime: p.Float("from", 0),
-		EndTime:   p.Float("to", 0),
+		StartTime: p.Sec("from", 0),
+		EndTime:   p.Sec("to", 0),
 		Players:   p.CSV("players"),
 		Fields:    p.CSV("fields"),
 		LocIndex:  p.LocIndex(),
@@ -630,7 +630,7 @@ func (s *server) handleStateAt(w http.ResponseWriter, r *http.Request) {
 	}
 	p := newQP(q)
 	opts := view.StateAtOptions{
-		Time:     p.Float("time", 0),
+		Time:     p.Sec("time", 0),
 		Players:  p.CSV("players"),
 		Fields:   p.CSV("fields"),
 		LocIndex: p.LocIndex(),
@@ -754,8 +754,8 @@ func (s *server) handleLocTrails(w http.ResponseWriter, r *http.Request) {
 	// Field order here fixes which of several malformed params is reported:
 	// keep from, to, minDwellMs, loc — the historical read order.
 	opts := view.LocTrailsOptions{
-		StartTime:  p.Float("from", 0),
-		EndTime:    p.Float("to", 0),
+		StartTime:  p.Sec("from", 0),
+		EndTime:    p.Sec("to", 0),
 		MinDwellMs: p.Int("minDwellMs", 0),
 		Players:    p.CSV("players"),
 		LocIndex:   p.LocIndex(),
@@ -798,8 +798,8 @@ func (s *server) handleRegionControl(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.RegionControlOptions{
 		WindowMs:  p.Int("windowMs", 50),
-		StartTime: p.Float("from", 0),
-		EndTime:   p.Float("to", 0),
+		StartTime: p.Sec("from", 0),
+		EndTime:   p.Sec("to", 0),
 	}
 	if writeInvalidParam(w, p.Err()) {
 		return

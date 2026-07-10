@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -145,14 +146,36 @@ func newQP(q url.Values) *qp { return &qp{q: q} }
 // writeInvalidParam for the shared 400 invalid_param tail.
 func (p *qp) Err() error { return p.err }
 
-// Float reads a float param (empty → def). No-op after a prior error.
-func (p *qp) Float(key string, def float64) float64 {
+// maxSecBound is the largest match-relative seconds bound the view layer can
+// represent: secToMs rounds sec*1000 to int32 ms, so a larger value would wrap
+// under Go's implementation-defined out-of-range float→int32 conversion and
+// silently filter everything with an HTTP 200 instead of erroring.
+const maxSecBound = float64(math.MaxInt32) / 1000.0
+
+// Sec reads a match-relative seconds bound (from/to/time; empty → def) and
+// validates it. NaN/Inf, negatives, and values whose millisecond form
+// overflows int32 are rejected here rather than reaching the view's secToMs,
+// where the bad float→int32 conversion would produce a silent all-filtered 200.
+// No-op after a prior error.
+func (p *qp) Sec(key string, def float64) float64 {
 	if p.err != nil {
 		return def
 	}
 	v, err := parseFloat(p.q, key, def)
 	if err != nil {
 		p.err = err
+		return def
+	}
+	switch {
+	case math.IsNaN(v) || math.IsInf(v, 0):
+		p.err = fmt.Errorf("invalid %s=%q (not a finite number)", key, ciGet(p.q, key))
+		return def
+	case v < 0:
+		p.err = fmt.Errorf("invalid %s=%q (must be >= 0)", key, ciGet(p.q, key))
+		return def
+	case v > maxSecBound:
+		p.err = fmt.Errorf("invalid %s=%q (exceeds the maximum match time)", key, ciGet(p.q, key))
+		return def
 	}
 	return v
 }

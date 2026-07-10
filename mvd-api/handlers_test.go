@@ -257,6 +257,35 @@ func TestDamageParams_MatrixWhenFiltered(t *testing.T) {
 	}
 }
 
+// TestTimeBoundParams_Rejected400 pins the from/to/time validation: NaN, Inf,
+// negatives, and values whose millisecond form overflows int32 must be a clean
+// 400 invalid_param, not a silent all-filtered 200 (the bad float→int32
+// conversion secToMs would otherwise perform).
+func TestTimeBoundParams_Rejected400(t *testing.T) {
+	srv := newTestServer(t, fragDamageStore())
+	defer srv.Close()
+
+	bad := []string{
+		"frags?from=-1",
+		"frags?to=-0.5",
+		"frags?from=NaN",
+		"frags?from=Inf",
+		"frags?from=1e12", // ms overflows int32
+		"damage?to=1e12",
+	}
+	for _, q := range bad {
+		body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/"+q)
+		if status != 400 {
+			t.Errorf("%s: status = %d, want 400 (body=%s)", q, status, string(body))
+		}
+	}
+
+	// A valid large-but-representable bound is still accepted (200).
+	if _, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/frags?from=100"); status != 200 {
+		t.Errorf("from=100: status = %d, want 200", status)
+	}
+}
+
 func newTestServer(t *testing.T, store demoStore) *httptest.Server {
 	t.Helper()
 	return newTestServerMaps(t, store, "")
