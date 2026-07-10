@@ -92422,7 +92422,107 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 53,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "ThundeR",
+        "team": "BhB",
+        "time": 1372
+      },
+      {
+        "entNum": 67,
+        "item": "ga",
+        "kind": "ga",
+        "loc": "cross",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 1547
+      },
+      {
+        "entNum": 54,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "KreatoR",
+        "team": "BhB",
+        "time": 2177
+      },
+      {
+        "entNum": 93,
+        "item": "rl",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "Doomie",
+        "team": "BhB",
+        "time": 3039
+      },
+      {
+        "entNum": 60,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "Ring",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 3763
+      },
+      {
+        "entNum": 79,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 5882
+      }
+    ],
+    "players": [
+      {
+        "loc": "RL",
+        "name": "Doomie",
+        "team": "BhB"
+      },
+      {
+        "loc": "Quad.beside",
+        "name": "KreatoR",
+        "team": "BhB"
+      },
+      {
+        "loc": "YA",
+        "name": "ThundeR",
+        "team": "BhB"
+      },
+      {
+        "loc": "GL",
+        "name": "rghst",
+        "team": "BhB"
+      },
+      {
+        "loc": "hall",
+        "name": "[nW].Veggie",
+        "team": "ahoy"
+      },
+      {
+        "loc": "MH.low",
+        "name": "nexus",
+        "team": "ahoy"
+      },
+      {
+        "loc": "cross",
+        "name": "ocoini",
+        "team": "ahoy"
+      },
+      {
+        "loc": "lift",
+        "name": "sailorman",
+        "team": "ahoy"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -245373,6 +245473,7 @@
           }
         ],
         "sp": [
+          0,
           61511,
           1187377
         ],
@@ -270835,6 +270936,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           63277,
           1198428
         ],
@@ -295971,6 +296073,7 @@
           }
         ],
         "sp": [
+          0,
           68420,
           1192020
         ],
@@ -321306,7 +321409,9 @@
             "s": 1184264
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 15540,
@@ -347241,6 +347346,7 @@
           }
         ],
         "sp": [
+          0,
           60745,
           74822,
           1189797,
@@ -372472,6 +372578,7 @@
           }
         ],
         "sp": [
+          0,
           4697,
           60940,
           71295
@@ -396714,6 +396821,7 @@
           }
         ],
         "sp": [
+          0,
           12097,
           69103,
           1187997,
@@ -422620,6 +422728,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           5393,
           1189312,
           1198393

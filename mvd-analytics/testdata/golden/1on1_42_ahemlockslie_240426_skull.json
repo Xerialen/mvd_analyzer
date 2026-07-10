@@ -13502,7 +13502,86 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 42,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "YA.RL",
+        "takenBy": "AHemlocksLie",
+        "team": "AHemlocksLie",
+        "time": 805
+      },
+      {
+        "entNum": 40,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "42",
+        "team": "42",
+        "time": 1883
+      },
+      {
+        "entNum": 41,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "AHemlocksLie",
+        "team": "AHemlocksLie",
+        "time": 2380
+      },
+      {
+        "entNum": 45,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "42",
+        "team": "42",
+        "time": 8276
+      },
+      {
+        "entNum": 43,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "yard.RL",
+        "takenBy": "42",
+        "team": "42",
+        "time": 9727
+      },
+      {
+        "entNum": 44,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "42",
+        "team": "42",
+        "time": 21458
+      },
+      {
+        "entNum": 60,
+        "item": "ga",
+        "kind": "ga",
+        "loc": "GA",
+        "takenBy": "42",
+        "team": "42",
+        "time": 53623
+      }
+    ],
+    "players": [
+      {
+        "loc": "MH.rox",
+        "name": "42",
+        "team": "42"
+      },
+      {
+        "loc": "YA.RL",
+        "name": "AHemlocksLie",
+        "team": "AHemlocksLie"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -32622,6 +32701,7 @@
           }
         ],
         "sp": [
+          0,
           69090,
           585669,
           592214
@@ -34936,6 +35016,7 @@
           }
         ],
         "sp": [
+          0,
           69493
         ],
         "ssg": [

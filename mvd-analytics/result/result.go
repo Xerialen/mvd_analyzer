@@ -597,7 +597,25 @@ package result
 //     match damage — and fixes a latent airgibs bug that counted warmup /
 //     post-match rocket airgibs (it iterated events with no gate). No field
 //     shape change; damage.events arrays shrink by the out-of-match hits.
-const CurrentSchemaVersion = 50
+//
+// v51: the match opening becomes first-class (PLAN-api-usability 16.1-A).
+//   - streams.players[].sp gains the match-start spawn. KTX respawns every
+//     player when the countdown ends (SM_PrepareClients → k_respawn,
+//     ktx/src/match.c:881,972), but a player alive through the countdown
+//     never crosses health ≤0→>0, so the parser's dead→alive detector
+//     missed the first — most contested — spawn of the match. The timeline
+//     now synthesizes a t=0 spawn for every player alive at match start
+//     whose respawn wasn't wire-visible.
+//   - Adds Result.Opening ("opening" artifact): each player's match-start
+//     spawn location plus the first in-match take of every contested
+//     spawner (armors, mega, powerups, RL/LG) — a pure projection of
+//     items + streams kept small for one-call fetches.
+//   - The events view (not stored, documented here for the contract) gains
+//     the default "pickup" type — identity-rich pickups joined from
+//     items[].phases (world takes, per-spawner ya_1/ya_2 naming) and
+//     weaponPickups (backpack/unknown grants) — and spawn events now carry
+//     the spawn location in detail.
+const CurrentSchemaVersion = 51
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -624,6 +642,7 @@ type Result struct {
 	MapEntities      *MapEntitiesResult      `json:"mapEntities,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
+	Opening          *OpeningResult          `json:"opening,omitempty"`
 	Streams          *Streams                `json:"streams,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }

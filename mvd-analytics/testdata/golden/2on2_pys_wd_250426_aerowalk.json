@@ -37352,7 +37352,114 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 40,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "wd.cao",
+        "team": "wd",
+        "time": 0
+      },
+      {
+        "entNum": 57,
+        "item": "ga_1",
+        "kind": "ga",
+        "loc": "low.RL",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 14
+      },
+      {
+        "entNum": 54,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "low.RL",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 868
+      },
+      {
+        "entNum": 52,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "wd.dilbert",
+        "team": "pys",
+        "time": 1365
+      },
+      {
+        "entNum": 51,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "RA.LG",
+        "takenBy": "wd.cao",
+        "team": "wd",
+        "time": 2061
+      },
+      {
+        "entNum": 72,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "wd.dilbert",
+        "team": "pys",
+        "time": 2192
+      },
+      {
+        "entNum": 67,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "high.RL",
+        "takenBy": "wd.cao",
+        "team": "wd",
+        "time": 4477
+      },
+      {
+        "entNum": 89,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 5676
+      },
+      {
+        "entNum": 86,
+        "item": "ga_2",
+        "kind": "ga",
+        "loc": "Quad.GA",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 7480
+      }
+    ],
+    "players": [
+      {
+        "loc": "air",
+        "name": "psy*overon",
+        "team": "pys"
+      },
+      {
+        "loc": "yard",
+        "name": "wd.dilbert",
+        "team": "pys"
+      },
+      {
+        "loc": "RA",
+        "name": "wd.cao",
+        "team": "wd"
+      },
+      {
+        "loc": "low.RL",
+        "name": "wd.char",
+        "team": "wd"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -60407,6 +60514,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           13999,
           66086,
           586075,
@@ -66264,6 +66372,7 @@
           }
         ],
         "sp": [
+          0,
           8442,
           12850,
           62764,
@@ -72255,6 +72364,7 @@
           }
         ],
         "sp": [
+          0,
           62089,
           74958
         ],
@@ -78331,6 +78441,7 @@
           }
         ],
         "sp": [
+          0,
           5909,
           10547,
           68441,

@@ -89952,7 +89952,143 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 49,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "tower.RL",
+        "takenBy": "anni",
+        "team": "'\u003e\u003c\u003e",
+        "time": 1459
+      },
+      {
+        "entNum": 48,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "cathedral",
+        "takenBy": ".N3ophyt3.",
+        "team": "'tbg",
+        "time": 1877
+      },
+      {
+        "entNum": 53,
+        "item": "pent",
+        "kind": "pent",
+        "loc": "yard.Pent",
+        "takenBy": "biggz",
+        "team": "'tbg",
+        "time": 2296
+      },
+      {
+        "entNum": 55,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "ocoini",
+        "team": "'\u003e\u003c\u003e",
+        "time": 2409
+      },
+      {
+        "entNum": 88,
+        "item": "mh_1",
+        "kind": "mh",
+        "loc": "yard",
+        "takenBy": "biggz",
+        "team": "'tbg",
+        "time": 4117
+      },
+      {
+        "entNum": 46,
+        "item": "ya_1",
+        "kind": "ya",
+        "loc": "tower",
+        "takenBy": "anni",
+        "team": "'\u003e\u003c\u003e",
+        "time": 4161
+      },
+      {
+        "entNum": 47,
+        "item": "ya_2",
+        "kind": "ya",
+        "loc": "cathedral.YA",
+        "takenBy": ".N3ophyt3.",
+        "team": "'tbg",
+        "time": 5019
+      },
+      {
+        "entNum": 45,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "paniagua",
+        "team": "'tbg",
+        "time": 5612
+      },
+      {
+        "entNum": 51,
+        "item": "mh_2",
+        "kind": "mh",
+        "loc": "cemetary",
+        "takenBy": "paniagua",
+        "team": "'tbg",
+        "time": 7372
+      },
+      {
+        "entNum": 54,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "cemetary.Ring",
+        "takenBy": "paniagua",
+        "team": "'tbg",
+        "time": 11596
+      }
+    ],
+    "players": [
+      {
+        "loc": "cathedral.SSG",
+        "name": "DobeZz",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "tower.RL",
+        "name": "anni",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "tower.entry",
+        "name": "gore",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "Quad.high",
+        "name": "ocoini",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "Quad",
+        "name": ".N3ophyt3.",
+        "team": "'tbg"
+      },
+      {
+        "loc": "yard.tunnel",
+        "name": "biggz",
+        "team": "'tbg"
+      },
+      {
+        "loc": "cemetary.tele",
+        "name": "nexus",
+        "team": "'tbg"
+      },
+      {
+        "loc": "cemetary",
+        "name": "paniagua",
+        "team": "'tbg"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -146329,6 +146465,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           5338,
           69698,
           1185945
@@ -157168,7 +157305,9 @@
             "s": 1806
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 92364,
@@ -168266,6 +168405,7 @@
           }
         ],
         "sp": [
+          0,
           1198418
         ],
         "ssg": [
@@ -178390,6 +178530,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           4131,
           12434,
           63622,
@@ -188684,6 +188825,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           3305,
           1185903,
           1193043,
@@ -198924,6 +199066,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           13890,
           62989,
           1188604
@@ -208842,6 +208985,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           65301
         ],
         "ssg": [],
@@ -218886,6 +219030,7 @@
           }
         ],
         "sp": [
+          0,
           67547,
           74766
         ],

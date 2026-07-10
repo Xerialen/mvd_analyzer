@@ -30183,7 +30183,96 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 90,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "rusti",
+        "team": "pora",
+        "time": 1220
+      },
+      {
+        "entNum": 77,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "RA",
+        "takenBy": "rusti",
+        "team": "pora",
+        "time": 1887
+      },
+      {
+        "entNum": 73,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "MH",
+        "takenBy": "gLAd",
+        "team": "nAnI",
+        "time": 2079
+      },
+      {
+        "entNum": 78,
+        "item": "ga",
+        "kind": "ga",
+        "loc": "GA",
+        "takenBy": "kippo",
+        "team": "pora",
+        "time": 2459
+      },
+      {
+        "entNum": 50,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "gLAd",
+        "team": "nAnI",
+        "time": 2506
+      },
+      {
+        "entNum": 82,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "kippo",
+        "team": "pora",
+        "time": 9324
+      },
+      {
+        "entNum": 85,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "LG",
+        "takenBy": "kippo",
+        "team": "pora",
+        "time": 9961
+      }
+    ],
+    "players": [
+      {
+        "loc": "GL.hide",
+        "name": "SS",
+        "team": "nAnI"
+      },
+      {
+        "loc": "GA.hide",
+        "name": "gLAd",
+        "team": "nAnI"
+      },
+      {
+        "loc": "GA.cells",
+        "name": "kippo",
+        "team": "pora"
+      },
+      {
+        "loc": "RA.behind",
+        "name": "rusti",
+        "team": "pora"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -117083,6 +117172,7 @@
           }
         ],
         "sp": [
+          0,
           7454
         ],
         "team": "nAnI"
@@ -120671,6 +120761,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           62883,
           586936,
           590948
@@ -124134,6 +124225,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           8298,
           62371,
           64909
@@ -127213,6 +127305,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           7765,
           585220
         ],

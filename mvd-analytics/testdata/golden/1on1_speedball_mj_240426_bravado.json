@@ -17542,7 +17542,86 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 43,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "low RL",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 939
+      },
+      {
+        "entNum": 41,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "mj",
+        "team": "mj",
+        "time": 1519
+      },
+      {
+        "entNum": 65,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 1939
+      },
+      {
+        "entNum": 42,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "mj",
+        "team": "mj",
+        "time": 3182
+      },
+      {
+        "entNum": 82,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 4342
+      },
+      {
+        "entNum": 44,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "mj",
+        "team": "mj",
+        "time": 9728
+      },
+      {
+        "entNum": 81,
+        "item": "ga",
+        "kind": "ga",
+        "loc": "GA",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 36357
+      }
+    ],
+    "players": [
+      {
+        "loc": "YA",
+        "name": "mj",
+        "team": "mj"
+      },
+      {
+        "loc": "low RL",
+        "name": "speedball",
+        "team": "speedball"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -32443,6 +32522,7 @@
           }
         ],
         "sp": [
+          0,
           8473
         ],
         "ssg": [
@@ -34791,6 +34871,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           66416,
           68975,
           586261,

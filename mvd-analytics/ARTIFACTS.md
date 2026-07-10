@@ -29,6 +29,7 @@ Every node in the analytics DAG, as declared in [`analyzer/dag.go`](analyzer/dag
 | `match-final` | light | no | — | `match`, `frags:final` | `match-final`, `match:final` | Final match scoreboard: folds frag-log-corrected kills/deaths/suicides into `match`; publishes `match:final` for in-pipeline consumers. |
 | `loc-graph` | light | no | `locGraph` | `timeline`, `demoinfo` | `loc-graph` | Per-map loc adjacency graph with directed transition weights derived from player movement. |
 | `region-control` | light | no | — | `timeline`, `match`, `demoinfo` | `region-control` | Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact). |
+| `opening` | light | no | `opening` | `timeline`, `items` | `opening` | Match opening: each player's match-start spawn location plus the first in-match take of every contested spawner (armors, mega, powerups, RL/LG). A pure projection of items + streams, kept small for one-call fetches. |
 | `los` | heavy | yes | — | `timeline`, `demoinfo` | `los` | Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand. |
 
-Generated at schema version 50.
+Generated at schema version 51.

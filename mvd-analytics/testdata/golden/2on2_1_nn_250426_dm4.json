@@ -53485,7 +53485,105 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 49,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "stepcop",
+        "team": "n n",
+        "time": 523
+      },
+      {
+        "entNum": 90,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "Milton",
+        "team": "1",
+        "time": 1432
+      },
+      {
+        "entNum": 83,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "MH",
+        "takenBy": "stepcop",
+        "team": "n n",
+        "time": 1886
+      },
+      {
+        "entNum": 77,
+        "item": "ga_1",
+        "kind": "ga",
+        "loc": "LG.GA",
+        "takenBy": "Milton",
+        "team": "1",
+        "time": 1961
+      },
+      {
+        "entNum": 68,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "Milton",
+        "team": "1",
+        "time": 6974
+      },
+      {
+        "entNum": 86,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "RA",
+        "takenBy": "Milton",
+        "team": "1",
+        "time": 7055
+      },
+      {
+        "entNum": 55,
+        "item": "ga_2",
+        "kind": "ga",
+        "loc": "low.tele",
+        "takenBy": "stepcop",
+        "team": "n n",
+        "time": 7257
+      },
+      {
+        "entNum": 63,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "Milton",
+        "team": "1",
+        "time": 17963
+      }
+    ],
+    "players": [
+      {
+        "loc": "YA.entry",
+        "name": "Milton",
+        "team": "1"
+      },
+      {
+        "loc": "Quad.tele",
+        "name": "squeeze",
+        "team": "1"
+      },
+      {
+        "loc": "SSG",
+        "name": "shazam",
+        "team": "n n"
+      },
+      {
+        "loc": "MH",
+        "name": "stepcop",
+        "team": "n n"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -82252,6 +82350,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           6236
         ],
         "ssg": [
@@ -86774,6 +86873,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           10298,
           13497,
           60802,
@@ -91737,6 +91837,7 @@
           }
         ],
         "sp": [
+          0,
           11456,
           14804,
           69455,
@@ -96764,6 +96865,7 @@
           }
         ],
         "sp": [
+          0,
           65123
         ],
         "ssg": [],

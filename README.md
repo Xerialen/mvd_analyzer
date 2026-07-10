@@ -424,10 +424,12 @@ direct/splash, LG reach/whiff, and enemy/team/self hit-counter slices;
 exact target attribution in duels, a labeled nearest-crosshair heuristic
 in team games),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
-`//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
+`//ktx drop` hint), weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
 effectiveness metric; joins to backpacks via `backpackEnt` ==
-`backpacks[].entNum`). Schema v7 introduced `streams` as the canonical
+`backpacks[].entNum`), and opening (schema v51 — each player's
+match-start spawn loc plus the first take of every contested spawner,
+the one-fetch answer to opening-race questions). Schema v7 introduced `streams` as the canonical
 event-rate storage — every per-player field (vitals, weapons, ammo,
 position) recorded at the rate it actually changed. Schema v8 stores
 **every timestamped field** as `int32` milliseconds rather than float

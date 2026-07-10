@@ -185,6 +185,12 @@ var postNodeMeta = map[string]nodeMeta{
 		requires: []string{"timeline", "match", "demoinfo"},
 		desc:     "Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact).",
 	},
+	"openingPost": {
+		name: "opening", mutates: true,
+		requires:  []string{"timeline", "items"},
+		resultKey: "opening",
+		desc:      "Match opening: each player's match-start spawn location plus the first in-match take of every contested spawner (armors, mega, powerups, RL/LG). A pure projection of items + streams, kept small for one-call fetches.",
+	},
 }
 
 // specFromMeta builds a nodeSpec from a live handle's metadata, attaching

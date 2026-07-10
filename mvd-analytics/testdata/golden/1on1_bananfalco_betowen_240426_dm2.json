@@ -10628,7 +10628,104 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 100,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "low.RL",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 2208
+      },
+      {
+        "entNum": 99,
+        "item": "ra_1",
+        "kind": "ra",
+        "loc": "secret",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 5922
+      },
+      {
+        "entNum": 59,
+        "item": "ya_3",
+        "kind": "ya",
+        "loc": "tele.YA",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 6195
+      },
+      {
+        "entNum": 70,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "high.RL",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 8286
+      },
+      {
+        "entNum": 113,
+        "item": "mh_1",
+        "kind": "mh",
+        "loc": "GL",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 14571
+      },
+      {
+        "entNum": 75,
+        "item": "mh_2",
+        "kind": "mh",
+        "loc": "RA.MH",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 17454
+      },
+      {
+        "entNum": 74,
+        "item": "ra_2",
+        "kind": "ra",
+        "loc": "RA.MH",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 17767
+      },
+      {
+        "entNum": 103,
+        "item": "ya_2",
+        "kind": "ya",
+        "loc": "big",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 68961
+      },
+      {
+        "entNum": 104,
+        "item": "ya_1",
+        "kind": "ya",
+        "loc": "big",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 287087
+      }
+    ],
+    "players": [
+      {
+        "loc": "NG",
+        "name": "banan falco",
+        "team": "banan falco"
+      },
+      {
+        "loc": "low.button",
+        "name": "betowen",
+        "team": "betowen"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -268342,6 +268439,7 @@
           }
         ],
         "sp": [
+          0,
           65986,
           596405
         ],
@@ -283460,6 +283558,7 @@
           }
         ],
         "sp": [
+          0,
           60130
         ],
         "ssg": [

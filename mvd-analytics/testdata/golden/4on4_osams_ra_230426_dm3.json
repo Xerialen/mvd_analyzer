@@ -89017,7 +89017,133 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 43,
+        "item": "rl",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "clox",
+        "team": "oSaMs",
+        "time": 158
+      },
+      {
+        "entNum": 79,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA.box",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 841
+      },
+      {
+        "entNum": 144,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "Ring",
+        "takenBy": "doberman",
+        "team": ".ra.",
+        "time": 2237
+      },
+      {
+        "entNum": 53,
+        "item": "mh_2",
+        "kind": "mh",
+        "loc": "hill",
+        "takenBy": "[cmd] witka",
+        "team": ".ra.",
+        "time": 2458
+      },
+      {
+        "entNum": 143,
+        "item": "pent",
+        "kind": "pent",
+        "loc": "Pent",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 2968
+      },
+      {
+        "entNum": 142,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "doberman",
+        "team": ".ra.",
+        "time": 4199
+      },
+      {
+        "entNum": 80,
+        "item": "mh_3",
+        "kind": "mh",
+        "loc": "Pent",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 7315
+      },
+      {
+        "entNum": 138,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "water.LG",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 13873
+      },
+      {
+        "entNum": 123,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "doberman",
+        "team": ".ra.",
+        "time": 13902
+      },
+      {
+        "entNum": 63,
+        "item": "mh_1",
+        "kind": "mh",
+        "loc": "SNG.MH",
+        "takenBy": "lakso",
+        "team": "oSaMs",
+        "time": 18969
+      }
+    ],
+    "players": [
+      {
+        "loc": "RA.tunnel",
+        "name": "[cmd] witka",
+        "team": ".ra."
+      },
+      {
+        "loc": "SNG.tele",
+        "name": "sCorp",
+        "team": ".ra."
+      },
+      {
+        "loc": "SNG.tele",
+        "name": "apa",
+        "team": "oSaMs"
+      },
+      {
+        "loc": "RL",
+        "name": "clox",
+        "team": "oSaMs"
+      },
+      {
+        "loc": "lifts",
+        "name": "lakso",
+        "team": "oSaMs"
+      },
+      {
+        "loc": "YA.box",
+        "name": "marksuzu",
+        "team": "oSaMs"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -198347,6 +198473,7 @@
           }
         ],
         "sp": [
+          0,
           60090,
           68686,
           1199510
@@ -205744,6 +205871,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           1186062,
           1187899
         ],
@@ -213468,6 +213596,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           8527,
           69398,
           1195073,
@@ -221223,7 +221352,9 @@
             "s": 1046208
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [],
         "team": "oSaMs"
       },
@@ -237746,6 +237877,7 @@
           }
         ],
         "sp": [
+          0,
           8007,
           72481
         ],
@@ -245169,7 +245301,9 @@
             "s": 1154022
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 136688,

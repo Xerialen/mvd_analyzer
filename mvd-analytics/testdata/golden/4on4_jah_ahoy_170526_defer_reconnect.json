@@ -93000,7 +93000,143 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 50,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 192,
+        "item": "ga_2",
+        "kind": "ga",
+        "loc": "Quad.low",
+        "takenBy": "paniagua",
+        "team": "jah",
+        "time": 1073
+      },
+      {
+        "entNum": 178,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "[nW].Veggie",
+        "team": "ahoy",
+        "time": 1595
+      },
+      {
+        "entNum": 171,
+        "item": "ga_1",
+        "kind": "ga",
+        "loc": "Pent",
+        "takenBy": "biggz",
+        "team": "jah",
+        "time": 1771
+      },
+      {
+        "entNum": 169,
+        "item": "pent",
+        "kind": "pent",
+        "loc": "Pent",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 2362
+      },
+      {
+        "entNum": 173,
+        "item": "ga_3",
+        "kind": "ga",
+        "loc": "RL",
+        "takenBy": "gandi",
+        "team": "jah",
+        "time": 2742
+      },
+      {
+        "entNum": 188,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "nexus",
+        "team": "ahoy",
+        "time": 3330
+      },
+      {
+        "entNum": 199,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "Ring",
+        "takenBy": "sailorman",
+        "team": "ahoy",
+        "time": 4294
+      },
+      {
+        "entNum": 175,
+        "item": "rl",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "gandi",
+        "team": "jah",
+        "time": 4328
+      },
+      {
+        "entNum": 203,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "sailorman",
+        "team": "ahoy",
+        "time": 5335
+      },
+      {
+        "entNum": 207,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "Pent.MH",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 7072
+      }
+    ],
+    "players": [
+      {
+        "loc": "Quad",
+        "name": "[nW].Veggie",
+        "team": "ahoy"
+      },
+      {
+        "loc": "RA.low",
+        "name": "nexus",
+        "team": "ahoy"
+      },
+      {
+        "loc": "RL",
+        "name": "ocoini",
+        "team": "ahoy"
+      },
+      {
+        "loc": "Ring.lift",
+        "name": "sailorman",
+        "team": "ahoy"
+      },
+      {
+        "loc": "Pent.MH",
+        "name": "biggz",
+        "team": "jah"
+      },
+      {
+        "loc": "Ring.tele",
+        "name": "gandi",
+        "team": "jah"
+      },
+      {
+        "loc": "Quad.low",
+        "name": "paniagua",
+        "team": "jah"
+      },
+      {
+        "loc": "GL.rox",
+        "name": "rusti",
+        "team": "jah"
+      }
+    ]
+  },
+  "schemaVersion": 51,
   "shots": {
     "byPlayer": [
       {
@@ -181184,6 +181320,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           12866
         ],
         "ssg": [
@@ -191975,6 +192112,7 @@
           }
         ],
         "sp": [
+          0,
           62843,
           1185833
         ],
@@ -202761,7 +202899,9 @@
           }
         ],
         "sng": [],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 100776,
@@ -211830,6 +211970,7 @@
           }
         ],
         "sp": [
+          0,
           73110,
           1187121,
           1199303
@@ -223266,6 +223407,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           1185978,
           1193666
         ],
@@ -234582,6 +234724,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           1186719,
           1191720
         ],
@@ -245211,6 +245354,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           63397,
           1188032,
           1194082
@@ -256695,6 +256839,7 @@
           }
         ],
         "sp": [
+          0,
           13519
         ],
         "ssg": [],
