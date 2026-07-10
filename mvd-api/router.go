@@ -40,6 +40,14 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string, auth *authe
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
 	mux.HandleFunc("GET /v1/auth/check", s.handleAuthCheck)
 
+	// Machine-readable API description + browsable viewer (embedded,
+	// auth-exempt — the spec is the public contract). /docs/{$} covers the
+	// trailing-slash form, which the bare "GET /docs" pattern would 404.
+	mux.HandleFunc("GET /openapi.yaml", s.handleOpenAPISpec)
+	mux.HandleFunc("GET /docs", s.handleDocs)
+	mux.HandleFunc("GET /docs/{$}", s.handleDocs)
+	mux.HandleFunc("GET /docs/rapidoc-min.js", s.handleDocsAsset)
+
 	// Automatic DAG surface (Stage 4): the artifact manifest, the generic
 	// per-artifact endpoint, and the graph as JSON.
 	mux.HandleFunc("GET /v1/artifacts", s.handleArtifactsManifest)

@@ -1,0 +1,1565 @@
+# mvd-api — OpenAPI 3.1 description of the REST surface.
+#
+# FORMATTING IS LOAD-BEARING. mvd-api/openapi_test.go scans this file
+# line-wise:
+#   - path items are "  /path:" (2-space indent), methods "    get:" (4-space);
+#   - the marker comments (artifact-enum, error-code-enum, field-code-enum)
+#     delimit enum blocks pinned to the code;
+#   - info.version must equal result.CurrentSchemaVersion.
+# Keep those conventions when editing, or the drift tests will fail loudly.
+#
+# Response shapes are authored from mvd-analytics/RESULT_SCHEMA.md (the
+# authoritative field-level reference) and the view/result structs, and are
+# validated against real golden-corpus responses by openapi_validate_test.go.
+# mvd-api/API.md remains the prose integration guide (recipes, semantics).
+openapi: 3.1.0
+info:
+  title: mvd-api
+  version: "52"
+  summary: QuakeWorld MVD demo analysis REST API
+  description: |
+    REST host for the mvd-analyzer pipeline: point it at a demo
+    (`gameId:N` from hub.quakeworld.nu, or `sha:HEX` of the demo file) and
+    read curated analysis sections — frags, damage, aim, item timelines,
+    positional streams — as JSON.
+
+    ### Time units — the one real gotcha
+    Query inputs `from` / `to` / `time` are match-relative **seconds**
+    (float). View-synthesised outputs (event lists, window bounds, trail
+    dwell spans, row-bucket timestamps) are **seconds**; anything copied
+    verbatim from the stored schema (change-stream / interval / position
+    arrays, the columnar bucket grid, `/overview` times) is **int32
+    milliseconds**. Scale ms→s by `* 0.001`. See API.md §2.1.
+
+    ### Caching
+    Per-demo 2xx responses carry `Cache-Control: public, max-age=86400,
+    immutable` and an `ETag` of the form `"<sha>-v<schemaVersion>"`
+    (per-artifact: `"<sha>-<name>@v<n>"`; binary-statics: `"<kind>-v<n>"`).
+    A demo's analysis never changes for a given schema version — cache
+    aggressively and revalidate with `If-None-Match` for cheap 304s.
+
+    ### Availability — the 422 rule
+    Object-shaped sections that need a demo capability return
+    `422 <section>_unavailable` when the demo structurally lacks the signal
+    (non-KTX server, no position track, …). Treat these as "panel
+    unavailable for this demo", not failures. Always-computable list
+    sections (`/items`, `/backpacks`, `/weapon-pickups`, `/chat`) return
+    200 with an empty body instead.
+
+    ### Parameter conventions
+    Query parameter **names** are case-insensitive (canonical spelling is
+    camelCase). CSV parameters are comma-separated lists. Player-name
+    values are case-sensitive (QW names are case-significant); weapon /
+    item / kind / loc / layout tokens are case-insensitive.
+
+    Full prose reference: mvd-api/API.md. Field-level payload shapes:
+    mvd-analytics/RESULT_SCHEMA.md.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: /
+    description: Same origin — correct for localhost and the hosted deployment alike.
+security:
+  - bearerKey: []
+tags:
+  - name: meta
+    description: Liveness, build stamp, auth check, this spec.
+  - name: demo
+    description: Demo identity, warm-up, and curated summaries.
+  - name: combat
+    description: Frags, damage, shots, aim.
+  - name: items
+    description: Item spawners, backpacks, weapon pickups.
+  - name: timeline
+    description: Unified events, chat, region control, key moments.
+  - name: positional
+    description: Position-derived views — buckets, slices, state-at, trails, LOS.
+  - name: streams
+    description: Raw projectile / beam / nail flight streams.
+  - name: artifacts
+    description: The analyzer DAG surface — manifest, graph, generic artifact accessor.
+  - name: maps
+    description: Per-map static data (no demo needed).
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      tags: [meta]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Server is up.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+  /openapi.yaml:
+    get:
+      operationId: getOpenAPISpec
+      tags: [meta]
+      summary: This document
+      description: >
+        The OpenAPI 3.1 description of this server, embedded in the binary.
+        ETag is a content hash; revalidate with If-None-Match.
+      security: []
+      responses:
+        "200":
+          description: The spec.
+          content:
+            application/yaml:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+  /docs:
+    get:
+      operationId: getDocsPage
+      tags: [meta]
+      summary: Browsable API reference
+      description: >
+        Interactive reference for this spec (vendored RapiDoc; no external
+        requests). Point a browser here.
+      security: []
+      responses:
+        "200":
+          description: The viewer page.
+          content:
+            text/html:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+  /v1/version:
+    get:
+      operationId: getVersion
+      tags: [meta]
+      summary: Build stamp
+      security: []
+      responses:
+        "200":
+          description: Build identity of the running binary.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Version" }
+  /v1/auth/check:
+    get:
+      operationId: checkAuthKey
+      tags: [meta]
+      summary: Validate the presented API key
+      description: >
+        204 when the Bearer key is valid. Deliberately NOT auth-exempt —
+        this route is the check itself. In no-auth (localhost) mode it
+        always succeeds.
+      responses:
+        "204":
+          description: Key accepted.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /v1/artifacts:
+    get:
+      operationId: listArtifacts
+      tags: [artifacts]
+      summary: Analyzer DAG artifact manifest
+      description: >
+        Every DAG node (name, requires, provides, mutates, lazy, cost,
+        resultKey, servable, description). Static per binary; ETag
+        `"artifacts-v<schemaVersion>"`.
+      responses:
+        "200":
+          description: The manifest.
+          headers: &staticHeaders
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Schema-Version: { $ref: "#/components/headers/XSchemaVersion" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtifactsManifest" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+  /v1/graph:
+    get:
+      operationId: getGraph
+      tags: [artifacts]
+      summary: Analyzer DAG as JSON
+      description: >
+        Nodes (cost / resultKey / lazy) + artifact edges, exactly
+        `analyzer.ExportGraph("json")`. Static per binary; ETag
+        `"graph-v<schemaVersion>"`.
+      responses:
+        "200":
+          description: The graph.
+          headers: *staticHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Graph" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+  /v1/demos/{id}:
+    post:
+      operationId: loadDemo
+      tags: [demo]
+      summary: Warm the cache for a demo (idempotent)
+      description: >
+        Resolves + parses the demo into the cache and returns identity
+        metadata. Optional: every per-demo GET auto-loads on cache miss —
+        use this only to warm up or to learn the SHA behind a gameId.
+        Non-cacheable action: no Cache-Control/ETag on the response.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: Demo identity + cache state.
+          headers:
+            X-Cache: { $ref: "#/components/headers/XCache" }
+            X-Schema-Version: { $ref: "#/components/headers/XSchemaVersion" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoadResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/overview:
+    get:
+      operationId: getOverview
+      tags: [demo]
+      summary: Curated match summary
+      description: >
+        Map, teams, corrected scoreboard, top streaks, top powerup runs,
+        timing, data-quality `errors[]`. UNITS SEAM: overview times are
+        int32 MILLISECONDS (verbatim from the stored schema). `teams` and
+        `players` are frag-sorted descending — index 0 is the winner.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The overview.
+          headers: &perDemoHeaders
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Cache: { $ref: "#/components/headers/XCache" }
+            X-Schema-Version: { $ref: "#/components/headers/XSchemaVersion" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Overview" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/demoinfo:
+    get:
+      operationId: getDemoInfo
+      tags: [demo]
+      summary: KTX demoinfo block (verbatim pass-through)
+      description: >
+        Per-player weapon accuracy, kills/deaths, damage, sprees, item
+        pickup counts, RL/LG transfers — exactly as KTX reported them.
+        KTX UNITS ISLAND: integer seconds on KTX's own clock; `timelimit`
+        is minutes; item `{took, time}` is count + cumulative-hold seconds.
+        Unavailable (422 `demoinfo_unavailable`) on non-KTX servers or
+        pre-match aborts.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The KTX demoinfo section.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoInfo" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/metadata:
+    get:
+      operationId: getMetadata
+      tags: [demo]
+      summary: Server cvars + KTX match settings
+      description: >
+        Full serverinfo cvars plus parsed match settings (timelimit,
+        fraglimit, antilag, midair, …). 422 `metadata_unavailable` when the
+        demo has no fullserverinfo / countdown centerprint.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The metadata section.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Metadata" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/frags:
+    get:
+      operationId: getFrags
+      tags: [combat]
+      summary: Frag aggregates + kill log
+      description: >
+        Top-level frag aggregates plus the full kill log. When any scoping
+        filter (players / weapon / from / to) is active, ALL aggregates are
+        recomputed from the filtered log so they stay consistent with the
+        entries shown. 422 `frags_unavailable` when the demo has no frag log.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: Aggregates + kill log (log omitted with `summary`).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Frags" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/damage:
+    get:
+      operationId: getDamage
+      tags: [combat]
+      summary: Damage log + aggregates
+      description: >
+        Per-hit damage log plus aggregates (matrix, per-weapon, given/taken)
+        and the KTX-scoreboard cross-check. Positional kills — telefrags and
+        stomps — are excluded from all damage figures and listed separately.
+        Filters recompute aggregates like /frags. 422 `damage_unavailable`
+        without the KTX mvdhidden_dmgdone stream.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: Aggregates + per-hit log (log omitted with `summary`).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Damage" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/shots:
+    get:
+      operationId: getShots
+      tags: [combat]
+      summary: Per-fire weapon stream
+      description: >
+        Every detected weapon fire with time/player/weapon/source, hit +
+        victims where linkable, per-player aggregates, and the KTX
+        reconciliation cross-check. No query parameters. 422
+        `shots_unavailable` when no weapon fires were decoded.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The shots section.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Shots" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/aim:
+    get:
+      operationId: getAim
+      tags: [combat]
+      summary: Per-player aim analysis
+      description: >
+        Per-weapon effectiveness (SG/SSG pellet stats, RL/GL direct/splash,
+        the LG near/blocked/out-of-range whiff split), columnar
+        crosshair-error samples, and the LG ramp series. A from/to window
+        recomputes aim over the shots in that window; `summary` drops the
+        big crosshair/lgRamp blocks. 422 `aim_unavailable` without shots +
+        position/view streams.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: The aim section (columnar blocks omitted with `summary`).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Aim" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/loc-graph:
+    get:
+      operationId: getLocGraph
+      tags: [positional]
+      summary: Per-map loc adjacency graph
+      description: >
+        Which locs are reachable from which, weighted by observed traversal.
+        422 `locgraph_unavailable` when no position track was emitted.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The loc graph.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocGraph" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/chat:
+    get:
+      operationId: getChat
+      tags: [timeline]
+      summary: Chat-only event slice
+      description: >
+        Chat messages with speaker/team, mirrored from result.MatchEvent
+        (Time, Type, Player, Team, Message, MessageClean). Always 200 —
+        empty list when nothing matches.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/ChatTypes"
+      responses:
+        "200":
+          description: Matching chat events.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chat" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/backpacks:
+    get:
+      operationId: getBackpacks
+      tags: [items]
+      summary: RL/LG backpack drops
+      description: >
+        Backpack drops from KTX's drop hint: time, dropper, weapon
+        (rl/lg), origin XYZ, resolved loc, and the server ent number that
+        joins to /weapon-pickups. Always 200 — empty when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Matching backpack drops.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Backpacks" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/items:
+    get:
+      operationId: getItems
+      tags: [items]
+      summary: Per-item pickup/respawn timeline
+      description: >
+        One entry per tracked spawner (unique name like `ya_1`, kind token,
+        world position + nearest loc) with its phase timeline
+        (availableFrom, takenBy/takenAt, respawnAt). `from`/`to` keep
+        phases OVERLAPPING the window; `summary` returns per-item take
+        aggregates (takenCount, byPlayer, firstTake) instead of phases.
+        Warmup pickups rebase to negative times; `availableFrom: 0` means
+        "available since match start". Always 200 — empty when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/ItemsFilter"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Kinds"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: Item timelines, or per-item aggregates with `summary`.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Items" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/weapon-pickups:
+    get:
+      operationId: getWeaponPickups
+      tags: [items]
+      summary: Slot-weapon acquisitions + effectiveness
+      description: >
+        Every slot-weapon acquisition (world spawners + RL/LG backpacks)
+        with kills-before-next-death effectiveness. Backpack pickups carry
+        the dropper and the ent number joining to /backpacks. Always 200 —
+        empty when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/Source"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Matching pickups.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeaponPickups" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/buckets:
+    get:
+      operationId: getBuckets
+      tags: [positional]
+      summary: Time-bucketed position/stat samples
+      description: >
+        Per-player field series reduced into fixed windows. ⚠️ `windowMs`
+        defaults to 50 ms — on a 20-minute match that is ~24,000 windows
+        per field per player; always pass a windowMs sized to your
+        question. `layout=column` (default) returns the compact columnar
+        grid (int32 ms axis); `layout=row` returns row objects (float
+        seconds `t`).
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/WindowMs"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/Reducers"
+        - $ref: "#/components/parameters/IncludeTeam"
+        - $ref: "#/components/parameters/Loc"
+        - $ref: "#/components/parameters/Layout"
+      responses:
+        "200":
+          description: Bucketed series (columnar or row layout).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Buckets" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/events:
+    get:
+      operationId: getEvents
+      tags: [timeline]
+      summary: Unified event stream
+      description: >
+        Discrete match events (frags, spawns, pickups, powerups, streaks,
+        chat, …) in one time-ordered list. `detail` is polymorphic per
+        event type. Omit `types` for the default set (includes `pickup`).
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/EventTypes"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: Matching events.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Events" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/stream-slice:
+    get:
+      operationId: getStreamSlice
+      tags: [positional]
+      summary: Raw per-player stream slice
+      description: >
+        Verbatim slices of the stored per-player streams (change-stream /
+        interval / position tracks) for a time window. Entries are int32
+        MILLISECONDS (raw schema); the envelope times are seconds.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: The slice.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StreamSlice" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/state-at:
+    get:
+      operationId: getStateAt
+      tags: [positional]
+      summary: Point-in-time player state
+      description: >
+        Every requested field carried forward to the instant `time`
+        (match-relative seconds; REQUIRED — missing returns 400
+        missing_param). Field selector codes are the same registry as
+        /buckets and /stream-slice; note the `li` code renders as output
+        key `loc`.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/TimeRequired"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: Per-player state at the instant.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StateAt" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/los:
+    get:
+      operationId: getLOS
+      tags: [positional]
+      summary: Per-player line-of-sight intervals (lazy)
+      description: >
+        LOS/PVS interval sets per player. The heaviest position-derived
+        pass — computed lazily on first request, then cached (tier-3
+        artifact). Always 200: `los` omitted for a player with no
+        sightlines; empty for every player when the map's BSP was not
+        provisioned.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: Per-player LOS/PVS intervals.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Los" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/streams/projectiles:
+    get:
+      operationId: getProjectiles
+      tags: [streams]
+      summary: Rocket/grenade flight stream
+      description: >
+        The raw projectile flight stream. Body is `{"projectiles": …}`,
+        null when the demo has none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The stream.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Projectiles" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/streams/beams:
+    get:
+      operationId: getBeams
+      tags: [streams]
+      summary: LG bolt stream
+      description: The raw lightning-bolt stream. Body is `{"beams": …}`, null when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The stream.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Beams" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/streams/nails:
+    get:
+      operationId: getNails
+      tags: [streams]
+      summary: Nail flight stream (ng/sng)
+      description: >
+        The raw nail flight stream — the highest-volume stream. Body is
+        `{"nails": …}`, null when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The stream.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Nails" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/loc-trails:
+    get:
+      operationId: getLocTrails
+      tags: [positional]
+      summary: Per-player loc dwell trails
+      description: >
+        Consecutive loc residences per player as `[s,e)` spans (float
+        seconds). `minDwellMs` filters out blips shorter than the
+        threshold.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/MinDwellMs"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: The trails.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocTrails" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/loc-table:
+    get:
+      operationId: getLocTable
+      tags: [positional]
+      summary: Interned loc-name table
+      description: >
+        The decoder for `li` indices returned by the loc-bearing views in
+        index mode (`?loc=index`). Index 0 is the "" no-loc sentinel.
+        Empty array when the demo carried no loc data.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The table.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocTable" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/region-control:
+    get:
+      operationId: getRegionControl
+      tags: [timeline]
+      summary: Region-control timeline
+      description: >
+        Team control of named map regions over time, windowed by
+        `windowMs` (⚠️ defaults to 50 ms — pass an explicit window). 422
+        `region_control_unavailable` when the map has no region layout.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/WindowMs"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: The control timeline.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegionControl" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/airgibs:
+    get:
+      operationId: getAirgibs
+      tags: [timeline]
+      summary: Airgib key moments
+      description: >
+        Every direct enemy rocket hit on an airborne victim above the
+        height threshold, sorted by height descending. Empty (not an
+        error) when the map's BSP was not provisioned at parse time. 422
+        `airgibs_unavailable` when the demo has no timeline analysis.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The airgib list.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Airgibs" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/artifacts/{name}:
+    get:
+      operationId: getArtifact
+      tags: [artifacts]
+      summary: Generic artifact accessor
+      description: >
+        Materialise and serve any servable artifact by DAG node name. The
+        response is a single-key envelope — the key is the artifact's
+        `resultKey` from GET /v1/artifacts (NOT the node name; e.g. `frag`
+        → `{"frags": …}`), the value the raw Result section
+        (RESULT_SCHEMA.md). Accepts NO query parameters (parameterised
+        reads are the curated endpoints) — any parameter returns 400
+        invalid_param. Unknown / non-servable names 404 artifact_unknown.
+        Capability-gated artifacts return their section-specific 422 code.
+        ETag is the finer per-artifact form `"<sha>-<name>@v<n>"`.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/ArtifactName"
+      responses:
+        "200":
+          description: Single-key artifact envelope.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtifactEnvelope" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: Unknown demo (`demo_not_found`) or unknown/non-servable artifact name (`artifact_unknown`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/maps/{map}/entities:
+    get:
+      operationId: getMapEntitiesByMap
+      tags: [maps]
+      summary: Static map entity layout
+      description: >
+        Items, spawns, teleporters, buttons, doors for a map from the
+        embedded corpus — no demo needed. ETag
+        `"ents-<map>-v<corpusVersion>"`.
+      parameters:
+        - $ref: "#/components/parameters/MapName"
+        - $ref: "#/components/parameters/EntityTypes"
+        - $ref: "#/components/parameters/Kinds"
+      responses:
+        "200":
+          description: The entity list.
+          headers: &mapStaticHeaders
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MapEntities" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/MapUnavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+  /v1/maps/{map}/geometry:
+    get:
+      operationId: getMapGeometry
+      tags: [maps]
+      summary: Per-map floor-polygon geometry
+      description: >
+        Streams the per-map floor-polygon geometry JSON (large; REST-only,
+        no MCP tool). 404 `map_unavailable` when geometry is not
+        provisioned on this server or unknown for the map. ETag
+        `"geo-<map>-<size>"`.
+      parameters:
+        - $ref: "#/components/parameters/MapName"
+      responses:
+        "200":
+          description: The geometry document.
+          headers: *mapStaticHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MapGeometry" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/MapUnavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+components:
+  securitySchemes:
+    bearerKey:
+      type: http
+      scheme: bearer
+      description: >
+        API key as `Authorization: Bearer <key>`. Required only when the
+        server runs in auth mode (the hosted deployment); localhost /
+        no-auth mode accepts every request and treats the header as an
+        unvalidated source label for the access log. Exempt even in auth
+        mode: /healthz, /v1/version, /openapi.yaml, /docs.
+  parameters:
+    DemoId:
+      name: id
+      in: path
+      required: true
+      description: >
+        Demo identity: `gameId:N` (a hub.quakeworld.nu game id, positive
+        integer) or `sha:HEX` (lowercase-insensitive 64-hex SHA-256 of the
+        demo file). Every per-demo endpoint auto-resolves and auto-loads
+        on cache miss.
+      schema:
+        type: string
+        pattern: "^(gameId:[0-9]+|sha:[0-9a-fA-F]{64})$"
+      examples:
+        byGameId: { value: "gameId:12345" }
+        bySha: { value: "sha:9f3aa7b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f" }
+    ArtifactName:
+      name: name
+      in: path
+      required: true
+      description: >
+        DAG node name of a servable artifact (see GET /v1/artifacts).
+        Note the body key of the response is the artifact's `resultKey`,
+        which may differ from this name.
+      schema:
+        type: string
+        enum:
+          # artifact-enum:begin — pinned to analyzer.ArtifactManifest() (servable only) by TestOpenAPIArtifactEnumCurrent
+          - demoinfo
+          - frag
+          - metadata
+          - match
+          - messages
+          - timeline
+          - items
+          - damage
+          - shots
+          - map-entities
+          - backpacks
+          - weapon-pickups
+          - aim
+          - loc-graph
+          - opening
+          - los
+          # artifact-enum:end
+    MapName:
+      name: map
+      in: path
+      required: true
+      description: Map name, e.g. `dm3` (normalized server-side).
+      schema: { type: string }
+    From:
+      name: from
+      in: query
+      description: >
+        Window start, match-relative SECONDS (float). 0 / omitted = no
+        lower bound. Endpoints treat the window as inclusive on both ends.
+      schema: { type: number, minimum: 0 }
+    To:
+      name: to
+      in: query
+      description: >
+        Window end, match-relative SECONDS (float). 0 / omitted = no
+        upper bound.
+      schema: { type: number, minimum: 0 }
+    Players:
+      name: players
+      in: query
+      description: >
+        CSV of player display names. Case-SENSITIVE (QW names are
+        case-significant). Omit for all players. Filter semantics are
+        per-endpoint (e.g. killer-or-victim on /frags, speaker on /chat).
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Weapons:
+      name: weapon
+      in: query
+      description: >
+        CSV of weapon codes (case-insensitive). Codes: rl, lg, gl, ssg,
+        sng, ng, sg, axe (plus tele/stomp where positional kills apply —
+        see API.md). /backpacks accepts rl/lg only; /weapon-pickups
+        rl,lg,gl,ssg,sng,ng.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Summary:
+      name: summary
+      in: query
+      description: >
+        `1`/`true` drops the big per-event log / sample arrays / phase
+        timeline and returns only the aggregates.
+      schema: { type: boolean }
+    ItemsFilter:
+      name: items
+      in: query
+      description: >
+        CSV restricting to items whose Name or Kind matches
+        (case-insensitive). A kind token matches every instance ("ya" →
+        ya_1, ya_2); an instance name ("ya_1") matches one.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Kinds:
+      name: kinds
+      in: query
+      description: >
+        CSV of item categories — armor, mega, health, powerup, weapon,
+        ammo — or raw kind tokens (ra, quad). Case-insensitive.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Source:
+      name: source
+      in: query
+      description: Restrict weapon pickups by provenance.
+      schema:
+        type: string
+        enum: [world, backpack, unknown]
+    ChatTypes:
+      name: types
+      in: query
+      description: >
+        CSV of message types; defaults to `chat,teamsay`. Pass a subset to
+        narrow.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    EventTypes:
+      name: types
+      in: query
+      description: >
+        CSV of event types (frag, spawn, pickup, powerup, streak, chat, …
+        — see API.md §events for the full list). Omit for the default set.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    EntityTypes:
+      name: types
+      in: query
+      description: >
+        CSV of entity types: item, spawn, teleportDst, teleportSrc,
+        button, door.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Fields:
+      name: fields
+      in: query
+      description: >
+        CSV of field selector codes. Omit for the default set (everything
+        except the opt-in view/hgt/lq/vel). NOTE: the selector code `li`
+        renders as output key `loc` in name mode — `loc` is NOT a selector
+        code. Unknown codes 400 with the full vocabulary enumerated.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            # field-code-enum:begin — pinned to view/fields.go by TestOpenAPIFieldCodesCurrent
+            - h
+            - a
+            - at
+            - li
+            - pos
+            - view
+            - hgt
+            - lq
+            - vel
+            - rl
+            - lg
+            - gl
+            - ssg
+            - sng
+            - q
+            - pe
+            - r
+            - sh
+            - nl
+            - rk
+            - cl
+            - sp
+            - d
+            # field-code-enum:end
+    Loc:
+      name: loc
+      in: query
+      description: >
+        Loc rendering — `name` (default) resolves loc indices to names;
+        `index` returns raw LocTable indices (decode via /loc-table).
+      schema:
+        type: string
+        enum: [name, index]
+    Layout:
+      name: layout
+      in: query
+      description: >
+        /buckets response layout — `column` (default, compact columnar
+        grid) or `row` (row objects).
+      schema:
+        type: string
+        enum: [column, row]
+    Reducers:
+      name: reducers
+      in: query
+      description: >
+        CSV of `field=reducerName` pairs overriding the per-field default
+        reducer, e.g. `reducers=h=min,a=last`. Names come from the reducer
+        registry in RESULT_SCHEMA.md.
+      schema: { type: string }
+    IncludeTeam:
+      name: includeTeam
+      in: query
+      description: Include each player's team in the bucket envelope.
+      schema: { type: boolean }
+    WindowMs:
+      name: windowMs
+      in: query
+      description: >
+        Window size, integer MILLISECONDS. ⚠️ Defaults to 50 ms — on a
+        20-minute match that is ~24,000 windows per field per player.
+        Always pass a windowMs sized to your question. Note the unit split
+        within one call: windowMs is ms while from/to are seconds.
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+    MinDwellMs:
+      name: minDwellMs
+      in: query
+      description: Drop loc residences shorter than this many milliseconds.
+      schema:
+        type: integer
+        minimum: 0
+    TimeRequired:
+      name: time
+      in: query
+      required: true
+      description: The instant to sample, match-relative SECONDS (float).
+      schema: { type: number }
+  headers:
+    ETag:
+      description: >
+        Strong validator. Per-demo `"<sha>-v<schemaVersion>"`; per-artifact
+        `"<sha>-<name>@v<n>"`; binary-static `"<kind>-v<n>"`; map-static
+        `"ents-<map>-v<n>"` / `"geo-<map>-<size>"`; spec/docs content hash.
+      schema: { type: string }
+    XCache:
+      description: Which cache tier served the demo — HIT, WARM, or MISS.
+      schema:
+        type: string
+        enum: [HIT, WARM, MISS]
+    XSchemaVersion:
+      description: result.CurrentSchemaVersion of the serving binary.
+      schema: { type: string }
+    XRequestId:
+      description: >
+        Per-request id echoed in the server access log; quote it when
+        reporting a problem.
+      schema: { type: string }
+  responses:
+    NotModified:
+      description: >
+        Not Modified — the If-None-Match validator matched; the cached
+        representation is current.
+    BadRequest:
+      description: >
+        Malformed `{id}` (`invalid_demo_id`), malformed or rejected query
+        parameter (`invalid_param`), or required parameter absent
+        (`missing_param`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Unauthorized:
+      description: >
+        Auth mode only — missing / invalid / revoked API key
+        (`unauthorized`). Carries `WWW-Authenticate: Bearer`. The body is
+        deliberately generic.
+      headers:
+        WWW-Authenticate:
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    DemoNotFound:
+      description: The hub has no row for this gameId (`demo_not_found`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    MapUnavailable:
+      description: >
+        No entity corpus / geometry for this map (`map_unavailable`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Unavailable:
+      description: >
+        The demo structurally lacks the signal this section needs
+        (`<section>_unavailable` — the operation description names the
+        specific code). Expected for some demos; treat as "panel
+        unavailable", not failure.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    RateLimited:
+      description: >
+        Auth mode only — per-key rate limit exceeded (`rate_limited`).
+        Carries `Retry-After` (seconds); wait and retry.
+      headers:
+        Retry-After:
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    HubUpstream:
+      description: Network error / 5xx from the hub (`hub_upstream`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Internal:
+      description: >
+        Unexpected server error (`internal`). The body is generic — a
+        fixed message plus the request id; the real error is logged
+        server-side keyed by X-Request-Id.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  schemas:
+    ErrorEnvelope:
+      type: object
+      description: Stable error envelope for every non-2xx JSON response.
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code: { $ref: "#/components/schemas/ErrorCode" }
+            message:
+              type: string
+              description: >
+                Human-readable and user-actionable for 4xx; generic (request
+                id only) for 5xx.
+    ErrorCode:
+      type: string
+      description: Machine-readable error class.
+      enum:
+        # error-code-enum:begin — pinned to the writeError/writeUnavailable call sites by TestOpenAPIErrorCodesCurrent
+        - aim_unavailable
+        - airgibs_unavailable
+        - artifact_unknown
+        - damage_unavailable
+        - demo_not_found
+        - demoinfo_unavailable
+        - frags_unavailable
+        - hub_upstream
+        - internal
+        - invalid_demo_id
+        - invalid_param
+        - locgraph_unavailable
+        - map_unavailable
+        - metadata_unavailable
+        - missing_param
+        - opening_unavailable
+        - rate_limited
+        - region_control_unavailable
+        - shots_unavailable
+        - unauthorized
+        # error-code-enum:end
+    Health:
+      type: object
+      required: [ok, schemaVersion]
+      additionalProperties: false
+      properties:
+        ok: { type: boolean }
+        schemaVersion: { type: integer }
+    Version:
+      type: object
+      required: [hash, tag, buildDate]
+      additionalProperties: false
+      properties:
+        hash: { type: string, description: Git commit hash of the build. }
+        tag: { type: string, description: Git tag, if any. }
+        buildDate: { type: string }
+    LoadResult:
+      type: object
+      required: [demoId, sha256, fromCache, schemaVersion]
+      additionalProperties: false
+      properties:
+        demoId:
+          type: string
+          description: Canonical `sha:HEX` id — use it for subsequent calls.
+        sha256: { type: string }
+        fromCache: { type: boolean }
+        schemaVersion: { type: integer }
+    ArtifactsManifest:
+      type: object
+      required: [schemaVersion, artifacts]
+      additionalProperties: false
+      properties:
+        schemaVersion: { type: integer }
+        artifacts:
+          type: array
+          items: { $ref: "#/components/schemas/ArtifactMeta" }
+    ArtifactMeta:
+      type: object
+      description: One analyzer DAG node, as listed in ARTIFACTS.md.
+      required: [name, mutates, lazy, cost, servable]
+      additionalProperties: false
+      properties:
+        name: { type: string, description: DAG node name. }
+        requires:
+          type: [array, "null"]
+          items: { type: string }
+        provides:
+          type: [array, "null"]
+          items: { type: string }
+        mutates: { type: boolean }
+        lazy: { type: boolean }
+        cost:
+          type: string
+          enum: [light, heavy]
+        resultKey:
+          type: string
+          description: >
+            Top-level Result JSON key (the generic artifact endpoint's body
+            key). Empty = internal / no direct section.
+        servable: { type: boolean }
+        description: { type: string }
+    Graph:
+      type: object
+      description: >
+        The analyzer DAG — analyzer.ExportGraph("json"). Deep shape:
+        mvd-analytics/ARTIFACTS.md.
+    # --- Per-endpoint response schemas.
+    # Placeholder depth (phase 16.2 commit 1); the full field-level pass
+    # replaces these in the same phase. Semantics: RESULT_SCHEMA.md.
+    Overview:
+      type: object
+      description: Curated match summary. Shape: RESULT_SCHEMA.md + API.md §4.2.
+    DemoInfo:
+      type: object
+      description: KTX demoinfo pass-through. Shape: RESULT_SCHEMA.md §demoInfo.
+    Metadata:
+      type: object
+      description: Server cvars + KTX match settings. Shape: RESULT_SCHEMA.md §metadata.
+    Frags:
+      type: object
+      description: Frag aggregates + kill log. Shape: RESULT_SCHEMA.md §frags.
+    Damage:
+      type: object
+      description: Damage log + aggregates. Shape: RESULT_SCHEMA.md §damage.
+    Shots:
+      type: object
+      description: Per-fire weapon stream. Shape: RESULT_SCHEMA.md §shots.
+    Aim:
+      type: object
+      description: Per-player aim analysis. Shape: RESULT_SCHEMA.md §aim.
+    LocGraph:
+      type: object
+      description: Loc adjacency graph. Shape: RESULT_SCHEMA.md §locGraph.
+    Chat:
+      type: object
+      description: Chat events. Shape mirrors result.MatchEvent.
+    Backpacks:
+      type: object
+      description: Backpack drops. Shape: RESULT_SCHEMA.md §backpacks.
+    Items:
+      type: object
+      description: >
+        Item phase timelines, or per-item aggregates with `summary`.
+        Shape: RESULT_SCHEMA.md §items.
+    WeaponPickups:
+      type: object
+      description: Slot-weapon acquisitions. Shape: RESULT_SCHEMA.md §weaponPickups.
+    Buckets:
+      type: object
+      description: >
+        Bucketed series — columnar grid (layout=column) or row objects
+        (layout=row). Shape: RESULT_SCHEMA.md §buckets.
+    Events:
+      type: object
+      description: Unified event list; `detail` is polymorphic per type.
+    StreamSlice:
+      type: object
+      description: Raw stream slices. Shape: RESULT_SCHEMA.md §streams.
+    StateAt:
+      type: object
+      description: Per-player point-in-time state.
+    Los:
+      type: object
+      description: Per-player LOS/PVS interval sets.
+    Projectiles:
+      type: object
+      description: '`{"projectiles": …}` — rocket/grenade flight stream, null when none.'
+    Beams:
+      type: object
+      description: '`{"beams": …}` — LG bolt stream, null when none.'
+    Nails:
+      type: object
+      description: '`{"nails": …}` — nail flight stream, null when none.'
+    LocTrails:
+      type: object
+      description: Per-player loc dwell spans.
+    LocTable:
+      type: object
+      description: '`{"locTable": [...]}` — interned loc names; index 0 is the no-loc sentinel.'
+    RegionControl:
+      type: object
+      description: Region-control timeline. Shape: RESULT_SCHEMA.md §regionControl.
+    Airgibs:
+      type: object
+      description: Airgib key moments list.
+    MapEntities:
+      type: object
+      description: Static map entity layout. Shape: RESULT_SCHEMA.md §mapEntities.
+    MapGeometry:
+      type: object
+      description: Floor-polygon geometry document (mapgeom.MapRegions v2).
+    ArtifactEnvelope:
+      type: object
+      description: >
+        Single-key envelope — the key is the artifact's `resultKey` (see
+        GET /v1/artifacts), the value the raw Result section.
+      minProperties: 1
+      maxProperties: 1
+      additionalProperties: true

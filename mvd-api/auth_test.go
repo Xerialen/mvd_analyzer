@@ -172,6 +172,13 @@ func TestAuth_TraversalNotExempt(t *testing.T) {
 	if !authExempt("/portal/login") || !authExempt("/healthz") || !authExempt("/v1/version") {
 		t.Error("authExempt must still exempt the real portal prefix, healthz, and version")
 	}
+	if !authExempt("/openapi.yaml") || !authExempt("/docs") || !authExempt("/docs/") ||
+		!authExempt("/docs/rapidoc-min.js") {
+		t.Error("authExempt must exempt the API description and its viewer assets")
+	}
+	if authExempt("/docs/../v1/auth/check") {
+		t.Error("authExempt must not exempt a traversal that cleans past /docs/")
+	}
 	if authExempt("/v1/auth/check") {
 		t.Error("authExempt must not exempt /v1/auth/check")
 	}

@@ -23,10 +23,12 @@ type authenticator struct {
 
 // authExempt reports whether a request path may be reached without a key.
 // Everything under /v1/ (and POST /v1/demos/{id}) requires a key; these are
-// the carve-outs: liveness, the build stamp, and the (reserved) portal prefix.
-// The portal (phase 15) does its own Discord-cookie auth, so it must not sit
-// behind the API-key gate. Note /v1/auth/check is deliberately NOT exempt —
-// it is the check itself.
+// the carve-outs: liveness, the build stamp, the API description + its
+// viewer (the spec is the public contract — it must be readable before a
+// client has a key, and it serves only embedded bytes), and the (reserved)
+// portal prefix. The portal (phase 15) does its own Discord-cookie auth, so
+// it must not sit behind the API-key gate. Note /v1/auth/check is
+// deliberately NOT exempt — it is the check itself.
 //
 // The path is path.Clean'd first so a traversal like /portal/../v1/auth/check
 // cannot be smuggled past the prefix test: it resolves to /v1/auth/check and
@@ -36,10 +38,11 @@ type authenticator struct {
 func authExempt(rawPath string) bool {
 	p := path.Clean(rawPath)
 	switch p {
-	case "/healthz", "/v1/version":
+	case "/healthz", "/v1/version", "/openapi.yaml", "/docs":
 		return true
 	}
-	return p == "/portal" || strings.HasPrefix(p, "/portal/")
+	return p == "/portal" || strings.HasPrefix(p, "/portal/") ||
+		strings.HasPrefix(p, "/docs/")
 }
 
 // bearerToken returns the raw token from an "Authorization: Bearer <token>"
