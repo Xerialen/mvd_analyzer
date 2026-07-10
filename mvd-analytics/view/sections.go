@@ -528,8 +528,8 @@ func Chat(r *result.Result, opts ChatOptions) []result.MatchEvent {
 	if len(types) == 0 {
 		types = map[string]bool{"chat": true, "teamsay": true}
 	}
-	startMs := int32(opts.From * 1000)
-	endMs := int32(opts.To * 1000)
+	startMs := secToMs(opts.From)
+	endMs := secToMs(opts.To)
 	for _, ev := range r.Messages.Events {
 		if !types[ev.Type] {
 			continue

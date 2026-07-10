@@ -202,3 +202,29 @@ func TestAim_WindowAndSummary(t *testing.T) {
 		t.Errorf("window+summary dropped weapons on A")
 	}
 }
+
+// TestFilteredEmptyAimIsArrayNotNull mirrors TestFilteredEmptyLogIsArrayNotNull
+// for aim: a scoping filter (players or window) that matches no shooter must
+// return players:[], never null — the shape the summary path already produced.
+func TestFilteredEmptyAimIsArrayNotNull(t *testing.T) {
+	r := aimFixture()
+
+	// players filter matching nobody (no window: the players-select branch).
+	got, err := Aim(r, AimOptions{Players: []string{"nobody"}})
+	if err != nil {
+		t.Fatalf("Aim: %v", err)
+	}
+	if got.Players == nil {
+		t.Errorf("players-filtered-empty aim.players must be [], not null")
+	}
+
+	// window matching no shots (recompute branch), scoped to nobody so the
+	// recompute yields no players.
+	got2, err := Aim(r, AimOptions{From: 1.5, Players: []string{"nobody"}})
+	if err != nil {
+		t.Fatalf("Aim: %v", err)
+	}
+	if got2.Players == nil {
+		t.Errorf("windowed-filtered-empty aim.players must be [], not null")
+	}
+}

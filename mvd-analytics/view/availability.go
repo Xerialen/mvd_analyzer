@@ -122,6 +122,15 @@ func Aim(r *result.Result, opts AimOptions) (*result.AimResult, error) {
 		}
 	}
 
+	// Included-but-empty players serialize as [], never null: a scoping filter
+	// (players / window) that matched no shooter must return players:[], the
+	// same shape the summary path (make below) and the filtered-empty-log
+	// convention (view commit d50d9ac) already produce. Only the unfiltered
+	// pass-through keeps the stored value untouched (aliasing r.Aim).
+	if base != r.Aim && base.Players == nil {
+		base.Players = []result.PlayerAim{}
+	}
+
 	if !opts.Summary {
 		return base, nil
 	}
