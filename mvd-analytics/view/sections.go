@@ -429,14 +429,20 @@ func Items(r *result.Result, opts ItemOptions) *result.ItemsResult {
 		return r.Items
 	}
 
+	// Boundary convention: the query window is CLOSED [from, to], like
+	// every sibling endpoint (frags/damage/backpacks keep time == to).
+	// Both bounds compare strictly so a phase touching the window at a
+	// single boundary instant survives — this matters for weapon-stay
+	// demos, whose zero-length phases (takenAt == respawnAt) would
+	// otherwise vanish when the take lands exactly on `from`.
 	keepPhase := func(ph result.ItemPhase) bool {
 		if len(players) > 0 && ph.TakenBy != "" && !players[ph.TakenBy] {
 			return false
 		}
-		if endMs > 0 && ph.AvailableFrom >= endMs {
+		if endMs > 0 && ph.AvailableFrom > endMs {
 			return false
 		}
-		if startMs > 0 && ph.RespawnAt != 0 && ph.RespawnAt <= startMs {
+		if startMs > 0 && ph.RespawnAt != 0 && ph.RespawnAt < startMs {
 			return false
 		}
 		return true
@@ -511,10 +517,12 @@ func ItemsSummary(r *result.Result, opts ItemOptions) *ItemsSummaryView {
 			if ph.TakenAt == 0 && ph.TakenBy == "" {
 				continue // untaken availability phase
 			}
+			// Closed window [from, to] on the take time — a take at
+			// exactly `to` counts, matching getFrags/getBackpacks.
 			if startMs > 0 && ph.TakenAt < startMs {
 				continue
 			}
-			if endMs > 0 && ph.TakenAt >= endMs {
+			if endMs > 0 && ph.TakenAt > endMs {
 				continue
 			}
 			s.TakenCount++

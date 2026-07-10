@@ -581,3 +581,35 @@ func TestWeaponPickups_Window(t *testing.T) {
 		t.Fatalf("windowed pickups = %+v", out)
 	}
 }
+
+// TestItems_WindowBoundaries: the window is CLOSED [from,to] like the
+// sibling endpoints; a weapon-stay zero-length phase (takenAt ==
+// respawnAt) landing exactly on `from` survives, and a take at exactly
+// `to` counts in the summary.
+func TestItems_WindowBoundaries(t *testing.T) {
+	r := &result.Result{Items: &result.ItemsResult{Items: []result.ItemTimeline{
+		{ // weapon-stay convention: zero-length unavailability at the take.
+			Name: "rl_1", Kind: "rl", EntNum: 9,
+			Phases: []result.ItemPhase{
+				{AvailableFrom: 0, TakenAt: 30000, TakenBy: "p1", RespawnAt: 30000},
+				{AvailableFrom: 30000},
+			},
+		},
+	}}}
+	v := Items(r, ItemOptions{From: 30})
+	if len(v.Items) != 1 || len(v.Items[0].Phases) != 2 {
+		t.Fatalf("zero-length phase at from boundary dropped: %+v", v.Items)
+	}
+	s := ItemsSummary(r, ItemOptions{From: 30})
+	if s.Items[0].TakenCount != 1 {
+		t.Errorf("take at exactly from: takenCount = %d, want 1", s.Items[0].TakenCount)
+	}
+	s = ItemsSummary(r, ItemOptions{To: 30})
+	if s.Items[0].TakenCount != 1 {
+		t.Errorf("take at exactly to: takenCount = %d, want 1 (closed window, getFrags parity)", s.Items[0].TakenCount)
+	}
+	s = ItemsSummary(r, ItemOptions{To: 29.999})
+	if s.Items[0].TakenCount != 0 {
+		t.Errorf("take just past to: takenCount = %d, want 0", s.Items[0].TakenCount)
+	}
+}
