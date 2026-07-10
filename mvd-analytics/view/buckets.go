@@ -424,7 +424,9 @@ func fastReduce(p *result.PlayerStream, field, reducer string, bStart, bEnd floa
 // without building the slice: the carry value (last change at/before
 // bStart) if any, else the first in-window change, else nil.
 func firstChangeI16(stream []result.ChangeI16, bStart, bEnd float64) any {
-	if stream == nil {
+	// len, not nil: an empty-but-non-nil stream (a player with no readings,
+	// or any JSON round-trip of one) must not panic on stream[0] below.
+	if len(stream) == 0 {
 		return nil
 	}
 	if carry := indexI16AtOrBefore(stream, int32(bStart*1000)); carry >= 0 {
@@ -440,7 +442,7 @@ func firstChangeI16(stream []result.ChangeI16, bStart, bEnd float64) any {
 
 // firstChangeStr is firstChangeI16 for string change streams.
 func firstChangeStr(stream []result.ChangeStr, bStart, bEnd float64) any {
-	if stream == nil {
+	if len(stream) == 0 { // len, not nil — see firstChangeI16
 		return nil
 	}
 	if carry := indexStrAtOrBefore(stream, int32(bStart*1000)); carry >= 0 {

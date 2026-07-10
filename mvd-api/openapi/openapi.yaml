@@ -688,8 +688,9 @@ paths:
         Every requested field carried forward to the instant `time`
         (match-relative seconds; REQUIRED — missing returns 400
         missing_param). Field selector codes are the same registry as
-        /buckets and /stream-slice; note the `li` code renders as output
-        key `loc`.
+        /buckets and /stream-slice, except `sp`/`d` are rejected (spawns
+        and deaths have no point-in-time meaning — use /events); note the
+        `li` code renders as output key `loc`.
       parameters:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/TimeRequired"
@@ -766,7 +767,9 @@ paths:
       operationId: getBeams
       tags: [streams]
       summary: LG bolt stream
-      description: The raw lightning-bolt stream. Body is `{"beams": …}`, null when none.
+      description: >
+        The raw lightning-bolt stream. Body is `{"beams": …}`, null when
+        none.
       parameters:
         - $ref: "#/components/parameters/DemoId"
       responses:
@@ -1160,8 +1163,10 @@ components:
       name: types
       in: query
       description: >
-        CSV of event types (frag, spawn, pickup, powerup, streak, chat, …
-        — see API.md §events for the full list). Omit for the default set.
+        CSV of event types: frag, powerup, streak, spawn, death, weapon,
+        item, chat, pickup (the default set), plus the opt-in
+        high-frequency / dedicated lenses damage, health, armor, loc,
+        telefrag, stomp. Omit for the default set.
       style: form
       explode: false
       schema:
@@ -1465,101 +1470,3931 @@ components:
             key). Empty = internal / no direct section.
         servable: { type: boolean }
         description: { type: string }
-    Graph:
-      type: object
-      description: >
-        The analyzer DAG — analyzer.ExportGraph("json"). Deep shape:
-        mvd-analytics/ARTIFACTS.md.
-    # --- Per-endpoint response schemas.
-    # Placeholder depth (phase 16.2 commit 1); the full field-level pass
-    # replaces these in the same phase. Semantics: RESULT_SCHEMA.md.
+    # --- Per-endpoint response schemas (full field-level).
+    # Bootstrapped from the Go structs (result/, view/, mvd-api Overview)
+    # via reflection and hand-curated; every schema is validated against
+    # real golden-corpus responses by openapi_validate_test.go, so shape
+    # drift fails tests. Semantics live in RESULT_SCHEMA.md.
     Overview:
+      additionalProperties: false
+      properties:
+        duration:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        errors:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+        filePath:
+          type: string
+        gameDir:
+          type: string
+        hasRegionControl:
+          type: boolean
+        locCount:
+          type: integer
+        map:
+          type: string
+        matchEnd:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        matchStart:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        matchtag:
+          type: string
+        mode:
+          type: string
+        playerUserIDs:
+          additionalProperties:
+            type: integer
+          type: object
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              deaths:
+                type: integer
+              frags:
+                type: integer
+              kills:
+                type: integer
+              name:
+                type: string
+              suicides:
+                type: integer
+              team:
+                type: string
+            required:
+              - name
+              - frags
+              - kills
+              - deaths
+              - suicides
+            type: object
+          type:
+            - "null"
+            - array
+        schemaVersion:
+          type: integer
+        teams:
+          items:
+            additionalProperties: false
+            properties:
+              frags:
+                type: integer
+              name:
+                type: string
+            required:
+              - name
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+        timing:
+          additionalProperties: false
+          properties:
+            demoOffset:
+              maximum: 2.147483647e+09
+              minimum: -2.147483648e+09
+              type: integer
+            demoStartAccuracyMs:
+              maximum: 2.147483647e+09
+              minimum: -2.147483648e+09
+              type: integer
+            demoStartUnixMs:
+              type: integer
+            pauses:
+              items:
+                additionalProperties: false
+                properties:
+                  atMs:
+                    maximum: 2.147483647e+09
+                    minimum: -2.147483648e+09
+                    type: integer
+                  durationMs:
+                    maximum: 2.147483647e+09
+                    minimum: -2.147483648e+09
+                    type: integer
+                required:
+                  - atMs
+                  - durationMs
+                type: object
+              type:
+                - "null"
+                - array
+          type:
+            - "null"
+            - object
+        topPowerups:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              frags:
+                type: integer
+              player:
+                type: string
+              start:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              team:
+                type: string
+              type:
+                type: string
+            required:
+              - player
+              - type
+              - start
+              - duration
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+        topStreaks:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              length:
+                type: integer
+              player:
+                type: string
+              start:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              team:
+                type: string
+              weapon:
+                type: string
+            required:
+              - player
+              - length
+              - start
+              - duration
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - schemaVersion
+        - duration
+        - matchStart
+        - matchEnd
+        - players
+        - locCount
+        - hasRegionControl
       type: object
-      description: Curated match summary. Shape: RESULT_SCHEMA.md + API.md §4.2.
-    DemoInfo:
-      type: object
-      description: KTX demoinfo pass-through. Shape: RESULT_SCHEMA.md §demoInfo.
     Metadata:
+      additionalProperties: false
+      properties:
+        countdownText:
+          type: string
+        matchSettings:
+          additionalProperties: false
+          properties:
+            airstep:
+              type: boolean
+            antilag:
+              type: integer
+            deathmatch:
+              type: integer
+            dmgfrags:
+              type: boolean
+            fraglimit:
+              type: integer
+            instagib:
+              type: boolean
+            matchtag:
+              type: string
+            midair:
+              type: boolean
+            mode:
+              type: string
+            noItems:
+              type: boolean
+            noweapon:
+              type: string
+            overtime:
+              type: string
+            powerups:
+              type: string
+            socdv2:
+              type: string
+            spawnK:
+              type:
+                - "null"
+                - integer
+            spawnmodel:
+              type: string
+            teamplay:
+              type: integer
+            timelimit:
+              type: integer
+            vwep:
+              type: boolean
+            yawnmode:
+              type: boolean
+          type:
+            - "null"
+            - object
+        serverInfo:
+          additionalProperties:
+            type: string
+          type: object
       type: object
-      description: Server cvars + KTX match settings. Shape: RESULT_SCHEMA.md §metadata.
+    DemoInfo:
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+        demo:
+          type: string
+        duration:
+          type: integer
+        fraglimit:
+          type: integer
+        hostname:
+          type: string
+        ip:
+          type: string
+        map:
+          type: string
+        mode:
+          type: string
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              bot:
+                additionalProperties: false
+                properties:
+                  customised:
+                    type: boolean
+                  skill:
+                    type: integer
+                required:
+                  - skill
+                  - customised
+                type:
+                  - "null"
+                  - object
+              bottomColor:
+                type: integer
+              control:
+                type: number
+              dmg:
+                additionalProperties: false
+                properties:
+                  enemy-weapons:
+                    type: integer
+                  given:
+                    type: integer
+                  self:
+                    type: integer
+                  taken:
+                    type: integer
+                  taken-to-die:
+                    type: integer
+                  team:
+                    type: integer
+                  team-weapons:
+                    type: integer
+                required:
+                  - taken
+                  - given
+                type:
+                  - "null"
+                  - object
+              handicap:
+                type: integer
+              items:
+                additionalProperties:
+                  additionalProperties: false
+                  properties:
+                    time:
+                      type: integer
+                    took:
+                      type: integer
+                  type:
+                    - "null"
+                    - object
+                type: object
+              login:
+                type: string
+              name:
+                type: string
+              ping:
+                type: integer
+              speed:
+                additionalProperties: false
+                properties:
+                  avg:
+                    type: number
+                  max:
+                    type: number
+                type:
+                  - "null"
+                  - object
+              spree:
+                additionalProperties: false
+                properties:
+                  max:
+                    type: integer
+                  quad:
+                    type: integer
+                type:
+                  - "null"
+                  - object
+              stats:
+                additionalProperties: false
+                properties:
+                  deaths:
+                    type: integer
+                  frags:
+                    type: integer
+                  kills:
+                    type: integer
+                  spawn-frags:
+                    type: integer
+                  suicides:
+                    type: integer
+                  tk:
+                    type: integer
+                required:
+                  - frags
+                  - deaths
+                type:
+                  - "null"
+                  - object
+              team:
+                type: string
+              topColor:
+                type: integer
+              weapons:
+                additionalProperties:
+                  additionalProperties: false
+                  properties:
+                    acc:
+                      additionalProperties: false
+                      properties:
+                        attacks:
+                          type: integer
+                        hits:
+                          type: integer
+                        real:
+                          type: integer
+                        virtual:
+                          type: integer
+                      required:
+                        - attacks
+                        - hits
+                      type:
+                        - "null"
+                        - object
+                    damage:
+                      additionalProperties: false
+                      properties:
+                        enemy:
+                          type: integer
+                        team:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    deaths:
+                      type: integer
+                    kills:
+                      additionalProperties: false
+                      properties:
+                        enemy:
+                          type: integer
+                        self:
+                          type: integer
+                        team:
+                          type: integer
+                        total:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    pickups:
+                      additionalProperties: false
+                      properties:
+                        dropped:
+                          type: integer
+                        spawn-taken:
+                          type: integer
+                        spawn-total-taken:
+                          type: integer
+                        taken:
+                          type: integer
+                        total-taken:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                  type:
+                    - "null"
+                    - object
+                type: object
+              xferLG:
+                type: integer
+              xferRL:
+                type: integer
+            required:
+              - name
+              - team
+            type: object
+          type:
+            - "null"
+            - array
+        port:
+          type: integer
+        rawJson:
+          type: string
+        teams:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+        timelimit:
+          type: integer
+        version:
+          type: integer
+      type: object
     Frags:
+      additionalProperties: false
+      properties:
+        byPlayer:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              byWeapon:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              deaths:
+                type: integer
+              kills:
+                type: integer
+              teamkills:
+                type: integer
+            required:
+              - kills
+              - deaths
+              - byWeapon
+            type:
+              - "null"
+              - object
+          type:
+            - object
+            - "null"
+        byWeapon:
+          additionalProperties:
+            type: integer
+          type:
+            - object
+            - "null"
+        frags:
+          items:
+            additionalProperties: false
+            properties:
+              isSuicide:
+                type: boolean
+              isTeamKill:
+                type: boolean
+              killer:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              weapon:
+                type: string
+            required:
+              - time
+              - killer
+              - victim
+              - weapon
+            type: object
+          type:
+            - "null"
+            - array
+        totalFrags:
+          type: integer
+      required:
+        - totalFrags
+        - frags
+        - byWeapon
+        - byPlayer
       type: object
-      description: Frag aggregates + kill log. Shape: RESULT_SCHEMA.md §frags.
     Damage:
+      additionalProperties: false
+      properties:
+        byPlayer:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              byWeapon:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              enemyVsBoth:
+                type: integer
+              enemyVsLg:
+                type: integer
+              enemyVsMid:
+                type: integer
+              enemyVsRl:
+                type: integer
+              enemyVsSg:
+                type: integer
+              ewep:
+                type: integer
+              given:
+                type: integer
+              givenSelf:
+                type: integer
+              givenTeam:
+                type: integer
+              stomps:
+                type: integer
+              taken:
+                type: integer
+              takenEnv:
+                type: integer
+              telefrags:
+                type: integer
+            required:
+              - given
+              - taken
+              - givenTeam
+              - givenSelf
+              - takenEnv
+              - byWeapon
+              - enemyVsSg
+              - enemyVsMid
+              - enemyVsLg
+              - enemyVsRl
+              - enemyVsBoth
+              - ewep
+            type:
+              - "null"
+              - object
+          type:
+            - object
+            - "null"
+        byWeapon:
+          additionalProperties:
+            type: integer
+          type:
+            - object
+            - "null"
+        events:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              damage:
+                type: integer
+              isEnv:
+                type: boolean
+              isSelf:
+                type: boolean
+              isSplash:
+                type: boolean
+              isTeam:
+                type: boolean
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              victimWep:
+                type: string
+              weapon:
+                type: string
+            required:
+              - time
+              - attacker
+              - victim
+              - weapon
+              - damage
+            type: object
+          type:
+            - "null"
+            - array
+        matrix:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              byWeapon:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              damage:
+                type: integer
+              victim:
+                type: string
+            required:
+              - attacker
+              - victim
+              - damage
+              - byWeapon
+            type: object
+          type:
+            - "null"
+            - array
+        scoreboard:
+          additionalProperties: false
+          properties:
+            byPlayer:
+              additionalProperties:
+                additionalProperties: false
+                properties:
+                  scoreEwep:
+                    type: integer
+                  scoreGiven:
+                    type: integer
+                  scoreTaken:
+                    type: integer
+                  streamEwep:
+                    type: integer
+                  streamGiven:
+                    type: integer
+                  streamTaken:
+                    type: integer
+                required:
+                  - streamGiven
+                  - scoreGiven
+                  - streamTaken
+                  - scoreTaken
+                  - streamEwep
+                  - scoreEwep
+                type:
+                  - "null"
+                  - object
+              type:
+                - object
+                - "null"
+          required:
+            - byPlayer
+          type:
+            - "null"
+            - object
+        stomps:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              isTeam:
+                type: boolean
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+            required:
+              - time
+              - attacker
+              - victim
+            type: object
+          type:
+            - "null"
+            - array
+        telefrags:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              isTeam:
+                type: boolean
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+            required:
+              - time
+              - attacker
+              - victim
+            type: object
+          type:
+            - "null"
+            - array
+        totalDamage:
+          type: integer
+      required:
+        - totalDamage
+        - events
+        - byWeapon
+        - byPlayer
+        - matrix
       type: object
-      description: Damage log + aggregates. Shape: RESULT_SCHEMA.md §damage.
     Shots:
+      additionalProperties: false
+      properties:
+        byPlayer:
+          items:
+            additionalProperties: false
+            properties:
+              byWeapon:
+                items:
+                  additionalProperties: false
+                  properties:
+                    accuracy:
+                      type: number
+                    enemyHits:
+                      type: integer
+                    hits:
+                      type: integer
+                    selfHits:
+                      type: integer
+                    shots:
+                      type: integer
+                    teamHits:
+                      type: integer
+                    weapon:
+                      type: string
+                  required:
+                    - weapon
+                    - shots
+                  type: object
+                type:
+                  - "null"
+                  - array
+              player:
+                type: string
+              team:
+                type: string
+              total:
+                type: integer
+            required:
+              - player
+              - total
+              - byWeapon
+            type: object
+          type:
+            - "null"
+            - array
+        reconciliation:
+          additionalProperties: false
+          properties:
+            byPlayer:
+              additionalProperties:
+                items:
+                  additionalProperties: false
+                  properties:
+                    ktxAttacks:
+                      type: integer
+                    ktxHits:
+                      type: integer
+                    streamAttacks:
+                      type: integer
+                    streamShots:
+                      type: integer
+                    weapon:
+                      type: string
+                  required:
+                    - weapon
+                    - streamShots
+                    - streamAttacks
+                    - ktxAttacks
+                    - ktxHits
+                  type: object
+                type:
+                  - "null"
+                  - array
+              type:
+                - object
+                - "null"
+          required:
+            - byPlayer
+          type:
+            - "null"
+            - object
+        shots:
+          items:
+            additionalProperties: false
+            properties:
+              hit:
+                type: boolean
+              player:
+                type: string
+              source:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victimKinds:
+                items:
+                  type: string
+                type:
+                  - "null"
+                  - array
+              victims:
+                items:
+                  type: string
+                type:
+                  - "null"
+                  - array
+              weapon:
+                type: string
+            required:
+              - time
+              - player
+              - weapon
+              - source
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - shots
       type: object
-      description: Per-fire weapon stream. Shape: RESULT_SCHEMA.md §shots.
     Aim:
+      additionalProperties: false
+      properties:
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              crosshair:
+                additionalProperties: false
+                properties:
+                  dist:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  dpitch:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  dyaw:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  hit:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                  npitch:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  nyaw:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  team:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                  tgt:
+                    items:
+                      type: string
+                    type:
+                      - "null"
+                      - array
+                  w:
+                    items:
+                      type: string
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - w
+                  - dyaw
+                  - dpitch
+                  - nyaw
+                  - npitch
+                  - dist
+                  - hit
+                  - tgt
+                type:
+                  - "null"
+                  - object
+              lgRamp:
+                additionalProperties: false
+                properties:
+                  hit:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                  since:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  team:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - since
+                  - hit
+                type:
+                  - "null"
+                  - object
+              mode:
+                type: string
+              player:
+                type: string
+              team:
+                type: string
+              weapons:
+                items:
+                  additionalProperties: false
+                  properties:
+                    blocked:
+                      type: integer
+                    direct:
+                      type: integer
+                    enemy:
+                      additionalProperties: false
+                      properties:
+                        direct:
+                          type: integer
+                        full:
+                          type: integer
+                        hits:
+                          type: integer
+                        miss:
+                          type: integer
+                        partial:
+                          type: integer
+                        pelletHits:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    full:
+                      type: integer
+                    hits:
+                      type: integer
+                    miss:
+                      type: integer
+                    missed:
+                      type: integer
+                    outOfRange:
+                      type: integer
+                    partial:
+                      type: integer
+                    pelletHits:
+                      type: integer
+                    pellets:
+                      type: integer
+                    self:
+                      additionalProperties: false
+                      properties:
+                        direct:
+                          type: integer
+                        full:
+                          type: integer
+                        hits:
+                          type: integer
+                        miss:
+                          type: integer
+                        partial:
+                          type: integer
+                        pelletHits:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    shots:
+                      type: integer
+                    splash:
+                      type: integer
+                    team:
+                      additionalProperties: false
+                      properties:
+                        direct:
+                          type: integer
+                        full:
+                          type: integer
+                        hits:
+                          type: integer
+                        miss:
+                          type: integer
+                        partial:
+                          type: integer
+                        pelletHits:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    unresolved:
+                      type: integer
+                    weapon:
+                      type: string
+                  required:
+                    - weapon
+                    - shots
+                    - hits
+                  type: object
+                type:
+                  - "null"
+                  - array
+            required:
+              - player
+              - mode
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - players
       type: object
-      description: Per-player aim analysis. Shape: RESULT_SCHEMA.md §aim.
     LocGraph:
+      additionalProperties: false
+      properties:
+        edges:
+          items:
+            additionalProperties: false
+            properties:
+              armed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              byPlayer:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              byTeam:
+                additionalProperties:
+                  type: integer
+                type: object
+              from:
+                type: string
+              kind:
+                type: string
+              pent:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              quad:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              to:
+                type: string
+              total:
+                type: integer
+              unarmed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+            required:
+              - from
+              - to
+              - kind
+              - total
+              - byPlayer
+            type: object
+          type:
+            - "null"
+            - array
+        locs:
+          items:
+            additionalProperties: false
+            properties:
+              armed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              byPlayer:
+                additionalProperties:
+                  type: number
+                type:
+                  - object
+                  - "null"
+              byTeam:
+                additionalProperties:
+                  type: number
+                type: object
+              name:
+                type: string
+              pent:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              quad:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              total:
+                type: number
+              unarmed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - name
+              - x
+              - "y"
+              - z
+              - total
+              - byPlayer
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - locs
+        - edges
       type: object
-      description: Loc adjacency graph. Shape: RESULT_SCHEMA.md §locGraph.
-    Chat:
+    MatchEvent:
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+        messageClean:
+          type: string
+        player:
+          type: string
+        team:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        type:
+          type: string
+        victim:
+          type: string
+        weapon:
+          type: string
+      required:
+        - time
+        - type
+        - player
+        - team
+        - message
       type: object
-      description: Chat events. Shape mirrors result.MatchEvent.
-    Backpacks:
+    BackpackDrop:
+      additionalProperties: false
+      properties:
+        entNum:
+          type: integer
+        loc:
+          type: string
+        origin:
+          items:
+            type: number
+          maxItems: 3
+          minItems: 3
+          type: array
+        player:
+          type: string
+        team:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        weapon:
+          type: string
+      required:
+        - time
+        - player
+        - weapon
+        - origin
+        - entNum
       type: object
-      description: Backpack drops. Shape: RESULT_SCHEMA.md §backpacks.
-    Items:
+    WeaponPickup:
+      additionalProperties: false
+      properties:
+        backpackEnt:
+          type: integer
+        dropTime:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        dropper:
+          type: string
+        dropperTeam:
+          type: string
+        hadBefore:
+          type: boolean
+        inferred:
+          type: boolean
+        kills:
+          type: integer
+        nextDeathTime:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        player:
+          type: string
+        source:
+          type: string
+        team:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        weapon:
+          type: string
+      required:
+        - time
+        - player
+        - weapon
+        - source
+        - hadBefore
+        - kills
       type: object
-      description: >
-        Item phase timelines, or per-item aggregates with `summary`.
-        Shape: RESULT_SCHEMA.md §items.
-    WeaponPickups:
+    ItemsTimelines:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            additionalProperties: false
+            properties:
+              entNum:
+                type: integer
+              kind:
+                type: string
+              loc:
+                type: string
+              name:
+                type: string
+              phases:
+                items:
+                  additionalProperties: false
+                  properties:
+                    availableFrom:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    respawnAt:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    takenAt:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    takenBy:
+                      type: string
+                    team:
+                      type: string
+                  required:
+                    - availableFrom
+                  type: object
+                type:
+                  - "null"
+                  - array
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - name
+              - kind
+              - entNum
+              - x
+              - "y"
+              - z
+              - phases
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - items
       type: object
-      description: Slot-weapon acquisitions. Shape: RESULT_SCHEMA.md §weaponPickups.
-    Buckets:
+    ItemsSummary:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            additionalProperties: false
+            properties:
+              byPlayer:
+                additionalProperties:
+                  type: integer
+                type: object
+              entNum:
+                type: integer
+              firstTake:
+                additionalProperties: false
+                properties:
+                  t:
+                    type: number
+                  takenBy:
+                    type: string
+                  team:
+                    type: string
+                required:
+                  - t
+                type:
+                  - "null"
+                  - object
+              kind:
+                type: string
+              loc:
+                type: string
+              name:
+                type: string
+              takenCount:
+                type: integer
+            required:
+              - name
+              - kind
+              - entNum
+              - takenCount
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - items
       type: object
-      description: >
-        Bucketed series — columnar grid (layout=column) or row objects
-        (layout=row). Shape: RESULT_SCHEMA.md §buckets.
+    AirgibEvent:
+      additionalProperties: false
+      properties:
+        attacker:
+          type: string
+        attackerTeam:
+          type: string
+        attackerUserID:
+          type: integer
+        damage:
+          type: integer
+        height:
+          type: number
+        heightAboveAttacker:
+          type: number
+        lethal:
+          type: boolean
+        loc:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        victim:
+          type: string
+        victimTeam:
+          type: string
+        victimUserID:
+          type: integer
+      required:
+        - time
+        - attacker
+        - victim
+        - height
+        - damage
+      type: object
+    RegionControl:
+      additionalProperties: false
+      properties:
+        bucketStates:
+          additionalProperties:
+            type: string
+          type: object
+        regions:
+          items:
+            additionalProperties: false
+            properties:
+              centroidX:
+                type: number
+              centroidY:
+                type: number
+              locs:
+                items:
+                  type: string
+                type:
+                  - "null"
+                  - array
+              name:
+                type: string
+              points:
+                items:
+                  additionalProperties: false
+                  properties:
+                    name:
+                      type: string
+                    x:
+                      type: number
+                    "y":
+                      type: number
+                    z:
+                      type: number
+                  required:
+                    - x
+                    - "y"
+                    - z
+                    - name
+                  type: object
+                type:
+                  - "null"
+                  - array
+            required:
+              - name
+              - locs
+              - points
+              - centroidX
+              - centroidY
+            type: object
+          type:
+            - "null"
+            - array
+        stats:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              byPlayer:
+                additionalProperties:
+                  additionalProperties: false
+                  properties:
+                    armed:
+                      type: integer
+                    team:
+                      type: string
+                    unarmed:
+                      type: integer
+                  required:
+                    - team
+                    - armed
+                    - unarmed
+                  type: object
+                type: object
+              contested:
+                type: number
+              empty:
+                type: number
+              teamAControl:
+                type: number
+              teamAWeakControl:
+                type: number
+              teamBControl:
+                type: number
+              teamBWeakControl:
+                type: number
+              weakContested:
+                type: number
+            required:
+              - teamAControl
+              - teamAWeakControl
+              - contested
+              - weakContested
+              - empty
+              - teamBWeakControl
+              - teamBControl
+            type: object
+          type: object
+        teamA:
+          type: string
+        teamB:
+          type: string
+      required:
+        - regions
+      type: object
+    ProjectileStreams:
+      additionalProperties: false
+      properties:
+        e:
+          items:
+            maximum: 2.147483647e+09
+            minimum: -2.147483648e+09
+            type: integer
+          type:
+            - "null"
+            - array
+        ex:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ey:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ez:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        s:
+          items:
+            maximum: 2.147483647e+09
+            minimum: -2.147483648e+09
+            type: integer
+          type:
+            - "null"
+            - array
+        sx:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sy:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sz:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        w:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+      required:
+        - w
+        - s
+        - e
+        - sx
+        - sy
+        - sz
+        - ex
+        - ey
+        - ez
+      type: object
+    BeamStreams:
+      additionalProperties: false
+      properties:
+        ex:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ey:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ez:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sx:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sy:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sz:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        t:
+          items:
+            maximum: 2.147483647e+09
+            minimum: -2.147483648e+09
+            type: integer
+          type:
+            - "null"
+            - array
+      required:
+        - t
+        - sx
+        - sy
+        - sz
+        - ex
+        - ey
+        - ez
+      type: object
+    LosTrack:
+      additionalProperties: false
+      properties:
+        iv:
+          items:
+            additionalProperties: false
+            properties:
+              e:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              s:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - s
+              - e
+            type: object
+          type:
+            - "null"
+            - array
+        o:
+          maximum: 32767
+          minimum: -32768
+          type: integer
+      required:
+        - o
+        - iv
+      type: object
+    MapEntities:
+      additionalProperties: false
+      properties:
+        entities:
+          items:
+            additionalProperties: false
+            properties:
+              bounds:
+                additionalProperties: false
+                properties:
+                  max:
+                    items:
+                      type: number
+                    maxItems: 3
+                    minItems: 3
+                    type: array
+                  min:
+                    items:
+                      type: number
+                    maxItems: 3
+                    minItems: 3
+                    type: array
+                required:
+                  - min
+                  - max
+                type:
+                  - "null"
+                  - object
+              class:
+                type: string
+              kind:
+                type: string
+              loc:
+                type: string
+              name:
+                type: string
+              spawnflags:
+                type: integer
+              target:
+                type: string
+              targetName:
+                type: string
+              type:
+                type: string
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - type
+              - class
+              - name
+              - x
+              - "y"
+              - z
+            type: object
+          type:
+            - "null"
+            - array
+        map:
+          type: string
+      required:
+        - map
+        - entities
+      type: object
+    TimelineAnalysis:
+      additionalProperties: false
+      properties:
+        airgibs:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              attackerTeam:
+                type: string
+              attackerUserID:
+                type: integer
+              damage:
+                type: integer
+              height:
+                type: number
+              heightAboveAttacker:
+                type: number
+              lethal:
+                type: boolean
+              loc:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              victimTeam:
+                type: string
+              victimUserID:
+                type: integer
+            required:
+              - time
+              - attacker
+              - victim
+              - height
+              - damage
+            type: object
+          type:
+            - "null"
+            - array
+        deathEvents:
+          items:
+            additionalProperties: false
+            properties:
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - player
+              - team
+            type: object
+          type:
+            - "null"
+            - array
+        fragEvents:
+          items:
+            additionalProperties: false
+            properties:
+              delta:
+                type: integer
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - player
+              - team
+              - delta
+            type: object
+          type:
+            - "null"
+            - array
+        fragStreaks:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              endTime:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              ewep:
+                type: string
+              frags:
+                type: integer
+              playerName:
+                type: string
+              playerUserID:
+                type: integer
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - endTime
+              - playerName
+              - playerUserID
+              - team
+              - frags
+              - duration
+              - ewep
+            type: object
+          type:
+            - "null"
+            - array
+        killEvents:
+          items:
+            additionalProperties: false
+            properties:
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - player
+              - team
+            type: object
+          type:
+            - "null"
+            - array
+        locTable:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+        locationData:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - x
+              - "y"
+              - z
+              - name
+            type: object
+          type:
+            - "null"
+            - array
+        playerUserIDs:
+          additionalProperties:
+            type: integer
+          type: object
+        powerupEvents:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              endTime:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              frags:
+                type: integer
+              playerName:
+                type: string
+              playerSlot:
+                type: integer
+              playerUserID:
+                type: integer
+              powerupType:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - endTime
+              - playerName
+              - playerSlot
+              - playerUserID
+              - team
+              - powerupType
+              - duration
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+        regionControl:
+          additionalProperties: false
+          properties:
+            bucketStates:
+              additionalProperties:
+                type: string
+              type: object
+            regions:
+              items:
+                additionalProperties: false
+                properties:
+                  centroidX:
+                    type: number
+                  centroidY:
+                    type: number
+                  locs:
+                    items:
+                      type: string
+                    type:
+                      - "null"
+                      - array
+                  name:
+                    type: string
+                  points:
+                    items:
+                      additionalProperties: false
+                      properties:
+                        name:
+                          type: string
+                        x:
+                          type: number
+                        "y":
+                          type: number
+                        z:
+                          type: number
+                      required:
+                        - x
+                        - "y"
+                        - z
+                        - name
+                      type: object
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - name
+                  - locs
+                  - points
+                  - centroidX
+                  - centroidY
+                type: object
+              type:
+                - "null"
+                - array
+            stats:
+              additionalProperties:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      additionalProperties: false
+                      properties:
+                        armed:
+                          type: integer
+                        team:
+                          type: string
+                        unarmed:
+                          type: integer
+                      required:
+                        - team
+                        - armed
+                        - unarmed
+                      type: object
+                    type: object
+                  contested:
+                    type: number
+                  empty:
+                    type: number
+                  teamAControl:
+                    type: number
+                  teamAWeakControl:
+                    type: number
+                  teamBControl:
+                    type: number
+                  teamBWeakControl:
+                    type: number
+                  weakContested:
+                    type: number
+                required:
+                  - teamAControl
+                  - teamAWeakControl
+                  - contested
+                  - weakContested
+                  - empty
+                  - teamBWeakControl
+                  - teamBControl
+                type: object
+              type: object
+            teamA:
+              type: string
+            teamB:
+              type: string
+          required:
+            - regions
+          type:
+            - "null"
+            - object
+      type: object
+    Match:
+      additionalProperties: false
+      properties:
+        duration:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        gameDir:
+          type: string
+        map:
+          type: string
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              deaths:
+                type: integer
+              frags:
+                type: integer
+              kills:
+                type: integer
+              name:
+                type: string
+              suicides:
+                type: integer
+              team:
+                type: string
+            required:
+              - name
+              - team
+              - frags
+              - kills
+              - deaths
+              - suicides
+            type: object
+          type:
+            - "null"
+            - array
+        teams:
+          items:
+            additionalProperties: false
+            properties:
+              frags:
+                type: integer
+              name:
+                type: string
+            required:
+              - name
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - map
+        - gameDir
+        - duration
+        - players
+      type: object
+    Messages:
+      additionalProperties: false
+      properties:
+        events:
+          items:
+            additionalProperties: false
+            properties:
+              message:
+                type: string
+              messageClean:
+                type: string
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              type:
+                type: string
+              victim:
+                type: string
+              weapon:
+                type: string
+            required:
+              - time
+              - type
+              - player
+              - team
+              - message
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - events
+      type: object
+    Opening:
+      additionalProperties: false
+      properties:
+        firstTakes:
+          items:
+            additionalProperties: false
+            properties:
+              entNum:
+                type: integer
+              item:
+                type: string
+              kind:
+                type: string
+              loc:
+                type: string
+              takenBy:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - item
+              - kind
+              - entNum
+              - time
+              - takenBy
+            type: object
+          type:
+            - "null"
+            - array
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              loc:
+                type: string
+              name:
+                type: string
+              team:
+                type: string
+            required:
+              - name
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - players
+        - firstTakes
+      type: object
     Events:
       type: object
-      description: Unified event list; `detail` is polymorphic per type.
-    StreamSlice:
+      description: >
+        /events body — a flat, time-ordered event list. detail keys vary
+        by event type (the well-known keys are typed below and validated
+        when present); detail is omitted for spawn/death without a loc
+        sample. Event types: armor, chat, damage, death, frag, health,
+        item, loc, pickup, powerup, spawn, stomp, streak, telefrag,
+        weapon.
+      required: [events]
+      additionalProperties: false
+      properties:
+        events:
+          type: [array, "null"]
+          items:
+            type: object
+            required: [t, type]
+            additionalProperties: false
+            properties:
+              t:
+                type: number
+                description: Match-relative seconds.
+              type: { type: string }
+              player: { type: string }
+              detail:
+                type: object
+                additionalProperties: true
+                properties:
+                  team: { type: string }
+                  delta: { type: integer, description: frag delta (frag) or value change (health/armor) }
+                  value: { type: integer, description: new value (health/armor/loc index) }
+                  powerup: { type: string }
+                  endTime: { type: number, description: seconds (powerup/streak) }
+                  frags: { type: integer, description: frags during the powerup run }
+                  length: { type: integer, description: streak length }
+                  duration: { type: number, description: streak duration, seconds }
+                  weapon: { type: string }
+                  victim: { type: string }
+                  damage: { type: integer }
+                  isSplash: { type: boolean }
+                  isEnv: { type: boolean }
+                  isSelf: { type: boolean }
+                  isTeam: { type: boolean }
+                  victimWep: { type: string }
+                  gain: { type: string, description: weapon/item code gained (interval start) }
+                  lose: { type: string, description: weapon/item code lost (interval end) }
+                  item: { type: string, description: spawner instance name (pickup), e.g. ya_1 }
+                  kind: { type: string }
+                  entNum: { type: integer }
+                  source:
+                    type: string
+                    enum: [world, backpack, unknown]
+                  dropper: { type: string }
+                  loc: { type: string }
+                  li: { type: integer, description: raw LocTable index (loc=index mode) }
+                  text: { type: string, description: chat message }
+                  clean: { type: string, description: chat message, color codes stripped }
+    BucketsRow:
+      additionalProperties: false
+      properties:
+        buckets:
+          items:
+            additionalProperties: false
+            properties:
+              p:
+                additionalProperties:
+                  additionalProperties: true
+                  type: object
+                type:
+                  - object
+                  - "null"
+              partial:
+                type: boolean
+              t:
+                type: number
+              team:
+                additionalProperties:
+                  additionalProperties: true
+                  type: object
+                type: object
+            required:
+              - t
+              - p
+            type: object
+          type:
+            - "null"
+            - array
+        windowMs:
+          type: integer
+      required:
+        - windowMs
+        - buckets
       type: object
-      description: Raw stream slices. Shape: RESULT_SCHEMA.md §streams.
-    StateAt:
-      type: object
-      description: Per-player point-in-time state.
-    Los:
-      type: object
-      description: Per-player LOS/PVS interval sets.
-    Projectiles:
-      type: object
-      description: '`{"projectiles": …}` — rocket/grenade flight stream, null when none.'
-    Beams:
-      type: object
-      description: '`{"beams": …}` — LG bolt stream, null when none.'
-    Nails:
-      type: object
-      description: '`{"nails": …}` — nail flight stream, null when none.'
-    LocTrails:
-      type: object
-      description: Per-player loc dwell spans.
-    LocTable:
-      type: object
-      description: '`{"locTable": [...]}` — interned loc names; index 0 is the no-loc sentinel.'
-    RegionControl:
-      type: object
-      description: Region-control timeline. Shape: RESULT_SCHEMA.md §regionControl.
-    Airgibs:
-      type: object
-      description: Airgib key moments list.
-    MapEntities:
-      type: object
-      description: Static map entity layout. Shape: RESULT_SCHEMA.md §mapEntities.
-    MapGeometry:
-      type: object
-      description: Floor-polygon geometry document (mapgeom.MapRegions v2).
-    ArtifactEnvelope:
+    BucketsColumnar:
       type: object
       description: >
-        Single-key envelope — the key is the artifact's `resultKey` (see
-        GET /v1/artifacts), the value the raw Result section.
-      minProperties: 1
-      maxProperties: 1
-      additionalProperties: true
+        Column-major buckets (layout=column, the default). The time axis is
+        implicit: time(i) = startMs + i*windowMs (int32 ms). Each player
+        object inlines its dense columns at the top level keyed by field
+        code; boolean columns (and the alive mask) serialize as 0/1.
+      required: [windowMs, startMs, count]
+      additionalProperties: false
+      properties:
+        windowMs: { type: integer }
+        startMs: { type: integer }
+        count: { type: integer }
+        partialLastMs:
+          type: integer
+          description: Shorter end of the final bucket when the match length is not a multiple of windowMs.
+        players:
+          type: object
+          additionalProperties:
+            type: object
+            description: >
+              One player's dense columns over their active span
+              [first, first+n). Reserved keys first/n/alive/validFrom;
+              every other key is a requested field-code column (or a
+              position/view sub-column like x/y/z, vp/vya, vx/vy/vz) of
+              length n — numeric, string (at), or 0/1 series.
+            required: [first, n, alive]
+            properties:
+              first: { type: integer }
+              n: { type: integer }
+              alive:
+                type: array
+                items: { type: integer, minimum: 0, maximum: 1 }
+              validFrom:
+                type: object
+                description: >
+                  Absolute bucket index from which a late-starting column
+                  is valid; leading slots hold a typed zero and must be
+                  treated as absent.
+                additionalProperties: { type: integer }
+            additionalProperties:
+              type: array
+              items:
+                type: [number, string]
+        teams:
+          type: object
+          additionalProperties:
+            type: object
+            description: >
+              One team's per-bucket aggregate counters as dense integer
+              columns of length count, keyed by counter name; armor-by-type
+              sub-columns nest under abt.
+            properties:
+              abt:
+                type: object
+                additionalProperties:
+                  type: array
+                  items: { type: integer }
+            additionalProperties:
+              type: array
+              items: { type: integer }
+    StreamSlice:
+      additionalProperties: false
+      properties:
+        endTime:
+          type: number
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              a:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              at:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      type: string
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              cl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              d:
+                items:
+                  maximum: 2.147483647e+09
+                  minimum: -2.147483648e+09
+                  type: integer
+                type:
+                  - "null"
+                  - array
+              gl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              h:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              hgt:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              lg:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              li:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              loc:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      type: string
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              lq:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              name:
+                type: string
+              nl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              pe:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              pos:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              q:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              r:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              rk:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              rl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              sh:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              sng:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              sp:
+                items:
+                  maximum: 2.147483647e+09
+                  minimum: -2.147483648e+09
+                  type: integer
+                type:
+                  - "null"
+                  - array
+              ssg:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              vel:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              view:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+            required:
+              - name
+            type: object
+          type:
+            - "null"
+            - array
+        startTime:
+          type: number
+      required:
+        - startTime
+        - endTime
+        - players
+      type: object
+    StateAt:
+      additionalProperties: false
+      properties:
+        players:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              a:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              at:
+                type:
+                  - "null"
+                  - string
+              cl:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              gl:
+                type:
+                  - "null"
+                  - boolean
+              h:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              hgt:
+                type:
+                  - "null"
+                  - number
+              lg:
+                type:
+                  - "null"
+                  - boolean
+              li:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              loc:
+                type:
+                  - "null"
+                  - string
+              lq:
+                maximum: 127
+                minimum: -128
+                type:
+                  - "null"
+                  - integer
+              nl:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              pe:
+                type:
+                  - "null"
+                  - boolean
+              pos:
+                additionalProperties: false
+                properties:
+                  x:
+                    type: number
+                  "y":
+                    type: number
+                  z:
+                    type: number
+                required:
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              q:
+                type:
+                  - "null"
+                  - boolean
+              r:
+                type:
+                  - "null"
+                  - boolean
+              rk:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              rl:
+                type:
+                  - "null"
+                  - boolean
+              sh:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              sng:
+                type:
+                  - "null"
+                  - boolean
+              ssg:
+                type:
+                  - "null"
+                  - boolean
+              vel:
+                additionalProperties: false
+                properties:
+                  vx:
+                    type: number
+                  vy:
+                    type: number
+                  vz:
+                    type: number
+                required:
+                  - vx
+                  - vy
+                  - vz
+                type:
+                  - "null"
+                  - object
+              view:
+                additionalProperties: false
+                properties:
+                  vp:
+                    maximum: 32767
+                    minimum: -32768
+                    type: integer
+                  vya:
+                    maximum: 32767
+                    minimum: -32768
+                    type: integer
+                required:
+                  - vp
+                  - vya
+                type:
+                  - "null"
+                  - object
+            type: object
+          type:
+            - object
+            - "null"
+        t:
+          type: number
+      required:
+        - t
+        - players
+      type: object
+    LocTrails:
+      additionalProperties: false
+      properties:
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              sequence:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      type: number
+                    li:
+                      maximum: 32767
+                      minimum: -32768
+                      type:
+                        - "null"
+                        - integer
+                    loc:
+                      type: string
+                    s:
+                      type: number
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+            required:
+              - name
+              - sequence
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - players
+      type: object
+    MapGeometry:
+      additionalProperties: false
+      properties:
+        bounds:
+          additionalProperties: false
+          properties:
+            maxX:
+              type: number
+            maxY:
+              type: number
+            minX:
+              type: number
+            minY:
+              type: number
+          required:
+            - minX
+            - maxX
+            - minY
+            - maxY
+          type: object
+        liquids:
+          items:
+            additionalProperties: false
+            properties:
+              kind:
+                type: string
+              tris:
+                items:
+                  type: number
+                type:
+                  - "null"
+                  - array
+            required:
+              - kind
+              - tris
+            type: object
+          type:
+            - "null"
+            - array
+        locs:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              tris:
+                items:
+                  type: number
+                type:
+                  - "null"
+                  - array
+              z:
+                type: number
+            required:
+              - name
+              - z
+              - tris
+            type: object
+          type:
+            - "null"
+            - array
+        map:
+          type: string
+        pruned:
+          additionalProperties: false
+          properties:
+            demos:
+              type: integer
+            facesDropped:
+              type: integer
+            points:
+              type: integer
+          required:
+            - demos
+            - points
+            - facesDropped
+          type:
+            - "null"
+            - object
+        submodels:
+          items:
+            additionalProperties: false
+            properties:
+              id:
+                type: integer
+              tris:
+                items:
+                  type: number
+                type:
+                  - "null"
+                  - array
+            required:
+              - id
+              - tris
+            type: object
+          type:
+            - "null"
+            - array
+        version:
+          type: integer
+        walls:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+      required:
+        - map
+        - version
+        - bounds
+        - locs
+      type: object
+    # --- Wrappers over the generated struct schemas: bare-array bodies,
+    # layout/summary unions, single-key stream envelopes, and the generic
+    # artifact envelope union.
+    Chat:
+      type: array
+      description: >
+        /chat body — chat events, verbatim result.MatchEvent entries
+        (time is int32 ms). [] when nothing matches.
+      items: { $ref: "#/components/schemas/MatchEvent" }
+    Backpacks:
+      type: array
+      description: /backpacks body — RL/LG backpack drops; [] when none.
+      items: { $ref: "#/components/schemas/BackpackDrop" }
+    WeaponPickups:
+      type: array
+      description: /weapon-pickups body — slot-weapon acquisitions; [] when none.
+      items: { $ref: "#/components/schemas/WeaponPickup" }
+    Airgibs:
+      type: array
+      description: >
+        /airgibs body — airgib key moments sorted by height descending;
+        [] on BSP-less maps.
+      items: { $ref: "#/components/schemas/AirgibEvent" }
+    Items:
+      description: >
+        /items body — per-item phase timelines, or per-item take
+        aggregates when summary is set.
+      anyOf: # not oneOf: an empty {"items": []} matches both branches
+        - $ref: "#/components/schemas/ItemsTimelines"
+        - $ref: "#/components/schemas/ItemsSummary"
+    Buckets:
+      description: >
+        /buckets body — the compact columnar grid (layout=column, the
+        default) or row objects (layout=row).
+      oneOf:
+        - $ref: "#/components/schemas/BucketsColumnar"
+        - $ref: "#/components/schemas/BucketsRow"
+    Los:
+      type: object
+      description: >
+        /los body (and the lazy `los` artifact) — per-player LOS/PVS
+        interval sets. `los`/`pvs` are omitted for a player with no
+        sightlines and empty on maps without a provisioned BSP.
+      required: [players]
+      additionalProperties: false
+      properties:
+        players:
+          type: array
+          items:
+            type: object
+            required: [name]
+            additionalProperties: false
+            properties:
+              name: { type: string }
+              los:
+                type: array
+                items: { $ref: "#/components/schemas/LosTrack" }
+              pvs:
+                type: array
+                items: { $ref: "#/components/schemas/LosTrack" }
+    Projectiles:
+      type: object
+      required: [projectiles]
+      additionalProperties: false
+      properties:
+        projectiles:
+          description: Rocket/grenade flight stream; null when the demo has none.
+          oneOf:
+            - $ref: "#/components/schemas/ProjectileStreams"
+            - type: "null"
+    Beams:
+      type: object
+      required: [beams]
+      additionalProperties: false
+      properties:
+        beams:
+          description: LG bolt stream; null when the demo has none.
+          oneOf:
+            - $ref: "#/components/schemas/BeamStreams"
+            - type: "null"
+    Nails:
+      type: object
+      required: [nails]
+      additionalProperties: false
+      properties:
+        nails:
+          description: Nail flight stream; null when the demo has none.
+          oneOf:
+            - $ref: "#/components/schemas/ProjectileStreams"
+            - type: "null"
+    LocTable:
+      type: object
+      required: [locTable]
+      additionalProperties: false
+      properties:
+        locTable:
+          type: array
+          description: Interned loc names; index 0 is the "" no-loc sentinel.
+          items: { type: string }
+    Graph:
+      type: object
+      description: The analyzer DAG — analyzer.ExportGraph("json").
+      required: [nodes, edges]
+      additionalProperties: false
+      properties:
+        nodes:
+          type: [array, "null"]
+          items:
+            type: object
+            required: [name, requires, provides, mutates, lazy, depth, cost, resultKey]
+            additionalProperties: false
+            properties:
+              name: { type: string }
+              requires:
+                type: [array, "null"]
+                items: { type: string }
+              provides:
+                type: [array, "null"]
+                items: { type: string }
+              mutates: { type: boolean }
+              lazy: { type: boolean }
+              depth: { type: integer }
+              cost:
+                type: string
+                enum: [light, heavy]
+              resultKey: { type: string }
+        edges:
+          type: [array, "null"]
+          items:
+            type: object
+            required: [from, to, artifact]
+            additionalProperties: false
+            properties:
+              from: { type: string }
+              to: { type: string }
+              artifact: { type: string }
+    ArtifactEnvelope:
+      description: >
+        GET /v1/demos/{id}/artifacts/{name} body — a single-key envelope
+        keyed by the artifact's resultKey (see GET /v1/artifacts; the key
+        is NOT the node name — e.g. node `frag` serves `{"frags": …}`).
+        Raw list/object sections (match, messages, timeline, items,
+        map-entities, backpacks, weapon-pickups) may be null at 200 for
+        demos without the signal; capability-gated artifacts return their
+        422 code instead. The lazy `los` artifact serves the /los body
+        shape (no resultKey).
+      oneOf:
+        - type: object
+          required: [demoInfo]
+          additionalProperties: false
+          properties:
+            demoInfo: { $ref: "#/components/schemas/DemoInfo" }
+        - type: object
+          required: [frags]
+          additionalProperties: false
+          properties:
+            frags: { $ref: "#/components/schemas/Frags" }
+        - type: object
+          required: [metadata]
+          additionalProperties: false
+          properties:
+            metadata: { $ref: "#/components/schemas/Metadata" }
+        - type: object
+          required: [damage]
+          additionalProperties: false
+          properties:
+            damage: { $ref: "#/components/schemas/Damage" }
+        - type: object
+          required: [shots]
+          additionalProperties: false
+          properties:
+            shots: { $ref: "#/components/schemas/Shots" }
+        - type: object
+          required: [aim]
+          additionalProperties: false
+          properties:
+            aim: { $ref: "#/components/schemas/Aim" }
+        - type: object
+          required: [locGraph]
+          additionalProperties: false
+          properties:
+            locGraph: { $ref: "#/components/schemas/LocGraph" }
+        - type: object
+          required: [opening]
+          additionalProperties: false
+          properties:
+            opening: { $ref: "#/components/schemas/Opening" }
+        - type: object
+          required: [match]
+          additionalProperties: false
+          properties:
+            match:
+              oneOf:
+                - $ref: "#/components/schemas/Match"
+                - type: "null"
+        - type: object
+          required: [messages]
+          additionalProperties: false
+          properties:
+            messages:
+              oneOf:
+                - $ref: "#/components/schemas/Messages"
+                - type: "null"
+        - type: object
+          required: [timelineAnalysis]
+          additionalProperties: false
+          properties:
+            timelineAnalysis:
+              oneOf:
+                - $ref: "#/components/schemas/TimelineAnalysis"
+                - type: "null"
+        - type: object
+          required: [items]
+          additionalProperties: false
+          properties:
+            items:
+              oneOf:
+                - $ref: "#/components/schemas/ItemsTimelines"
+                - type: "null"
+        - type: object
+          required: [mapEntities]
+          additionalProperties: false
+          properties:
+            mapEntities:
+              oneOf:
+                - $ref: "#/components/schemas/MapEntities"
+                - type: "null"
+        - type: object
+          required: [backpacks]
+          additionalProperties: false
+          properties:
+            backpacks:
+              type: [array, "null"]
+              items: { $ref: "#/components/schemas/BackpackDrop" }
+        - type: object
+          required: [weaponPickups]
+          additionalProperties: false
+          properties:
+            weaponPickups:
+              type: [array, "null"]
+              items: { $ref: "#/components/schemas/WeaponPickup" }
+        - $ref: "#/components/schemas/Los"
