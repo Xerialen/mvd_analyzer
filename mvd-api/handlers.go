@@ -275,7 +275,8 @@ func (s *server) handleLocGraph(w http.ResponseWriter, r *http.Request) {
 //
 //	players  csv   — restrict aggregates + the Frags list to entries
 //	               where killer or victim is in the set
-//	weapon   csv   — restrict aggregates + the Frags list to these weapons
+//	weapons  csv   — restrict aggregates + the Frags list to these weapons
+//	               (legacy alias: weapon)
 //	from     float — window start, match-relative seconds (0 = no bound)
 //	to       float — window end, match-relative seconds (0 = no bound)
 //	summary  bool  — drop the per-event Frags log; return only aggregates
@@ -287,7 +288,7 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.FragOptions{
 		Players: p.CSV("players"),
-		Weapons: p.CSV("weapon"),
+		Weapons: p.CSVAny("weapons", "weapon"),
 		From:    p.Sec("from", 0),
 		To:      p.Sec("to", 0),
 		Summary: p.Bool("summary"),
@@ -317,8 +318,8 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 //
 //	players  csv   — restrict aggregates / Matrix / Events / Scoreboard to
 //	               entries where attacker or victim is in the set
-//	weapon   csv   — restrict aggregates + Matrix/Events + per-player
-//	               ByWeapon to these (attacker) weapons
+//	weapons  csv   — restrict aggregates + Matrix/Events + per-player
+//	               ByWeapon to these (attacker) weapons (legacy alias: weapon)
 //	from     float — window start, match-relative seconds (0 = no bound)
 //	to       float — window end, match-relative seconds (0 = no bound)
 //	summary  bool  — drop the per-hit Events log; return only aggregates
@@ -330,7 +331,7 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.DamageOptions{
 		Players: p.CSV("players"),
-		Weapons: p.CSV("weapon"),
+		Weapons: p.CSVAny("weapons", "weapon"),
 		From:    p.Sec("from", 0),
 		To:      p.Sec("to", 0),
 		Summary: p.Bool("summary"),
@@ -469,7 +470,8 @@ func (s *server) handleDemoInfo(w http.ResponseWriter, r *http.Request) {
 // Query params:
 //
 //	players  csv — restrict to drops by these dropper names
-//	weapon   csv — restrict to these weapons ("rl"/"lg"; case-insensitive)
+//	weapons  csv — restrict to these weapons ("rl"/"lg"; case-insensitive;
+//	             legacy alias: weapon)
 //	from/to  match-relative seconds — window the drop time
 func (s *server) handleBackpacks(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
@@ -479,7 +481,7 @@ func (s *server) handleBackpacks(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.BackpackOptions{
 		Players: p.CSV("players"),
-		Weapons: p.CSV("weapon"),
+		Weapons: p.CSVAny("weapons", "weapon"),
 		From:    p.Sec("from", 0),
 		To:      p.Sec("to", 0),
 	}
@@ -547,7 +549,8 @@ func (s *server) handleItems(w http.ResponseWriter, r *http.Request) {
 // Query params:
 //
 //	players  csv — restrict to picks by these names
-//	weapon   csv — "rl","lg","gl","ssg","sng","ng" (case-insensitive)
+//	weapons  csv — "rl","lg","gl","ssg","sng","ng" (case-insensitive;
+//	             legacy alias: weapon)
 //	source   "world" | "backpack" | "unknown"
 //	from/to  match-relative seconds — window the pickup time
 func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
@@ -558,7 +561,7 @@ func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
 	p := newQP(r.URL.Query())
 	opts := view.WeaponPickupOptions{
 		Players: p.CSV("players"),
-		Weapons: p.CSV("weapon"),
+		Weapons: p.CSVAny("weapons", "weapon"),
 		Source:  ciGet(r.URL.Query(), "source"),
 		From:    p.Sec("from", 0),
 		To:      p.Sec("to", 0),

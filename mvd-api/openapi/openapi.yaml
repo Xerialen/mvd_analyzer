@@ -322,6 +322,7 @@ paths:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/Players"
         - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/Summary"
@@ -355,6 +356,7 @@ paths:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/Players"
         - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/Summary"
@@ -500,6 +502,7 @@ paths:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/Players"
         - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -565,6 +568,7 @@ paths:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/Players"
         - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
         - $ref: "#/components/parameters/Source"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -1099,13 +1103,26 @@ components:
         type: array
         items: { type: string }
     Weapons:
-      name: weapon
+      name: weapons
       in: query
       description: >
         CSV of weapon codes (case-insensitive). Codes: rl, lg, gl, ssg,
         sng, ng, sg, axe (plus tele/stomp where positional kills apply —
         see API.md). /backpacks accepts rl/lg only; /weapon-pickups
-        rl,lg,gl,ssg,sng,ng.
+        rl,lg,gl,ssg,sng,ng. The pre-16.2 singular spelling `weapon` is
+        an accepted legacy alias; `weapons` wins when both are present.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    WeaponsLegacy:
+      name: weapon
+      in: query
+      deprecated: true
+      description: >
+        Deprecated legacy alias of `weapons` (the pre-16.2 singular
+        spelling). Ignored when `weapons` is present.
       style: form
       explode: false
       schema:

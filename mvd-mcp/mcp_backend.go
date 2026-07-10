@@ -143,7 +143,7 @@ type GetMetadataInput struct {
 type GetFragsInput struct {
 	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players   []string `json:"players,omitempty" jsonschema:"restrict aggregates + kill log to entries involving these players (killer OR victim)"`
-	Weapon    []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + kill log to these weapon codes (rl, lg, gl, ssg, sng, ng, axe, sg, ...)"`
+	Weapons   []string `json:"weapons,omitempty" jsonschema:"restrict aggregates + kill log to these weapon codes (rl, lg, gl, ssg, sng, ng, axe, sg, ...)"`
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (frags at or after this time)"`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (frags at or before this time)"`
 	Summary   bool     `json:"summary,omitempty" jsonschema:"return only aggregates, dropping the big per-event kill log (avoids overflowing context)"`
@@ -156,7 +156,7 @@ type GetFragsInput struct {
 type GetDamageInput struct {
 	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players   []string `json:"players,omitempty" jsonschema:"restrict aggregates + damage log to entries involving these players (attacker OR victim)"`
-	Weapon    []string `json:"weapon,omitempty" jsonschema:"restrict aggregates + damage log to these attacker weapon codes (rl, lg, gl, ssg, sng, sg, tele, ...)"`
+	Weapons   []string `json:"weapons,omitempty" jsonschema:"restrict aggregates + damage log to these attacker weapon codes (rl, lg, gl, ssg, sng, sg, tele, ...)"`
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (hits at or after this time)"`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (hits at or before this time)"`
 	Summary   *bool    `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): aggregates only, the big per-hit damage log dropped. Pass false for the full log."`
@@ -193,7 +193,7 @@ type GetChatInput struct {
 type GetBackpacksInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players []string `json:"players,omitempty" jsonschema:"restrict to drops by these dropper names"`
-	Weapon  []string `json:"weapon,omitempty" jsonschema:"restrict to these dropped-weapon codes (rl, lg); empty = both. Forwarded as a CSV set, matching REST /backpacks"`
+	Weapons []string `json:"weapons,omitempty" jsonschema:"restrict to these dropped-weapon codes (rl, lg); empty = both. Forwarded as a CSV set, matching REST /backpacks"`
 	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (drops at or after this time)"`
 	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }
@@ -221,7 +221,7 @@ type GetMapEntitiesByMapInput struct {
 type GetWeaponPickupsInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players []string `json:"players,omitempty" jsonschema:"restrict to picks by these names"`
-	Weapon  []string `json:"weapon,omitempty" jsonschema:"weapon codes: rl, lg, gl, ssg, sng, ng"`
+	Weapons []string `json:"weapons,omitempty" jsonschema:"weapon codes: rl, lg, gl, ssg, sng, ng"`
 	Source  string   `json:"source,omitempty" jsonschema:"'world' (spawner) or 'backpack' (RL/LG drop)"`
 	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (pickups at or after this time)"`
 	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`

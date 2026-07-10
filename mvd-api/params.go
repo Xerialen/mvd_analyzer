@@ -195,6 +195,20 @@ func (p *qp) Int(key string, def int) int {
 // CSV reads a comma-separated param. It cannot fail, so it never sets err.
 func (p *qp) CSV(key string) []string { return parseCSV(ciGet(p.q, key)) }
 
+// CSVAny reads the first of several aliased comma-separated params that
+// has a non-empty value (earlier keys win). Exists for the
+// weapons/weapon rename (phase 16.2): the canonical name is listed
+// first, the legacy alias after, and a request carrying both gets the
+// canonical one.
+func (p *qp) CSVAny(keys ...string) []string {
+	for _, k := range keys {
+		if vals := parseCSV(ciGet(p.q, k)); len(vals) > 0 {
+			return vals
+		}
+	}
+	return nil
+}
+
 // Bool reads a 0/1|true/false param. It cannot fail, so it never sets err.
 func (p *qp) Bool(key string) bool { return parseBool(p.q, key) }
 

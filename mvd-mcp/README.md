@@ -86,7 +86,7 @@ vocabulary, and the reducer registry.
 
 The first twenty-one tools are **curated**: each wraps one analytics
 section with a hand-written description and (where useful)
-`players`/`weapon`/window filters — that ergonomics is the product
+`players`/`weapons`/window filters — that ergonomics is the product
 surface, and it stays. The last two are the **generic** DAG accessor:
 `listArtifacts` returns the fetchable-artifact catalog — servable
 artifacts only, trimmed to `{name, resultKey, cost, lazy, description}`
@@ -285,12 +285,12 @@ Frag aggregates + the full kill log. Cheaper than aggregating
 |---|---|---|---|
 | `demoId`    | `string` (required) | — | — |
 | `players`   | `string[]` | all | Restrict aggregates + log to entries involving these (killer OR victim) |
-| `weapon`    | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
+| `weapons`   | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
 | `startTime` | `number` | match start | Window start, match-relative **seconds** (keep kills at `time ≥ startTime`) |
 | `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep kills at `time ≤ endTime`) |
 | `summary`   | `bool` | `false` | Return only aggregates, dropping the kill log. **Deliberately the opposite default from getDamage/getAim/getItems**: a kill log is one row per frag — small, and usually the point of the call. |
 
-When any scoping filter (`players` / `weapon` / `startTime` / `endTime`) is
+When any scoping filter (`players` / `weapons` / `startTime` / `endTime`) is
 set, **every** aggregate is recomputed from the filtered kill log (consistent
 with the entries shown); with none set the authoritative stored totals are
 returned. Filtered aggregates are log-sourced and may differ slightly from the
@@ -310,7 +310,7 @@ time-ordered per-hit log.
 |---|---|---|---|
 | `demoId`    | `string` (required) | — | — |
 | `players`   | `string[]` | all | Restrict aggregates + log to entries involving these (attacker OR victim) |
-| `weapon`    | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
+| `weapons`   | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
 | `startTime` | `number` | match start | Window start, match-relative **seconds** (keep hits at `time ≥ startTime`) |
 | `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep hits at `time ≤ endTime`) |
 | `summary`   | `bool` | **`true`** (MCP-only default) | Aggregates only, the big per-hit damage log dropped. Pass `false` for the full log (REST `/damage` defaults to the full log; the defaulted MCP response carries a `hint` field saying how to opt out). |
@@ -319,7 +319,7 @@ The damage output — the aggregates AND the per-hit `events` log — is
 **match-only**: out-of-match (warmup / post-match) hits are dropped at the
 source and never appear (schema v50).
 
-When any scoping filter (`players` / `weapon` / `startTime` / `endTime`) is
+When any scoping filter (`players` / `weapons` / `startTime` / `endTime`) is
 set, **every** aggregate (`totalDamage`, `byPlayer`, `byWeapon`, `matrix`) is
 recomputed from the filtered per-hit log — this also populates `matrix` /
 `events` on filtered responses (previously null). Because `events` is
@@ -407,7 +407,7 @@ structuredContent must be a JSON object.)
 |---|---|---|---|
 | `demoId`  | `string` (required) | — | — |
 | `players` | `string[]` | all | Restrict to drops by these dropper names |
-| `weapon`  | `string[]` | both | Dropped-weapon codes (`rl`, `lg`); forwarded as a CSV set, matching REST `/backpacks` |
+| `weapons` | `string[]` | both | Dropped-weapon codes (`rl`, `lg`); forwarded as a CSV set, matching REST `/backpacks` |
 | `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the drop time |
 
 Output: `{ backpacks: []result.BackpackDrop }` — each entry has `time`,
@@ -445,7 +445,7 @@ Timeline output (`summary: false`): `result.ItemsResult` —
 |---|---|---|---|
 | `demoId`  | `string` (required) | — | — |
 | `players` | `string[]` | all | Restrict to picks by these names |
-| `weapon`  | `string[]` | all | `rl`, `lg`, `gl`, `ssg`, `sng`, `ng` |
+| `weapons` | `string[]` | all | `rl`, `lg`, `gl`, `ssg`, `sng`, `ng` |
 | `source`  | `string`   | both | `world` (spawner) or `backpack` (RL/LG drop) |
 | `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the pickup time |
 

@@ -301,13 +301,15 @@ func TestProxy_GetBackpacks_WeaponCSV(t *testing.T) {
 	b := newProxyBackend(srv.URL, "", 5*time.Second)
 
 	if _, err := b.GetBackpacks(context.Background(), GetBackpacksInput{
-		DemoID: "gameId:42", Weapon: []string{"rl", "lg"},
+		DemoID: "gameId:42", Weapons: []string{"rl", "lg"},
 	}); err != nil {
 		t.Fatalf("GetBackpacks: %v", err)
 	}
 	vals, _ := url.ParseQuery(seenQuery)
-	if vals.Get("weapon") != "rl,lg" {
-		t.Errorf("weapon=%q; want rl,lg (CSV set)", vals.Get("weapon"))
+	// Pins the wire param: the proxy sends the canonical `weapons` (the
+	// 16.2 rename); REST keeps `weapon` as a legacy alias for old clients.
+	if vals.Get("weapons") != "rl,lg" {
+		t.Errorf("weapons=%q; want rl,lg (CSV set)", vals.Get("weapons"))
 	}
 }
 

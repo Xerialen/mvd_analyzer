@@ -77,9 +77,11 @@ weapon / item / kind / loc / layout tokens.
 - **`players`, `fields`, `types`** — comma-separated lists; URL-decode
   once. Omit `players` to get all; omit `fields`/`types` to get the
   endpoint's default set.
-- **`weapon`** — comma-separated weapon tokens (`rl,lg,…`) on `/frags`,
+- **`weapons`** — comma-separated weapon tokens (`rl,lg,…`) on `/frags`,
   `/damage`, `/backpacks`, `/weapon-pickups`. A CSV set on every one of
   them since schema v36 (`/backpacks` previously took a single value).
+  The pre-16.2 singular spelling `weapon` remains an accepted legacy
+  alias; `weapons` wins when both are present.
 - **`reducers`** (`/buckets`) — comma-separated `field=name` pairs, e.g.
   `reducers=h=min,a=last`. Names come from the reducer registry in
   RESULT_SCHEMA.md.
@@ -392,7 +394,7 @@ mode, antilag, midair, instagib, …). Shape: `result.MetadataResult` →
 
 ### 4.5 `GET /v1/demos/{id}/frags`
 
-Params: `players`, `weapon`, `from`, `to`, `summary`. Total + per-player +
+Params: `players`, `weapons` (alias `weapon`), `from`, `to`, `summary`. Total + per-player +
 per-weapon breakdown + the full chronological kill log. Shape:
 `result.FragResult` →
 [RESULT_SCHEMA.md §FragResult](../mvd-analytics/RESULT_SCHEMA.md#fragresult-frags).
@@ -408,7 +410,7 @@ For a kill feed with obituary text, prefer `/events?types=frag`.
   matched nothing. Aggregates are then `0` / `{}` / `[]`, never `null`.
 
 **Filtering semantics (changed — bug fix).** When ANY scoping filter
-(`players` OR `weapon` OR `from` OR `to`) is active, **every** aggregate
+(`players` OR `weapons` OR `from` OR `to`) is active, **every** aggregate
 (`totalFrags`, `byPlayer`, `byWeapon`) is **recomputed from the filtered kill
 log** so the response is internally consistent with the entries shown — not
 just the `frags` list and `byPlayer` keys as before. With **no** scoping filter
@@ -419,11 +421,11 @@ unfiltered totals for reconnect / unresolved-name edge cases (per-player
 `deaths` in the unfiltered result come from the protocol death signal, and
 top-level `byWeapon` counts some generic-killer obituaries the log omits — so a
 filtered recompute cannot reproduce those exactly, by construction). `players`
-matches killer OR victim; `weapon` matches the kill weapon.
+matches killer OR victim; `weapons` matches the kill weapon.
 
 ### 4.5b `GET /v1/demos/{id}/damage`
 
-Params: `players`, `weapon`, `from`, `to`, `summary`. Per-hit damage
+Params: `players`, `weapons` (alias `weapon`), `from`, `to`, `summary`. Per-hit damage
 reconstructed from the KTX
 `mvdhidden_dmgdone` stream: total + per-player (`given`/`taken`/team/self,
 per-weapon, and the **EWep** victim-weapon buckets
@@ -437,7 +439,7 @@ end-of-match totals. Shape: `result.DamageResult` →
 **Units:** damage is **unbound** (includes overkill), so totals run
 higher than the KTX scoreboard, which bounds each hit to the victim's
 remaining health — see the `scoreboard` deltas (each pairs an `stream*`
-unbound figure with the `score*` bounded KTX figure). The `weapon` filter
+unbound figure with the `score*` bounded KTX figure). The `weapons` filter
 matches the **attacker's** weapon; the EWep buckets are keyed on the
 **victim's** held weapons. `players` matches attacker OR victim. For the
 raw time-ordered log alone use `/events?types=damage`.
@@ -451,7 +453,7 @@ raw time-ordered log alone use `/events?types=damage`.
 `events` log — is match-time only. Out-of-match (warmup / post-match) hits are
 dropped at the source and excluded everywhere; there is no way to see them.
 
-**Filtering semantics.** When ANY scoping filter (`players` OR `weapon` OR
+**Filtering semantics.** When ANY scoping filter (`players` OR `weapons` OR
 `from` OR `to`) is active, **every** aggregate (`totalDamage`, `byPlayer`
 given/taken/byWeapon/EWep buckets, `byWeapon`, `matrix`) is **recomputed from
 the filtered per-hit log** so it is consistent with the entries shown. This also
@@ -468,7 +470,7 @@ dominate `given`/`byWeapon`/`ewep`/`totalDamage`; a stomp is a movement
 kill, not a weapon). They are listed separately under `telefrags` /
 `stomps`, counted per-player in `byPlayer.<name>.telefrags` / `.stomps`,
 and exposed as the opt-in `telefrag` / `stomp` events (see §4.8). The
-`weapon` filter treats their implicit weapon as `tele` / `stomp`. The
+`weapons` filter treats their implicit weapon as `tele` / `stomp`. The
 kill itself still appears in `/frags` and as a `frag` event.
 
 ### 4.5c `GET /v1/demos/{id}/aim`
@@ -558,7 +560,7 @@ combat-posture weights). Shape: `result.LocGraphResult` →
 
 KTX-hint-derived item analytics:
 
-- **`/backpacks`** (`players`, `weapon`, `from`, `to`) — RL/LG drops,
+- **`/backpacks`** (`players`, `weapons`, `from`, `to`) — RL/LG drops,
   the window on drop time. `[]result.BackpackDrop`.
 - **`/items`** (`items`, `players`, `kinds`, `from`, `to`, `summary`) —
   per-item pickup/respawn timeline. `result.ItemsResult`. The `from`/`to`
@@ -570,7 +572,7 @@ KTX-hint-derived item analytics:
   with takes counted **inside** the window and `firstTake` =
   `{t (seconds), takenBy?, team?}` — the cheap shape for "who took what
   / who took X first" (and the MCP-layer default for `getItems`).
-- **`/weapon-pickups`** (`players`, `weapon`, `source`, `from`, `to`) —
+- **`/weapon-pickups`** (`players`, `weapons`, `source`, `from`, `to`) —
   slot-weapon acquisitions with kills-before-next-death, the window on
   pickup time; joins to backpacks via
   `backpackEnt`. `[]result.WeaponPickup`. `source` is
@@ -980,7 +982,7 @@ connect" panel.
 Materialise and serve any **servable** artifact by name (the DAG node name from
 the manifest — e.g. `frag`, `damage`, `loc-graph`, `los`). This
 is a thin generic accessor, not a filtered view: the curated endpoints (§4.5 ff.)
-remain the ergonomic surface with their `players`/`weapon`/window params. Use
+remain the ergonomic surface with their `players`/`weapons`/window params. Use
 this to reach an artifact that has no curated endpoint, or to enumerate the
 surface programmatically from the manifest.
 

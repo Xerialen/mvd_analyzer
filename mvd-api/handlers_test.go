@@ -1452,3 +1452,29 @@ func TestWeaponPickups_SourceValidated(t *testing.T) {
 		}
 	}
 }
+
+// TestWeaponsAlias: phase 16.2 renamed the singular `weapon` CSV param to
+// `weapons`; the old spelling stays accepted as a legacy alias and the
+// canonical name wins when both are present.
+func TestWeaponsAlias(t *testing.T) {
+	srv := newTestServer(t, fragDamageStore())
+	defer srv.Close()
+
+	canonical := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapons=rl", 200)
+	legacy := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapon=rl", 200)
+	cb, _ := canonical["byWeapon"].(map[string]any)
+	lb, _ := legacy["byWeapon"].(map[string]any)
+	if len(cb) != 1 || cb["rl"] == nil {
+		t.Errorf("weapons=rl byWeapon = %v, want only rl", cb)
+	}
+	if fmt.Sprintf("%v", cb) != fmt.Sprintf("%v", lb) {
+		t.Errorf("weapons= and weapon= disagree: %v vs %v", cb, lb)
+	}
+
+	// Canonical wins when both are present.
+	both := getJSON(t, srv.URL+"/v1/demos/gameId:42/damage?weapons=rl&weapon=tele", 200)
+	bb, _ := both["byWeapon"].(map[string]any)
+	if len(bb) != 1 || bb["rl"] == nil {
+		t.Errorf("weapons=rl&weapon=tele byWeapon = %v, want only rl (weapons wins)", bb)
+	}
+}

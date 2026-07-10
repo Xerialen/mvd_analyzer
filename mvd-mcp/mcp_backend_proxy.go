@@ -333,7 +333,7 @@ func (p *proxyBackend) GetFrags(ctx context.Context, in GetFragsInput) (any, err
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
 	q.boolean("summary", in.Summary)
@@ -347,7 +347,7 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
 	summary, defaulted := summaryDefaultTrue(in.Summary)
@@ -399,7 +399,7 @@ func (p *proxyBackend) GetBackpacks(ctx context.Context, in GetBackpacksInput) (
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
 	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "backpacks")
@@ -439,7 +439,7 @@ func (p *proxyBackend) GetWeaponPickups(ctx context.Context, in GetWeaponPickups
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
 	q.str("source", in.Source)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)

@@ -189,15 +189,15 @@ key their ETag on the schema version alone (`"artifacts-v<n>"` /
 | GET | `/v1/demos/{id}/overview` | — | `Overview` (map, teams, top streaks, top powerups, playerUserIDs, analyzer `errors`) |
 | GET | `/v1/demos/{id}/demoinfo` | — | `result.DemoInfoResult` (KTX scoreboard — per-player weapon accuracy, kills/deaths/TK, damage, sprees, item counts, RL/LG transfers) |
 | GET | `/v1/demos/{id}/metadata` | — | `result.MetadataResult` (full fullserverinfo cvars + KTX match settings: timelimit, fraglimit, spawnmodel, antilag, midair, instagib, …) |
-| GET | `/v1/demos/{id}/frags` | `players`, `weapon` | `result.FragResult` (totalFrags + byPlayer + byWeapon + full kill log) |
-| GET | `/v1/demos/{id}/damage` | `players`, `weapon` | `result.DamageResult` (per-hit damage log + byPlayer/byWeapon/matrix + EWep victim-weapon buckets + KTX-scoreboard cross-check; unbound/overkill amounts) |
+| GET | `/v1/demos/{id}/frags` | `players`, `weapons` | `result.FragResult` (totalFrags + byPlayer + byWeapon + full kill log) |
+| GET | `/v1/demos/{id}/damage` | `players`, `weapons` | `result.DamageResult` (per-hit damage log + byPlayer/byWeapon/matrix + EWep victim-weapon buckets + KTX-scoreboard cross-check; unbound/overkill amounts) |
 | GET | `/v1/demos/{id}/shots` | — | `result.ShotsResult` (per-fire stream with linked hits/victims + per-player aggregates + KTX cross-check; from the always-full base parse) |
 | GET | `/v1/demos/{id}/aim` | — | `result.AimResult` (per-player per-weapon effectiveness + crosshair-error samples (hitscan) + LG ramp; from the always-full base parse, so RL/GL direct/splash + the LG whiff split are always present) |
 | GET | `/v1/demos/{id}/loc-graph` | — | `result.LocGraphResult` (per-map loc adjacency + edge weights) |
 | GET | `/v1/demos/{id}/chat` | `from`, `to`, `players`, `types` | `[]result.MatchEvent` (chat + teamsay only; types defaults to both) |
-| GET | `/v1/demos/{id}/backpacks` | `players`, `weapon` | `[]result.BackpackDrop` (RL/LG drops via `//ktx drop`) |
+| GET | `/v1/demos/{id}/backpacks` | `players`, `weapons` | `[]result.BackpackDrop` (RL/LG drops via `//ktx drop`) |
 | GET | `/v1/demos/{id}/items` | `items`, `players`, `kinds` | `result.ItemsResult` (per-item pickup/respawn timeline) |
-| GET | `/v1/demos/{id}/weapon-pickups` | `players`, `weapon`, `source` | `[]result.WeaponPickup` (kills-before-next-death; joins to backpacks via `backpackEnt`) |
+| GET | `/v1/demos/{id}/weapon-pickups` | `players`, `weapons`, `source` | `[]result.WeaponPickup` (kills-before-next-death; joins to backpacks via `backpackEnt`) |
 | GET | `/v1/demos/{id}/buckets` | `windowMs`, `from`, `to`, `players`, `fields`, `reducers`, `includeTeam`, `loc`, `layout` | `view.ColumnarBuckets` (`layout=column`, default) or `view.BucketsView` (`layout=row`) |
 | GET | `/v1/demos/{id}/events` | `from`, `to`, `players`, `types`, `loc` | `view.EventsView` |
 | GET | `/v1/demos/{id}/stream-slice` | `from`, `to`, `players`, `fields`, `loc` | `view.StreamSliceView` |
