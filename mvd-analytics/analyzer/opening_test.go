@@ -138,3 +138,22 @@ func TestOpeningPostNoMatchStart(t *testing.T) {
 		t.Fatalf("Opening = %+v, want nil on a no-match-start demo", res.Opening)
 	}
 }
+
+// TestFlagDemoTimeBase: when no match start is detected the result is
+// flagged demo-clock (D9) instead of silently shipping unrebased times.
+func TestFlagDemoTimeBase(t *testing.T) {
+	res := &Result{Streams: &result.Streams{}}
+	flagDemoTimeBase(res)
+	if res.Streams.Global.TimeBase != "demo" {
+		t.Errorf("timeBase = %q, want demo", res.Streams.Global.TimeBase)
+	}
+	if len(res.Errors) != 1 {
+		t.Fatalf("errors = %v, want the demo-relative notice", res.Errors)
+	}
+	// No streams ⇒ nothing to flag (and no dangling errors entry).
+	res2 := &Result{}
+	flagDemoTimeBase(res2)
+	if len(res2.Errors) != 0 {
+		t.Errorf("streamless result got errors: %v", res2.Errors)
+	}
+}

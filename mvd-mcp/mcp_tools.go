@@ -37,7 +37,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getOverview",
-		Description: "Return a curated summary of the demo (map, teams, top streaks, top powerups). Also carries `errors`: the analyzer's non-fatal errors — if non-empty the result is degraded (some sections may be missing/partial), so check it before trusting detail views. Use this first to decide which detailed view to query next. Response shape: see mvd-api /v1/demos/{id}/overview.",
+		Description: "Return a curated summary of the demo (map, teams, top streaks, top powerups). Also carries `errors`: the analyzer's non-fatal errors — if non-empty the result is degraded (some sections may be missing/partial), so check it before trusting detail views. Use this first to decide which detailed view to query next. UNITS SEAM: overview times (duration, matchStart/End, topStreaks/topPowerups start+duration) are integer MILLISECONDS, while every tool's startTime/endTime/time input is match-relative SECONDS — divide by 1000 when carrying an overview time into a filter. Response shape: see mvd-api /v1/demos/{id}/overview.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetOverviewInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetOverview(ctx, in)
 		return toolResult(out, err)

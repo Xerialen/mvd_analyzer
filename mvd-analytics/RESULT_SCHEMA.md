@@ -563,6 +563,15 @@ Defined in `result/demoinfo.go`. **Verbatim from KTX's STUFFCMD
 demoinfo JSON; never transformed.** Treat this as authoritative for
 accuracy, damage breakdown, item pickups, bot info.
 
+**Time island.** This section is the one deliberate exception to the
+schema's time contract: KTX's numbers are integer **seconds** on KTX's
+own match clock (`duration`, `timelimit`, per-player item `time`/`took`),
+not this pipeline's match-relative int32 **ms**. KTX's item times count
+from KTX's match start, which coincides with the pipeline's t=0 in
+practice, but the pipeline does not verify or transform them — join
+them with second-resolution tolerance, or prefer the pipeline's own
+`items`/`streams` for anything time-precise.
+
 Top-level fields (`version`, `date`, `map`, `hostname`, `ip`, `port`,
 `mode`, `timelimit`, `fraglimit`, `duration`, `demo`, `teams`,
 `players`, `rawJson`) plus per-player nested objects:
@@ -871,6 +880,7 @@ The match window plus the demo/wall-clock anchor (moved here from
 |---|---|---|---|
 | MatchStart | `matchStart` | int32 | Match window start in milliseconds (always 0 after post-process — it *is* the time origin). |
 | MatchEnd | `matchEnd` | int32 | Match window end in milliseconds. |
+| TimeBase | `timeBase` | string, omitempty | `"demo"` when **no match start was detected** (schema v52): the rebase never ran, so *every* timestamp in the whole Result is on the raw demo clock (t=0 = demo open, warmup included). Omitted on the normal match-relative result. A matching notice appears in `errors[]` (and therefore `/overview`). |
 | DemoOffset | `demoOffset` | int32, omitempty | Ms from demo open (≈ countdown start) to match start. |
 | DemoStartUnixMs | `demoStartUnixMs` | int64, omitempty | Server wall clock (Unix epoch ms) at demo open. |
 | DemoStartAccuracyMs | `demoStartAccuracyMs` | int32, omitempty | Resolution of `demoStartUnixMs`: `1` or `1000`. |
@@ -1566,6 +1576,14 @@ full item layout and pickup timeline, just without picker names.
 `{ items: []ItemTimeline }`. Each `ItemTimeline` has
 `{ name, kind, entNum, x, y, z, loc, phases: []ItemPhase }`.
 `ItemPhase` is `{ availableFrom, takenAt, takenBy, team, respawnAt }`.
+
+**Time sentinels.** `availableFrom == 0` marks the initial "available
+since match start" phase (the rebase leaves zeros alone). Takes are
+recorded only under the match gate and rebase to `>= 0` by
+construction, so phase times are never negative; `takenAt`/`respawnAt`
+`== 0` (omitted in JSON) mean "not taken" / "not yet respawned", with
+the theoretical collision (a take at *exactly* t=0) physically
+unreachable.
 
 **Weapon-stay convention** (schema v46; serverinfo `deathmatch` 2/3/5
 or `coop` — dmm3 duels/2on2 included): touched weapons never leave the

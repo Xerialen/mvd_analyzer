@@ -7,10 +7,10 @@ package result
 // weapon with no per-shot fire sound — it is one TE_LIGHTNING2 beam
 // (KTX emits exactly one per fire tick), flagged Source="beam".
 //
-// The raw Shots stream is NOT match-gated — warmup fires are real signal and
-// consumers window by Time. ByPlayer aggregates ARE match-gated (KTX
-// scoreboard parity) so Reconciliation against demoInfo accuracy is
-// meaningful.
+// The Shots stream is match-gated at the source (schema v50): warmup and
+// post-match fires are dropped before the stream is built, so Shots and
+// the ByPlayer aggregates come from the same in-match fire set and
+// Reconciliation against demoInfo accuracy is meaningful.
 type ShotsResult struct {
 	// Shots is every detected fire, chronological, match-relative ms.
 	Shots []Shot `json:"shots"`
@@ -34,15 +34,14 @@ type ShotsResult struct {
 // decoding was enabled. On non-KTX servers there is no damage stream, so
 // Hit is always false.
 //
-// Warmup is true for fires outside the match (prewar / warmup / post-match) —
-// the stream keeps them, but the ByPlayer aggregates and match-time consumers
-// (e.g. the aim analysis) exclude them. Match-time fires omit the field.
+// The stream is match-only (schema v50; the pre-v50 Warmup field is gone) —
+// every entry is an in-match fire.
+//
 // VictimKinds classifies each Victims entry — "enemy", "team" (same non-empty
 // team as the shooter, not self) or "self" (victim slot == attacker slot, an
 // rl/gl self-splash such as a rocket jump) — mirroring the Damage layer's
 // IsSelf/IsTeam semantics. Omitted when every victim is an enemy (the common
-// case); when present it is parallel to Victims. Warmup fires classify with
-// warmup-time teams.
+// case); when present it is parallel to Victims.
 type Shot struct {
 	Time        int32    `json:"time"`
 	Player      string   `json:"player"`

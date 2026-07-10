@@ -85,7 +85,10 @@ func openingPost(res *Result, co *CoreOutputs) {
 					continue // untaken availability phase
 				}
 				if ph.TakenAt < 0 {
-					continue // warmup take (pre-match phases carry negative times)
+					// Defensive only: item takes are recorded under the match
+					// gate and rebase to >= 0 by construction (items.go), so
+					// a negative TakenAt should not occur.
+					continue
 				}
 				opening.FirstTakes = append(opening.FirstTakes, result.OpeningTake{
 					Item:    it.Name,

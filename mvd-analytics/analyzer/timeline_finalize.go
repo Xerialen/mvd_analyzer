@@ -381,6 +381,8 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	if ms := a.core.MatchStartMs(); ms > 0 {
 		a.rebaseToMatch(result, ms)
 		synthesizeMatchStartSpawns(result.Streams)
+	} else {
+		flagDemoTimeBase(result)
 	}
 
 	// Duel: synthesise the frag-score timeline for a participant who never
@@ -539,6 +541,21 @@ func (a *TimelineAnalyzer) rebaseToMatch(result *Result, matchStartMs int32) {
 	for mi := range streams.Movers {
 		shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
 	}
+}
+
+// flagDemoTimeBase marks a result whose match start could not be
+// detected: the per-producer rebase never ran, so every timestamp in
+// the whole Result stays on the raw demo clock. We cannot invent a
+// time origin — flag the result instead so a consumer can tell a
+// demo-clock result from a match-rebased one (D9, PLAN-api-usability).
+// The errors entry surfaces it in /overview without an extra field.
+func flagDemoTimeBase(result *Result) {
+	if result.Streams == nil {
+		return
+	}
+	result.Streams.Global.TimeBase = "demo"
+	result.Errors = append(result.Errors,
+		`no match start detected: all times are demo-relative (streams.global.timeBase="demo")`)
 }
 
 // matchStartSpawnDedupMs bounds the dedup window for the synthesized

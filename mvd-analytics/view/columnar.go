@@ -149,10 +149,10 @@ func resolveBucketGrid(r *result.Result, opts BucketsOptions) (bucketGrid, error
 	g.end = opts.EndTime
 	g.start = opts.StartTime
 	if g.end == 0 {
-		g.end = float64(r.Streams.Global.MatchEnd) * 0.001
+		g.end = secs(r.Streams.Global.MatchEnd)
 	}
 	if g.start == 0 {
-		g.start = float64(r.Streams.Global.MatchStart) * 0.001
+		g.start = secs(r.Streams.Global.MatchStart)
 	}
 	if g.end <= g.start {
 		return g, nil // count stays 0

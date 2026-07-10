@@ -228,6 +228,12 @@ type LosTrack struct {
 type GlobalStream struct {
 	MatchStart int32 `json:"matchStart"` // always 0 — the match-relative time origin
 	MatchEnd   int32 `json:"matchEnd"`   // match end (≈ duration) in match-relative ms
+	// TimeBase is "demo" when no match start could be detected: nothing
+	// was rebased, so every timestamp in the whole Result is on the raw
+	// demo clock (t=0 = demo open, warmup included). Omitted on the
+	// normal match-relative result. We cannot invent a time origin —
+	// flagging honestly beats coercing (schema v52).
+	TimeBase string `json:"timeBase,omitempty"`
 	// DemoOffset is ms from demo open (demo t=0, ≈ countdown start) to match
 	// start; it bridges match-relative time and demo time.
 	DemoOffset int32 `json:"demoOffset,omitempty"`

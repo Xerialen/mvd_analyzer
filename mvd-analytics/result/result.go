@@ -615,7 +615,14 @@ package result
 //     items[].phases (world takes, per-spawner ya_1/ya_2 naming) and
 //     weaponPickups (backpack/unknown grants) — and spawn events now carry
 //     the spawn location in detail.
-const CurrentSchemaVersion = 51
+//
+// v52: no-match-start demos are flagged, not coerced.
+//   - streams.global gains timeBase: "demo" (omitted normally) when no match
+//     start was detected. On such demos the per-producer rebase never runs,
+//     so every timestamp in the Result is on the raw demo clock — previously
+//     indistinguishable from a match-rebased result. A matching entry is
+//     appended to errors[] so /overview surfaces it without a new field.
+const CurrentSchemaVersion = 52
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

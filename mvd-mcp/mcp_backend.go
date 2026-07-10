@@ -65,7 +65,7 @@ type GetBucketsInput struct {
 	StartTime   float64           `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
 	EndTime     float64           `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 	Players     []string          `json:"players,omitempty"`
-	Fields      []string          `json:"fields,omitempty" jsonschema:"field codes (h, a, rl, lg, ...). Empty = all standard fields"`
+	Fields      []string          `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
 	Reducers    map[string]string `json:"reducers,omitempty" jsonschema:"per-field reducer override, e.g. {\"h\":\"min\"}"`
 	IncludeTeam bool              `json:"includeTeam,omitempty"`
 	Loc         string            `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default, resolved loc names) or 'index' (raw LocTable indices; decode via getLocTable). Ignored for layout=column, which always returns raw 'li' indices"`
@@ -88,7 +88,7 @@ type GetStreamSliceInput struct {
 	StartTime float64  `json:"startTime,omitempty"`
 	EndTime   float64  `json:"endTime,omitempty"`
 	Players   []string `json:"players,omitempty"`
-	Fields    []string `json:"fields,omitempty"`
+	Fields    []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
 	Loc       string   `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default) or 'index' (raw LocTable index stream; decode via getLocTable)"`
 }
 
@@ -97,7 +97,7 @@ type GetStateAtInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Time    float64  `json:"time" jsonschema:"required; match-relative seconds"`
 	Players []string `json:"players,omitempty"`
-	Fields  []string `json:"fields,omitempty"`
+	Fields  []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d rejected here (no point-in-time meaning). Empty = all standard fields; an unknown code errors with the full list"`
 	Loc     string   `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default) or 'index' (raw LocTable index; decode via getLocTable)"`
 }
 

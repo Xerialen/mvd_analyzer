@@ -7,6 +7,34 @@ detail.
 
 ## Unreleased (branch `phase-16.1`)
 
+- **Friction + correctness edges (schema v52,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream C).**
+  - **No-match-start demos are flagged, not coerced (v52):** when no
+    match start is detected the rebase never runs and every timestamp
+    stays on the raw demo clock — previously indistinguishable from a
+    rebased result. `streams.global` now carries `timeBase: "demo"`
+    (omitted normally) and `errors[]` gains a matching notice, so
+    `/overview` surfaces it.
+  - **Unknown field codes now teach the vocabulary:** the
+    `state-at`/`buckets`/`stream-slice` field error enumerates every
+    valid code with a gloss (`li (location), h (health), …`). The
+    classic `loc`-vs-`li` trap is also documented in the MCP tool
+    schemas (the selector code is `li`; the `loc=` param picks name-
+    vs-index rendering). No aliases, by decision (D6 amended).
+  - **Float-artifact fix on the view envelope (D8 amended):** all view
+    ms→seconds conversions now divide by 1000 (IEEE division is
+    correctly rounded) instead of multiplying by the inexact `0.001`
+    — `13.155000000000001` becomes `13.155` across events, trails,
+    buckets, stream-slice. Values change at most one ulp; shapes
+    unchanged.
+  - **Doc-debt:** the stale `result/shots.go` comments claiming the
+    stream is not match-gated (pre-v50) are fixed; RESULT_SCHEMA
+    documents the `demoInfo` time island (KTX seconds on KTX's clock)
+    and the items phase time sentinels; powerup events in the events
+    view no longer echo the derivable `duration` (the Result keeps
+    it); `getOverview`'s description spells out the ms-out/seconds-in
+    units seam.
+
 - **Filter + summary pass over the item/pickup endpoints and MCP-layer
   token-lean defaults (no schema change,
   [PLAN-api-usability](PLAN-api-usability.md) workstream B).**
