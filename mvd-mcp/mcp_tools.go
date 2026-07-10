@@ -141,7 +141,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getEvents",
-		Description: "Time-ordered discrete events (frags, powerups, streaks, spawns, deaths, pickups, chat). Default types exclude high-frequency change events (health/armor/loc). pickup events carry full identity: detail{item (per-spawner name, ya_1 vs ya_2), kind, entNum, loc, source (world/backpack/unknown), dropper?} — no cross-referencing needed to learn which spawner was taken. spawn events include the match-start spawn (t=0) and carry detail{loc} — types:['spawn'] with endTime:1 answers \"where did everyone start\"; for the pre-joined opening summary use getArtifact('opening'). Response shape: see mvd-api /v1/demos/{id}/events.",
+		Description: "Time-ordered discrete events (frags, powerups, streaks, spawns, deaths, pickups, chat). Default types exclude high-frequency change events (health/armor/loc). pickup events carry full identity in two shapes: world-spawner takes detail{item (per-spawner name, ya_1 vs ya_2), kind, entNum, loc?, source:'world'}; backpack/unknown weapon grants detail{item, kind, source, entNum? (backpack edict), dropper?} (no loc) — no cross-referencing needed to learn which spawner was taken. spawn events include the match-start spawn (t=0) and carry detail{loc} — types:['spawn'] with endTime:1 answers \"where did everyone start\"; for the pre-joined opening summary use getArtifact('opening'). Response shape: see mvd-api /v1/demos/{id}/events.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetEventsInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetEvents(ctx, in)
 		return toolResult(out, err)

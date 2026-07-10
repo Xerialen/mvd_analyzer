@@ -588,7 +588,7 @@ players alive through the countdown, schema v51) — so
 `?types=spawn&to=1` answers "where did everyone start". For the
 pre-joined opening summary (spawns + first takes of every contested
 spawner) fetch the `opening` artifact instead:
-`GET /v1/demos/{id}/artifacts/opening` (§4.17). A `damage`
+`GET /v1/demos/{id}/artifacts/opening` (§4.17b). A `damage`
 event carries `detail{ victim, damage, weapon, isSplash?, isEnv?,
 isSelf?, isTeam?, victimWep? }`; `players` matches its attacker or
 victim. `damage` events are **match-only** — out-of-match (warmup /

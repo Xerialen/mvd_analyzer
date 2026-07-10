@@ -26,8 +26,9 @@ detail.
     `detail{item (ya_1 vs ya_2), kind, entNum, loc, source
     (world/backpack/unknown), dropper?}` — "which YA / which RL pad"
     no longer needs a second call and timestamp cross-referencing.
-    `spawn` events now carry `detail{loc}` (the spawn location,
-    sampled just after the teleport landing).
+    `spawn` events now carry `detail{loc}` when the location is
+    resolvable (sampled just after the teleport landing; absent on
+    maps without a .loc corpus).
   - **New `opening` artifact.** A post-processor projects each
     player's match-start spawn loc plus the first in-match take of
     every contested spawner (armors, mega, powerups, RL/LG) into

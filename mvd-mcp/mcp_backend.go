@@ -78,7 +78,7 @@ type GetEventsInput struct {
 	StartTime float64  `json:"startTime,omitempty"`
 	EndTime   float64  `json:"endTime,omitempty"`
 	Players   []string `json:"players,omitempty"`
-	Types     []string `json:"types,omitempty" jsonschema:"event types. Default set (when empty): frag, powerup, streak, spawn, death, weapon, item, chat, pickup. Opt-in (pass explicitly): loc, health, armor, damage, telefrag, stomp. pickup = identity-rich takes (detail{item, kind, entNum, loc, source, dropper?}); weapon/item = held-interval gain/lose (the holding story). spawn carries detail{loc} and includes the synthesized match-start spawn at t=0. A damage event carries detail{victim, damage, weapon, isSplash?, ...}; telefrag/stomp carry detail{victim, isTeam?} with player = the killer (the kill is already in the frag feed, hence opt-in)"`
+	Types     []string `json:"types,omitempty" jsonschema:"event types. Default set (when empty): frag, powerup, streak, spawn, death, weapon, item, chat, pickup. Opt-in (pass explicitly): loc, health, armor, damage, telefrag, stomp. pickup = identity-rich takes: world takes detail{item, kind, entNum, loc?, source:'world'}, backpack/unknown grants detail{item, kind, source, entNum?, dropper?} (no loc); weapon/item = held-interval gain/lose (the holding story). spawn carries detail{loc} and includes the synthesized match-start spawn at t=0. A damage event carries detail{victim, damage, weapon, isSplash?, ...}; telefrag/stomp carry detail{victim, isTeam?} with player = the killer (the kill is already in the frag feed, hence opt-in)"`
 	Loc       string   `json:"loc,omitempty" jsonschema:"loc-event representation: 'name' (default) or 'index' (raw LocTable index; decode via getLocTable)"`
 }
 

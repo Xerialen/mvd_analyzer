@@ -57,6 +57,13 @@ var eagerArtifacts = map[string]eagerArtifact{
 		code: "aim_unavailable", msg: "this demo has no aim data (needs shots + position/view streams)"},
 	"loc-graph": {extract: func(r *result.Result) (any, error) { return view.LocGraph(r) },
 		code: "locgraph_unavailable", msg: "this demo has no loc graph (probably no position track was emitted)"},
+	"opening": {extract: func(r *result.Result) (any, error) {
+		if r.Opening == nil {
+			return nil, view.ErrUnavailable
+		}
+		return r.Opening, nil
+	},
+		code: "opening_unavailable", msg: "this demo has no opening (no detected match start)"},
 
 	// Always-computable / list-shaped sections: 200 with the raw section (which
 	// may be null/empty), never 422 — the same convention the curated endpoints

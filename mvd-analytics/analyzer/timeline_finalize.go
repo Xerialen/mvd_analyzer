@@ -556,8 +556,12 @@ const matchStartSpawnDedupMs = 1000
 // countdown never crosses health ≤0→>0, so no SpawnEvent fires and the
 // first — most contested — spawn of the match is absent from Spawns.
 // Runs after rebaseToMatch (match-relative times, warmup spawns already
-// dropped): a player whose carry-forward health at t=0 is alive gets a
-// spawn at 0 unless a real one already landed inside the dedup window.
+// dropped). The health predicate really tests "was present at match
+// start": health is not recorded during warmup, so the t=0 carry entry
+// is the KTX respawn write (V=100) for every present player, dead or
+// alive at countdown end. The dedup does the actual split — a player
+// dead at countdown end has a wire-visible dead→alive spawn at ≈0 with
+// no in-match death before it, which suppresses the synthesis.
 // Same life-boundary policy as the FragStreak first-life synthesis.
 func synthesizeMatchStartSpawns(streams *Streams) {
 	if streams == nil {
