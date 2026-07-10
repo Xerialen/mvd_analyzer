@@ -61,7 +61,7 @@ type GetOverviewInput struct {
 // GetBucketsInput mirrors /v1/demos/{id}/buckets query params.
 type GetBucketsInput struct {
 	DemoID      string            `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	WindowMs    int               `json:"windowMs,omitempty" jsonschema:"bucket size in ms; default 5000 (5 s) — right for trends/control questions; pass 1000 or finer only when the question needs it (50 ms produces tens of thousands of buckets per match)"`
+	WindowMs    int               `json:"windowMs,omitempty" jsonschema:"bucket size in MILLISECONDS (startTime/endTime are seconds!); default 5000 (5 s) — right for trends/control questions; pass 1000 or finer only when the question needs it (50 ms produces tens of thousands of buckets per match)"`
 	StartTime   float64           `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
 	EndTime     float64           `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 	Players     []string          `json:"players,omitempty"`
@@ -85,8 +85,8 @@ type GetEventsInput struct {
 // GetStreamSliceInput mirrors /v1/demos/{id}/stream-slice query params.
 type GetStreamSliceInput struct {
 	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	StartTime float64  `json:"startTime,omitempty"`
-	EndTime   float64  `json:"endTime,omitempty"`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start, match-relative seconds. The MCP layer REQUIRES at least one of startTime/endTime: an unwindowed slice is native-rate change entries for the whole match (the biggest payload this service can emit). REST /stream-slice stays unwindowed for programs."`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end, match-relative seconds (see startTime: at least one bound is required at the MCP layer). Keep windows tens of seconds, not minutes."`
 	Players   []string `json:"players,omitempty"`
 	Fields    []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
 	Loc       string   `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default) or 'index' (raw LocTable index stream; decode via getLocTable)"`
@@ -105,7 +105,7 @@ type GetStateAtInput struct {
 type GetLocTrailsInput struct {
 	DemoID     string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Players    []string `json:"players,omitempty"`
-	MinDwellMs int      `json:"minDwellMs,omitempty"`
+	MinDwellMs *int     `json:"minDwellMs,omitempty" jsonschema:"drop residences shorter than this (ms). MCP default 250 (REST differs: 0 = raw) — nearest-loc flicker at loc boundaries otherwise dominates the list. Pass 0 explicitly for the raw unfiltered residences."`
 	StartTime  float64  `json:"startTime,omitempty"`
 	EndTime    float64  `json:"endTime,omitempty"`
 	Loc        string   `json:"loc,omitempty" jsonschema:"residence representation: 'name' (default) or 'index' (raw LocTable index; decode via getLocTable)"`
@@ -120,7 +120,7 @@ type GetLocTableInput struct {
 // GetRegionControlInput mirrors /v1/demos/{id}/region-control query params.
 type GetRegionControlInput struct {
 	DemoID    string  `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	WindowMs  int     `json:"windowMs,omitempty" jsonschema:"bucket size for per-region state strings; default 5000 (5 s) — finer resolution multiplies the bucketStates string length"`
+	WindowMs  int     `json:"windowMs,omitempty" jsonschema:"bucket size in MILLISECONDS (startTime/endTime are seconds!); default 5000 (5 s) for the per-region state strings — finer resolution multiplies the bucketStates string length"`
 	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
 	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }

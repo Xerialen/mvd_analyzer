@@ -288,7 +288,7 @@ Frag aggregates + the full kill log. Cheaper than aggregating
 | `weapon`    | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
 | `startTime` | `number` | match start | Window start, match-relative **seconds** (keep kills at `time ≥ startTime`) |
 | `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep kills at `time ≤ endTime`) |
-| `summary`   | `bool` | `false` | Return only aggregates, dropping the big per-event kill log |
+| `summary`   | `bool` | `false` | Return only aggregates, dropping the kill log. **Deliberately the opposite default from getDamage/getAim/getItems**: a kill log is one row per frag — small, and usually the point of the call. |
 
 When any scoping filter (`players` / `weapon` / `startTime` / `endTime`) is
 set, **every** aggregate is recomputed from the filtered kill log (consistent
@@ -482,7 +482,7 @@ Output: `view.ColumnarBuckets` (default) or `view.BucketsView` (`layout=row`)
 | `startTime` | `float64` | match start | — |
 | `endTime`   | `float64` | match end | — |
 | `players`   | `string[]` | all | — |
-| `types`     | `string[]` | discrete-event default set | `frag, powerup, streak, spawn, death, weapon, item, chat` (default), opt-in: `loc, health, armor, damage, telefrag, stomp` |
+| `types`     | `string[]` | discrete-event default set | `frag, powerup, streak, spawn, death, weapon, item, chat, pickup` (default), opt-in: `loc, health, armor, damage, telefrag, stomp` |
 
 Output: `view.EventsView` —
 `{ events: [{ t, type, player, detail }, …] }`. Per-type `detail`
@@ -493,8 +493,8 @@ keys are in RESULT_SCHEMA.md.
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`    | `string` (required) | — | — |
-| `startTime` | `float64` | match start | — |
-| `endTime`   | `float64` | match end | — |
+| `startTime` | `float64` | — | **At least one of startTime/endTime is required at the MCP layer** — an unwindowed slice is native-rate entries for the whole match, the biggest payload this service can emit. Keep windows tens of seconds. (REST `/stream-slice` stays unwindowed.) |
+| `endTime`   | `float64` | — | See `startTime`. |
 | `players`   | `string[]` | all | — |
 | `fields`    | `string[]` | all standard | — |
 
@@ -521,7 +521,7 @@ intervals to membership; position to nearest sample.
 |---|---|---|---|
 | `demoId`     | `string` (required) | — | — |
 | `players`    | `string[]` | all | — |
-| `minDwellMs` | `int`     | 0 | Drop transitions shorter than this; folded into neighbour |
+| `minDwellMs` | `int`     | **250** (MCP default; REST 0) | Drop residences shorter than this (nearest-loc flicker), folded into neighbour. Pass `0` explicitly for the raw stream. |
 | `startTime`  | `float64` | match start | — |
 | `endTime`    | `float64` | match end | — |
 
@@ -544,10 +544,13 @@ region layout. See RESULT_SCHEMA.md for the encoding of
 
 #### `listArtifacts({})`
 
-No parameters. Output: the DAG manifest
-`{ schemaVersion, artifacts: [{ name, cost, lazy, requires,
-provides, mutates, resultKey, servable, description }, …] }`. Static per
-schema version. The authoritative catalog is the generated
+No parameters. Output: the fetchable-artifact catalog
+`{ schemaVersion, artifacts: [{ name, resultKey, cost, lazy,
+description }, …] }` — trimmed at the MCP layer to servable artifacts
+and routing-relevant fields (the full DAG manifest with
+`requires`/`provides`/`mutates` edges and internal nodes lives on REST
+`/v1/artifacts` + `/v1/graph`). Static per schema version. The
+authoritative catalog is the generated
 [`../mvd-analytics/ARTIFACTS.md`](../mvd-analytics/ARTIFACTS.md). Call
 this to discover artifacts beyond the curated tools.
 

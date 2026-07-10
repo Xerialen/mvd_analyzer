@@ -59,6 +59,10 @@ func (s *server) handleMapGeometry(w http.ResponseWriter, r *http.Request) {
 	}
 	// The geometry is immutable for a given map content; len(data) is a
 	// cheap content-version proxy that avoids parsing the (large) file.
+	// Caveat accepted: a regeneration producing different bytes of the
+	// exact same length would false-304 — vanishingly unlikely for this
+	// format, and a schema/corpus bump changes the URL-visible content
+	// anyway.
 	etag := fmt.Sprintf(`"geo-%s-%d"`, base, len(data))
 	if !writeStaticHeaders(w, r, etag) {
 		return

@@ -377,7 +377,8 @@ func TestProxy_AllView(t *testing.T) {
 	if _, err := b.GetEvents(ctx, GetEventsInput{DemoID: "gameId:42"}); err != nil {
 		t.Errorf("GetEvents: %v", err)
 	}
-	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42"}); err != nil {
+	// stream-slice requires a window at the MCP layer (size guard).
+	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42", StartTime: 60, EndTime: 90}); err != nil {
 		t.Errorf("GetStreamSlice: %v", err)
 	}
 	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:42"}); err != nil {
@@ -576,5 +577,59 @@ func TestProxy_ListArtifacts_CompactsManifest(t *testing.T) {
 	}
 	if v := out.(map[string]any)["schemaVersion"]; v.(float64) != 52 {
 		t.Errorf("envelope fields must pass through, got schemaVersion=%v", v)
+	}
+}
+
+// TestProxy_StreamSliceRequiresWindow: the MCP layer refuses an
+// unwindowed slice (native-rate whole-match dump) with a routing hint;
+// either bound alone satisfies the guard.
+func TestProxy_StreamSliceRequiresWindow(t *testing.T) {
+	srv := cannedAPI(t, nil)
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	_, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42"})
+	if err == nil || !strings.Contains(err.Error(), "time window") {
+		t.Fatalf("unwindowed slice must be refused with guidance, got %v", err)
+	}
+	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42", EndTime: 30}); err != nil {
+		t.Errorf("endTime-only window must pass: %v", err)
+	}
+	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42", StartTime: 500}); err != nil {
+		t.Errorf("startTime-only window must pass: %v", err)
+	}
+}
+
+// TestProxy_LocTrailsDwellDefault: MCP injects minDwellMs=250 when the
+// caller is silent (flicker filter); explicit 0 opts back into raw.
+func TestProxy_LocTrailsDwellDefault(t *testing.T) {
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.Query()
+		w.Write([]byte(`{"players":[]}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:1"}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("minDwellMs") != "250" {
+		t.Errorf("defaulted minDwellMs = %q, want 250", seenQuery.Get("minDwellMs"))
+	}
+	zero := 0
+	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:1", MinDwellMs: &zero}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Has("minDwellMs") {
+		t.Errorf("explicit 0 must suppress the param (raw trails), sent %q", seenQuery.Get("minDwellMs"))
+	}
+	custom := 1000
+	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:1", MinDwellMs: &custom}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("minDwellMs") != "1000" {
+		t.Errorf("explicit minDwellMs = %q, want 1000", seenQuery.Get("minDwellMs"))
 	}
 }

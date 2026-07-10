@@ -86,10 +86,21 @@ weapon / item / kind / loc / layout tokens.
 - **`from` / `to`** — match-relative **seconds**. Omit for the whole
   match. Honoured by `events`, `stream-slice`, `loc-trails`, `chat`,
   `region-control`, and (schema-unchanged) `frags` / `damage`.
-- **`summary`** (`/frags`, `/damage`) — `1`/`true` drops the big per-event
-  log and returns only the aggregates.
+- **`summary`** (`/frags`, `/damage`, `/aim`, `/items`) — `1`/`true` drops
+  the big per-event log / sample arrays / phase timeline and returns only
+  the aggregates.
 - **`time`** — match-relative **seconds**; **required** on `/state-at`.
 - **`windowMs`** — integer milliseconds (`/buckets`, `/region-control`).
+  ⚠️ **Defaults to 50 ms when omitted** — on a 20-minute match that is
+  ~24,000 windows per field per player. Always pass an explicit
+  `windowMs` sized to your question (the hosted MCP layer injects 5000).
+  Note the unit split *within one call*: `windowMs` is **ms** while
+  `from`/`to` are **seconds**.
+- **There is deliberately no `limit`/`offset` pagination** on the
+  per-demo endpoints: the data is time-series, so the size controls are
+  the `from`/`to` window, `players`/`fields` scoping, and `summary`.
+  (`searchGames`-style pagination exists only on the hub search, which
+  is not part of this API.)
 - **`loc`** — `name` (default) resolves loc indices to names; `index`
   returns the raw `LocTable` index for index-based math (decode via
   `/loc-table`). Honoured by `buckets`, `events`, `stream-slice`,
@@ -120,7 +131,7 @@ no-floor sentinel is `-1000000000` (was `-2147483648`).
 
 ### 2.3 Caching (use it — the data is immutable)
 
-Successful 2xx responses set:
+Successful 2xx responses on the **per-demo** endpoints set:
 
 ```
 Cache-Control: public, max-age=86400, immutable
@@ -141,7 +152,12 @@ Two families carry a **different ETag shape**:
   revalidate one artifact independently.
 - The binary-static endpoints `/v1/artifacts` and `/v1/graph` (§4.17) depend
   only on the schema version, so their ETag is `"artifacts-v<n>"` /
-  `"graph-v<n>"` (no sha).
+  `"graph-v<n>"` (no sha). They set `Cache-Control` + `ETag` +
+  `X-Schema-Version` but **no `X-Cache`** (nothing demo-cached to report).
+- The per-map endpoints `/v1/maps/{map}/entities` and `/geometry` are
+  demo-independent statics: ETags `"ents-<map>-v<corpusVersion>"` and
+  `"geo-<map>-<size>"`, with **only** `Cache-Control` + `ETag` (no
+  `X-Schema-Version` / `X-Cache`).
 
 `POST /v1/demos/{id}` (the warm-up call) is a non-cacheable action: it
 returns `X-Cache` / `X-Schema-Version` but **no** `Cache-Control` / `ETag`.
@@ -175,6 +191,7 @@ Non-2xx responses use a stable envelope:
 | 422 | `shots_unavailable` | no shot data (no weapon fires decoded) |
 | 422 | `aim_unavailable` | no aim data (needs shots + position/view streams) |
 | 422 | `locgraph_unavailable` | no position track |
+| 422 | `opening_unavailable` | no detected match start (`/v1/demos/{id}/artifacts/opening`) |
 | 422 | `region_control_unavailable` | no region-control layout for this map |
 | 422 | `airgibs_unavailable` | no timeline analysis (BSP-less maps return `[]`, not this) |
 | 502 | `hub_upstream` | network / 5xx from the hub |

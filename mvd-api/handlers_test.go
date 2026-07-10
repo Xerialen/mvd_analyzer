@@ -1432,3 +1432,23 @@ func TestLOS_NoStreams(t *testing.T) {
 		}
 	}
 }
+
+// TestWeaponPickups_SourceValidated: source is an enum like loc/layout —
+// a typo 400s instead of silently matching nothing.
+func TestWeaponPickups_SourceValidated(t *testing.T) {
+	srv := newTestServer(t, storeWithStub())
+	defer srv.Close()
+	body, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/weapon-pickups?source=backpak")
+	if status != 400 {
+		t.Fatalf("status = %d, want 400 for a bad source (%s)", status, body)
+	}
+	if !strings.Contains(string(body), "invalid_param") || !strings.Contains(string(body), "backpak") {
+		t.Errorf("error must name the code and the bad value: %s", body)
+	}
+	for _, ok := range []string{"world", "backpack", "unknown", "WORLD", ""} {
+		_, status := getRaw(t, srv.URL+"/v1/demos/gameId:42/weapon-pickups?source="+ok)
+		if status != 200 {
+			t.Errorf("source=%q: status = %d, want 200", ok, status)
+		}
+	}
+}

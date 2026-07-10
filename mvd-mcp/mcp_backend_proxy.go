@@ -498,6 +498,14 @@ func (p *proxyBackend) GetEvents(ctx context.Context, in GetEventsInput) (any, e
 }
 
 func (p *proxyBackend) GetStreamSlice(ctx context.Context, in GetStreamSliceInput) (any, error) {
+	// MCP-layer size guard (same family as the windowMs / summary
+	// defaults): an unwindowed slice is native-rate change entries for
+	// every requested field of every player over the whole match — the
+	// biggest payload this service can emit, and never what an agent
+	// wants blind. REST /stream-slice stays unwindowed for programs.
+	if in.StartTime == 0 && in.EndTime == 0 {
+		return nil, errors.New("stream-slice needs a time window at the MCP layer: pass startTime and/or endTime (match-relative seconds; keep windows tens of seconds). For whole-match overviews use getBuckets; for one instant use getStateAt")
+	}
 	path, err := demoPath(in.DemoID, "/stream-slice")
 	if err != nil {
 		return nil, err
@@ -533,8 +541,16 @@ func (p *proxyBackend) GetLocTrails(ctx context.Context, in GetLocTrailsInput) (
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
 	q.csv("players", in.Players)
-	if in.MinDwellMs > 0 {
-		q.set("minDwellMs", strconv.Itoa(in.MinDwellMs))
+	// MCP default: 250 ms dwell filter. Raw trails are dominated by
+	// nearest-loc flicker at region boundaries; an agent reading a
+	// residence list wants where the player WAS, not every boundary
+	// graze. Explicit 0 opts back into the raw stream (REST default).
+	minDwell := 250
+	if in.MinDwellMs != nil {
+		minDwell = *in.MinDwellMs
+	}
+	if minDwell > 0 {
+		q.set("minDwellMs", strconv.Itoa(minDwell))
 	}
 	q.str("loc", in.Loc)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))

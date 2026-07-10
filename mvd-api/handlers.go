@@ -566,6 +566,15 @@ func (s *server) handleWeaponPickups(w http.ResponseWriter, r *http.Request) {
 	if writeInvalidParam(w, p.Err()) {
 		return
 	}
+	// source is an enum like loc/layout — a typo must 400, not silently
+	// match nothing (the other enum params already reject unknowns).
+	switch strings.ToLower(opts.Source) {
+	case "", "world", "backpack", "unknown":
+	default:
+		writeError(w, http.StatusBadRequest, "invalid_param",
+			fmt.Sprintf("unknown source %q; valid: world, backpack, unknown", opts.Source))
+		return
+	}
 	writeJSON(w, http.StatusOK, view.WeaponPickups(res, opts))
 }
 

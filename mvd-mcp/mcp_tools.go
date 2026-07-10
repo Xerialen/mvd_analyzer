@@ -61,7 +61,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getFrags",
-		Description: "Frag aggregates + full kill log. totalFrags + byPlayer (kills/deaths/byWeapon per player) + byWeapon (kills per weapon) + frags (every kill with time/killer/victim/weapon/isSuicide/isTeamKill). Optional players= / weapon= filters narrow both aggregates and log. Empty-log convention: frags is null when dropped by summary=true, [] when included but the filter matched nothing. Use this instead of aggregating getEvents(types:['frag']) yourself.",
+		Description: "Frag aggregates + full kill log. totalFrags + byPlayer (kills/deaths/byWeapon per player) + byWeapon (kills per weapon) + frags (every kill with time/killer/victim/weapon/isSuicide/isTeamKill). NOTE: unlike getDamage/getAim/getItems, summary defaults FALSE here — the kill log is small (one row per frag) and usually the point; pass summary:true to drop it. Optional players= / weapon= filters narrow both aggregates and log. Empty-log convention: frags is null when dropped by summary=true, [] when included but the filter matched nothing. Use this instead of aggregating getEvents(types:['frag']) yourself.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetFragsInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetFrags(ctx, in)
 		return toolResult(out, err)
@@ -149,7 +149,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getStreamSlice",
-		Description: "Raw native-rate change entries for each requested field inside a time window. Right shape for inspecting a short event in detail (carry-forward at window start; intervals clamped to window). Health entries are the authoritative wire values: a negative value is the killing blow's overkill remainder (the player died at that entry) — for death events themselves prefer the d/sp streams or getEvents.",
+		Description: "Raw native-rate change entries for each requested field inside a REQUIRED time window (startTime and/or endTime — an unwindowed slice would be the biggest payload this service can emit; keep windows tens of seconds). Right shape for inspecting a short event in detail (carry-forward at window start; intervals clamped to window). Health entries are the authoritative wire values: a negative value is the killing blow's overkill remainder (the player died at that entry) — for death events themselves prefer the d/sp streams or getEvents.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetStreamSliceInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetStreamSlice(ctx, in)
 		return toolResult(out, err)
@@ -165,7 +165,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getLocTrails",
-		Description: "Per-player sequence of loc residences with dwell durations. Use minDwellMs to filter nearest-loc flicker. Each residence is a resolved loc name by default; pass loc='index' for raw LocTable indices (decode via getLocTable).",
+		Description: "Per-player sequence of loc residences with dwell durations. minDwellMs filters nearest-loc flicker (MCP default 250; pass 0 for raw). Each residence is a resolved loc name by default; pass loc='index' for raw LocTable indices (decode via getLocTable).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetLocTrailsInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetLocTrails(ctx, in)
 		return toolResult(out, err)

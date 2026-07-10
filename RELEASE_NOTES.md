@@ -7,6 +7,30 @@ detail.
 
 ## Unreleased (branch `phase-16.1`)
 
+- **Fresh-eyes review fixes: the remaining size footguns + doc drift
+  (no schema change).** Two independent no-history design reviews of
+  the MCP and REST surfaces (both verdicts: sound); their confirmed
+  findings:
+  - `getStreamSlice` now **requires a time window at the MCP layer**
+    (either bound suffices; REST stays unwindowed) — an unwindowed
+    slice is native-rate entries for the whole match, the exact class
+    of payload the windowMs/summary defaults exist to prevent.
+    `getLocTrails` defaults `minDwellMs` to **250** at the MCP layer
+    (explicit `0` restores the raw stream) — raw trails are dominated
+    by nearest-loc boundary flicker.
+  - `/weapon-pickups` `source` is now validated like the other enum
+    params: a typo (`source=backpak`) 400s with the valid values
+    instead of silently matching nothing.
+  - Doc truth: API.md documents the **50 ms REST `windowMs` default**
+    (with a warning), the deliberate no-pagination stance, the scoped
+    per-endpoint cache-header sets, the map-endpoint ETag shapes, and
+    the missing `opening_unavailable` error row; the MCP README's
+    `listArtifacts` section now shows the trimmed shape, the events
+    default-type list includes `pickup`, and `getFrags` explains why
+    its `summary` default is deliberately the opposite of its
+    siblings'. `windowMs`/`minDwellMs` docs now contrast ms vs the
+    seconds-typed window params in the same call.
+
 - **listArtifacts goes routing-only at the MCP layer; timeline artifact
   gets a size warning (no schema change).** External-review follow-ups:
   `listArtifacts` now returns servable artifacts only, trimmed to
