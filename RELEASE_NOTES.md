@@ -51,20 +51,41 @@ detail.
     Goldens regenerated: `damage.events` arrays shrink; some `aim` splits and
     `airgibs` lists shift on demos with out-of-match rocket hits. Frags are
     unaffected (they already gated at the analyzer).
-  - **Telefrags / stomps are match-only and exclude team kills.** The
-    `damage.telefrags` / `damage.stomps` arrays are likewise gated to in-match
-    at the source, and a **team** telefrag/stomp is no longer credited to the
-    attacker's `telefrags` / `stomps` counter (mirroring the team-kill
-    convention the view already applied) — so the filtered telefrag/stomp
-    counters now match the stored totals. Goldens: two demos drop
-    team/out-of-match telefrag+stomp counts; no other change.
+  - **Telefrags / stomps are match-only, match-clock, and exclude team
+    kills.** The `damage.telefrags` / `damage.stomps` arrays are gated to
+    in-match at the source, and a **team** telefrag/stomp is no longer credited
+    to the attacker's `telefrags` / `stomps` counter (mirroring the team-kill
+    convention the view already applied) — so the filtered counters match the
+    stored totals. Their `time` is now **match-relative ms** like
+    `damage.events`: only the per-hit log was rebased before, leaving the
+    positional-kill arrays on the demo clock, contradicting the schema and the
+    `from`/`to` window / telefrag+stomp event lenses that compare against
+    match-relative bounds. The in-match gate now keys off the match **timestamp
+    range** (the detector's final start/end) rather than a live match-phase
+    flag sampled per record, fixing a same-frame race: a kill on the exact
+    match-start frame — decoded before the same-frame "Fight" print flipped the
+    detector — was wrongly dropped, and now appears at match-relative `t=0`
+    (the inclusive upper bound likewise keeps a hit on the exact match-end
+    frame, which KTX itself scored). Goldens: telefrag/stomp times shift by
+    `-demoOffset`; a couple of start/end-frame entries reappear with the
+    counters they imply.
   - **All analytics streams are match-only now, except chat.** The `shots`
     stream is gated to in-match at the source (warmup / prewar / post-match
     fires dropped; the `Shot.warmup` field is removed — no out-of-match shot
-    survives). Frags, damage, telefrags/stomps, shots, positions, pickups,
-    items and backpacks are all match-only; **chat is the deliberate
-    exception** (pre-game talk is kept). This makes it impossible for a
-    consumer to accidentally mix warmup data into match analytics.
+    survives). The shots gate keys off the same match **timestamp range** as
+    damage, so a fire on the exact match-start/-end frame is kept rather than
+    lost to the same same-frame race. Frags, damage, telefrags/stomps, shots,
+    positions, pickups, items and backpacks are all match-only; **chat is the
+    deliberate exception** (pre-game talk is kept). This makes it impossible
+    for a consumer to accidentally mix warmup data into match analytics.
+  - **Windowing consistency + bound validation nits.** `chat` now rounds its
+    `from`/`to` seconds→ms to the nearest ms like the other windowed sections
+    (it truncated before, off by up to 1 ms); a windowed / players-scoped
+    `aim` that matches no shooter returns `players: []`, not `null`, matching
+    the filtered-empty-log convention; and the REST layer now rejects a NaN /
+    Inf / negative / int32-ms-overflowing `from` / `to` / `time` with a `400
+    invalid_param` instead of letting the bad float→int32 conversion silently
+    filter everything behind a `200`.
 
 - **`getAim` (`/aim`): `players` / `from` / `to` / `summary` filters (no schema
   change).** The aim endpoint and its MCP tool used to return everything

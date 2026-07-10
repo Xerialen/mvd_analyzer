@@ -492,7 +492,10 @@ post-match fires. Two paths, mirroring `/frags` and `/damage`:
   seconds→ms conversion rounds to the nearest ms (`0.29s`→`290ms`).
 
 `summary` is orthogonal — it trims the sample blocks off whichever result was
-produced. Malformed `from`/`to` → 400 `invalid_param`.
+produced. A `players` / window filter that matches no shooter returns
+`players: []` (never `null`), matching the empty-log convention. Malformed
+`from`/`to` (non-numeric, NaN/Inf, negative, or past the int32-ms range) → 400
+`invalid_param`.
 
 **Availability:** served from the always-full base parse. mvd-api parses every
 demo with the projectile/beam/nail streams built (since phase 12 — the +3–4%
