@@ -515,7 +515,7 @@ func TestItems_Window(t *testing.T) {
 	}
 	ya := v.Items[0]
 	// Phase[0] ends (respawns) at 25s < from=26 → dropped. Phase[1]
-	// [25,50) and phase[2] [50,110) overlap. Phase[3] starts at 110 ≥
+	// [25,50) and phase[2] [50,110) overlap. Phase[3] starts at 110 >
 	// to=60 → dropped.
 	if len(ya.Phases) != 2 || ya.Phases[0].TakenAt != 30000 || ya.Phases[1].TakenAt != 90000 {
 		t.Fatalf("ya phases = %+v", ya.Phases)

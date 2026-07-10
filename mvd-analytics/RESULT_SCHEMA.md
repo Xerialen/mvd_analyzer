@@ -563,14 +563,16 @@ Defined in `result/demoinfo.go`. **Verbatim from KTX's STUFFCMD
 demoinfo JSON; never transformed.** Treat this as authoritative for
 accuracy, damage breakdown, item pickups, bot info.
 
-**Time island.** This section is the one deliberate exception to the
-schema's time contract: KTX's numbers are integer **seconds** on KTX's
-own match clock (`duration`, `timelimit`, per-player item `time`/`took`),
-not this pipeline's match-relative int32 **ms**. KTX's item times count
-from KTX's match start, which coincides with the pipeline's t=0 in
-practice, but the pipeline does not verify or transform them — join
-them with second-resolution tolerance, or prefer the pipeline's own
-`items`/`streams` for anything time-precise.
+**Units island.** This section is the one deliberate exception to the
+schema's time contract — KTX's numbers keep KTX's own units, not the
+pipeline's match-relative int32 **ms**, and several are not timestamps
+at all: `duration` is integer **seconds**; `timelimit` is **minutes**;
+a per-player item entry is `{took, time}` where `took` is a **pickup
+count** and `time` is the **cumulative seconds** the item was
+held/controlled — neither is a match-clock offset, so there is nothing
+to join against the ms timeline. For per-pickup timestamps use the
+pipeline's own `items` phases (or `weaponPickups`); use this section
+for KTX-authoritative totals.
 
 Top-level fields (`version`, `date`, `map`, `hostname`, `ip`, `port`,
 `mode`, `timelimit`, `fraglimit`, `duration`, `demo`, `teams`,
