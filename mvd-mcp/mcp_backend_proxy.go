@@ -451,13 +451,16 @@ func (p *proxyBackend) GetBuckets(ctx context.Context, in GetBucketsInput) (any,
 	if err != nil {
 		return nil, err
 	}
-	// MCP default: 1 s windows. The REST API still defaults to 50 ms when
+	// MCP default: 5 s windows. The REST API still defaults to 50 ms when
 	// omitted, but 50 ms emits ~24K buckets / 4on4 — far too verbose for an
-	// LLM context. Explicit override (windowMs: 50) reaches the finer
-	// resolution.
+	// LLM context — and even 1 s is ~1200 buckets per field per player on a
+	// 20-min match. 5 s resolves everything a bucketed timeline answers
+	// (trends, control; the shortest interesting run — a quad — is 30 s);
+	// finer questions belong to getStateAt / getEvents / getStreamSlice.
+	// Explicit override (windowMs: 1000, 50, ...) reaches finer resolution.
 	windowMs := in.WindowMs
 	if windowMs <= 0 {
-		windowMs = 1000
+		windowMs = 5000
 	}
 	q := query{}
 	q.intv("windowMs", windowMs)
@@ -568,12 +571,13 @@ func (p *proxyBackend) GetRegionControl(ctx context.Context, in GetRegionControl
 	if err != nil {
 		return nil, err
 	}
-	// Same MCP-vs-REST default split as GetBuckets — 1 s buckets are the
-	// right granularity for an LLM reading region-control state strings;
-	// pass windowMs explicitly to override.
+	// Same MCP-vs-REST default split as GetBuckets — 5 s buckets keep the
+	// per-region bucketStates strings readable (a 20-min match is 240
+	// chars per region instead of 1200); pass windowMs explicitly to
+	// override.
 	windowMs := in.WindowMs
 	if windowMs <= 0 {
-		windowMs = 1000
+		windowMs = 5000
 	}
 	q := query{}
 	q.intv("windowMs", windowMs)

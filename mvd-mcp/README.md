@@ -457,7 +457,7 @@ picker's next death), `nextDeathTime`, plus for backpack pickups
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`      | `string` (required) | — | — |
-| `windowMs`    | `int`     | **1000** (MCP default) | Bucket size in ms. The REST API itself defaults to 50 — the MCP proxy injects 1000 when caller omits, since 50 ms emits ~24K buckets per match (drowns an LLM context). Pass an explicit value to override either way. |
+| `windowMs`    | `int`     | **5000** (MCP default) | Bucket size in ms. The REST API itself defaults to 50 — the MCP proxy injects 5000 when the caller omits it: 50 ms emits ~24K buckets per match and even 1 s is ~1200 per field per player, while 5 s resolves the trend/control questions a bucketed timeline answers (a quad run is 30 s). Pass an explicit value (1000, 50, …) to override either way; for instants use getStateAt, for exact events getEvents. |
 | `startTime`   | `float64` | match start | Window start, match-relative seconds |
 | `endTime`     | `float64` | match end | Window end |
 | `players`     | `string[]` | all | Restrict to these player names |
@@ -529,7 +529,7 @@ Output: `view.LocTrailsView` —
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`   | `string` (required) | — | — |
-| `windowMs` | `int` | **1000** (MCP default) | Bucket size for the per-region state strings. Same MCP-vs-REST split as `getBuckets`: REST default is 50, MCP proxy injects 1000 to keep `bucketStates` lengths manageable. |
+| `windowMs` | `int` | **5000** (MCP default) | Bucket size for the per-region state strings. Same MCP-vs-REST split as `getBuckets`: REST default is 50, MCP proxy injects 5000 to keep `bucketStates` lengths manageable (a 20-min match: 240 chars per region instead of 24K). |
 | `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the bucket range |
 
 Output: `result.RegionControlResult`. Errors with

@@ -61,7 +61,7 @@ type GetOverviewInput struct {
 // GetBucketsInput mirrors /v1/demos/{id}/buckets query params.
 type GetBucketsInput struct {
 	DemoID      string            `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	WindowMs    int               `json:"windowMs,omitempty" jsonschema:"bucket size in ms; default 1000 (1 s) — finer resolution like 50 ms or 100 ms produces tens of thousands of buckets per match, override only when needed"`
+	WindowMs    int               `json:"windowMs,omitempty" jsonschema:"bucket size in ms; default 5000 (5 s) — right for trends/control questions; pass 1000 or finer only when the question needs it (50 ms produces tens of thousands of buckets per match)"`
 	StartTime   float64           `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
 	EndTime     float64           `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 	Players     []string          `json:"players,omitempty"`
@@ -120,7 +120,7 @@ type GetLocTableInput struct {
 // GetRegionControlInput mirrors /v1/demos/{id}/region-control query params.
 type GetRegionControlInput struct {
 	DemoID    string  `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	WindowMs  int     `json:"windowMs,omitempty" jsonschema:"bucket size for per-region state strings; default 1000 (1 s) — finer resolution multiplies the bucketStates string length"`
+	WindowMs  int     `json:"windowMs,omitempty" jsonschema:"bucket size for per-region state strings; default 5000 (5 s) — finer resolution multiplies the bucketStates string length"`
 	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
 	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }

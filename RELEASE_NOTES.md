@@ -46,6 +46,12 @@ detail.
     drop/pickup time. The MCP proxy now forwards `startTime`/`endTime`
     for `getRegionControl` (REST already accepted them; the proxy
     silently dropped them).
+  - **MCP `windowMs` default is now 5 s (was 1 s)** for `getBuckets`
+    and `getRegionControl`: a 20-min match at 1 s is ~1200 buckets per
+    field per player — 5 s resolves the trend/control questions a
+    bucketed timeline answers (shortest interesting run, a quad, is
+    30 s) at a fifth of the payload. Pass `windowMs` explicitly for
+    finer resolution; REST keeps its 50 ms default.
   - **MCP defaults diverge from REST toward token-lean (D1):**
     `getDamage`, `getAim`, and `getItems` now default `summary: true`
     at the MCP layer only — REST keeps full logs by default. A

@@ -148,12 +148,12 @@ func TestProxy_GetBuckets_WindowMs(t *testing.T) {
 	}
 }
 
-// TestProxy_GetBuckets_MCPDefaultIs1s verifies that omitting
-// WindowMs in the MCP input forwards windowMs=1000 to the REST API
+// TestProxy_GetBuckets_MCPDefaultIs5s verifies that omitting
+// WindowMs in the MCP input forwards windowMs=5000 to the REST API
 // (not 50, which is what the API itself defaults to). This is the
 // MCP-side ergonomic default to keep buckets responses
 // LLM-readable.
-func TestProxy_GetBuckets_MCPDefaultIs1s(t *testing.T) {
+func TestProxy_GetBuckets_MCPDefaultIs5s(t *testing.T) {
 	srv := cannedAPI(t, nil)
 	b := newProxyBackend(srv.URL, "", 5*time.Second)
 	out, err := b.GetBuckets(context.Background(), GetBucketsInput{DemoID: "gameId:42"})
@@ -161,8 +161,8 @@ func TestProxy_GetBuckets_MCPDefaultIs1s(t *testing.T) {
 		t.Fatalf("GetBuckets: %v", err)
 	}
 	m := out.(map[string]any)
-	if m["windowMs"].(float64) != 1000 {
-		t.Errorf("MCP default windowMs=%v; want 1000 (proxy must inject)", m["windowMs"])
+	if m["windowMs"].(float64) != 5000 {
+		t.Errorf("MCP default windowMs=%v; want 5000 (proxy must inject)", m["windowMs"])
 	}
 }
 
@@ -193,7 +193,7 @@ func TestProxy_GetBuckets_LayoutForwarded(t *testing.T) {
 	}
 }
 
-func TestProxy_GetRegionControl_MCPDefaultIs1s(t *testing.T) {
+func TestProxy_GetRegionControl_MCPDefaultIs5s(t *testing.T) {
 	var seenQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seenQuery = r.URL.RawQuery
@@ -205,8 +205,8 @@ func TestProxy_GetRegionControl_MCPDefaultIs1s(t *testing.T) {
 	if _, err := b.GetRegionControl(context.Background(), GetRegionControlInput{DemoID: "gameId:42"}); err != nil {
 		t.Fatalf("GetRegionControl: %v", err)
 	}
-	if !strings.Contains(seenQuery, "windowMs=1000") {
-		t.Errorf("expected windowMs=1000 in query; got %q", seenQuery)
+	if !strings.Contains(seenQuery, "windowMs=5000") {
+		t.Errorf("expected windowMs=5000 in query; got %q", seenQuery)
 	}
 }
 
@@ -540,7 +540,7 @@ func TestProxy_TimeWindowsForwarded(t *testing.T) {
 	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
 		t.Errorf("region-control window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
 	}
-	if seenQuery.Get("windowMs") != "1000" {
-		t.Errorf("region-control windowMs = %q, want the 1000 MCP default preserved", seenQuery.Get("windowMs"))
+	if seenQuery.Get("windowMs") != "5000" {
+		t.Errorf("region-control windowMs = %q, want the 5000 MCP default preserved", seenQuery.Get("windowMs"))
 	}
 }
