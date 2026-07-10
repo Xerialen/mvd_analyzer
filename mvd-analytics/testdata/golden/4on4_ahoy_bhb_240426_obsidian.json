@@ -37201,7 +37201,7 @@
           },
           {
             "hits": 0,
-            "shots": 100,
+            "shots": 101,
             "weapon": "sng"
           }
         ]
@@ -37574,7 +37574,7 @@
         "given": 6181,
         "givenSelf": 65,
         "givenTeam": 100,
-        "taken": 10164,
+        "taken": 10182,
         "takenEnv": 25
       },
       "ThundeR": {
@@ -37683,16 +37683,16 @@
           "gl": 603,
           "rl": 6554,
           "sg": 4796,
-          "sng": 468,
+          "sng": 486,
           "ssg": 1288
         },
         "enemyVsBoth": 0,
         "enemyVsLg": 0,
         "enemyVsMid": 3048,
         "enemyVsRl": 2275,
-        "enemyVsSg": 8386,
+        "enemyVsSg": 8404,
         "ewep": 2275,
-        "given": 13709,
+        "given": 13727,
         "givenSelf": 485,
         "givenTeam": 853,
         "taken": 10474,
@@ -37704,7 +37704,7 @@
       "ng": 9,
       "rl": 24856,
       "sg": 31724,
-      "sng": 5202,
+      "sng": 5220,
       "ssg": 10164
     },
     "events": [
@@ -60317,6 +60317,14 @@
         "victim": "KreatoR",
         "victimWep": "sg",
         "weapon": "sng"
+      },
+      {
+        "attacker": "sailorman",
+        "damage": 18,
+        "time": 1200128,
+        "victim": "KreatoR",
+        "victimWep": "sg",
+        "weapon": "sng"
       }
     ],
     "matrix": [
@@ -60656,10 +60664,10 @@
           "gl": 112,
           "rl": 1608,
           "sg": 1532,
-          "sng": 72,
+          "sng": 90,
           "ssg": 140
         },
-        "damage": 3464,
+        "damage": 3482,
         "victim": "KreatoR"
       },
       {
@@ -60703,7 +60711,7 @@
           "scoreTaken": 7873,
           "streamEwep": 803,
           "streamGiven": 6181,
-          "streamTaken": 10164
+          "streamTaken": 10182
         },
         "ThundeR": {
           "scoreEwep": 1990,
@@ -60750,12 +60758,12 @@
           "scoreGiven": 11178,
           "scoreTaken": 7628,
           "streamEwep": 2275,
-          "streamGiven": 13709,
+          "streamGiven": 13727,
           "streamTaken": 10474
         }
       }
     },
-    "totalDamage": 83730
+    "totalDamage": 83748
   },
   "demoInfo": {
     "date": "2026-04-24 22:23:21 +0100",
@@ -92745,7 +92753,7 @@
             "weapon": "ssg"
           },
           {
-            "shots": 100,
+            "shots": 101,
             "weapon": "sng"
           },
           {
@@ -92768,7 +92776,7 @@
         ],
         "player": "sailorman",
         "team": "ahoy",
-        "total": 566
+        "total": 567
       }
     ],
     "reconciliation": {
@@ -93064,8 +93072,8 @@
           {
             "ktxAttacks": 100,
             "ktxHits": 26,
-            "streamAttacks": 100,
-            "streamShots": 100,
+            "streamAttacks": 101,
+            "streamShots": 101,
             "weapon": "sng"
           },
           {
@@ -140017,6 +140025,13 @@
         "source": "sound",
         "team": "ahoy",
         "time": 1199994,
+        "weapon": "sng"
+      },
+      {
+        "player": "sailorman",
+        "source": "sound",
+        "team": "ahoy",
+        "time": 1200128,
         "weapon": "sng"
       }
     ]

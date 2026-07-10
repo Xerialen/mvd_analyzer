@@ -36945,7 +36945,8 @@
         "givenSelf": 1015,
         "givenTeam": 142,
         "taken": 10641,
-        "takenEnv": 50
+        "takenEnv": 50,
+        "telefrags": 1
       },
       "doberman": {
         "byWeapon": {
@@ -56295,6 +56296,17 @@
       }
     ],
     "telefrags": [
+      {
+        "attacker": "doberman",
+        "isTeam": true,
+        "time": 0,
+        "victim": "nlk"
+      },
+      {
+        "attacker": "clox",
+        "time": 0,
+        "victim": "doberman"
+      },
       {
         "attacker": "lakso",
         "time": 348808,

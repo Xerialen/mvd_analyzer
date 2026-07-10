@@ -30,8 +30,10 @@ type DamageAnalyzer struct {
 }
 
 // rawDamage is one mvdhidden_dmgdone record pinned to wire slots + time,
-// plus the victim's weapon bitfield snapshot and whether it landed during
-// the match. Names/teams are resolved in Finalize.
+// plus the victim's weapon bitfield snapshot. The match-time gate is applied
+// in Finalize from the demo-clock timestamp (tMs), not sampled here, to avoid
+// the match-start-frame race (see Finalize). Names/teams are resolved in
+// Finalize too.
 type rawDamage struct {
 	attacker   int // wire slot, or -1 for world / non-player inflictor
 	victim     int // wire slot
@@ -39,8 +41,7 @@ type rawDamage struct {
 	deathType  int
 	isSplash   bool
 	tMs        int32
-	victimItem int  // victim's StatItems bitfield at hit time
-	inMatch    bool // match was running when the hit landed
+	victimItem int // victim's StatItems bitfield at hit time
 }
 
 // NewDamageAnalyzer creates a new damage analyzer.
@@ -81,7 +82,6 @@ func (a *DamageAnalyzer) OnEvent(event events.Event) error {
 			isSplash:   e.IsSplash,
 			tMs:        msTime(e.Time),
 			victimItem: a.items[e.Victim],
-			inMatch:    a.timing.Started && !a.timing.Ended,
 		})
 	}
 	return nil
@@ -108,6 +108,26 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// the victim-weapon buckets and the matrix are built once, correctly,
 	// instead of being rebuilt after the fact.
 	duel := a.core.IsDuel()
+
+	// Match window on the demo clock. Gate on the timestamp range, not the live
+	// match-phase flag sampled in OnEvent: a DamageEvent on the match-start
+	// frame is decoded before the same-frame "Fight" print that flips the
+	// detector, so the flag was still false and the hit — e.g. a telefrag at
+	// match-relative t=0 — was wrongly dropped (v50 start-frame race). The
+	// window keeps every hit whose demo time lands in [start, end], from the
+	// detector's final state: not started keeps nothing (aborted demos
+	// unchanged); started with no detected end (demo cut before intermission) is
+	// unbounded above, so late in-match hits survive as they did under the flag.
+	started := a.timing.Started
+	matchStartMs := msTime(a.timing.StartTime)
+	ended := a.timing.Ended
+	matchEndMs := msTime(a.timing.EndTime)
+	inMatchWindow := func(tMs int32) bool {
+		if !started || tMs < matchStartMs {
+			return false
+		}
+		return !ended || tMs <= matchEndMs
+	}
 
 	for _, d := range a.raw {
 		isWorld := d.attacker < 0
@@ -152,7 +172,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			// interest, unreconcilable). Team telefrags/stomps are not credited
 			// to the attacker, mirroring the team-kill convention (and matching
 			// view.Damage's recompute).
-			if !d.inMatch {
+			if !inMatchWindow(d.tMs) {
 				continue
 			}
 			kill := PositionalKill{Time: d.tMs, Attacker: attacker, Victim: victim, IsTeam: isTeam}
@@ -177,7 +197,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		// and downstream consumers (aim splits, airgib detection) would only
 		// ever want to filter it back out. Drop it at the source so every
 		// damage figure and the Events log agree.
-		if !d.inMatch {
+		if !inMatchWindow(d.tMs) {
 			continue
 		}
 
@@ -239,7 +259,9 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// match-relative ms, the view from/to window (view/sections.go) and the
 	// getEvents telefrag/stomp lens (view/events.go) compare them against
 	// match-relative bounds, and no consumer reads them on the demo clock.
-	// Identity resolution above used the demo-time d.tMs, so this runs last.
+	// Identity resolution above used the demo-time d.tMs, so this runs last. The
+	// shift equals matchStartMs (co.MatchStartMs() derives from the same
+	// detector StartTime), so the gated in-match window rebases to [0, ...].
 	if ms := a.core.MatchStartMs(); ms > 0 {
 		for i := range out.Events {
 			out.Events[i].Time -= ms

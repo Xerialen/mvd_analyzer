@@ -50,18 +50,18 @@ type ShotsAnalyzer struct {
 	hadDmg bool // any DamageEvent seen — distinguishes 0% accuracy from no-stream
 }
 
-// rawShot is one detected fire pinned to a wire slot + time, plus whether
-// the match was running (for gated aggregates) and whether the weapon is
-// instantaneous hitscan (linkable to same-frame damage). shooterPos is the
-// firer's last-seen origin, used as the muzzle reference when matching a
-// rocket spawn back to its fire. The resolved identity and link result are
-// filled in Finalize.
+// rawShot is one detected fire pinned to a wire slot + time, plus whether the
+// weapon is instantaneous hitscan (linkable to same-frame damage). The match-
+// time gate for the stream + aggregates is applied in Finalize from the demo-
+// clock timestamp (tMs), not sampled here, to avoid the match-start-frame race
+// (see Finalize). shooterPos is the firer's last-seen origin, used as the
+// muzzle reference when matching a rocket spawn back to its fire. The resolved
+// identity and link result are filled in Finalize.
 type rawShot struct {
 	slot       int
 	weapon     string
 	source     string // "sound" | "beam"
 	tMs        int32
-	inMatch    bool
 	hitscan    bool
 	shooterPos [3]float32
 
@@ -236,7 +236,6 @@ func (a *ShotsAnalyzer) onSound(e *events.SoundEvent) {
 		weapon:     w,
 		source:     "sound",
 		tMs:        e.TimeMs,
-		inMatch:    a.timing.Started && !a.timing.Ended,
 		hitscan:    isHitscanWeapon(w),
 		shooterPos: a.pos[slot],
 	})
@@ -257,7 +256,6 @@ func (a *ShotsAnalyzer) onBeam(e *events.BeamEvent) {
 		weapon:     "lg",
 		source:     "beam",
 		tMs:        e.TimeMs,
-		inMatch:    a.timing.Started && !a.timing.Ended,
 		hitscan:    true,
 		shooterPos: a.pos[slot],
 	})
@@ -314,6 +312,23 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 	a.linkProjectiles(a.nailFlights, dmgBySlot, duel)
 
 	// 4. Emit the stream + match-time aggregates from the resolved state.
+	// Match window on the demo clock, gated on the timestamp range rather than a
+	// per-fire flag sampled in OnEvent: a fire on the match-start frame is
+	// decoded before the same-frame "Fight" print that flips the detector, so
+	// the flag was still false and the fire was wrongly dropped (same v50 start-
+	// frame race as damage.go). From the detector's final state: not started
+	// keeps nothing; started with no detected end (demo cut before intermission)
+	// is unbounded above.
+	started := a.timing.Started
+	matchStartMs := msTime(a.timing.StartTime)
+	ended := a.timing.Ended
+	matchEndMs := msTime(a.timing.EndTime)
+	inMatchWindow := func(tMs int32) bool {
+		if !started || tMs < matchStartMs {
+			return false
+		}
+		return !ended || tMs <= matchEndMs
+	}
 	out := &ShotsResult{}
 	aggByName := make(map[string]*shotAgg)
 	var aggOrder []string
@@ -329,7 +344,7 @@ func (a *ShotsAnalyzer) Finalize(result *Result) error {
 		// prewar / post-match fires are dropped at the source so no consumer
 		// can mistake them for match data. The aggregates below are gated the
 		// same way.
-		if !s.inMatch {
+		if !inMatchWindow(s.tMs) {
 			continue
 		}
 		out.Shots = append(out.Shots, Shot{
