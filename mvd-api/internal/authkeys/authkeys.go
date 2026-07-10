@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -73,21 +74,54 @@ func (r Record) HashPrefix() string {
 // read-modify-write would silently clobber the winner's key. Every mutation
 // (Issue/Revoke) takes the flock, RELOADS keys.json from disk under it (so it
 // applies its change to the latest on-disk state, not a possibly-stale
-// in-memory map), applies, writes atomically, then releases. Reads (Lookup/
-// List) take only the RWMutex: they tolerate a slightly stale map (a key
-// issued by another process a moment ago authenticates once this process next
-// mutates-and-reloads, or is reopened), which is acceptable and keeps the hot
-// auth path flock-free.
+// in-memory map), applies, writes atomically, then releases.
+//
+// Lookup additionally does an mtime-checked TTL reload: at most once per
+// reloadTTL it stats keys.json and, if the mtime changed, reloads under the
+// flock before answering. This closes the fail-OPEN gap where a key revoked by
+// a SEPARATE process (the `keys` CLI, per the day-2 runbook) would keep
+// authenticating on the running server until a portal op or restart — the file
+// is the only thing the CLI touches, and only this process's own mutations
+// reloaded it. List still takes only the RWMutex and may lag one TTL, which is
+// acceptable for a management listing. The steady-state auth path pays at most
+// one cheap stat per TTL and no flock.
 type Store struct {
 	dir  string
 	path string
 
 	mu   sync.RWMutex
 	recs map[string]Record // keyHashHex -> record
+
+	// reloadTTL bounds how often Lookup will re-check keys.json for an
+	// out-of-process change (see maybeReloadForLookup). 0 → defaultReloadTTL;
+	// tests set a small value. nowFn is the injectable clock (mirrors
+	// ratelimit.go's nowFn) so those tests need no real sleeps; nil → time.Now.
+	reloadTTL time.Duration
+	nowFn     func() time.Time
+
+	// lastCheck is when Lookup last decided whether to re-stat keys.json;
+	// lastMod is the keys.json mtime observed at the last (re)load. Both are
+	// guarded by mu and drive the mtime-checked TTL reload.
+	lastCheck time.Time
+	lastMod   time.Time
 }
 
 // keysFileName is the single JSON file the store persists to.
 const keysFileName = "keys.json"
+
+// defaultReloadTTL is how stale a Lookup tolerates its in-memory map before it
+// re-checks keys.json for an out-of-process mutation. Small enough that a CLI
+// revocation takes effect promptly on the running server, large enough that the
+// hot auth path almost never pays for a stat.
+const defaultReloadTTL = 2 * time.Second
+
+// now returns the current time via the injectable clock (time.Now in prod).
+func (s *Store) now() time.Time {
+	if s.nowFn != nil {
+		return s.nowFn()
+	}
+	return time.Now()
+}
 
 // Open loads the store from dir/keys.json, creating dir (and starting empty)
 // if the file does not exist.
@@ -113,7 +147,23 @@ func Open(dir string) (*Store, error) {
 	if err := s.reloadLocked(); err != nil {
 		return nil, err
 	}
+	s.noteReloaded()
 	return s, nil
+}
+
+// noteReloaded records that s.recs now reflects the current on-disk keys.json:
+// it stamps lastCheck to now and lastMod to the file's mtime, so the next
+// Lookup's TTL window starts here and a subsequent stat only reloads on a real
+// change. Caller holds s.mu for write. A missing file (empty store) leaves
+// lastMod zero, which simply forces the first post-TTL Lookup to (cheaply)
+// re-check.
+func (s *Store) noteReloaded() {
+	s.lastCheck = s.now()
+	if fi, err := os.Stat(s.path); err == nil {
+		s.lastMod = fi.ModTime()
+	} else {
+		s.lastMod = time.Time{}
+	}
 }
 
 // reloadLocked replaces s.recs with the current on-disk contents of keys.json.
@@ -222,7 +272,86 @@ func (s *Store) Issue(discordID, discordName string, service bool, note string) 
 		delete(s.recs, rec.KeyHash) // keep memory and disk consistent
 		return "", Record{}, err
 	}
+	s.noteReloaded() // s.recs now equals the file we just wrote
 	return key, rec, nil
+}
+
+// maybeReloadForLookup refreshes s.recs from keys.json when the file has
+// changed since the last check, but at most once per reloadTTL so the hot auth
+// path stays cheap. Without it, a key revoked by a separate process (the `keys`
+// CLI) never reaches this process's map — only its own Issue/Revoke reload —
+// so revocation would fail OPEN until a portal op or restart. keys.json is
+// replaced atomically via rename, so an mtime change is a sound change signal.
+//
+// It never upgrades a read lock in place: it reads lastCheck under the read
+// lock for the fast path, then re-checks and mutates under the write lock.
+func (s *Store) maybeReloadForLookup() {
+	ttl := s.reloadTTL
+	if ttl <= 0 {
+		ttl = defaultReloadTTL
+	}
+	now := s.now()
+
+	// Fast path: within the TTL window, trust the in-memory map (no stat, no
+	// flock). This is the steady state of the auth hot path.
+	s.mu.RLock()
+	fresh := now.Sub(s.lastCheck) < ttl
+	s.mu.RUnlock()
+	if fresh {
+		return
+	}
+
+	// TTL elapsed: cheaply stat the file before paying for the flock+reload, so
+	// an unchanged keys.json costs only a stat.
+	fi, statErr := os.Stat(s.path)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// Re-check under the write lock: another Lookup may have refreshed while we
+	// blocked on the lock. Do not reload twice for one change.
+	if now.Sub(s.lastCheck) < ttl {
+		return
+	}
+	s.lastCheck = now
+
+	if statErr != nil {
+		if errors.Is(statErr, os.ErrNotExist) {
+			// The file vanished out from under us (an operator deleted it, or a
+			// botched deploy). Treat as no keys — fail closed, not open — and log
+			// once per non-empty->empty transition.
+			if len(s.recs) != 0 {
+				slog.Warn("authkeys: keys.json disappeared; treating as empty store", "path", s.path)
+				s.recs = make(map[string]Record)
+			}
+			s.lastMod = time.Time{}
+			return
+		}
+		slog.Warn("authkeys: stat keys.json failed; keeping current keys", "path", s.path, "err", statErr)
+		return
+	}
+	if fi.ModTime().Equal(s.lastMod) {
+		return // unchanged since the last reload
+	}
+
+	// mtime changed: reload under the cross-process flock so we observe a fully
+	// committed file, never one mid-rename by another process's mutation.
+	unlock, err := s.flockLocked()
+	if err != nil {
+		slog.Warn("authkeys: flock for reload failed; keeping current keys", "err", err)
+		return
+	}
+	defer unlock()
+	if err := s.reloadLocked(); err != nil {
+		slog.Warn("authkeys: reload failed; keeping current keys", "err", err)
+		return
+	}
+	// Record the mtime of exactly what we loaded (re-stat under the flock, where
+	// the file is stable); fall back to the pre-flock stat if that fails.
+	if fi2, err := os.Stat(s.path); err == nil {
+		s.lastMod = fi2.ModTime()
+	} else {
+		s.lastMod = fi.ModTime()
+	}
 }
 
 // Lookup returns the active record for a presented plaintext key, or
@@ -238,6 +367,8 @@ func (s *Store) Lookup(presentedKey string) (Record, error) {
 		return Record{}, ErrUnknownKey
 	}
 	h := hashKey(presentedKey)
+
+	s.maybeReloadForLookup()
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -316,6 +447,7 @@ func (s *Store) Revoke(byKey, byHash, byDiscordID string) (int, error) {
 		}
 		return 0, err
 	}
+	s.noteReloaded() // s.recs now equals the file we just wrote
 	return n, nil
 }
 

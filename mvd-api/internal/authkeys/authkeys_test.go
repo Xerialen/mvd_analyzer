@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestIssueLookupRoundtrip(t *testing.T) {
@@ -313,6 +314,78 @@ func TestRevokeRollsBackOnSaveFailure(t *testing.T) {
 	// revocation back.
 	if _, err := s.Lookup(key); err != nil {
 		t.Errorf("key wrongly revoked in memory after a failed save: %v", err)
+	}
+}
+
+// TestLookupReloadsAfterCrossProcessRevoke pins FIX 2: a key revoked by a
+// SEPARATE process (the `keys` CLI, modelled by a second Store on the same dir)
+// must stop authenticating on the running server after the reload TTL, without
+// any portal op or restart. Before the mtime-checked TTL reload, the server's
+// Lookup read only its stale in-memory map and revocation failed OPEN.
+func TestLookupReloadsAfterCrossProcessRevoke(t *testing.T) {
+	dir := t.TempDir()
+
+	server, err := Open(dir) // the live server process
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Tiny TTL so the reload window elapses within the test; nowFn stays real.
+	server.reloadTTL = 20 * time.Millisecond
+
+	cli, err := Open(dir) // a separate `keys` CLI process, distinct in-mem map
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key, _, err := server.Issue("42", "carol", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The server authenticates its freshly issued key.
+	if _, err := server.Lookup(key); err != nil {
+		t.Fatalf("issued key should authenticate on the server: %v", err)
+	}
+
+	// Revoke via the CLI process. Revoke reloads under the flock, so cli picks
+	// up the server-issued key from disk even though cli opened before Issue.
+	n, err := cli.Revoke(key, "", "")
+	if err != nil || n != 1 {
+		t.Fatalf("cli revoke: n=%d err=%v", n, err)
+	}
+
+	// Let the server's reload TTL elapse, then Lookup must re-stat, see the
+	// changed mtime, reload under the flock, and reject the revoked key.
+	time.Sleep(40 * time.Millisecond)
+	if _, err := server.Lookup(key); err != ErrUnknownKey {
+		t.Errorf("server still authenticates a CLI-revoked key after the TTL: err=%v", err)
+	}
+}
+
+// TestLookupHandlesKeysFileDisappearing pins that a keys.json deleted out from
+// under a running Store fails CLOSED after the TTL: Lookup treats a missing
+// file as an empty store, so no key authenticates.
+func TestLookupHandlesKeysFileDisappearing(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.reloadTTL = 20 * time.Millisecond
+
+	key, _, err := s.Issue("1", "u", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Lookup(key); err != nil {
+		t.Fatalf("issued key should authenticate: %v", err)
+	}
+
+	if err := os.Remove(filepath.Join(dir, keysFileName)); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(40 * time.Millisecond)
+	if _, err := s.Lookup(key); err != ErrUnknownKey {
+		t.Errorf("key still authenticates after keys.json vanished: err=%v", err)
 	}
 }
 
