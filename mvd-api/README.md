@@ -153,8 +153,11 @@ systemd `EnvironmentFile` that carries the secrets machine-side.
 
 > **Building a frontend or tool?** [`API.md`](API.md) is the detailed
 > HTTP reference — per-endpoint parameters, response semantics, units
-> (the seconds-vs-milliseconds gotcha), caching, and task recipes. The
-> table below is just the quick index.
+> (the seconds-vs-milliseconds gotcha), caching, and task recipes. A
+> machine-readable OpenAPI 3.1 spec is served at `/openapi.yaml` (drift
+> tests pin it to the code and validate its response schemas against the
+> golden corpus), browsable at `/docs`. The table below is just the
+> quick index.
 
 All paths under the base URL (default `http://localhost:8080`). The
 `{id}` segment is one of:
@@ -185,6 +188,8 @@ key their ETag on the schema version alone (`"artifacts-v<n>"` /
 |---|---|---|---|
 | GET | `/healthz` | — | `{ok, schemaVersion}` |
 | GET | `/v1/version` | — | `{hash, tag, buildDate}` |
+| GET | `/openapi.yaml` | — | the OpenAPI 3.1 description of this surface (embedded; content-hash ETag; auth-exempt) |
+| GET | `/docs` | — | browsable API reference (vendored RapiDoc viewer over `/openapi.yaml`; auth-exempt) |
 | POST | `/v1/demos/{id}` | — | `{demoId, sha256, fromCache, schemaVersion}` (`loadDemo` — warms the cache) |
 | GET | `/v1/demos/{id}/overview` | — | `Overview` (map, teams, top streaks, top powerups, playerUserIDs, analyzer `errors`) |
 | GET | `/v1/demos/{id}/demoinfo` | — | `result.DemoInfoResult` (KTX scoreboard — per-player weapon accuracy, kills/deaths/TK, damage, sprees, item counts, RL/LG transfers) |
@@ -340,6 +345,13 @@ make build-api                              # ./dist/mvd-api
 make build-api-{linux,darwin,windows}       # cross-compile targets
 make build-all-platforms                    # everything + mvd-mcp targets
 ```
+
+The binary embeds `openapi/openapi.yaml` (the OpenAPI 3.1 spec served at
+`/openapi.yaml`) and the `/docs` viewer — **RapiDoc 9.3.8**, vendored as
+`openapi/rapidoc-min.js` (MIT, license text committed beside it; source
+URL + sha256 recorded in `openapi/docs.html`). No CDN or external
+requests; updating the viewer means replacing that one file and its
+header comment.
 
 ## Pairing with mvd-mcp
 

@@ -113,7 +113,9 @@ A few `mvd-api` REST endpoints have **no** curated MCP tool yet:
 deliberate for now — those views are large or specialised, and adding
 tools is deferred (they can still be fetched at the REST layer, and
 `/los` is reachable generically via `getArtifact name=los`). See
-[`../mvd-api/API.md`](../mvd-api/API.md) for the full endpoint list.
+[`../mvd-api/API.md`](../mvd-api/API.md) for the full endpoint list, or
+the machine-readable OpenAPI spec the server itself serves at
+`/openapi.yaml` (browsable at `/docs`).
 
 ## Hosted / HTTP mode
 

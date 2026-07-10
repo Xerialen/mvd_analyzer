@@ -5,6 +5,39 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## Unreleased (branch `phase-16.2`)
+
+- **OpenAPI 3.1 spec + `/docs` viewer; `weapons` param rename (no schema
+  change).** Phase 16.2 — the REST surface now ships a machine-readable
+  contract for external integrators:
+  - **`GET /openapi.yaml`** serves a hand-authored OpenAPI 3.1
+    description of all 35 operations with **full field-level response
+    schemas**, embedded in the binary. It is pinned to the code by
+    drift tests (route parity with the router in both directions,
+    error-code/artifact/field-code enums, `info.version` =
+    schemaVersion) and its response schemas are **validated against
+    real golden-corpus responses** through the real router — ~50 cases
+    covering every operation, the shape-changing param variants
+    (`summary`, `layout`, `loc=index`, all field codes) and every error
+    class. **`GET /docs`** is a browsable reference over it (vendored
+    RapiDoc, no CDN). Both auth-exempt.
+  - **`weapons` replaces the singular `weapon` query param** on
+    `/frags`, `/damage`, `/backpacks`, `/weapon-pickups`. REST keeps
+    `weapon` as an accepted legacy alias (canonical wins when both are
+    present), so existing integrations keep working. **The MCP tool
+    input field is renamed outright** (`weapon` → `weapons` on
+    getFrags/getDamage/getBackpacks/getWeaponPickups) — MCP clients
+    re-read schemas per session; hardcoded callers must rename.
+  - Tool-description papercuts: getOverview names the winner
+    (frag-sorted, index 0), getDamage/getAim lead with their MCP
+    `summary=true` default and state the telefrag exclusion once, the
+    items/weapon-pickups/backpacks trio cross-links its division of
+    labour, and API.md §4.17b gains the full node-name ↔ curated-route
+    ↔ `resultKey` ↔ 422-code table.
+  - Robustness fallout from the validation harness: the buckets
+    first-value reducers no longer panic on empty-but-non-nil change
+    streams.
+
 ## Unreleased (branch `phase-16.1`)
 
 - **Fresh-eyes review fixes: the remaining size footguns + doc drift

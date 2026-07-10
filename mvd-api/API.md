@@ -42,6 +42,13 @@ GET  /v1/demos/gameId:12345/<detail>     → drill into a specific panel
 Everything else is served from the cached `*Result`, typically
 sub-millisecond.
 
+A machine-readable **OpenAPI 3.1** description of the whole surface is
+served at **`GET /openapi.yaml`** (embedded in the binary; drift tests pin
+its routes, error codes and enums to the code, and its response schemas
+are validated against golden-corpus responses), with a browsable viewer
+at **`GET /docs`** (vendored RapiDoc — no external requests). Both are
+reachable without an API key.
+
 ---
 
 ## 2. Conventions (read this once)
@@ -244,8 +251,10 @@ Authorization: Bearer qwmvd_<...>
   a lost key cannot be recovered, only re-issued.
 - Missing, malformed, or revoked keys get `401 unauthorized` with
   `WWW-Authenticate: Bearer`. The body never distinguishes those cases.
-- Exempt from the key requirement: `GET /healthz`, `GET /v1/version`, the
-  `/portal/*` prefix (its own sign-in), and any `OPTIONS` preflight.
+- Exempt from the key requirement: `GET /healthz`, `GET /v1/version`,
+  `GET /openapi.yaml` + `GET /docs` (the API description and its viewer —
+  the public contract, embedded bytes only), the `/portal/*` prefix (its
+  own sign-in), and any `OPTIONS` preflight.
 - **`GET /v1/auth/check`** → `204 No Content` for a live key, `401` otherwise.
   Use it to test a key without side effects:
   `curl -sSD- -o/dev/null -H "Authorization: Bearer qwmvd_…" https://host/v1/auth/check`.
@@ -314,6 +323,18 @@ Concrete consequences:
 
 Headers (`X-Cache`, `ETag`, …) and the error envelope from §2 apply to
 all endpoints and aren't repeated.
+
+### 4.0 `GET /openapi.yaml` + `GET /docs` — the machine-readable spec
+
+The OpenAPI 3.1 description of this API, embedded in the binary, and a
+browsable reference over it (vendored RapiDoc; loads nothing from a CDN).
+Auth-exempt (§2.5). Cacheable with a **content-hash** ETag
+(`"openapi-…"` / `"docs-…"` — not schema-version-keyed, so wording-only
+edits revalidate correctly); `Cache-Control: public, max-age=3600`.
+Drift tests pin the spec's routes, error-code/artifact/field-code enums
+and `info.version` to the code, and validate every response schema
+against golden-corpus responses, so the spec is contractual, not
+aspirational.
 
 ### 4.1 `POST /v1/demos/{id}` — loadDemo
 
