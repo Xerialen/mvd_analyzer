@@ -6,8 +6,8 @@ There are two ways to connect a client:
 - **Local stdio binary** — you run `mvd-mcp` (a small binary) and the
   client launches it over stdio. This is the bulk of this guide.
 - **Hosted HTTP URL** — you point the client at a hosted
-  `https://<domain>/mcp` endpoint with an API key, and run **no** local
-  binary. See [Hosted HTTP mode](#hosted-http-mode-no-local-binary).
+  `https://<domain>/mcp` endpoint (no API key required) and run **no**
+  local binary. See [Hosted HTTP mode](#hosted-http-mode-no-local-binary).
 
 Wire either into Claude Desktop, Claude Code, Cursor, or any other MCP
 client.

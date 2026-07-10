@@ -151,11 +151,26 @@ done; echo    # a run of 204 then 429 once the bucket drains
 
 ## Notes
 
-- **Cache growth** is bounded by `-cache-max-bytes` (background GC evicts
-  oldest by mtime). Size it to the disk.
+- **Cache growth** is bounded by `-cache-max-bytes`, but the eviction GC
+  runs **only on cache writes** — so the on-disk byte budget can overshoot
+  briefly and self-heals on the next write (GC evicts oldest by mtime).
+  Size `-cache-max-bytes` to the disk with a little headroom.
+- **Warm-cache reads are not bounded by `-max-parses`.** `-max-parses`
+  caps concurrent cold parses only; a burst of requests across many
+  distinct *already-cached* demos each triggers a tier-2 gob decode into
+  memory with no concurrency cap. Size the box's RAM for that fan-out, not
+  just for `-max-parses` cold parses.
 - **A revoked key dies on the next request** — keys are validated by
   mvd-api per call, never cached by the shim. Revoking the mvd-mcp
   service key turns off all anonymous MCP tool calls at once.
-- **Logs**: both services log JSON to journald (`journalctl -u mvd-api`).
-  The access log's identity is the key's note / Discord name / hash
-  prefix — never the key.
+- **Anonymous MCP shares one rate bucket.** All keyless MCP traffic is
+  throttled together under the single mvd-mcp service key's service class,
+  so one abusive anonymous caller can 429 anonymous MCP for everyone.
+  `-rate-service` / `-burst-service` (on mvd-api) is the dial; `keys
+  revoke` on that service key is the kill switch (see the revoked-key note
+  above). Callers who present their own `qwmvd_…` key get their own bucket.
+- **Logs**: only mvd-api emits JSON (`-log-format json`) to journald, so
+  `journalctl -u mvd-api -o cat | jq` works on those lines. mvd-mcp logs
+  plain text (slog TextHandler, no flag) — read it with `journalctl -u
+  mvd-mcp`, don't pipe it through jq. mvd-api's access-log identity is the
+  key's note / Discord name / hash prefix — never the key.
