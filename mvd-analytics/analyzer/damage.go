@@ -233,13 +233,22 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 
 	result.Damage = out
 
-	// Born-correct timestamps: rebase the damage log to the match clock. Only
-	// Events carries a rebased timestamp (Telefrags/Stomps Time stayed on the
-	// demo clock under the old rebase too; preserve that). Identity resolution
-	// above used the demo-time d.tMs, so this runs last.
+	// Born-correct timestamps: rebase the whole damage log to the match clock.
+	// Events, Telefrags and Stomps all carry a match-relative Time — the schema
+	// (result/damage.go PositionalKill/DamageEntry) documents all three as
+	// match-relative ms, the view from/to window (view/sections.go) and the
+	// getEvents telefrag/stomp lens (view/events.go) compare them against
+	// match-relative bounds, and no consumer reads them on the demo clock.
+	// Identity resolution above used the demo-time d.tMs, so this runs last.
 	if ms := a.core.MatchStartMs(); ms > 0 {
 		for i := range out.Events {
 			out.Events[i].Time -= ms
+		}
+		for i := range out.Telefrags {
+			out.Telefrags[i].Time -= ms
+		}
+		for i := range out.Stomps {
+			out.Stomps[i].Time -= ms
 		}
 	}
 	return nil

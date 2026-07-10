@@ -56290,51 +56290,51 @@
     "stomps": [
       {
         "attacker": "marksuzu",
-        "time": 311531,
+        "time": 301205,
         "victim": "doberman"
       }
     ],
     "telefrags": [
       {
         "attacker": "lakso",
-        "time": 359134,
+        "time": 348808,
         "victim": "nlk"
       },
       {
         "attacker": "apa",
-        "time": 482191,
+        "time": 471865,
         "victim": "doberman"
       },
       {
         "attacker": "lakso",
-        "time": 631419,
+        "time": 621093,
         "victim": "nlk"
       },
       {
         "attacker": "lakso",
-        "time": 633548,
+        "time": 623222,
         "victim": "nlk"
       },
       {
         "attacker": "doberman",
-        "time": 687225,
+        "time": 676899,
         "victim": "clox"
       },
       {
         "attacker": "marksuzu",
         "isTeam": true,
-        "time": 802059,
+        "time": 791733,
         "victim": "clox"
       },
       {
         "attacker": "lakso",
-        "time": 957989,
+        "time": 947663,
         "victim": "doberman"
       },
       {
         "attacker": "nlk",
         "isTeam": true,
-        "time": 1197220,
+        "time": 1186894,
         "victim": "sCorp"
       }
     ],
