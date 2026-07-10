@@ -141,7 +141,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getEvents",
-		Description: "Time-ordered discrete events (frags, powerups, streaks, spawns, deaths, chat). Default types exclude high-frequency change events (health/armor/loc). Response shape: see mvd-api /v1/demos/{id}/events.",
+		Description: "Time-ordered discrete events (frags, powerups, streaks, spawns, deaths, pickups, chat). Default types exclude high-frequency change events (health/armor/loc). pickup events carry full identity: detail{item (per-spawner name, ya_1 vs ya_2), kind, entNum, loc, source (world/backpack/unknown), dropper?} — no cross-referencing needed to learn which spawner was taken. spawn events include the match-start spawn (t=0) and carry detail{loc} — types:['spawn'] with endTime:1 answers \"where did everyone start\"; for the pre-joined opening summary use getArtifact('opening'). Response shape: see mvd-api /v1/demos/{id}/events.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetEventsInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetEvents(ctx, in)
 		return toolResult(out, err)
@@ -202,7 +202,7 @@ func registerTools(s *mcp.Server, b MCPBackend, sr searcher) {
 
 	addTool(s, &mcp.Tool{
 		Name:        "getArtifact",
-		Description: "Fetch one servable analytics artifact for a demo by its manifest name (from listArtifacts), e.g. frag, damage, loc-graph, los. Returns the artifact's Result section under its resultKey (los is materialised on demand; the first call may be slow). Takes no filters — for filtered/parameterised reads use the curated tools (getFrags players=..., getBuckets windowMs=..., etc.). Unknown or non-servable names error.",
+		Description: "Fetch one servable analytics artifact for a demo by its manifest name (from listArtifacts), e.g. frag, damage, loc-graph, opening, los. opening is the match-opening summary: each player's match-start spawn loc + the first take of every contested spawner (armors, mega, powerups, RL/LG) — the one-call answer to opening-race questions. Returns the artifact's Result section under its resultKey (los is materialised on demand; the first call may be slow). Takes no filters — for filtered/parameterised reads use the curated tools (getFrags players=..., getBuckets windowMs=..., etc.). Unknown or non-servable names error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in GetArtifactInput) (*mcp.CallToolResult, any, error) {
 		out, err := b.GetArtifact(ctx, in)
 		return toolResult(out, err)

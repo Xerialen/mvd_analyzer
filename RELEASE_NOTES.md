@@ -5,6 +5,36 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## Unreleased (branch `phase-16.1`)
+
+- **The match opening becomes first-class (schema v51,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream A).** Three
+  related changes driven by the first real hosted-MCP agent session
+  (an opening-race question cost ~45 tool calls of timestamp
+  cross-referencing):
+  - **Initial-spawn bug fix.** KTX respawns every player when the
+    countdown ends (`SM_PrepareClients` → `k_respawn`,
+    ktx/src/match.c:881,972), but a player alive through the countdown
+    never crosses health ≤0→>0, so the parser's dead→alive detector
+    missed the first — most contested — spawn of the match. The
+    timeline now synthesizes a `t=0` spawn in `streams.players[].sp`
+    for every player alive at match start whose respawn wasn't
+    wire-visible.
+  - **`pickup` events with full identity.** `/events` (and MCP
+    `getEvents`) gains a default `pickup` type joined from the
+    authoritative `items` / `weaponPickups` sections:
+    `detail{item (ya_1 vs ya_2), kind, entNum, loc, source
+    (world/backpack/unknown), dropper?}` — "which YA / which RL pad"
+    no longer needs a second call and timestamp cross-referencing.
+    `spawn` events now carry `detail{loc}` (the spawn location,
+    sampled just after the teleport landing).
+  - **New `opening` artifact.** A post-processor projects each
+    player's match-start spawn loc plus the first in-match take of
+    every contested spawner (armors, mega, powerups, RL/LG) into
+    `Result.Opening` — served via `GET /v1/demos/{id}/artifacts/opening`
+    and MCP `getArtifact('opening')` with zero new tools. One small
+    call per demo answers the opening-race question class.
+
 ## 2026-07-09
 
 - **Hosted MCP is now unauthenticated (no schema change).** `mvd-mcp -http`

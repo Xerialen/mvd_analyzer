@@ -41,11 +41,13 @@ type TaggedEvent struct {
 // high-frequency change events that drown the discrete-event story).
 var defaultEventTypes = []string{
 	"frag", "powerup", "streak", "spawn", "death", "weapon", "item", "chat",
+	"pickup",
 }
 
 // Events returns a time-ordered list of events matching the filter.
 // Synthesised from result.TimelineAnalysis.{FragEvents, PowerupEvents,
-// FragStreaks}, result.Messages, and result.Streams change entries.
+// FragStreaks}, result.Messages, result.Streams change entries, and —
+// for the pickup type — result.Items / result.WeaponPickups.
 func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 	if r == nil {
 		return &EventsView{}, nil
@@ -228,6 +230,79 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 		}
 	}
 
+	if want["pickup"] {
+		// Pickups with identity, joined from the authoritative Result
+		// sections rather than the held-interval streams (which only say
+		// "gained rl", not which spawner). Two sources, split so no take
+		// is double-reported:
+		//   - world-spawner takes (any kind, weapons included) come from
+		//     the per-spawner item timelines — Name disambiguates twin
+		//     spawners (ya_1 vs ya_2), EntNum/Loc pin the map entity;
+		//   - backpack / unknown-source weapon grants come from
+		//     WeaponPickups (a backpack grab never flips the world
+		//     spawner's entity state, so it has no item phase).
+		if r.Items != nil {
+			for _, it := range r.Items.Items {
+				for _, ph := range it.Phases {
+					if ph.TakenAt == 0 && ph.TakenBy == "" {
+						continue // untaken availability phase
+					}
+					ts := msToSec(ph.TakenAt)
+					if !inWindow(ts, filter.StartTime, end) {
+						continue
+					}
+					if !pf.accepts(ph.TakenBy) {
+						continue
+					}
+					detail := map[string]any{
+						"item":   it.Name,
+						"kind":   it.Kind,
+						"entNum": it.EntNum,
+						"source": "world",
+					}
+					if it.Loc != "" {
+						detail["loc"] = it.Loc
+					}
+					if ph.Team != "" {
+						detail["team"] = ph.Team
+					}
+					events = append(events, TaggedEvent{
+						T: ts, Type: "pickup", Player: ph.TakenBy, Detail: detail,
+					})
+				}
+			}
+		}
+		for _, wp := range r.WeaponPickups {
+			if wp.Source == "world" {
+				continue // world takes are covered by the item timelines above
+			}
+			ts := msToSec(wp.Time)
+			if !inWindow(ts, filter.StartTime, end) {
+				continue
+			}
+			if !pf.accepts(wp.Player) {
+				continue
+			}
+			detail := map[string]any{
+				"item":   wp.Weapon,
+				"kind":   wp.Weapon,
+				"source": wp.Source,
+			}
+			if wp.Team != "" {
+				detail["team"] = wp.Team
+			}
+			if wp.BackpackEnt != 0 {
+				detail["entNum"] = wp.BackpackEnt
+			}
+			if wp.Dropper != "" {
+				detail["dropper"] = wp.Dropper
+			}
+			events = append(events, TaggedEvent{
+				T: ts, Type: "pickup", Player: wp.Player, Detail: detail,
+			})
+		}
+	}
+
 	if r.Streams != nil {
 		for _, p := range r.Streams.Players {
 			if !pf.accepts(p.Name) {
@@ -242,7 +317,17 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 					if !inWindow(ts, filter.StartTime, end) {
 						continue
 					}
-					events = append(events, TaggedEvent{T: ts, Type: "spawn", Player: p.Name})
+					var detail map[string]any
+					if li, ok := locAtSpawn(p.Loc, tMs); ok {
+						if filter.LocIndex {
+							detail = map[string]any{"li": int(li)}
+						} else if r.TimelineAnalysis != nil {
+							if name := locNameAt(r.TimelineAnalysis.LocTable, li); name != "" {
+								detail = map[string]any{"loc": name}
+							}
+						}
+					}
+					events = append(events, TaggedEvent{T: ts, Type: "spawn", Player: p.Name, Detail: detail})
 				}
 			}
 			if want["death"] {
@@ -330,6 +415,37 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 		return events[i].Type < events[j].Type
 	})
 	return &EventsView{Events: events}, nil
+}
+
+// locAtSpawnWindowMs bounds how far past a spawn timestamp the loc
+// change stream is searched. The spawn teleport lands in the loc
+// stream at the first post-spawn position sample (native samples are
+// ≤~100ms apart), so a couple of frames is plenty.
+const locAtSpawnWindowMs = 500
+
+// locAtSpawn resolves where a player spawned from their loc change
+// stream. The first change entry strictly after tMs (within the
+// window) is the spawn teleport landing — change streams record the
+// post-transition value, and the teleport lands at the next position
+// sample. When no entry changed in that window the loc didn't change
+// across the spawn, so the value in effect at tMs is correct. The
+// strictly-after preference matters for the synthesized t=0 spawn:
+// the rebase's carry-forward entry AT t=0 holds the countdown-end
+// location, while the match-start respawn teleport lands just after.
+func locAtSpawn(stream []result.ChangeI16, tMs int32) (int16, bool) {
+	for _, c := range stream {
+		if c.T <= tMs {
+			continue
+		}
+		if c.T <= tMs+locAtSpawnWindowMs {
+			return c.V, true
+		}
+		break
+	}
+	if idx := indexI16AtOrBefore(stream, tMs); idx >= 0 {
+		return stream[idx].V, true
+	}
+	return 0, false
 }
 
 func inWindow(t, start, end float64) bool {

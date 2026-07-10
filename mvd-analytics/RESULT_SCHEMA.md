@@ -32,6 +32,7 @@ analyzer are also covered there.
 | MapEntities | `mapEntities` | *MapEntitiesResult | Static designed map layout (item spawns, spawnpoints, teleporters, buttons) from the BSP entity corpus. |
 | Backpacks | `backpacks` | []BackpackDrop | RL/LG backpack drops from KTX `//ktx drop` hint. |
 | WeaponPickups | `weaponPickups` | []WeaponPickup | Slot-weapon acquisitions with kills-before-next-death effectiveness. |
+| Opening | `opening` | *OpeningResult | Match opening: per-player match-start spawn loc + first in-match take of each contested spawner (armors, mega, powerups, RL/LG). Pure projection of items + streams (schema v51). |
 | Errors | `errors` | []string | Non-fatal parse / analysis errors (omitted when empty). Includes analyzer `Finalize` failures, an `"event stream aborted: …"` entry when the event source returned a non-EOF error mid-demo (a truncated or corrupt stream — a clean end of demo does **not** appear here), and a `"region control: …"` entry when the region-control post-pass failed. A non-empty `errors` on an otherwise-populated result means the analysis is partial but usable. |
 
 All sub-result fields are pointers and use `omitempty`, so a missing
@@ -921,7 +922,7 @@ when the demo has no pauses or the server does not embed the block.
 | RL / LG / GL / SSG / SNG | `rl` / `lg` / `gl` / `ssg` / `sng` | []Interval | Half-open `[Start, End)` periods the weapon was held. |
 | Quad / Pent / Ring | `q` / `pe` / `r` | []Interval | Same shape as weapons. |
 | Shells / Nails / Rockets / Cells | `sh` / `nl` / `rk` / `cl` | []ChangeI16 | Ammo change streams. |
-| Spawns / Deaths | `sp` / `d` | []int32 | Discrete event timestamps in milliseconds. |
+| Spawns / Deaths | `sp` / `d` | []int32 | Discrete event timestamps in milliseconds. `sp` includes the match-start spawn: KTX respawns everyone when the countdown ends, but a player alive through the countdown produces no dead→alive wire transition, so the timeline synthesizes their spawn at `0` (schema v51). |
 | LOS | `los` | []LosTrack (omitempty) | Per-opponent line-of-sight intervals. BSP-backed maps only, and **computed lazily** — absent from the default parse; populated on demand (web LOS overlay, `qw-analyze -include los`, mvd-api `/los`). |
 | PVS | `pvs` | []LosTrack (omitempty) | Per-opponent potentially-visible-set intervals: the PVS cull the LOS raycast gates on, recorded before the rays narrow it. Lossless superset of `los` (PVS ⊇ LOS). Same shape, gate, and lazy pass as `los`. |
 
@@ -1411,6 +1412,24 @@ Default Types omits high-frequency change events (`health`, `armor`,
 holds the resolved name (`{"loc":"RA"}`) by default, or the raw index
 (`{"li":7}`) with `loc=index` — decode via `GET /loc-table`.
 
+The default set includes `pickup` (schema v51): identity-rich pickups
+joined from the authoritative sections rather than the held-interval
+streams. World-spawner takes (any kind, weapons included) come from the
+per-spawner item timelines — `detail{ item, kind, entNum, loc?, source:
+"world", team? }` with `item` the disambiguated spawner name (`ya_1` vs
+`ya_2`); backpack / unknown-source weapon grants come from
+weaponPickups — `detail{ item, kind, source, entNum?, dropper?, team? }`
+where `entNum` is the backpack edict. The two sources are disjoint by
+construction (a backpack grab never flips the world spawner's entity
+state), so no take is double-reported. The interval-derived `weapon` /
+`item` gain–lose events are unchanged — they tell the *holding* story.
+
+`spawn` events carry the spawn location when resolvable:
+`detail{"loc": name}` (or `{"li": idx}` with `loc=index`), sampled from
+the loc stream just after the spawn — the first change entry after the
+spawn timestamp is the teleport landing; no change inside the window
+means the loc didn't change across the spawn (schema v51).
+
 #### StreamSlice
 
 ```go
@@ -1628,6 +1647,32 @@ touch range of a matching weapon spawn during the stat-lag window,
 else `"unknown"` — typically a non-RL/LG backpack grant, which has no
 hint in any mode. Synthesized entries always have `hadBefore: false`
 (the bit was observed flipping 0→1).
+
+## OpeningResult (`opening`)
+
+Defined in `result/opening.go` (schema v51). The match opening in one
+small block — a pure projection of data `items` / `streams` already
+carry, kept as its own artifact (`opening`, servable via
+`GET /v1/demos/{id}/artifacts/opening`) so "how did the opening go" is
+one cheap fetch.
+
+```jsonc
+{
+  "players":    [ { "name", "team"?, "loc"? } ],   // match-start spawn loc
+  "firstTakes": [ { "item", "kind", "entNum", "loc"?, "time", "takenBy", "team"? } ]
+}
+```
+
+- `players` — every player present **and alive** at match start, sorted
+  by team then name. `loc` is the resolved spawn location (empty when
+  the map has no .loc corpus).
+- `firstTakes` — the first **in-match** take of each tracked spawner
+  (warmup takes are skipped), sorted by time. Tracked kinds: armors,
+  mega, powerups, and the RL/LG weapon pads. `item`/`entNum`/`loc`
+  identify the spawner (`ItemTimeline` naming: `ya_1` vs `ya_2`). A
+  spawner nobody took has no entry. `time` is match-relative ms.
+- Omitted entirely when no match start was detected (t=0 would be the
+  demo open, not an opening).
 
 ## Cross-references / join keys
 

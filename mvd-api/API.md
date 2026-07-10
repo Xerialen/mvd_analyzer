@@ -566,9 +566,29 @@ Params: `from`, `to`, `players`, `types`, `loc`. A merged, time-sorted
 event log. Shape: `view.EventsView`.
 
 `types` selects event kinds; the **default set** (when `types` is empty)
-is `frag,powerup,streak,spawn,death,weapon,item,chat`. High-frequency
-state events `health`, `armor`, `loc`, and per-hit `damage` are
-**excluded by default** — pass them explicitly to opt in. A `damage`
+is `frag,powerup,streak,spawn,death,weapon,item,chat,pickup`.
+High-frequency state events `health`, `armor`, `loc`, and per-hit
+`damage` are **excluded by default** — pass them explicitly to opt in.
+
+`pickup` events (schema v51) carry full pickup identity, joined from
+the authoritative `items` / `weaponPickups` sections: a world-spawner
+take has `detail{ item, kind, entNum, loc?, source:"world", team? }`
+with `item` the disambiguated spawner name (`ya_1` vs `ya_2`, so "which
+YA" needs no cross-referencing); a backpack / unknown-source weapon
+grant has `detail{ item, kind, source, entNum?, dropper?, team? }`
+(`entNum` = the backpack edict, joinable to `/backpacks`). No take is
+double-reported. The interval-derived `weapon`/`item` gain–lose events
+are unchanged (they tell the *holding* story; `pickup` tells the
+*acquisition* story).
+
+`spawn` events carry the spawn location when resolvable:
+`detail{"loc": name}` (or `{"li": idx}` with `loc=index`). The spawn
+stream includes the **match-start spawn** (synthesized at `t=0` for
+players alive through the countdown, schema v51) — so
+`?types=spawn&to=1` answers "where did everyone start". For the
+pre-joined opening summary (spawns + first takes of every contested
+spawner) fetch the `opening` artifact instead:
+`GET /v1/demos/{id}/artifacts/opening` (§4.17). A `damage`
 event carries `detail{ victim, damage, weapon, isSplash?, isEnv?,
 isSelf?, isTeam?, victimWep? }`; `players` matches its attacker or
 victim. `damage` events are **match-only** — out-of-match (warmup /
