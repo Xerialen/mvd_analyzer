@@ -77,10 +77,15 @@ func requestIDMiddleware(next http.Handler) http.Handler {
 }
 
 // corsMiddleware makes the read-only API callable from browser apps on any
-// origin (F17). The API is unauthenticated today and the Bearer value is a
-// non-secret label, so `*` is safe. Expose-Headers is required for browser
-// JS to read ETag/X-Cache/X-Schema-Version/X-Request-Id off the response.
-// OPTIONS preflight is answered here — 204, no auth, on every path.
+// origin (F17). `Access-Control-Allow-Origin: *` is safe even in auth mode
+// (where the Bearer value IS the secret API key): without
+// Access-Control-Allow-Credentials, a browser never attaches the Authorization
+// header (or cookies) to a cross-origin request on its own, so `*` cannot make
+// a victim's browser replay their key to an attacker's page. Do NOT ever add
+// Allow-Credentials alongside the `*` origin — that combination is what would
+// turn the wildcard into a credential-leak. Expose-Headers is required for
+// browser JS to read ETag/X-Cache/X-Schema-Version/X-Request-Id off the
+// response. OPTIONS preflight is answered here — 204, no auth, on every path.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()

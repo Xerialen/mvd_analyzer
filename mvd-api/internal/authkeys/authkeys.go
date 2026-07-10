@@ -254,9 +254,15 @@ func (s *Store) Issue(discordID, discordName string, service bool, note string) 
 
 	// Enforce one-active-key-per-Discord-user (D4). Service keys are ops-
 	// issued and not portal-bound, so an empty discordID never collides.
+	// Snapshot each prior active key before revoking it so a saveLocked
+	// failure below can restore the full pre-Issue state — not just delete the
+	// new record — keeping the in-memory map identical to disk. Mirrors
+	// Revoke's rollback.
+	prev := make(map[string]Record)
 	if discordID != "" {
 		for hash, existing := range s.recs {
 			if existing.DiscordID == discordID && existing.Active() {
+				prev[hash] = existing // pre-mutation copy (Record is a value type)
 				existing.Revoked = now
 				s.recs[hash] = existing
 			}
@@ -269,7 +275,14 @@ func (s *Store) Issue(discordID, discordName string, service bool, note string) 
 	}
 	s.recs[rec.KeyHash] = rec
 	if err := s.saveLocked(); err != nil {
-		delete(s.recs, rec.KeyHash) // keep memory and disk consistent
+		// Roll back to the pre-Issue state: drop the new record AND un-revoke
+		// the prior active key. Without the latter, memory would show the old
+		// key revoked while disk still has it active — an asymmetric divergence
+		// (Revoke rolls back fully).
+		delete(s.recs, rec.KeyHash)
+		for hash, r := range prev {
+			s.recs[hash] = r
+		}
 		return "", Record{}, err
 	}
 	s.noteReloaded() // s.recs now equals the file we just wrote
@@ -357,11 +370,13 @@ func (s *Store) maybeReloadForLookup() {
 // Lookup returns the active record for a presented plaintext key, or
 // ErrUnknownKey if the key is absent or revoked.
 //
-// The map lookup already gates on the hash, but we additionally run a
-// constant-time compare of the presented hash against the stored hash: it
-// removes any timing signal that could distinguish "hash present in map" from
-// "hash absent" through the comparison itself, and documents the intent that
-// key verification is constant-time (belt-and-suspenders over the map).
+// The map lookup already gates on the hash, and we additionally run a
+// constant-time compare of the presented hash against the stored hash. This
+// makes the comparison of a MATCHED hash constant-time and documents the
+// intent that key verification is constant-time (belt-and-suspenders over the
+// map). It does NOT hide the map lookup's own timing — a miss returns before
+// the compare — but that leaks nothing exploitable: presenting a stored hash
+// already requires knowing the corresponding key.
 func (s *Store) Lookup(presentedKey string) (Record, error) {
 	if presentedKey == "" {
 		return Record{}, ErrUnknownKey

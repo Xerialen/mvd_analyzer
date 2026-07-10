@@ -389,6 +389,42 @@ func TestLookupHandlesKeysFileDisappearing(t *testing.T) {
 	}
 }
 
+// TestIssueRollsBackPriorKeyOnSaveFailure pins that a re-Issue whose disk write
+// fails leaves the in-memory map identical to disk: the prior active key must
+// still authenticate (its D4 revocation is rolled back), symmetric with
+// Revoke's full rollback. Before the fix, Issue only deleted the new record and
+// left the prior key wrongly revoked in memory.
+func TestIssueRollsBackPriorKeyOnSaveFailure(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root: dir perms do not block writes")
+	}
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key1, _, err := s.Issue("42", "carol", false, "first")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Make the dir unwritable so the atomic temp-file create in saveLocked fails
+	// on the SECOND Issue (the flock file already exists, so flock still works).
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+
+	if _, _, err := s.Issue("42", "carol", false, "second"); err == nil {
+		t.Fatal("expected re-Issue to fail when the dir is unwritable")
+	}
+	// The prior key must STILL authenticate in-process: the failed save rolled
+	// its D4 revocation back.
+	if _, err := s.Lookup(key1); err != nil {
+		t.Errorf("prior key wrongly revoked in memory after a failed re-Issue: %v", err)
+	}
+}
+
 // TestConcurrentIssueLookup exercises the mutex under -race.
 func TestConcurrentIssueLookup(t *testing.T) {
 	s, err := Open(t.TempDir())
