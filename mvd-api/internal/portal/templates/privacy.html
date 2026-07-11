@@ -1,8 +1,9 @@
 {{define "privacy.html"}}{{template "head" .}}
 <!--
   OPERATOR NOTE (not rendered): review before deploying —
-  (1) the log-retention period below must match your journald/rotation
-      config; (2) "the operator" contact is the project's GitHub issues;
+  (1) the log-retention period below (one year) must match your
+      journald/rotation config; (2) "the operator" contact is the
+      project's GitHub issues;
       add a direct email/Discord contact if you prefer; (3) this is a
       good-faith community-service policy, not legal advice.
 -->
@@ -44,10 +45,10 @@
   best-effort client IP address, a request id, and a request label (for
   keyed requests, your key's short identifier / Discord username; for
   unauthenticated deployments, an optional self-declared label). The log
-  exists for operations, debugging and abuse prevention (legal basis:
-  legitimate interest) and is rotated; entries are kept for a limited
-  period — typically no more than 30 days — and are not used for
-  profiling or shared with anyone.
+  exists for operations, debugging and abuse prevention — including
+  investigating slow-moving abuse patterns (legal basis: legitimate
+  interest). Log entries are kept for <strong>up to one year</strong> and
+  are not used for profiling or shared with anyone.
 </p>
 
 <h3>Cookies</h3>

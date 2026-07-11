@@ -14,7 +14,7 @@ detail.
   only (id + username stored with the key record), keys stored as
   SHA-256 hashes shown once, strictly-necessary `/portal`-scoped
   cookies only (1 h session), access logs with best-effort IP for
-  operations/abuse (limited retention), public hub.quakeworld.nu demos
+  operations/abuse (kept up to one year), public hub.quakeworld.nu demos
   as the content source, Discord + hub as the only third parties, and
   the GDPR rights/contact channel. Pinned by portal tests; operator
   review notes embedded in the template.
