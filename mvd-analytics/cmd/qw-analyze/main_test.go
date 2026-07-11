@@ -36,7 +36,7 @@ func TestDiagnosticBucketsUseCompleteDemoWindowIncludingQuietTail(t *testing.T) 
 			Name: "cand-1",
 			Team: "red",
 			Position: &result.PositionTrack{
-				T: []int32{100}, X: []int32{10}, Y: []int32{20}, Z: []int32{30},
+				T: []int32{100}, X: []float32{10}, Y: []float32{20}, Z: []float32{30},
 			},
 		}},
 	}}
@@ -64,7 +64,7 @@ func TestDiagnosticBucketsIncludePositionExactlyAtSourceEnd(t *testing.T) {
 		Players: []result.PlayerStream{{
 			Name: "cand-1",
 			Position: &result.PositionTrack{
-				T: []int32{3000}, X: []int32{40}, Y: []int32{50}, Z: []int32{60},
+				T: []int32{3000}, X: []float32{40}, Y: []float32{50}, Z: []float32{60},
 			},
 		}},
 	}}
