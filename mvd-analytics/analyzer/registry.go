@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"io"
 	"reflect"
 	"runtime"
@@ -186,7 +187,18 @@ func (r *Registry) AnalyzeSource(source events.Source, filename string) (*Result
 	return r.analyzeSource(source, filename)
 }
 
+// AnalyzeSourceStrict runs all registered analyzers but rejects source decode
+// errors instead of finalizing a partial result. It is intended for evidence
+// paths where incomplete output must never be mistaken for a complete demo.
+func (r *Registry) AnalyzeSourceStrict(source events.Source, filename string) (*Result, error) {
+	return r.analyzeSourceWithMode(source, filename, true)
+}
+
 func (r *Registry) analyzeSource(source events.Source, filename string) (*Result, error) {
+	return r.analyzeSourceWithMode(source, filename, false)
+}
+
+func (r *Registry) analyzeSourceWithMode(source events.Source, filename string, strict bool) (*Result, error) {
 	r.PhaseTimings = r.PhaseTimings[:0]
 	record := func(name string, start time.Time) {
 		r.PhaseTimings = append(r.PhaseTimings, PhaseTiming{
@@ -221,12 +233,19 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 
 	eventStart := time.Now()
 	var streamErr error
+	eventCount := 0
 	for {
 		event, err := source.Next()
 		if err == io.EOF {
+			if strict && eventCount == 0 {
+				return nil, fmt.Errorf("read source: no events")
+			}
 			break
 		}
 		if err != nil {
+			if strict {
+				return nil, fmt.Errorf("read source: %w", err)
+			}
 			// A clean end of demo arrives as io.EOF (reader F2); any other
 			// error means the event stream was truncated mid-demo (a decode
 			// failure, a corrupt or cut-off file). Partial results are still
@@ -236,6 +255,7 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 			streamErr = err
 			break
 		}
+		eventCount++
 
 		if e, ok := event.(*events.ServerDataEvent); ok {
 			ctx.ServerData = e.Data
@@ -308,6 +328,9 @@ func (r *Registry) analyzeSource(source events.Source, filename string) (*Result
 	}
 
 	canonicalizeErrors(result.Errors)
+	if strict && len(result.Errors) > 0 {
+		return nil, fmt.Errorf("analysis failed: %s", strings.Join(result.Errors, "; "))
+	}
 	return result, nil
 }
 

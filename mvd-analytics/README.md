@@ -109,10 +109,10 @@ that downstream consumers render, summarise, or feed to an agent.
   buckets. Each observed slot occupancy remains an isolated identity;
   ambiguous userid/name handovers rotate, and duplicate display names are
   made unique. It never consults spawn/death liveness and never carries an old
-  position into a bucket without a native sample. Decoder errors, analyzer
-  errors, and any remaining identity ambiguity abort the view instead of
-  returning partial evidence. Ordinary `full` and `buckets` views retain
-  reconnect folding, stay match-gated, and keep their existing compatibility
+  position into a bucket without a native sample. An empty source, decoder
+  error, analyzer error, or any remaining identity ambiguity aborts before a
+  JSON byte is written. Ordinary `full` and `buckets` views retain reconnect
+  folding, stay match-gated, and keep their existing best-effort compatibility
   semantics.
 
 ## Pipeline architecture
@@ -496,16 +496,19 @@ res, err := reg.AnalyzeSource(src, "demo.mvd.gz")
 // res is *result.Result
 ```
 
-Three equivalent entry points:
+The standard entry points are:
 
 | Method | Input | When to use |
 |---|---|---|
 | `Analyze(path)` | file path | You have a local file |
 | `AnalyzeReader(r, name)` | `io.Reader` | You have bytes in hand (WASM, HTTP body) |
 | `AnalyzeSource(src, name)` | `events.Source` | You have a non-MVD source |
+| `AnalyzeSourceStrict(src, name)` | `events.Source` | Evidence must reject empty, truncated, or analyzer-invalid input |
 
-All three fill the same `Result`. `AnalyzeSource` is the source-agnostic
-primitive; the other two wrap an MVD source around the input.
+The first three fill the same `Result`; `AnalyzeSource` remains the
+source-agnostic, best-effort primitive used by existing callers. The strict
+variant returns a nil result on any non-EOF source error, an event-empty
+source, or any error recorded while analyzers finalize.
 
 ### Custom pipeline
 

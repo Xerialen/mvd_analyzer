@@ -371,7 +371,11 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 	if regionsOverride != nil {
 		reg.SetRegionsOverride(regionsOverride)
 	}
-	res, err := reg.AnalyzeSource(src, filepath.Base(path))
+	analyze := reg.AnalyzeSource
+	if vopts.view == "diagnostic-buckets" {
+		analyze = reg.AnalyzeSourceStrict
+	}
+	res, err := analyze(src, filepath.Base(path))
 	if err != nil {
 		return err
 	}

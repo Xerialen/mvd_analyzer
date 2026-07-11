@@ -1,9 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/mvd-analyzer/mvd-analytics/result"
+	"github.com/mvd-analyzer/mvd-reader/mvd"
 )
 
 func TestParseViewOptionsAcceptsClosedDiagnosticBucketsView(t *testing.T) {
@@ -80,4 +86,54 @@ func TestDiagnosticBucketsIncludePositionExactlyAtSourceEnd(t *testing.T) {
 	if got == nil {
 		t.Fatalf("position at exact source end was excluded: %+v", buckets.Buckets[3])
 	}
+}
+
+func TestDiagnosticBucketsRejectsTruncatedMVDWithoutJSON(t *testing.T) {
+	payload := []byte{mvd.SvcPrint, mvd.PrintHigh, 'o', 'k', 0}
+	data := appendMVDMessage(nil, mvd.DemAll, payload)
+	data = append(data, 0, mvd.DemAll)
+	data = binary.LittleEndian.AppendUint32(data, 4)
+	data = append(data, mvd.SvcNop) // declared payload is truncated by 3 bytes
+
+	path := filepath.Join(t.TempDir(), "truncated.mvd")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	err := runOne(path, &output, "json", false, nil, &viewOptions{
+		view:      "diagnostic-buckets",
+		bucketDur: time.Second,
+	})
+	if err == nil {
+		t.Fatal("runOne succeeded for truncated diagnostic MVD")
+	}
+	if output.Len() != 0 {
+		t.Fatalf("stdout = %q, want no JSON on decode failure", output.String())
+	}
+}
+
+func TestDiagnosticBucketsRejectsZeroByteMVDWithoutJSON(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "empty.mvd")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	err := runOne(path, &output, "json", false, nil, &viewOptions{
+		view:      "diagnostic-buckets",
+		bucketDur: time.Second,
+	})
+	if err == nil {
+		t.Fatal("runOne succeeded for zero-byte diagnostic MVD")
+	}
+	if output.Len() != 0 {
+		t.Fatalf("stdout = %q, want no JSON for an empty source", output.String())
+	}
+}
+
+func appendMVDMessage(dst []byte, messageType byte, payload []byte) []byte {
+	dst = append(dst, 0, messageType)
+	dst = binary.LittleEndian.AppendUint32(dst, uint32(len(payload)))
+	return append(dst, payload...)
 }

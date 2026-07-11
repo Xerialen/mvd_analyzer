@@ -591,6 +591,13 @@ res, err := reg.AnalyzeSource(src, "demo.mvd.gz")
 // res is *result.Result; marshal to JSON, inspect, etc.
 ```
 
+`AnalyzeSource` preserves the historical best-effort behavior and can
+finalize a partial result after a source decode error. Evidence-producing
+callers should use `AnalyzeSourceStrict`: it returns a nil result for empty
+sources, non-EOF source errors, and analyzer finalization errors. The CLI's
+closed `-view diagnostic-buckets` path uses this strict contract and writes no
+JSON when validation fails.
+
 Swap the source and the rest keeps working:
 
 ```go
