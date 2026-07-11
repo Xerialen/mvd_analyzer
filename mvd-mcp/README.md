@@ -159,7 +159,7 @@ handler is mounted at `/mcp` (and `/mcp/`).
 Claude Code:
 
 ```sh
-claude mcp add --transport http mvd https://<domain>/mcp
+claude mcp add --transport http mvdanalyzer https://mvdanalyzer.com/mcp
 ```
 
 JSON config form (e.g. `.mcp.json`):
@@ -167,15 +167,15 @@ JSON config form (e.g. `.mcp.json`):
 ```json
 {
   "mcpServers": {
-    "mvd": {
-      "url": "https://<domain>/mcp"
+    "mvdanalyzer": {
+      "url": "https://mvdanalyzer.com/mcp"
     }
   }
 }
 ```
 
 Web chat connectors (claude.ai custom connectors and the like) just take
-the URL `https://<domain>/mcp` — no headers or OAuth needed.
+the URL `https://mvdanalyzer.com/mcp` — no headers or OAuth needed.
 
 For the full deployment (Caddy TLS, systemd units, provisioning runbook)
 see [`../deploy/README.md`](../deploy/README.md).
