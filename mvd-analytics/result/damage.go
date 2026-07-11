@@ -1,25 +1,28 @@
 package result
 
 // DamageResult holds per-hit damage and derived aggregates, reconstructed
-// from the KTX mvdhidden_dmgdone stream (see mvd-reader MVD_FORMAT.md). All
-// damage figures are raw/unbound amounts including overkill, exactly as KTX
-// reports them on the wire.
+// from the KTX mvdhidden_dmgdone stream (see mvd-reader MVD_FORMAT.md).
 //
-// Unbound vs bounded: the wire carries UNBOUND damage (the full hit, capped
-// only at 9999). KTX's end-of-match scoreboard (demoInfo.players[].dmg)
-// instead accumulates damage BOUNDED to the victim's remaining health (no
-// overkill). So these figures are systematically higher than the scoreboard,
-// most dramatically on killing blows. That gap is expected, not a defect —
-// see DamageReconciliation for the cross-check.
+// Two damage families exist side by side. The RAW family (Damage, Given,
+// Taken, ...) carries the wire value: UNBOUND damage including overkill,
+// capped only at 9999, exactly as KTX multicasts it (unbound_dmg_dealt,
+// ktx/src/combat.c:795). The BOUNDED family (Events[].Bounded and each
+// player's Bounded nest) is reconstructed per hit to KTX's scoreboard
+// semantics — armor absorbed + health damage capped to the victim's
+// remaining health (dmg_dealt, combat.c:783). The wire does not carry the
+// bounded value; it is re-derived from the victim's tracked armor/health
+// state at hit time and therefore carries a small reconstruction slop
+// (±1/hit ceil rounding; see the analyzer). DamageReconciliation
+// cross-checks both families against the KTX scoreboard.
 //
 // Telefrags and stomps are NOT weapon damage: they are positional instant
 // kills (teleporting onto a player; landing on their head). The wire reports
 // a telefrag as the 9999 cap, which would otherwise dominate the attacker's
-// Given / ByWeapon / EWep and the totals; a stomp is a movement kill, not a
-// weapon. Both are excluded from every damage figure here and surfaced
-// separately in Telefrags / Stomps (and as the opt-in "telefrag" / "stomp"
-// events in view.Events). The kill still appears in FragResult / the "frag"
-// event.
+// ByWeapon / EWep and the totals; a stomp is a movement kill, not a
+// weapon. Both are excluded from the Events log, ByWeapon, Matrix, EWep and
+// TotalDamage, and surfaced separately in Telefrags / Stomps (and as the
+// opt-in "telefrag" / "stomp" events in view.Events). The kill still appears
+// in FragResult / the "frag" event.
 type DamageResult struct {
 	TotalDamage int                      `json:"totalDamage"`
 	Events      []DamageEntry            `json:"events"`               // per-hit log, time-ordered (excludes telefrags + stomps)
@@ -29,6 +32,18 @@ type DamageResult struct {
 	Telefrags   []PositionalKill         `json:"telefrags,omitempty"`  // instant-kill telefrags, separate from damage
 	Stomps      []PositionalKill         `json:"stomps,omitempty"`     // head-stomp kills, separate from damage
 	Scoreboard  *DamageReconciliation    `json:"scoreboard,omitempty"` // stream vs KTX-scoreboard cross-check
+
+	// Dmg echoes which damage family this payload carries: "both" as stored
+	// (raw fields + bounded nests), "bounded" when the view materialized the
+	// bounded family into the raw field names, absent on a raw view.
+	Dmg string `json:"dmg,omitempty"`
+	// BoundedMode is "standard" when the bounded family was reconstructed,
+	// or "skipped:midair" / "skipped:instagib" / "skipped:dmgfrags" when the
+	// server mode rewrites T_Damage's take in ways the wire does not expose
+	// (midair height rule / flat 5000 / inverted pent+tele accounting) — a
+	// best-effort reconstruction there would be confidently wrong, so none
+	// is attempted and every Bounded field is absent.
+	BoundedMode string `json:"boundedMode,omitempty"`
 }
 
 // PositionalKill is one telefrag (deathtype "tele") or stomp (deathtype
@@ -56,6 +71,13 @@ type DamageEntry struct {
 	IsSelf    bool   `json:"isSelf,omitempty"`    // attacker == victim
 	IsTeam    bool   `json:"isTeam,omitempty"`    // same team, not self
 	VictimWep string `json:"victimWep,omitempty"` // victim's weapon class at hit: sg|mid|lg|rl|both ("" if env/self/team)
+
+	// Bounded is the KTX-scoreboard-semantics reconstruction of this hit
+	// (armor absorbed + health damage capped to remaining health). nil means
+	// "equal to Damage" — the common no-overkill case. 0 is a real value: a
+	// hit whose health share was fully nullified (pent / teamplay rules)
+	// still emits a wire event carrying the pre-nullification amount.
+	Bounded *int `json:"bounded,omitempty"`
 }
 
 // PlayerDamage holds per-player damage aggregates.
@@ -79,8 +101,15 @@ type PlayerDamage struct {
 	EnemyVsBoth int `json:"enemyVsBoth"` // victim holds both RL and LG
 	EWep        int `json:"ewep"`        // = EnemyVsLG + EnemyVsRL + EnemyVsBoth (KTX dmg_eweapon)
 
-	Telefrags int `json:"telefrags,omitempty"` // in-match, non-team instant-kill telefrags DEALT (not damage; excluded from Given; team telefrags are not credited, per the team-kill convention)
-	Stomps    int `json:"stomps,omitempty"`    // in-match, non-team head-stomp kills DEALT (not damage; excluded from Given)
+	Telefrags int `json:"telefrags,omitempty"` // in-match, non-team instant-kill telefrags DEALT (a count; team telefrags are not credited, per the team-kill convention)
+	Stomps    int `json:"stomps,omitempty"`    // in-match, non-team head-stomp kills DEALT (a count; team stomps are not credited)
+
+	// Bounded mirrors the damage aggregates above under KTX bounded-scoreboard
+	// semantics (per-hit reconstruction; see DamageResult). Invariant: the
+	// nest never sets Telefrags/Stomps/Bounded (all omitempty), so its JSON
+	// shape is exactly the damage-figure fields. Absent when reconstruction
+	// was skipped (DamageResult.BoundedMode) or on a raw view.
+	Bounded *PlayerDamage `json:"bounded,omitempty"`
 }
 
 // DamagePair is one attacker→victim total in the damage matrix.
@@ -103,7 +132,9 @@ type DamageReconciliation struct {
 // for one player. The Stream* fields are UNBOUND (overkill-inclusive, from
 // the mvdhidden_dmgdone stream); the Score* fields are BOUNDED (capped to
 // victim health, from the KTX scoreboard JSON). Score* <= Stream* by the
-// overkill; the gap is expected, not a reconstruction error.
+// overkill; the gap is expected, not a reconstruction error. The Bounded
+// nest compares like-for-like: our bounded reconstruction against the same
+// scoreboard, where near-equality IS the correctness signal.
 type DamageDelta struct {
 	StreamGiven int `json:"streamGiven"` // unbound, this pipeline
 	ScoreGiven  int `json:"scoreGiven"`  // bounded, KTX scoreboard (dmg.given)
@@ -111,4 +142,18 @@ type DamageDelta struct {
 	ScoreTaken  int `json:"scoreTaken"`  // bounded, KTX scoreboard (dmg.taken)
 	StreamEWep  int `json:"streamEwep"`  // unbound, this pipeline
 	ScoreEWep   int `json:"scoreEwep"`   // bounded, KTX scoreboard (dmg.enemy-weapons)
+
+	Bounded *DamageDeltaBounded `json:"bounded,omitempty"` // bounded-stream side; absent when reconstruction skipped
+}
+
+// DamageDeltaBounded carries the bounded-reconstruction reconciliation
+// figures. StreamTaken here is ENEMY-ONLY — KTX dmg_t accumulates only in
+// the enemy branch (ktx/src/combat.c:1069) — unlike PlayerDamage.Taken
+// (raw or bounded nest), which counts all sources.
+type DamageDeltaBounded struct {
+	StreamGiven int `json:"streamGiven"` // bounded enemy given, this pipeline
+	StreamTaken int `json:"streamTaken"` // bounded enemy-only taken, this pipeline
+	StreamEWep  int `json:"streamEwep"`  // bounded ewep, this pipeline
+	StreamTeam  int `json:"streamTeam"`  // bounded team given, this pipeline
+	ScoreTeam   int `json:"scoreTeam"`   // KTX scoreboard (dmg.team)
 }

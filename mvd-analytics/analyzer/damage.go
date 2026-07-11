@@ -1,7 +1,10 @@
 package analyzer
 
 import (
+	"math"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/mvd-analyzer/mvd-reader/events"
 )
@@ -26,27 +29,61 @@ type DamageAnalyzer struct {
 	// hit time (KTX "ewep" semantics — see ktx/src/combat.c:1084-1089).
 	items map[int]int
 
+	// vitals tracks each wire slot's health and armor value for the bounded
+	// reconstruction. The wire carries only the UNBOUND damage; the bounded
+	// (KTX-scoreboard) value is re-derived per hit from the victim's pre-hit
+	// state. KTX multicasts dmgdone mid-frame inside T_Damage while stat
+	// broadcasts land at end of frame, so the last-seen stat at DamageEvent
+	// time IS the pre-hit value — the same wire-order guarantee the items
+	// snapshot above relies on. Between authoritative stat updates the shadow
+	// decrement in OnEvent keeps same-frame multi-hits sequentially capped;
+	// every accepted stat update overwrites (checkpoints) the shadow value,
+	// so any drift self-corrects within a frame.
+	vitals map[int]*slotVitals
+
+	// serverInfo collects the serverinfo cvars (fullserverinfo stufftext +
+	// mid-game key updates, same sources as MetadataAnalyzer) that the
+	// bounded arithmetic depends on: teamplay for the KTX team-damage
+	// nullification rules, and k_midair / k_instagib / k_dmgfrags to detect
+	// modes whose T_Damage rewrites are not reconstructable from the wire.
+	serverInfo map[string]string
+
 	raw []rawDamage
 }
 
+// slotVitals is one slot's tracked health/armor. known distinguishes "never
+// saw a stat for this slot" (snapshot falls back to the 100/0 spawn state)
+// from a legitimately tracked value.
+type slotVitals struct {
+	health int
+	armor  int
+	known  bool
+}
+
 // rawDamage is one mvdhidden_dmgdone record pinned to wire slots + time,
-// plus the victim's weapon bitfield snapshot. The match-time gate is applied
-// in Finalize from the demo-clock timestamp (tMs), not sampled here, to avoid
-// the match-start-frame race (see Finalize). Names/teams are resolved in
-// Finalize too.
+// plus the victim's weapon bitfield and vitals snapshots. The match-time
+// gate is applied in Finalize from the demo-clock timestamp (tMs), not
+// sampled here, to avoid the match-start-frame race (see Finalize).
+// Names/teams are resolved in Finalize too.
 type rawDamage struct {
-	attacker   int // wire slot, or -1 for world / non-player inflictor
-	victim     int // wire slot
-	damage     int
-	deathType  int
-	isSplash   bool
-	tMs        int32
-	victimItem int // victim's StatItems bitfield at hit time
+	attacker     int // wire slot, or -1 for world / non-player inflictor
+	victim       int // wire slot
+	damage       int
+	deathType    int
+	isSplash     bool
+	tMs          int32
+	victimItem   int // victim's StatItems bitfield at hit time
+	victimHealth int // victim's pre-hit health (shadow-tracked)
+	victimArmor  int // victim's pre-hit armor value (shadow-tracked)
 }
 
 // NewDamageAnalyzer creates a new damage analyzer.
 func NewDamageAnalyzer() *DamageAnalyzer {
-	return &DamageAnalyzer{items: make(map[int]int)}
+	return &DamageAnalyzer{
+		items:      make(map[int]int),
+		vitals:     make(map[int]*slotVitals),
+		serverInfo: make(map[string]string),
+	}
 }
 
 func (a *DamageAnalyzer) Name() string { return "damage" }
@@ -67,24 +104,94 @@ func (a *DamageAnalyzer) OnEvent(event events.Event) error {
 		a.timing.OnPrint(e)
 	case *events.IntermissionEvent:
 		a.timing.OnIntermission(e.Time)
+	case *events.StuffTextEvent:
+		// Serverinfo capture for the bounded arithmetic (teamplay,
+		// k_midair/k_instagib/k_dmgfrags) — same sources as MetadataAnalyzer.
+		// Captured here rather than read from CoreOutputs because the shadow
+		// decrement below runs during OnEvent, before Finalize wiring.
+		if strings.HasPrefix(e.Command, "fullserverinfo ") {
+			for k, v := range parseInfoString(e.Command) {
+				a.serverInfo[k] = v
+			}
+		}
+	case *events.ServerInfoEvent:
+		if e.Key != "" {
+			a.serverInfo[e.Key] = e.Value
+		}
 	case *events.StatUpdateEvent:
-		// Track weapon inventory ungated so a victim's loadout is known
-		// from the first stat update, regardless of match phase.
-		if e.StatIndex == events.StatItems {
+		switch e.StatIndex {
+		case events.StatItems:
+			// Track weapon inventory ungated so a victim's loadout is known
+			// from the first stat update, regardless of match phase.
 			a.items[e.PlayerNum] = e.Value
+		case events.StatHealth:
+			// Authoritative checkpoint for the vitals shadow. KTX reuses the
+			// health stat as a damage indicator (1000+damage, combat.c:1001);
+			// only plausible values are real health (≤ 250, the mega cap;
+			// negative death values are genuine). Same filter as timeline.go.
+			if e.Value <= 250 {
+				a.vitalsFor(e.PlayerNum).health = e.Value
+			}
+		case events.StatArmor:
+			// Real armor caps at 200 (RA); larger values are KTX feedback
+			// sentinels. Same filter as timeline.go.
+			if e.Value <= 200 && e.Value >= 0 {
+				a.vitalsFor(e.PlayerNum).armor = e.Value
+			}
 		}
 	case *events.DamageEvent:
+		v := a.vitalsFor(e.Victim)
 		a.raw = append(a.raw, rawDamage{
-			attacker:   e.Attacker,
-			victim:     e.Victim,
-			damage:     e.Damage,
-			deathType:  e.DeathType,
-			isSplash:   e.IsSplash,
-			tMs:        msTime(e.Time),
-			victimItem: a.items[e.Victim],
+			attacker:     e.Attacker,
+			victim:       e.Victim,
+			damage:       e.Damage,
+			deathType:    e.DeathType,
+			isSplash:     e.IsSplash,
+			tMs:          msTime(e.Time),
+			victimItem:   a.items[e.Victim],
+			victimHealth: v.health,
+			victimArmor:  v.armor,
 		})
+		// Shadow decrement so a same-frame follow-up hit (no stat update in
+		// between — stats broadcast at end of frame) sees sequentially
+		// reduced vitals. Mirrors KTX: armor is only consumed in a live
+		// match (combat.c:636-639). Teamplay nullification is deliberately
+		// NOT modeled here — team classification needs Finalize's identity
+		// resolution; the rare same-frame drift on a tp1/3-nullified hit is
+		// corrected by the next end-of-frame stat checkpoint.
+		if a.timing.Started && !a.timing.Ended {
+			if isTeleDeathType(e.DeathType) {
+				// Telefrag: armor fully consumed, health overwhelmed.
+				v.armor = 0
+				v.health -= 50000
+			} else {
+				save, take := damageSplit(e.Damage, a.items[e.Victim], v.armor)
+				if a.items[e.Victim]&events.ITInvulnerability != 0 && e.DeathType != events.DtSuicide {
+					take = 0 // pent: armor still consumed, health untouched
+				}
+				v.armor -= save
+				v.health -= take
+			}
+		}
 	}
 	return nil
+}
+
+// vitalsFor returns the tracked vitals for a slot, creating the entry at the
+// 100/0 spawn state when no stat has been seen yet.
+func (a *DamageAnalyzer) vitalsFor(slot int) *slotVitals {
+	v, ok := a.vitals[slot]
+	if !ok {
+		v = &slotVitals{health: 100}
+		a.vitals[slot] = v
+	}
+	return v
+}
+
+// isTeleDeathType reports whether dt is one of the four KTX telefrag
+// deathtypes (dtTELE1..4 — normal, pent-deflect, pent-vs-pent, unused).
+func isTeleDeathType(dt int) bool {
+	return dt >= events.DtTele1 && dt <= events.DtTele4
 }
 
 func (a *DamageAnalyzer) Finalize(result *Result) error {
@@ -108,6 +215,22 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// the victim-weapon buckets and the matrix are built once, correctly,
 	// instead of being rebuilt after the fact.
 	duel := a.core.IsDuel()
+
+	// Bounded reconstruction setup. boundedSkip names a server mode whose
+	// T_Damage rewrites are not observable per hit (see boundedSkipReason);
+	// when set, no bounded figure is produced anywhere. tp mirrors KTX
+	// tp_num() (g_utils.c:1586): the raw teamplay cvar counts only in team
+	// modes — a duel's colour-team artifact must not trigger the teamplay
+	// nullification rules.
+	boundedSkip := a.boundedSkipReason()
+	tp := 0
+	if !duel {
+		tp, _ = strconv.Atoi(a.serverInfo["teamplay"])
+	}
+	// enemyTakenBounded feeds DamageDeltaBounded.StreamTaken: KTX dmg_t
+	// accumulates only in the enemy branch (combat.c:1069), unlike our
+	// all-sources Taken.
+	enemyTakenBounded := make(map[string]int)
 
 	// Match window on the demo clock. Gate on the timestamp range, not the live
 	// match-phase flag sampled in OnEvent: a DamageEvent on the match-start
@@ -206,7 +329,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			vw = victimWeaponClass(d.victimItem)
 		}
 
-		out.Events = append(out.Events, DamageEntry{
+		entry := DamageEntry{
 			Time:      d.tMs,
 			Attacker:  attacker,
 			Victim:    victim,
@@ -217,7 +340,21 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			IsSelf:    isSelf,
 			IsTeam:    isTeam,
 			VictimWep: vw,
-		})
+		}
+
+		// Bounded reconstruction for this hit (KTX dmg_dealt semantics).
+		// Omitted from the entry when equal to the raw value — the common
+		// non-overkill case — so the log only grows where the families
+		// actually differ.
+		b := 0
+		if boundedSkip == "" {
+			b = boundedDamage(d, tp, isTeam, isSelf)
+			if b != d.damage {
+				bv := b
+				entry.Bounded = &bv
+			}
+		}
+		out.Events = append(out.Events, entry)
 
 		out.TotalDamage += d.damage
 
@@ -226,6 +363,13 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		vp.Taken += d.damage
 		if isEnv {
 			vp.TakenEnv += d.damage
+		}
+		if boundedSkip == "" {
+			vb := boundedNest(vp)
+			vb.Taken += b
+			if isEnv {
+				vb.TakenEnv += b
+			}
 		}
 
 		if isWorld {
@@ -236,8 +380,14 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		switch {
 		case isSelf:
 			ap.GivenSelf += d.damage
+			if boundedSkip == "" {
+				boundedNest(ap).GivenSelf += b
+			}
 		case isTeam:
 			ap.GivenTeam += d.damage
+			if boundedSkip == "" {
+				boundedNest(ap).GivenTeam += b
+			}
 		default:
 			// Enemy damage — the "useful" number.
 			ap.Given += d.damage
@@ -245,11 +395,24 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			out.ByWeapon[weapon] += d.damage
 			addToMatrix(matrix, attacker, victim, weapon, d.damage)
 			addVictimWeaponBucket(ap, vw, d.damage)
+			if boundedSkip == "" {
+				ab := boundedNest(ap)
+				ab.Given += b
+				ab.ByWeapon[weapon] += b
+				addVictimWeaponBucket(ab, vw, b)
+				enemyTakenBounded[victim] += b
+			}
 		}
 	}
 
 	out.Matrix = flattenMatrix(matrix)
-	out.Scoreboard = a.reconcile(out.ByPlayer)
+	out.Scoreboard = a.reconcile(out.ByPlayer, enemyTakenBounded, boundedSkip == "")
+	if boundedSkip == "" {
+		out.Dmg = "both"
+		out.BoundedMode = "standard"
+	} else {
+		out.BoundedMode = "skipped:" + boundedSkip
+	}
 
 	result.Damage = out
 
@@ -330,6 +493,106 @@ func getOrCreateDamage(m map[string]*PlayerDamage, name string) *PlayerDamage {
 	return p
 }
 
+// boundedNest lazily creates a player's bounded-family aggregate. The nest
+// is itself a PlayerDamage (same field names, same helpers) with the
+// invariant that its Telefrags/Stomps/Bounded stay zero/nil.
+func boundedNest(p *PlayerDamage) *PlayerDamage {
+	if p.Bounded == nil {
+		p.Bounded = &PlayerDamage{ByWeapon: make(map[string]int)}
+	}
+	return p.Bounded
+}
+
+// boundedDamage reconstructs one hit's KTX-scoreboard value (dmg_dealt,
+// ktx/src/combat.c:783): armor absorbed + health damage capped to the
+// victim's remaining health, after the nullification rules the wire value
+// deliberately ignores (virtual_take is captured pre-nullification at
+// combat.c:719). Godmode is unobservable from the demo and ignored — it
+// does not occur in real matches.
+func boundedDamage(d rawDamage, tp int, isTeam, isSelf bool) int {
+	if tp == 4 && isTeam {
+		// tp4teamdmg: neither armor nor health is touched (combat.c:554,
+		// 622-625, 749-752); only velocity applies. The wire still carries
+		// save+virtual_take, so bounded is 0, not the wire value.
+		return 0
+	}
+	save, take := damageSplit(d.damage, d.victimItem, d.victimArmor)
+	// Nullification rules zero the health share only — armor was already
+	// consumed above them (combat.c:620-639 precede 722-753). All are
+	// skipped for dtSUICIDE (combat.c:722).
+	if d.deathType != events.DtSuicide {
+		switch {
+		case d.victimItem&events.ITInvulnerability != 0:
+			take = 0 // pent (combat.c:728-737)
+		case tp == 1 && (isTeam || isSelf):
+			take = 0 // tp1: no damage to mates or self (combat.c:738-748)
+		case tp == 3 && isTeam:
+			take = 0 // tp3: no damage to mates; self still takes
+		}
+	}
+	h := d.victimHealth
+	if h < 0 {
+		h = 0 // hit on a corpse: only armor (if any) absorbs
+	}
+	if take > h {
+		take = h // the overkill cap — the whole point of the bounded family
+	}
+	return save + take
+}
+
+// damageSplit mirrors T_Damage's armor absorption (ktx/src/combat.c:618-641):
+// save is the armor-absorbed share of one wire damage value, capped at the
+// victim's remaining armor; take is the health share. The wire value is
+// save+take of the true float damage (each newceil'd), so re-deriving the
+// split from the wire int instead of the unobservable float can differ by
+// ±1 on armor-absorbing hits — the documented reconstruction slop.
+func damageSplit(damage, victimItems, victimArmor int) (save, take int) {
+	save = newceil(armorFraction(victimItems) * float64(damage))
+	if save > victimArmor {
+		save = victimArmor
+	}
+	if save < 0 {
+		save = 0
+	}
+	return save, damage - save
+}
+
+// newceil mirrors KTX's QVM ceil shim (ktx/src/combat.c:353-356): ceiling
+// with a 1e-3 truncation guard against float noise.
+func newceil(f float64) int { return int(math.Ceil(math.Trunc(f*1000) / 1000)) }
+
+// armorFraction maps the victim's armor item bit to KTX's armortype
+// absorption fraction (GA 0.3 / YA 0.6 / RA 0.8).
+func armorFraction(items int) float64 {
+	switch {
+	case items&events.ITArmor3 != 0:
+		return 0.8
+	case items&events.ITArmor2 != 0:
+		return 0.6
+	case items&events.ITArmor1 != 0:
+		return 0.3
+	}
+	return 0
+}
+
+// boundedSkipReason names the server mode that makes the bounded
+// reconstruction impossible, or "" when the standard arithmetic applies.
+// k_midair rewrites take from the victim's height above ground (combat.c:
+// 644-694), k_instagib flattens it to 5000 (698-709), k_dmgfrags inverts
+// the pent/telefrag accumulation (758-777) — none observable per hit.
+func (a *DamageAnalyzer) boundedSkipReason() string {
+	for _, m := range [...]struct{ cvar, mode string }{
+		{"k_midair", "midair"},
+		{"k_instagib", "instagib"},
+		{"k_dmgfrags", "dmgfrags"},
+	} {
+		if v := a.serverInfo[m.cvar]; v != "" && v != "0" {
+			return m.mode
+		}
+	}
+	return ""
+}
+
 func addToMatrix(m map[string]*DamagePair, attacker, victim, weapon string, dmg int) {
 	key := attacker + "\x00" + victim
 	p, ok := m[key]
@@ -357,8 +620,11 @@ func flattenMatrix(m map[string]*DamagePair) []DamagePair {
 
 // reconcile cross-checks the stream-derived per-player totals against the
 // KTX end-of-match scoreboard. Diagnostic only — divergence is reported,
-// never used to adjust the stream-derived numbers.
-func (a *DamageAnalyzer) reconcile(byPlayer map[string]*PlayerDamage) *DamageReconciliation {
+// never used to adjust the stream-derived numbers. When the bounded family
+// was reconstructed, each delta also pairs it against the same scoreboard
+// (near-equality is the reconstruction's correctness signal; the raw side
+// keeps its expected overkill gap).
+func (a *DamageAnalyzer) reconcile(byPlayer map[string]*PlayerDamage, enemyTakenBounded map[string]int, bounded bool) *DamageReconciliation {
 	if a.core == nil || a.core.DemoInfo == nil || len(a.core.DemoInfo.Players) == 0 {
 		return nil
 	}
@@ -372,10 +638,23 @@ func (a *DamageAnalyzer) reconcile(byPlayer map[string]*PlayerDamage) *DamageRec
 			ScoreTaken: p.Dmg.Taken,
 			ScoreEWep:  p.Dmg.EnemyWeapons,
 		}
-		if pd, ok := byPlayer[p.Name]; ok {
+		pd := byPlayer[p.Name]
+		if pd != nil {
 			d.StreamGiven = pd.Given
 			d.StreamTaken = pd.Taken
 			d.StreamEWep = pd.EWep
+		}
+		if bounded {
+			db := &DamageDeltaBounded{
+				StreamTaken: enemyTakenBounded[p.Name],
+				ScoreTeam:   p.Dmg.Team,
+			}
+			if pd != nil && pd.Bounded != nil {
+				db.StreamGiven = pd.Bounded.Given
+				db.StreamEWep = pd.Bounded.EWep
+				db.StreamTeam = pd.Bounded.GivenTeam
+			}
+			d.Bounded = db
 		}
 		rec.ByPlayer[p.Name] = d
 	}

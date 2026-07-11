@@ -322,3 +322,327 @@ func TestDamageAnalyzer_ScoreboardReconciliation(t *testing.T) {
 		t.Errorf("ewep: stream=%d score=%d, want 100/75", d.StreamEWep, d.ScoreEWep)
 	}
 }
+
+// --- bounded reconstruction (schema v54) ---------------------------------
+//
+// The wire carries only KTX's unbound damage; the tests below pin the per-hit
+// reconstruction of the bounded (scoreboard) value against hand-computed
+// T_Damage arithmetic (ktx/src/combat.c:618-783).
+
+// seedVitals pushes authoritative health/armor/items stats for a slot.
+func seedVitals(a *DamageAnalyzer, slot, health, armor, items int) {
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: slot, StatIndex: events.StatHealth, Value: health})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: slot, StatIndex: events.StatArmor, Value: armor})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: slot, StatIndex: events.StatItems, Value: items})
+}
+
+// boundedOf returns the effective bounded value of an events-log entry
+// (the omit-when-equal convention: nil means "equals Damage").
+func boundedOf(e DamageEntry) int {
+	if e.Bounded != nil {
+		return *e.Bounded
+	}
+	return e.Damage
+}
+
+func finalizeDamage(t *testing.T, a *DamageAnalyzer) *DamageResult {
+	t.Helper()
+	a.UseCoreOutputs(damageCore())
+	var res Result
+	if err := a.Finalize(&res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Damage == nil {
+		t.Fatal("no DamageResult")
+	}
+	return res.Damage
+}
+
+// T1: the three armor tiers absorb per their KTX fraction; with 10 HP left
+// the health share caps, exposing the armor split in the bounded value.
+func TestDamageAnalyzer_BoundedArmorTiers(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 10, 100, events.ITArmor1) // GA 0.3
+	seedVitals(a, 2, 10, 100, events.ITArmor2) // YA 0.6
+	seedVitals(a, 3, 10, 100, events.ITArmor3) // RA 0.8
+	for slot := 1; slot <= 3; slot++ {
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: slot, Damage: 100, DeathType: dtRLTest, Time: 10})
+	}
+	d := finalizeDamage(t, a)
+	want := map[string]int{"bsg": 40, "cmid": 70, "dlg": 90} // save 30/60/80 + 10 HP
+	for _, e := range d.Events {
+		if got := boundedOf(e); got != want[e.Victim] {
+			t.Errorf("%s bounded = %d, want %d", e.Victim, got, want[e.Victim])
+		}
+	}
+	alpha := d.ByPlayer["alpha"]
+	if alpha.Bounded == nil || alpha.Bounded.Given != 200 {
+		t.Fatalf("bounded Given = %+v, want 200 (40+70+90)", alpha.Bounded)
+	}
+	if alpha.Given != 300 {
+		t.Errorf("raw Given = %d, want 300 (raw family untouched)", alpha.Given)
+	}
+	// Victims' bounded taken mirror the same values.
+	if bp := d.ByPlayer["dlg"].Bounded; bp == nil || bp.Taken != 90 {
+		t.Errorf("dlg bounded Taken = %+v, want 90", bp)
+	}
+}
+
+// T2: armor break mid-hit — the shadow armor hits 0 so the same-frame
+// follow-up absorbs nothing and caps on the reduced health.
+func TestDamageAnalyzer_BoundedArmorBreakSequential(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 100, 5, events.ITArmor2) // YA, 5 armor left
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	d := finalizeDamage(t, a)
+	if len(d.Events) != 2 {
+		t.Fatalf("events = %d, want 2", len(d.Events))
+	}
+	// Hit 1: save=min(ceil(36),5)=5, take=55 of 100 HP -> bounded 60 == raw.
+	if d.Events[0].Bounded != nil {
+		t.Errorf("hit1 bounded = %d, want nil (armor cap does not change save+take)", *d.Events[0].Bounded)
+	}
+	// Hit 2: armor 0 now, health 45 -> bounded 45.
+	if got := boundedOf(d.Events[1]); got != 45 {
+		t.Errorf("hit2 bounded = %d, want 45 (armor broke, health 45 caps)", got)
+	}
+}
+
+// T3+T4: the overkill cap is the whole point; equal values are omitted.
+func TestDamageAnalyzer_BoundedOverkillAndOmitWhenEqual(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 30, 0, 0)
+	seedVitals(a, 2, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 2, Damage: 27, DeathType: dtSGTest, Time: 11})
+	d := finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 30 {
+		t.Errorf("overkill bounded = %d, want 30", got)
+	}
+	if d.Events[0].Bounded == nil {
+		t.Errorf("overkill hit must carry an explicit bounded value")
+	}
+	if d.Events[1].Bounded != nil {
+		t.Errorf("no-overkill hit bounded = %d, want omitted", *d.Events[1].Bounded)
+	}
+	if bg := d.ByPlayer["alpha"].Bounded; bg == nil || bg.Given != 57 {
+		t.Fatalf("bounded Given = %+v, want 57 (30+27)", bg)
+	}
+}
+
+// T5: pent zeroes the health share but armor is still consumed
+// (combat.c:728-737 zeroes take only; the save block precedes it).
+func TestDamageAnalyzer_BoundedPent(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 100, 100, events.ITArmor3|events.ITInvulnerability)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+	d := finalizeDamage(t, a)
+	// Hit 1: save=80, take zeroed -> bounded 80.
+	if got := boundedOf(d.Events[0]); got != 80 {
+		t.Errorf("pent hit1 bounded = %d, want 80 (armor only)", got)
+	}
+	// Hit 2 same frame: shadow armor 20, health untouched at 100 -> bounded 20.
+	if got := boundedOf(d.Events[1]); got != 20 {
+		t.Errorf("pent hit2 bounded = %d, want 20 (armor 20 left, health never touched)", got)
+	}
+}
+
+// T6: the KTX teamplay nullification rules (combat.c:738-753). tp1 zeroes
+// mates AND self; tp3 zeroes mates only; tp4 zeroes armor too; dtSUICIDE is
+// exempt from all of them (combat.c:722).
+func TestDamageAnalyzer_BoundedTeamplayRules(t *testing.T) {
+	run := func(tp string, f func(a *DamageAnalyzer)) *DamageResult {
+		a := buildDamageAnalyzer()
+		a.OnEvent(&events.ServerInfoEvent{Key: "teamplay", Value: tp})
+		f(a)
+		return finalizeDamage(t, a)
+	}
+
+	// tp1 team hit: no armor -> bounded 0 (a real zero, not omitted).
+	d := run("1", func(a *DamageAnalyzer) {
+		seedVitals(a, 6, 100, 0, 0)
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 30, DeathType: dtRLTest, Time: 10})
+	})
+	if got := boundedOf(d.Events[0]); got != 0 || d.Events[0].Bounded == nil {
+		t.Errorf("tp1 team hit bounded = %d (ptr %v), want explicit 0", got, d.Events[0].Bounded)
+	}
+
+	// tp1 self hit: also nullified ((tp_num()==1) has no targ!=attacker guard).
+	d = run("1", func(a *DamageAnalyzer) {
+		seedVitals(a, 0, 100, 0, 0)
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 0, Damage: 30, DeathType: dtRLTest, Time: 10})
+	})
+	if got := boundedOf(d.Events[0]); got != 0 {
+		t.Errorf("tp1 self hit bounded = %d, want 0", got)
+	}
+
+	// tp3 self hit: self still takes damage (tp3 requires targ != attacker).
+	d = run("3", func(a *DamageAnalyzer) {
+		seedVitals(a, 0, 100, 0, 0)
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 0, Damage: 30, DeathType: dtRLTest, Time: 10})
+	})
+	if d.Events[0].Bounded != nil {
+		t.Errorf("tp3 self hit bounded = %d, want nil (== raw 30)", *d.Events[0].Bounded)
+	}
+
+	// tp3 team hit: nullified.
+	d = run("3", func(a *DamageAnalyzer) {
+		seedVitals(a, 6, 100, 0, 0)
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 30, DeathType: dtRLTest, Time: 10})
+	})
+	if got := boundedOf(d.Events[0]); got != 0 {
+		t.Errorf("tp3 team hit bounded = %d, want 0", got)
+	}
+
+	// tp4 team hit: armor untouched too -> bounded 0 even with RA.
+	d = run("4", func(a *DamageAnalyzer) {
+		seedVitals(a, 6, 100, 100, events.ITArmor3)
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 30, DeathType: dtRLTest, Time: 10})
+	})
+	if got := boundedOf(d.Events[0]); got != 0 {
+		t.Errorf("tp4 team hit bounded = %d, want 0 (no armor consumption either)", got)
+	}
+
+	// dtSUICIDE under tp1: exempt from nullification.
+	d = run("1", func(a *DamageAnalyzer) {
+		seedVitals(a, 0, 100, 0, 0)
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 0, Damage: 30, DeathType: events.DtSuicide, Time: 10})
+	})
+	if d.Events[0].Bounded != nil {
+		t.Errorf("suicide bounded = %d, want nil (nullification skipped)", *d.Events[0].Bounded)
+	}
+}
+
+// T8: KTX damage-indicator sentinels must not poison the vitals shadow.
+func TestDamageAnalyzer_BoundedStatSentinelsRejected(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 40, 0, 0)
+	// Sentinels: health 1000+dmg indicator, armor feedback value.
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: 1042})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatArmor, Value: 1080})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+	d := finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 40 {
+		t.Errorf("bounded = %d, want 40 (sentinel stats rejected, real health 40)", got)
+	}
+}
+
+// T9: two hits in one frame (no stat refresh in between) cap sequentially.
+func TestDamageAnalyzer_BoundedSameFrameSequentialCap(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	d := finalizeDamage(t, a)
+	if d.Events[0].Bounded != nil {
+		t.Errorf("hit1 bounded = %d, want nil (60 of 100)", *d.Events[0].Bounded)
+	}
+	if got := boundedOf(d.Events[1]); got != 40 {
+		t.Errorf("hit2 bounded = %d, want 40 (health 40 left)", got)
+	}
+}
+
+// T10: an authoritative stat update between hits checkpoints the shadow.
+func TestDamageAnalyzer_BoundedCheckpointResync(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	// Mega pickup / respawn: the server says 100 again.
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: 100})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 11})
+	d := finalizeDamage(t, a)
+	if d.Events[1].Bounded != nil {
+		t.Errorf("post-checkpoint bounded = %d, want nil (health back to 100)", *d.Events[1].Bounded)
+	}
+}
+
+// T11: modes whose T_Damage rewrites are unobservable skip the bounded
+// family entirely — no half-right numbers.
+func TestDamageAnalyzer_BoundedSkippedModes(t *testing.T) {
+	for _, tc := range []struct{ cvar, mode string }{
+		{"k_midair", "midair"}, {"k_instagib", "instagib"}, {"k_dmgfrags", "dmgfrags"},
+	} {
+		a := buildDamageAnalyzer()
+		a.OnEvent(&events.ServerInfoEvent{Key: tc.cvar, Value: "1"})
+		seedVitals(a, 1, 30, 0, 0)
+		// Overkill hit that WOULD get a bounded value in standard mode.
+		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+		co := damageCore()
+		co.DemoInfo = &DemoInfoResult{Players: []DemoInfoPlayer{
+			{Name: "alpha", Team: "red", Dmg: &DemoInfoDmg{Given: 30}},
+		}}
+		a.UseCoreOutputs(co)
+		var res Result
+		if err := a.Finalize(&res); err != nil {
+			t.Fatal(err)
+		}
+		d := res.Damage
+		if want := "skipped:" + tc.mode; d.BoundedMode != want {
+			t.Errorf("%s: BoundedMode = %q, want %q", tc.cvar, d.BoundedMode, want)
+		}
+		if d.Dmg != "" {
+			t.Errorf("%s: Dmg = %q, want empty (only the raw family is stored)", tc.cvar, d.Dmg)
+		}
+		if d.Events[0].Bounded != nil {
+			t.Errorf("%s: event carries bounded despite skip", tc.cvar)
+		}
+		if d.ByPlayer["alpha"].Bounded != nil {
+			t.Errorf("%s: byPlayer carries a bounded nest despite skip", tc.cvar)
+		}
+		if d.Scoreboard.ByPlayer["alpha"].Bounded != nil {
+			t.Errorf("%s: scoreboard delta carries bounded despite skip", tc.cvar)
+		}
+	}
+}
+
+// T12: a victim with no stat history defaults to the 100/0 spawn state.
+func TestDamageAnalyzer_BoundedUnknownVitalsDefault(t *testing.T) {
+	a := buildDamageAnalyzer()
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 150, DeathType: dtRLTest, Time: 10})
+	d := finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 100 {
+		t.Errorf("bounded = %d, want 100 (spawn-state default)", got)
+	}
+}
+
+// T13: the scoreboard delta's bounded nest — enemy-only taken and dmg.team.
+func TestDamageAnalyzer_BoundedScoreboardDelta(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 4, 100, 0, 0)
+	seedVitals(a, 6, 100, 0, 0)
+	// Enemy overkill: bounded 100 of raw 150.
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 150, DeathType: dtRLTest, Time: 10})
+	// Team hit: bounded team damage 40 (tp 0 here: no nullification).
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 40, DeathType: dtRLTest, Time: 11})
+
+	co := damageCore()
+	co.DemoInfo = &DemoInfoResult{Players: []DemoInfoPlayer{
+		{Name: "alpha", Team: "red", Dmg: &DemoInfoDmg{Given: 100, Team: 41}},
+		{Name: "erl", Team: "blue", Dmg: &DemoInfoDmg{Taken: 100}},
+	}}
+	a.UseCoreOutputs(co)
+	var res Result
+	if err := a.Finalize(&res); err != nil {
+		t.Fatal(err)
+	}
+	alpha := res.Damage.Scoreboard.ByPlayer["alpha"]
+	if alpha.Bounded == nil {
+		t.Fatal("no bounded delta for alpha")
+	}
+	if alpha.Bounded.StreamGiven != 100 || alpha.Bounded.StreamTeam != 40 || alpha.Bounded.ScoreTeam != 41 {
+		t.Errorf("alpha bounded delta = %+v, want given 100 / team 40 / scoreTeam 41", alpha.Bounded)
+	}
+	if alpha.Bounded.StreamTaken != 0 {
+		t.Errorf("alpha bounded taken = %d, want 0 (took nothing)", alpha.Bounded.StreamTaken)
+	}
+	erl := res.Damage.Scoreboard.ByPlayer["erl"]
+	if erl.Bounded == nil || erl.Bounded.StreamTaken != 100 {
+		t.Fatalf("erl bounded delta = %+v, want enemy-only taken 100", erl.Bounded)
+	}
+	// The stored result self-describes the family and mode.
+	if res.Damage.Dmg != "both" || res.Damage.BoundedMode != "standard" {
+		t.Errorf("dmg/boundedMode = %q/%q, want both/standard", res.Damage.Dmg, res.Damage.BoundedMode)
+	}
+}

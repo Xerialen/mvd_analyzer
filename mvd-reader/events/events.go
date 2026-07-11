@@ -141,6 +141,19 @@ const (
 	ITQuad            = mvd.ITQuad
 )
 
+// Deathtype constants re-exported for consumers that need to branch on the
+// exact deathtype rather than its weapon mapping (e.g. the suicide
+// exemption in KTX's damage-nullification rules, or the telefrag variants
+// dtTELE2/3 whose obituary attribution differs).
+const (
+	DtStomp   = mvd.DtStomp
+	DtTele1   = mvd.DtTele1
+	DtTele2   = mvd.DtTele2
+	DtTele3   = mvd.DtTele3
+	DtTele4   = mvd.DtTele4
+	DtSuicide = mvd.DtSuicide
+)
+
 // Damage-source helpers re-exported so Layer-2 consumers map a
 // DamageEvent.DeathType (and obituary deathtype) to a weapon / cause
 // without reaching into the mvd wire package directly.

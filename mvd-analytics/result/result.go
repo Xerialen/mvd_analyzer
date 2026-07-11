@@ -632,7 +632,29 @@ package result
 //     which resolves names per bucket); the legend lets a consumer —
 //     notably an MCP agent on the columnar default — decode locally
 //     instead of a /loc-table round trip.
-const CurrentSchemaVersion = 53
+//
+// v54: the bounded damage family (additive).
+//   - The wire carries only KTX's UNBOUND damage (overkill-inclusive,
+//     ktx/src/combat.c:795); the scoreboard's BOUNDED dmg_dealt (armor
+//     absorbed + health damage capped to remaining health, combat.c:783)
+//     is now reconstructed per hit from tracked victim armor/health state.
+//     damage.events[].bounded (omitted when equal to damage; 0 is a real
+//     value — a pent/teamplay-nullified hit), damage.byPlayer.<p>.bounded
+//     (a nested PlayerDamage mirroring the damage figures), and
+//     damage.scoreboard deltas gain a bounded nest incl. streamTeam /
+//     scoreTeam (dmg.team reconciliation only becomes meaningful with the
+//     bounded family). damage.dmg ("both") and damage.boundedMode
+//     ("standard", or "skipped:midair|instagib|dmgfrags" when the server
+//     mode rewrites T_Damage unobservably — no bounded fields then).
+//   - Telefrags and stomps fold their BOUNDED damage into given/givenTeam/
+//     taken in both families (telefrag: armor+health — the wire 9999 is a
+//     sentinel; stomp: the honest ~10 HP wire value through the normal
+//     arithmetic), matching KTX's own accumulation (combat.c:1046-1076
+//     has no tele/stomp exclusion). telefrags[]/stomps[] entries carry the
+//     per-kill bounded value. ByWeapon/Matrix/EWep/TotalDamage still
+//     exclude them (KTX wpNONE — demostats weapons[].damage excludes them
+//     too).
+const CurrentSchemaVersion = 54
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

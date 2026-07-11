@@ -138,12 +138,23 @@ Defined in `result/damage.go`. Reconstructed from the KTX
 `mvdhidden_dmgdone` stream (see `mvd-reader/MVD_FORMAT.md`). Present only
 when the demo carries that stream (KTX with MVD-hidden extensions).
 
-**Unbound vs bounded.** All amounts are **unbound** — the full hit
-including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
-end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
-hit to the victim's remaining health. So these figures run higher than
-the scoreboard, most on killing blows and telefrags. The `scoreboard`
-sub-object surfaces both side by side; the divergence is expected.
+**Unbound vs bounded — two families (schema v54).** The **raw** family
+(`damage`, `given`, `taken`, …) is **unbound** — the full hit including
+overkill, capped only at 9999, exactly the wire value. The **bounded**
+family (`events[].bounded`, each player's `bounded` nest) reconstructs
+KTX's scoreboard semantics per hit: armor absorbed + health damage capped
+to the victim's remaining health (`dmg_dealt`, `combat.c:783`). The wire
+does not carry the bounded value; it is re-derived from the victim's
+tracked armor/health state at hit time (pre-hit state is well-defined:
+KTX multicasts `dmgdone` mid-frame, stats broadcast at end of frame), so
+it carries ±1/hit ceiling slop on armor-absorbing hits. `dmg` echoes
+which family a payload carries (`"both"` as stored); `boundedMode` is
+`"standard"`, or `"skipped:midair"`/`"skipped:instagib"`/
+`"skipped:dmgfrags"` when the server mode rewrites `T_Damage` in ways
+the wire does not expose — every bounded field is then absent, and the
+raw family is unaffected. The `scoreboard` sub-object surfaces both
+families against the KTX scoreboard; raw diverges by the overkill
+(expected), bounded should nearly match (its correctness signal).
 
 The per-player / matrix aggregates AND the `events` log are both **match-time
 only** (schema v50): the analyzer drops out-of-match (warmup / post-match) hits
@@ -174,6 +185,8 @@ separate from the overkill effect.)
 | Telefrags | `telefrags` | []PositionalKill (omitempty — instant kills, separate from damage) |
 | Stomps | `stomps` | []PositionalKill (omitempty — head-stomp kills, separate from damage) |
 | Scoreboard | `scoreboard` | *DamageReconciliation (omitempty) |
+| Dmg | `dmg` | string (omitempty — family echo: `both` as stored, `bounded` from the view, absent on a raw view) |
+| BoundedMode | `boundedMode` | string (omitempty — `standard`, or `skipped:midair`/`skipped:instagib`/`skipped:dmgfrags`) |
 
 ### PositionalKill
 
@@ -203,6 +216,7 @@ stomp is a movement kill).
 | IsSelf | `isSelf` | bool (omitempty — attacker == victim) |
 | IsTeam | `isTeam` | bool (omitempty — same team, not self) |
 | VictimWep | `victimWep` | string (omitempty — victim's class at hit: `sg`/`mid`/`lg`/`rl`/`both`; set only on enemy hits) |
+| Bounded | `bounded` | *int (omitempty — KTX-scoreboard reconstruction; **absent means "equal to `damage`"**; `0` is a real value: a pent/teamplay-nullified hit still emits a wire event) |
 
 ### PlayerDamage
 
@@ -229,8 +243,9 @@ sum of the LG/RL/both buckets = damage dealt to enemies holding RL or LG.
 | EnemyVsRL | `enemyVsRl` | int (victim held RL, not LG) |
 | EnemyVsBoth | `enemyVsBoth` | int (victim held both RL and LG) |
 | EWep | `ewep` | int (= enemyVsLg + enemyVsRl + enemyVsBoth) |
-| Telefrags | `telefrags` | int (omitempty — instant-kill telefrags DEALT; not damage, excluded from `given`) |
-| Stomps | `stomps` | int (omitempty — head-stomp kills DEALT; not damage, excluded from `given`) |
+| Telefrags | `telefrags` | int (omitempty — instant-kill telefrags DEALT, a count) |
+| Stomps | `stomps` | int (omitempty — head-stomp kills DEALT, a count) |
+| Bounded | `bounded` | *PlayerDamage (omitempty — the bounded family: same damage-figure fields under KTX-scoreboard semantics; the nest never carries `telefrags`/`stomps`/`bounded`) |
 
 ### DamagePair
 
@@ -258,6 +273,15 @@ overkill; `scoreEwep` is the KTX `enemy-weapons` field.
 | ScoreTaken | `scoreTaken` | int (bounded, KTX scoreboard) |
 | StreamEWep | `streamEwep` | int (unbound, this pipeline) |
 | ScoreEWep | `scoreEwep` | int (bounded, KTX scoreboard) |
+| Bounded | `bounded` | *DamageDeltaBounded (omitempty — this pipeline's bounded family vs the same scoreboard; near-equality is the reconstruction's correctness signal) |
+
+| Field (DamageDeltaBounded) | JSON key | Type |
+|---|---|---|
+| StreamGiven | `streamGiven` | int (bounded enemy given, this pipeline) |
+| StreamTaken | `streamTaken` | int (bounded **enemy-only** taken — KTX `dmg_t` semantics, unlike `PlayerDamage.taken`) |
+| StreamEWep | `streamEwep` | int (bounded ewep, this pipeline) |
+| StreamTeam | `streamTeam` | int (bounded team given, this pipeline) |
+| ScoreTeam | `scoreTeam` | int (KTX scoreboard `dmg.team` — reconciled only in the bounded family, where it is comparable) |
 
 ## ShotsResult (`shots`)
 
@@ -1752,6 +1776,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v54 | The **bounded damage family** (additive). The wire carries only KTX's unbound damage; the scoreboard's bounded `dmg_dealt` (armor absorbed + health damage capped to remaining health) is now reconstructed per hit from tracked victim vitals: `damage.events[].bounded` (absent = equal to `damage`; `0` is a real nullified-hit value), `damage.byPlayer.<p>.bounded` (a nested `PlayerDamage`), `damage.scoreboard` deltas gain a `bounded` nest incl. `streamTeam`/`scoreTeam`, plus the `dmg` family echo and `boundedMode` (`skipped:*` on midair/instagib/dmgfrags demos — no bounded fields there). Telefrags **and stomps** now fold their bounded damage into `given`/`givenTeam`/`taken` in **both** families, matching KTX's own accumulation (telefrag: armor+health, the wire 9999 is a sentinel; stomp: the honest ~10 HP wire value); `telefrags[]`/`stomps[]` entries carry the per-kill `bounded` value. `byWeapon`/`matrix`/`ewep`/`totalDamage` still exclude positional kills (KTX `wpNONE` parity). |
 | v53 | Columnar buckets become **loc-self-contained**; view shape only, no stored-field change (bumped so the immutable schemaVersion-keyed ETags stop revalidating pre-legend bodies). The `/buckets` `layout=column` envelope gains `locTable` — the demo's interned loc-name legend, present iff an `li` column is in the output. Columnar keeps the compact raw index (row mode keeps resolving names per bucket); consumers decode locally instead of a `/loc-table` round trip. |
 | v52 | No-match-start demos are **flagged, not coerced**: `streams.global` gains `timeBase: "demo"` (omitted normally) when no match start was detected — on such demos the rebase never ran, so every timestamp in the Result is on the raw demo clock; previously indistinguishable from a match-rebased result. A matching notice is appended to `errors[]` (surfaces via `/overview`). |
 | v51 | The match opening becomes first-class. `streams.players[].sp` gains the **match-start spawn** (KTX respawns everyone at countdown end, but a player alive through the countdown never crosses dead→alive on the wire, so the timeline synthesizes `t=0`). Adds `Result.opening` (`OpeningResult`, the `opening` artifact): per-player match-start spawn loc + the first in-match take of each contested spawner. The events *view* gains the default `pickup` type (identity-rich takes joined from `items[].phases` + `weaponPickups`) and spawn events carry `detail{loc}`. |
