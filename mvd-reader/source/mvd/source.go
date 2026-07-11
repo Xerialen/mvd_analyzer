@@ -133,6 +133,13 @@ func (s *Source) CurrentTime() float64 {
 	return s.decoder.CurrentTime()
 }
 
+// CurrentTimeMs reports the decoder's exact wire-native demo time. Prefer it
+// over CurrentTime when an inclusive/exclusive evidence boundary must be
+// compared with schema timestamps, which are also stored in milliseconds.
+func (s *Source) CurrentTimeMs() int32 {
+	return s.decoder.CurrentTimeMs()
+}
+
 // Parser returns the underlying parser. Exposed for diagnostic tooling
 // that needs to flip the parser into diagnostic mode or read collected
 // warnings; not part of the stable Source contract.

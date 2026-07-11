@@ -41,7 +41,7 @@ func TestDiagnosticBucketsUseCompleteDemoWindowIncludingQuietTail(t *testing.T) 
 		}},
 	}}
 
-	buckets, err := diagnosticBuckets(r, 1000, 3.0)
+	buckets, err := diagnosticBuckets(r, 1000, 3000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestDiagnosticBucketsIncludePositionExactlyAtSourceEnd(t *testing.T) {
 		}},
 	}}
 
-	buckets, err := diagnosticBuckets(r, 1000, 3.0)
+	buckets, err := diagnosticBuckets(r, 1000, 3000)
 	if err != nil {
 		t.Fatal(err)
 	}

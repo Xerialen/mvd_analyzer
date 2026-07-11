@@ -378,7 +378,7 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 	// This is deliberately read from the concrete MVD source rather than
 	// inferred from the last position. A standby recording can have a quiet
 	// tail, and the diagnostic bucket axis must still cover the complete demo.
-	demoEnd := src.CurrentTime()
+	demoEndMs := src.CurrentTimeMs()
 
 	enc := json.NewEncoder(w)
 	if pretty {
@@ -393,7 +393,7 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 		// particular, -from/-to/-fields cannot turn this into a disguised
 		// match analysis. The output shape intentionally matches BucketsView
 		// so evidence consumers can share their strict parser.
-		bv, err := diagnosticBuckets(res, int(vopts.bucketDur/time.Millisecond), demoEnd)
+		bv, err := diagnosticBuckets(res, int(vopts.bucketDur/time.Millisecond), demoEndMs)
 		if err != nil {
 			return err
 		}
@@ -481,25 +481,13 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 }
 
 // diagnosticBuckets is the closed standby/non-match projection used by the
-// CLI view of the same name. demoEnd comes from mvdsource.Source.CurrentTime,
+// CLI view of the same name. sourceEndMs comes from the concrete MVD source,
 // not from a match detector or the last entity update, so quiet demo tail is
 // represented by empty buckets instead of silently truncating the evidence.
-func diagnosticBuckets(res *result.Result, windowMs int, demoEnd float64) (*view.BucketsView, error) {
-	// Buckets are half-open. Diagnostic capture sets Global.MatchEnd to one
-	// millisecond after its final position, while CurrentTime can equal that
-	// position's timestamp. Take the later boundary so the final entity sample
-	// is selectable without truncating a source-level quiet tail.
-	end := demoEnd
-	if res != nil && res.Streams != nil {
-		if streamEnd := float64(res.Streams.Global.MatchEnd) * 0.001; streamEnd > end {
-			end = streamEnd
-		}
-	}
-	return view.Buckets(res, view.BucketsOptions{
-		WindowMs:  windowMs,
-		StartTime: 0,
-		EndTime:   end,
-		Fields:    []string{view.FieldPosition},
+func diagnosticBuckets(res *result.Result, windowMs int, sourceEndMs int32) (*view.BucketsView, error) {
+	return view.DiagnosticBuckets(res, view.DiagnosticBucketsOptions{
+		WindowMs:    windowMs,
+		SourceEndMs: sourceEndMs,
 	})
 }
 
