@@ -388,7 +388,8 @@ With no time window the **stored** `res.Aim` is served (a `players` filter
 selects named shooters' match-wide aim; `summary` drops the `crosshair` +
 `lgRamp` sample blocks). A `from`/`to` window (match-relative seconds)
 **recomputes** aim over the shots in the window via `aimcore.Compute`, so every
-field scopes to the window consistently. See mvd-api API.md §4.5c.
+field scopes to the window consistently. See the /aim operation in the
+served OpenAPI spec (mvd-api `/openapi.yaml`, browsable at `/docs`).
 
 Geometry: the shot traces from the weapon **muzzle** (origin + 16, the LG/SG
 fire origin) toward the enemy **hull center** (origin + 4, the −24..+32 box

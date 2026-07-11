@@ -8,10 +8,13 @@
 #   - info.version must equal result.CurrentSchemaVersion.
 # Keep those conventions when editing, or the drift tests will fail loudly.
 #
-# Response shapes are authored from mvd-analytics/RESULT_SCHEMA.md (the
-# authoritative field-level reference) and the view/result structs, and are
+# This file is THE per-endpoint reference and must stay self-contained:
+# it is served to external integrators who cannot follow repo-relative
+# file references, so inline semantics here rather than pointing at
+# API.md (high-level guide + recipes only) or RESULT_SCHEMA.md (deep
+# Result internals; the one permitted link, as an absolute GitHub URL).
+# Response shapes are authored from the view/result structs and are
 # validated against real golden-corpus responses by openapi_validate_test.go.
-# mvd-api/API.md remains the prose integration guide (recipes, semantics).
 openapi: 3.1.0
 info:
   title: mvd-api
@@ -29,7 +32,7 @@ info:
     dwell spans, row-bucket timestamps) are **seconds**; anything copied
     verbatim from the stored schema (change-stream / interval / position
     arrays, the columnar bucket grid, `/overview` times) is **int32
-    milliseconds**. Scale ms→s by `* 0.001`. See API.md §2.1.
+    milliseconds**. Scale ms→s by `* 0.001`.
 
     ### Caching
     Per-demo 2xx responses carry `Cache-Control: public, max-age=86400,
@@ -52,8 +55,10 @@ info:
     values are case-sensitive (QW names are case-significant); weapon /
     item / kind / loc / layout tokens are case-insensitive.
 
-    Full prose reference: mvd-api/API.md. Field-level payload shapes:
-    mvd-analytics/RESULT_SCHEMA.md.
+    This document is the complete per-endpoint reference. Deep
+    field-level semantics of the underlying analysis (the Result
+    contract shared with the Go library and WASM builds) live in
+    [RESULT_SCHEMA.md](https://github.com/galfthan/mvd_analyzer/blob/main/mvd-analytics/RESULT_SCHEMA.md).
   license:
     name: MIT
     identifier: MIT
@@ -233,6 +238,12 @@ paths:
         timing, data-quality `errors[]`. UNITS SEAM: overview times are
         int32 MILLISECONDS (verbatim from the stored schema). `teams` and
         `players` are frag-sorted descending — index 0 is the winner.
+        Wall-clock mapping: `timing` converts a match-relative game time g
+        (ms) to real time — the game clock freezes during pauses, so
+        wallClockMs = demoStartUnixMs + demoOffset + g + the durations of
+        pauses at or before g (±demoStartAccuracyMs). `timing` is omitted
+        when the demo carries no wall-clock source; `pauses` when the
+        match had none.
       parameters:
         - $ref: "#/components/parameters/DemoId"
       responses:
@@ -350,8 +361,12 @@ paths:
         Per-hit damage log plus aggregates (matrix, per-weapon, given/taken)
         and the KTX-scoreboard cross-check. Positional kills — telefrags and
         stomps — are excluded from all damage figures and listed separately.
-        Filters recompute aggregates like /frags. 422 `damage_unavailable`
-        without the KTX mvdhidden_dmgdone stream.
+        Damage is UNBOUND (includes overkill), so totals run higher than the
+        KTX scoreboard, which is bounded to victim health. Per-player EWep
+        buckets slice enemy-given damage by what the victim held:
+        enemyVsSg/enemyVsMid/enemyVsLg/enemyVsRl/enemyVsBoth, with
+        ewep = lg+rl+both. Filters recompute aggregates like /frags. 422
+        `damage_unavailable` without the KTX mvdhidden_dmgdone stream.
       parameters:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/Players"
@@ -930,16 +945,34 @@ paths:
       operationId: getArtifact
       tags: [artifacts]
       summary: Generic artifact accessor
-      description: >
+      description: |
         Materialise and serve any servable artifact by DAG node name. The
         response is a single-key envelope — the key is the artifact's
-        `resultKey` from GET /v1/artifacts (NOT the node name; e.g. `frag`
-        → `{"frags": …}`), the value the raw Result section
-        (RESULT_SCHEMA.md). Accepts NO query parameters (parameterised
-        reads are the curated endpoints) — any parameter returns 400
-        invalid_param. Unknown / non-servable names 404 artifact_unknown.
-        Capability-gated artifacts return their section-specific 422 code.
-        ETag is the finer per-artifact form `"<sha>-<name>@v<n>"`.
+        **resultKey, NOT the node name**. Accepts NO query parameters
+        (parameterised reads are the curated endpoints) — any parameter
+        returns 400 invalid_param. Unknown / non-servable names 404
+        artifact_unknown. Capability-gated artifacts return their
+        section-specific 422 code. ETag is the finer per-artifact form
+        `"<sha>-<name>@v<n>"`.
+
+        | DAG node | curated route | body key (resultKey) | when the demo lacks it |
+        |---|---|---|---|
+        | demoinfo | /demoinfo | demoInfo | 422 demoinfo_unavailable |
+        | frag | /frags | frags | 422 frags_unavailable |
+        | metadata | /metadata | metadata | 422 metadata_unavailable |
+        | match | — (feeds /overview) | match | 200, null body value |
+        | messages | /chat (filtered view) | messages | 200, null body value |
+        | timeline | — (feeds /events, /buckets, /region-control) | timelineAnalysis | 200, null body value |
+        | items | /items (filtered view) | items | 200, null body value |
+        | damage | /damage | damage | 422 damage_unavailable |
+        | shots | /shots | shots | 422 shots_unavailable |
+        | map-entities | /v1/maps/{map}/entities (per-map form) | mapEntities | 200, null body value |
+        | backpacks | /backpacks (filtered view) | backpacks | 200, null/[] |
+        | weapon-pickups | /weapon-pickups (filtered view) | weaponPickups | 200, null/[] |
+        | aim | /aim | aim | 422 aim_unavailable |
+        | loc-graph | /loc-graph | locGraph | 422 locgraph_unavailable |
+        | opening | — (artifact only) | opening | 422 opening_unavailable |
+        | los | /los | — (serves the /los body, no envelope key) | 200, empty lists |
       parameters:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/ArtifactName"
@@ -969,7 +1002,9 @@ paths:
       summary: Static map entity layout
       description: >
         Items, spawns, teleporters, buttons, doors for a map from the
-        embedded corpus — no demo needed. ETag
+        embedded corpus — no demo needed, identical for every demo on the
+        map (a caller holding a demo id reads the map name from /overview
+        first; the per-match pickup timeline is /items). ETag
         `"ents-<map>-v<corpusVersion>"`.
       parameters:
         - $ref: "#/components/parameters/MapName"
@@ -1039,8 +1074,8 @@ components:
         type: string
         pattern: "^(gameId:[0-9]+|sha:[0-9a-fA-F]{64})$"
       examples:
-        byGameId: { value: "gameId:12345" }
-        bySha: { value: "sha:9f3aa7b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f" }
+        byGameId: { value: "gameId:145060" }
+        bySha: { value: "sha:ffda58010f3ab43c020dfd267dd90ba6775ec8e6f0b969ade82ca15d9162f57d" }
     ArtifactName:
       name: name
       in: path
@@ -1107,8 +1142,9 @@ components:
       in: query
       description: >
         CSV of weapon codes (case-insensitive). Codes: rl, lg, gl, ssg,
-        sng, ng, sg, axe (plus tele/stomp where positional kills apply —
-        see API.md). /backpacks accepts rl/lg only; /weapon-pickups
+        sng, ng, sg, axe; on /damage the pseudo-codes tele/stomp select
+        the positional instant kills (which carry no real weapon).
+        /backpacks accepts rl/lg only; /weapon-pickups
         rl,lg,gl,ssg,sng,ng. The pre-16.2 singular spelling `weapon` is
         an accepted legacy alias; `weapons` wins when both are present.
       style: form
@@ -1263,8 +1299,10 @@ components:
       in: query
       description: >
         CSV of `field=reducerName` pairs overriding the per-field default
-        reducer, e.g. `reducers=h=min,a=last`. Names come from the reducer
-        registry in RESULT_SCHEMA.md.
+        reducer, e.g. `reducers=h=min,a=last`. Registry: first (default
+        for most fields — value at window start), last, mean, min, max,
+        dominant (most common value), held-any, majority, any. Unknown
+        names 400.
       schema: { type: string }
     IncludeTeam:
       name: includeTeam
@@ -1491,7 +1529,9 @@ components:
     # Bootstrapped from the Go structs (result/, view/, mvd-api Overview)
     # via reflection and hand-curated; every schema is validated against
     # real golden-corpus responses by openapi_validate_test.go, so shape
-    # drift fails tests. Semantics live in RESULT_SCHEMA.md.
+    # drift fails tests. Deep field semantics: RESULT_SCHEMA.md (linked
+    # absolutely from info.description; do not add repo-relative refs in
+    # rendered descriptions).
     Overview:
       additionalProperties: false
       properties:

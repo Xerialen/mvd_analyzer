@@ -217,29 +217,29 @@ key their ETag on the schema version alone (`"artifacts-v<n>"` /
 | GET | `/v1/demos/{id}/airgibs` | — | `[]result.AirgibEvent` (Key Moments: direct rocket hits on airborne victims, height-sorted; empty without the map BSP) |
 | GET | `/v1/maps/{map}/entities` | `types`, `kinds` | `result.MapEntitiesResult` (static layout by map name, no demo needed) |
 | GET | `/v1/maps/{map}/geometry` | — | `mapgeom.MapRegions` floor-polygon JSON (needs `-maps-dir`; REST-only) |
-| GET | `/v1/artifacts` | — | `{schemaVersion, artifacts:[…]}` — the DAG manifest (name, cost, lazy, requires/provides, resultKey, servable); static, ETag `"artifacts-v<n>"` (API.md §4.17) |
+| GET | `/v1/artifacts` | — | `{schemaVersion, artifacts:[…]}` — the DAG manifest (name, cost, lazy, requires/provides, resultKey, servable); static, ETag `"artifacts-v<n>"` |
 | GET | `/v1/graph` | — | `{nodes:[…], edges:[…]}` — the analyzer DAG as JSON; static, ETag `"graph-v<n>"` |
 | GET | `/v1/demos/{id}/artifacts/{name}` | — (params rejected) | the named servable artifact's section (generic accessor; closed registry, `404 artifact_unknown`; per-artifact ETag `"<sha>-<name>@v<n>"`) |
 
-### Details → [`API.md`](API.md)
+### Details → `/docs` and [`API.md`](API.md)
 
-The full HTTP reference lives in [`API.md`](API.md):
+The per-endpoint reference (every operation, parameter, full field-level
+response schema, and error code) is the OpenAPI document the server
+serves at `/openapi.yaml`, browsable at `/docs` — drift-tested against
+the code, so it can't go stale. [`API.md`](API.md) is the high-level
+guide around it:
 
-- **Query conventions** — `players`/`fields`/`types` lists, `reducers`,
-  `loc=name|index`, `layout=column|row`, defaults.
-- **Units** — the seconds-vs-milliseconds split (view envelopes are
-  seconds; raw stream entries, the columnar grid, and all `/overview`
-  times are int32 ms).
-- **Response shapes** — per-endpoint, cross-linked to
-  [`mvd-analytics/RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md)
-  (the authoritative source for `BucketsView`, `EventsView`,
-  `StreamSliceView`, `StateAtView`, `LocTrailsView`,
-  `result.RegionControlResult`, the field vocabulary, and the reducer
-  registry). View shapes are produced identically via the WASM bridge,
-  CLI, or this REST surface.
-- **Error envelope + stable codes** — the `{ "error": { code, message } }`
-  shape and every `4xx`/`5xx` code.
+- **Getting started** — demo addressing, auto-load, the typical flow.
+- **Query conventions + units** — the seconds-vs-milliseconds split
+  (view envelopes are seconds; raw stream entries, the columnar grid,
+  and all `/overview` times are int32 ms).
+- **Caching, errors, auth, CORS** — the cross-cutting behaviour.
+- **Choosing the right endpoint** — state-at vs buckets vs stream-slice
+  vs events.
 - **Recipes** — common frontend features → the call that backs them.
+
+Deep field-level semantics stay in
+[`mvd-analytics/RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md).
 
 ## Authentication
 

@@ -7,6 +7,17 @@ detail.
 
 ## Unreleased (branch `phase-16.2`)
 
+- **The served OpenAPI spec is now the single per-endpoint reference;
+  API.md slims to a high-level guide (docs only).** `/openapi.yaml` +
+  `/docs` are self-contained — no more dead repo-file references in
+  rendered descriptions (reducer registry, tele/stomp pseudo-codes, the
+  artifact mapping table, the overview wall-clock formula are inlined;
+  the one external link is an absolute GitHub URL to RESULT_SCHEMA.md
+  for deep Result internals). API.md drops its ~700-line §4 endpoint
+  reference (three-way duplication with the spec and RESULT_SCHEMA.md)
+  and keeps getting-started, conventions, endpoint-choice, and recipes.
+  Spec examples use a real demo (`gameId:145060` and its SHA).
+
 - **Columnar buckets carry their own loc legend (schema v53).** The
   `/buckets` `layout=column` envelope — the REST and MCP default — gains
   `locTable`, the demo's interned loc-name table, present iff an `li`
@@ -45,8 +56,8 @@ detail.
     (frag-sorted, index 0), getDamage/getAim lead with their MCP
     `summary=true` default and state the telefrag exclusion once, the
     items/weapon-pickups/backpacks trio cross-links its division of
-    labour, and API.md §4.17b gains the full node-name ↔ curated-route
-    ↔ `resultKey` ↔ 422-code table.
+    labour, and the generic-artifact operation gains the full node-name
+    ↔ curated-route ↔ `resultKey` ↔ 422-code table (in the served spec).
   - Robustness fallout from the validation harness: the buckets
     first-value reducers no longer panic on empty-but-non-nil change
     streams.
