@@ -23,6 +23,7 @@ var templates = template.Must(template.ParseFS(templateFS, "templates/*.html"))
 // pageData is the union of fields any portal page may read. Unused fields stay
 // zero. All string fields are auto-escaped by html/template on render.
 type pageData struct {
+	BaseURL     string // public origin, for absolute URLs users paste into configs (landing MCP snippet)
 	DiscordName string // signed-in user's Discord username (attacker-influenced)
 	HasKey      bool   // user already has an active key
 	HashPrefix  string // short non-secret key identifier

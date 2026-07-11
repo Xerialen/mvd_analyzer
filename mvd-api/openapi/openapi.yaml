@@ -11,13 +11,13 @@
 # This file is THE per-endpoint reference and must stay self-contained:
 # it is served to external integrators who cannot follow repo-relative
 # file references, so inline semantics here rather than pointing at
-# API.md (high-level guide + recipes only) or RESULT_SCHEMA.md (deep
-# Result internals; the one permitted link, as an absolute GitHub URL).
+# API.md (high-level guide + recipes only). Deep Result internals may
+# link to /docs/result-schema — RESULT_SCHEMA.md served by this API.
 # Response shapes are authored from the view/result structs and are
 # validated against real golden-corpus responses by openapi_validate_test.go.
 openapi: 3.1.0
 info:
-  title: mvd-api
+  title: mvdanalyzer-api
   version: "53"
   summary: QuakeWorld MVD demo analysis REST API
   description: |
@@ -57,8 +57,9 @@ info:
 
     This document is the complete per-endpoint reference. Deep
     field-level semantics of the underlying analysis (the Result
-    contract shared with the Go library and WASM builds) live in
-    [RESULT_SCHEMA.md](https://github.com/galfthan/mvd_analyzer/blob/main/mvd-analytics/RESULT_SCHEMA.md).
+    contract shared with the Go library and WASM builds) are served by
+    this API at [/docs/result-schema](/docs/result-schema)
+    (raw markdown: /docs/result-schema.md).
   license:
     name: MIT
     identifier: MIT
@@ -127,6 +128,25 @@ paths:
       responses:
         "200":
           description: The viewer page.
+          content:
+            text/html:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+  /docs/result-schema:
+    get:
+      operationId: getResultSchemaPage
+      tags: [meta]
+      summary: Result schema reference
+      description: >
+        RESULT_SCHEMA.md — the field-level reference for the analysis
+        output (vocabulary codes, stream forms, per-section field
+        tables, schema version history) — rendered as a standalone page
+        (vendored renderer, no external requests). Raw markdown at
+        /docs/result-schema.md.
+      security: []
+      responses:
+        "200":
+          description: The rendered reference.
           content:
             text/html:
               schema: { type: string }
@@ -1529,8 +1549,8 @@ components:
     # Bootstrapped from the Go structs (result/, view/, mvd-api Overview)
     # via reflection and hand-curated; every schema is validated against
     # real golden-corpus responses by openapi_validate_test.go, so shape
-    # drift fails tests. Deep field semantics: RESULT_SCHEMA.md (linked
-    # absolutely from info.description; do not add repo-relative refs in
+    # drift fails tests. Deep field semantics: /docs/result-schema (the
+    # served RESULT_SCHEMA.md; do not add repo-relative file refs in
     # rendered descriptions).
     Overview:
       additionalProperties: false

@@ -47,6 +47,9 @@ func newRouter(store demoStore, logger *slog.Logger, mapsDir string, auth *authe
 	mux.HandleFunc("GET /docs", s.handleDocs)
 	mux.HandleFunc("GET /docs/{$}", s.handleDocs)
 	mux.HandleFunc("GET /docs/rapidoc-min.js", s.handleDocsAsset)
+	mux.HandleFunc("GET /docs/result-schema", s.handleResultSchema)
+	mux.HandleFunc("GET /docs/result-schema.md", s.handleResultSchemaMD)
+	mux.HandleFunc("GET /docs/marked.min.js", s.handleMarkedAsset)
 
 	// Automatic DAG surface (Stage 4): the artifact manifest, the generic
 	// per-artifact endpoint, and the graph as JSON.

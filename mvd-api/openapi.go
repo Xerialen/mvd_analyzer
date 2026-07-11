@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	_ "embed"
+
+	mvdanalytics "github.com/mvd-analyzer/mvd-analytics"
 )
 
 // This file serves the machine-readable API description and its browsable
@@ -30,6 +32,12 @@ var docsHTML []byte
 //go:embed openapi/rapidoc-min.js
 var rapidocJS []byte
 
+//go:embed openapi/result-schema.html
+var resultSchemaHTML []byte
+
+//go:embed openapi/marked.min.js
+var markedJS []byte
+
 // contentETag is a strong validator derived from the bytes themselves.
 // The spec/viewer change with deploys, not with the schema version alone
 // (wording edits don't bump the schema), so a schemaVersion-keyed ETag
@@ -40,9 +48,12 @@ func contentETag(kind string, body []byte) string {
 }
 
 var (
-	openapiSpecETag = contentETag("openapi", openapiSpec)
-	docsHTMLETag    = contentETag("docs", docsHTML)
-	rapidocJSETag   = contentETag("rapidoc", rapidocJS)
+	openapiSpecETag      = contentETag("openapi", openapiSpec)
+	docsHTMLETag         = contentETag("docs", docsHTML)
+	rapidocJSETag        = contentETag("rapidoc", rapidocJS)
+	resultSchemaHTMLETag = contentETag("schema", resultSchemaHTML)
+	resultSchemaMDETag   = contentETag("schemamd", mvdanalytics.ResultSchemaMD)
+	markedJSETag         = contentETag("marked", markedJS)
 )
 
 // serveEmbedded writes one embedded asset with revalidation. max-age is an
@@ -74,4 +85,24 @@ func (s *server) handleDocs(w http.ResponseWriter, r *http.Request) {
 // handleDocsAsset: GET /docs/rapidoc-min.js — the vendored viewer bundle.
 func (s *server) handleDocsAsset(w http.ResponseWriter, r *http.Request) {
 	serveEmbedded(w, r, "text/javascript; charset=utf-8", rapidocJSETag, rapidocJS)
+}
+
+// handleResultSchema: GET /docs/result-schema — RESULT_SCHEMA.md (the
+// field-level Result reference) rendered as a standalone page, so the
+// deep contract is reachable from /docs without a GitHub round trip.
+// The markdown itself is embedded from the mvd-analytics module root.
+func (s *server) handleResultSchema(w http.ResponseWriter, r *http.Request) {
+	serveEmbedded(w, r, "text/html; charset=utf-8", resultSchemaHTMLETag, resultSchemaHTML)
+}
+
+// handleResultSchemaMD: GET /docs/result-schema.md — the raw markdown
+// the page renders (also the machine-readable form).
+func (s *server) handleResultSchemaMD(w http.ResponseWriter, r *http.Request) {
+	serveEmbedded(w, r, "text/markdown; charset=utf-8", resultSchemaMDETag, mvdanalytics.ResultSchemaMD)
+}
+
+// handleMarkedAsset: GET /docs/marked.min.js — the vendored markdown
+// renderer the result-schema page uses.
+func (s *server) handleMarkedAsset(w http.ResponseWriter, r *http.Request) {
+	serveEmbedded(w, r, "text/javascript; charset=utf-8", markedJSETag, markedJS)
 }

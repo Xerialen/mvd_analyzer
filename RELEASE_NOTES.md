@@ -7,6 +7,21 @@ detail.
 
 ## Unreleased (branch `phase-16.2`)
 
+- **RESULT_SCHEMA served standalone; portal points at the self-served
+  docs; public name is mvdanalyzer-api (no schema change).**
+  `GET /docs/result-schema` renders `RESULT_SCHEMA.md` (embedded from
+  the mvd-analytics module root, rendered by vendored marked 12.0.2 —
+  no CDN; raw markdown at `/docs/result-schema.md`; GitHub-style
+  heading anchors so internal `#links` work; repo-relative links
+  rewritten to GitHub). The OpenAPI spec's deep-contract link now
+  points there instead of GitHub. The portal landing links `/docs`,
+  `/openapi.yaml` and `/docs/result-schema`, gains a short MCP section
+  (endpoint `<origin>/mcp`, no key needed, one-line client-add
+  example), and keeps exactly one GitHub link (source/issues) — pinned
+  by a landing-page test. The API's public name is **mvdanalyzer-api**
+  (spec title, docs pages, portal); the server binary and module stay
+  `mvd-api`.
+
 - **The served OpenAPI spec is now the single per-endpoint reference;
   API.md slims to a high-level guide (docs only).** `/openapi.yaml` +
   `/docs` are self-contained — no more dead repo-file references in

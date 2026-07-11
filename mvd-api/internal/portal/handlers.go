@@ -12,7 +12,7 @@ func (p *Portal) handleLanding(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/portal/key", http.StatusFound)
 		return
 	}
-	p.render(w, "landing.html", pageData{})
+	p.render(w, "landing.html", pageData{BaseURL: p.baseURL})
 }
 
 // handleLogin: GET /portal/login — mint a state nonce, store it in a signed

@@ -351,6 +351,7 @@ func TestOpenAPIGoldenResponsesValidate(t *testing.T) {
 		exempt := map[string]bool{
 			"GET /openapi.yaml":           true, // yaml, not JSON
 			"GET /docs":                   true, // html
+			"GET /docs/result-schema":     true, // html
 			"GET /v1/auth/check":          true, // 204, validated above but no 200
 			"GET /v1/maps/{map}/geometry": true, // needs -maps-dir; 404 path validated above
 		}

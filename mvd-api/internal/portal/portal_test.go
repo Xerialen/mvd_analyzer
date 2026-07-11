@@ -569,3 +569,36 @@ func assertNoSecret(t *testing.T, body string) {
 		t.Errorf("response body leaked the cookie secret:\n%s", body)
 	}
 }
+
+// TestLandingPage: the portal landing must point at the self-served docs
+// (/docs, /openapi.yaml, /docs/result-schema), carry the MCP endpoint
+// built from the configured base URL, and keep exactly one GitHub link.
+func TestLandingPage(t *testing.T) {
+	d := newDiscordStub(t)
+	p, _ := newTestPortal(t, d)
+	srv, client := newPortalServer(t, p)
+
+	resp, err := client.Get(srv.URL + "/portal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /portal = %d, want 200", resp.StatusCode)
+	}
+	page := string(body)
+	for _, want := range []string{
+		`href="/docs"`,
+		`href="/openapi.yaml"`,
+		`href="/docs/result-schema"`,
+		"https://portal.example.com/mcp",
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("landing page missing %q", want)
+		}
+	}
+	if got := strings.Count(page, "github.com"); got != 2 { // one href + its visible text
+		t.Errorf("landing page github.com mentions = %d, want exactly 2 (one link)", got)
+	}
+}

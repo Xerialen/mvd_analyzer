@@ -156,7 +156,7 @@ func routerOps(t *testing.T) map[string]bool {
 	}
 	// Floor guard against regex rot: 33 v1 routes + the 4 spec/docs
 	// registrations existed when this test was written.
-	if len(ops) < 37 {
+	if len(ops) < 40 {
 		t.Fatalf("routerOps found only %d registrations — has the HandleFunc pattern changed?", len(ops))
 	}
 	return ops
@@ -168,8 +168,10 @@ func TestOpenAPICoversAllRoutes(t *testing.T) {
 	// Viewer plumbing intentionally undocumented: /docs is the documented
 	// entry point; the trailing-slash alias and the JS asset are not API.
 	excluded := map[string]bool{
-		"GET /docs/{$}":            true,
-		"GET /docs/rapidoc-min.js": true,
+		"GET /docs/{$}":              true,
+		"GET /docs/rapidoc-min.js":   true,
+		"GET /docs/result-schema.md": true, // raw-markdown sibling, described on the page's op
+		"GET /docs/marked.min.js":    true,
 	}
 	router := routerOps(t)
 	spec := specPaths(t)
@@ -328,5 +330,53 @@ func TestOpenAPIVersionMatchesSchemaVersion(t *testing.T) {
 	if !strings.Contains(string(openapiSpec), wantLine+"\n") {
 		t.Fatalf("openapi/openapi.yaml info.version is stale — set the line %s (schema version %d)",
 			wantLine, result.CurrentSchemaVersion)
+	}
+}
+
+// TestResultSchemaServed: /docs/result-schema renders RESULT_SCHEMA.md
+// standalone — the shell, the raw markdown, and the vendored renderer.
+func TestResultSchemaServed(t *testing.T) {
+	srv := newTestServer(t, &fakeStore{})
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/docs/result-schema")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /docs/result-schema = %d, want 200", resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("Content-Type = %q, want text/html", ct)
+	}
+	// The shell must reference the markdown and the vendored renderer.
+	if !strings.Contains(string(body), "/docs/result-schema.md") ||
+		!strings.Contains(string(body), "/docs/marked.min.js") {
+		t.Error("shell does not reference the markdown + renderer assets")
+	}
+
+	resp, err = http.Get(srv.URL + "/docs/result-schema.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	md, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /docs/result-schema.md = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(string(md), "# Result schema") && !strings.Contains(string(md), "RESULT_SCHEMA") &&
+		!strings.Contains(string(md), "schemaVersion") {
+		t.Errorf("markdown body does not look like RESULT_SCHEMA.md (%d bytes)", len(md))
+	}
+
+	resp, err = http.Get(srv.URL + "/docs/marked.min.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /docs/marked.min.js = %d, want 200", resp.StatusCode)
 	}
 }

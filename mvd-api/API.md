@@ -1,7 +1,8 @@
-# mvd-api HTTP reference
+# mvdanalyzer-api — HTTP integration guide
 
 Integration guide for building **custom web frontends and tools** on top
-of `mvd-api` — the hosted REST surface over QuakeWorld demo analytics.
+of **mvdanalyzer-api** (the `mvd-api` server binary) — the hosted REST
+surface over QuakeWorld demo analytics.
 
 This document is the **high-level guide**: getting started, the
 cross-cutting conventions (units, caching, errors, auth, CORS), how to
@@ -342,7 +343,8 @@ be spelled out here — filtering/recompute rules, unit seams, the
 artifact node↔resultKey mapping table, availability behaviour — are in
 the operations' descriptions there. Field-level semantics of the
 underlying Result sections stay in
-[`RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md).
+[`RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md), which the
+server also renders standalone at **`GET /docs/result-schema`**.
 
 ---
 

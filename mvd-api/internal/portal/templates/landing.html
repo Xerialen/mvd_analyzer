@@ -1,14 +1,14 @@
 {{define "landing.html"}}{{template "head" .}}
 <h1>QuakeWorld MVD Analytics API</h1>
 <p>
-  This service parses QuakeWorld <code>.mvd</code> demos into structured
-  analytics — frags, damage, weapon accuracy, positions, region control and
-  more — over a JSON REST API.
+  <strong>mvdanalyzer-api</strong> parses QuakeWorld <code>.mvd</code> demos
+  into structured analytics — frags, damage, weapon accuracy, positions,
+  region control and more — over a JSON REST API.
 </p>
 <p class="muted">
-  Access requires an API key. Sign in with Discord to get one; it takes a few
-  seconds and no email or server membership is requested — only your Discord
-  username and id.
+  REST access requires an API key. Sign in with Discord to get one; it takes a
+  few seconds and no email or server membership is requested — only your
+  Discord username and id.
 </p>
 
 <div class="panel">
@@ -21,7 +21,29 @@
 </p>
 <code>Authorization: Bearer qwmvd_…</code>
 <p class="muted" style="margin-top:1rem">
-  See the <a href="https://github.com/galfthan/mvd_analyzer">API documentation</a> for the endpoint
-  surface, parameters and response shapes.
+  The full API reference — every endpoint, parameter, response schema and
+  error — is served by the API itself: browse it at
+  <a href="/docs">/docs</a> (machine-readable spec at
+  <a href="/openapi.yaml">/openapi.yaml</a>). Deep field-level semantics of
+  the analysis output are at
+  <a href="/docs/result-schema">/docs/result-schema</a>.
+</p>
+
+<h2>MCP (AI agents)</h2>
+<p class="muted">
+  The same analytics are exposed as an MCP server for AI agents
+  (Claude Code / Claude Desktop, Cursor, …) — streamable HTTP, no API key
+  needed:
+</p>
+<code>{{.BaseURL}}/mcp</code>
+<p class="muted" style="margin-top:1rem">
+  For example: <code>claude mcp add --transport http mvdanalyzer {{.BaseURL}}/mcp</code>
+  — then ask about any demo on <a href="https://hub.quakeworld.nu">hub.quakeworld.nu</a>
+  ("analyze the opening of gameId 145060").
+</p>
+
+<p class="muted" style="margin-top:1.5rem">
+  Source, issues and the full project:
+  <a href="https://github.com/galfthan/mvd_analyzer">github.com/galfthan/mvd_analyzer</a>.
 </p>
 {{template "foot" .}}{{end}}

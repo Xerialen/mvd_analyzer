@@ -190,6 +190,7 @@ key their ETag on the schema version alone (`"artifacts-v<n>"` /
 | GET | `/v1/version` | — | `{hash, tag, buildDate}` |
 | GET | `/openapi.yaml` | — | the OpenAPI 3.1 description of this surface (embedded; content-hash ETag; auth-exempt) |
 | GET | `/docs` | — | browsable API reference (vendored RapiDoc viewer over `/openapi.yaml`; auth-exempt) |
+| GET | `/docs/result-schema` | — | RESULT_SCHEMA.md rendered standalone (vendored marked.js; raw markdown at `/docs/result-schema.md`; auth-exempt) |
 | POST | `/v1/demos/{id}` | — | `{demoId, sha256, fromCache, schemaVersion}` (`loadDemo` — warms the cache) |
 | GET | `/v1/demos/{id}/overview` | — | `Overview` (map, teams, top streaks, top powerups, playerUserIDs, analyzer `errors`) |
 | GET | `/v1/demos/{id}/demoinfo` | — | `result.DemoInfoResult` (KTX scoreboard — per-player weapon accuracy, kills/deaths/TK, damage, sprees, item counts, RL/LG transfers) |
@@ -347,10 +348,13 @@ make build-all-platforms                    # everything + mvd-mcp targets
 ```
 
 The binary embeds `openapi/openapi.yaml` (the OpenAPI 3.1 spec served at
-`/openapi.yaml`) and the `/docs` viewer — **RapiDoc 9.3.8**, vendored as
-`openapi/rapidoc-min.js` (MIT, license text committed beside it; source
-URL + sha256 recorded in `openapi/docs.html`). No CDN or external
-requests; updating the viewer means replacing that one file and its
+`/openapi.yaml`), the `/docs` viewer — **RapiDoc 9.3.8**, vendored as
+`openapi/rapidoc-min.js` — and the `/docs/result-schema` page:
+`mvd-analytics/RESULT_SCHEMA.md` (embedded via the mvd-analytics module
+root package) rendered client-side with **marked 12.0.2**, vendored as
+`openapi/marked.min.js`. Both viewers are MIT (license texts committed
+beside them; source URLs + sha256 recorded in the shell pages). No CDN
+or external requests; updating a viewer means replacing its one file and
 header comment.
 
 ## Pairing with mvd-mcp
