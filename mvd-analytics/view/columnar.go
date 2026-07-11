@@ -17,11 +17,22 @@ import (
 // The per-bucket time axis is implicit: time(i) = StartMs + i*WindowMs.
 // PartialLastMs, when non-zero, is the (shorter) end of the final
 // bucket; its start is still regular.
+//
+// LocTable is the legend for the raw "li" columns: unlike the row
+// layout (which resolves loc indices to names per bucket), columnar
+// keeps the compact int16 index and ships the demo's full interned
+// name table alongside — the table is tens of short strings, so one
+// legend beats repeating names per bucket AND beats forcing a
+// /loc-table round trip (the pre-v53 shape did the latter; an MCP
+// agent's default getBuckets carried undecodable ints). Present only
+// when at least one player carries an "li" column; index 0 is the ""
+// no-loc sentinel, same as /loc-table.
 type ColumnarBuckets struct {
 	WindowMs      int                        `json:"windowMs"`
 	StartMs       int32                      `json:"startMs"`
 	Count         int                        `json:"count"`
 	PartialLastMs int32                      `json:"partialLastMs,omitempty"`
+	LocTable      []string                   `json:"locTable,omitempty"`
 	Players       map[string]*ColumnarPlayer `json:"players,omitempty"`
 	Teams         map[string]*ColumnarTeam   `json:"teams,omitempty"`
 }
@@ -221,6 +232,15 @@ func BucketsColumnar(r *result.Result, opts BucketsOptions) (*ColumnarBuckets, e
 	}
 	if len(cps) > 0 {
 		cb.Players = cps
+		// Ship the loc legend iff an "li" column made it into the output
+		// (li requested AND at least one player had loc data) — a legend
+		// with nothing to decode would be noise.
+		for _, cp := range cps {
+			if _, ok := cp.Cols[FieldLoc]; ok {
+				cb.LocTable = locTableOf(r)
+				break
+			}
+		}
 	}
 
 	if opts.IncludeTeam {

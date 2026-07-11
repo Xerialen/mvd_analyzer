@@ -7,6 +7,19 @@ detail.
 
 ## Unreleased (branch `phase-16.2`)
 
+- **Columnar buckets carry their own loc legend (schema v53).** The
+  `/buckets` `layout=column` envelope — the REST and MCP default — gains
+  `locTable`, the demo's interned loc-name table, present iff an `li`
+  column is in the output. Columnar deliberately keeps the compact raw
+  `li` index instead of repeating name strings per bucket, but that
+  meant the default `getBuckets` handed an MCP agent undecodable
+  integers and forced a `getLocTable` round trip + join. The legend
+  makes columnar responses loc-self-contained; `loc=index` workflows
+  and `/loc-table` are unchanged. View-shape-only change; the bump
+  exists so schemaVersion-keyed immutable ETags stop revalidating
+  pre-legend bodies. RESULT_SCHEMA's version-history table also gains
+  the v51/v52 rows that 16.1 omitted.
+
 - **OpenAPI 3.1 spec + `/docs` viewer; `weapons` param rename (no schema
   change).** Phase 16.2 — the REST surface now ships a machine-readable
   contract for external integrators:

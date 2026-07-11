@@ -15,7 +15,7 @@
 openapi: 3.1.0
 info:
   title: mvd-api
-  version: "52"
+  version: "53"
   summary: QuakeWorld MVD demo analysis REST API
   description: |
     REST host for the mvd-analyzer pipeline: point it at a demo
@@ -3992,6 +3992,15 @@ components:
         partialLastMs:
           type: integer
           description: Shorter end of the final bucket when the match length is not a multiple of windowMs.
+        locTable:
+          type: array
+          description: >
+            Legend for the raw li columns — the demo's interned loc-name
+            table (index 0 is the "" no-loc sentinel; identical to
+            /loc-table). Present iff an li column is in the output, so
+            columnar responses decode locally without a /loc-table call
+            (v53).
+          items: { type: string }
         players:
           type: object
           additionalProperties:

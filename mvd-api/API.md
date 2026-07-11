@@ -718,8 +718,10 @@ window per field — the shape for charts and heatmaps. Default reducer is
 **`layout=column` (default)** → `view.ColumnarBuckets`: one dense typed
 array per `(player, field)` over the player's active span, implicit time
 axis `time(i) = startMs + i*windowMs` (**ms**), `0`/`1` `alive[]` mask,
-booleans as `0`/`1`, loc always the raw `li` index. Compact; best for
-series reads. Full shape:
+booleans as `0`/`1`, loc always the raw `li` index — decoded by the
+envelope's own `locTable` legend (v53; present iff an `li` column is
+emitted, identical content to `/loc-table`), so the response is
+loc-self-contained. Compact; best for series reads. Full shape:
 [RESULT_SCHEMA.md §Columnar layout](../mvd-analytics/RESULT_SCHEMA.md#columnar-layout-viewbucketscolumnar-rest-layoutcolumn).
 
 **`layout=row`** → `view.BucketsView`: one self-describing object per

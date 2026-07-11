@@ -1380,6 +1380,7 @@ across arrays.
 view.BucketsColumnar(r, view.BucketsOptions{WindowMs: 50, IncludeTeam: true})
 // → *ColumnarBuckets {
 //     windowMs, startMs, count, partialLastMs?,
+//     locTable?: ["", "RA", …],           // li legend (v53); present iff an li column is emitted
 //     players: { name: {
 //        first, n,                       // active span [first, first+n)
 //        alive: [0/1 …],                 // liveness per bucket in the span
@@ -1396,8 +1397,12 @@ view.BucketsColumnar(r, view.BucketsOptions{WindowMs: 50, IncludeTeam: true})
 ```
 
 Conventions: `time(i) = startMs + i*windowMs` (int32 ms); booleans and
-the `alive` mask are `0`/`1`; a field array is omitted when the player
-never has it; values carry forward through dead buckets (the `alive`
+the `alive` mask are `0`/`1`; the `li` column keeps the compact raw
+index and the envelope's `locTable` legend decodes it (schema v53 —
+identical content to `/loc-table`, index 0 = the `""` no-loc sentinel),
+so a columnar response is loc-self-contained; a field array is omitted
+when the player never has it; values carry forward through dead buckets
+(the `alive`
 mask, not the arrays, marks liveness — row-major omits dead players, so
 treat `alive[i]==0` as "absent"); loc is always the raw `li` index
 (`LocIndex` does not apply). Team arrays span the full `count` grid.
@@ -1746,6 +1751,9 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v53 | Columnar buckets become **loc-self-contained**; view shape only, no stored-field change (bumped so the immutable schemaVersion-keyed ETags stop revalidating pre-legend bodies). The `/buckets` `layout=column` envelope gains `locTable` — the demo's interned loc-name legend, present iff an `li` column is in the output. Columnar keeps the compact raw index (row mode keeps resolving names per bucket); consumers decode locally instead of a `/loc-table` round trip. |
+| v52 | No-match-start demos are **flagged, not coerced**: `streams.global` gains `timeBase: "demo"` (omitted normally) when no match start was detected — on such demos the rebase never ran, so every timestamp in the Result is on the raw demo clock; previously indistinguishable from a match-rebased result. A matching notice is appended to `errors[]` (surfaces via `/overview`). |
+| v51 | The match opening becomes first-class. `streams.players[].sp` gains the **match-start spawn** (KTX respawns everyone at countdown end, but a player alive through the countdown never crosses dead→alive on the wire, so the timeline synthesizes `t=0`). Adds `Result.opening` (`OpeningResult`, the `opening` artifact): per-player match-start spawn loc + the first in-match take of each contested spawner. The events *view* gains the default `pickup` type (identity-rich takes joined from `items[].phases` + `weaponPickups`) and spawn events carry `detail{loc}`. |
 | v50 | `damage.events` is now **match-gated at the source**; no field-shape change. The per-hit `events` log previously carried out-of-match (warmup / post-match) hits while the aggregates gated them out; the analyzer now drops out-of-match hits before appending, so `events` and the aggregates are folds of the same in-match hit set. `damage.events` arrays shrink by the dropped hits. This lets the `/damage` filter's all-players recompute reproduce the stored aggregates exactly, removes the aim `[0,matchEnd]` self-window added in v49 (aim reads exactly-in-match damage), and fixes a latent bug where `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs (it iterated `events` with no gate). The `shots` stream is now match-gated too (warmup fires dropped at the source; the `Shot.warmup` field is removed since no out-of-match shot survives), and `damage.telefrags`/`damage.stomps` arrays are match-gated with team telefrags/stomps no longer credited to the attacker counter. |
 | v49 | Aim/shots correctness fixes; no field-shape change. (1) The `aim.players[].weapons` rl/gl `direct`/`splash`/`missed` block appears on every default parse: it was gated on the opt-in `streams.projectiles` emission while the projectile linking it needs runs on every parse — it now gates on linking evidence (any linked rl/gl fire). (2) The damage records feeding aim's pellet and direct splits are windowed to match time `[0, matchEnd]`, so warmup and post-match damage no longer inflates `direct` (and deflates `splash`). (3) In a 1v1 where both players share a non-empty colour team, `damage.events[].isTeam` is no longer true for hits on the opponent: `DamageAnalyzer` classifies duel hits as enemy at birth, so the events, `given`/`givenTeam`, the matrix, `victimWep` and the EWep buckets agree with the duel-normalized `shots` victim kinds (previously airgibs came out empty and the aim enemy splits zero on such demos). (4) Shots identity resolution uses the canonical `ResolveSlotAt` chain, backfilling an empty team from the demoinfo name table (parity with damage/frags). |
 | v48 | Correctness fixes to already-emitted values; no field-shape change. (1) `timelineAnalysis.killEvents` is now on the match-relative clock and carries duel team labels, exactly like the sibling `deathEvents`/`fragEvents` (both post-processors previously skipped it): each kill `time` was ~`demoOffset` ms late and, in 1v1s, `team` was a raw colour tag instead of the player name. (2) Match-timing detection ignores `PRINT_CHAT` (level 3), so a pre-match "go!" or a mid-match "gg game over" chat line can no longer flip the match window (`streams.global.matchStart`/`matchEnd`) or freeze streams; the obituary parser likewise rejects level-3 prints. (3) The CRMod "eats 2 scoops of" super-shotgun obituary is reachable again — those kills were mislabeled `gl` with a phantom "2 scoops of X" killer, now `ssg` with the real killer. (4) `match.players`/`match.teams` no longer drop players who finished on exactly 0 frags (surface-authoritative-data), and duel detection trusts `demoInfo.players` as authoritative so a 2on2 in which two players end on 0 frags is no longer misclassified as a duel and team-renamed; a paired reader fix parses the server-set `*spectator` userinfo star key (and resets the flag on every full userinfo update, ezquake-style) so actual spectators don't leak into `match.players` in place of the removed filter. (5) Powerup interval end times use the same effective match end as the weapon intervals on demos cut before intermission. |

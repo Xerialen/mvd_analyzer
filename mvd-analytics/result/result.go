@@ -622,7 +622,17 @@ package result
 //     so every timestamp in the Result is on the raw demo clock — previously
 //     indistinguishable from a match-rebased result. A matching entry is
 //     appended to errors[] so /overview surfaces it without a new field.
-const CurrentSchemaVersion = 52
+//
+// v53: columnar buckets become loc-self-contained (view shape only — no
+//   stored field changes; bumped so the immutable schemaVersion-keyed
+//   ETags stop revalidating the pre-legend bodies).
+//   - The /buckets layout=column envelope gains locTable: the demo's
+//     interned loc-name legend, present iff an "li" column is in the
+//     output. Columnar keeps the compact raw index (unlike row mode,
+//     which resolves names per bucket); the legend lets a consumer —
+//     notably an MCP agent on the columnar default — decode locally
+//     instead of a /loc-table round trip.
+const CurrentSchemaVersion = 53
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
