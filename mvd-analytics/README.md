@@ -104,9 +104,13 @@ that downstream consumers render, summarise, or feed to an agent.
   JSON; `-format md` produces a human summary; `-format events` dumps the
   raw event stream; `-bulk -out-dir dir/` processes a directory. The closed
   `-view diagnostic-buckets -bucket 1s` view is the explicit exception to
-  match-relative analysis: it emits position-only buckets on the MVD's
-  demo-relative clock, including standby and quiet-tail time. Ordinary
-  `full` and `buckets` views remain match-gated.
+  match-relative analysis: it emits native-position-only buckets on the
+  MVD's demo-relative clock, including standby and concrete empty quiet-tail
+  buckets. It never consults spawn/death liveness and never carries an old
+  position into a bucket without a native sample. Decoder errors, analyzer
+  errors, and ambiguous display identities abort the view instead of
+  returning partial evidence. Ordinary `full` and `buckets` views remain
+  match-gated and retain their existing compatibility semantics.
 
 ## Pipeline architecture
 

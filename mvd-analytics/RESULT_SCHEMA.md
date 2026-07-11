@@ -1431,6 +1431,27 @@ default each bucket's player map carries a resolved `loc` name; in
 index mode (`loc=index`) it carries the raw `li` integer instead, which
 you decode against the demo's loc-table (`GET /loc-table`).
 
+##### Closed diagnostic buckets (`qw-analyze -view diagnostic-buckets`)
+
+The CLI's opt-in diagnostic view reuses the row-major `BucketsView` wire
+shape but not ordinary `Buckets` match semantics. It is a fail-closed,
+demo-relative evidence projection with these invariants:
+
+- the axis is the complete concrete MVD interval `[0, sourceEndMs)`; a native
+  position stamped exactly at `sourceEndMs` extends the exclusive end to
+  `sourceEndMs+1`, producing a one-millisecond partial bucket rather than
+  dropping the endpoint;
+- every interval is materialized, including empty standby/quiet-tail buckets;
+- only a native position inside that bucket can emit `p[name].pos`; there is
+  no spawn/death liveness filter and no carry-forward position;
+- each position-bearing display identity must be non-empty and unique, and
+  its timestamp/coordinate columns must be internally consistent;
+- a decoder/source error or analyzer finalization error produces no diagnostic
+  JSON. Ordinary analysis keeps its historical partial-result compatibility.
+
+This is an evidence view, not a new `Result` schema field, so schema v33 and
+the `BucketsView` JSON keys are unchanged.
+
 ##### Columnar layout (`view.BucketsColumnar`, REST `?layout=column`)
 
 The same per-bucket values in a column-major shape — for each
