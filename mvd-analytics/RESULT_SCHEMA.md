@@ -162,18 +162,24 @@ at the source, so every damage figure and the `events` log are built from the
 same in-match hit set (KTX scoreboard parity). Each `events` entry carries the
 match-relative `time` so consumers can still window within the match.
 
-**Positional kills (telefrag, stomp) are excluded from every damage
-figure.** A telefrag (deathtype `tele`) is an instant kill reported on
-the wire as the 9999 sentinel; a stomp (deathtype `stomp`, landing on a
-head) is a movement kill, not a weapon. Left in, a telefrag's 9999 would
-dominate the attacker's `given` / `byWeapon` / `ewep` and the totals.
-Both are pulled out into `telefrags` / `stomps` (and the opt-in
-`telefrag` / `stomp` events) and counted per-player in
-`PlayerDamage.telefrags` / `.stomps`. The kill still appears in
-`FragResult` and as a `frag` event. (KTX's scoreboard `dmg.given` does
-fold in a *bounded* ~victim-health telefrag/stomp amount, so a player's
-`streamGiven` may sit slightly under `scoreGiven` for that reason —
-separate from the overkill effect.)
+**Positional kills (telefrag, stomp) fold their honest value into
+`given`/`givenTeam`/`taken` — and nothing else (schema v54).** A telefrag
+(deathtype `tele`) is an instant kill reported on the wire as the 9999
+sentinel; a stomp (deathtype `stomp`, landing on a head) is a real ~10 HP
+`T_Damage`. Both stay out of the `events` log, `byWeapon`, `matrix`,
+`ewep` and `totalDamage` (KTX maps them to `wpNONE`, so its
+`weapons[].damage` excludes them too), are listed in `telefrags` /
+`stomps` (and the opt-in `telefrag` / `stomp` events) and counted
+per-player in `PlayerDamage.telefrags` / `.stomps`. But their DAMAGE
+folds into the given/taken aggregates in **both families**, matching
+KTX's own accumulation (`combat.c:1046-1076` has no tele/stomp
+exclusion): a telefrag folds its **bounded** reconstruction (victim's
+full armor + remaining health) into the raw family too — the wire 9999
+is a kill guarantee, not a measurement — while a stomp folds its wire
+value (raw) / reconstruction (bounded). Each `telefrags[]`/`stomps[]`
+entry carries the folded value as `bounded`. No fold-in on
+`boundedMode: skipped:*` demos (v53 exclusion semantics there). The kill
+still appears in `FragResult` and as a `frag` event.
 
 | Field | JSON key | Type |
 |---|---|---|
@@ -192,8 +198,9 @@ separate from the overkill effect.)
 
 A telefrag (`telefrags`, deathtype `tele`) or stomp (`stomps`, deathtype
 `stomp`) — an instant kill from occupying a player's space rather than a
-weapon. No damage amount (a telefrag is the 9999 instakill sentinel; a
-stomp is a movement kill).
+weapon. No raw damage amount (a telefrag's wire value is the 9999
+instakill sentinel); `bounded` carries the reconstructed value the
+fold-in added to the aggregates.
 
 | Field | JSON key | Type |
 |---|---|---|
@@ -201,6 +208,7 @@ stomp is a movement kill).
 | Attacker | `attacker` | string (killer) |
 | Victim | `victim` | string |
 | IsTeam | `isTeam` | bool (omitempty — same team) |
+| Bounded | `bounded` | int (omitempty — telefrag: victim's full armor + remaining health; stomp: wire value through the bounded arithmetic; absent when reconstruction was skipped, or on a 0-value nullified stomp) |
 
 ### DamageEntry
 

@@ -188,18 +188,21 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 	}
 
 	alpha := res.Damage.ByPlayer["alpha"]
-	// The 9999 telefrag must NOT pollute damage figures.
-	if alpha.Given != 100 {
-		t.Errorf("Given = %d, want 100 (telefrag excluded)", alpha.Given)
+	// The 9999 telefrag sentinel must NOT pollute damage figures — but the
+	// fold-in adds each positional kill's honest value: this telefrag lands
+	// on a 0-HP shadow (the RL hit emptied erl same-frame) so folds 0, and
+	// the 10-HP stomp folds 10. Given = 100 (RL) + 0 + 10.
+	if alpha.Given != 110 {
+		t.Errorf("Given = %d, want 110 (rl 100 + tele fold 0 + stomp fold 10)", alpha.Given)
 	}
 	if alpha.EWep != 100 || alpha.EnemyVsRL != 100 {
-		t.Errorf("ewep=%d enemyVsRl=%d, want 100/100 (telefrag excluded)", alpha.EWep, alpha.EnemyVsRL)
+		t.Errorf("ewep=%d enemyVsRl=%d, want 100/100 (positional kills stay out of EWep)", alpha.EWep, alpha.EnemyVsRL)
 	}
 	if res.Damage.ByWeapon["tele"] != 0 {
 		t.Errorf("byWeapon[tele] = %d, want 0 (telefrag is not weapon damage)", res.Damage.ByWeapon["tele"])
 	}
 	if res.Damage.TotalDamage != 100 {
-		t.Errorf("totalDamage = %d, want 100 (telefrag excluded)", res.Damage.TotalDamage)
+		t.Errorf("totalDamage = %d, want 100 (a fold of the events log only)", res.Damage.TotalDamage)
 	}
 	for _, e := range res.Damage.Events {
 		if e.Weapon == "tele" || e.Weapon == "stomp" {
@@ -208,9 +211,6 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 	}
 	if res.Damage.ByWeapon["stomp"] != 0 {
 		t.Errorf("byWeapon[stomp] = %d, want 0", res.Damage.ByWeapon["stomp"])
-	}
-	if alpha.Given != 100 { // unchanged by the 10-HP stomp
-		t.Errorf("Given = %d, want 100 (stomp excluded too)", alpha.Given)
 	}
 	// Both must be tracked separately instead.
 	if alpha.Telefrags != 1 || alpha.Stomps != 1 {
@@ -226,8 +226,89 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 	if len(res.Damage.Stomps) != 1 {
 		t.Fatalf("Stomps list = %d, want 1", len(res.Damage.Stomps))
 	}
-	if st := res.Damage.Stomps[0]; st.Attacker != "alpha" || st.Victim != "bsg" {
-		t.Errorf("stomp entry = %+v, want alpha->bsg", st)
+	if st := res.Damage.Stomps[0]; st.Attacker != "alpha" || st.Victim != "bsg" || st.Bounded != 10 {
+		t.Errorf("stomp entry = %+v, want alpha->bsg bounded 10", st)
+	}
+}
+
+// T7: telefrags and stomps fold their bounded value into given/taken in
+// BOTH families, per KTX's own accumulation (combat.c:1046-1076 — tele and
+// stomp map to wpNONE, so they land in dmg totals but not per-weapon ones).
+func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
+	// Enemy telefrag through armor: bounded = full armor + remaining health.
+	a := buildDamageAnalyzer()
+	seedVitals(a, 4, 80, 150, events.ITArmor3)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 9999, DeathType: dtTeleTest, Time: 10})
+	d := finalizeDamage(t, a)
+	alpha := d.ByPlayer["alpha"]
+	if alpha.Given != 230 {
+		t.Errorf("raw Given = %d, want 230 (150 armor + 80 health; the 9999 sentinel never folds)", alpha.Given)
+	}
+	if alpha.Bounded == nil || alpha.Bounded.Given != 230 {
+		t.Errorf("bounded Given = %+v, want 230", alpha.Bounded)
+	}
+	if erl := d.ByPlayer["erl"]; erl.Taken != 230 || erl.Bounded.Taken != 230 {
+		t.Errorf("victim taken = %d/%d, want 230/230", erl.Taken, erl.Bounded.Taken)
+	}
+	if d.Telefrags[0].Bounded != 230 {
+		t.Errorf("kill bounded = %d, want 230", d.Telefrags[0].Bounded)
+	}
+	if alpha.EWep != 0 || len(d.ByWeapon) != 0 || d.TotalDamage != 0 {
+		t.Errorf("tele fold leaked into EWep/ByWeapon/TotalDamage: %d/%v/%d", alpha.EWep, d.ByWeapon, d.TotalDamage)
+	}
+
+	// Team telefrag: GivenTeam in both families; the credit counter stays 0.
+	a = buildDamageAnalyzer()
+	seedVitals(a, 6, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 9999, DeathType: dtTeleTest, Time: 10})
+	d = finalizeDamage(t, a)
+	alpha = d.ByPlayer["alpha"]
+	if alpha.GivenTeam != 100 || alpha.Bounded == nil || alpha.Bounded.GivenTeam != 100 {
+		t.Errorf("team tele GivenTeam = %d/%+v, want 100/100", alpha.GivenTeam, alpha.Bounded)
+	}
+	if alpha.Given != 0 || alpha.Telefrags != 0 {
+		t.Errorf("team tele credited as enemy: given=%d count=%d", alpha.Given, alpha.Telefrags)
+	}
+
+	// dtTELE2 pent-deflect: an ordinary tele wire event with the pent holder
+	// as attacker — the arriving mortal's spawn state folds in.
+	a = buildDamageAnalyzer()
+	seedVitals(a, 1, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 9999, DeathType: events.DtTele2, Time: 10})
+	d = finalizeDamage(t, a)
+	if got := d.ByPlayer["alpha"].Given; got != 100 {
+		t.Errorf("deflect Given = %d, want 100", got)
+	}
+	if d.Telefrags[0].Bounded != 100 || d.ByPlayer["alpha"].Telefrags != 1 {
+		t.Errorf("deflect kill = %+v count=%d, want bounded 100, credited", d.Telefrags[0], d.ByPlayer["alpha"].Telefrags)
+	}
+
+	// Stomp through armor: the honest wire value folds raw; the bounded
+	// arithmetic still applies (YA absorbs 6 of 10).
+	a = buildDamageAnalyzer()
+	seedVitals(a, 1, 3, 40, events.ITArmor2)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 10, DeathType: dtStompTest, Time: 10})
+	d = finalizeDamage(t, a)
+	alpha = d.ByPlayer["alpha"]
+	// save=ceil(6)=6, take=4 capped to 3 HP -> bounded 9, raw 10.
+	if alpha.Given != 10 || alpha.Bounded.Given != 9 {
+		t.Errorf("stomp fold = raw %d / bounded %d, want 10/9", alpha.Given, alpha.Bounded.Given)
+	}
+	if d.Stomps[0].Bounded != 9 {
+		t.Errorf("stomp kill bounded = %d, want 9", d.Stomps[0].Bounded)
+	}
+
+	// Skipped mode: no fold-in at all — v53 exclusion semantics.
+	a = buildDamageAnalyzer()
+	a.OnEvent(&events.ServerInfoEvent{Key: "k_midair", Value: "1"})
+	seedVitals(a, 4, 80, 150, events.ITArmor3)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 9999, DeathType: dtTeleTest, Time: 10})
+	d = finalizeDamage(t, a)
+	if alpha := d.ByPlayer["alpha"]; alpha.Given != 0 || alpha.Bounded != nil {
+		t.Errorf("skipped-mode tele folded anyway: given=%d bounded=%+v", alpha.Given, alpha.Bounded)
+	}
+	if d.Telefrags[0].Bounded != 0 {
+		t.Errorf("skipped-mode kill bounded = %d, want absent", d.Telefrags[0].Bounded)
 	}
 }
 

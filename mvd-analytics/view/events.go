@@ -184,6 +184,9 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 			if tf.IsTeam {
 				detail["isTeam"] = true
 			}
+			if tf.Bounded != 0 {
+				detail["bounded"] = tf.Bounded
+			}
 			events = append(events, TaggedEvent{
 				T: ts, Type: "telefrag", Player: tf.Attacker, Detail: detail,
 			})
@@ -203,6 +206,9 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 			detail := map[string]any{"victim": st.Victim}
 			if st.IsTeam {
 				detail["isTeam"] = true
+			}
+			if st.Bounded != 0 {
+				detail["bounded"] = st.Bounded
 			}
 			events = append(events, TaggedEvent{
 				T: ts, Type: "stomp", Player: st.Attacker, Detail: detail,

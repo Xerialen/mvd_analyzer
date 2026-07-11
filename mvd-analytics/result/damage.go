@@ -23,6 +23,13 @@ package result
 // TotalDamage, and surfaced separately in Telefrags / Stomps (and as the
 // opt-in "telefrag" / "stomp" events in view.Events). The kill still appears
 // in FragResult / the "frag" event.
+//
+// Their DAMAGE does fold into Given/GivenTeam/Taken in both families,
+// matching KTX's own accumulation (combat.c:1046-1076 maps them to wpNONE —
+// in dmg totals, out of per-weapon ones): a telefrag folds its Bounded
+// reconstruction (armor + remaining health) into the raw family too, since
+// the wire 9999 is a sentinel; a stomp folds its honest wire value (raw) /
+// reconstruction (bounded). No fold-in when BoundedMode is skipped:*.
 type DamageResult struct {
 	TotalDamage int                      `json:"totalDamage"`
 	Events      []DamageEntry            `json:"events"`               // per-hit log, time-ordered (excludes telefrags + stomps)
@@ -48,14 +55,22 @@ type DamageResult struct {
 
 // PositionalKill is one telefrag (deathtype "tele") or stomp (deathtype
 // "stomp") — an instant kill from occupying a player's space rather than
-// from a weapon. There is no meaningful damage amount (a telefrag is the
-// 9999 instakill sentinel; a stomp is a movement kill), so none is recorded.
+// from a weapon. The wire damage is not a measurement (a telefrag reports
+// the 9999 sentinel), so no raw amount is recorded; Bounded carries the
+// reconstructed KTX-scoreboard value that the fold-in added to the
+// attacker's given/givenTeam and the victim's taken (see DamageResult).
 // Time is match-relative milliseconds.
 type PositionalKill struct {
 	Time     int32  `json:"time"`
 	Attacker string `json:"attacker"` // killer ("world" only in the degenerate non-player case)
 	Victim   string `json:"victim"`
 	IsTeam   bool   `json:"isTeam,omitempty"` // killer and victim on the same team
+	// Bounded is the reconstructed kill value folded into the aggregates:
+	// telefrag = victim's full armor + remaining health; stomp = the wire
+	// value through the normal bounded arithmetic. Absent when the bounded
+	// reconstruction is skipped (no fold-in happened) — and, a documented
+	// conflation, when a teamplay-nullified stomp reconstructs to 0.
+	Bounded int `json:"bounded,omitempty"`
 }
 
 // DamageEntry is a single damage event. Time is match-relative

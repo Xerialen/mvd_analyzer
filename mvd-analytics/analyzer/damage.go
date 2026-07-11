@@ -286,19 +286,72 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			victimTeam != "" && attackerTeam == victimTeam
 
 		// Telefrags and stomps are positional instant kills, not weapon
-		// damage — a telefrag is the 9999 sentinel, a stomp is a movement
-		// kill. Keep them out of every damage figure and surface them on
-		// their own. The kill itself is still in FragResult.
+		// damage — a telefrag's wire value is the 9999 sentinel, a stomp is
+		// a movement kill. They stay out of the Events log / ByWeapon /
+		// Matrix / EWep / TotalDamage (KTX maps them to wpNONE, so its
+		// weapons[].damage excludes them too) and are surfaced on their own.
+		// The kill itself is still in FragResult.
 		if isTele || isStomp {
 			// Positional instant kills are match-only, like all damage output:
 			// out-of-match telefrags/stomps are dropped everywhere (of no
 			// interest, unreconcilable). Team telefrags/stomps are not credited
-			// to the attacker, mirroring the team-kill convention (and matching
-			// view.Damage's recompute).
+			// to the attacker COUNTER, mirroring the team-kill convention (and
+			// matching view.Damage's recompute).
 			if !inMatchWindow(d.tMs) {
 				continue
 			}
 			kill := PositionalKill{Time: d.tMs, Attacker: attacker, Victim: victim, IsTeam: isTeam}
+
+			// Their damage DOES fold into Given/GivenTeam/Taken in both
+			// families — KTX's accumulation has no tele/stomp exclusion
+			// (combat.c:1046-1076), which is exactly why demoInfo dmg.given/
+			// team run above a fold-free reconstruction. The raw family
+			// folds the bounded value for a telefrag (the wire 9999 is a
+			// kill guarantee, not a measurement; armor + remaining health is
+			// the only honest number) and the wire value for a stomp. Only
+			// when the bounded reconstruction is active: in skipped modes
+			// the shadow vitals these values depend on are polluted by the
+			// unmodeled take rewrites, so v53 exclusion semantics apply.
+			if boundedSkip == "" {
+				var b, raw int
+				if isTele {
+					h := d.victimHealth
+					if h < 0 {
+						h = 0
+					}
+					// Full armor consumed: take = newceil(50000 - save)
+					// overwhelms every cap (combat.c:627-632). Pent/tp rules
+					// deliberately not applied — KTX excludes TELEDEATH from
+					// them (combat.c:742,747), and a telefrag on a pent
+					// holder deflects into dtTELE2 server-side anyway.
+					b = d.victimArmor + h
+					raw = b
+				} else {
+					b = boundedDamage(d, tp, isTeam, isSelf)
+					raw = d.damage
+				}
+				kill.Bounded = b
+
+				vp := getOrCreateDamage(out.ByPlayer, victim)
+				vp.Taken += raw
+				boundedNest(vp).Taken += b
+				if !isWorld {
+					ap := getOrCreateDamage(out.ByPlayer, attacker)
+					switch {
+					case isSelf:
+						ap.GivenSelf += raw
+						boundedNest(ap).GivenSelf += b
+					case isTeam:
+						ap.GivenTeam += raw
+						boundedNest(ap).GivenTeam += b
+					default:
+						ap.Given += raw
+						boundedNest(ap).Given += b
+						enemyTakenBounded[victim] += b
+					}
+				}
+			}
+
 			credit := !isWorld && !isSelf && !isTeam
 			if isTele {
 				out.Telefrags = append(out.Telefrags, kill)
