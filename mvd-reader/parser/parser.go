@@ -227,17 +227,7 @@ func (p *Parser) ParseOne() error {
 		}
 		return err
 	}
-	if err := p.parseMessage(msg); err != nil {
-		// KTX normally closes a recorded demo with svc_disconnect
-		// "EndOfDemo" inside the final payload. Normalize that protocol-level
-		// sentinel exactly like decoder EOF so events.Source callers can rely
-		// on the documented clean-end contract.
-		if err == mvd.ErrEndOfDemo {
-			return io.EOF
-		}
-		return err
-	}
-	return nil
+	return p.parseMessage(msg)
 }
 
 // parseMessage handles a single demo message
