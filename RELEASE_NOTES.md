@@ -7,6 +7,18 @@ detail.
 
 ## Unreleased (branch `phase-16.2`)
 
+- **GDPR disclosure: privacy policy + terms of use on the portal (no
+  schema change).** `/portal/privacy` and `/portal/terms`, linked from
+  every portal page footer and acknowledged at the sign-in panel. The
+  privacy policy states the audited facts: Discord `identify` scope
+  only (id + username stored with the key record), keys stored as
+  SHA-256 hashes shown once, strictly-necessary `/portal`-scoped
+  cookies only (1 h session), access logs with best-effort IP for
+  operations/abuse (limited retention), public hub.quakeworld.nu demos
+  as the content source, Discord + hub as the only third parties, and
+  the GDPR rights/contact channel. Pinned by portal tests; operator
+  review notes embedded in the template.
+
 - **RESULT_SCHEMA served standalone; portal points at the self-served
   docs; public name is mvdanalyzer-api (no schema change).**
   `GET /docs/result-schema` renders `RESULT_SCHEMA.md` (embedded from

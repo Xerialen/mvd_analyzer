@@ -117,6 +117,13 @@ same `keys.json` the auth middleware validates against). When `-portal` is
 **not** set, none of the `/portal` routes exist (a request to `/portal`
 404s) and the server is unchanged.
 
+The portal also serves the GDPR disclosure pages `/portal/privacy` and
+`/portal/terms` (linked from every portal page's footer and from the
+sign-in panel). Before deploying, review the operator notes in
+`internal/portal/templates/privacy.html` — the stated log-retention
+period must match your journald/rotation config, and the contact channel
+defaults to the project's GitHub issue tracker.
+
 Flow (all under `/portal`, exempt from API-key auth — they use their own
 Discord-cookie session, not a Bearer key):
 

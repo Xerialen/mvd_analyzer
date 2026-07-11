@@ -185,6 +185,8 @@ func (p *Portal) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /portal/key", p.handleKeyPage)
 	mux.HandleFunc("POST /portal/key", p.handleKeyIssue)
 	mux.HandleFunc("POST /portal/logout", p.handleLogout)
+	mux.HandleFunc("GET /portal/privacy", p.handlePrivacy)
+	mux.HandleFunc("GET /portal/terms", p.handleTerms)
 }
 
 // redirectURI is the absolute OAuth callback URL Discord redirects back to. It

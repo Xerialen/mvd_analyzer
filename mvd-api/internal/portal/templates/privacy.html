@@ -1,0 +1,95 @@
+{{define "privacy.html"}}{{template "head" .}}
+<!--
+  OPERATOR NOTE (not rendered): review before deploying —
+  (1) the log-retention period below must match your journald/rotation
+      config; (2) "the operator" contact is the project's GitHub issues;
+      add a direct email/Discord contact if you prefer; (3) this is a
+      good-faith community-service policy, not legal advice.
+-->
+<h1>Privacy policy</h1>
+<p class="muted">
+  This page describes what personal data the mvdanalyzer-api service
+  ("the service") processes, why, and what your options are. The data
+  controller is the operator of this deployment; contact them via the
+  <a href="https://github.com/galfthan/mvd_analyzer/issues">project's issue tracker</a>.
+</p>
+
+<h2>What we collect, and why</h2>
+
+<h3>When you sign in to this portal</h3>
+<p class="muted">
+  Sign-in uses Discord OAuth2 with the <code>identify</code> scope only. We
+  receive and store your <strong>Discord user id and username</strong> —
+  nothing else: no email address, no server/guild memberships. They are
+  stored together with your API key record (see below) and are used to
+  tie your key to your account and to label your API requests in the
+  access log. Legal basis: performance of the service you request
+  (issuing and managing your key).
+</p>
+
+<h3>Your API key</h3>
+<p class="muted">
+  We store a <strong>SHA-256 hash</strong> of your API key, never the key
+  itself (it is shown to you exactly once, at creation), together with
+  the creation time. Regenerating your key revokes the previous one; the
+  revoked record (hash, Discord id/username, timestamps) is retained so
+  revocation stays effective. To have your key records and Discord
+  details deleted entirely, contact the operator.
+</p>
+
+<h3>When you call the API</h3>
+<p class="muted">
+  Requests are recorded in a technical <strong>access log</strong>:
+  timestamp, method and path, response status and size, latency, a
+  best-effort client IP address, a request id, and a request label (for
+  keyed requests, your key's short identifier / Discord username; for
+  unauthenticated deployments, an optional self-declared label). The log
+  exists for operations, debugging and abuse prevention (legal basis:
+  legitimate interest) and is rotated; entries are kept for a limited
+  period — typically no more than 30 days — and are not used for
+  profiling or shared with anyone.
+</p>
+
+<h3>Cookies</h3>
+<p class="muted">
+  The portal sets <strong>strictly necessary cookies only</strong>, scoped
+  to <code>/portal</code>: a short-lived state cookie during the Discord
+  sign-in handshake and a signed session cookie valid for one hour.
+  Signing out clears the session. There are no analytics, advertising or
+  third-party cookies anywhere on the service, and the API endpoints set
+  no cookies at all.
+</p>
+
+<h3>Demo content (in-game data)</h3>
+<p class="muted">
+  The service analyzes <strong>publicly available QuakeWorld demo
+  recordings</strong> fetched from
+  <a href="https://hub.quakeworld.nu">hub.quakeworld.nu</a>. Demos contain
+  in-game player nicknames and public in-game chat, which appear in the
+  analytics this API serves. This is a faithful re-presentation of data
+  already published by the QuakeWorld community (legal basis: legitimate
+  interest in community game analysis). If a demo contains something you
+  believe should not be served, contact the operator.
+</p>
+
+<h2>Third parties</h2>
+<p class="muted">
+  Two external services are involved: <strong>Discord</strong> (the OAuth
+  sign-in — see Discord's own privacy policy) and
+  <strong>hub.quakeworld.nu</strong> (the public demo source). Nothing is
+  sent to them beyond what those interactions require, and no data is
+  sold or shared with anyone else.
+</p>
+
+<h2>Your rights</h2>
+<p class="muted">
+  Under the GDPR you can request access to, correction of, or deletion of
+  the personal data held about you (your key records, Discord id/username,
+  and any log entries attributable to you), object to processing, and
+  lodge a complaint with your supervisory authority. For any of these,
+  contact the operator via the
+  <a href="https://github.com/galfthan/mvd_analyzer/issues">issue tracker</a>.
+  You can revoke your own key at any time on the
+  <a href="/portal/key">key page</a>.
+</p>
+{{template "foot" .}}{{end}}

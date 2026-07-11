@@ -602,3 +602,54 @@ func TestLandingPage(t *testing.T) {
 		t.Errorf("landing page github.com mentions = %d, want exactly 2 (one link)", got)
 	}
 }
+
+// TestPolicyPages: the GDPR disclosure pages render without a session and
+// say what they must — data collected, cookies, contact, rights.
+func TestPolicyPages(t *testing.T) {
+	d := newDiscordStub(t)
+	p, _ := newTestPortal(t, d)
+	srv, client := newPortalServer(t, p)
+
+	for path, wants := range map[string][]string{
+		"/portal/privacy": {
+			"Discord user id and username",
+			"SHA-256 hash",
+			"strictly necessary cookies only",
+			"access log",
+			"hub.quakeworld.nu",
+			"Your rights",
+		},
+		"/portal/terms": {
+			"as is",
+			"rate-limited per key",
+			`href="/portal/privacy"`,
+		},
+	} {
+		resp, err := client.Get(srv.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("GET %s = %d, want 200", path, resp.StatusCode)
+		}
+		for _, want := range wants {
+			if !strings.Contains(string(body), want) {
+				t.Errorf("%s missing %q", path, want)
+			}
+		}
+	}
+
+	// Every portal page footer must link the policies (base template).
+	resp, err := client.Get(srv.URL + "/portal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(body), `href="/portal/privacy"`) ||
+		!strings.Contains(string(body), `href="/portal/terms"`) {
+		t.Error("landing footer does not link the policy pages")
+	}
+}

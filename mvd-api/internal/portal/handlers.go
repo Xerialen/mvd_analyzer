@@ -135,3 +135,13 @@ func (p *Portal) handleLogout(w http.ResponseWriter, r *http.Request) {
 	p.clearSessionCookie(w)
 	http.Redirect(w, r, "/portal", http.StatusFound)
 }
+
+// handlePrivacy / handleTerms serve the static policy pages (GDPR
+// disclosure). Reachable without a session, like the landing page.
+func (p *Portal) handlePrivacy(w http.ResponseWriter, _ *http.Request) {
+	p.render(w, "privacy.html", pageData{})
+}
+
+func (p *Portal) handleTerms(w http.ResponseWriter, _ *http.Request) {
+	p.render(w, "terms.html", pageData{})
+}
