@@ -134,6 +134,11 @@ func (r *Registry) SetRegionsOverride(regs []config.MapRegionOverride) {
 // mode down to the registered TimelineAnalyzer. It exists for closed
 // diagnostic views only; NewDefaultRegistry otherwise remains match-gated.
 func (r *Registry) EnableDiagnosticPositionCapture() {
+	for _, a := range r.core {
+		if ia, ok := a.(*IdentityAnalyzer); ok {
+			ia.EnableDiagnosticIdentityIsolation()
+		}
+	}
 	for _, a := range r.derived {
 		if ta, ok := a.(*TimelineAnalyzer); ok {
 			ta.EnableDiagnosticPositionCapture()

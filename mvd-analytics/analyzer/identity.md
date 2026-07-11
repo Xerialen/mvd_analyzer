@@ -41,6 +41,17 @@ via its ghost mechanism (restore-stats-by-netname on reconnect,
    events still resolve). `co.SlotIdentityAt(slot, tMs)` returns the
    identity that held the slot at `tMs`.
 
+### Diagnostic identity isolation
+
+The CLI's closed `diagnostic-buckets` mode opts this analyser into a stricter
+non-match policy. Every observed slot occupancy remains a separate identity:
+auth, demoinfo, reconnect-print, and bare-name unions are disabled. A
+userid-ambiguous userinfo update with a different normalized name rotates the
+slot instead of adopting the later identity. Timeline output also guarantees
+unique display keys when separate occupancies used the same name and slot.
+This policy prevents standby history from being attributed to the candidate;
+ordinary match analysis retains the four reconnect-union sources above.
+
 ## Who consumes it
 
 - **items**, **weapon_pickups**, **timeline** (frag events, powerups,

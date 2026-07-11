@@ -554,6 +554,7 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 		}
 		return gi.name < gj.name
 	})
+	usedDiagnosticNames := make(map[string]bool)
 	for _, key := range order {
 		g := groups[key]
 		// Order fragments chronologically by their actual earliest in-window
@@ -573,10 +574,20 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 			continue // phantom identity with no recorded play (e.g. a vacated slot's new occupant who never played)
 		}
 		uniqName := disambiguatePlayerName(g.name, g.repSlot, nameCounts)
-		// Born-correct team label: in a 1v1 the roster rewrites a participant's
-		// team to their own name (keyed on the resolved display name), replacing
-		// the old normalizeDuelTeams stream rewrite.
-		team := a.core.TeamFor(g.name, g.team)
+		if a.diagnosticPositionCapture {
+			baseName := uniqName
+			for suffix := 2; usedDiagnosticNames[uniqName]; suffix++ {
+				uniqName = baseName + ":" + intToStr(suffix)
+			}
+			usedDiagnosticNames[uniqName] = true
+		}
+		team := g.team
+		if !a.diagnosticPositionCapture {
+			// Born-correct team label: in a 1v1 the roster rewrites a participant's
+			// team to their own name (keyed on the resolved display name), replacing
+			// the old normalizeDuelTeams stream rewrite.
+			team = a.core.TeamFor(g.name, g.team)
+		}
 		streams.Players = append(streams.Players, merged.toPlayerStream(uniqName, team))
 	}
 	if len(streams.Players) == 0 {
