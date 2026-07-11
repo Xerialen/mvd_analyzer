@@ -77,8 +77,8 @@ func DiagnosticBuckets(r *result.Result, opts DiagnosticBucketsOptions) (*Bucket
 			return nil, fmt.Errorf("diagnostic position identity %q has inconsistent columns", player.Name)
 		}
 		for sample := 0; sample < count; sample++ {
-			if sample > 0 && track.T[sample] <= track.T[sample-1] {
-				return nil, fmt.Errorf("diagnostic position identity %q timestamps are not increasing", player.Name)
+			if sample > 0 && track.T[sample] < track.T[sample-1] {
+				return nil, fmt.Errorf("diagnostic position identity %q timestamps regress", player.Name)
 			}
 			tMs := int64(track.T[sample])
 			if tMs < 0 || tMs >= exclusiveEndMs {

@@ -112,3 +112,44 @@ func TestDiagnosticBucketsRejectDuplicateDisplayNames(t *testing.T) {
 		t.Fatal("duplicate display names were silently collapsed")
 	}
 }
+
+func TestDiagnosticBucketsAllowSameMillisecondSamplesInStableOrder(t *testing.T) {
+	r := &result.Result{Streams: &result.Streams{
+		Players: []result.PlayerStream{{
+			Name: "paused-player",
+			Position: &result.PositionTrack{
+				T: []int32{100, 100, 2100},
+				X: []float32{10, 40, 70},
+				Y: []float32{20, 50, 80},
+				Z: []float32{30, 60, 90},
+			},
+		}},
+	}}
+
+	got, err := DiagnosticBuckets(r, DiagnosticBucketsOptions{WindowMs: 1000, SourceEndMs: 3000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := [3]result.Coord{10, 20, 30}
+	if pos := got.Buckets[0].Players["paused-player"][FieldPosition]; !reflect.DeepEqual(pos, want) {
+		t.Fatalf("first paused position = %#v, want stable first sample %#v", pos, want)
+	}
+}
+
+func TestDiagnosticBucketsRejectTimestampRegression(t *testing.T) {
+	r := &result.Result{Streams: &result.Streams{
+		Players: []result.PlayerStream{{
+			Name: "regressed-player",
+			Position: &result.PositionTrack{
+				T: []int32{101, 100},
+				X: []float32{10, 40},
+				Y: []float32{20, 50},
+				Z: []float32{30, 60},
+			},
+		}},
+	}}
+
+	if _, err := DiagnosticBuckets(r, DiagnosticBucketsOptions{WindowMs: 1000, SourceEndMs: 1000}); err == nil {
+		t.Fatal("timestamp regression was accepted")
+	}
+}
