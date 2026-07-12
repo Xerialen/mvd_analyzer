@@ -912,6 +912,14 @@ independently — `pos` is strictly x/y/z, and `view` / `hgt` / `lq` /
 `-include positions,view,height,liquid,velocity` each keep their column
 set in the full-result JSON (default strips the whole heavy track).
 
+## Selected weapon (`PlayerStream.ActiveWeapon`)
+
+`streams.players[].w` is a sparse change stream of the selected weapon's raw
+`STAT_ACTIVEWEAPON` IT_* bit. It answers which weapon is currently wielded;
+the existing `rl`/`lg`/etc. intervals answer which weapons are held in the
+inventory. The view-layer selector is also `w`, available in buckets,
+stream-slice, and state-at with carry-forward semantics.
+
 ## Line of sight (`PlayerStream.LOS`) and potential visibility (`PlayerStream.PVS`)
 
 `analyzer.ComputeLOS(res)` (`analyzer/los.go`, schema v38) records, per ordered

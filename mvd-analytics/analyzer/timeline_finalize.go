@@ -517,6 +517,7 @@ func (a *TimelineAnalyzer) rebaseToMatch(result *Result, matchStartMs int32) {
 		p.Armor = shiftAndFilterChangeI16(p.Armor, matchStartMs)
 		p.ArmorType = shiftAndFilterChangeStr(p.ArmorType, matchStartMs)
 		p.Loc = shiftAndFilterChangeI16(p.Loc, matchStartMs)
+		p.ActiveWeapon = shiftAndFilterChangeI16(p.ActiveWeapon, matchStartMs)
 		p.Shells = shiftAndFilterChangeI16(p.Shells, matchStartMs)
 		p.Nails = shiftAndFilterChangeI16(p.Nails, matchStartMs)
 		p.Rockets = shiftAndFilterChangeI16(p.Rockets, matchStartMs)

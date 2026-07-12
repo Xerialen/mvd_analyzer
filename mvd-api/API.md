@@ -133,7 +133,7 @@ weapon / item / kind / loc / layout tokens.
 - **`layout`** (`/buckets` only) — `column` (default, compact) or `row`.
   See the `/buckets` operation in `/docs`.
 
-The valid **field codes** (`h`, `a`, `rl`, `pos`, `view`, `hgt`, `lq`,
+The valid **field codes** (`h`, `a`, `w`, `rl`, `pos`, `view`, `hgt`, `lq`,
 `vel`, `sp`, `d`, …) and **reducer names** are listed once in
 [RESULT_SCHEMA.md §Field vocabulary / Reducer registry](../mvd-analytics/RESULT_SCHEMA.md#field-vocabulary).
 Note (schema v31+): `pos` is **strictly x/y/z** (+ the per-sample loc

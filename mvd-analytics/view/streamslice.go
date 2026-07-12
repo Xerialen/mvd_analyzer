@@ -52,9 +52,10 @@ type PlayerSlice struct {
 	Liquid   *result.PositionTrack `json:"lq,omitempty"`
 	Velocity *result.PositionTrack `json:"vel,omitempty"`
 
-	Health    []result.ChangeI16 `json:"h,omitempty"`
-	Armor     []result.ChangeI16 `json:"a,omitempty"`
-	ArmorType []result.ChangeStr `json:"at,omitempty"`
+	Health       []result.ChangeI16 `json:"h,omitempty"`
+	Armor        []result.ChangeI16 `json:"a,omitempty"`
+	ActiveWeapon []result.ChangeI16 `json:"w,omitempty"`
+	ArmorType    []result.ChangeStr `json:"at,omitempty"`
 	// Loc / Li carry the loc change stream, one or the other depending
 	// on StreamSliceOptions.LocIndex. Loc (default) holds resolved names
 	// in V (e.g. "RA") so consumers never need the table; Li holds the
@@ -127,6 +128,9 @@ func StreamSlice(r *result.Result, opts StreamSliceOptions) (*StreamSliceView, e
 		}
 		if requested[FieldArmor] {
 			ps.Armor = sliceI16(p.Armor, start, end)
+		}
+		if requested[FieldActiveWeapon] {
+			ps.ActiveWeapon = sliceI16(p.ActiveWeapon, start, end)
 		}
 		if requested[FieldArmorType] {
 			ps.ArmorType = sliceStr(p.ArmorType, start, end)

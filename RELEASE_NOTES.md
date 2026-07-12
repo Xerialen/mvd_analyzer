@@ -5,6 +5,15 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## Unreleased (Xerialen upstream sync)
+
+- **Selected weapon stream (schema v56).** `streams.players[]` gains `w`, a
+  sparse `ChangeI16` stream carrying the raw `STAT_ACTIVEWEAPON` IT_* bit.
+  This is the weapon currently wielded, distinct from the existing RL/LG/etc.
+  inventory-presence intervals. The `w` field code is available in buckets,
+  stream-slice, and state-at views with the standard carry-forward reducer.
+  Values are surfaced raw without an armor-style clamp (`IT_AXE = 4096`).
+
 ## Unreleased (branch `phase-16.3`)
 
 - **The bounded damage family (schema v55).** Damage now ships in **two

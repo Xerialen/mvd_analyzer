@@ -18,7 +18,7 @@
 openapi: 3.1.0
 info:
   title: mvdanalyzer-api
-  version: "55"
+  version: "56"
   summary: QuakeWorld MVD demo analysis REST API
   description: |
     REST host for the mvd-analyzer pipeline: point it at a demo
@@ -1294,6 +1294,7 @@ components:
             - a
             - at
             - li
+            - w
             - pos
             - view
             - hgt
@@ -4341,6 +4342,25 @@ components:
                 type:
                   - "null"
                   - array
+              w:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
               cl:
                 items:
                   additionalProperties: false
@@ -5137,6 +5157,12 @@ components:
                 type:
                   - "null"
                   - string
+              w:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
               cl:
                 maximum: 32767
                 minimum: -32768

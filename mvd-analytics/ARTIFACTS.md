@@ -32,4 +32,4 @@ Every node in the analytics DAG, as declared in [`analyzer/dag.go`](analyzer/dag
 | `opening` | light | no | `opening` | `timeline`, `items` | `opening` | Match opening: each player's match-start spawn location plus the first in-match take of every contested spawner (armors, mega, powerups, RL/LG). A pure projection of items + streams, kept small for one-call fetches. |
 | `los` | heavy | yes | — | `timeline`, `demoinfo` | `los` | Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand. |
 
-Generated at schema version 55.
+Generated at schema version 56.

@@ -624,14 +624,15 @@ package result
 //     appended to errors[] so /overview surfaces it without a new field.
 //
 // v53: columnar buckets become loc-self-contained (view shape only — no
-//   stored field changes; bumped so the immutable schemaVersion-keyed
-//   ETags stop revalidating the pre-legend bodies).
-//   - The /buckets layout=column envelope gains locTable: the demo's
-//     interned loc-name legend, present iff an "li" column is in the
-//     output. Columnar keeps the compact raw index (unlike row mode,
-//     which resolves names per bucket); the legend lets a consumer —
-//     notably an MCP agent on the columnar default — decode locally
-//     instead of a /loc-table round trip.
+//
+//	stored field changes; bumped so the immutable schemaVersion-keyed
+//	ETags stop revalidating the pre-legend bodies).
+//	- The /buckets layout=column envelope gains locTable: the demo's
+//	  interned loc-name legend, present iff an "li" column is in the
+//	  output. Columnar keeps the compact raw index (unlike row mode,
+//	  which resolves names per bucket); the legend lets a consumer —
+//	  notably an MCP agent on the columnar default — decode locally
+//	  instead of a /loc-table round trip.
 //
 // v54: the bounded damage family (additive).
 //   - The wire carries only KTX's UNBOUND damage (overkill-inclusive,
@@ -667,7 +668,12 @@ package result
 //     back to the shadow-health cap.
 //   - Corpus given/taken reconcile ~2.5× tighter (max |Δ| 16/15 vs 44/44);
 //     ewep/team bands unchanged (the victim-item one-frame window).
-const CurrentSchemaVersion = 55
+//
+// v56: PlayerStream gains the selected-weapon change stream.
+//   - ActiveWeapon (JSON "w") carries the raw STAT_ACTIVEWEAPON IT_* bit.
+//   - The view-layer field code "w" exposes it in buckets, stream-slice,
+//     and state-at responses with normal carry-forward semantics.
+const CurrentSchemaVersion = 56
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

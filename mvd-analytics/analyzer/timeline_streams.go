@@ -62,10 +62,13 @@ func (b *streamBuilder) recordHealth(tMs int32, v int16)     { appendChangeI16(&
 func (b *streamBuilder) recordArmor(tMs int32, v int16)      { appendChangeI16(&b.armor, tMs, v) }
 func (b *streamBuilder) recordArmorType(tMs int32, v string) { appendChangeStr(&b.armorType, tMs, v) }
 func (b *streamBuilder) recordLoc(tMs int32, v int16)        { appendChangeI16(&b.loc, tMs, v) }
-func (b *streamBuilder) recordShells(tMs int32, v int16)     { appendChangeI16(&b.shells, tMs, v) }
-func (b *streamBuilder) recordNails(tMs int32, v int16)      { appendChangeI16(&b.nails, tMs, v) }
-func (b *streamBuilder) recordRockets(tMs int32, v int16)    { appendChangeI16(&b.rockets, tMs, v) }
-func (b *streamBuilder) recordCells(tMs int32, v int16)      { appendChangeI16(&b.cells, tMs, v) }
+func (b *streamBuilder) recordActiveWeapon(tMs int32, v int16) {
+	appendChangeI16(&b.activeWeapon, tMs, v)
+}
+func (b *streamBuilder) recordShells(tMs int32, v int16)  { appendChangeI16(&b.shells, tMs, v) }
+func (b *streamBuilder) recordNails(tMs int32, v int16)   { appendChangeI16(&b.nails, tMs, v) }
+func (b *streamBuilder) recordRockets(tMs int32, v int16) { appendChangeI16(&b.rockets, tMs, v) }
+func (b *streamBuilder) recordCells(tMs int32, v int16)   { appendChangeI16(&b.cells, tMs, v) }
 
 // recordPosition appends every native sample (no dedup; D11
 // asymmetry). Time is integer milliseconds — the canonical wire-native
@@ -159,6 +162,7 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 	ps.Armor = toChangeI16s(b.armor)
 	ps.ArmorType = toChangeStrs(b.armorType)
 	ps.Loc = toChangeI16s(b.loc)
+	ps.ActiveWeapon = toChangeI16s(b.activeWeapon)
 	ps.RL = intervalsToResult(b.rl.closed)
 	ps.LG = intervalsToResult(b.lg.closed)
 	ps.GL = intervalsToResult(b.gl.closed)
@@ -291,6 +295,7 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 	appendI16(&b.health, src.health)
 	appendI16(&b.armor, src.armor)
 	appendI16(&b.loc, src.loc)
+	appendI16(&b.activeWeapon, src.activeWeapon)
 	appendI16(&b.shells, src.shells)
 	appendI16(&b.nails, src.nails)
 	appendI16(&b.rockets, src.rockets)
@@ -630,7 +635,7 @@ const (
 // phantom identities (a vacated slot taken by someone who never played).
 func (b *streamBuilder) isEmpty() bool {
 	return len(b.health) == 0 && len(b.armor) == 0 && len(b.armorType) == 0 &&
-		len(b.loc) == 0 && len(b.shells) == 0 && len(b.nails) == 0 &&
+		len(b.loc) == 0 && len(b.activeWeapon) == 0 && len(b.shells) == 0 && len(b.nails) == 0 &&
 		len(b.rockets) == 0 && len(b.cells) == 0 && len(b.posT) == 0 &&
 		len(b.spawns) == 0 && len(b.deaths) == 0 &&
 		len(b.rl.closed) == 0 && len(b.lg.closed) == 0 && len(b.gl.closed) == 0 &&

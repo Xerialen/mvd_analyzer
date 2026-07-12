@@ -990,6 +990,7 @@ when the demo has no pauses or the server does not embed the block.
 | Health / Armor | `h` / `a` | []ChangeI16 | Vital change streams. Health caps at 250, Armor at 200; int16 holds the range. |
 | ArmorType | `at` | []ChangeStr | `"ga"` / `"ya"` / `"ra"` / `""` transitions. |
 | Loc | `li` | []ChangeI16 | Index into `TimelineAnalysisResult.LocTable`. Smoothed by the blip filter. |
+| ActiveWeapon | `w` | []ChangeI16 | Selected weapon as the raw `STAT_ACTIVEWEAPON` IT_* bit (`1` SG, `2` SSG, `4` NG, `8` SNG, `16` GL, `32` RL, `64` LG, `4096` axe). Distinct from weapon-possession intervals. |
 | RL / LG / GL / SSG / SNG | `rl` / `lg` / `gl` / `ssg` / `sng` | []Interval | Half-open `[Start, End)` periods the weapon was held. |
 | Quad / Pent / Ring | `q` / `pe` / `r` | []Interval | Same shape as weapons. |
 | Shells / Nails / Rockets / Cells | `sh` / `nl` / `rk` / `cl` | []ChangeI16 | Ammo change streams. |
@@ -1012,7 +1013,7 @@ Interval  = { "s": int32, "e": int32 }   // half-open [s, e)
 that records one `{t, v}` only when the value *changes*; a reader carries the
 last value forward until the next entry (so `h: [{t:0,v:100},{t:10000,v:50}]`
 means health is 100 from `t=0` and 50 from `t=10000`). Health/Armor/Loc/ammo
-use these. An `Interval` is a half-open `[s, e)` period during which something
+and ActiveWeapon use these. An `Interval` is a half-open `[s, e)` period during which something
 was *true* (start included, end excluded) — weapons-held, powerups, and
 `LosTrack.iv` use these.
 
@@ -1297,7 +1298,7 @@ truth. Integer storage:
 
 ### Append rules (the dedup invariant)
 
-- **Change streams** (Health, Armor, ArmorType, Loc, ammo): every entry
+- **Change streams** (Health, Armor, ArmorType, Loc, ActiveWeapon, ammo): every entry
   is a transition. `appendChange(t, v)` appends only if `v` differs
   from the previous entry's value. Consecutive identical samples are
   dropped.
@@ -1340,6 +1341,7 @@ aggregation (`min`, `max`, `mean`, `dominant`, etc.).
 | `a` | Armor | `[]ChangeI16` | `first` |
 | `at` | Armor type | `[]ChangeStr` | `first` |
 | `li` | Loc index | `[]ChangeI16` | `first` |
+| `w` | Active weapon (raw IT_* bit) | `[]ChangeI16` | `first` |
 | `pos` | Position xyz | `*PositionTrack` | `first` |
 | `view` | View direction (pitch/yaw, raw angle16) | `*PositionTrack` (vp/vya) | `first` |
 | `hgt` | Height above floor | `*PositionTrack` (h) | `first` |
@@ -1817,6 +1819,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v56 | `PlayerStream` gains `w`, the selected weapon as a sparse `ChangeI16` stream carrying the raw `STAT_ACTIVEWEAPON` IT_* bit. This is the weapon currently wielded, distinct from the RL/LG/etc. possession intervals. The `w` field code is part of the default view vocabulary and is queryable through buckets, stream-slice, and state-at with `first` carry-forward semantics. Additive (`omitempty`). |
 | v55 | Bounded damage becomes **death-value-derived and the default**. The v54 shadow-health cap is replaced: a survived hit is bounded == raw by identity, a killing hit's overkill comes from the end-of-frame death broadcast (bounded = raw + deathValue; corpus reconciliation tightens ~2.5x, max +-16/player on given/taken). Fallback to the approximate shadow cap only for the -99 corpse clamp and respawn-masked deaths; same-frame multi-hit deaths cascade the overkill from the last hit backward. The REST/MCP `dmg` **default flips to `bounded`** for summaries AND the full log (`raw`/`both` opt-in; a *defaulted* request on a `skipped:*` demo falls back to raw, only an explicit `dmg=bounded` 422s). Unfiltered bounded summaries substitute KTX's exact scoreboard figures (given/givenTeam/givenSelf/ewep/byWeapon-enemy; `taken` and the `enemyVs*` buckets stay reconstructed) with provenance in the new `damage.boundedSource` (`ktx` / `reconstructed`). |
 | v54 | The **bounded damage family** (additive). The wire carries only KTX's unbound damage; the scoreboard's bounded `dmg_dealt` (armor absorbed + health damage capped to remaining health) is now reconstructed per hit from tracked victim vitals: `damage.events[].bounded` (absent = equal to `damage`; `0` is a real nullified-hit value), `damage.byPlayer.<p>.bounded` (a nested `PlayerDamage`), `damage.scoreboard` deltas gain a `bounded` nest incl. `streamTeam`/`scoreTeam`, plus the `dmg` family echo and `boundedMode` (`skipped:*` on midair/instagib/dmgfrags demos — no bounded fields there). Telefrags **and stomps** now fold their bounded damage into `given`/`givenTeam`/`taken` in **both** families, matching KTX's own accumulation (telefrag: armor+health, the wire 9999 is a sentinel; stomp: the honest ~10 HP wire value); `telefrags[]`/`stomps[]` entries carry the per-kill `bounded` value. `byWeapon`/`matrix`/`ewep`/`totalDamage` still exclude positional kills (KTX `wpNONE` parity). |
 | v53 | Columnar buckets become **loc-self-contained**; view shape only, no stored-field change (bumped so the immutable schemaVersion-keyed ETags stop revalidating pre-legend bodies). The `/buckets` `layout=column` envelope gains `locTable` — the demo's interned loc-name legend, present iff an `li` column is in the output. Columnar keeps the compact raw index (row mode keeps resolving names per bucket); consumers decode locally instead of a `/loc-table` round trip. |

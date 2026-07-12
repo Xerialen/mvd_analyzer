@@ -853,6 +853,8 @@ func streamI16(p *result.PlayerStream, field string) []result.ChangeI16 {
 		return p.Health
 	case FieldArmor:
 		return p.Armor
+	case FieldActiveWeapon:
+		return p.ActiveWeapon
 	case FieldLoc:
 		return p.Loc
 	case FieldShells:

@@ -326,6 +326,11 @@ func (a *TimelineAnalyzer) handleStatUpdate(e *events.StatUpdateEvent) error {
 	case events.StatCells:
 		state.ammo.cells = e.Value
 		state.streams.recordCells(msTime(e.Time), int16(e.Value))
+	case events.StatActiveWeapon:
+		// STAT_ACTIVEWEAPON is the wielded weapon's raw IT_* bit. Unlike
+		// health and armor, values such as IT_AXE (4096) are valid and must
+		// not be clamped.
+		state.streams.recordActiveWeapon(msTime(e.Time), int16(e.Value))
 	}
 	return nil
 }

@@ -65,7 +65,7 @@ type GetBucketsInput struct {
 	StartTime   float64           `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds"`
 	EndTime     float64           `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 	Players     []string          `json:"players,omitempty"`
-	Fields      []string          `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
+	Fields      []string          `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location, w=active weapon IT bit (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
 	Reducers    map[string]string `json:"reducers,omitempty" jsonschema:"per-field reducer override, e.g. {\"h\":\"min\"}"`
 	IncludeTeam bool              `json:"includeTeam,omitempty"`
 	Loc         string            `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default, resolved loc names) or 'index' (raw LocTable indices; decode via getLocTable). Ignored for layout=column, which always returns raw 'li' indices plus a locTable legend for decoding them locally"`
@@ -88,7 +88,7 @@ type GetStreamSliceInput struct {
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start, match-relative seconds. The MCP layer REQUIRES at least one of startTime/endTime: an unwindowed slice is native-rate change entries for the whole match (the biggest payload this service can emit). REST /stream-slice stays unwindowed for programs."`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end, match-relative seconds (see startTime: at least one bound is required at the MCP layer). Keep windows tens of seconds, not minutes."`
 	Players   []string `json:"players,omitempty"`
-	Fields    []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
+	Fields    []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location, w=active weapon IT bit (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d (spawn/death events). Empty = all standard fields; an unknown code errors with the full list"`
 	Loc       string   `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default) or 'index' (raw LocTable index stream; decode via getLocTable)"`
 }
 
@@ -97,7 +97,7 @@ type GetStateAtInput struct {
 	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
 	Time    float64  `json:"time" jsonschema:"required; match-relative seconds"`
 	Players []string `json:"players,omitempty"`
-	Fields  []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d rejected here (no point-in-time meaning). Empty = all standard fields; an unknown code errors with the full list"`
+	Fields  []string `json:"fields,omitempty" jsonschema:"field codes: h=health, a=armor, at=armorType, li=location, w=active weapon IT bit (NOTE: the selector code is li; the loc= param picks how it renders — name under output key 'loc' (default) or raw index under 'li'), pos, view, hgt, lq, vel, rl/lg/gl/ssg/sng (held weapons), q/pe/r (powerups), sh/nl/rk/cl (ammo), sp/d rejected here (no point-in-time meaning). Empty = all standard fields; an unknown code errors with the full list"`
 	Loc     string   `json:"loc,omitempty" jsonschema:"loc representation: 'name' (default) or 'index' (raw LocTable index; decode via getLocTable)"`
 }
 
@@ -192,22 +192,22 @@ type GetChatInput struct {
 
 // GetBackpacksInput filters /v1/demos/{id}/backpacks.
 type GetBackpacksInput struct {
-	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Players []string `json:"players,omitempty" jsonschema:"restrict to drops by these dropper names"`
-	Weapons []string `json:"weapons,omitempty" jsonschema:"restrict to these dropped-weapon codes (rl, lg); empty = both. Forwarded as a CSV set, matching REST /backpacks"`
-	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (drops at or after this time)"`
-	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
+	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Players   []string `json:"players,omitempty" jsonschema:"restrict to drops by these dropper names"`
+	Weapons   []string `json:"weapons,omitempty" jsonschema:"restrict to these dropped-weapon codes (rl, lg); empty = both. Forwarded as a CSV set, matching REST /backpacks"`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (drops at or after this time)"`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }
 
 // GetItemsInput filters /v1/demos/{id}/items.
 type GetItemsInput struct {
-	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Items   []string `json:"items,omitempty" jsonschema:"item name or kind token (case-insensitive). A kind matches every instance of a type (YA → ya_1, ya_2; RA; MH; Quad; Pent; Ring; RL; LG; GL; SSG; SNG; NG); a suffixed name matches one instance (ya_1)."`
-	Players []string `json:"players,omitempty" jsonschema:"restrict phases to those taken by these player names (phases with no TakenBy survive)"`
-	Kinds   []string `json:"kinds,omitempty" jsonschema:"item category (case-insensitive): armor, mega, health, powerup, weapon, ammo. A raw kind token (ra, quad, rl, ...) is also accepted."`
-	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds. Timeline mode keeps phases OVERLAPPING the window; summary mode counts takes INSIDE it"`
-	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (e.g. endTime:60 = the opening minute)"`
-	Summary   *bool   `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): per-item take aggregates {takenCount, byPlayer, firstTake} instead of the full phase timeline. Pass false for every phase (available/taken/respawn cycles)."`
+	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Items     []string `json:"items,omitempty" jsonschema:"item name or kind token (case-insensitive). A kind matches every instance of a type (YA → ya_1, ya_2; RA; MH; Quad; Pent; Ring; RL; LG; GL; SSG; SNG; NG); a suffixed name matches one instance (ya_1)."`
+	Players   []string `json:"players,omitempty" jsonschema:"restrict phases to those taken by these player names (phases with no TakenBy survive)"`
+	Kinds     []string `json:"kinds,omitempty" jsonschema:"item category (case-insensitive): armor, mega, health, powerup, weapon, ammo. A raw kind token (ra, quad, rl, ...) is also accepted."`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds. Timeline mode keeps phases OVERLAPPING the window; summary mode counts takes INSIDE it"`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (e.g. endTime:60 = the opening minute)"`
+	Summary   *bool    `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): per-item take aggregates {takenCount, byPlayer, firstTake} instead of the full phase timeline. Pass false for every phase (available/taken/respawn cycles)."`
 }
 
 // GetMapEntitiesByMapInput addresses the static layout by map name
@@ -220,12 +220,12 @@ type GetMapEntitiesByMapInput struct {
 
 // GetWeaponPickupsInput filters /v1/demos/{id}/weapon-pickups.
 type GetWeaponPickupsInput struct {
-	DemoID  string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
-	Players []string `json:"players,omitempty" jsonschema:"restrict to picks by these names"`
-	Weapons []string `json:"weapons,omitempty" jsonschema:"weapon codes: rl, lg, gl, ssg, sng, ng"`
-	Source  string   `json:"source,omitempty" jsonschema:"'world' (spawner) or 'backpack' (RL/LG drop)"`
-	StartTime float64 `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (pickups at or after this time)"`
-	EndTime   float64 `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
+	DemoID    string   `json:"demoId" jsonschema:"the demo id (gameId:N or sha:HEX)"`
+	Players   []string `json:"players,omitempty" jsonschema:"restrict to picks by these names"`
+	Weapons   []string `json:"weapons,omitempty" jsonschema:"weapon codes: rl, lg, gl, ssg, sng, ng"`
+	Source    string   `json:"source,omitempty" jsonschema:"'world' (spawner) or 'backpack' (RL/LG drop)"`
+	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (pickups at or after this time)"`
+	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds"`
 }
 
 // ListArtifactsInput has no parameters — the artifact manifest is static
