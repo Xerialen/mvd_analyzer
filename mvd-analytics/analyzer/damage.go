@@ -341,6 +341,12 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 					raw = d.damage
 				}
 				kill.Bounded = b
+				if raw != b {
+					// Only a stomp can diverge (its raw fold is the wire
+					// value); carried so the view's filtered recompute
+					// reproduces the raw totals exactly.
+					kill.Damage = raw
+				}
 
 				vp := getOrCreateDamage(out.ByPlayer, victim)
 				vp.Taken += raw
@@ -368,6 +374,12 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 						addVictimWeaponBucket(ap, pvw, raw)
 						addVictimWeaponBucket(boundedNest(ap), pvw, b)
 						enemyTakenBounded[victim] += b
+						// Record the victim-weapon class the enemy fold used so
+						// the view's filtered recompute can reproduce the EWep
+						// bucket fold exactly (view can't re-derive the victim's
+						// hit-time inventory). Enemy branch only — team/self/world
+						// telefrags don't touch the buckets.
+						kill.VictimWep = pvw
 					}
 				}
 			}

@@ -2,6 +2,7 @@ package view
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -22,6 +23,14 @@ import (
 // source) and the list-shaped sections (Backpacks, WeaponPickups, Chat)
 // never return ErrUnavailable; they return an empty value instead.
 var ErrUnavailable = errors.New("result section unavailable")
+
+// ErrBoundedUnavailable signals that the caller asked view.Damage for the
+// bounded family (dmg=bounded) on a demo whose server mode made the bounded
+// reconstruction impossible (DamageResult.BoundedMode "skipped:*") — there is
+// no bounded figure to materialize. HTTP callers map it to 422; it wraps
+// ErrUnavailable so errors.Is(err, ErrUnavailable) still holds for the generic
+// unavailability handler, while a bounded-aware handler can single it out.
+var ErrBoundedUnavailable = fmt.Errorf("bounded damage family unavailable: %w", ErrUnavailable)
 
 // Filtering note: player names are matched case-sensitively (QW names are
 // case-significant); weapon / item / kind tokens are matched
@@ -167,6 +176,14 @@ type DamageOptions struct {
 	From    float64  // window start, match-relative seconds (0 = no bound)
 	To      float64  // window end, match-relative seconds (0 = no bound)
 	Summary bool     // drop the per-hit Events log; keep only aggregates
+
+	// Dmg selects the damage family: "" / "raw" strip every v54 bounded
+	// addition to the v53 raw shape (the default, for exact in-process
+	// back-compat); "both" serves the stored shape (raw fields + bounded
+	// nests); "bounded" materializes the bounded family into the raw field
+	// names. The view does NOT validate this — the REST layer does — and
+	// treats anything but "bounded"/"both" as raw.
+	Dmg string
 }
 
 // Damage returns the demo's DamageResult, optionally narrowed to the named
@@ -189,26 +206,65 @@ type DamageOptions struct {
 //   - SCOPING FILTER ACTIVE (players OR weapon OR from OR to): RECOMPUTE every
 //     aggregate (TotalDamage, ByPlayer given/taken/byWeapon/EWep buckets,
 //     ByWeapon, Matrix) from the FILTERED per-hit Events, mirroring the damage
-//     analyzer's rules. Damage aggregates are a pure function of Events, and
-//     Events is match-gated at the source (the analyzer drops out-of-match
-//     hits), so an all-players recompute reproduces the stored numbers
-//     exactly — the two are built from the same in-match hit set.
+//     analyzer's rules. Damage aggregates are a pure function of Events plus the
+//     telefrag/stomp fold-in, and both are match-gated at the source (the
+//     analyzer drops out-of-match hits), so an all-players/full-window recompute
+//     reproduces the stored numbers exactly — the two are built from the same
+//     in-match hit set. The kill entries carry everything the fold needs
+//     (bounded, the raw damage when it differs, victimWep for the buckets).
+//
+// FAMILY (opts.Dmg): the stored shape carries two damage families (schema v54).
+// "both" serves it as stored; "raw"/"" strips every bounded addition to the v53
+// shape; "bounded" materializes the bounded family into the raw field names.
+// See DamageOptions.Dmg. On a skipped:* demo the bounded family was never
+// reconstructed, so dmg=bounded returns ErrBoundedUnavailable; "both"/"raw"
+// serve normally. All family transforms operate on COPIES — the stored Result
+// is never mutated (aimcore/airgibs read its raw values in place).
 func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) {
 	if r.Damage == nil {
 		return nil, ErrUnavailable
 	}
+	d := r.Damage
+
+	// Family selection. hasBounded is true exactly when the analyzer stored the
+	// bounded family (Dmg=="both"); a skipped:* demo carries none. The view does
+	// NOT validate opts.Dmg (the REST layer does) — anything but "bounded"/"both"
+	// is the raw (v53) shape.
+	fam := strings.ToLower(strings.TrimSpace(opts.Dmg))
+	hasBounded := d.Dmg == "both"
+	if fam == "bounded" && !hasBounded {
+		return nil, ErrBoundedUnavailable
+	}
+
 	players := toSet(opts.Players)
 	weapons := toLowerSet(opts.Weapons)
+
 	if len(players) == 0 && len(weapons) == 0 && opts.From == 0 && opts.To == 0 {
+		// Unfiltered: serve the stored aggregates, transformed to the requested
+		// family. "both" (and raw on a bounded-less demo — nothing to strip) may
+		// alias the stored Result by reference; raw/bounded on a bounded-carrying
+		// demo return owned copies.
+		var out *result.DamageResult
+		switch {
+		case fam == "bounded":
+			out = materializeBounded(d)
+		case fam == "both":
+			out = d
+		default: // raw / ""
+			if hasBounded {
+				out = stripBounded(d)
+			} else {
+				out = d // already the v53 raw shape
+			}
+		}
 		if opts.Summary {
-			cp := *r.Damage
+			cp := *out
 			cp.Events = nil
 			return &cp, nil
 		}
-		return r.Damage, nil
+		return out, nil
 	}
 
-	d := r.Damage
 	startMs := secToMs(opts.From)
 	endMs := secToMs(opts.To)
 
@@ -229,7 +285,9 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 	}
 
 	// Filter the per-hit log first, then recompute the aggregates from it so
-	// every figure is consistent with exactly the hits shown.
+	// every figure is consistent with exactly the hits shown. Both families are
+	// summed in parallel (the bounded nests) when the demo carries bounded; the
+	// family transform below strips or materializes them.
 	var events []result.DamageEntry
 	for _, de := range d.Events {
 		if matchEvent(de.Attacker, de.Victim, de.Weapon, de.Time) {
@@ -260,6 +318,11 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 		// is in the set still counts its enemy pair in the matrix). Only the
 		// per-player ByPlayer map is scoped to the set, via getP.
 		out.TotalDamage += de.Damage
+		// Per-hit bounded effective value: nil Bounded means "equal to Damage".
+		bdmg := de.Damage
+		if de.Bounded != nil {
+			bdmg = *de.Bounded
+		}
 		enemy := de.Attacker != "world" && !de.IsSelf && !de.IsTeam
 		if enemy {
 			out.ByWeapon[de.Weapon] += de.Damage
@@ -270,6 +333,13 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 			vp.Taken += de.Damage
 			if de.IsEnv {
 				vp.TakenEnv += de.Damage
+			}
+			if hasBounded {
+				vb := boundedNest(vp)
+				vb.Taken += bdmg
+				if de.IsEnv {
+					vb.TakenEnv += bdmg
+				}
 			}
 		}
 		if de.Attacker == "world" {
@@ -283,20 +353,71 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 			switch {
 			case de.IsSelf:
 				ap.GivenSelf += de.Damage
+				if hasBounded {
+					boundedNest(ap).GivenSelf += bdmg
+				}
 			case de.IsTeam:
 				ap.GivenTeam += de.Damage
+				if hasBounded {
+					boundedNest(ap).GivenTeam += bdmg
+				}
 			default:
 				ap.Given += de.Damage
 				ap.ByWeapon[de.Weapon] += de.Damage
 				addVictimBucket(ap, de.VictimWep, de.Damage)
+				if hasBounded {
+					ab := boundedNest(ap)
+					ab.Given += bdmg
+					ab.ByWeapon[de.Weapon] += bdmg
+					addVictimBucket(ab, de.VictimWep, bdmg)
+				}
 			}
 		}
 	}
 	out.Matrix = flattenDamageMatrix(matrix)
 
 	// Positional kills (telefrags/stomps) aren't in Events. Filter the stored
-	// lists directly, treating their implicit weapon as "tele"/"stomp", and
-	// recompute the per-player counts from what survives.
+	// lists directly, treating their implicit weapon as "tele"/"stomp", recompute
+	// the per-player counts from what survives, and fold their value into the
+	// given/taken aggregates — the raw family now DEPENDS on that fold (v54), so
+	// an all-players recompute must reproduce it or it wouldn't equal the stored
+	// numbers. Fold only when the bounded family exists: a skipped:* demo folds
+	// nothing (v53 exclusion semantics), matching the analyzer.
+	foldKill := func(k result.PositionalKill) {
+		// Mirror the analyzer's fold exactly: the raw family folds the kill's
+		// Damage (present only when it differs from Bounded — a stomp whose
+		// bounded arithmetic capped below the wire value), the bounded family
+		// folds Bounded. Telefrags fold the same number into both.
+		b := k.Bounded
+		raw := k.Damage
+		if raw == 0 {
+			raw = b
+		}
+		if vp := getP(k.Victim); vp != nil {
+			vp.Taken += raw
+			boundedNest(vp).Taken += b
+		}
+		if k.Attacker == "world" {
+			return
+		}
+		ap := getP(k.Attacker)
+		if ap == nil {
+			return
+		}
+		switch {
+		case k.Attacker == k.Victim:
+			ap.GivenSelf += raw
+			boundedNest(ap).GivenSelf += b
+		case k.IsTeam:
+			ap.GivenTeam += raw
+			boundedNest(ap).GivenTeam += b
+		default:
+			ap.Given += raw
+			boundedNest(ap).Given += b
+			addVictimBucket(ap, k.VictimWep, raw)
+			addVictimBucket(boundedNest(ap), k.VictimWep, b)
+		}
+	}
 	for _, tf := range d.Telefrags {
 		if !matchEvent(tf.Attacker, tf.Victim, "tele", tf.Time) {
 			continue
@@ -306,6 +427,9 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 			if ap := getP(tf.Attacker); ap != nil {
 				ap.Telefrags++
 			}
+		}
+		if hasBounded {
+			foldKill(tf)
 		}
 	}
 	for _, st := range d.Stomps {
@@ -318,14 +442,9 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 				ap.Stomps++
 			}
 		}
-	}
-
-	if !opts.Summary {
-		if events == nil {
-			// Same rule as Frags: an included-but-empty log is [], never null.
-			events = []result.DamageEntry{}
+		if hasBounded {
+			foldKill(st)
 		}
-		out.Events = events
 	}
 
 	// Scoreboard is a KTX end-of-match cross-check keyed by player; it has no
@@ -341,7 +460,158 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 		}
 		out.Scoreboard = sb
 	}
+
+	// Carry the stored family echo, then apply the requested family transform.
+	// out currently holds the "both" shape (raw fields + bounded nests). The
+	// transforms recompute over out.Events, so it must be set first.
+	out.Dmg = d.Dmg
+	out.BoundedMode = d.BoundedMode
+	out.Events = events
+	switch {
+	case fam == "bounded":
+		out = materializeBounded(out)
+	case fam == "both":
+		// keep as built
+	default: // raw / ""
+		if hasBounded {
+			out = stripBounded(out)
+		}
+	}
+
+	if opts.Summary {
+		out.Events = nil
+	} else if out.Events == nil {
+		// Same rule as Frags: an included-but-empty log is [], never null.
+		out.Events = []result.DamageEntry{}
+	}
 	return out, nil
+}
+
+// boundedNest lazily creates a player's bounded-family aggregate, mirroring the
+// analyzer's helper of the same name (analyzer/damage.go): the nest is itself a
+// PlayerDamage with the invariant that its Telefrags/Stomps/Bounded stay
+// zero/nil, so its JSON shape is exactly the damage-figure fields.
+func boundedNest(p *result.PlayerDamage) *result.PlayerDamage {
+	if p.Bounded == nil {
+		p.Bounded = &result.PlayerDamage{ByWeapon: map[string]int{}}
+	}
+	return p.Bounded
+}
+
+// stripBounded returns an owned copy of d in the v53 raw shape: every v54
+// bounded addition removed (events[].Bounded, byPlayer nests' Bounded,
+// scoreboard deltas' Bounded, Dmg). BoundedMode survives (on a skipped:* demo
+// it explains why no bounded family exists). Telefrags/stomps keep their
+// Bounded (+VictimWep): the raw given/taken now DEPEND on the folded kill
+// value, so the kill entries are what make the raw totals explainable. Caller
+// must never pass stored memory expecting it left untouched — the copies here
+// protect it, but only the parts stripBounded rewrites.
+func stripBounded(d *result.DamageResult) *result.DamageResult {
+	cp := *d
+	cp.Dmg = ""
+	if d.Events != nil {
+		ev := make([]result.DamageEntry, len(d.Events))
+		copy(ev, d.Events)
+		for i := range ev {
+			ev[i].Bounded = nil
+		}
+		cp.Events = ev
+	}
+	if d.ByPlayer != nil {
+		bp := make(map[string]*result.PlayerDamage, len(d.ByPlayer))
+		for k, v := range d.ByPlayer {
+			pv := *v // shallow copy: nil the nest without writing through
+			pv.Bounded = nil
+			bp[k] = &pv
+		}
+		cp.ByPlayer = bp
+	}
+	if d.Scoreboard != nil {
+		sb := &result.DamageReconciliation{ByPlayer: make(map[string]*result.DamageDelta, len(d.Scoreboard.ByPlayer))}
+		for k, v := range d.Scoreboard.ByPlayer {
+			dv := *v
+			dv.Bounded = nil
+			sb.ByPlayer[k] = &dv
+		}
+		cp.Scoreboard = sb
+	}
+	// ByWeapon, Matrix, Telefrags, Stomps stay shared by reference — read-only
+	// downstream, never mutated here.
+	return &cp
+}
+
+// materializeBounded returns an owned copy of d with the bounded family promoted
+// into the raw field names: each event carries its bounded amount, per-player
+// figures come from the bounded nest (Telefrags/Stomps counts kept from the
+// parent), and TotalDamage/ByWeapon/Matrix are recomputed from the materialized
+// events. Scoreboard is kept as stored (it already carries both sides).
+// Telefrags/stomps stay as-is (their Bounded already IS the bounded fold value).
+// Requires the bounded family to exist — the caller checks hasBounded.
+func materializeBounded(d *result.DamageResult) *result.DamageResult {
+	cp := *d
+	cp.Dmg = "bounded"
+
+	var ev []result.DamageEntry
+	if d.Events != nil {
+		ev = make([]result.DamageEntry, len(d.Events))
+		copy(ev, d.Events)
+	}
+	total := 0
+	byWeapon := map[string]int{}
+	matrix := map[string]*result.DamagePair{}
+	for i := range ev {
+		e := &ev[i]
+		if e.Bounded != nil {
+			e.Damage = *e.Bounded
+		}
+		e.Bounded = nil
+		total += e.Damage
+		if e.Attacker != "world" && !e.IsSelf && !e.IsTeam {
+			byWeapon[e.Weapon] += e.Damage
+			addPair(matrix, e.Attacker, e.Victim, e.Weapon, e.Damage)
+		}
+	}
+	cp.Events = ev
+	cp.TotalDamage = total
+	cp.ByWeapon = byWeapon
+	cp.Matrix = flattenDamageMatrix(matrix)
+
+	if d.ByPlayer != nil {
+		bp := make(map[string]*result.PlayerDamage, len(d.ByPlayer))
+		for k, v := range d.ByPlayer {
+			bp[k] = materializePlayer(v)
+		}
+		cp.ByPlayer = bp
+	}
+	return &cp
+}
+
+// materializePlayer builds one player's bounded-materialized figure: the damage
+// fields come from the bounded nest, the Telefrags/Stomps counts from the parent
+// (those aren't part of the bounded nest), and the nested Bounded is dropped.
+func materializePlayer(p *result.PlayerDamage) *result.PlayerDamage {
+	out := &result.PlayerDamage{
+		Telefrags: p.Telefrags,
+		Stomps:    p.Stomps,
+		ByWeapon:  map[string]int{}, // no omitempty — must serialize as {}
+	}
+	if b := p.Bounded; b != nil {
+		out.Given = b.Given
+		out.Taken = b.Taken
+		out.GivenTeam = b.GivenTeam
+		out.GivenSelf = b.GivenSelf
+		out.TakenEnv = b.TakenEnv
+		out.EnemyVsSG = b.EnemyVsSG
+		out.EnemyVsMid = b.EnemyVsMid
+		out.EnemyVsLG = b.EnemyVsLG
+		out.EnemyVsRL = b.EnemyVsRL
+		out.EnemyVsBoth = b.EnemyVsBoth
+		out.EWep = b.EWep
+		for k, v := range b.ByWeapon {
+			out.ByWeapon[k] = v
+		}
+	}
+	return out
 }
 
 // addPair aggregates one attacker→victim hit into the damage matrix, mirroring

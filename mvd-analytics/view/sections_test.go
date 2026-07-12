@@ -1,8 +1,10 @@
 package view
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/mvd-analyzer/mvd-analytics/result"
@@ -471,6 +473,299 @@ func TestDamage_FromRoundsToNearestMs(t *testing.T) {
 	if len(out.Events) != 1 {
 		t.Errorf("from=0.29 dropped the t=290ms event (truncation bug): events=%d, want 1", len(out.Events))
 	}
+}
+
+func intPtr(v int) *int { return &v }
+
+// boundedFixture is a self-consistent v54 DamageResult carrying BOTH families:
+// three enemy events (one an overkill hit whose bounded value is smaller than
+// the wire value), plus an enemy telefrag and an enemy stomp whose folded value
+// is baked into the given/taken aggregates in both families (raw and the Bounded
+// nests). The stored aggregates ARE the true fold of the events + kills, so a
+// full-window all-players recompute must reproduce them exactly.
+//
+//	ev1 t1000 alpha->bravo rl  100         victim rl
+//	ev2 t2000 bravo->alpha lg   40         victim lg
+//	ev3 t3000 alpha->bravo rl  200 (b=30)  victim sg   [overkill]
+//	tele t1500 alpha->bravo     b=50       victim rl
+//	stomp t1700 bravo->alpha    raw=10 b=8 victim lg   [near-death stomp: the
+//	  raw family folds the wire 10, the bounded family the capped 8]
+func boundedFixture() *result.Result {
+	return &result.Result{Damage: &result.DamageResult{
+		Dmg:         "both",
+		BoundedMode: "standard",
+		TotalDamage: 340, // 100 + 40 + 200 (excl. tele/stomp)
+		ByWeapon:    map[string]int{"rl": 300, "lg": 40},
+		Events: []result.DamageEntry{
+			{Time: 1000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 100, VictimWep: "rl"},
+			{Time: 2000, Attacker: "bravo", Victim: "alpha", Weapon: "lg", Damage: 40, VictimWep: "lg"},
+			{Time: 3000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 200, VictimWep: "sg", Bounded: intPtr(30)},
+		},
+		Telefrags: []result.PositionalKill{
+			{Time: 1500, Attacker: "alpha", Victim: "bravo", Bounded: 50, VictimWep: "rl"},
+		},
+		Stomps: []result.PositionalKill{
+			{Time: 1700, Attacker: "bravo", Victim: "alpha", Bounded: 8, Damage: 10, VictimWep: "lg"},
+		},
+		Matrix: []result.DamagePair{
+			{Attacker: "alpha", Victim: "bravo", Damage: 300, ByWeapon: map[string]int{"rl": 300}},
+			{Attacker: "bravo", Victim: "alpha", Damage: 40, ByWeapon: map[string]int{"lg": 40}},
+		},
+		ByPlayer: map[string]*result.PlayerDamage{
+			"alpha": {
+				Given: 350, Taken: 50, ByWeapon: map[string]int{"rl": 300},
+				EnemyVsRL: 150, EnemyVsSG: 200, EWep: 150, Telefrags: 1,
+				Bounded: &result.PlayerDamage{
+					Given: 180, Taken: 48, ByWeapon: map[string]int{"rl": 130},
+					EnemyVsRL: 150, EnemyVsSG: 30, EWep: 150,
+				},
+			},
+			"bravo": {
+				Given: 50, Taken: 350, ByWeapon: map[string]int{"lg": 40},
+				EnemyVsLG: 50, EWep: 50, Stomps: 1,
+				Bounded: &result.PlayerDamage{
+					Given: 48, Taken: 180, ByWeapon: map[string]int{"lg": 40},
+					EnemyVsLG: 48, EWep: 48,
+				},
+			},
+		},
+		Scoreboard: &result.DamageReconciliation{ByPlayer: map[string]*result.DamageDelta{
+			"alpha": {StreamGiven: 350, ScoreGiven: 180, StreamTaken: 50,
+				Bounded: &result.DamageDeltaBounded{StreamGiven: 180}},
+		}},
+	}}
+}
+
+// V1: the raw view ("" and "raw") strips every v54 bounded addition to the v53
+// shape — no bounded on events/byPlayer/scoreboard, no dmg echo — but keeps the
+// telefrag/stomp bounded (the raw given/taken now depend on that fold) and the
+// BoundedMode. The two spellings are byte-identical, and the stored raw
+// aggregates (incl. the folds) survive untouched.
+func TestDamage_RawFamilyStripsBounded(t *testing.T) {
+	r := boundedFixture()
+
+	empty, err := Damage(r, DamageOptions{Dmg: ""})
+	if err != nil {
+		t.Fatalf("dmg=\"\": %v", err)
+	}
+	explicit, err := Damage(r, DamageOptions{Dmg: "raw"})
+	if err != nil {
+		t.Fatalf("dmg=raw: %v", err)
+	}
+	if !reflect.DeepEqual(empty, explicit) {
+		t.Fatalf("dmg=\"\" and dmg=raw must be identical")
+	}
+
+	if empty.Dmg != "" {
+		t.Errorf("raw Dmg = %q, want empty", empty.Dmg)
+	}
+	if empty.BoundedMode != "standard" {
+		t.Errorf("raw BoundedMode = %q, want standard (survives the strip)", empty.BoundedMode)
+	}
+	for i, ev := range empty.Events {
+		if ev.Bounded != nil {
+			t.Errorf("event %d kept bounded", i)
+		}
+	}
+	for name, p := range empty.ByPlayer {
+		if p.Bounded != nil {
+			t.Errorf("player %s kept a bounded nest", name)
+		}
+	}
+	for name, dd := range empty.Scoreboard.ByPlayer {
+		if dd.Bounded != nil {
+			t.Errorf("scoreboard %s kept a bounded delta", name)
+		}
+	}
+	// Raw aggregates (with the folds) are unchanged.
+	if empty.ByPlayer["alpha"].Given != 350 || empty.Events[2].Damage != 200 {
+		t.Errorf("raw view altered the raw numbers: alpha.Given=%d ev3=%d",
+			empty.ByPlayer["alpha"].Given, empty.Events[2].Damage)
+	}
+	// Telefrag/stomp bounded + victimWep survive the raw strip.
+	if empty.Telefrags[0].Bounded != 50 || empty.Telefrags[0].VictimWep != "rl" {
+		t.Errorf("raw telefrag lost its fold value: %+v", empty.Telefrags[0])
+	}
+	// The v53 shape carries no "dmg" echo.
+	if b, _ := json.Marshal(empty); strings.Contains(string(b), `"dmg"`) {
+		t.Errorf("raw JSON still echoes dmg")
+	}
+}
+
+// V2: bounded materialization promotes the bounded family into the raw field
+// names — the overkill event shows the smaller (bounded) number, aggregates come
+// from the nests, and TotalDamage/ByWeapon/Matrix are consistent with the
+// materialized events.
+func TestDamage_BoundedMaterializes(t *testing.T) {
+	r := boundedFixture()
+	out, err := Damage(r, DamageOptions{Dmg: "bounded"})
+	if err != nil {
+		t.Fatalf("dmg=bounded: %v", err)
+	}
+	if out.Dmg != "bounded" {
+		t.Errorf("Dmg = %q, want bounded", out.Dmg)
+	}
+	// Overkill event now shows the bounded 30, and carries no nested bounded.
+	if out.Events[2].Damage != 30 || out.Events[2].Bounded != nil {
+		t.Errorf("ev3 materialized = %d (bounded=%v), want 30/nil", out.Events[2].Damage, out.Events[2].Bounded)
+	}
+	if out.TotalDamage != 170 { // 100 + 40 + 30
+		t.Errorf("TotalDamage = %d, want 170", out.TotalDamage)
+	}
+	if !reflect.DeepEqual(out.ByWeapon, map[string]int{"rl": 130, "lg": 40}) {
+		t.Errorf("ByWeapon = %v, want {rl:130, lg:40}", out.ByWeapon)
+	}
+	wantMatrix := []result.DamagePair{
+		{Attacker: "alpha", Victim: "bravo", Damage: 130, ByWeapon: map[string]int{"rl": 130}},
+		{Attacker: "bravo", Victim: "alpha", Damage: 40, ByWeapon: map[string]int{"lg": 40}},
+	}
+	if !reflect.DeepEqual(out.Matrix, wantMatrix) {
+		t.Errorf("Matrix = %+v, want %+v", out.Matrix, wantMatrix)
+	}
+	// Per-player figures come from the nests; counts stay; no nested bounded.
+	a := out.ByPlayer["alpha"]
+	if a.Given != 180 || a.Taken != 48 || a.EnemyVsSG != 30 || a.EWep != 150 || a.Telefrags != 1 || a.Bounded != nil {
+		t.Errorf("alpha materialized = %+v", a)
+	}
+	if !reflect.DeepEqual(a.ByWeapon, map[string]int{"rl": 130}) {
+		t.Errorf("alpha.ByWeapon = %v, want {rl:130}", a.ByWeapon)
+	}
+	b := out.ByPlayer["bravo"]
+	if b.Given != 48 || b.Taken != 180 || b.Stomps != 1 || b.Bounded != nil {
+		t.Errorf("bravo materialized = %+v (near-death stomp folds its capped 8 here, wire 10 in raw)", b)
+	}
+}
+
+// V3: both + unfiltered + non-summary returns the STORED pointer (zero-copy).
+func TestDamage_BothUnfilteredIsZeroCopy(t *testing.T) {
+	r := boundedFixture()
+	out, err := Damage(r, DamageOptions{Dmg: "both"})
+	if err != nil {
+		t.Fatalf("dmg=both: %v", err)
+	}
+	if out != r.Damage {
+		t.Fatalf("both/unfiltered/non-summary must alias the stored Result")
+	}
+}
+
+// V4: a full-window all-players recompute reproduces the stored aggregates for
+// BOTH families, including the tele/stomp folds and the EnemyVs* buckets.
+func TestDamage_FilteredRecomputeEqualsStoredBothFamilies(t *testing.T) {
+	r := boundedFixture()
+	out, err := Damage(r, DamageOptions{Dmg: "both", Players: []string{"alpha", "bravo"}})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.TotalDamage != r.Damage.TotalDamage {
+		t.Errorf("TotalDamage recompute=%d stored=%d", out.TotalDamage, r.Damage.TotalDamage)
+	}
+	if !reflect.DeepEqual(out.ByWeapon, r.Damage.ByWeapon) {
+		t.Errorf("ByWeapon recompute=%v stored=%v", out.ByWeapon, r.Damage.ByWeapon)
+	}
+	if !reflect.DeepEqual(out.Matrix, r.Damage.Matrix) {
+		t.Errorf("Matrix recompute=%v stored=%v", out.Matrix, r.Damage.Matrix)
+	}
+	if !reflect.DeepEqual(out.ByPlayer, r.Damage.ByPlayer) {
+		t.Errorf("ByPlayer recompute mismatch:\n got %s\nwant %s",
+			mustJSON(out.ByPlayer), mustJSON(r.Damage.ByPlayer))
+	}
+}
+
+// V5: the window gates the fold — a telefrag outside [from,to] does not fold.
+func TestDamage_FilteredWindowExcludesTeleFold(t *testing.T) {
+	r := boundedFixture()
+	// [1.6s, ...] drops ev1(1000) and the telefrag(1500); keeps ev3(3000) and
+	// the stomp(1700). alpha's only enemy-given hit is ev3 (200) — the tele's
+	// +50 must NOT fold.
+	out, err := Damage(r, DamageOptions{Dmg: "both", From: 1.6})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if len(out.Telefrags) != 0 {
+		t.Fatalf("telefrag at t1500 should be windowed out, got %d", len(out.Telefrags))
+	}
+	if g := out.ByPlayer["alpha"].Given; g != 200 {
+		t.Errorf("alpha.Given = %d, want 200 (ev3 only, no tele fold)", g)
+	}
+	if bg := out.ByPlayer["alpha"].Bounded.Given; bg != 30 {
+		t.Errorf("alpha.Bounded.Given = %d, want 30 (ev3 bounded, no tele fold)", bg)
+	}
+}
+
+// V6: summary composes with bounded — aggregates materialized, events dropped.
+func TestDamage_SummaryBounded(t *testing.T) {
+	r := boundedFixture()
+	out, err := Damage(r, DamageOptions{Dmg: "bounded", Summary: true})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.Events != nil {
+		t.Errorf("summary must drop events")
+	}
+	if out.Dmg != "bounded" || out.TotalDamage != 170 || out.ByPlayer["alpha"].Given != 180 {
+		t.Errorf("summary+bounded lost the materialized aggregates: %+v", out)
+	}
+}
+
+// V7: no view call ever mutates the stored Result.
+func TestDamage_StoredNeverMutated(t *testing.T) {
+	r := boundedFixture()
+	before := mustJSON(r.Damage)
+	_, _ = Damage(r, DamageOptions{Dmg: "raw"})
+	_, _ = Damage(r, DamageOptions{Dmg: "bounded"})
+	_, _ = Damage(r, DamageOptions{Dmg: "both"})
+	_, _ = Damage(r, DamageOptions{Dmg: "bounded", Players: []string{"alpha", "bravo"}})
+	_, _ = Damage(r, DamageOptions{Dmg: "raw", From: 1.6})
+	if after := mustJSON(r.Damage); after != before {
+		t.Fatalf("stored Result was mutated:\nbefore %s\nafter  %s", before, after)
+	}
+}
+
+// Skipped-mode: dmg=bounded is unavailable (the bounded family was never
+// reconstructed); raw/both serve normally and keep BoundedMode.
+func TestDamage_SkippedModeBoundedUnavailable(t *testing.T) {
+	r := &result.Result{Damage: &result.DamageResult{
+		BoundedMode: "skipped:midair",
+		TotalDamage: 100,
+		ByWeapon:    map[string]int{"rl": 100},
+		ByPlayer: map[string]*result.PlayerDamage{
+			"alpha": {Given: 100, ByWeapon: map[string]int{"rl": 100}, EnemyVsRL: 100, EWep: 100},
+			"bravo": {Taken: 100, ByWeapon: map[string]int{}},
+		},
+		Events: []result.DamageEntry{
+			{Time: 1000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 100, VictimWep: "rl"},
+		},
+		Telefrags: []result.PositionalKill{{Time: 1500, Attacker: "alpha", Victim: "bravo"}},
+	}}
+
+	if _, err := Damage(r, DamageOptions{Dmg: "bounded"}); !errors.Is(err, ErrBoundedUnavailable) {
+		t.Errorf("skipped dmg=bounded: want ErrBoundedUnavailable, got %v", err)
+	}
+	if !errors.Is(ErrBoundedUnavailable, ErrUnavailable) {
+		t.Errorf("ErrBoundedUnavailable must wrap ErrUnavailable")
+	}
+	// raw + both still serve; the skipped BoundedMode survives.
+	raw, err := Damage(r, DamageOptions{Dmg: "raw"})
+	if err != nil || raw.BoundedMode != "skipped:midair" {
+		t.Errorf("skipped raw: err=%v boundedMode=%q", err, raw.BoundedMode)
+	}
+	both, err := Damage(r, DamageOptions{Dmg: "both"})
+	if err != nil || both != r.Damage {
+		t.Errorf("skipped both should alias stored: err=%v aliased=%v", err, both == r.Damage)
+	}
+	// Filtered skipped-mode recompute folds nothing (no bounded family).
+	f, _ := Damage(r, DamageOptions{Dmg: "raw", Players: []string{"alpha"}})
+	if f.ByPlayer["alpha"].Bounded != nil {
+		t.Errorf("skipped filtered recompute invented a bounded nest")
+	}
+}
+
+func mustJSON(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
 }
 
 func TestChat_DefaultsAndWindow(t *testing.T) {

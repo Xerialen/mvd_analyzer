@@ -209,6 +209,8 @@ fold-in added to the aggregates.
 | Victim | `victim` | string |
 | IsTeam | `isTeam` | bool (omitempty — same team) |
 | Bounded | `bounded` | int (omitempty — telefrag: victim's full armor + remaining health; stomp: wire value through the bounded arithmetic; absent when reconstruction was skipped, or on a 0-value nullified stomp) |
+| Damage | `damage` | int (omitempty — the RAW-family fold value when it differs from `bounded`: only a stomp whose bounded arithmetic capped below the wire value; absent means "equal to `bounded`") |
+| VictimWep | `victimWep` | string (omitempty — victim's class at hit `sg`/`mid`/`lg`/`rl`/`both`; set on ENEMY kills only, so `view.Damage`'s filtered recompute can reproduce the fold's `enemyVs*`/`ewep` buckets; absent on team/self/world kills and skipped-mode demos) |
 
 ### DamageEntry
 

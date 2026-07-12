@@ -65,12 +65,27 @@ type PositionalKill struct {
 	Attacker string `json:"attacker"` // killer ("world" only in the degenerate non-player case)
 	Victim   string `json:"victim"`
 	IsTeam   bool   `json:"isTeam,omitempty"` // killer and victim on the same team
-	// Bounded is the reconstructed kill value folded into the aggregates:
-	// telefrag = victim's full armor + remaining health; stomp = the wire
-	// value through the normal bounded arithmetic. Absent when the bounded
-	// reconstruction is skipped (no fold-in happened) — and, a documented
-	// conflation, when a teamplay-nullified stomp reconstructs to 0.
+	// Bounded is the reconstructed kill value folded into the BOUNDED
+	// aggregates: telefrag = victim's full armor + remaining health; stomp =
+	// the wire value through the normal bounded arithmetic. Absent when the
+	// bounded reconstruction is skipped (no fold-in happened) — and, a
+	// documented conflation, when a teamplay-nullified stomp reconstructs
+	// to 0.
 	Bounded int `json:"bounded,omitempty"`
+	// Damage is the RAW-family fold value when it differs from Bounded —
+	// only a stomp whose bounded arithmetic capped below the wire value
+	// (telefrags fold the same number into both families, so it is omitted
+	// there). Absent means "equal to Bounded". Carried so a re-aggregation
+	// (view.Damage's filtered recompute) reproduces the stored raw totals
+	// exactly.
+	Damage int `json:"damage,omitempty"`
+	// VictimWep is the victim's weapon class (sg|mid|lg|rl|both) at hit time,
+	// recorded on ENEMY kills only so a consumer that re-aggregates the fold
+	// (view.Damage's filtered recompute) can reproduce the EnemyVs*/EWep
+	// bucket fold — the same class DamageEntry.VictimWep carries. Empty on
+	// team/self/world kills and when the bounded reconstruction was skipped
+	// (no fold happened).
+	VictimWep string `json:"victimWep,omitempty"`
 }
 
 // DamageEntry is a single damage event. Time is match-relative

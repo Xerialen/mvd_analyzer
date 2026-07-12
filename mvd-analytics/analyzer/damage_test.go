@@ -227,8 +227,8 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 	if len(res.Damage.Stomps) != 1 {
 		t.Fatalf("Stomps list = %d, want 1", len(res.Damage.Stomps))
 	}
-	if st := res.Damage.Stomps[0]; st.Attacker != "alpha" || st.Victim != "bsg" || st.Bounded != 10 {
-		t.Errorf("stomp entry = %+v, want alpha->bsg bounded 10", st)
+	if st := res.Damage.Stomps[0]; st.Attacker != "alpha" || st.Victim != "bsg" || st.Bounded != 10 || st.Damage != 0 {
+		t.Errorf("stomp entry = %+v, want alpha->bsg bounded 10, damage omitted (== bounded)", st)
 	}
 }
 
@@ -270,6 +270,10 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	if alpha.Given != 0 || alpha.Telefrags != 0 {
 		t.Errorf("team tele credited as enemy: given=%d count=%d", alpha.Given, alpha.Telefrags)
 	}
+	// VictimWep is an enemy-branch-only annotation — a team kill leaves it empty.
+	if d.Telefrags[0].VictimWep != "" {
+		t.Errorf("team tele VictimWep = %q, want empty", d.Telefrags[0].VictimWep)
+	}
 
 	// dtTELE2 pent-deflect: an ordinary tele wire event with the pent holder
 	// as attacker — the arriving mortal's spawn state folds in.
@@ -295,8 +299,8 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	if alpha.Given != 10 || alpha.Bounded.Given != 9 {
 		t.Errorf("stomp fold = raw %d / bounded %d, want 10/9", alpha.Given, alpha.Bounded.Given)
 	}
-	if d.Stomps[0].Bounded != 9 {
-		t.Errorf("stomp kill bounded = %d, want 9", d.Stomps[0].Bounded)
+	if d.Stomps[0].Bounded != 9 || d.Stomps[0].Damage != 10 {
+		t.Errorf("stomp kill = bounded %d / damage %d, want 9/10 (raw fold value carried when it diverges)", d.Stomps[0].Bounded, d.Stomps[0].Damage)
 	}
 
 	// Tele victim holding RL and alive: the fold lands in the EWep buckets
@@ -308,6 +312,11 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	alpha = d.ByPlayer["alpha"]
 	if alpha.EnemyVsRL != 60 || alpha.EWep != 60 || alpha.Bounded.EWep != 60 {
 		t.Errorf("tele-on-RL-holder ewep = %d/%d/%d, want 60/60/60", alpha.EnemyVsRL, alpha.EWep, alpha.Bounded.EWep)
+	}
+	// The enemy fold records the victim's weapon class so a downstream
+	// recompute can reproduce the EWep bucket fold (view.Damage filtered path).
+	if d.Telefrags[0].VictimWep != "rl" {
+		t.Errorf("tele-on-RL-holder VictimWep = %q, want rl", d.Telefrags[0].VictimWep)
 	}
 
 	// Respawn telefrag: the victim died (negative health checkpoint, stale
