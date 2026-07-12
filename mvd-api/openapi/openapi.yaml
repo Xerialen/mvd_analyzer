@@ -1336,7 +1336,7 @@ components:
       name: dmg
       in: query
       description: >
-        Damage family (schema v54). `raw` — the unbound wire values in the
+        Damage family (schema v55). `raw` — the unbound wire values in the
         v53 field layout, with v54 fold semantics (given/taken include the
         telefrag/stomp folds on standard demos; the kill entries keep their
         fold fields and boundedMode survives). `bounded` — KTX-scoreboard semantics (armor
