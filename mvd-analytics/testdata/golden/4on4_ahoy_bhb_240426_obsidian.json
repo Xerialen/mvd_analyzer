@@ -37543,20 +37543,20 @@
           "byWeapon": {
             "gl": 385,
             "rl": 389,
-            "sg": 3521,
-            "sng": 257,
-            "ssg": 1201
+            "sg": 3520,
+            "sng": 256,
+            "ssg": 1199
           },
           "enemyVsBoth": 0,
           "enemyVsLg": 0,
-          "enemyVsMid": 1842,
+          "enemyVsMid": 1840,
           "enemyVsRl": 954,
-          "enemyVsSg": 2957,
+          "enemyVsSg": 2955,
           "ewep": 954,
-          "given": 5753,
+          "given": 5749,
           "givenSelf": 113,
-          "givenTeam": 449,
-          "taken": 9262,
+          "givenTeam": 448,
+          "taken": 9257,
           "takenEnv": 370
         },
         "byWeapon": {
@@ -37583,20 +37583,20 @@
           "byWeapon": {
             "gl": 109,
             "rl": 1595,
-            "sg": 2553,
+            "sg": 2551,
             "sng": 503,
             "ssg": 640
           },
           "enemyVsBoth": 0,
           "enemyVsLg": 0,
           "enemyVsMid": 1055,
-          "enemyVsRl": 779,
-          "enemyVsSg": 3566,
-          "ewep": 779,
-          "given": 5400,
-          "givenSelf": 58,
+          "enemyVsRl": 778,
+          "enemyVsSg": 3565,
+          "ewep": 778,
+          "given": 5398,
+          "givenSelf": 57,
           "givenTeam": 100,
-          "taken": 8196,
+          "taken": 8192,
           "takenEnv": 25
         },
         "byWeapon": {
@@ -37635,8 +37635,8 @@
           "ewep": 1990,
           "given": 10626,
           "givenSelf": 538,
-          "givenTeam": 467,
-          "taken": 9885,
+          "givenTeam": 466,
+          "taken": 9882,
           "takenEnv": 40
         },
         "byWeapon": {
@@ -37663,20 +37663,20 @@
           "byWeapon": {
             "gl": 749,
             "rl": 420,
-            "sg": 3276,
+            "sg": 3274,
             "sng": 855,
             "ssg": 709
           },
           "enemyVsBoth": 0,
           "enemyVsLg": 0,
-          "enemyVsMid": 1694,
+          "enemyVsMid": 1693,
           "enemyVsRl": 585,
-          "enemyVsSg": 3730,
+          "enemyVsSg": 3729,
           "ewep": 585,
-          "given": 6009,
+          "given": 6007,
           "givenSelf": 133,
-          "givenTeam": 252,
-          "taken": 7752,
+          "givenTeam": 251,
+          "taken": 7747,
           "takenEnv": 0
         },
         "byWeapon": {
@@ -37702,21 +37702,21 @@
         "bounded": {
           "byWeapon": {
             "gl": 100,
-            "rl": 4145,
-            "sg": 3309,
+            "rl": 4143,
+            "sg": 3304,
             "sng": 812,
             "ssg": 718
           },
           "enemyVsBoth": 0,
           "enemyVsLg": 0,
-          "enemyVsMid": 2999,
+          "enemyVsMid": 2997,
           "enemyVsRl": 718,
-          "enemyVsSg": 5367,
+          "enemyVsSg": 5362,
           "ewep": 718,
-          "given": 9084,
+          "given": 9077,
           "givenSelf": 389,
           "givenTeam": 468,
-          "taken": 7782,
+          "taken": 7781,
           "takenEnv": 30
         },
         "byWeapon": {
@@ -37743,7 +37743,7 @@
           "byWeapon": {
             "gl": 237,
             "rl": 966,
-            "sg": 4570,
+            "sg": 4569,
             "sng": 783,
             "ssg": 1161
           },
@@ -37751,13 +37751,13 @@
           "enemyVsLg": 0,
           "enemyVsMid": 1583,
           "enemyVsRl": 744,
-          "enemyVsSg": 5390,
+          "enemyVsSg": 5389,
           "ewep": 744,
-          "given": 7717,
+          "given": 7716,
           "givenSelf": 418,
-          "givenTeam": 196,
-          "taken": 8512,
-          "takenEnv": 50
+          "givenTeam": 195,
+          "taken": 8507,
+          "takenEnv": 49
         },
         "byWeapon": {
           "gl": 260,
@@ -37783,21 +37783,21 @@
           "byWeapon": {
             "gl": 72,
             "ng": 9,
-            "rl": 2223,
-            "sg": 3331,
+            "rl": 2222,
+            "sg": 3328,
             "sng": 873,
-            "ssg": 1001
+            "ssg": 1000
           },
           "enemyVsBoth": 0,
           "enemyVsLg": 0,
-          "enemyVsMid": 1901,
+          "enemyVsMid": 1900,
           "enemyVsRl": 1253,
-          "enemyVsSg": 4355,
+          "enemyVsSg": 4351,
           "ewep": 1253,
-          "given": 7509,
+          "given": 7504,
           "givenSelf": 271,
           "givenTeam": 352,
-          "taken": 9461,
+          "taken": 9458,
           "takenEnv": 15
         },
         "byWeapon": {
@@ -37825,20 +37825,20 @@
           "byWeapon": {
             "gl": 557,
             "rl": 4740,
-            "sg": 4360,
+            "sg": 4358,
             "sng": 457,
             "ssg": 1082
           },
           "enemyVsBoth": 0,
           "enemyVsLg": 0,
-          "enemyVsMid": 2579,
+          "enemyVsMid": 2578,
           "enemyVsRl": 1816,
-          "enemyVsSg": 6801,
+          "enemyVsSg": 6800,
           "ewep": 1816,
-          "given": 11196,
+          "given": 11194,
           "givenSelf": 478,
-          "givenTeam": 740,
-          "taken": 8449,
+          "givenTeam": 739,
+          "taken": 8445,
           "takenEnv": 53
         },
         "byWeapon": {
@@ -38358,6 +38358,7 @@
       },
       {
         "attacker": "ThundeR",
+        "bounded": 3,
         "damage": 4,
         "isTeam": true,
         "time": 22076,
@@ -38511,6 +38512,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 27774,
         "victim": "Doomie",
@@ -38894,6 +38896,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 3,
         "damage": 4,
         "isTeam": true,
         "time": 44733,
@@ -39025,6 +39028,7 @@
       },
       {
         "attacker": "Doomie",
+        "bounded": 23,
         "damage": 24,
         "time": 53084,
         "victim": "[nW].Veggie",
@@ -41227,6 +41231,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 172769,
         "victim": "rghst",
@@ -42316,6 +42321,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 3,
         "damage": 4,
         "isTeam": true,
         "time": 242985,
@@ -44311,6 +44317,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 7,
         "damage": 8,
         "time": 326596,
         "victim": "Doomie",
@@ -44702,6 +44709,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 348043,
         "victim": "Doomie",
@@ -47673,6 +47681,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 15,
         "damage": 16,
         "isTeam": true,
         "time": 507540,
@@ -48124,6 +48133,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 525146,
         "victim": "Doomie",
@@ -49105,6 +49115,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 11,
         "damage": 12,
         "time": 565990,
         "victim": "KreatoR",
@@ -49829,7 +49840,7 @@
       },
       {
         "attacker": "KreatoR",
-        "bounded": 22,
+        "bounded": 21,
         "damage": 29,
         "isSelf": true,
         "isSplash": true,
@@ -50028,6 +50039,7 @@
       },
       {
         "attacker": "rghst",
+        "bounded": 15,
         "damage": 16,
         "time": 619471,
         "victim": "ocoini",
@@ -51024,7 +51036,7 @@
       },
       {
         "attacker": "rghst",
-        "bounded": 156,
+        "bounded": 155,
         "damage": 184,
         "isSplash": true,
         "time": 680782,
@@ -52897,6 +52909,7 @@
       },
       {
         "attacker": "rghst",
+        "bounded": 23,
         "damage": 24,
         "time": 771463,
         "victim": "[nW].Veggie",
@@ -53830,6 +53843,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 821444,
@@ -54695,6 +54709,7 @@
       },
       {
         "attacker": "rghst",
+        "bounded": 23,
         "damage": 24,
         "time": 856246,
         "victim": "sailorman",
@@ -55047,6 +55062,7 @@
       },
       {
         "attacker": "Doomie",
+        "bounded": 71,
         "damage": 72,
         "time": 877399,
         "victim": "sailorman",
@@ -55188,7 +55204,7 @@
       },
       {
         "attacker": "nexus",
-        "bounded": 56,
+        "bounded": 55,
         "damage": 77,
         "isSplash": true,
         "time": 884864,
@@ -55565,6 +55581,7 @@
       },
       {
         "attacker": "Doomie",
+        "bounded": 51,
         "damage": 52,
         "time": 898853,
         "victim": "sailorman",
@@ -55750,6 +55767,7 @@
       },
       {
         "attacker": "Doomie",
+        "bounded": 7,
         "damage": 8,
         "time": 904886,
         "victim": "sailorman",
@@ -55977,6 +55995,7 @@
       },
       {
         "attacker": "rghst",
+        "bounded": 23,
         "damage": 24,
         "time": 914118,
         "victim": "ocoini",
@@ -56020,6 +56039,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 9,
         "damage": 10,
         "isEnv": true,
         "time": 921624,
@@ -56696,6 +56716,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 23,
         "damage": 24,
         "time": 957340,
         "victim": "KreatoR",
@@ -56712,6 +56733,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 15,
         "damage": 16,
         "time": 957963,
         "victim": "ThundeR",
@@ -56989,6 +57011,7 @@
       },
       {
         "attacker": "KreatoR",
+        "bounded": 23,
         "damage": 24,
         "time": 971130,
         "victim": "ocoini",
@@ -58352,6 +58375,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 23,
         "damage": 24,
         "time": 1040405,
         "victim": "Doomie",
@@ -58457,6 +58481,7 @@
       },
       {
         "attacker": "Doomie",
+        "bounded": 3,
         "damage": 4,
         "isTeam": true,
         "time": 1044698,
@@ -58923,6 +58948,7 @@
       },
       {
         "attacker": "KreatoR",
+        "bounded": 3,
         "damage": 4,
         "time": 1082181,
         "victim": "nexus",
@@ -60865,6 +60891,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 23,
         "damage": 24,
         "time": 1193933,
         "victim": "rghst",
@@ -61330,9 +61357,9 @@
           "bounded": {
             "scoreTeam": 449,
             "streamEwep": 954,
-            "streamGiven": 5753,
-            "streamTaken": 8337,
-            "streamTeam": 449
+            "streamGiven": 5749,
+            "streamTaken": 8332,
+            "streamTeam": 448
           },
           "scoreEwep": 954,
           "scoreGiven": 5753,
@@ -61344,9 +61371,9 @@
         "KreatoR": {
           "bounded": {
             "scoreTeam": 100,
-            "streamEwep": 779,
-            "streamGiven": 5400,
-            "streamTaken": 7891,
+            "streamEwep": 778,
+            "streamGiven": 5398,
+            "streamTaken": 7888,
             "streamTeam": 100
           },
           "scoreEwep": 798,
@@ -61361,8 +61388,8 @@
             "scoreTeam": 467,
             "streamEwep": 1990,
             "streamGiven": 10626,
-            "streamTaken": 8980,
-            "streamTeam": 467
+            "streamTaken": 8978,
+            "streamTeam": 466
           },
           "scoreEwep": 1990,
           "scoreGiven": 10626,
@@ -61375,9 +61402,9 @@
           "bounded": {
             "scoreTeam": 252,
             "streamEwep": 585,
-            "streamGiven": 6009,
-            "streamTaken": 7190,
-            "streamTeam": 252
+            "streamGiven": 6007,
+            "streamTaken": 7187,
+            "streamTeam": 251
           },
           "scoreEwep": 585,
           "scoreGiven": 6009,
@@ -61390,8 +61417,8 @@
           "bounded": {
             "scoreTeam": 468,
             "streamEwep": 718,
-            "streamGiven": 9084,
-            "streamTaken": 7072,
+            "streamGiven": 9077,
+            "streamTaken": 7071,
             "streamTeam": 468
           },
           "scoreEwep": 718,
@@ -61405,9 +61432,9 @@
           "bounded": {
             "scoreTeam": 196,
             "streamEwep": 744,
-            "streamGiven": 7717,
-            "streamTaken": 7398,
-            "streamTeam": 196
+            "streamGiven": 7716,
+            "streamTaken": 7395,
+            "streamTeam": 195
           },
           "scoreEwep": 744,
           "scoreGiven": 7717,
@@ -61420,8 +61447,8 @@
           "bounded": {
             "scoreTeam": 352,
             "streamEwep": 1253,
-            "streamGiven": 7509,
-            "streamTaken": 8798,
+            "streamGiven": 7504,
+            "streamTaken": 8796,
             "streamTeam": 352
           },
           "scoreEwep": 1253,
@@ -61435,9 +61462,9 @@
           "bounded": {
             "scoreTeam": 740,
             "streamEwep": 1816,
-            "streamGiven": 11196,
-            "streamTaken": 7628,
-            "streamTeam": 740
+            "streamGiven": 11194,
+            "streamTaken": 7624,
+            "streamTeam": 739
           },
           "scoreEwep": 1816,
           "scoreGiven": 11178,
@@ -93207,7 +93234,7 @@
       }
     ]
   },
-  "schemaVersion": 54,
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {

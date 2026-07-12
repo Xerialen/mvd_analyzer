@@ -138,16 +138,18 @@ Defined in `result/damage.go`. Reconstructed from the KTX
 `mvdhidden_dmgdone` stream (see `mvd-reader/MVD_FORMAT.md`). Present only
 when the demo carries that stream (KTX with MVD-hidden extensions).
 
-**Unbound vs bounded — two families (schema v54).** The **raw** family
+**Unbound vs bounded — two families (schema v55).** The **raw** family
 (`damage`, `given`, `taken`, …) is **unbound** — the full hit including
 overkill, capped only at 9999, exactly the wire value. The **bounded**
-family (`events[].bounded`, each player's `bounded` nest) reconstructs
-KTX's scoreboard semantics per hit: armor absorbed + health damage capped
-to the victim's remaining health (`dmg_dealt`, `combat.c:783`). The wire
-does not carry the bounded value; it is re-derived from the victim's
-tracked armor/health state at hit time (pre-hit state is well-defined:
-KTX multicasts `dmgdone` mid-frame, stats broadcast at end of frame), so
-it carries ±1/hit ceiling slop on armor-absorbing hits. `dmg` echoes
+family (`events[].bounded`, each player's `bounded` nest) carries KTX's
+scoreboard semantics per hit (`dmg_dealt`, `combat.c:783`), derived from
+the death-value identity: a survived hit has no overkill, so bounded ==
+raw exactly; a killing hit's overkill is measured by the end-of-frame
+death broadcast (bounded = raw + deathValue — the armor share cancels).
+Residual approximation only where the wire hides state: the −99 corpse
+clamp, respawn-masked deaths, and same-frame multi-hit deaths (overkill
+cascaded from the last hit backward in wire order); pent/teamplay-
+nullified hits are bounded to their estimated armor share. `dmg` echoes
 which family a payload carries (`"both"` as stored); `boundedMode` is
 `"standard"`, or `"skipped:midair"`/`"skipped:instagib"`/
 `"skipped:dmgfrags"` when the server mode rewrites `T_Damage` in ways
@@ -1815,6 +1817,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v55 | Bounded damage becomes **death-value-derived and the default**. The v54 shadow-health cap is replaced: a survived hit is bounded == raw by identity, a killing hit's overkill comes from the end-of-frame death broadcast (bounded = raw + deathValue; corpus reconciliation tightens ~2.5x, max +-16/player on given/taken). Fallback to the approximate shadow cap only for the -99 corpse clamp and respawn-masked deaths; same-frame multi-hit deaths cascade the overkill from the last hit backward. The REST/MCP `dmg` **default flips to `bounded`** for summaries AND the full log (`raw`/`both` opt-in; a *defaulted* request on a `skipped:*` demo falls back to raw, only an explicit `dmg=bounded` 422s). Unfiltered bounded summaries substitute KTX's exact scoreboard figures (given/givenTeam/givenSelf/ewep/byWeapon-enemy; `taken` and the `enemyVs*` buckets stay reconstructed) with provenance in the new `damage.boundedSource` (`ktx` / `reconstructed`). |
 | v54 | The **bounded damage family** (additive). The wire carries only KTX's unbound damage; the scoreboard's bounded `dmg_dealt` (armor absorbed + health damage capped to remaining health) is now reconstructed per hit from tracked victim vitals: `damage.events[].bounded` (absent = equal to `damage`; `0` is a real nullified-hit value), `damage.byPlayer.<p>.bounded` (a nested `PlayerDamage`), `damage.scoreboard` deltas gain a `bounded` nest incl. `streamTeam`/`scoreTeam`, plus the `dmg` family echo and `boundedMode` (`skipped:*` on midair/instagib/dmgfrags demos — no bounded fields there). Telefrags **and stomps** now fold their bounded damage into `given`/`givenTeam`/`taken` in **both** families, matching KTX's own accumulation (telefrag: armor+health, the wire 9999 is a sentinel; stomp: the honest ~10 HP wire value); `telefrags[]`/`stomps[]` entries carry the per-kill `bounded` value. `byWeapon`/`matrix`/`ewep`/`totalDamage` still exclude positional kills (KTX `wpNONE` parity). |
 | v53 | Columnar buckets become **loc-self-contained**; view shape only, no stored-field change (bumped so the immutable schemaVersion-keyed ETags stop revalidating pre-legend bodies). The `/buckets` `layout=column` envelope gains `locTable` — the demo's interned loc-name legend, present iff an `li` column is in the output. Columnar keeps the compact raw index (row mode keeps resolving names per bucket); consumers decode locally instead of a `/loc-table` round trip. |
 | v52 | No-match-start demos are **flagged, not coerced**: `streams.global` gains `timeBase: "demo"` (omitted normally) when no match start was detected — on such demos the rebase never ran, so every timestamp in the Result is on the raw demo clock; previously indistinguishable from a match-rebased result. A matching notice is appended to `errors[]` (surfaces via `/overview`). |

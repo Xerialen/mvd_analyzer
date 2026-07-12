@@ -788,13 +788,17 @@ diff -r /tmp/before /tmp/after
    **full** hit including overkill, capped only at 9999 (a telefrag reports
    9999) — the **raw** family. KTX's end-of-match scoreboard
    (`demoInfo.players[].dmg`) instead bounds each hit to the victim's
-   remaining health; since schema v54 that **bounded** family is
-   reconstructed per hit from tracked victim vitals and carried in additive
-   `bounded` fields (the `dmg=raw|bounded|both` REST param selects one).
-   The bounded value is a **reconstruction**, not a wire measurement: it
-   carries a ±1-per-hit armor-ceil rounding slop and a one-frame stat-window
-   residual (mid-frame pickups, corpse gibs, same-frame respawns) that keeps
-   corpus-wide totals within ~1% of `demoInfo` (pinned tolerances). Godmode
+   remaining health; since schema v55 that **bounded** family is
+   derived per hit from the death-value identity (a survived hit is exact
+   by construction; a killing hit's overkill is measured by the death
+   broadcast) and carried in additive `bounded` fields — `bounded` is the
+   REST/MCP **default**, `raw`/`both` the opt-ins, and unfiltered bounded
+   summaries substitute KTX's exact scoreboard figures
+   (`boundedSource: "ktx"`). Residual approximation exists only where the
+   wire hides state (the −99 corpse clamp, respawn-masked deaths,
+   same-frame multi-hit cascades, pent/teamplay armor-share estimates);
+   corpus-wide totals reconcile with `demoInfo` within pinned tolerances
+   (max ±16 per player on given/taken). Godmode
    is unobservable, so a hit on a godmode holder is reconstructed as if it
    landed. The reconstruction is **skipped** on `k_midair` / `k_instagib` /
    `k_dmgfrags` demos (`damage.boundedMode = "skipped:<mode>"`) where the

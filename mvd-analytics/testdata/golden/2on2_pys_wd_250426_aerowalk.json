@@ -15438,20 +15438,20 @@
       "psy*overon": {
         "bounded": {
           "byWeapon": {
-            "lg": 1649,
-            "rl": 5838,
+            "lg": 1648,
+            "rl": 5836,
             "sg": 179
           },
-          "enemyVsBoth": 3113,
+          "enemyVsBoth": 3112,
           "enemyVsLg": 0,
           "enemyVsMid": 350,
-          "enemyVsRl": 3042,
+          "enemyVsRl": 3040,
           "enemyVsSg": 1161,
-          "ewep": 6155,
-          "given": 7666,
+          "ewep": 6152,
+          "given": 7663,
           "givenSelf": 887,
           "givenTeam": 650,
-          "taken": 8925,
+          "taken": 8923,
           "takenEnv": 185
         },
         "byWeapon": {
@@ -15476,19 +15476,19 @@
           "byWeapon": {
             "gl": 231,
             "lg": 1900,
-            "rl": 4406,
-            "sg": 320
+            "rl": 4405,
+            "sg": 319
           },
-          "enemyVsBoth": 1845,
+          "enemyVsBoth": 1844,
           "enemyVsLg": 524,
           "enemyVsMid": 341,
-          "enemyVsRl": 3269,
+          "enemyVsRl": 3268,
           "enemyVsSg": 878,
-          "ewep": 5638,
-          "given": 6857,
-          "givenSelf": 1002,
+          "ewep": 5636,
+          "given": 6855,
+          "givenSelf": 1001,
           "givenTeam": 378,
-          "taken": 8391,
+          "taken": 8388,
           "takenEnv": 55
         },
         "byWeapon": {
@@ -15513,20 +15513,20 @@
         "bounded": {
           "byWeapon": {
             "lg": 3371,
-            "rl": 6119,
+            "rl": 6116,
             "sg": 12,
             "sng": 72
           },
-          "enemyVsBoth": 2167,
+          "enemyVsBoth": 2166,
           "enemyVsLg": 462,
           "enemyVsMid": 396,
-          "enemyVsRl": 4196,
+          "enemyVsRl": 4194,
           "enemyVsSg": 2353,
-          "ewep": 6825,
-          "given": 9574,
+          "ewep": 6822,
+          "given": 9571,
           "givenSelf": 1614,
           "givenTeam": 640,
-          "taken": 8789,
+          "taken": 8787,
           "takenEnv": 70
         },
         "byWeapon": {
@@ -15552,19 +15552,19 @@
           "byWeapon": {
             "gl": 65,
             "lg": 541,
-            "rl": 4946,
+            "rl": 4945,
             "sg": 203
           },
-          "enemyVsBoth": 3050,
+          "enemyVsBoth": 3049,
           "enemyVsLg": 331,
           "enemyVsMid": 249,
           "enemyVsRl": 1718,
           "enemyVsSg": 407,
-          "ewep": 5099,
-          "given": 5755,
+          "ewep": 5098,
+          "given": 5754,
           "givenSelf": 720,
           "givenTeam": 196,
-          "taken": 10289,
+          "taken": 10286,
           "takenEnv": 145
         },
         "byWeapon": {
@@ -16446,6 +16446,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 109,
         "damage": 110,
         "time": 56632,
         "victim": "wd.char",
@@ -18109,6 +18110,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 94,
         "damage": 95,
         "isSplash": true,
         "time": 198282,
@@ -18324,7 +18326,7 @@
       },
       {
         "attacker": "wd.cao",
-        "bounded": 44,
+        "bounded": 43,
         "damage": 47,
         "isSelf": true,
         "isSplash": true,
@@ -18366,7 +18368,7 @@
       },
       {
         "attacker": "psy*overon",
-        "bounded": 52,
+        "bounded": 51,
         "damage": 69,
         "isSplash": true,
         "time": 224907,
@@ -18651,6 +18653,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 64,
         "damage": 65,
         "isSplash": true,
         "time": 249913,
@@ -19516,6 +19519,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 29,
         "damage": 30,
         "time": 312794,
         "victim": "wd.cao",
@@ -20371,6 +20375,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 15,
         "damage": 16,
         "time": 367297,
         "victim": "psy*overon",
@@ -20758,6 +20763,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 90,
         "damage": 91,
         "isSplash": true,
         "time": 396183,
@@ -21846,6 +21852,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 484453,
@@ -22706,7 +22713,7 @@
       },
       {
         "attacker": "wd.char",
-        "bounded": 63,
+        "bounded": 62,
         "damage": 77,
         "isSplash": true,
         "time": 562423,
@@ -23150,9 +23157,9 @@
         "psy*overon": {
           "bounded": {
             "scoreTeam": 650,
-            "streamEwep": 6155,
-            "streamGiven": 7666,
-            "streamTaken": 7657,
+            "streamEwep": 6152,
+            "streamGiven": 7663,
+            "streamTaken": 7655,
             "streamTeam": 650
           },
           "scoreEwep": 6154,
@@ -23165,9 +23172,9 @@
         "wd.cao": {
           "bounded": {
             "scoreTeam": 378,
-            "streamEwep": 5638,
-            "streamGiven": 6857,
-            "streamTaken": 6694,
+            "streamEwep": 5636,
+            "streamGiven": 6855,
+            "streamTaken": 6692,
             "streamTeam": 378
           },
           "scoreEwep": 5638,
@@ -23180,9 +23187,9 @@
         "wd.char": {
           "bounded": {
             "scoreTeam": 640,
-            "streamEwep": 6825,
-            "streamGiven": 9574,
-            "streamTaken": 6727,
+            "streamEwep": 6822,
+            "streamGiven": 9571,
+            "streamTaken": 6725,
             "streamTeam": 640
           },
           "scoreEwep": 6824,
@@ -23195,9 +23202,9 @@
         "wd.dilbert": {
           "bounded": {
             "scoreTeam": 196,
-            "streamEwep": 5099,
-            "streamGiven": 5755,
-            "streamTaken": 8774,
+            "streamEwep": 5098,
+            "streamGiven": 5754,
+            "streamTaken": 8771,
             "streamTeam": 196
           },
           "scoreEwep": 5099,
@@ -37778,7 +37785,7 @@
       }
     ]
   },
-  "schemaVersion": 54,
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {

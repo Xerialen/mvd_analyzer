@@ -36901,9 +36901,9 @@
           "enemyVsSg": 3470,
           "ewep": 1540,
           "given": 5952,
-          "givenSelf": 351,
+          "givenSelf": 350,
           "givenTeam": 198,
-          "taken": 7770,
+          "taken": 7763,
           "takenEnv": 25
         },
         "byWeapon": {
@@ -36933,20 +36933,20 @@
             "lg": 844,
             "ng": 9,
             "rl": 1898,
-            "sg": 2278,
+            "sg": 2275,
             "sng": 120,
             "ssg": 84
           },
           "enemyVsBoth": 429,
           "enemyVsLg": 536,
-          "enemyVsMid": 359,
-          "enemyVsRl": 772,
-          "enemyVsSg": 3612,
-          "ewep": 1737,
-          "given": 5708,
+          "enemyVsMid": 358,
+          "enemyVsRl": 771,
+          "enemyVsSg": 3611,
+          "ewep": 1736,
+          "given": 5705,
           "givenSelf": 443,
           "givenTeam": 158,
-          "taken": 7133,
+          "taken": 7131,
           "takenEnv": 93
         },
         "byWeapon": {
@@ -36975,21 +36975,21 @@
         "bounded": {
           "byWeapon": {
             "lg": 518,
-            "rl": 1487,
-            "sg": 2474,
-            "sng": 1560,
-            "ssg": 292
+            "rl": 1486,
+            "sg": 2472,
+            "sng": 1558,
+            "ssg": 291
           },
           "enemyVsBoth": 358,
           "enemyVsLg": 1110,
-          "enemyVsMid": 559,
+          "enemyVsMid": 557,
           "enemyVsRl": 1367,
-          "enemyVsSg": 3037,
+          "enemyVsSg": 3033,
           "ewep": 2835,
-          "given": 6431,
+          "given": 6425,
           "givenSelf": 206,
           "givenTeam": 82,
-          "taken": 7976,
+          "taken": 7974,
           "takenEnv": 50
         },
         "byWeapon": {
@@ -37017,21 +37017,21 @@
           "byWeapon": {
             "gl": 47,
             "lg": 875,
-            "rl": 2294,
-            "sg": 2884,
+            "rl": 2293,
+            "sg": 2882,
             "sng": 110,
             "ssg": 395
           },
           "enemyVsBoth": 108,
-          "enemyVsLg": 311,
+          "enemyVsLg": 310,
           "enemyVsMid": 862,
-          "enemyVsRl": 957,
-          "enemyVsSg": 4375,
-          "ewep": 1376,
-          "given": 6613,
+          "enemyVsRl": 956,
+          "enemyVsSg": 4374,
+          "ewep": 1374,
+          "given": 6610,
           "givenSelf": 277,
           "givenTeam": 566,
-          "taken": 7279,
+          "taken": 7273,
           "takenEnv": 30
         },
         "byWeapon": {
@@ -37062,20 +37062,20 @@
             "lg": 543,
             "ng": 12,
             "rl": 1838,
-            "sg": 2624,
-            "sng": 546,
+            "sg": 2622,
+            "sng": 545,
             "ssg": 876
           },
           "enemyVsBoth": 208,
           "enemyVsLg": 560,
           "enemyVsMid": 347,
           "enemyVsRl": 1963,
-          "enemyVsSg": 4248,
+          "enemyVsSg": 4245,
           "ewep": 2731,
-          "given": 7326,
+          "given": 7323,
           "givenSelf": 218,
           "givenTeam": 347,
-          "taken": 7920,
+          "taken": 7917,
           "takenEnv": 49
         },
         "byWeapon": {
@@ -37106,7 +37106,7 @@
             "gl": 187,
             "lg": 846,
             "rl": 2279,
-            "sg": 2583,
+            "sg": 2580,
             "sng": 36,
             "ssg": 108
           },
@@ -37114,12 +37114,12 @@
           "enemyVsLg": 786,
           "enemyVsMid": 408,
           "enemyVsRl": 944,
-          "enemyVsSg": 3699,
+          "enemyVsSg": 3696,
           "ewep": 1942,
-          "given": 6049,
+          "given": 6046,
           "givenSelf": 201,
           "givenTeam": 276,
-          "taken": 7842,
+          "taken": 7839,
           "takenEnv": 75
         },
         "byWeapon": {
@@ -37147,22 +37147,22 @@
         "bounded": {
           "byWeapon": {
             "gl": 204,
-            "lg": 2178,
-            "rl": 2444,
-            "sg": 2641,
+            "lg": 2177,
+            "rl": 2443,
+            "sg": 2638,
             "sng": 54,
             "ssg": 195
           },
-          "enemyVsBoth": 485,
+          "enemyVsBoth": 483,
           "enemyVsLg": 507,
-          "enemyVsMid": 1409,
+          "enemyVsMid": 1408,
           "enemyVsRl": 1100,
-          "enemyVsSg": 4215,
-          "ewep": 2092,
-          "given": 7716,
+          "enemyVsSg": 4213,
+          "ewep": 2090,
+          "given": 7711,
           "givenSelf": 158,
-          "givenTeam": 359,
-          "taken": 7745,
+          "givenTeam": 358,
+          "taken": 7741,
           "takenEnv": 40
         },
         "byWeapon": {
@@ -37189,9 +37189,9 @@
         "bounded": {
           "byWeapon": {
             "gl": 100,
-            "lg": 1944,
+            "lg": 1943,
             "rl": 4438,
-            "sg": 1600,
+            "sg": 1599,
             "sng": 18,
             "ssg": 292
           },
@@ -37199,12 +37199,12 @@
           "enemyVsLg": 540,
           "enemyVsMid": 1522,
           "enemyVsRl": 1155,
-          "enemyVsSg": 4957,
+          "enemyVsSg": 4955,
           "ewep": 1913,
-          "given": 8392,
+          "given": 8390,
           "givenSelf": 927,
-          "givenTeam": 750,
-          "taken": 6450,
+          "givenTeam": 749,
+          "taken": 6449,
           "takenEnv": 49
         },
         "byWeapon": {
@@ -39135,6 +39135,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 19,
         "damage": 20,
         "time": 88511,
         "victim": "clox",
@@ -39486,6 +39487,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 17,
         "damage": 18,
         "time": 107357,
         "victim": "doberman",
@@ -39915,6 +39917,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 29,
         "damage": 30,
         "time": 135721,
         "victim": "marksuzu",
@@ -40419,6 +40422,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 71,
         "damage": 72,
         "isSplash": true,
         "time": 163842,
@@ -42049,7 +42053,7 @@
       },
       {
         "attacker": "sCorp",
-        "bounded": 64,
+        "bounded": 63,
         "damage": 84,
         "isSplash": true,
         "isTeam": true,
@@ -42352,6 +42356,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 23,
         "damage": 24,
         "time": 276155,
         "victim": "doberman",
@@ -42409,7 +42414,7 @@
       },
       {
         "attacker": "nlk",
-        "bounded": 47,
+        "bounded": 46,
         "damage": 53,
         "isSplash": true,
         "time": 282269,
@@ -42419,6 +42424,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 23,
         "damage": 24,
         "time": 282705,
         "victim": "lakso",
@@ -43111,6 +43117,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 23,
         "damage": 24,
         "time": 316866,
         "victim": "doberman",
@@ -43342,6 +43349,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 17,
         "damage": 18,
         "time": 332288,
         "victim": "doberman",
@@ -43844,6 +43852,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 23,
         "damage": 24,
         "time": 356693,
         "victim": "doberman",
@@ -44380,6 +44389,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 15,
         "damage": 16,
         "time": 379209,
         "victim": "doberman",
@@ -44939,6 +44949,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 23,
         "damage": 24,
         "time": 413573,
         "victim": "nlk",
@@ -45268,6 +45279,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 19,
         "damage": 20,
         "time": 441788,
         "victim": "nlk",
@@ -46828,6 +46840,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 29,
         "damage": 30,
         "time": 547049,
         "victim": "apa",
@@ -47506,6 +47519,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 11,
         "damage": 12,
         "time": 585339,
         "victim": "[cmd] witka",
@@ -49791,6 +49805,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 11,
         "damage": 12,
         "time": 721030,
         "victim": "clox",
@@ -49833,7 +49848,7 @@
       },
       {
         "attacker": "[cmd] witka",
-        "bounded": 35,
+        "bounded": 34,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -49949,6 +49964,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 3,
         "damage": 4,
         "isTeam": true,
         "time": 735181,
@@ -50065,6 +50081,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 23,
         "damage": 24,
         "time": 737719,
         "victim": "marksuzu",
@@ -50122,6 +50139,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 47,
         "damage": 48,
         "time": 750438,
         "victim": "[cmd] witka",
@@ -50155,6 +50173,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 7,
         "damage": 8,
         "time": 752681,
         "victim": "nlk",
@@ -52582,6 +52601,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 17,
         "damage": 18,
         "time": 940922,
         "victim": "[cmd] witka",
@@ -52876,6 +52896,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 15,
         "damage": 16,
         "time": 953298,
         "victim": "lakso",
@@ -53033,6 +53054,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 23,
         "damage": 24,
         "time": 968362,
         "victim": "nlk",
@@ -54070,6 +54092,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 23,
         "damage": 24,
         "time": 1022845,
         "victim": "sCorp",
@@ -54726,6 +54749,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 19,
         "damage": 20,
         "time": 1054886,
         "victim": "marksuzu",
@@ -55554,6 +55578,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 1123184,
@@ -56790,7 +56815,7 @@
             "scoreTeam": 198,
             "streamEwep": 1540,
             "streamGiven": 5952,
-            "streamTaken": 6838,
+            "streamTaken": 6834,
             "streamTeam": 198
           },
           "scoreEwep": 1540,
@@ -56803,9 +56828,9 @@
         "apa": {
           "bounded": {
             "scoreTeam": 158,
-            "streamEwep": 1737,
-            "streamGiven": 5708,
-            "streamTaken": 6523,
+            "streamEwep": 1736,
+            "streamGiven": 5705,
+            "streamTaken": 6521,
             "streamTeam": 158
           },
           "scoreEwep": 1737,
@@ -56819,8 +56844,8 @@
           "bounded": {
             "scoreTeam": 82,
             "streamEwep": 2835,
-            "streamGiven": 6431,
-            "streamTaken": 7338,
+            "streamGiven": 6425,
+            "streamTaken": 7336,
             "streamTeam": 82
           },
           "scoreEwep": 2735,
@@ -56833,9 +56858,9 @@
         "doberman": {
           "bounded": {
             "scoreTeam": 566,
-            "streamEwep": 1376,
-            "streamGiven": 6613,
-            "streamTaken": 6544,
+            "streamEwep": 1374,
+            "streamGiven": 6610,
+            "streamTaken": 6538,
             "streamTeam": 566
           },
           "scoreEwep": 1376,
@@ -56849,8 +56874,8 @@
           "bounded": {
             "scoreTeam": 347,
             "streamEwep": 2731,
-            "streamGiven": 7326,
-            "streamTaken": 7441,
+            "streamGiven": 7323,
+            "streamTaken": 7438,
             "streamTeam": 347
           },
           "scoreEwep": 2731,
@@ -56864,8 +56889,8 @@
           "bounded": {
             "scoreTeam": 276,
             "streamEwep": 1942,
-            "streamGiven": 6049,
-            "streamTaken": 7371,
+            "streamGiven": 6046,
+            "streamTaken": 7368,
             "streamTeam": 276
           },
           "scoreEwep": 1942,
@@ -56878,10 +56903,10 @@
         "nlk": {
           "bounded": {
             "scoreTeam": 359,
-            "streamEwep": 2092,
-            "streamGiven": 7716,
-            "streamTaken": 6898,
-            "streamTeam": 359
+            "streamEwep": 2090,
+            "streamGiven": 7711,
+            "streamTaken": 6894,
+            "streamTeam": 358
           },
           "scoreEwep": 2091,
           "scoreGiven": 7715,
@@ -56894,9 +56919,9 @@
           "bounded": {
             "scoreTeam": 749,
             "streamEwep": 1913,
-            "streamGiven": 8392,
-            "streamTaken": 5234,
-            "streamTeam": 750
+            "streamGiven": 8390,
+            "streamTaken": 5233,
+            "streamTeam": 749
           },
           "scoreEwep": 1913,
           "scoreGiven": 8392,
@@ -89781,7 +89806,7 @@
       }
     ]
   },
-  "schemaVersion": 54,
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {

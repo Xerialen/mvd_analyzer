@@ -4654,18 +4654,18 @@
       "42": {
         "bounded": {
           "byWeapon": {
-            "lg": 2697,
+            "lg": 2695,
             "rl": 3953,
             "sg": 40,
             "ssg": 12
           },
-          "enemyVsBoth": 3249,
+          "enemyVsBoth": 3247,
           "enemyVsLg": 390,
           "enemyVsMid": 0,
           "enemyVsRl": 2951,
           "enemyVsSg": 112,
-          "ewep": 6590,
-          "given": 6702,
+          "ewep": 6588,
+          "given": 6700,
           "givenSelf": 530,
           "givenTeam": 0,
           "taken": 5295,
@@ -4705,7 +4705,7 @@
           "given": 4695,
           "givenSelf": 396,
           "givenTeam": 0,
-          "taken": 7173,
+          "taken": 7171,
           "takenEnv": 75
         },
         "byWeapon": {
@@ -5839,6 +5839,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 29,
         "damage": 30,
         "time": 272490,
         "victim": "AHemlocksLie",
@@ -6371,6 +6372,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 29,
         "damage": 30,
         "time": 396293,
         "victim": "AHemlocksLie",
@@ -7203,8 +7205,8 @@
         "42": {
           "bounded": {
             "scoreTeam": 0,
-            "streamEwep": 6590,
-            "streamGiven": 6702,
+            "streamEwep": 6588,
+            "streamGiven": 6700,
             "streamTaken": 4695,
             "streamTeam": 0
           },
@@ -7220,7 +7222,7 @@
             "scoreTeam": 0,
             "streamEwep": 4357,
             "streamGiven": 4695,
-            "streamTaken": 6702,
+            "streamTaken": 6700,
             "streamTeam": 0
           },
           "scoreEwep": 4357,
@@ -13665,7 +13667,7 @@
       }
     ]
   },
-  "schemaVersion": 54,
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {

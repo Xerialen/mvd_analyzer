@@ -13937,17 +13937,17 @@
           "byWeapon": {
             "gl": 157,
             "lg": 2800,
-            "rl": 2534,
+            "rl": 2539,
             "sg": 225,
             "sng": 76
           },
           "enemyVsBoth": 1809,
           "enemyVsLg": 100,
-          "enemyVsMid": 385,
+          "enemyVsMid": 390,
           "enemyVsRl": 2415,
           "enemyVsSg": 1083,
           "ewep": 4324,
-          "given": 5792,
+          "given": 5797,
           "givenSelf": 287,
           "givenTeam": 153,
           "taken": 3640,
@@ -14027,7 +14027,7 @@
           "given": 3271,
           "givenSelf": 319,
           "givenTeam": 214,
-          "taken": 5708,
+          "taken": 5713,
           "takenEnv": 50
         },
         "byWeapon": {
@@ -17085,7 +17085,7 @@
       },
       {
         "attacker": "gLAd",
-        "bounded": 95,
+        "bounded": 100,
         "damage": 110,
         "time": 372482,
         "victim": "rusti",
@@ -18984,7 +18984,7 @@
           "bounded": {
             "scoreTeam": 153,
             "streamEwep": 4324,
-            "streamGiven": 5792,
+            "streamGiven": 5797,
             "streamTaken": 3135,
             "streamTeam": 153
           },
@@ -19015,7 +19015,7 @@
             "scoreTeam": 214,
             "streamEwep": 2941,
             "streamGiven": 3271,
-            "streamTaken": 5339,
+            "streamTaken": 5344,
             "streamTeam": 214
           },
           "scoreEwep": 2941,
@@ -30497,7 +30497,7 @@
       }
     ]
   },
-  "schemaVersion": 54,
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {

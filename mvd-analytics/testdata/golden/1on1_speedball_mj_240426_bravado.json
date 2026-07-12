@@ -7001,19 +7001,19 @@
           "byWeapon": {
             "gl": 112,
             "lg": 403,
-            "rl": 4524,
+            "rl": 4545,
             "sg": 208
           },
           "enemyVsBoth": 4559,
           "enemyVsLg": 0,
           "enemyVsMid": 82,
-          "enemyVsRl": 491,
+          "enemyVsRl": 512,
           "enemyVsSg": 115,
-          "ewep": 5050,
-          "given": 5247,
+          "ewep": 5071,
+          "given": 5268,
           "givenSelf": 536,
           "givenTeam": 0,
-          "taken": 9356,
+          "taken": 9352,
           "takenEnv": 70
         },
         "byWeapon": {
@@ -7037,21 +7037,21 @@
       "speedball": {
         "bounded": {
           "byWeapon": {
-            "lg": 4387,
+            "lg": 4383,
             "rl": 4259,
             "sg": 44,
             "ssg": 60
           },
-          "enemyVsBoth": 1578,
+          "enemyVsBoth": 1576,
           "enemyVsLg": 815,
           "enemyVsMid": 640,
-          "enemyVsRl": 4334,
+          "enemyVsRl": 4332,
           "enemyVsSg": 1383,
-          "ewep": 6727,
-          "given": 8750,
+          "ewep": 6723,
+          "given": 8746,
           "givenSelf": 1776,
           "givenTeam": 0,
-          "taken": 7073,
+          "taken": 7094,
           "takenEnv": 50
         },
         "byWeapon": {
@@ -7746,6 +7746,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 113885,
         "victim": "mj",
@@ -7966,6 +7967,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 165730,
         "victim": "mj",
@@ -8271,6 +8273,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 211875,
         "victim": "mj",
@@ -8947,6 +8950,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 349203,
         "victim": "mj",
@@ -9749,7 +9753,6 @@
       },
       {
         "attacker": "mj",
-        "bounded": 89,
         "damage": 110,
         "time": 476050,
         "victim": "speedball",
@@ -10596,9 +10599,9 @@
         "mj": {
           "bounded": {
             "scoreTeam": 0,
-            "streamEwep": 5050,
-            "streamGiven": 5247,
-            "streamTaken": 8750,
+            "streamEwep": 5071,
+            "streamGiven": 5268,
+            "streamTaken": 8746,
             "streamTeam": 0
           },
           "scoreEwep": 5071,
@@ -10611,9 +10614,9 @@
         "speedball": {
           "bounded": {
             "scoreTeam": 0,
-            "streamEwep": 6727,
-            "streamGiven": 8750,
-            "streamTaken": 5247,
+            "streamEwep": 6723,
+            "streamGiven": 8746,
+            "streamTaken": 5268,
             "streamTeam": 0
           },
           "scoreEwep": 6727,
@@ -17738,7 +17741,7 @@
       }
     ]
   },
-  "schemaVersion": 54,
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {

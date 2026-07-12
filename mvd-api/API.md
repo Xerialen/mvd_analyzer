@@ -107,10 +107,13 @@ weapon / item / kind / loc / layout tokens.
   `raw` (the unbound wire value, byte-stable pre-v54 shape), `bounded`
   (KTX's scoreboard reconstruction — armor absorbed + health capped to the
   victim's remaining health, in the raw field names), or `both` (raw plus
-  additive `bounded` fields). The default is family-by-request: **`both`
-  for a `summary` call, `raw` for the full log**. `dmg=bounded` on a demo
-  whose reconstruction was skipped (midair / instagib / dmgfrags modes) is
-  a `422 bounded_unavailable`.
+  additive `bounded` fields). The default is **`bounded`** for both
+  summaries and the full log (effective damage is what the scoreboard
+  means; raw overkill is the opt-in). A *defaulted* request on a demo
+  whose reconstruction was skipped (midair / instagib / dmgfrags modes)
+  falls back to `raw`; an *explicit* `dmg=bounded` there is a
+  `422 bounded_unavailable`. Unfiltered bounded summaries source the
+  per-player figures from KTX's exact scoreboard (`boundedSource: "ktx"`).
 - **`time`** — match-relative **seconds**; **required** on `/state-at`.
 - **`windowMs`** — integer milliseconds (`/buckets`, `/region-control`).
   ⚠️ **Defaults to 50 ms when omitted** — on a 20-minute match that is
