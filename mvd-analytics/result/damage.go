@@ -10,9 +10,14 @@ package result
 // player's Bounded nest) is reconstructed per hit to KTX's scoreboard
 // semantics — armor absorbed + health damage capped to the victim's
 // remaining health (dmg_dealt, combat.c:783). The wire does not carry the
-// bounded value; it is re-derived from the victim's tracked armor/health
-// state at hit time and therefore carries a small reconstruction slop
-// (±1/hit ceil rounding; see the analyzer). DamageReconciliation
+// bounded value, but it does reveal it almost exactly: a hit the victim
+// SURVIVES has no overkill, so bounded == raw identically; a KILLING hit's
+// overkill is the end-of-frame death broadcast (bounded = raw + deathValue,
+// the armor share cancelling). The residual slop is small and confined to
+// three cases: same-frame multi-hit deaths (one death value cascaded across
+// the frame's hits with an approximate save split), the -99 corpse-health
+// clamp and respawn-masked deaths (both falling back to an approximate
+// shadow-health cap), and the pent/tp save-share estimate. DamageReconciliation
 // cross-checks both families against the KTX scoreboard.
 //
 // Telefrags and stomps are NOT weapon damage: they are positional instant

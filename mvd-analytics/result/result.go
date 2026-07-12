@@ -654,7 +654,20 @@ package result
 //     per-kill bounded value. ByWeapon/Matrix/EWep/TotalDamage still
 //     exclude them (KTX wpNONE — demostats weapons[].damage excludes them
 //     too).
-const CurrentSchemaVersion = 54
+//
+// v55: bounded damage becomes death-value-exact (reconstruction change only).
+//   - No field-shape change. The bounded value no longer caps the health
+//     share against a drifting per-hit health shadow.
+//   - A SURVIVED hit is bounded == raw by identity (no overkill); a KILLING
+//     hit's overkill is the end-of-frame death broadcast, so bounded is raw
+//     plus the (negative) death value (armor cancels; combat.c:944,983).
+//   - Residual approximations remain: same-frame multi-hit deaths cascade
+//     one death value across the frame's hits (approximate save split); the
+//     -99 corpse-health clamp (combat.c:259) and respawn-masked deaths fall
+//     back to the shadow-health cap.
+//   - Corpus given/taken reconcile ~2.5× tighter (max |Δ| 16/15 vs 44/44);
+//     ewep/team bands unchanged (the victim-item one-frame window).
+const CurrentSchemaVersion = 55
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields

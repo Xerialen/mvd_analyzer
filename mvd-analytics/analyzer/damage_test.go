@@ -288,19 +288,19 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 		t.Errorf("deflect kill = %+v count=%d, want bounded 100, credited", d.Telefrags[0], d.ByPlayer["alpha"].Telefrags)
 	}
 
-	// Stomp through armor: the honest wire value folds raw; the bounded
-	// arithmetic still applies (YA absorbs 6 of 10).
+	// Killing stomp through armor: the honest wire value folds raw; the
+	// bounded value comes from the death broadcast (raw 10 + death −1 = 9).
 	a = buildDamageAnalyzer()
 	seedVitals(a, 1, 3, 40, events.ITArmor2)
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 10, DeathType: dtStompTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -1, Time: 10}) // 3 - 4 take -> -1
 	d = finalizeDamage(t, a)
 	alpha = d.ByPlayer["alpha"]
-	// save=ceil(6)=6, take=4 capped to 3 HP -> bounded 9, raw 10.
 	if alpha.Given != 10 || alpha.Bounded.Given != 9 {
 		t.Errorf("stomp fold = raw %d / bounded %d, want 10/9", alpha.Given, alpha.Bounded.Given)
 	}
 	if killBounded(d.Stomps[0]) != 9 || d.Stomps[0].Damage != 10 {
-		t.Errorf("stomp kill = bounded %d / damage %d, want 9/10 (raw fold value carried when it diverges)", d.Stomps[0].Bounded, d.Stomps[0].Damage)
+		t.Errorf("stomp kill = bounded %d / damage %d, want 9/10 (raw fold value carried when it diverges)", killBounded(d.Stomps[0]), d.Stomps[0].Damage)
 	}
 
 	// Tele victim holding RL and alive: the fold lands in the EWep buckets
@@ -500,18 +500,24 @@ func finalizeDamage(t *testing.T, a *DamageAnalyzer) *DamageResult {
 	return res.Damage
 }
 
-// T1: the three armor tiers absorb per their KTX fraction; with 10 HP left
-// the health share caps, exposing the armor split in the bounded value.
+// T1: three killing hits across armor tiers. Under the death-value model the
+// armor split cancels — bounded = raw + deathValue — so each victim's bounded
+// is fixed by the overkill the death broadcast carries (10 HP absorbed +
+// tier-dependent armor, all reflected in the leftover health).
 func TestDamageAnalyzer_BoundedArmorTiers(t *testing.T) {
 	a := buildDamageAnalyzer()
-	seedVitals(a, 1, 10, 100, events.ITArmor1) // GA 0.3
-	seedVitals(a, 2, 10, 100, events.ITArmor2) // YA 0.6
-	seedVitals(a, 3, 10, 100, events.ITArmor3) // RA 0.8
+	seedVitals(a, 1, 10, 100, events.ITArmor1) // GA 0.3: save 30, take 70 -> health -60
+	seedVitals(a, 2, 10, 100, events.ITArmor2) // YA 0.6: save 60, take 40 -> health -30
+	seedVitals(a, 3, 10, 100, events.ITArmor3) // RA 0.8: save 80, take 20 -> health -10
 	for slot := 1; slot <= 3; slot++ {
 		a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: slot, Damage: 100, DeathType: dtRLTest, Time: 10})
 	}
+	// End-of-frame death broadcasts (same frame as the hits) carry the overkill.
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -60, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 2, StatIndex: events.StatHealth, Value: -30, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 3, StatIndex: events.StatHealth, Value: -10, Time: 10})
 	d := finalizeDamage(t, a)
-	want := map[string]int{"bsg": 40, "cmid": 70, "dlg": 90} // save 30/60/80 + 10 HP
+	want := map[string]int{"bsg": 40, "cmid": 70, "dlg": 90} // raw 100 + deathValue
 	for _, e := range d.Events {
 		if got := boundedOf(e); got != want[e.Victim] {
 			t.Errorf("%s bounded = %d, want %d", e.Victim, got, want[e.Victim])
@@ -530,37 +536,43 @@ func TestDamageAnalyzer_BoundedArmorTiers(t *testing.T) {
 	}
 }
 
-// T2: armor break mid-hit — the shadow armor hits 0 so the same-frame
-// follow-up absorbs nothing and caps on the reduced health.
+// T2: two same-frame hits kill through a breaking armor. The overkill in the
+// death broadcast cascades onto the LAST hit (wire order), flooring hit 2's
+// health share; hit 1 landed in full.
 func TestDamageAnalyzer_BoundedArmorBreakSequential(t *testing.T) {
 	a := buildDamageAnalyzer()
 	seedVitals(a, 1, 100, 5, events.ITArmor2) // YA, 5 armor left
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	// health 100 - (55 take + 60 take) = -15; one death value covers the frame.
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -15, Time: 10})
 	d := finalizeDamage(t, a)
 	if len(d.Events) != 2 {
 		t.Fatalf("events = %d, want 2", len(d.Events))
 	}
-	// Hit 1: save=min(ceil(36),5)=5, take=55 of 100 HP -> bounded 60 == raw.
+	// Hit 1: full — the overkill is absorbed by hit 2 first (last-to-first).
 	if d.Events[0].Bounded != nil {
-		t.Errorf("hit1 bounded = %d, want nil (armor cap does not change save+take)", *d.Events[0].Bounded)
+		t.Errorf("hit1 bounded = %d, want nil (== raw 60)", *d.Events[0].Bounded)
 	}
-	// Hit 2: armor 0 now, health 45 -> bounded 45.
+	// Hit 2: raw 60 minus the |−15| overkill -> bounded 45.
 	if got := boundedOf(d.Events[1]); got != 45 {
-		t.Errorf("hit2 bounded = %d, want 45 (armor broke, health 45 caps)", got)
+		t.Errorf("hit2 bounded = %d, want 45 (cascade deducts 15 from the last hit)", got)
 	}
 }
 
-// T3+T4: the overkill cap is the whole point; equal values are omitted.
+// T3+T4 (T-kill): a killing hit's overkill comes from the death value
+// (raw 100, death −70 -> bounded 30); a survived hit is bounded == raw and
+// omitted.
 func TestDamageAnalyzer_BoundedOverkillAndOmitWhenEqual(t *testing.T) {
 	a := buildDamageAnalyzer()
 	seedVitals(a, 1, 30, 0, 0)
 	seedVitals(a, 2, 100, 0, 0)
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
-	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 2, Damage: 27, DeathType: dtSGTest, Time: 11})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -70, Time: 10}) // 30 - 100
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 2, Damage: 27, DeathType: dtSGTest, Time: 11})    // survives
 	d := finalizeDamage(t, a)
 	if got := boundedOf(d.Events[0]); got != 30 {
-		t.Errorf("overkill bounded = %d, want 30", got)
+		t.Errorf("overkill bounded = %d, want 30 (raw 100 + death −70)", got)
 	}
 	if d.Events[0].Bounded == nil {
 		t.Errorf("overkill hit must carry an explicit bounded value")
@@ -677,46 +689,80 @@ func TestDamageAnalyzer_BoundedTeamplayRules(t *testing.T) {
 	}
 }
 
-// T8: KTX damage-indicator sentinels must not poison the vitals shadow.
+// T8: KTX damage-indicator sentinels (positive 1000+dmg) must never be
+// mistaken for a death broadcast — only the genuine negative death value caps
+// the kill.
 func TestDamageAnalyzer_BoundedStatSentinelsRejected(t *testing.T) {
 	a := buildDamageAnalyzer()
 	seedVitals(a, 1, 40, 0, 0)
-	// Sentinels: health 1000+dmg indicator, armor feedback value.
+	// Sentinels: health 1000+dmg indicator, armor feedback value. Positive, so
+	// neither poisons the shadow nor registers as a death marker.
 	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: 1042})
 	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatArmor, Value: 1080})
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 100, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -60, Time: 10}) // 40 - 100
 	d := finalizeDamage(t, a)
 	if got := boundedOf(d.Events[0]); got != 40 {
-		t.Errorf("bounded = %d, want 40 (sentinel stats rejected, real health 40)", got)
+		t.Errorf("bounded = %d, want 40 (raw 100 + real death −60, sentinels ignored)", got)
 	}
 }
 
-// T9: two hits in one frame (no stat refresh in between) cap sequentially.
+// T9 (T-double-kill-cascade): two hits in one frame share a single death
+// value; the overkill cascades from the LAST hit backward.
 func TestDamageAnalyzer_BoundedSameFrameSequentialCap(t *testing.T) {
 	a := buildDamageAnalyzer()
 	seedVitals(a, 1, 100, 0, 0)
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -20, Time: 10}) // 100 - 120
 	d := finalizeDamage(t, a)
 	if d.Events[0].Bounded != nil {
-		t.Errorf("hit1 bounded = %d, want nil (60 of 100)", *d.Events[0].Bounded)
+		t.Errorf("hit1 bounded = %d, want nil (== raw 60; overkill lands on hit 2)", *d.Events[0].Bounded)
 	}
 	if got := boundedOf(d.Events[1]); got != 40 {
-		t.Errorf("hit2 bounded = %d, want 40 (health 40 left)", got)
+		t.Errorf("hit2 bounded = %d, want 40 (60 − |−20| overkill)", got)
 	}
 }
 
-// T10: an authoritative stat update between hits checkpoints the shadow.
-func TestDamageAnalyzer_BoundedCheckpointResync(t *testing.T) {
+// T10 (T-survive-stale-shadow): the invisible-heal fix. The victim died once
+// (a death marker, no respawn checkpoint after), so the health shadow is
+// still negative; a LATER hit with no death marker of its own must be bounded
+// == raw, not capped to the stale corpse health.
+func TestDamageAnalyzer_BoundedSurvivedStaleShadow(t *testing.T) {
 	a := buildDamageAnalyzer()
 	seedVitals(a, 1, 100, 0, 0)
-	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 10})
-	// Mega pickup / respawn: the server says 100 again.
-	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: 100})
-	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 60, DeathType: dtRLTest, Time: 11})
+	// First death, its overkill capped by the death value.
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 150, DeathType: dtRLTest, Time: 5})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -50, Time: 5})
+	// No respawn checkpoint arrives — the shadow stays at −50. The victim
+	// silently respawned; a later hit lands with no death marker.
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 40, DeathType: dtRLTest, Time: 20})
 	d := finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 100 {
+		t.Errorf("kill bounded = %d, want 100 (raw 150 + death −50)", got)
+	}
 	if d.Events[1].Bounded != nil {
-		t.Errorf("post-checkpoint bounded = %d, want nil (health back to 100)", *d.Events[1].Bounded)
+		t.Errorf("survived hit bounded = %d, want nil (== raw 40; not capped to the stale −50 shadow)", *d.Events[1].Bounded)
+	}
+}
+
+// T-two-deaths: two kills of the same victim, a respawn checkpoint between —
+// each frame's death value is matched and consumed exactly once.
+func TestDamageAnalyzer_BoundedTwoDeaths(t *testing.T) {
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 150, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -50, Time: 10})
+	// Respawn checkpoint.
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: 100, Time: 15})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 120, DeathType: dtRLTest, Time: 20})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -20, Time: 20})
+	d := finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 100 {
+		t.Errorf("first kill bounded = %d, want 100 (raw 150 + death −50)", got)
+	}
+	if got := boundedOf(d.Events[1]); got != 100 {
+		t.Errorf("second kill bounded = %d, want 100 (raw 120 + death −20)", got)
 	}
 }
 
@@ -759,24 +805,19 @@ func TestDamageAnalyzer_BoundedSkippedModes(t *testing.T) {
 	}
 }
 
-// T12: a victim with no stat history defaults to the 100/0 spawn state.
-func TestDamageAnalyzer_BoundedUnknownVitalsDefault(t *testing.T) {
-	a := buildDamageAnalyzer()
-	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 150, DeathType: dtRLTest, Time: 10})
-	d := finalizeDamage(t, a)
-	if got := boundedOf(d.Events[0]); got != 100 {
-		t.Errorf("bounded = %d, want 100 (spawn-state default)", got)
-	}
-}
+// (T12, the shadow spawn-state default, is obsolete: a survived hit is now
+// bounded == raw and a killing hit reads the death value, so the pre-hit
+// health shadow no longer feeds the normal-hit bounded arithmetic.)
 
 // T13: the scoreboard delta's bounded nest — enemy-only taken and dmg.team.
 func TestDamageAnalyzer_BoundedScoreboardDelta(t *testing.T) {
 	a := buildDamageAnalyzer()
 	seedVitals(a, 4, 100, 0, 0)
 	seedVitals(a, 6, 100, 0, 0)
-	// Enemy overkill: bounded 100 of raw 150.
+	// Enemy overkill: raw 150, death −50 -> bounded 100.
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 150, DeathType: dtRLTest, Time: 10})
-	// Team hit: bounded team damage 40 (tp 0 here: no nullification).
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 4, StatIndex: events.StatHealth, Value: -50, Time: 10})
+	// Team hit: survives (bounded 40 == raw), tp 0 here so no nullification.
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 40, DeathType: dtRLTest, Time: 11})
 
 	co := damageCore()

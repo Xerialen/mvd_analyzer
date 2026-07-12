@@ -29,17 +29,38 @@ type DamageAnalyzer struct {
 	// hit time (KTX "ewep" semantics — see ktx/src/combat.c:1084-1089).
 	items map[int]int
 
-	// vitals tracks each wire slot's health and armor value for the bounded
-	// reconstruction. The wire carries only the UNBOUND damage; the bounded
-	// (KTX-scoreboard) value is re-derived per hit from the victim's pre-hit
-	// state. KTX multicasts dmgdone mid-frame inside T_Damage while stat
-	// broadcasts land at end of frame, so the last-seen stat at DamageEvent
-	// time IS the pre-hit value — the same wire-order guarantee the items
-	// snapshot above relies on. Between authoritative stat updates the shadow
-	// decrement in OnEvent keeps same-frame multi-hits sequentially capped;
-	// every accepted stat update overwrites (checkpoints) the shadow value,
-	// so any drift self-corrects within a frame.
+	// vitals tracks each wire slot's health and armor value. Under the v55
+	// death-value model the NORMAL-hit bounded value no longer reads shadow
+	// health (a survived hit is bounded == raw by identity; a killing hit's
+	// overkill comes from the end-of-frame death broadcast, see deaths). The
+	// shadow is kept ONLY for the paths that still need it: the armor share
+	// (save) for pent/tp-nullified hits and the cascade floor, and the
+	// telefrag reconstruction's armor+remaining-health + its respawn
+	// inference (a non-positive health shadow on a live tele victim means the
+	// respawn beat the end-of-frame stat broadcast). KTX multicasts dmgdone
+	// mid-frame inside T_Damage while stat broadcasts land at end of frame,
+	// so the last-seen stat at DamageEvent time is the pre-hit value; the
+	// per-hit shadow decrement in OnEvent keeps same-frame multi-hits'
+	// armor/health sequential, and every accepted stat update checkpoints it.
 	vitals map[int]*slotVitals
+
+	// deaths records, per wire slot, the end-of-frame StatHealth broadcasts
+	// that carry a death value (<= 0 — KTX sets health to the negative
+	// leftover, or -1 when it lands exactly on 0; combat.c:983-985). This is
+	// the exact overkill signal the wire otherwise hides: for a killing hit
+	// bounded = raw + deathValue (the armor share cancels out of the
+	// save+take identity). Empirically the death broadcast shares the
+	// killing DamageEvent's demo timestamp exactly (10923/10923 across the
+	// corpus), so hits are matched to a marker by identical tMs.
+	deaths map[int][]deathMarker
+
+	// deathFrames records, per wire slot, the demo timestamps of authoritative
+	// DeathEvents. It is the masked-death fallback: a tight death→respawn cycle
+	// broadcasts the respawn's positive health at end of frame, hiding the
+	// negative death value, but the obituary-driven DeathEvent still fires
+	// (parser forceEmitDeath). A killing hit with a DeathEvent but no death
+	// value is capped by the (approximate) shadow instead of left at raw.
+	deathFrames map[int][]int32
 
 	// serverInfo collects the serverinfo cvars (fullserverinfo stufftext +
 	// mid-game key updates, same sources as MetadataAnalyzer) that the
@@ -59,6 +80,15 @@ type slotVitals struct {
 	armor  int
 }
 
+// deathMarker is one accepted end-of-frame StatHealth <= 0 broadcast: the
+// victim's post-frame leftover health (never 0 — combat.c:985 coerces to
+// -1), pinned to its demo timestamp. Consumed at most once, matched to the
+// same-frame killing hit(s) by identical tMs.
+type deathMarker struct {
+	tMs   int32
+	value int
+}
+
 // rawDamage is one mvdhidden_dmgdone record pinned to wire slots + time,
 // plus the victim's weapon bitfield and vitals snapshots. The match-time
 // gate is applied in Finalize from the demo-clock timestamp (tMs), not
@@ -72,16 +102,18 @@ type rawDamage struct {
 	isSplash     bool
 	tMs          int32
 	victimItem   int // victim's StatItems bitfield at hit time
-	victimHealth int // victim's pre-hit health (shadow-tracked)
-	victimArmor  int // victim's pre-hit armor value (shadow-tracked)
+	victimHealth int // victim's pre-hit health (shadow) — telefrag path + respawn inference only
+	victimArmor  int // victim's pre-hit armor (shadow) — save share for pent/tp + cascade floor + telefrag
 }
 
 // NewDamageAnalyzer creates a new damage analyzer.
 func NewDamageAnalyzer() *DamageAnalyzer {
 	return &DamageAnalyzer{
-		items:      make(map[int]int),
-		vitals:     make(map[int]*slotVitals),
-		serverInfo: make(map[string]string),
+		items:       make(map[int]int),
+		vitals:      make(map[int]*slotVitals),
+		deaths:      make(map[int][]deathMarker),
+		deathFrames: make(map[int][]int32),
+		serverInfo:  make(map[string]string),
 	}
 }
 
@@ -132,6 +164,13 @@ func (a *DamageAnalyzer) OnEvent(event events.Event) error {
 			// negative death values are genuine). Same filter as timeline.go.
 			if e.Value <= 250 {
 				a.vitalsFor(e.PlayerNum).health = e.Value
+				// A non-positive accepted health is a death broadcast (the
+				// negative leftover, or -1 for an exact-0 landing). Record it
+				// as the frame's overkill signal for the bounded arithmetic.
+				if e.Value <= 0 {
+					a.deaths[e.PlayerNum] = append(a.deaths[e.PlayerNum],
+						deathMarker{tMs: msTime(e.Time), value: e.Value})
+				}
 			}
 		case events.StatArmor:
 			// Real armor caps at 200 (RA); larger values are KTX feedback
@@ -140,6 +179,10 @@ func (a *DamageAnalyzer) OnEvent(event events.Event) error {
 				a.vitalsFor(e.PlayerNum).armor = e.Value
 			}
 		}
+	case *events.DeathEvent:
+		// Authoritative death signal (StatHealth edge or obituary). Used only
+		// as the masked-death fallback when no death value was broadcast.
+		a.deathFrames[e.PlayerNum] = append(a.deathFrames[e.PlayerNum], e.TimeMs)
 	case *events.DamageEvent:
 		v := a.vitalsFor(e.Victim)
 		a.raw = append(a.raw, rawDamage{
@@ -257,38 +300,26 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		return !ended || tMs <= matchEndMs
 	}
 
-	for _, d := range a.raw {
-		isWorld := d.attacker < 0
-		isSelf := !isWorld && d.attacker == d.victim
-		isEnv := isWorld || events.IsEnvironmentalDamage(d.deathType)
+	// Per-hit bounded values (v55 death-value model), indexed by raw hit.
+	// Computed once up front so same-frame multi-hit deaths can cascade the
+	// shared overkill across their hits (see computeBounded). Only produced
+	// for the standard mode; nil when the bounded family is skipped.
+	var boundedNew []int
+	if boundedSkip == "" {
+		boundedNew = a.computeBounded(tp, duel, inMatchWindow)
+	}
 
-		attacker := ""
-		var attackerTeam string
-		if !isWorld {
-			id := a.resolveAt(d.attacker, d.tMs)
-			attacker, attackerTeam = id.Name, id.Team
-		} else {
-			attacker = "world"
-		}
-		victimID := a.resolveAt(d.victim, d.tMs)
-		victim, victimTeam := victimID.Name, victimID.Team
-		if victim == "" {
+	for i := range a.raw {
+		d := a.raw[i]
+		hc := a.classifyHit(d, duel)
+		if hc.victim == "" {
 			// Can't attribute the hit to a known victim; skip rather than
 			// inventing a slot-numbered name.
 			continue
 		}
-
-		weapon := events.DeathTypeToWeapon(d.deathType)
-		isTele := weapon == "tele"
-		isStomp := weapon == "stomp"
-		if isEnv && !isTele && !isStomp {
-			if env := events.EnvironmentalDamageType(d.deathType); env != "" {
-				weapon = env
-			}
-		}
-
-		isTeam := !duel && !isWorld && !isSelf && attackerTeam != "" &&
-			victimTeam != "" && attackerTeam == victimTeam
+		isWorld, isSelf, isEnv := hc.isWorld, hc.isSelf, hc.isEnv
+		isTele, isStomp, isTeam := hc.isTele, hc.isStomp, hc.isTeam
+		attacker, victim, weapon := hc.attacker, hc.victim, hc.weapon
 
 		// Telefrags and stomps are positional instant kills, not weapon
 		// damage — a telefrag's wire value is the 9999 sentinel, a stomp is
@@ -349,7 +380,10 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 					}
 					raw = b
 				} else {
-					b = boundedDamage(dd, tp, isTeam, isSelf)
+					// Stomp keeps the normal path under the death-value model
+					// (its ~10 HP wire value is honest): bounded == raw unless
+					// it killed, then raw + deathValue via computeBounded.
+					b = boundedNew[i]
 					raw = d.damage
 				}
 				bv := b
@@ -446,7 +480,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		// actually differ.
 		b := 0
 		if boundedSkip == "" {
-			b = boundedDamage(d, tp, isTeam, isSelf)
+			b = boundedNew[i]
 			if b != d.damage {
 				bv := b
 				entry.Bounded = &bv
@@ -591,42 +625,220 @@ func getOrCreateDamage(m map[string]*PlayerDamage, name string) *PlayerDamage {
 	return p
 }
 
-// boundedDamage reconstructs one hit's KTX-scoreboard value (dmg_dealt,
-// ktx/src/combat.c:783): armor absorbed + health damage capped to the
-// victim's remaining health, after the nullification rules the wire value
-// deliberately ignores (virtual_take is captured pre-nullification at
-// combat.c:719). Godmode is unobservable from the demo and ignored — it
-// does not occur in real matches.
-func boundedDamage(d rawDamage, tp int, isTeam, isSelf bool) int {
-	if tp == 4 && isTeam {
-		// tp4teamdmg: neither armor nor health is touched (combat.c:554,
-		// 622-625, 749-752); only velocity applies. The wire still carries
-		// save+virtual_take, so bounded is 0, not the wire value.
-		return 0
+// hitInfo is one raw hit's resolved identity + classification, shared by the
+// bounded pre-pass (computeBounded) and the aggregation loop so the two never
+// diverge on how a hit is classified. victim == "" marks an unattributable
+// hit (dropped).
+type hitInfo struct {
+	isWorld  bool
+	isSelf   bool
+	isEnv    bool
+	isTele   bool
+	isStomp  bool
+	isTeam   bool
+	attacker string
+	victim   string
+	weapon   string
+}
+
+// classifyHit resolves a raw hit's attacker/victim identities at hit time and
+// derives the world/self/env/tele/stomp/team flags + the resolved weapon
+// (environmental category folded in). duel forces enemy classification for a
+// colour-team 1v1 (F20).
+func (a *DamageAnalyzer) classifyHit(d rawDamage, duel bool) hitInfo {
+	h := hitInfo{}
+	h.isWorld = d.attacker < 0
+	h.isSelf = !h.isWorld && d.attacker == d.victim
+	h.isEnv = h.isWorld || events.IsEnvironmentalDamage(d.deathType)
+
+	var attackerTeam string
+	if !h.isWorld {
+		id := a.resolveAt(d.attacker, d.tMs)
+		h.attacker, attackerTeam = id.Name, id.Team
+	} else {
+		h.attacker = "world"
 	}
-	save, take := damageSplit(d.damage, d.victimItem, d.victimArmor)
-	// Nullification rules zero the health share only — armor was already
-	// consumed above them (combat.c:620-639 precede 722-753). All are
-	// skipped for dtSUICIDE (combat.c:722).
-	if d.deathType != events.DtSuicide {
-		switch {
-		case d.victimItem&events.ITInvulnerability != 0:
-			take = 0 // pent (combat.c:728-737)
-		case tp == 1 && (isTeam || isSelf):
-			take = 0 // tp1: no damage to mates or self (combat.c:738-748)
-		case tp == 3 && isTeam:
-			take = 0 // tp3: no damage to mates; self still takes
+	victimID := a.resolveAt(d.victim, d.tMs)
+	h.victim = victimID.Name
+	victimTeam := victimID.Team
+	if h.victim == "" {
+		return h
+	}
+
+	h.weapon = events.DeathTypeToWeapon(d.deathType)
+	h.isTele = h.weapon == "tele"
+	h.isStomp = h.weapon == "stomp"
+	if h.isEnv && !h.isTele && !h.isStomp {
+		if env := events.EnvironmentalDamageType(d.deathType); env != "" {
+			h.weapon = env
 		}
 	}
-	h := d.victimHealth
-	if h < 0 {
-		h = 0 // hit on a corpse: only armor (if any) absorbs
-	}
-	if take > h {
-		take = h // the overkill cap — the whole point of the bounded family
-	}
-	return save + take
+	h.isTeam = !duel && !h.isWorld && !h.isSelf && attackerTeam != "" &&
+		victimTeam != "" && attackerTeam == victimTeam
+	return h
 }
+
+// computeBounded reconstructs each raw hit's KTX-scoreboard value (dmg_dealt,
+// ktx/src/combat.c:783) under the v55 death-value model, returned indexed by
+// raw hit. The wire carries save+virtual_take (unbound, combat.c:795); the
+// bounded value differs only by the overkill on a KILLING hit, which the wire
+// hides but the end-of-frame death broadcast reveals exactly:
+//
+//   - A survived hit has no overkill: bounded == raw, identically. No health
+//     knowledge needed — only liveliness (no death this frame).
+//   - A killing hit: bounded = raw + deathValue. Since raw = save+take and
+//     bounded = save+min(take,health_pre) = save+health_pre while
+//     deathValue = health_pre-take, the armor share cancels — the identity is
+//     exact (modulo the -1 coercion when health lands exactly on 0, at most a
+//     1-low residual on that hit).
+//   - Same-frame multi-hit death: one deathValue covers the frame's hits.
+//     Wire order is application order, so the overkill |deathValue| is
+//     deducted from each hit's health share from LAST to FIRST, flooring each
+//     hit's bounded at its save share (the one case where the save split —
+//     re-derived from the wire int, approximate — enters a normal hit; it is
+//     exact everywhere else because it cancels).
+//
+// Two wire limitations force an approximate shadow-cap fallback (see
+// shadowFallback): KTX clamps a corpse's health at -99 (combat.c:257-260), so
+// a death value AT that floor hides a deeper overkill; and a tight
+// death→respawn broadcasts the respawn's positive health, masking the death
+// value entirely (detected via the authoritative DeathEvent).
+//
+// The nullification paths are unchanged and do NOT read the death signal (a
+// nullified hit deals no health damage, so it can't kill): a pent or tp1/tp3
+// hit is bounded to its armor share (save), a tp4 team hit to 0, all skipped
+// for dtSUICIDE (combat.c:722). Telefrags are handled separately (the wire
+// 9999 clamp breaks the raw+deathValue identity) and excluded here.
+func (a *DamageAnalyzer) computeBounded(tp int, duel bool, inMatchWindow func(int32) bool) []int {
+	b := make([]int, len(a.raw))
+
+	type frameKey struct {
+		slot int
+		t    int32
+	}
+	// Non-nullified normal-path hits grouped by (victim, frame) — the cascade
+	// candidates. And the frames that also carry a telefrag, whose overwhelming
+	// -50000 health sink would corrupt the deathValue; a normal hit sharing a
+	// tele's frame landed before the tele killed, so it stays bounded == raw.
+	groups := map[frameKey][]int{}
+	teleFrames := map[frameKey]bool{}
+
+	for i := range a.raw {
+		d := a.raw[i]
+		hc := a.classifyHit(d, duel)
+		if hc.victim == "" || !inMatchWindow(d.tMs) {
+			continue
+		}
+		key := frameKey{d.victim, d.tMs}
+		if hc.isTele {
+			teleFrames[key] = true
+			continue
+		}
+		save, _ := damageSplit(d.damage, d.victimItem, d.victimArmor)
+
+		// Nullification (mirrors T_Damage combat.c:620-753 minus the health
+		// cap). The wire still carries save+virtual_take, so a nullified hit
+		// is bounded to its armor share, not zero — except tp4, which touches
+		// neither armor nor health.
+		if tp == 4 && hc.isTeam {
+			b[i] = 0
+			continue
+		}
+		if d.deathType != events.DtSuicide {
+			pent := d.victimItem&events.ITInvulnerability != 0
+			if pent || (tp == 1 && (hc.isTeam || hc.isSelf)) || (tp == 3 && hc.isTeam) {
+				b[i] = save // health share zeroed; armor still consumed
+				continue
+			}
+		}
+
+		// Normal path: bounded == raw unless a same-frame death caps it.
+		b[i] = d.damage
+		groups[key] = append(groups[key], i)
+	}
+
+	// shadowFallback caps each hit in a frame by the sequentially-decremented
+	// shadow-health (the pre-v55 arithmetic): approximate, but bounded by the
+	// victim's real capacity. Used when the exact death value is unavailable —
+	// the -99 clamp or a masked (respawn-hidden) death.
+	shadowFallback := func(idxs []int) {
+		for _, i := range idxs {
+			d := a.raw[i]
+			save, take := damageSplit(d.damage, d.victimItem, d.victimArmor)
+			h := d.victimHealth
+			if h < 0 {
+				h = 0
+			}
+			if take > h {
+				take = h
+			}
+			b[i] = save + take
+		}
+	}
+
+	deathByKey := map[frameKey]int{}
+	for slot, ms := range a.deaths {
+		for _, dm := range ms {
+			deathByKey[frameKey{slot, dm.tMs}] = dm.value // one marker per (slot,frame)
+		}
+	}
+	// Frames with an authoritative DeathEvent — the masked-death fallback.
+	deathFrame := map[frameKey]bool{}
+	for slot, ts := range a.deathFrames {
+		for _, t := range ts {
+			deathFrame[frameKey{slot, t}] = true
+		}
+	}
+
+	for key, idxs := range groups {
+		if teleFrames[key] {
+			continue
+		}
+		dv, ok := deathByKey[key]
+		if !ok {
+			// No death value this frame. If an authoritative DeathEvent still
+			// fired, a tight death→respawn hid the negative broadcast behind
+			// the respawn's positive health — cap by the shadow rather than
+			// leaving the killing hit at raw. Otherwise the victim survived,
+			// so bounded == raw stands (the invisible-heal fix — a stale-low
+			// shadow must NOT re-cap a survived hit).
+			if deathFrame[key] {
+				shadowFallback(idxs)
+			}
+			continue
+		}
+		delete(deathByKey, key) // consume at most once
+
+		if dv <= deathClamp {
+			// KTX clamps a corpse's health at -99 (Killed(), combat.c:257-260),
+			// so an overkill deeper than 99 HP is unrecoverable from the wire —
+			// raw + deathValue would over-credit by (overkill − 99). Fall back
+			// to the shadow-health cap, bounded by the victim's real capacity.
+			shadowFallback(idxs)
+			continue
+		}
+
+		remaining := -dv // |deathValue| = the frame's total overkill (≤ 99)
+		for j := len(idxs) - 1; j >= 0 && remaining > 0; j-- {
+			i := idxs[j]
+			d := a.raw[i]
+			_, take := damageSplit(d.damage, d.victimItem, d.victimArmor)
+			ded := take
+			if ded > remaining {
+				ded = remaining
+			}
+			b[i] = d.damage - ded // floors at the save share when ded == take
+			remaining -= ded
+		}
+	}
+	return b
+}
+
+// deathClamp is KTX's corpse-health floor (Killed(), ktx/src/combat.c:259):
+// health below -99 is pinned to -99 before the end-of-frame stat broadcast, so
+// a death value AT the floor may hide a deeper overkill and the exact raw +
+// deathValue identity no longer holds.
+const deathClamp = -99
 
 // damageSplit mirrors T_Damage's armor absorption (ktx/src/combat.c:618-641):
 // save is the armor-absorbed share of one wire damage value, capped at the

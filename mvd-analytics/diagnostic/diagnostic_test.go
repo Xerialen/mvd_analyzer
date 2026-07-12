@@ -299,8 +299,8 @@ func checkDataQuality(r *analyzer.Result) []string {
 				stream, score int
 				tol           int
 			}{
-				{"given", b.StreamGiven, delta.ScoreGiven, loose(180, delta.ScoreGiven)},
-				{"taken", b.StreamTaken, delta.ScoreTaken, loose(180, delta.ScoreTaken)},
+				{"given", b.StreamGiven, delta.ScoreGiven, loose(120, delta.ScoreGiven)},
+				{"taken", b.StreamTaken, delta.ScoreTaken, loose(120, delta.ScoreTaken)},
 				{"ewep", b.StreamEWep, delta.ScoreEWep, loose(450, delta.ScoreEWep)},
 				{"team", b.StreamTeam, b.ScoreTeam, loose(30, b.ScoreTeam)},
 			}

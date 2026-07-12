@@ -7,7 +7,7 @@ detail.
 
 ## Unreleased (branch `phase-16.3`)
 
-- **The bounded damage family (schema v54).** Damage now ships in **two
+- **The bounded damage family (schema v55).** Damage now ships in **two
   families**. The **raw** family is the v53 shape — the full hit
   including overkill, capped only at 9999, exactly the wire value
   (`unbound_dmg_dealt`, written mid-frame in `T_Damage`,
@@ -17,17 +17,24 @@ detail.
   until now existed only as `demoInfo`'s end-of-match totals. The
   additions are purely additive; every raw field is byte-stable except
   the tele/stomp fold-in below.
-  - **Per-hit reconstruction.** The damage analyzer tracks each slot's
-    health/armor from `StatHealth`/`StatArmor` (rejecting KTX's
-    `1000+dmg` indicator sentinels) and snapshots the victim's pre-hit
-    vitals on every hit — wire order guarantees pre-hit state (the
-    dmgdone multicast is mid-frame, stats broadcast at end of frame). A
-    shadow decrement keeps same-frame multi-hits sequentially capped.
-    The bounded value mirrors `T_Damage`: `save = newceil(armortype ×
-    damage)` capped at `armorvalue`, then the nullification rules the
-    wire value deliberately ignores (pent zeroes the health share, the
-    teamplay `tp` masks nullify mates/self, all skipped for a suicide) —
-    teamplay read from serverinfo with `tp_num()` semantics. Godmode is
+  - **Death-value reconstruction.** The wire hides the bounded value but
+    reveals it almost exactly. A hit the victim **survives** has no
+    overkill, so `bounded == raw` identically — no health knowledge
+    needed, only that no death happened this frame. A **killing** hit's
+    overkill is the end-of-frame death broadcast KTX writes (`health -=
+    take`, then the negative leftover or `-1`; `combat.c:944,983-985`):
+    `bounded = raw + deathValue`, the armor share cancelling out of the
+    `save + take` identity (verified per-hit exact, and the death
+    broadcast shares the killing hit's demo timestamp on all 10923
+    corpus deaths). Same-frame multi-hit deaths cascade the one death
+    value across the frame's hits in wire (application) order, last to
+    first. Two wire limits force an approximate shadow-health fallback:
+    KTX clamps a corpse's health at `-99` (`combat.c:259`), and a tight
+    death→respawn hides the death value behind the respawn's positive
+    health (recovered from the authoritative `DeathEvent`). The
+    nullification rules the wire ignores are unchanged (pent/`tp`
+    mates+self bounded to armor, `tp4` to 0, all skipped for a suicide),
+    read from serverinfo with `tp_num()` semantics; godmode is
     unobservable and ignored.
   - **Telefrags and stomps fold their honest damage into
     `given`/`givenTeam`/`taken`** — and nothing else. KTX's scoreboard
@@ -57,11 +64,14 @@ detail.
   - **Corpus validation.** `TestBoundedReconciliationCorpus` reconciles
     the reconstruction against `demoInfo` on every corpus demo — per
     player (`given`/`taken`/`ewep`/`team`) and per weapon
-    (`weapons[].damage.enemy`/`team`). Tolerances are pinned at measured
-    max + headroom (given/taken/per-weapon ±60, measured 44; ewep ±150,
-    measured 130; team ±10, measured 1); the residuals are the ±1
-    per-hit armor-ceil slop and the one-frame stat window (mid-frame
-    pickups, corpse gibs, same-frame respawns). The dm3 pent-deflect
+    (`weapons[].damage.enemy`/`team`). The death-value model tightens the
+    given/taken reconciliation ~2.5×: tolerances are re-pinned at measured
+    max + headroom (given/taken/per-weapon ±40, measured 16/15/18; ewep
+    ±150, measured 131; team ±10, measured 1). The remaining residuals are
+    the multi-hit cascade save split, the `-99` clamp / masked-death shadow
+    fallback, and — for ewep only — the victim-item one-frame window (a
+    same-frame RL/LG pickup reclassifying a hit's victim-weapon bucket,
+    independent of the health arithmetic). The dm3 pent-deflect
     (`Satan's power deflects nlk's telefrag`) is pinned as live coverage.
     A loose warning-mode variant landed in the diagnostic harness.
   - **REST / MCP surface.** `/damage` gains `dmg=raw|bounded|both`

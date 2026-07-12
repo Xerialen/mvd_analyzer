@@ -8,12 +8,16 @@ package analyzer_test
 // independent totals is the correctness signal for the whole shadow-vitals
 // + T_Damage-arithmetic pipeline (analyzer/damage.go).
 //
-// Expected residual per player is small: ±1 ceiling slop per armor-
-// absorbing hit (save is re-derived from the wire int, not KTX's float),
-// plus unknown-initial-state joins. The tolerances below were measured
-// across the 10-demo corpus and pinned with headroom; a regression that
-// breaks the arithmetic (wrong armor fraction, missed nullification,
-// broken checkpointing) overshoots them by an order of magnitude.
+// Expected residual per player is small. Under the v55 death-value model a
+// survived hit is bounded == raw by identity and a killing hit's overkill
+// comes from the end-of-frame death broadcast (bounded = raw + deathValue),
+// so given/taken reconcile far tighter than the pre-v55 shadow cap. The
+// residuals that remain are: the -99 corpse-health clamp + masked
+// (respawn-hidden) deaths falling back to the approximate shadow cap; the
+// same-frame multi-hit cascade's approximate save split; and, for ewep, the
+// victim-item one-frame window (a same-frame RL/LG pickup reclassifying a
+// hit's victim-weapon bucket) — a classification effect independent of the
+// health arithmetic, so its band is unchanged from v54.
 //
 // Run with -v to see every per-player and per-weapon delta.
 
@@ -25,26 +29,20 @@ import (
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
 )
 
-// Tolerances: measured corpus max |delta| + headroom, pinned 2026-07-12
-// across the 10-demo corpus (50 players, ~200 weapon rows). Re-measure with
-// -v when they trip on an intended change.
+// Tolerances: measured corpus max |delta| + headroom, re-pinned 2026-07-12
+// for the v55 death-value model across the 10-demo corpus (50 players, ~200
+// weapon rows). Re-measure with -v when they trip on an intended change.
 //
-// Residual mechanisms (why not zero):
-//   - ±1 ceiling slop per armor-absorbing hit (save re-derived from the
-//     wire int, not KTX's float).
-//   - The one-frame stat window: stats/items broadcast at end of frame, so
-//     a hit in the same frame as a mid-frame pickup (mega, armor), respawn
-//     or corpse gib reconstructs against the previous frame's state. Single
-//     hits, bounded by one blast's damage. Measured extremes: given −44
-//     (one SG blast on a same-frame respawn), ewep −130 (a duel's RL/LG
-//     pickups reclassifying same-frame hits' victim-weapon bucket).
-//   - team/taken reconcile to ±1 corpus-wide.
+// v54 → v55 measured max |Δ| (the death-value model replacing the shadow
+// cap): given 44 → 16, taken 44 → 15, per-weapon enemy 44 → 18 — a ~2.5×
+// tightening. ewep (131) and team (1) are unchanged: they are the
+// victim-item one-frame window and are independent of the health cap.
 const (
-	tolBoundedGiven = 60  // measured max |Δ| 44
-	tolBoundedTaken = 60  // measured max |Δ| 44 (the given outliers' victim side)
-	tolBoundedEWep  = 150 // measured max |Δ| 130 (victim-item one-frame window)
+	tolBoundedGiven = 40  // measured max |Δ| 16
+	tolBoundedTaken = 40  // measured max |Δ| 15
+	tolBoundedEWep  = 150 // measured max |Δ| 131 (victim-item one-frame window)
 	tolBoundedTeam  = 10  // measured max |Δ| 1
-	tolBoundedByWep = 60  // measured max |Δ| 44
+	tolBoundedByWep = 40  // measured max |Δ| 18
 )
 
 func TestBoundedReconciliationCorpus(t *testing.T) {

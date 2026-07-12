@@ -18,7 +18,7 @@
 openapi: 3.1.0
 info:
   title: mvdanalyzer-api
-  version: "54"
+  version: "55"
   summary: QuakeWorld MVD demo analysis REST API
   description: |
     REST host for the mvd-analyzer pipeline: point it at a demo
