@@ -61,6 +61,20 @@ type DamageResult struct {
 	// best-effort reconstruction there would be confidently wrong, so none
 	// is attempted and every Bounded field is absent.
 	BoundedMode string `json:"boundedMode,omitempty"`
+
+	// BoundedSource records where a SUMMARY response's bounded per-player
+	// figures came from: "ktx" when they were substituted with KTX's exact
+	// end-of-match scoreboard totals (demoInfo.players[].dmg +
+	// weapons[].damage.enemy — authoritative where our per-hit reconstruction
+	// is best-effort), or "reconstructed" when no KTX counterpart was
+	// available. Set by view.Damage ONLY on an unfiltered summary response
+	// that serves the bounded family (dmg=bounded or dmg=both); absent on the
+	// full-log, filtered, and raw responses. The stored Result never carries
+	// it. NOTE the substitution is deliberately partial: `taken` is left as
+	// reconstructed (KTX dmg.taken is enemy-only while our taken counts all
+	// sources), and the enemyVs* buckets keep the reconstruction (KTX has no
+	// split), so they may no longer sum exactly to the substituted `given`.
+	BoundedSource string `json:"boundedSource,omitempty"`
 }
 
 // PositionalKill is one telefrag (deathtype "tele") or stomp (deathtype

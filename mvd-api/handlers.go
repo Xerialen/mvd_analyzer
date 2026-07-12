@@ -314,12 +314,16 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 // filtered per-hit log so they are consistent with the entries shown. With no
 // filter the authoritative stored aggregates are returned unchanged.
 //
-// The dmg param selects the damage family (schema v54): raw = the unbound wire
+// The dmg param selects the damage family: raw = the unbound wire
 // values (the v53 shape); bounded = KTX-scoreboard semantics materialized into
 // the same field names; both = raw fields plus per-player `bounded` nests and a
-// per-event `bounded`. Unset resolves here to `both` for a summary request and
-// `raw` otherwise. dmg=bounded on a demo whose bounded reconstruction was
-// skipped (boundedMode skipped:*) is a 422 bounded_unavailable.
+// per-event `bounded`. Unset resolves here to `bounded` (for both the summary
+// and the full-log request). An EXPLICIT dmg=bounded on a demo whose bounded
+// reconstruction was skipped (boundedMode skipped:*) is a 422
+// bounded_unavailable; a DEFAULTED bounded there falls back to raw instead
+// (the raw response's boundedMode explains the absence). A bounded/both SUMMARY
+// sources its per-player bounded figures from the exact KTX scoreboard when the
+// demo carries demoInfo (boundedSource echoes "ktx" or "reconstructed").
 //
 // Query params:
 //
@@ -330,7 +334,7 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 //	from     float — window start, match-relative seconds (0 = no bound)
 //	to       float — window end, match-relative seconds (0 = no bound)
 //	summary  bool  — drop the per-hit Events log; return only aggregates
-//	dmg      enum  — raw | bounded | both (default: both if summary, else raw)
+//	dmg      enum  — raw | bounded | both (default: bounded)
 func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
@@ -350,22 +354,28 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	}
 	// Single resolution point for the damage-family default — the MCP layer
 	// inherits it (it proxies the REST call without a dmg param). An unset dmg
-	// yields the richer "both" family for a summary request (the aggregates are
-	// small, so carrying both is cheap and answers more) and the lean v53 "raw"
-	// shape for the full log. NOTE: the summary-driven default is deliberately
-	// resolved here and may be revisited.
+	// resolves to "bounded" for BOTH the summary and the full-log request:
+	// bounded is the KTX-scoreboard-semantics number a reader almost always
+	// wants (per-player given/taken near the scoreboard, no overkill inflation).
+	// raw and both stay explicit opt-ins.
+	explicitDmg := opts.Dmg != ""
 	if opts.Dmg == "" {
-		if opts.Summary {
-			opts.Dmg = "both"
-		} else {
-			opts.Dmg = "raw"
-		}
+		opts.Dmg = "bounded"
 	}
 	out, err := view.Damage(res, opts)
+	// EXCEPTION: a DEFAULTED bounded request on a skipped:* demo (whose bounded
+	// family was never reconstructed) falls back to raw instead of 422 — the
+	// caller didn't ask for bounded, and the raw response's boundedMode names
+	// why it is absent. Only an EXPLICIT dmg=bounded 422s.
+	if errors.Is(err, view.ErrBoundedUnavailable) && !explicitDmg {
+		opts.Dmg = "raw"
+		out, err = view.Damage(res, opts)
+	}
 	if err != nil {
 		// ErrBoundedUnavailable wraps ErrUnavailable, so it must be singled out
-		// before the generic writeUnavailable. Name the demo's boundedMode so
-		// the caller learns why the bounded family is missing.
+		// before the generic writeUnavailable. Only an explicit dmg=bounded
+		// reaches here. Name the demo's boundedMode so the caller learns why the
+		// bounded family is missing.
 		if errors.Is(err, view.ErrBoundedUnavailable) {
 			mode := ""
 			if res.Damage != nil {

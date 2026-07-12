@@ -156,6 +156,20 @@ raw family is unaffected. The `scoreboard` sub-object surfaces both
 families against the KTX scoreboard; raw diverges by the overkill
 (expected), bounded should nearly match (its correctness signal).
 
+**KTX-exact bounded on a summary (phase 16.3).** The per-hit bounded
+reconstruction is best-effort, but KTX's own end-of-match totals
+(`demoInfo.players[].dmg` + `weapons[].damage.enemy`) are exact. So on an
+**unfiltered summary** that serves the bounded family (`dmg=bounded` or
+`dmg=both`), the view substitutes each player's bounded `given`,
+`givenTeam`, `givenSelf`, `ewep` and per-weapon `byWeapon` with the KTX
+figures when the demo carries `demoInfo`, echoing `boundedSource: "ktx"`
+(else `"reconstructed"`). The substitution is deliberately partial:
+`taken` stays reconstructed (KTX `dmg.taken` is enemy-only, our `taken`
+counts all sources) and the `enemyVs*` buckets stay reconstructed (KTX has
+no such split) — so on a KTX-sourced summary they may no longer sum
+exactly to the substituted `given`. A filtered/windowed summary has no KTX
+counterpart, so it stays fully reconstructed (no `boundedSource`).
+
 The per-player / matrix aggregates AND the `events` log are both **match-time
 only** (schema v50): the analyzer drops out-of-match (warmup / post-match) hits
 at the source, so every damage figure and the `events` log are built from the
@@ -200,6 +214,7 @@ a `frag` event.
 | Scoreboard | `scoreboard` | *DamageReconciliation (omitempty) |
 | Dmg | `dmg` | string (omitempty — family echo: `both` as stored, `bounded` from the view, absent on a raw view) |
 | BoundedMode | `boundedMode` | string (omitempty — `standard`, or `skipped:midair`/`skipped:instagib`/`skipped:dmgfrags`) |
+| BoundedSource | `boundedSource` | string (omitempty — provenance of a SUMMARY response's per-player bounded figures: `ktx` when substituted with KTX's exact end-of-match scoreboard totals, else `reconstructed`; set by the view ONLY on an unfiltered summary serving the bounded family — `dmg=bounded`/`dmg=both`; the stored Result never carries it) |
 
 ### PositionalKill
 

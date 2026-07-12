@@ -107,7 +107,7 @@ func parseLayout(q url.Values) (string, error) {
 }
 
 // parseDmg reads ?dmg=raw|bounded|both. Empty → "" (the handler resolves the
-// summary-aware default: "both" for a summary request, "raw" otherwise). Any
+// default: "bounded", for both summary and full-log requests). Any
 // other value is an error.
 func parseDmg(q url.Values) (string, error) {
 	v := strings.ToLower(strings.TrimSpace(ciGet(q, "dmg")))
@@ -249,7 +249,7 @@ func (p *qp) Layout() string {
 }
 
 // Dmg reads ?dmg=raw|bounded|both (empty → "", the handler resolves the
-// summary-aware default). No-op after a prior error.
+// default to "bounded"). No-op after a prior error.
 func (p *qp) Dmg() string {
 	if p.err != nil {
 		return ""

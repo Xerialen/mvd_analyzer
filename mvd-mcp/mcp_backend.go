@@ -160,7 +160,7 @@ type GetDamageInput struct {
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (hits at or after this time)"`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (hits at or before this time)"`
 	Summary   *bool    `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): aggregates only, the big per-hit damage log dropped. Pass false for the full log."`
-	Dmg       string   `json:"dmg,omitempty" jsonschema:"damage family: raw | bounded | both; semantics and the summary-aware default are described in the tool description"`
+	Dmg       string   `json:"dmg,omitempty" jsonschema:"damage family: raw | bounded | both; semantics and the default (bounded) are described in the tool description"`
 }
 
 // GetAimInput identifies a demo for its per-player aim analysis, with optional

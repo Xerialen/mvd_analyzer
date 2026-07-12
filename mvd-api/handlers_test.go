@@ -295,38 +295,66 @@ func boundedDamageStore() *fakeStore {
 func intp(i int) *int { return &i }
 
 // TestDamageParams_DmgFamily pins the dmg= family selection and its
-// summary-aware default resolution (resolved once in handleDamage).
+// default resolution (resolved once in handleDamage): an unset dmg is now
+// `bounded` for BOTH the summary and the full log.
 func TestDamageParams_DmgFamily(t *testing.T) {
 	srv := newTestServer(t, boundedDamageStore())
 	defer srv.Close()
 
 	base := srv.URL + "/v1/demos/gameId:42/damage"
 
-	// Default, full log: dmg resolves to raw — no dmg echo, no per-player
-	// bounded nest, events present without a bounded field.
+	// Default, full log: dmg resolves to bounded — materialized into the raw
+	// field names (bps.given comes from the nest, 80), dmg echo "bounded", no
+	// per-player bounded nest, and no summary-only boundedSource on the full log.
 	resp := getJSON(t, base, 200)
-	if _, ok := resp["dmg"]; ok {
-		t.Errorf("full default: dmg should be absent (raw), got %v", resp["dmg"])
+	if resp["dmg"] != "bounded" {
+		t.Errorf("full default: dmg = %v, want bounded", resp["dmg"])
 	}
 	bps := resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
+	if int(bps["given"].(float64)) != 80 {
+		t.Errorf("full default (bounded): bps.given = %v, want 80 (materialized)", bps["given"])
+	}
 	if _, ok := bps["bounded"]; ok {
-		t.Errorf("full default: byPlayer.bps.bounded should be stripped on raw")
+		t.Errorf("full default (bounded): byPlayer.bps.bounded nest should be dropped")
+	}
+	if _, ok := resp["boundedSource"]; ok {
+		t.Errorf("full-log response must not carry boundedSource (summary-only)")
 	}
 
-	// Default, summary: dmg resolves to both — dmg echo + per-player bounded nest.
+	// Default, summary: dmg resolves to bounded — materialized, events dropped,
+	// and boundedSource present (the stub's demoInfo players carry no dmg block,
+	// so the figures stay reconstructed).
 	resp = getJSON(t, base+"?summary=1", 200)
-	if resp["dmg"] != "both" {
-		t.Errorf("summary default: dmg = %v, want both", resp["dmg"])
+	if resp["dmg"] != "bounded" {
+		t.Errorf("summary default: dmg = %v, want bounded", resp["dmg"])
+	}
+	if resp["boundedSource"] != "reconstructed" {
+		t.Errorf("summary default: boundedSource = %v, want reconstructed", resp["boundedSource"])
 	}
 	bps = resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
-	if bps["bounded"] == nil {
-		t.Errorf("summary default (both): byPlayer.bps.bounded missing")
+	if int(bps["given"].(float64)) != 80 {
+		t.Errorf("summary default (bounded): bps.given = %v, want 80 (materialized)", bps["given"])
 	}
 
 	// Explicit both on the full log keeps the bounded nest.
 	resp = getJSON(t, base+"?dmg=both", 200)
 	if resp["dmg"] != "both" {
 		t.Errorf("dmg=both: dmg = %v, want both", resp["dmg"])
+	}
+	bps = resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
+	if bps["bounded"] == nil {
+		t.Errorf("dmg=both: byPlayer.bps.bounded nest missing")
+	}
+
+	// Explicit raw on the full log strips the bounded additions (no dmg echo,
+	// no per-player bounded nest).
+	resp = getJSON(t, base+"?dmg=raw", 200)
+	if _, ok := resp["dmg"]; ok {
+		t.Errorf("dmg=raw: dmg should be absent, got %v", resp["dmg"])
+	}
+	bps = resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
+	if _, ok := bps["bounded"]; ok {
+		t.Errorf("dmg=raw: byPlayer.bps.bounded should be stripped")
 	}
 
 	// Explicit bounded materializes: dmg echo "bounded", per-player figures come
@@ -373,6 +401,24 @@ func TestDamageParams_DmgFamily(t *testing.T) {
 	// Both/bounded on the skipped:* demo still serve (raw path unaffected).
 	if _, status := getRaw(t, srv.URL+"/v1/demos/gameId:99/damage?dmg=both"); status != 200 {
 		t.Errorf("skipped dmg=both: status = %d, want 200", status)
+	}
+
+	// A DEFAULTED request (no dmg param) on the skipped:* demo falls back to raw
+	// instead of 422: 200, no dmg echo, and boundedMode explains the absence.
+	resp = getJSON(t, srv.URL+"/v1/demos/gameId:99/damage", 200)
+	if _, ok := resp["dmg"]; ok {
+		t.Errorf("skipped defaulted: dmg should be absent (raw fallback), got %v", resp["dmg"])
+	}
+	if resp["boundedMode"] != "skipped:midair" {
+		t.Errorf("skipped defaulted: boundedMode = %v, want skipped:midair", resp["boundedMode"])
+	}
+	// The defaulted summary on the skipped demo also falls back to raw.
+	resp = getJSON(t, srv.URL+"/v1/demos/gameId:99/damage?summary=1", 200)
+	if _, ok := resp["dmg"]; ok {
+		t.Errorf("skipped defaulted summary: dmg should be absent (raw fallback), got %v", resp["dmg"])
+	}
+	if _, ok := resp["boundedSource"]; ok {
+		t.Errorf("skipped defaulted summary: boundedSource should be absent (raw fallback)")
 	}
 }
 

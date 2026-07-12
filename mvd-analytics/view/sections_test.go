@@ -707,6 +707,149 @@ func TestDamage_SummaryBounded(t *testing.T) {
 	}
 }
 
+// boundedFixtureWithKTX is boundedFixture augmented with a KTX demoInfo whose
+// per-player dmg/weapons totals DIFFER from the reconstruction, so a summary
+// substitution is observable.
+func boundedFixtureWithKTX() *result.Result {
+	r := boundedFixture()
+	r.DemoInfo = &result.DemoInfoResult{
+		Players: []result.DemoInfoPlayer{
+			{Name: "alpha", Team: "red", Dmg: &result.DemoInfoDmg{
+				Given: 175, Team: 5, Self: 3, EnemyWeapons: 140, Taken: 44,
+			}, Weapons: map[string]*result.DemoInfoWeapon{
+				"rl": {Damage: &result.DemoInfoDamage{Enemy: 125}},
+				"lg": {Damage: &result.DemoInfoDamage{Enemy: 10}},
+			}},
+			{Name: "bravo", Team: "blue", Dmg: &result.DemoInfoDmg{
+				Given: 50, EnemyWeapons: 45, Taken: 60,
+			}, Weapons: map[string]*result.DemoInfoWeapon{
+				"lg": {Damage: &result.DemoInfoDamage{Enemy: 42}},
+			}},
+		},
+	}
+	return r
+}
+
+// C1a: an unfiltered dmg=both SUMMARY sources the bounded nest from KTX's exact
+// scoreboard — given/givenTeam/givenSelf/ewep/byWeapon substituted, taken and the
+// enemyVs* buckets KEPT (reconstruction), provenance "ktx", stored untouched.
+func TestDamage_SummaryKTXBoundedBoth(t *testing.T) {
+	r := boundedFixtureWithKTX()
+	before := mustJSON(r.Damage)
+
+	out, err := Damage(r, DamageOptions{Dmg: "both", Summary: true})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.BoundedSource != "ktx" {
+		t.Fatalf("BoundedSource = %q, want ktx", out.BoundedSource)
+	}
+	a := out.ByPlayer["alpha"].Bounded
+	if a.Given != 175 || a.GivenTeam != 5 || a.GivenSelf != 3 || a.EWep != 140 {
+		t.Errorf("alpha bounded not KTX-sourced: %+v", a)
+	}
+	if a.Taken != 48 {
+		t.Errorf("alpha bounded taken = %d, want 48 (reconstruction kept, NOT KTX 44)", a.Taken)
+	}
+	if a.EnemyVsRL != 150 || a.EnemyVsSG != 30 {
+		t.Errorf("alpha bounded buckets substituted, want kept: rl=%d sg=%d", a.EnemyVsRL, a.EnemyVsSG)
+	}
+	// byWeapon: KTX rl=125, lg=10 override/extend the reconstruction {rl:130}.
+	if !reflect.DeepEqual(a.ByWeapon, map[string]int{"rl": 125, "lg": 10}) {
+		t.Errorf("alpha bounded byWeapon = %v, want {rl:125, lg:10}", a.ByWeapon)
+	}
+	b := out.ByPlayer["bravo"].Bounded
+	if b.Given != 50 || b.EWep != 45 || b.Taken != 180 {
+		t.Errorf("bravo bounded: given=%d ewep=%d taken=%d (taken kept)", b.Given, b.EWep, b.Taken)
+	}
+	if !reflect.DeepEqual(b.ByWeapon, map[string]int{"lg": 42}) {
+		t.Errorf("bravo bounded byWeapon = %v, want {lg:42}", b.ByWeapon)
+	}
+	// Raw figures are never touched by the bounded substitution.
+	if out.ByPlayer["alpha"].Given != 350 {
+		t.Errorf("alpha raw given mutated = %d, want 350", out.ByPlayer["alpha"].Given)
+	}
+	if after := mustJSON(r.Damage); after != before {
+		t.Fatalf("stored Result mutated by KTX substitution:\nbefore %s\nafter  %s", before, after)
+	}
+}
+
+// C1b: dmg=bounded SUMMARY (materialized) substitutes into the promoted top-level
+// fields; taken/buckets kept; provenance "ktx".
+func TestDamage_SummaryKTXBoundedMaterialized(t *testing.T) {
+	r := boundedFixtureWithKTX()
+	out, err := Damage(r, DamageOptions{Dmg: "bounded", Summary: true})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.BoundedSource != "ktx" {
+		t.Fatalf("BoundedSource = %q, want ktx", out.BoundedSource)
+	}
+	a := out.ByPlayer["alpha"]
+	if a.Given != 175 || a.GivenTeam != 5 || a.GivenSelf != 3 || a.EWep != 140 {
+		t.Errorf("alpha materialized not KTX-sourced: %+v", a)
+	}
+	if a.Taken != 48 { // materialized-from-nest reconstruction taken (48), not KTX 44
+		t.Errorf("alpha materialized taken = %d, want 48 (kept)", a.Taken)
+	}
+	if a.EnemyVsRL != 150 || a.EnemyVsSG != 30 {
+		t.Errorf("alpha materialized buckets substituted, want kept")
+	}
+	if a.Bounded != nil {
+		t.Errorf("materialized alpha must not carry a bounded nest")
+	}
+	if !reflect.DeepEqual(a.ByWeapon, map[string]int{"rl": 125, "lg": 10}) {
+		t.Errorf("alpha materialized byWeapon = %v, want {rl:125, lg:10}", a.ByWeapon)
+	}
+}
+
+// C1c: a FILTERED summary is NOT substituted — no KTX counterpart for a window —
+// so it stays reconstruction and carries no boundedSource.
+func TestDamage_FilteredSummaryNotKTXSourced(t *testing.T) {
+	r := boundedFixtureWithKTX()
+	out, err := Damage(r, DamageOptions{Dmg: "both", Summary: true, Players: []string{"alpha", "bravo"}})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.BoundedSource != "" {
+		t.Errorf("filtered summary BoundedSource = %q, want empty", out.BoundedSource)
+	}
+	if g := out.ByPlayer["alpha"].Bounded.Given; g != 180 {
+		t.Errorf("filtered summary alpha bounded given = %d, want 180 (reconstruction, not KTX 175)", g)
+	}
+}
+
+// C1d: a full-log (non-summary) bounded response is NOT KTX-sourced (the
+// substitution is summary-only) — no boundedSource, reconstruction figures.
+func TestDamage_FullLogBoundedNotKTXSourced(t *testing.T) {
+	r := boundedFixtureWithKTX()
+	out, err := Damage(r, DamageOptions{Dmg: "both"})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.BoundedSource != "" {
+		t.Errorf("full-log BoundedSource = %q, want empty", out.BoundedSource)
+	}
+	if g := out.ByPlayer["alpha"].Bounded.Given; g != 180 {
+		t.Errorf("full-log alpha bounded given = %d, want 180 (reconstruction)", g)
+	}
+}
+
+// C1e: no demoInfo dmg blocks → provenance "reconstructed", figures untouched.
+func TestDamage_SummaryBoundedReconstructedProvenance(t *testing.T) {
+	r := boundedFixture() // no DemoInfo
+	out, err := Damage(r, DamageOptions{Dmg: "both", Summary: true})
+	if err != nil {
+		t.Fatalf("Damage: %v", err)
+	}
+	if out.BoundedSource != "reconstructed" {
+		t.Errorf("BoundedSource = %q, want reconstructed", out.BoundedSource)
+	}
+	if g := out.ByPlayer["alpha"].Bounded.Given; g != 180 {
+		t.Errorf("alpha bounded given = %d, want 180 (reconstruction)", g)
+	}
+}
+
 // V7: no view call ever mutates the stored Result.
 func TestDamage_StoredNeverMutated(t *testing.T) {
 	r := boundedFixture()

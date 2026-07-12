@@ -77,14 +77,29 @@ detail.
   - **REST / MCP surface.** `/damage` gains `dmg=raw|bounded|both`
     (`raw` = the byte-stable v53 shape; `both` = the stored shape;
     `bounded` = the bounded family materialized into the raw field
-    names). The default is resolved at one point: **`both` for a
-    `summary` request, `raw` for the full log**. MCP `getDamage` takes
-    the same `dmg` input and forwards it; because MCP defaults
-    `summary=true`, an unadorned `getDamage` serves **both** families
-    side by side. An invalid `dmg` is a `400 invalid_param`; `bounded`
-    on a skipped demo is the `422 bounded_unavailable` (a new
-    drift-tested error code). The view-layer filtered recompute
-    reproduces both families exactly, including the tele/stomp fold.
+    names). The default (unset `dmg`) is **`bounded` for both the summary
+    and the full log** — the KTX-scoreboard number a reader almost always
+    wants; `raw` and `both` stay explicit opt-ins. MCP `getDamage` takes
+    the same `dmg` input and forwards it, so an unadorned `getDamage`
+    (MCP defaults `summary=true`) serves the bounded family. An invalid
+    `dmg` is a `400 invalid_param`; an **explicit** `dmg=bounded` on a
+    skipped demo is the `422 bounded_unavailable` (a new drift-tested
+    error code), while a **defaulted** bounded there falls back to `raw`
+    (whose `boundedMode` explains the absence) instead of erroring. The
+    view-layer filtered recompute reproduces both families exactly,
+    including the tele/stomp fold.
+  - **KTX-exact bounded on a summary.** An unfiltered bounded/both
+    **summary** now sources its per-player bounded figures — `given`,
+    `givenTeam`, `givenSelf`, `ewep`, per-weapon `byWeapon` — from KTX's
+    exact end-of-match scoreboard (`demoInfo.players[].dmg` +
+    `weapons[].damage.enemy`) when the demo carries `demoInfo`, since the
+    per-hit reconstruction is only best-effort. A new
+    `boundedSource: "ktx" | "reconstructed"` field records which. The
+    substitution is partial: `taken` (KTX is enemy-only; ours is
+    all-sources) and the `enemyVs*` buckets (KTX has no split) stay
+    reconstructed, so on a `ktx` summary they may not sum exactly to the
+    substituted `given`. Filtered/windowed summaries and the full-log
+    response have no KTX counterpart and stay fully reconstructed.
   - Goldens regenerate at branch end (they stay v53 until then, so the
     served-spec validation augments the fixture Result with a synthetic
     bounded family in the meantime). See

@@ -177,7 +177,7 @@ type DamageOptions struct {
 	To      float64  // window end, match-relative seconds (0 = no bound)
 	Summary bool     // drop the per-hit Events log; keep only aggregates
 
-	// Dmg selects the damage family: "" / "raw" (the default) strip the
+	// Dmg selects the damage family: "" / "raw" strip the
 	// bounded additions down to the v53 FIELD layout — but with v54 fold
 	// semantics (given/taken include the tele/stomp folds on standard-mode
 	// demos), the kill entries' bounded/damage/victimWep retained, and
@@ -185,7 +185,9 @@ type DamageOptions struct {
 	// shape (raw fields + bounded nests); "bounded" materializes the
 	// bounded family into the raw field names. The view does NOT validate
 	// this — the REST layer does — and treats anything but "bounded"/"both"
-	// as raw.
+	// as raw. In-process default: "" is RAW here (in-process compat). The
+	// REST layer resolves an unset dmg to "bounded" before calling — the two
+	// defaults differ deliberately; do not conflate them.
 	Dmg string
 }
 
@@ -270,6 +272,16 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 		if opts.Summary {
 			cp := *out
 			cp.Events = nil
+			// Change (phase 16.3): a summary that serves the bounded family
+			// sources its per-player bounded figures from KTX's exact
+			// end-of-match scoreboard when the demo carries it — the
+			// reconstruction is only best-effort per hit. Unfiltered by
+			// construction (this whole branch is the no-filter path), so KTX's
+			// windowless totals apply. Skipped:* demos carry no bounded family
+			// (hasBounded false), so no provenance is set there.
+			if hasBounded && (fam == "bounded" || fam == "both") {
+				cp.BoundedSource = applyKTXBoundedSummary(&cp, r, fam == "bounded")
+			}
 			return &cp, nil
 		}
 		return out, nil
@@ -650,6 +662,95 @@ func materializePlayer(p *result.PlayerDamage) *result.PlayerDamage {
 		}
 	}
 	return out
+}
+
+// applyKTXBoundedSummary substitutes each player's bounded SUMMARY figures with
+// KTX's exact end-of-match scoreboard totals (demoInfo.players[].dmg +
+// weapons[].damage.enemy) when the demo carries them, returning the provenance
+// token ("ktx" if any player was substituted, else "reconstructed"). It runs
+// only on an unfiltered summary that serves the bounded family: KTX's totals are
+// exact where our per-hit reconstruction is best-effort, and a filtered/windowed
+// request has no KTX counterpart to source from.
+//
+// The `materialized` flag says where the bounded figures live in out: when true
+// (dmg=bounded) they are the promoted top-level PlayerDamage fields; when false
+// (dmg=both) they are the .Bounded nest.
+//
+// Deliberately partial substitution (documented on DamageResult.BoundedSource):
+//   - given  <- dmg.given, givenTeam <- dmg.team, givenSelf <- dmg.self,
+//     ewep <- dmg.enemy-weapons, byWeapon[w] <- weapons[w].damage.enemy for
+//     every weapon KTX carries a damage block for (reconstruction keys KTX lacks
+//     survive).
+//   - taken is NOT substituted: KTX dmg.taken is ENEMY-ONLY, our taken counts
+//     all sources — different semantics.
+//   - the enemyVs* buckets are NOT substituted (KTX has no such split), so they
+//     may no longer sum exactly to the substituted given.
+//
+// Works on owned copies — the touched ByPlayer entries (and their .Bounded nest)
+// are deep-copied before mutation, so a stored Result aliased via dmg=both is
+// never written through.
+func applyKTXBoundedSummary(out *result.DamageResult, r *result.Result, materialized bool) string {
+	if r.DemoInfo == nil {
+		return "reconstructed"
+	}
+	ktx := make(map[string]*result.DemoInfoPlayer, len(r.DemoInfo.Players))
+	for i := range r.DemoInfo.Players {
+		p := &r.DemoInfo.Players[i]
+		if p.Dmg != nil {
+			ktx[p.Name] = p
+		}
+	}
+	if len(ktx) == 0 {
+		return "reconstructed"
+	}
+
+	// Copy the map so we can replace the entries we touch without writing
+	// through to a possibly-aliased stored Result.
+	bp := make(map[string]*result.PlayerDamage, len(out.ByPlayer))
+	for k, v := range out.ByPlayer {
+		bp[k] = v
+	}
+	substituted := false
+	for name, di := range ktx {
+		pd, ok := bp[name]
+		if !ok {
+			continue
+		}
+		cp := *pd
+		target := &cp
+		if !materialized {
+			// dmg=both: the bounded figures live in the nest. A standard-mode
+			// demo always carries one; guard the (unexpected) nil rather than
+			// panic.
+			if pd.Bounded == nil {
+				continue
+			}
+			nb := *pd.Bounded
+			cp.Bounded = &nb
+			target = &nb
+		}
+		target.Given = di.Dmg.Given
+		target.GivenTeam = di.Dmg.Team
+		target.GivenSelf = di.Dmg.Self
+		target.EWep = di.Dmg.EnemyWeapons
+		nbw := make(map[string]int, len(target.ByWeapon)+len(di.Weapons))
+		for k, v := range target.ByWeapon {
+			nbw[k] = v
+		}
+		for w, wv := range di.Weapons {
+			if wv.Damage != nil {
+				nbw[w] = wv.Damage.Enemy
+			}
+		}
+		target.ByWeapon = nbw
+		bp[name] = &cp
+		substituted = true
+	}
+	if !substituted {
+		return "reconstructed"
+	}
+	out.ByPlayer = bp
+	return "ktx"
 }
 
 // addPair aggregates one attacker→victim hit into the damage matrix, mirroring
