@@ -849,3 +849,45 @@ func TestDamageAnalyzer_BoundedScoreboardDelta(t *testing.T) {
 		t.Errorf("dmg/boundedMode = %q/%q, want both/standard", res.Damage.Dmg, res.Damage.BoundedMode)
 	}
 }
+
+// A clamped death value (-99) proves overkill >= 99 even though the exact
+// overkill is unrecoverable: the frame's bounded total must not exceed
+// raw - 99, whatever the shadow estimate says.
+func TestDamageAnalyzer_BoundedClampCeiling(t *testing.T) {
+	// Stale-HIGH shadow: victim last checkpointed at 200 (mega), then an
+	// invisible-heal-style gap; the killing 250-raw hit lands with the
+	// corpse broadcast clamped at -99. Shadow estimate = min(250,200) = 200,
+	// but the clamp proves bounded <= 250-99 = 151.
+	a := buildDamageAnalyzer()
+	seedVitals(a, 1, 200, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 250, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -99, Time: 10})
+	d := finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 151 {
+		t.Errorf("clamped-kill bounded = %d, want 151 (raw 250 - proven overkill 99, not the stale shadow 200)", got)
+	}
+
+	// Control — stale-LOW shadow (40): the ceiling must not inflate the
+	// estimate; the shadow's 40 already deducts more than 99.
+	a = buildDamageAnalyzer()
+	seedVitals(a, 1, 40, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 250, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -99, Time: 10})
+	d = finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 40 {
+		t.Errorf("clamped-kill low-shadow bounded = %d, want 40 (ceiling never inflates)", got)
+	}
+
+	// Armor floor: RA 100 + shadow health 200, one 500-raw hit, clamped
+	// death. save = min(ceil(0.8*500),100) = 100; shadow estimate = 100+200
+	// = 300; ceiling 500-99 = 401 doesn't bite. With shadow health 30 the
+	// estimate is 130 and the ceiling still doesn't bite; sanity both.
+	a = buildDamageAnalyzer()
+	seedVitals(a, 1, 200, 100, events.ITArmor3)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 1, Damage: 500, DeathType: dtRLTest, Time: 10})
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatHealth, Value: -99, Time: 10})
+	d = finalizeDamage(t, a)
+	if got := boundedOf(d.Events[0]); got != 300 {
+		t.Errorf("clamped-kill armored bounded = %d, want 300 (save 100 + shadow health 200; ceiling 401 not binding)", got)
+	}
+}

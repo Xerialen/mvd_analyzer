@@ -815,6 +815,27 @@ func (a *DamageAnalyzer) computeBounded(tp int, duel bool, inMatchWindow func(in
 			// raw + deathValue would over-credit by (overkill − 99). Fall back
 			// to the shadow-health cap, bounded by the victim's real capacity.
 			shadowFallback(idxs)
+			// The clamped value still proves overkill ≥ 99, so the frame's
+			// bounded total cannot exceed raw − 99 — a hard ceiling a
+			// stale-high shadow must not breach. Cascade any excess off the
+			// health shares from the last hit backward (same order as the
+			// exact-dv path), flooring each hit at its armor share.
+			excess := 99
+			for _, i := range idxs {
+				excess -= a.raw[i].damage - b[i] // overkill the shadow already deducted
+			}
+			for j := len(idxs) - 1; j >= 0 && excess > 0; j-- {
+				i := idxs[j]
+				save, _ := damageSplit(a.raw[i].damage, a.raw[i].victimItem, a.raw[i].victimArmor)
+				ded := b[i] - save
+				if ded > excess {
+					ded = excess
+				}
+				if ded > 0 {
+					b[i] -= ded
+					excess -= ded
+				}
+			}
 			continue
 		}
 
