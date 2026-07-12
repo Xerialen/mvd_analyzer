@@ -106,6 +106,24 @@ func parseLayout(q url.Values) (string, error) {
 	}
 }
 
+// parseDmg reads ?dmg=raw|bounded|both. Empty → "" (the handler resolves the
+// summary-aware default: "both" for a summary request, "raw" otherwise). Any
+// other value is an error.
+func parseDmg(q url.Values) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(ciGet(q, "dmg"))) {
+	case "":
+		return "", nil
+	case "raw":
+		return "raw", nil
+	case "bounded":
+		return "bounded", nil
+	case "both":
+		return "both", nil
+	default:
+		return "", fmt.Errorf("invalid dmg=%q (want 'raw', 'bounded' or 'both')", ciGet(q, "dmg"))
+	}
+}
+
 // parseReducers parses a comma-separated list of "field=name" pairs.
 // Empty → nil. Malformed → error.
 func parseReducers(v string) (map[string]string, error) {
@@ -230,6 +248,19 @@ func (p *qp) Layout() string {
 		return "column"
 	}
 	v, err := parseLayout(p.q)
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
+
+// Dmg reads ?dmg=raw|bounded|both (empty → "", the handler resolves the
+// summary-aware default). No-op after a prior error.
+func (p *qp) Dmg() string {
+	if p.err != nil {
+		return ""
+	}
+	v, err := parseDmg(p.q)
 	if err != nil {
 		p.err = err
 	}

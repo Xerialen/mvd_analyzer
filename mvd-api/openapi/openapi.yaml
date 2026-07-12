@@ -380,13 +380,22 @@ paths:
       description: >
         Per-hit damage log plus aggregates (matrix, per-weapon, given/taken)
         and the KTX-scoreboard cross-check. Positional kills — telefrags and
-        stomps — are excluded from all damage figures and listed separately.
-        Damage is UNBOUND (includes overkill), so totals run higher than the
-        KTX scoreboard, which is bounded to victim health. Per-player EWep
-        buckets slice enemy-given damage by what the victim held:
+        stomps — are excluded from the per-weapon/matrix/EWep figures and
+        listed separately, but their kill value DOES fold into given/taken.
+        Two damage families (schema v54), selected by `dmg`: the RAW family is
+        the unbound wire value (includes overkill), so totals run higher than
+        the KTX scoreboard; the BOUNDED family reconstructs KTX-scoreboard
+        semantics (armor absorbed + health capped to victim health). `boundedMode`
+        reports whether that reconstruction ran (`standard`) or was skipped
+        (`skipped:midair` / `skipped:instagib` / `skipped:dmgfrags`, where the
+        server mode rewrites the take in ways the wire does not expose). On a
+        telefrag/stomp the folded value appears as `bounded` (and `damage` when
+        the raw fold differs) on the telefrags[]/stomps[] entries. Per-player
+        EWep buckets slice enemy-given damage by what the victim held:
         enemyVsSg/enemyVsMid/enemyVsLg/enemyVsRl/enemyVsBoth, with
         ewep = lg+rl+both. Filters recompute aggregates like /frags. 422
-        `damage_unavailable` without the KTX mvdhidden_dmgdone stream.
+        `damage_unavailable` without the KTX mvdhidden_dmgdone stream, or
+        `bounded_unavailable` for `dmg=bounded` on a skipped:* demo.
       parameters:
         - $ref: "#/components/parameters/DemoId"
         - $ref: "#/components/parameters/Players"
@@ -395,6 +404,7 @@ paths:
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/Summary"
+        - $ref: "#/components/parameters/Dmg"
       responses:
         "200":
           description: Aggregates + per-hit log (log omitted with `summary`).
@@ -1314,6 +1324,21 @@ components:
       schema:
         type: string
         enum: [column, row]
+    Dmg:
+      name: dmg
+      in: query
+      description: >
+        Damage family (schema v54). `raw` — the unbound wire values (the v53
+        shape; positional-kill fold values still surface on
+        telefrags[]/stomps[]). `bounded` — KTX-scoreboard semantics (armor
+        absorbed + health capped to remaining) materialized into the same
+        field names; 422 `bounded_unavailable` on midair / instagib / dmgfrags
+        demos, whose server mode makes the reconstruction impossible. `both` —
+        the raw fields plus per-player `bounded` nests and a per-event
+        `bounded`. Default: `both` when `summary=true`, else `raw`.
+      schema:
+        type: string
+        enum: [raw, bounded, both]
     Reducers:
       name: reducers
       in: query
@@ -1467,6 +1492,7 @@ components:
         - aim_unavailable
         - airgibs_unavailable
         - artifact_unknown
+        - bounded_unavailable
         - damage_unavailable
         - demo_not_found
         - demoinfo_unavailable
@@ -2089,10 +2115,69 @@ components:
     Damage:
       additionalProperties: false
       properties:
+        boundedMode:
+          description: >
+            Whether the bounded family was reconstructed — `standard`, or a
+            `skipped:*` reason when the server mode rewrites the take in ways
+            the wire does not expose (every bounded field is then absent).
+            Survives a raw view.
+          type: string
+          enum: [standard, "skipped:midair", "skipped:instagib", "skipped:dmgfrags"]
         byPlayer:
           additionalProperties:
             additionalProperties: false
             properties:
+              bounded:
+                description: >
+                  The same damage figures under KTX bounded-scoreboard
+                  semantics (dmg=both only). A flat nest carrying just the
+                  damage-figure fields — no telefrags/stomps/bounded of its
+                  own. Absent on a raw view and when the reconstruction was
+                  skipped (see boundedMode).
+                additionalProperties: false
+                properties:
+                  byWeapon:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  enemyVsBoth:
+                    type: integer
+                  enemyVsLg:
+                    type: integer
+                  enemyVsMid:
+                    type: integer
+                  enemyVsRl:
+                    type: integer
+                  enemyVsSg:
+                    type: integer
+                  ewep:
+                    type: integer
+                  given:
+                    type: integer
+                  givenSelf:
+                    type: integer
+                  givenTeam:
+                    type: integer
+                  taken:
+                    type: integer
+                  takenEnv:
+                    type: integer
+                required:
+                  - given
+                  - taken
+                  - givenTeam
+                  - givenSelf
+                  - takenEnv
+                  - byWeapon
+                  - enemyVsSg
+                  - enemyVsMid
+                  - enemyVsLg
+                  - enemyVsRl
+                  - enemyVsBoth
+                  - ewep
+                type: object
               byWeapon:
                 additionalProperties:
                   type: integer
@@ -2150,12 +2235,27 @@ components:
           type:
             - object
             - "null"
+        dmg:
+          description: >
+            Which family this payload carries — `both` as stored (raw fields +
+            bounded nests) or `bounded` when the bounded family was
+            materialized into the raw field names. Absent on a raw view.
+          type: string
+          enum: [both, bounded]
         events:
           items:
             additionalProperties: false
             properties:
               attacker:
                 type: string
+              bounded:
+                description: >
+                  This hit under KTX bounded semantics (armor + health capped
+                  to remaining). Omitted means equal to `damage` (the common
+                  no-overkill case); 0 is a real value — a hit whose health
+                  share was fully nullified (pent / teamplay). Present only on
+                  dmg=both.
+                type: integer
               damage:
                 type: integer
               isEnv:
@@ -2218,6 +2318,32 @@ components:
               additionalProperties:
                 additionalProperties: false
                 properties:
+                  bounded:
+                    description: >
+                      The bounded-reconstruction side of the reconciliation
+                      (dmg=both only): our bounded figures against the same KTX
+                      scoreboard, where near-equality is the correctness
+                      signal. streamTaken here is ENEMY-ONLY (KTX dmg_t).
+                      Absent on a raw view / when reconstruction was skipped.
+                    additionalProperties: false
+                    properties:
+                      scoreTeam:
+                        type: integer
+                      streamEwep:
+                        type: integer
+                      streamGiven:
+                        type: integer
+                      streamTaken:
+                        type: integer
+                      streamTeam:
+                        type: integer
+                    required:
+                      - streamGiven
+                      - streamTaken
+                      - streamEwep
+                      - streamTeam
+                      - scoreTeam
+                    type: object
                   scoreEwep:
                     type: integer
                   scoreGiven:
@@ -2254,6 +2380,18 @@ components:
             properties:
               attacker:
                 type: string
+              bounded:
+                description: >
+                  Reconstructed kill value folded into the bounded aggregates.
+                  Omitted when the fold was skipped (or a teamplay-nullified
+                  stomp reconstructs to 0).
+                type: integer
+              damage:
+                description: >
+                  The RAW-family fold value when it differs from `bounded`
+                  (a stomp whose bounded arithmetic capped below the wire
+                  value). Omitted means equal to `bounded`.
+                type: integer
               isTeam:
                 type: boolean
               time:
@@ -2261,6 +2399,12 @@ components:
                 minimum: -2.147483648e+09
                 type: integer
               victim:
+                type: string
+              victimWep:
+                description: >
+                  Victim's weapon class (sg|mid|lg|rl|both) at hit time, on
+                  enemy kills only — so a re-aggregation can reproduce the
+                  EnemyVs*/EWep fold. Omitted on team/self/world kills.
                 type: string
             required:
               - time
@@ -2276,6 +2420,18 @@ components:
             properties:
               attacker:
                 type: string
+              bounded:
+                description: >
+                  Reconstructed kill value (victim's full armor + remaining
+                  health) folded into the bounded aggregates. Omitted when the
+                  fold was skipped.
+                type: integer
+              damage:
+                description: >
+                  The RAW-family fold value when it differs from `bounded`
+                  (telefrags fold the same number into both families, so this
+                  is normally omitted).
+                type: integer
               isTeam:
                 type: boolean
               time:
@@ -2283,6 +2439,11 @@ components:
                 minimum: -2.147483648e+09
                 type: integer
               victim:
+                type: string
+              victimWep:
+                description: >
+                  Victim's weapon class (sg|mid|lg|rl|both) at hit time, on
+                  enemy kills only. Omitted on team/self/world kills.
                 type: string
             required:
               - time

@@ -314,6 +314,13 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 // filtered per-hit log so they are consistent with the entries shown. With no
 // filter the authoritative stored aggregates are returned unchanged.
 //
+// The dmg param selects the damage family (schema v54): raw = the unbound wire
+// values (the v53 shape); bounded = KTX-scoreboard semantics materialized into
+// the same field names; both = raw fields plus per-player `bounded` nests and a
+// per-event `bounded`. Unset resolves here to `both` for a summary request and
+// `raw` otherwise. dmg=bounded on a demo whose bounded reconstruction was
+// skipped (boundedMode skipped:*) is a 422 bounded_unavailable.
+//
 // Query params:
 //
 //	players  csv   — restrict aggregates / Matrix / Events / Scoreboard to
@@ -323,6 +330,7 @@ func (s *server) handleFrags(w http.ResponseWriter, r *http.Request) {
 //	from     float — window start, match-relative seconds (0 = no bound)
 //	to       float — window end, match-relative seconds (0 = no bound)
 //	summary  bool  — drop the per-hit Events log; return only aggregates
+//	dmg      enum  — raw | bounded | both (default: both if summary, else raw)
 func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 	res, _, ok := s.resolveDemo(w, r)
 	if !ok {
@@ -335,12 +343,38 @@ func (s *server) handleDamage(w http.ResponseWriter, r *http.Request) {
 		From:    p.Sec("from", 0),
 		To:      p.Sec("to", 0),
 		Summary: p.Bool("summary"),
+		Dmg:     p.Dmg(),
 	}
 	if writeInvalidParam(w, p.Err()) {
 		return
 	}
+	// Single resolution point for the damage-family default — the MCP layer
+	// inherits it (it proxies the REST call without a dmg param). An unset dmg
+	// yields the richer "both" family for a summary request (the aggregates are
+	// small, so carrying both is cheap and answers more) and the lean v53 "raw"
+	// shape for the full log. NOTE: the summary-driven default is deliberately
+	// resolved here and may be revisited.
+	if opts.Dmg == "" {
+		if opts.Summary {
+			opts.Dmg = "both"
+		} else {
+			opts.Dmg = "raw"
+		}
+	}
 	out, err := view.Damage(res, opts)
 	if err != nil {
+		// ErrBoundedUnavailable wraps ErrUnavailable, so it must be singled out
+		// before the generic writeUnavailable. Name the demo's boundedMode so
+		// the caller learns why the bounded family is missing.
+		if errors.Is(err, view.ErrBoundedUnavailable) {
+			mode := ""
+			if res.Damage != nil {
+				mode = res.Damage.BoundedMode
+			}
+			writeError(w, http.StatusUnprocessableEntity, "bounded_unavailable",
+				fmt.Sprintf("this demo has no bounded damage family (boundedMode %q); use dmg=raw", mode))
+			return
+		}
 		s.writeUnavailable(w, r, err, "damage_unavailable",
 			"this demo has no damage data (no KTX mvdhidden_dmgdone stream)")
 		return

@@ -257,6 +257,125 @@ func TestDamageParams_MatrixWhenFiltered(t *testing.T) {
 	}
 }
 
+// boundedDamageStore carries a demo with a full v54 bounded family (gameId:42)
+// and one whose bounded reconstruction was skipped (gameId:99), for exercising
+// the dmg= family selection.
+func boundedDamageStore() *fakeStore {
+	full := stubResult()
+	full.Damage = &result.DamageResult{
+		Dmg:         "both",
+		BoundedMode: "standard",
+		TotalDamage: 200,
+		ByWeapon:    map[string]int{"rl": 200},
+		ByPlayer: map[string]*result.PlayerDamage{
+			"bps": {Given: 100, Taken: 100, ByWeapon: map[string]int{"rl": 100},
+				Bounded: &result.PlayerDamage{Given: 80, Taken: 90, ByWeapon: map[string]int{"rl": 80}}},
+			"milton": {Given: 100, Taken: 100, ByWeapon: map[string]int{"rl": 100},
+				Bounded: &result.PlayerDamage{Given: 85, Taken: 88, ByWeapon: map[string]int{"rl": 85}}},
+		},
+		Matrix: []result.DamagePair{
+			{Attacker: "bps", Victim: "milton", Damage: 100, ByWeapon: map[string]int{"rl": 100}},
+		},
+		Events: []result.DamageEntry{
+			{Time: 10000, Attacker: "bps", Victim: "milton", Weapon: "rl", Damage: 100, Bounded: intp(80), VictimWep: "rl"},
+		},
+	}
+	skipped := stubResult()
+	skipped.Damage = &result.DamageResult{
+		BoundedMode: "skipped:midair",
+		ByWeapon:    map[string]int{},
+		ByPlayer:    map[string]*result.PlayerDamage{},
+	}
+	return &fakeStore{byID: map[string]*result.Result{
+		"gameId:42": full,
+		"gameId:99": skipped,
+	}}
+}
+
+func intp(i int) *int { return &i }
+
+// TestDamageParams_DmgFamily pins the dmg= family selection and its
+// summary-aware default resolution (resolved once in handleDamage).
+func TestDamageParams_DmgFamily(t *testing.T) {
+	srv := newTestServer(t, boundedDamageStore())
+	defer srv.Close()
+
+	base := srv.URL + "/v1/demos/gameId:42/damage"
+
+	// Default, full log: dmg resolves to raw — no dmg echo, no per-player
+	// bounded nest, events present without a bounded field.
+	resp := getJSON(t, base, 200)
+	if _, ok := resp["dmg"]; ok {
+		t.Errorf("full default: dmg should be absent (raw), got %v", resp["dmg"])
+	}
+	bps := resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
+	if _, ok := bps["bounded"]; ok {
+		t.Errorf("full default: byPlayer.bps.bounded should be stripped on raw")
+	}
+
+	// Default, summary: dmg resolves to both — dmg echo + per-player bounded nest.
+	resp = getJSON(t, base+"?summary=1", 200)
+	if resp["dmg"] != "both" {
+		t.Errorf("summary default: dmg = %v, want both", resp["dmg"])
+	}
+	bps = resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
+	if bps["bounded"] == nil {
+		t.Errorf("summary default (both): byPlayer.bps.bounded missing")
+	}
+
+	// Explicit both on the full log keeps the bounded nest.
+	resp = getJSON(t, base+"?dmg=both", 200)
+	if resp["dmg"] != "both" {
+		t.Errorf("dmg=both: dmg = %v, want both", resp["dmg"])
+	}
+
+	// Explicit bounded materializes: dmg echo "bounded", per-player figures come
+	// from the nest (given 80), and the nest itself is dropped.
+	resp = getJSON(t, base+"?dmg=bounded", 200)
+	if resp["dmg"] != "bounded" {
+		t.Errorf("dmg=bounded: dmg = %v, want bounded", resp["dmg"])
+	}
+	bps = resp["byPlayer"].(map[string]any)["bps"].(map[string]any)
+	if int(bps["given"].(float64)) != 80 {
+		t.Errorf("dmg=bounded: bps.given = %v, want 80 (materialized)", bps["given"])
+	}
+	if _, ok := bps["bounded"]; ok {
+		t.Errorf("dmg=bounded: byPlayer.bps.bounded nest should be dropped")
+	}
+
+	// Unknown dmg is a clean 400 invalid_param.
+	body, status := getRaw(t, base+"?dmg=nope")
+	if status != 400 {
+		t.Errorf("dmg=nope: status = %d, want 400 (body=%s)", status, string(body))
+	}
+
+	// dmg=bounded on a skipped:* demo is a 422 bounded_unavailable.
+	body, status = getRaw(t, srv.URL+"/v1/demos/gameId:99/damage?dmg=bounded")
+	if status != 422 {
+		t.Fatalf("skipped dmg=bounded: status = %d, want 422 (body=%s)", status, string(body))
+	}
+	var env struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &env); err != nil {
+		t.Fatalf("422 body decode: %v (body=%s)", err, string(body))
+	}
+	if env.Error.Code != "bounded_unavailable" {
+		t.Errorf("422 code = %q, want bounded_unavailable", env.Error.Code)
+	}
+	if !strings.Contains(env.Error.Message, "skipped:midair") {
+		t.Errorf("422 message should name the boundedMode, got %q", env.Error.Message)
+	}
+
+	// Both/bounded on the skipped:* demo still serve (raw path unaffected).
+	if _, status := getRaw(t, srv.URL+"/v1/demos/gameId:99/damage?dmg=both"); status != 200 {
+		t.Errorf("skipped dmg=both: status = %d, want 200", status)
+	}
+}
+
 // TestTimeBoundParams_Rejected400 pins the from/to/time validation: NaN, Inf,
 // negatives, and values whose millisecond form overflows int32 must be a clean
 // 400 invalid_param, not a silent all-filtered 200 (the bad float→int32

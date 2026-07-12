@@ -190,6 +190,53 @@ func goldenResult(t *testing.T) *result.Result {
 	return goldenVal
 }
 
+// addBoundedFamily augments a Result's Damage with a synthetic v54 bounded
+// family so the dmg=both / dmg=bounded validation cases exercise the new
+// schema. The committed golden JSON is still v53-shaped on this branch (a
+// regen lands in a later commit), so without this a dmg=both request would
+// show no bounded fields and a dmg=bounded request would 422 — neither would
+// hit the additionalProperties/required rules the schema now carries. The
+// figures are not analytically consistent (this is a schema fixture, not a
+// numeric one): bounded == raw per hit, and each player's bounded nest mirrors
+// its raw figures.
+func addBoundedFamily(d *result.DamageResult) {
+	d.Dmg = "both"
+	d.BoundedMode = "standard"
+	for i := range d.Events {
+		b := d.Events[i].Damage
+		d.Events[i].Bounded = &b
+	}
+	for _, p := range d.ByPlayer {
+		nb := &result.PlayerDamage{
+			Given: p.Given, Taken: p.Taken, GivenTeam: p.GivenTeam,
+			GivenSelf: p.GivenSelf, TakenEnv: p.TakenEnv,
+			ByWeapon:  map[string]int{},
+			EnemyVsSG: p.EnemyVsSG, EnemyVsMid: p.EnemyVsMid, EnemyVsLG: p.EnemyVsLG,
+			EnemyVsRL: p.EnemyVsRL, EnemyVsBoth: p.EnemyVsBoth, EWep: p.EWep,
+		}
+		for k, v := range p.ByWeapon {
+			nb.ByWeapon[k] = v
+		}
+		p.Bounded = nb
+	}
+	for i := range d.Telefrags {
+		d.Telefrags[i].Bounded = 130
+		d.Telefrags[i].VictimWep = "rl"
+	}
+	for i := range d.Stomps {
+		d.Stomps[i].Bounded = 45
+		d.Stomps[i].Damage = 60 // raw fold differs from bounded
+	}
+	if d.Scoreboard != nil {
+		for _, dd := range d.Scoreboard.ByPlayer {
+			dd.Bounded = &result.DamageDeltaBounded{
+				StreamGiven: dd.StreamGiven, StreamTaken: dd.StreamTaken,
+				StreamEWep: dd.StreamEWep, StreamTeam: 0, ScoreTeam: 0,
+			}
+		}
+	}
+}
+
 // allFieldCodes is every fields= selector, to exercise the widest
 // stream-slice / state-at / buckets shapes.
 const allFieldCodes = "h,a,at,li,pos,view,hgt,lq,vel,rl,lg,gl,ssg,sng,q,pe,r,sh,nl,rk,cl,sp,d"
@@ -221,6 +268,15 @@ func validationCases() []validationCase {
 		{name: "damage", url: "/v1/demos/gameId:42/damage", path: "/v1/demos/{id}/damage", status: 200},
 		{name: "damage-summary", url: "/v1/demos/gameId:42/damage?summary=1", path: "/v1/demos/{id}/damage", status: 200},
 		{name: "damage-filtered", url: "/v1/demos/gameId:42/damage?weapon=rl&from=60&to=300", path: "/v1/demos/{id}/damage", status: 200},
+		// dmg families: both (raw fields + bounded nests + per-event bounded)
+		// and bounded (materialized) must each satisfy the extended schema; an
+		// unknown dmg is a 400 invalid_param; dmg=bounded on a skipped:* demo
+		// is a 422 bounded_unavailable. The gameId:42 fixture is augmented with
+		// a synthetic bounded family (addBoundedFamily) so these carry content.
+		{name: "damage-dmg-both", url: "/v1/demos/gameId:42/damage?dmg=both", path: "/v1/demos/{id}/damage", status: 200},
+		{name: "damage-dmg-bounded", url: "/v1/demos/gameId:42/damage?dmg=bounded", path: "/v1/demos/{id}/damage", status: 200},
+		{name: "damage-dmg-invalid", url: "/v1/demos/gameId:42/damage?dmg=nope", path: "/v1/demos/{id}/damage", status: 400},
+		{name: "err-bounded-unavailable", url: "/v1/demos/gameId:44/damage?dmg=bounded", path: "/v1/demos/{id}/damage", status: 422},
 		{name: "shots", url: "/v1/demos/gameId:42/shots", path: "/v1/demos/{id}/shots", status: 200},
 		{name: "aim", url: "/v1/demos/gameId:42/aim", path: "/v1/demos/{id}/aim", status: 200},
 		{name: "aim-summary", url: "/v1/demos/gameId:42/aim?summary=1", path: "/v1/demos/{id}/aim", status: 200},
@@ -295,11 +351,22 @@ func validationCases() []validationCase {
 func TestOpenAPIGoldenResponsesValidate(t *testing.T) {
 	sd := specDoc(t)
 	res := goldenResult(t)
+	// Give the served demo a v54 bounded family (the committed golden JSON is
+	// still v53 on this branch) so the dmg=both / dmg=bounded cases exercise
+	// the extended schema instead of validating empty additions.
+	addBoundedFamily(res.Damage)
 	store := &fakeStore{byID: map[string]*result.Result{
 		"gameId:42": res,
 		// gameId:43 is a well-formed but capability-empty Result for the
 		// 422 error paths.
 		"gameId:43": {SchemaVersion: result.CurrentSchemaVersion},
+		// gameId:44 carries damage whose bounded reconstruction was skipped —
+		// dmg=bounded there is a 422 bounded_unavailable.
+		"gameId:44": {SchemaVersion: result.CurrentSchemaVersion, Damage: &result.DamageResult{
+			ByWeapon:    map[string]int{},
+			ByPlayer:    map[string]*result.PlayerDamage{},
+			BoundedMode: "skipped:midair",
+		}},
 	}}
 	srv := newTestServer(t, store)
 	defer srv.Close()
