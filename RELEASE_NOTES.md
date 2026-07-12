@@ -5,6 +5,82 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## Unreleased (branch `phase-16.3`)
+
+- **The bounded damage family (schema v54).** Damage now ships in **two
+  families**. The **raw** family is the v53 shape — the full hit
+  including overkill, capped only at 9999, exactly the wire value
+  (`unbound_dmg_dealt`, written mid-frame in `T_Damage`,
+  `combat.c:795`). The new **bounded** family reconstructs KTX's own
+  scoreboard `dmg_dealt` (`combat.c:783`) per hit — armor absorbed plus
+  the health portion capped at the victim's remaining health — which
+  until now existed only as `demoInfo`'s end-of-match totals. The
+  additions are purely additive; every raw field is byte-stable except
+  the tele/stomp fold-in below.
+  - **Per-hit reconstruction.** The damage analyzer tracks each slot's
+    health/armor from `StatHealth`/`StatArmor` (rejecting KTX's
+    `1000+dmg` indicator sentinels) and snapshots the victim's pre-hit
+    vitals on every hit — wire order guarantees pre-hit state (the
+    dmgdone multicast is mid-frame, stats broadcast at end of frame). A
+    shadow decrement keeps same-frame multi-hits sequentially capped.
+    The bounded value mirrors `T_Damage`: `save = newceil(armortype ×
+    damage)` capped at `armorvalue`, then the nullification rules the
+    wire value deliberately ignores (pent zeroes the health share, the
+    teamplay `tp` masks nullify mates/self, all skipped for a suicide) —
+    teamplay read from serverinfo with `tp_num()` semantics. Godmode is
+    unobservable and ignored.
+  - **Telefrags and stomps fold their honest damage into
+    `given`/`givenTeam`/`taken`** — and nothing else. KTX's scoreboard
+    accumulation has no tele/stomp exclusion (`combat.c:1046-1076`, both
+    map to `wpNONE`), so our fold-free exclusion was exactly the
+    corpus-visible residual — every player whose KTX `dmg.team` exceeded
+    our `givenTeam` had dealt a team telefrag. A telefrag folds its
+    **bounded** reconstruction (victim's full armor + remaining health —
+    the wire 9999 is a kill guarantee, not a measurement) into the raw
+    family too; a stomp is a real ~10 HP `T_Damage` and folds wire (raw)
+    / reconstruction (bounded). Both stay out of `events`, `byWeapon`,
+    `matrix`, `ewep` and `totalDamage` (KTX's `weapons[].damage`
+    excludes them too); each `telefrags[]`/`stomps[]` entry now carries
+    the folded `bounded`/`damage` and the `victimWep` class it landed
+    in.
+  - **Spawn-state inference.** A tele/stomp victim is alive by
+    definition (`tdeath_touch` requires `ISLIVE`), so a non-positive
+    health shadow means the respawn beat the end-of-frame stat
+    broadcast: the reconstruction reads that victim from spawn state
+    (100 health, no armor, spawn inventory) instead of the stale corpse
+    shadow — the same wire-invisibility as the match-start spawn.
+  - **Skipped modes.** `k_midair` / `k_instagib` / `k_dmgfrags` rewrite
+    `take` unobservably, so bounded is skipped outright there rather
+    than emitted wrong: `damage.boundedMode = "skipped:<mode>"`, no
+    tele/stomp fold-in, and a `dmg=bounded` request returns the new
+    `422 bounded_unavailable`.
+  - **Corpus validation.** `TestBoundedReconciliationCorpus` reconciles
+    the reconstruction against `demoInfo` on every corpus demo — per
+    player (`given`/`taken`/`ewep`/`team`) and per weapon
+    (`weapons[].damage.enemy`/`team`). Tolerances are pinned at measured
+    max + headroom (given/taken/per-weapon ±60, measured 44; ewep ±150,
+    measured 130; team ±10, measured 1); the residuals are the ±1
+    per-hit armor-ceil slop and the one-frame stat window (mid-frame
+    pickups, corpse gibs, same-frame respawns). The dm3 pent-deflect
+    (`Satan's power deflects nlk's telefrag`) is pinned as live coverage.
+    A loose warning-mode variant landed in the diagnostic harness.
+  - **REST / MCP surface.** `/damage` gains `dmg=raw|bounded|both`
+    (`raw` = the byte-stable v53 shape; `both` = the stored shape;
+    `bounded` = the bounded family materialized into the raw field
+    names). The default is resolved at one point: **`both` for a
+    `summary` request, `raw` for the full log**. MCP `getDamage` takes
+    the same `dmg` input and forwards it; because MCP defaults
+    `summary=true`, an unadorned `getDamage` serves **both** families
+    side by side. An invalid `dmg` is a `400 invalid_param`; `bounded`
+    on a skipped demo is the `422 bounded_unavailable` (a new
+    drift-tested error code). The view-layer filtered recompute
+    reproduces both families exactly, including the tele/stomp fold.
+  - Goldens regenerate at branch end (they stay v53 until then, so the
+    served-spec validation augments the fixture Result with a synthetic
+    bounded family in the meantime). See
+    [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for the
+    field-level reference.
+
 ## Unreleased (branch `phase-16.2`)
 
 - **GDPR disclosure: privacy policy + terms of use on the portal (no

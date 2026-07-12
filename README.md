@@ -506,9 +506,16 @@ Schema v20 adds the `damage` section: per-hit damage reconstructed from the
 KTX `mvdhidden_dmgdone` stream, with an attacker→victim `matrix`, per-weapon
 and per-player given/taken totals, the **EWep** victim-weapon buckets
 (`enemyVsSg/Mid/Lg/Rl/Both`, where `ewep = lg + rl + both`), and a
-`scoreboard` cross-check against the KTX end-of-match totals. Positional
-kills (telefrags, stomps) are surfaced separately and kept out of every
-damage figure.
+`scoreboard` cross-check against the KTX end-of-match totals. Since schema
+v54 damage ships in **two families**: the **raw** wire value (the full hit
+including overkill, capped only at 9999) and a **bounded** reconstruction of
+KTX's scoreboard `dmg_dealt` (armor absorbed + health capped to the victim's
+remaining health) carried in additive `bounded` fields. Positional kills
+(telefrags, stomps) are surfaced separately and kept out of `events` /
+`byWeapon` / `matrix` / `ewep`, but their damage now folds into
+`given`/`givenTeam`/`taken` in both families (matching KTX's own
+accumulation). The REST `/damage` `dmg=raw|bounded|both` param picks the
+family.
 
 `streams.global` carries a wall-clock anchor so a consumer can project any
 match-relative game time onto real-world time (for syncing voice tracks /
@@ -776,17 +783,29 @@ diff -r /tmp/before /tmp/after
    pad can't be tied to a specific pack. See
    [mvd-analytics/README.md](mvd-analytics/README.md#weapon-pickups).
 
-6. **Damage is unbound (overkill)**: `result.Damage` is reconstructed
-   from the KTX `mvdhidden_dmgdone` stream, which reports the **full** hit
-   including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
-   end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
-   hit to the victim's remaining health, so the reconstructed totals run
-   higher — most on killing blows. The `damage.scoreboard` cross-check
-   surfaces both side by side; the divergence is expected, not a defect.
-   **Positional kills** — telefrags (the 9999 instakill sentinel) and
-   stomps (landing on a head) — are excluded from all damage figures and
-   tracked separately (`damage.telefrags`/`damage.stomps`, the opt-in
-   `telefrag`/`stomp` events) so they don't swamp `given`/`ewep`/`byWeapon`.
+6. **Damage: raw (unbound) vs bounded families**: `result.Damage` is
+   reconstructed from the KTX `mvdhidden_dmgdone` stream, which reports the
+   **full** hit including overkill, capped only at 9999 (a telefrag reports
+   9999) — the **raw** family. KTX's end-of-match scoreboard
+   (`demoInfo.players[].dmg`) instead bounds each hit to the victim's
+   remaining health; since schema v54 that **bounded** family is
+   reconstructed per hit from tracked victim vitals and carried in additive
+   `bounded` fields (the `dmg=raw|bounded|both` REST param selects one).
+   The bounded value is a **reconstruction**, not a wire measurement: it
+   carries a ±1-per-hit armor-ceil rounding slop and a one-frame stat-window
+   residual (mid-frame pickups, corpse gibs, same-frame respawns) that keeps
+   corpus-wide totals within ~1% of `demoInfo` (pinned tolerances). Godmode
+   is unobservable, so a hit on a godmode holder is reconstructed as if it
+   landed. The reconstruction is **skipped** on `k_midair` / `k_instagib` /
+   `k_dmgfrags` demos (`damage.boundedMode = "skipped:<mode>"`) where the
+   mode rewrites `T_Damage` unobservably; `dmg=bounded` there is a `422
+   bounded_unavailable`. **Positional kills** — telefrags (the 9999
+   instakill sentinel) and stomps (landing on a head) — are kept out of
+   `events` / `byWeapon` / `matrix` / `ewep` / `totalDamage` and tracked
+   separately (`damage.telefrags`/`damage.stomps`, the opt-in
+   `telefrag`/`stomp` events), but their damage **folds into**
+   `given`/`givenTeam`/`taken` in both families (mirroring KTX, which
+   applies no tele/stomp exclusion to its scoreboard accumulation).
    Available only on KTX demos with the MVD-hidden extension; the `EWep`
    victim-weapon buckets additionally depend on reconstructing each
    victim's inventory from `STAT_ITEMS` updates.

@@ -103,6 +103,14 @@ weapon / item / kind / loc / layout tokens.
 - **`summary`** (`/frags`, `/damage`, `/aim`, `/items`) — `1`/`true` drops
   the big per-event log / sample arrays / phase timeline and returns only
   the aggregates.
+- **`dmg`** (`/damage`) — which damage **family** to return:
+  `raw` (the unbound wire value, byte-stable pre-v54 shape), `bounded`
+  (KTX's scoreboard reconstruction — armor absorbed + health capped to the
+  victim's remaining health, in the raw field names), or `both` (raw plus
+  additive `bounded` fields). The default is family-by-request: **`both`
+  for a `summary` call, `raw` for the full log**. `dmg=bounded` on a demo
+  whose reconstruction was skipped (midair / instagib / dmgfrags modes) is
+  a `422 bounded_unavailable`.
 - **`time`** — match-relative **seconds**; **required** on `/state-at`.
 - **`windowMs`** — integer milliseconds (`/buckets`, `/region-control`).
   ⚠️ **Defaults to 50 ms when omitted** — on a 20-minute match that is
@@ -202,6 +210,7 @@ Non-2xx responses use a stable envelope:
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
 | 422 | `damage_unavailable` | no KTX `mvdhidden_dmgdone` damage stream |
+| 422 | `bounded_unavailable` | `dmg=bounded` on a demo whose bounded reconstruction was skipped (midair / instagib / dmgfrags mode) |
 | 422 | `shots_unavailable` | no shot data (no weapon fires decoded) |
 | 422 | `aim_unavailable` | no aim data (needs shots + position/view streams) |
 | 422 | `locgraph_unavailable` | no position track |

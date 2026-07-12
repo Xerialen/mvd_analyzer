@@ -529,7 +529,7 @@ type Result struct {
     Metadata         *MetadataResult          // serverinfo + match settings
     LocGraph         *LocGraphResult          // loc-to-loc movement graph
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
-    Damage           *DamageResult            // per-hit damage log + aggregates (KTX dmgdone stream)
+    Damage           *DamageResult            // per-hit damage log + aggregates, raw + bounded families (KTX dmgdone stream)
     Shots            *ShotsResult             // per-shot weapon-fire stream (sound + LG ammo) + hitscan→damage links
     Aim              *AimResult               // per-player aim analysis (crosshair error, LG ramp, rocket direct/splash, LG reach)
     MapEntities      *MapEntitiesResult       // static map layout from the BSP entity corpus (mapents)
@@ -542,10 +542,21 @@ type Result struct {
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `38`). For "how long was the match"
+`CurrentSchemaVersion` (defined in `result/result.go`, with the full
+version history alongside it). For "how long was the match"
 read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
 (integer, KTX-authoritative); the legacy top-level `duration` was
 removed in v6.
+
+Since schema v54 `Damage` carries **two families**: the **raw** wire
+value (the full hit including overkill) and a **bounded** reconstruction
+of KTX's scoreboard `dmg_dealt` (armor absorbed + health capped to the
+victim's remaining health), the latter in additive `bounded` fields.
+Telefrag and stomp damage now folds into `given`/`givenTeam`/`taken` in
+both families — matching KTX's accumulation, which applies no positional-
+kill exclusion — while staying out of `events`/`byWeapon`/`matrix`/`ewep`.
+See [RESULT_SCHEMA.md](RESULT_SCHEMA.md#damageresult-damage) for the
+field-level reference.
 
 ### Items result
 
