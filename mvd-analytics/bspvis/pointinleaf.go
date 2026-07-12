@@ -64,8 +64,61 @@ func (b *BSP) PointInLeaf(p [3]float32) int {
 	return leafIdx
 }
 
-// PointSolid is a convenience: returns true iff the point falls inside a
-// CONTENTS_SOLID leaf. Liquid contents (water/slime/lava) are not solid.
-func (b *BSP) PointSolid(p [3]float32) bool {
-	return b.LeafContents(b.PointInLeaf(p)) == ContentsSolid
+// BoxLeafs appends the index of every leaf the axis-aligned box [mins,maxs]
+// overlaps to dst (which is truncated first) and returns it, descending the
+// worldspawn visibility BSP. This is the engine broadphase (Mod_BoxLeafnums /
+// SV_FindTouchedLeafs): one descent that prunes whole subtrees the box is on
+// one side of. A small box (a player hull) touches only 1–3 leaves. Leaves are
+// disjoint, so no leaf is reported twice. Sign convention matches PointInLeaf
+// (front = d>0).
+func (b *BSP) BoxLeafs(mins, maxs [3]float32, dst []int) []int {
+	dst = dst[:0]
+	if len(b.Models) == 0 || len(b.Nodes) == 0 {
+		return dst
+	}
+	return b.boxLeafs(b.Models[0].HeadNodes[0], mins, maxs, dst)
+}
+
+func (b *BSP) boxLeafs(nodeIdx int32, mins, maxs [3]float32, dst []int) []int {
+	if nodeIdx < 0 {
+		if leaf := int(-1 - nodeIdx); leaf >= 0 && leaf < len(b.Leaves) {
+			dst = append(dst, leaf)
+		}
+		return dst
+	}
+	if int(nodeIdx) >= len(b.Nodes) {
+		return dst
+	}
+	n := &b.Nodes[nodeIdx]
+	pl := &b.Planes[n.PlaneID]
+	dmin, dmax := boxPlaneDist(pl, mins, maxs)
+	if dmin > 0 { // box entirely on the front side
+		return b.boxLeafs(n.Children[0], mins, maxs, dst)
+	}
+	if dmax <= 0 { // box entirely on the back side
+		return b.boxLeafs(n.Children[1], mins, maxs, dst)
+	}
+	dst = b.boxLeafs(n.Children[0], mins, maxs, dst)
+	return b.boxLeafs(n.Children[1], mins, maxs, dst)
+}
+
+// boxPlaneDist returns the signed distances of the box's nearest and farthest
+// extents from the plane (dmin <= dmax). Axis-aligned planes (Type 0–2) take a
+// fast path; the general case projects the supporting box corners onto the
+// normal.
+func boxPlaneDist(pl *Plane, mins, maxs [3]float32) (dmin, dmax float32) {
+	if pl.Type >= 0 && pl.Type < 3 {
+		return mins[pl.Type] - pl.Dist, maxs[pl.Type] - pl.Dist
+	}
+	nrm := [3]float32{pl.Normal.X, pl.Normal.Y, pl.Normal.Z}
+	for i, ni := range nrm {
+		if ni >= 0 {
+			dmin += ni * mins[i]
+			dmax += ni * maxs[i]
+		} else {
+			dmin += ni * maxs[i]
+			dmax += ni * mins[i]
+		}
+	}
+	return dmin - pl.Dist, dmax - pl.Dist
 }

@@ -29,7 +29,7 @@ The repo is a Go workspace (`go.work`) binding five sibling modules:
 | [mvd-reader](mvd-reader/README.md)       | `mvd-reader/`       | Event schema + MVD source (Layer 1)               |
 | [mvd-analytics](mvd-analytics/README.md) | `mvd-analytics/`    | Analysis pipeline + Result schema + view API (L2) |
 | [mvd-api](mvd-api/README.md)             | `mvd-api/`          | HTTP REST server on top of `mvd-analytics/view`   |
-| [mvd-mcp](mvd-mcp/README.md)             | `mvd-mcp/`          | Distributable stdio MCP shim that talks to mvd-api |
+| [mvd-mcp](mvd-mcp/README.md)             | `mvd-mcp/`          | MCP shim that talks to mvd-api — stdio (local) or streamable HTTP (hosted) |
 | [mvd-web](mvd-web/README.md)             | `mvd-web/`          | Browser UI + WASM glue (Layer 3)                  |
 
 Each module has its own `go.mod`, is tested in isolation, and can be extracted
@@ -50,15 +50,28 @@ grow on its own timeline. Today's concrete shape:
   into bucketed timelines, event lists, point-in-time state, and loc trails.
   Analytics never peeks at MVD bytes; it consumes events.
 - **Layer 3 consumers** read `Result` or call `view/` and produce something
-  user-facing. There are four today:
+  user-facing. When hosted, the service presents **four surfaces** — REST,
+  MCP over stdio, MCP over HTTP, and the web UI:
   - `mvd-analytics/cmd/qw-analyze` — offline CLI (one demo → JSON / md / events).
-  - `mvd-api` — hosted REST API + two-tier on-disk cache.
-  - `mvd-mcp` — tiny stdio MCP shim that forwards every tool call to a
-    running `mvd-api`. Distributable as a small `.exe` for Claude Desktop /
-    Cursor / Claude Code.
+  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed
+    Result, lazy artifacts). Optionally API-key-gated with a Discord key portal.
+  - `mvd-mcp` — MCP shim that forwards every tool call to a running `mvd-api`.
+    Two transports: **stdio** (a small `.exe` for Claude Desktop / Cursor /
+    Claude Code) and **streamable HTTP** (`-http`, for hosting with per-request
+    API-key auth). See [`deploy/`](deploy/README.md) for the hosted layout.
   - `mvd-web` — browser UI compiled to WASM.
 
 ## Quick start
+
+### Dev container
+
+For a reproducible toolchain (pinned Go, `gh`, `jq`, build deps, Claude Code)
+without installing anything locally, open the repo in a dev-container-aware
+editor — [Zed](https://zed.dev/docs/dev-containers) ("reopen in container"),
+VS Code, or the `devcontainer` CLI. It builds from
+[`.devcontainer/`](.devcontainer/README.md) with no prebuilt image required;
+your git identity and `GH_TOKEN` stay on the host (see that README for the
+environment variables to export).
 
 ### Analyze a demo at the command line
 
@@ -106,7 +119,9 @@ make build-api-linux build-api-darwin build-api-windows
 `mvd-api` hosts the analytics surface for non-Go consumers
 (third-party integrations, the MCP shim, a future web frontend that
 benefits from server-side caching). See
-[`mvd-api/README.md`](mvd-api/README.md) for the endpoint table.
+[`mvd-api/README.md`](mvd-api/README.md) for the endpoint table; the
+running server also describes itself — an OpenAPI 3.1 spec at
+`/openapi.yaml`, browsable at `/docs`.
 
 ### Run MCP locally (`mvd-mcp`)
 
@@ -129,10 +144,12 @@ make build-all-platforms                    # cross-compile both mvd-api and mvd
 
 #### Tool surface
 
-Twenty-one tools — one for discovery, two for cache control + curated
+Twenty-three tools — one for discovery, two for cache control + curated
 summary, the high-level Result-section pass-throughs (KTX demoinfo,
 metadata, frags, damage, loc-graph, chat, backpacks, items, map entities,
-weapon-pickups), and six for the view query layer:
+weapon-pickups), six for the view query layer, and two generic
+DAG-artifact tools (`listArtifacts` + `getArtifact`) that reach any
+servable artifact by name:
 
 | Tool | Backing |
 |---|---|
@@ -160,6 +177,9 @@ weapon-pickups), and six for the view query layer:
 | `getStateAt(demoId, time, fields, …)` | `mvd-api` `/state-at` |
 | `getLocTrails(demoId, minDwellMs, …)` | `mvd-api` `/loc-trails` |
 | `getRegionControl(demoId, windowMs)` | `mvd-api` `/region-control` |
+| **Generic DAG artifacts** | |
+| `listArtifacts()` | `mvd-api` `GET /v1/artifacts` (the DAG manifest) |
+| `getArtifact(demoId, name)` | `mvd-api` `GET /v1/demos/{id}/artifacts/{name}` (any servable artifact by name) |
 
 **Full schemas live in three places:**
 
@@ -237,7 +257,7 @@ score?", "who played?"), the agent should stop there — no
   `demoId`: fetch bytes, parse, cache, serve view analytics."
 - **`loadDemo` / `get*`** go through `mvd-api`, which talks to the
   hub only to download `.mvd.gz` bytes (the rest comes from its
-  two-tier on-disk cache).
+  three-tier on-disk cache: raw bytes, parsed Result, lazy artifacts).
 - `mvd-web` (the browser UI) uses the same Supabase search path
   directly — both consumers behave identically against the hub.
 
@@ -349,10 +369,17 @@ Concrete event types are plain structs: `ServerDataEvent`, `UserInfoEvent`,
 `ItemPickupPrintEvent`, `BackpackPickupPrintEvent`,
 `DemoStartTimestampEvent` (mvdhidden `0x000B` wall-clock anchor),
 `PausedDurationEvent` (mvdhidden `0x000A` per-frame pause duration),
+`SoundEvent` (`svc_sound` — emitting entity + channel + resolved sound
+path; weapon-fire sounds drive the shots analyzer),
+`ProjectileSpawnEvent` / `ProjectileDespawnEvent` (rocket/grenade entity
+flight brackets — the shots analyzer links RL/GL fires to their impacts),
+`BeamEvent` (`svc_temp_entity` lightning beams — `TE_LIGHTNING2` is the
+per-tick LG fire signal),
+`NailsFrameEvent` (`svc_nails` spike snapshots — opt-in, off by default),
 `MoverSpawnEvent` / `MoverStateEvent` (inline brush-model entities —
 lifts, doors, trains — identity plus per-frame origin while moving).
-Domain types carried by events — `ServerData`, `PlayerInfo`,
-`PlayerState`, `Stats` — are source-agnostic.
+Domain types carried by events — `ServerData`, `PlayerInfo` — are
+source-agnostic.
 
 `DeathEvent` / `SpawnEvent` are derived events the parser synthesises
 from `StatHealth` edges so analytics never has to reconstruct
@@ -389,11 +416,22 @@ items (per-item pickup / respawn timeline — works on any MVD source),
 damage (per-hit damage log + aggregates — attacker→victim matrix,
 per-weapon, given/taken, and the EWep victim-weapon buckets — from the
 KTX `mvdhidden_dmgdone` stream, with a scoreboard cross-check),
+shots (per-shot weapon-fire stream — who fired what at exactly what ms,
+from `svc_sound` fire sounds + LG `TE_LIGHTNING2` beams — with same-frame hitscan→damage
+links, entity-tracked rocket/grenade→impact links, per-victim
+enemy/team/self classification, and a KTX-accuracy cross-check),
+aim (per-player aim analysis derived from shots + streams + damage —
+normalized crosshair-error samples for hitscan, LG ramp-onto-target, rocket
+direct/splash, LG reach/whiff, and enemy/team/self hit-counter slices;
+exact target attribution in duels, a labeled nearest-crosshair heuristic
+in team games),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
-`//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
+`//ktx drop` hint), weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
 effectiveness metric; joins to backpacks via `backpackEnt` ==
-`backpacks[].entNum`). Schema v7 introduced `streams` as the canonical
+`backpacks[].entNum`), and opening (schema v51 — each player's
+match-start spawn loc plus the first take of every contested spawner,
+the one-fetch answer to opening-race questions). Schema v7 introduced `streams` as the canonical
 event-rate storage — every per-player field (vitals, weapons, ammo,
 position) recorded at the rate it actually changed. Schema v8 stores
 **every timestamped field** as `int32` milliseconds rather than float
@@ -468,9 +506,16 @@ Schema v20 adds the `damage` section: per-hit damage reconstructed from the
 KTX `mvdhidden_dmgdone` stream, with an attacker→victim `matrix`, per-weapon
 and per-player given/taken totals, the **EWep** victim-weapon buckets
 (`enemyVsSg/Mid/Lg/Rl/Both`, where `ewep = lg + rl + both`), and a
-`scoreboard` cross-check against the KTX end-of-match totals. Positional
-kills (telefrags, stomps) are surfaced separately and kept out of every
-damage figure.
+`scoreboard` cross-check against the KTX end-of-match totals. Since schema
+v54 damage ships in **two families**: the **raw** wire value (the full hit
+including overkill, capped only at 9999) and a **bounded** reconstruction of
+KTX's scoreboard `dmg_dealt` (armor absorbed + health capped to the victim's
+remaining health) carried in additive `bounded` fields. Positional kills
+(telefrags, stomps) are surfaced separately and kept out of `events` /
+`byWeapon` / `matrix` / `ewep`, but their damage now folds into
+`given`/`givenTeam`/`taken` in both families (matching KTX's own
+accumulation). The REST `/damage` `dmg=raw|bounded|both` param picks the
+family.
 
 `streams.global` carries a wall-clock anchor so a consumer can project any
 match-relative game time onto real-world time (for syncing voice tracks /
@@ -512,10 +557,21 @@ geometry. These additive columns are all `omitempty` and BSP-gated where
 noted. Schema v36 is a breaking removal: `match.startTime` / `match.endTime`
 drop out (they duplicated `streams.global.matchStart` / `matchEnd` —
 `startTime` was always 0 and `endTime` always equalled `duration`).
+Schema v37–v38 add two per-opponent visibility tracks to `PlayerStream`,
+both computed lazily and BSP-gated (absent from the default parse and on
+maps without a provisioned BSP, so additive for existing consumers):
+`LOS` (v37) — geometric **line of sight**, the intervals a player has a
+clear ray to an opponent (eye point, nine rays against the BSP clip hull
+and moving movers, bbox corners; directional, so asymmetric sightlines
+survive) — and `PVS` (v38) — server-reproduced **potential visibility**,
+wire-exact against mvdsv's `SV_PlayerVisibleToClient`. PVS ⊇ LOS by
+construction; the PVS-minus-LOS gap is an occlusion-tolerant
+proximity/awareness signal. Both are surfaced through the REST/MCP
+`/los` endpoint, the CLI, and the web map overlay.
 
-Every breaking change bumps `CurrentSchemaVersion` (currently `38`).
+Every schema change bumps `CurrentSchemaVersion` (currently `57`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
-The full per-field reference and the complete v4–v38 migration table live
+The full per-field reference and the complete v4–v57 migration table live
 in [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
 
 ### Running the pipeline
@@ -591,11 +647,13 @@ mvd-analyzer/
 
 ## Documentation
 
+- [.devcontainer/README.md](.devcontainer/README.md) — reproducible dev environment (Zed / VS Code / `devcontainer` CLI)
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — feature-level changes as they land on `main`, with dates and schema bumps
 - [mvd-reader/README.md](mvd-reader/README.md) — ingestion layer, how to add a source
 - [mvd-reader/MVD_FORMAT.md](mvd-reader/MVD_FORMAT.md) — MVD binary format spec with ezQuake references
 - [mvd-analytics/README.md](mvd-analytics/README.md) — pipeline, how to add an analyzer, Result schema
 - [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) — Result JSON schema reference (every field, every section)
+- [mvd-analytics/WRITING_AN_ANALYZER.md](mvd-analytics/WRITING_AN_ANALYZER.md) — tutorial: write and register your own analyzer (DAG node declaration, eager vs lazy, checklist)
 - [mvd-api/README.md](mvd-api/README.md) — REST endpoint table, cache layout, smoke tests
 - [mvd-mcp/README.md](mvd-mcp/README.md) — stdio MCP shim, distribution
 - [mvd-mcp/CLAUDE_DESKTOP.md](mvd-mcp/CLAUDE_DESKTOP.md) — Claude Desktop / Claude Code config snippets
@@ -609,18 +667,6 @@ go test ./mvd-analytics/analyzer/                         # single package
 go test -v -run TestDiagnosticParseDemos \
     ./mvd-analytics/diagnostic/                           # opt-in demo corpus
 ```
-
-### CI and review gate
-
-Pull requests run `PR Tests`, which executes `make test` across the workspace.
-The deterministic review-gate executor can squash-merge only open, non-draft
-PRs targeting `main` when all checks pass, `gate: ready` is present,
-`gate: blocked` is absent, and a top-level gate comment binds the decision to
-the current head with `DECISION: PASS`, `LABEL: gate: ready`, and
-`HEAD_SHA: <full sha>`.
-
-New commits reset terminal gate labels back to `gate: reviewing`; draft PRs
-cannot keep `gate: ready`.
 
 ### Golden corpus
 
@@ -683,8 +729,15 @@ diff -r /tmp/before /tmp/after
 ## Known limitations
 
 1. **Weapon switching scripts**: QW players use scripts that switch weapons
-   faster than MVD stat updates, causing RL/GL shot undercounting in
-   MVD-based tracking. KTX demoinfo stats (when available) are authoritative.
+   faster than MVD stat updates, so any *ammo-delta*-based inference of
+   RL/GL usage undercounts. The `shots` analyzer sidesteps this by keying on
+   the `svc_sound` weapon-fire sound (which carries the firing entity), not
+   ammo — its per-weapon counts match KTX `acc.attacks` exactly across the
+   corpus, including RL/GL. The one weapon still counted from ammo is LG
+   (it has no per-shot fire sound), which can slip by a single cell at a
+   death/discharge boundary. KTX demoinfo stats (when available) remain the
+   authoritative reference, and `shots.reconciliation` cross-checks against
+   them.
 
 2. **Auth name override**: When players authenticate via mvdsv,
    `sv_forcenick` can set the userinfo name to the login. The analyzer
@@ -718,24 +771,45 @@ diff -r /tmp/before /tmp/after
 
 5. **Weapon pickups from backpacks (SSG/SNG/GL/NG)**: KTX emits the
    `//ktx bp` backpack-pickup hint only for RL and LG packs, so
-   `result.WeaponPickups` captures world (spawn) grabs of every weapon
-   but misses super-shotgun / super-nailgun / nailgun / grenade-launcher
-   taken off a dropped pack. Per-weapon totals reconcile with KTX
-   `weapons.<w>.pickups.spawn-taken` but fall short of `total-taken` by
-   the backpack grabs (systemic; RL/LG reconcile fully). See
+   super-shotgun / super-nailgun / nailgun / grenade-launcher grabs off
+   a dropped pack have no authoritative wire signal. In non-weapon-stay
+   modes (dmm1/dmm4) they are simply missing: per-weapon totals
+   reconcile with KTX `weapons.<w>.pickups.spawn-taken` but fall short
+   of `total-taken` by the backpack grabs (systemic; RL/LG reconcile
+   fully). In weapon-stay modes (deathmatch 2/3/5, coop — dmm3
+   duels/2on2 included), where world weapon pickups are synthesized
+   from STAT_ITEMS flips, these pack grabs *do* surface — as
+   `source: "unknown"` entries, since a bit flip away from any weapon
+   pad can't be tied to a specific pack. See
    [mvd-analytics/README.md](mvd-analytics/README.md#weapon-pickups).
 
-6. **Damage is unbound (overkill)**: `result.Damage` is reconstructed
-   from the KTX `mvdhidden_dmgdone` stream, which reports the **full** hit
-   including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
-   end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
-   hit to the victim's remaining health, so the reconstructed totals run
-   higher — most on killing blows. The `damage.scoreboard` cross-check
-   surfaces both side by side; the divergence is expected, not a defect.
-   **Positional kills** — telefrags (the 9999 instakill sentinel) and
-   stomps (landing on a head) — are excluded from all damage figures and
-   tracked separately (`damage.telefrags`/`damage.stomps`, the opt-in
-   `telefrag`/`stomp` events) so they don't swamp `given`/`ewep`/`byWeapon`.
+6. **Damage: raw (unbound) vs bounded families**: `result.Damage` is
+   reconstructed from the KTX `mvdhidden_dmgdone` stream, which reports the
+   **full** hit including overkill, capped only at 9999 (a telefrag reports
+   9999) — the **raw** family. KTX's end-of-match scoreboard
+   (`demoInfo.players[].dmg`) instead bounds each hit to the victim's
+   remaining health; since schema v55 that **bounded** family is
+   derived per hit from the death-value identity (a survived hit is exact
+   by construction; a killing hit's overkill is measured by the death
+   broadcast) and carried in additive `bounded` fields — `bounded` is the
+   REST/MCP **default**, `raw`/`both` the opt-ins, and unfiltered bounded
+   summaries substitute KTX's exact scoreboard figures
+   (`boundedSource: "ktx"`). Residual approximation exists only where the
+   wire hides state (the −99 corpse clamp, respawn-masked deaths,
+   same-frame multi-hit cascades, pent/teamplay armor-share estimates);
+   corpus-wide totals reconcile with `demoInfo` within pinned tolerances
+   (max ±16 per player on given/taken). Godmode
+   is unobservable, so a hit on a godmode holder is reconstructed as if it
+   landed. The reconstruction is **skipped** on `k_midair` / `k_instagib` /
+   `k_dmgfrags` demos (`damage.boundedMode = "skipped:<mode>"`) where the
+   mode rewrites `T_Damage` unobservably; `dmg=bounded` there is a `422
+   bounded_unavailable`. **Positional kills** — telefrags (the 9999
+   instakill sentinel) and stomps (landing on a head) — are kept out of
+   `events` / `byWeapon` / `matrix` / `ewep` / `totalDamage` and tracked
+   separately (`damage.telefrags`/`damage.stomps`, the opt-in
+   `telefrag`/`stomp` events), but their damage **folds into**
+   `given`/`givenTeam`/`taken` in both families (mirroring KTX, which
+   applies no tele/stomp exclusion to its scoreboard accumulation).
    Available only on KTX demos with the MVD-hidden extension; the `EWep`
    victim-weapon buckets additionally depend on reconstructing each
    victim's inventory from `STAT_ITEMS` updates.
@@ -798,6 +872,23 @@ diff -r /tmp/before /tmp/after
    height (h) are **`float32`** — the wire-native sub-unit origin, no
    longer truncated to whole units (which also sharpens the velocity);
    the `h` no-floor sentinel is now `-1000000000`.
+
+9. **Aim target attribution (schema v41, refined v44)**: the `aim` block's
+   crosshair error is computed against the player it attributes each shot
+   to. A **hit** attributes to its server-confirmed victim (exact; nearest
+   by crosshair error when a pellet fire hit several — can be a teammate on
+   team damage, flagged per sample since v45). A **miss** has no confirmed
+   target: in a **duel** the one enemy is exact (`mode: "duel"`); in a
+   **team game** it is a heuristic — the live enemy nearest the crosshair
+   at the fire time (`mode: "team"`), so a missed shot tracking one
+   opponent while another crosses closer to the crosshair can be
+   mis-attributed. Misses are only attributed to an enemy whose position
+   track brackets the fire time and who is alive at it. The rocket
+   "direct hit" count is likewise a heuristic (non-splash damage events ≈
+   direct contacts). These are labeled in the data so consumers can
+   disambiguate. Hit counts include team and self hits (server parity) —
+   the v45 `victimKinds` / per-bucket splits let consumers separate them
+   (a rocket jump is a self hit, not an enemy hit).
 
 ## Reference sources
 

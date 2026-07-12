@@ -206,6 +206,34 @@ func validateFields(fields []string) error {
 
 type unknownFieldError struct{ Code string }
 
-func (e unknownFieldError) Error() string { return "unknown field code " + e.Code }
+// fieldGlosses is the one-word vocabulary the unknown-field error
+// teaches. Selector codes are deliberately the ONLY accepted spelling
+// (no long-name aliases — decision D6, PLAN-api-usability): the output
+// key `loc` names a *representation* of the `li` field chosen by the
+// `loc=` param, and letting it double as a selector spelling invites
+// exactly the confusion the error exists to fix. Keep in sync with the
+// Field* constants above.
+var fieldGlosses = []struct{ code, gloss string }{
+	{FieldHealth, "health"}, {FieldArmor, "armor"}, {FieldArmorType, "armorType"},
+	{FieldLoc, "location"}, {FieldActiveWeapon, "active weapon IT bit"},
+	{FieldPosition, "position x/y/z"}, {FieldView, "view direction"},
+	{FieldHeight, "floor height"}, {FieldLiquid, "liquid state"}, {FieldVelocity, "velocity"},
+	{FieldRL, "has RL"}, {FieldLG, "has LG"}, {FieldGL, "has GL"},
+	{FieldSSG, "has SSG"}, {FieldSNG, "has SNG"},
+	{FieldQuad, "quad"}, {FieldPent, "pent"}, {FieldRing, "ring"},
+	{FieldShells, "shells"}, {FieldNails, "nails"}, {FieldRockets, "rockets"}, {FieldCells, "cells"},
+	{FieldSpawns, "spawn events"}, {FieldDeaths, "death events"},
+}
+
+func (e unknownFieldError) Error() string {
+	msg := "unknown field code " + e.Code + "; valid codes: "
+	for i, fg := range fieldGlosses {
+		if i > 0 {
+			msg += ", "
+		}
+		msg += fg.code + " (" + fg.gloss + ")"
+	}
+	return msg
+}
 
 func fieldErr(code string) error { return unknownFieldError{Code: code} }

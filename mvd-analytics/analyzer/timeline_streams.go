@@ -3,6 +3,7 @@ package analyzer
 import (
 	"math"
 	"sort"
+	"strconv"
 
 	"github.com/mvd-analyzer/mvd-analytics/bspvis"
 	"github.com/mvd-analyzer/mvd-analytics/mapclip"
@@ -37,70 +38,37 @@ func msTime(t float64) int32 {
 // value; position never dedups; intervals open on false→true and close
 // on true→false (or at match end).
 
-// recordHealth dedups against the last seen value before appending.
-// All record* functions take integer milliseconds (schema v8).
-func (b *streamBuilder) recordHealth(tMs int32, v int16) {
-	if n := len(b.health); n > 0 && b.health[n-1].v == v {
+// appendChangeI16 / appendChangeStr are the shared dedup-append
+// primitive behind every change stream: append v only when it differs
+// from the last recorded value. All callers pass integer milliseconds
+// (schema v8). One helper per element type — the int16 vitals/ammo/loc
+// streams and the string armor-type stream.
+func appendChangeI16(col *[]changeI16, tMs int32, v int16) {
+	if n := len(*col); n > 0 && (*col)[n-1].v == v {
 		return
 	}
-	b.health = append(b.health, changeI16{t: tMs, v: v})
+	*col = append(*col, changeI16{t: tMs, v: v})
 }
 
-func (b *streamBuilder) recordArmor(tMs int32, v int16) {
-	if n := len(b.armor); n > 0 && b.armor[n-1].v == v {
+func appendChangeStr(col *[]changeStr, tMs int32, v string) {
+	if n := len(*col); n > 0 && (*col)[n-1].v == v {
 		return
 	}
-	b.armor = append(b.armor, changeI16{t: tMs, v: v})
+	*col = append(*col, changeStr{t: tMs, v: v})
 }
 
+// record* dedup against the last seen value before appending.
+func (b *streamBuilder) recordHealth(tMs int32, v int16)     { appendChangeI16(&b.health, tMs, v) }
+func (b *streamBuilder) recordArmor(tMs int32, v int16)      { appendChangeI16(&b.armor, tMs, v) }
+func (b *streamBuilder) recordArmorType(tMs int32, v string) { appendChangeStr(&b.armorType, tMs, v) }
+func (b *streamBuilder) recordLoc(tMs int32, v int16)        { appendChangeI16(&b.loc, tMs, v) }
 func (b *streamBuilder) recordActiveWeapon(tMs int32, v int16) {
-	if n := len(b.activeWeapon); n > 0 && b.activeWeapon[n-1].v == v {
-		return
-	}
-	b.activeWeapon = append(b.activeWeapon, changeI16{t: tMs, v: v})
+	appendChangeI16(&b.activeWeapon, tMs, v)
 }
-
-func (b *streamBuilder) recordArmorType(tMs int32, v string) {
-	if n := len(b.armorType); n > 0 && b.armorType[n-1].v == v {
-		return
-	}
-	b.armorType = append(b.armorType, changeStr{t: tMs, v: v})
-}
-
-func (b *streamBuilder) recordLoc(tMs int32, v int16) {
-	if n := len(b.loc); n > 0 && b.loc[n-1].v == v {
-		return
-	}
-	b.loc = append(b.loc, changeI16{t: tMs, v: v})
-}
-
-func (b *streamBuilder) recordShells(tMs int32, v int16) {
-	if n := len(b.shells); n > 0 && b.shells[n-1].v == v {
-		return
-	}
-	b.shells = append(b.shells, changeI16{t: tMs, v: v})
-}
-
-func (b *streamBuilder) recordNails(tMs int32, v int16) {
-	if n := len(b.nails); n > 0 && b.nails[n-1].v == v {
-		return
-	}
-	b.nails = append(b.nails, changeI16{t: tMs, v: v})
-}
-
-func (b *streamBuilder) recordRockets(tMs int32, v int16) {
-	if n := len(b.rockets); n > 0 && b.rockets[n-1].v == v {
-		return
-	}
-	b.rockets = append(b.rockets, changeI16{t: tMs, v: v})
-}
-
-func (b *streamBuilder) recordCells(tMs int32, v int16) {
-	if n := len(b.cells); n > 0 && b.cells[n-1].v == v {
-		return
-	}
-	b.cells = append(b.cells, changeI16{t: tMs, v: v})
-}
+func (b *streamBuilder) recordShells(tMs int32, v int16)  { appendChangeI16(&b.shells, tMs, v) }
+func (b *streamBuilder) recordNails(tMs int32, v int16)   { appendChangeI16(&b.nails, tMs, v) }
+func (b *streamBuilder) recordRockets(tMs int32, v int16) { appendChangeI16(&b.rockets, tMs, v) }
+func (b *streamBuilder) recordCells(tMs int32, v int16)   { appendChangeI16(&b.cells, tMs, v) }
 
 // recordPosition appends every native sample (no dedup; D11
 // asymmetry). Time is integer milliseconds — the canonical wire-native
@@ -108,6 +76,9 @@ func (b *streamBuilder) recordCells(tMs int32, v int16) {
 // boundary comparisons in locgraph / blip filter. x/y/z are kept as the
 // wire-native float32 origin (no truncation to whole units). vp/vya are
 // the raw angle16 view pitch/yaw shorts off the wire, stored losslessly.
+//
+// PositionTrack column checklist site 2 (record-time append); see the
+// checklist in result/coord.go (PositionTrack.MarshalJSON).
 func (b *streamBuilder) recordPosition(tMs int32, x, y, z float32, vp, vya int16) {
 	b.posT = append(b.posT, tMs)
 	b.posX = append(b.posX, x)
@@ -187,36 +158,11 @@ func (b *streamBuilder) finalize(matchEndMs int32) {
 // suitable for appending to result.Streams.Players.
 func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 	ps := result.PlayerStream{Name: name, Team: team}
-	if len(b.health) > 0 {
-		ps.Health = make([]result.ChangeI16, len(b.health))
-		for i, c := range b.health {
-			ps.Health[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
-	if len(b.armor) > 0 {
-		ps.Armor = make([]result.ChangeI16, len(b.armor))
-		for i, c := range b.armor {
-			ps.Armor[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
-	if len(b.activeWeapon) > 0 {
-		ps.ActiveWeapon = make([]result.ChangeI16, len(b.activeWeapon))
-		for i, c := range b.activeWeapon {
-			ps.ActiveWeapon[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
-	if len(b.armorType) > 0 {
-		ps.ArmorType = make([]result.ChangeStr, len(b.armorType))
-		for i, c := range b.armorType {
-			ps.ArmorType[i] = result.ChangeStr{T: c.t, V: c.v}
-		}
-	}
-	if len(b.loc) > 0 {
-		ps.Loc = make([]result.ChangeI16, len(b.loc))
-		for i, c := range b.loc {
-			ps.Loc[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
+	ps.Health = toChangeI16s(b.health)
+	ps.Armor = toChangeI16s(b.armor)
+	ps.ArmorType = toChangeStrs(b.armorType)
+	ps.Loc = toChangeI16s(b.loc)
+	ps.ActiveWeapon = toChangeI16s(b.activeWeapon)
 	ps.RL = intervalsToResult(b.rl.closed)
 	ps.LG = intervalsToResult(b.lg.closed)
 	ps.GL = intervalsToResult(b.gl.closed)
@@ -225,30 +171,12 @@ func (b *streamBuilder) toPlayerStream(name, team string) result.PlayerStream {
 	ps.Quad = intervalsToResult(b.quad.closed)
 	ps.Pent = intervalsToResult(b.pent.closed)
 	ps.Ring = intervalsToResult(b.ring.closed)
-	if len(b.shells) > 0 {
-		ps.Shells = make([]result.ChangeI16, len(b.shells))
-		for i, c := range b.shells {
-			ps.Shells[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
-	if len(b.nails) > 0 {
-		ps.Nails = make([]result.ChangeI16, len(b.nails))
-		for i, c := range b.nails {
-			ps.Nails[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
-	if len(b.rockets) > 0 {
-		ps.Rockets = make([]result.ChangeI16, len(b.rockets))
-		for i, c := range b.rockets {
-			ps.Rockets[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
-	if len(b.cells) > 0 {
-		ps.Cells = make([]result.ChangeI16, len(b.cells))
-		for i, c := range b.cells {
-			ps.Cells[i] = result.ChangeI16{T: c.t, V: c.v}
-		}
-	}
+	ps.Shells = toChangeI16s(b.shells)
+	ps.Nails = toChangeI16s(b.nails)
+	ps.Rockets = toChangeI16s(b.rockets)
+	ps.Cells = toChangeI16s(b.cells)
+	// PositionTrack column checklist site 3 (builder → result.PlayerStream);
+	// see the checklist in result/coord.go (PositionTrack.MarshalJSON).
 	if len(b.posT) > 0 {
 		pos := &result.PositionTrack{
 			T: append([]int32(nil), b.posT...),
@@ -302,38 +230,40 @@ func intervalsToResult(in []intervalRecord) []result.Interval {
 	return out
 }
 
+// toChangeI16s / toChangeStrs convert an internal change slice into the
+// public result form, returning nil for an empty stream (so an absent
+// stream marshals via omitempty exactly as before).
+func toChangeI16s(in []changeI16) []result.ChangeI16 {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]result.ChangeI16, len(in))
+	for i, c := range in {
+		out[i] = result.ChangeI16{T: c.t, V: c.v}
+	}
+	return out
+}
+
+func toChangeStrs(in []changeStr) []result.ChangeStr {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]result.ChangeStr, len(in))
+	for i, c := range in {
+		out[i] = result.ChangeStr{T: c.t, V: c.v}
+	}
+	return out
+}
+
 // disambiguatePlayerName resolves D12 (collision suffix). Given a slot
 // and a name that may collide with another slot's resolved name in the
 // same match, return the slot-suffixed form so each slot's stream is
 // uniquely keyed.
 func disambiguatePlayerName(name string, slot int, allNames map[string]int) string {
 	if allNames[name] > 1 {
-		return name + "#" + intToStr(slot)
+		return name + "#" + strconv.Itoa(slot)
 	}
 	return name
-}
-
-func intToStr(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	negative := false
-	if n < 0 {
-		negative = true
-		n = -n
-	}
-	var digits []byte
-	for n > 0 {
-		digits = append(digits, byte('0'+n%10))
-		n /= 10
-	}
-	if negative {
-		digits = append(digits, '-')
-	}
-	for i, j := 0, len(digits)-1; i < j; i, j = i+1, j-1 {
-		digits[i], digits[j] = digits[j], digits[i]
-	}
-	return string(digits)
 }
 
 // appendSlice appends the entries of src that fall within the half-open
@@ -364,8 +294,8 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 	}
 	appendI16(&b.health, src.health)
 	appendI16(&b.armor, src.armor)
-	appendI16(&b.activeWeapon, src.activeWeapon)
 	appendI16(&b.loc, src.loc)
+	appendI16(&b.activeWeapon, src.activeWeapon)
 	appendI16(&b.shells, src.shells)
 	appendI16(&b.nails, src.nails)
 	appendI16(&b.rockets, src.rockets)
@@ -381,6 +311,8 @@ func (b *streamBuilder) appendSlice(src *streamBuilder, startMs, endMs int32) {
 		b.armorType = append(b.armorType, c)
 	}
 
+	// PositionTrack column checklist site 4 (window concatenation); see the
+	// checklist in result/coord.go (PositionTrack.MarshalJSON).
 	hasLi := len(src.posLi) == len(src.posT)
 	hasH := len(src.posH) == len(src.posT)
 	hasLq := len(src.posLq) == len(src.posT)
@@ -597,7 +529,7 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 			// No identity table (e.g. unit test without the registry, or
 			// an untracked slot): fall back to one stream per slot named
 			// by the demoinfo/userinfo resolution.
-			add("slot:"+intToStr(slot), slotToName[slot], slotToTeam[slot], slot, minInt32, maxInt32)
+			add("slot:"+strconv.Itoa(slot), slotToName[slot], slotToTeam[slot], slot, minInt32, maxInt32)
 			continue
 		}
 		for _, s := range sessions {
@@ -641,7 +573,11 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 			continue // phantom identity with no recorded play (e.g. a vacated slot's new occupant who never played)
 		}
 		uniqName := disambiguatePlayerName(g.name, g.repSlot, nameCounts)
-		streams.Players = append(streams.Players, merged.toPlayerStream(uniqName, g.team))
+		// Born-correct team label: in a 1v1 the roster rewrites a participant's
+		// team to their own name (keyed on the resolved display name), replacing
+		// the old normalizeDuelTeams stream rewrite.
+		team := a.core.TeamFor(g.name, g.team)
+		streams.Players = append(streams.Players, merged.toPlayerStream(uniqName, team))
 	}
 	if len(streams.Players) == 0 {
 		return nil
@@ -699,8 +635,7 @@ const (
 // phantom identities (a vacated slot taken by someone who never played).
 func (b *streamBuilder) isEmpty() bool {
 	return len(b.health) == 0 && len(b.armor) == 0 && len(b.armorType) == 0 &&
-		len(b.activeWeapon) == 0 &&
-		len(b.loc) == 0 && len(b.shells) == 0 && len(b.nails) == 0 &&
+		len(b.loc) == 0 && len(b.activeWeapon) == 0 && len(b.shells) == 0 && len(b.nails) == 0 &&
 		len(b.rockets) == 0 && len(b.cells) == 0 && len(b.posT) == 0 &&
 		len(b.spawns) == 0 && len(b.deaths) == 0 &&
 		len(b.rl.closed) == 0 && len(b.lg.closed) == 0 && len(b.gl.closed) == 0 &&
@@ -718,13 +653,12 @@ func (b *streamBuilder) isEmpty() bool {
 // directly on the native-rate position samples so the parse-time
 // bucket data structure is no longer needed.
 //
-// Returns the loc-name → index map for any callers that need to
-// resolve external loc references (e.g. the regions builder).
-func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() (locTable []string, locIndex map[string]int) {
-	locTable = []string{""}
-	locIndex = map[string]int{"": 0}
+// Returns the ordered loc table (index → name) to ship in Result.
+func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() []string {
+	locTable := []string{""}
+	locIndex := map[string]int{"": 0}
 	if a.locFinder == nil {
-		return locTable, locIndex
+		return locTable
 	}
 	thresholdMs := int32(a.blipThresholdMs)
 
@@ -799,7 +733,7 @@ func (a *TimelineAnalyzer) resolveLocsAndFilterBlips() (locTable []string, locIn
 			state.streams.recordLoc(b.posT[i], b.posLi[i])
 		}
 	}
-	return locTable, locIndex
+	return locTable
 }
 
 // resolveFloorHeights populates each player's PositionTrack.H column —

@@ -22,13 +22,14 @@ package analyzer_test
 //    ≤ 30 total per demo on the corpus; if a refactor makes that
 //    materially worse, the test fails.
 //
-// Weapons aren't asserted: in KTX's "weapon stays" mode (1on1, 2on2,
-// some 4on4 configs) weapon entities never disappear from the wire
-// when picked up — the wire-level signal items-analyser depends on
-// is silent. KTX still records the touches via its own counter.
-// Weapon pickup tracking is the responsibility of weapon_pickups.go,
-// which uses KTX hints (and shares the same coverage gap when those
-// hints aren't emitted; out of scope for this test).
+// Weapons aren't asserted in TestItemPickupCountsMatchDemoInfo: in
+// KTX's weapon-stay modes (deathmatch 2/3/5 — the standard duel/2on2
+// dmm3 included) weapon entities never disappear from the wire, so
+// the entity-visibility signal is silent for them. Since schema v46
+// both analyzers recover those pickups from STAT_ITEMS bit flips, and
+// TestWeaponPickupCountsMatchDemoInfo (below) asserts the recovered
+// counts against KTX's own weapon counters on the weapon-stay demos
+// in the corpus.
 //
 // Run:
 //
@@ -113,11 +114,11 @@ func TestItemPickupCountsMatchDemoInfo(t *testing.T) {
 			}
 
 			var (
-				matchCells   int
-				overCells    []cellDiff
-				underCells   []cellDiff
-				totalOver    int
-				totalUnder   int
+				matchCells    int
+				overCells     []cellDiff
+				underCells    []cellDiff
+				totalOver     int
+				totalUnder    int
 				kindBreakdown = map[string]struct{ ana, ktx int }{}
 			)
 
@@ -199,15 +200,160 @@ func TestItemPickupCountsMatchDemoInfo(t *testing.T) {
 	}
 }
 
+// Per-cell and per-demo thresholds for weapon pickup counts on
+// weapon-stay demos. The synthesis is stat-transition-driven so it has
+// known residuals, all measured on the corpus:
+//
+//   - A grant whose bit flip never surfaces on the wire (grab + death
+//     inside one stat interval) is unrecoverable — the raw wire runs
+//     ~1 short of KTX per player on frantic demos. Undercounts both
+//     world and any.
+//   - A pad grab and a pack grab of the same weapon landing within one
+//     stat interval are wire-ambiguous (the pad touch has no hint):
+//     the //ktx bp record claims the flip, so the grant counts as
+//     backpack instead of world. `any` parity is preserved; the world
+//     column undercounts vs KTX spawn-taken. Worst observed: 3 per
+//     cell on a dm4 2on2 where packs pile up on the LG pad.
+//   - A non-RL/LG pack grabbed on a matching weapon pad classifies as
+//     world (over vs spawn-taken). Rare.
+//
+// Corpus worst case: 3 under per cell, 9 under per demo, 1 over per
+// demo. Thresholds sit above that so drift doesn't break the test but
+// 2× regressions do.
+const (
+	maxWeaponsOverPerCell  = 2
+	maxWeaponsOverPerDemo  = 4
+	maxWeaponsUnderPerCell = 4
+	maxWeaponsUnderPerDemo = 12
+)
+
+// TestWeaponPickupCountsMatchDemoInfo asserts the weapon-stay
+// synthesis (schema v46) against KTX's authoritative per-player weapon
+// counters, which stay correct in weapon-stay modes because
+// TookWeaponHandler runs before weapon_touch's early return
+// (ktx/src/items.c:981 → ktx/src/client.c:4749). Only demos whose
+// serverinfo deathmatch is 2/3/5 are checked — everything else keeps
+// the hint-driven path, already covered indirectly by the golden
+// corpus. Two reconciliations per (player, weapon):
+//
+//   - count(weaponPickups, source=="world") vs KTX `spawn-taken`
+//     (first-per-life grabs off a spawn pad), and
+//   - count(weaponPickups, !hadBefore) vs KTX `taken` (first-per-life
+//     from any source — world, backpack, or unknown).
+//
+// In weapon-stay every grant is first-per-life by construction
+// (re-touch while holding the bit is blocked, ktx/src/items.c:844).
+func TestWeaponPickupCountsMatchDemoInfo(t *testing.T) {
+	corpus := loadCorpus(t)
+	if len(corpus) == 0 {
+		t.Skip("qwanalytics/testdata/corpus.json has no entries")
+	}
+
+	cacheDir := filepath.Join("..", "testdata", "cache")
+	weaponKinds := []string{"ssg", "ng", "sng", "gl", "rl", "lg"}
+
+	for _, entry := range corpus {
+		t.Run(entry.Label, func(t *testing.T) {
+			mvdPath := ensureCached(t, cacheDir, entry)
+
+			result, err := analyzer.NewDefaultRegistry().Analyze(mvdPath)
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
+			}
+			if result.DemoInfo == nil {
+				t.Skip("demo has no embedded demoinfo")
+			}
+			dm := ""
+			if result.Metadata != nil {
+				dm = result.Metadata.ServerInfo["deathmatch"]
+			}
+			if dm != "2" && dm != "3" && dm != "5" {
+				t.Skipf("deathmatch=%q — not a weapon-stay demo", dm)
+			}
+
+			world := map[playerKind]int{}
+			firstAny := map[playerKind]int{}
+			for _, wp := range result.WeaponPickups {
+				k := playerKind{wp.Player, wp.Weapon}
+				if wp.Source == "world" {
+					world[k]++
+				}
+				if !wp.HadBefore {
+					firstAny[k]++
+				}
+			}
+
+			var (
+				matchCells            int
+				overCells, underCells []cellDiff
+				totalOver, totalUnder int
+			)
+			check := func(player, weapon string, ana, ktx int) {
+				switch {
+				case ana == ktx:
+					matchCells++
+				case ana > ktx:
+					overCells = append(overCells, cellDiff{player, weapon, ana, ktx, ana - ktx})
+					totalOver += ana - ktx
+				default:
+					underCells = append(underCells, cellDiff{player, weapon, ana, ktx, ktx - ana})
+					totalUnder += ktx - ana
+				}
+			}
+			for _, p := range result.DemoInfo.Players {
+				for _, w := range weaponKinds {
+					var pk *analyzer.DemoInfoPickups
+					if info := p.Weapons[w]; info != nil {
+						pk = info.Pickups
+					}
+					spawnTaken, taken := 0, 0
+					if pk != nil {
+						spawnTaken, taken = pk.SpawnTaken, pk.Taken
+					}
+					check(p.Name, w+"/world", world[playerKind{p.Name, w}], spawnTaken)
+					check(p.Name, w+"/any", firstAny[playerKind{p.Name, w}], taken)
+				}
+			}
+
+			t.Logf("weapon pickup counts: %d cells matched, %d over (+%d), %d under (-%d)",
+				matchCells, len(overCells), totalOver, len(underCells), totalUnder)
+
+			for _, c := range overCells {
+				if c.diff > maxWeaponsOverPerCell {
+					t.Errorf("over-count exceeds per-cell threshold: %s/%s ana=%d ktx=%d (+%d > %d)",
+						c.player, c.kind, c.ana, c.ktx, c.diff, maxWeaponsOverPerCell)
+				}
+			}
+			if totalOver > maxWeaponsOverPerDemo {
+				t.Errorf("aggregate over-count %d exceeds per-demo threshold %d", totalOver, maxWeaponsOverPerDemo)
+				for _, c := range overCells {
+					t.Logf("    over: %s/%s ana=%d ktx=%d", c.player, c.kind, c.ana, c.ktx)
+				}
+			}
+			for _, c := range underCells {
+				if c.diff > maxWeaponsUnderPerCell {
+					t.Errorf("under-count exceeds per-cell threshold: %s/%s ana=%d ktx=%d (-%d > %d)",
+						c.player, c.kind, c.ana, c.ktx, c.diff, maxWeaponsUnderPerCell)
+				}
+			}
+			if totalUnder > maxWeaponsUnderPerDemo {
+				t.Errorf("aggregate under-count %d exceeds per-demo threshold %d", totalUnder, maxWeaponsUnderPerDemo)
+				for _, c := range underCells {
+					t.Logf("    under: %s/%s ana=%d ktx=%d", c.player, c.kind, c.ana, c.ktx)
+				}
+			}
+		})
+	}
+}
+
 type playerKind struct {
 	player string
 	kind   string
 }
 
 type cellDiff struct {
-	player    string
-	kind      string
-	ana, ktx  int
-	diff      int
+	player   string
+	kind     string
+	ana, ktx int
+	diff     int
 }
-

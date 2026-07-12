@@ -80,6 +80,9 @@ type streamBuilder struct {
 	// stay exact int32 here and downstream; converting to float seconds
 	// would reintroduce the precision drift this schema-v8 type was
 	// chosen to eliminate.
+	//
+	// PositionTrack column checklist site 1: adding a pos* column touches
+	// every site listed in result/coord.go (PositionTrack.MarshalJSON).
 	posT   []int32
 	posX   []float32
 	posY   []float32

@@ -4,12 +4,69 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// TestInputSchemasHaveNoNullUnions guards the array/map filter params against
+// the jsonschema-go regression that broke them in production: a nilable Go
+// slice/map reflects to a ["null", X] type union, which several MCP clients
+// coerce to a string, silently disabling filters like players/fields/weapon.
+// addTool/stripNullTypes collapse those unions; this pins the result.
+func TestInputSchemasHaveNoNullUnions(t *testing.T) {
+	for name, s := range map[string]*jsonschema.Schema{
+		"getBuckets":       inputSchema[GetBucketsInput](), // players, fields, reducers(map)
+		"getEvents":        inputSchema[GetEventsInput](),  // players, types
+		"getFrags":         inputSchema[GetFragsInput](),   // players, weapon
+		"getDamage":        inputSchema[GetDamageInput](),  // players, weapons, dmg
+		"getItems":         inputSchema[GetItemsInput](),   // items, players, kinds
+		"getWeaponPickups": inputSchema[GetWeaponPickupsInput](),
+	} {
+		assertNoNullTypes(t, name, s)
+	}
+
+	// The damage-family selector reflects to a plain (non-nullable) string.
+	if d := inputSchema[GetDamageInput]().Properties["dmg"]; d == nil || d.Type != "string" || len(d.Types) != 0 {
+		t.Errorf("getDamage.dmg is not a clean string: %+v", d)
+	}
+
+	// Spot-check the concrete shape: players is a plain array of strings.
+	pl := inputSchema[GetEventsInput]().Properties["players"]
+	if pl == nil || pl.Type != "array" || len(pl.Types) != 0 || pl.Items == nil || pl.Items.Type != "string" {
+		t.Errorf("getEvents.players is not a clean string array: %+v", pl)
+	}
+	// The reducers map is a plain object.
+	if r := inputSchema[GetBucketsInput]().Properties["reducers"]; r == nil || r.Type != "object" || len(r.Types) != 0 {
+		t.Errorf("getBuckets.reducers is not a clean object: %+v", r)
+	}
+}
+
+func assertNoNullTypes(t *testing.T, path string, s *jsonschema.Schema) {
+	t.Helper()
+	if s == nil {
+		return
+	}
+	for _, tp := range s.Types {
+		if tp == "null" {
+			t.Errorf("%s: schema still carries a \"null\" type union: %v", path, s.Types)
+		}
+	}
+	for k, p := range s.Properties {
+		assertNoNullTypes(t, path+"."+k, p)
+	}
+	assertNoNullTypes(t, path+".items", s.Items)
+	assertNoNullTypes(t, path+".additionalProperties", s.AdditionalProperties)
+	for i, p := range s.PrefixItems {
+		assertNoNullTypes(t, path+".prefixItems", p)
+		_ = i
+	}
+}
 
 // fakeBackend implements MCPBackend with canned responses, so the
 // tool-registration tests don't need an HTTP server.
@@ -69,6 +126,9 @@ func (f *fakeBackend) GetFrags(_ context.Context, _ GetFragsInput) (any, error) 
 func (f *fakeBackend) GetDamage(_ context.Context, _ GetDamageInput) (any, error) {
 	return map[string]any{"totalDamage": 50000, "byWeapon": map[string]any{"rl": 30000}}, nil
 }
+func (f *fakeBackend) GetAim(_ context.Context, _ GetAimInput) (any, error) {
+	return map[string]any{"players": []any{map[string]any{"player": "gore", "mode": "team"}}}, nil
+}
 func (f *fakeBackend) GetLocGraph(_ context.Context, _ GetLocGraphInput) (any, error) {
 	return map[string]any{"locs": []any{}, "edges": []any{}}, nil
 }
@@ -86,6 +146,17 @@ func (f *fakeBackend) GetMapEntitiesByMap(_ context.Context, _ GetMapEntitiesByM
 }
 func (f *fakeBackend) GetWeaponPickups(_ context.Context, _ GetWeaponPickupsInput) (any, error) {
 	return []any{}, nil
+}
+func (f *fakeBackend) ListArtifacts(_ context.Context, _ ListArtifactsInput) (any, error) {
+	return map[string]any{"schemaVersion": 49, "artifacts": []any{
+		map[string]any{"name": "frag", "servable": true, "resultKey": "frags"},
+	}}, nil
+}
+func (f *fakeBackend) GetArtifact(_ context.Context, in GetArtifactInput) (any, error) {
+	if in.Name == "" {
+		return nil, errors.New("name required")
+	}
+	return map[string]any{in.Name: map[string]any{}}, nil
 }
 
 // fakeSearcher is the default no-op searcher for backend-focused tests.
@@ -156,14 +227,20 @@ func TestMCP_ListTools(t *testing.T) {
 	want := []string{
 		"searchGames", "loadDemo",
 		"getOverview", "getDemoInfo", "getMetadata", "getFrags", "getDamage",
-		"getLocGraph", "getChat",
+		"getAim", "getLocGraph", "getChat",
 		"getBackpacks", "getItems", "getMapEntitiesByMap", "getWeaponPickups",
 		"getBuckets", "getEvents", "getStreamSlice", "getStateAt",
 		"getLocTrails", "getLocTable", "getRegionControl",
+		"listArtifacts", "getArtifact",
 	}
 	got := map[string]bool{}
 	for _, tool := range res.Tools {
 		got[tool.Name] = true
+		// Every tool is read-only (analytics, no user-facing mutation) so
+		// clients can reduce per-call approval prompts.
+		if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint {
+			t.Errorf("tool %q missing readOnlyHint annotation", tool.Name)
+		}
 	}
 	if len(got) != len(want) {
 		t.Errorf("got %d tools; want %d (names=%v)", len(got), len(want), toolNames(res.Tools))
@@ -299,5 +376,44 @@ func mustDecodeStructured(t *testing.T, res *mcp.CallToolResult, out any) {
 	}
 	if err := json.Unmarshal(data, out); err != nil {
 		t.Fatalf("decode structured content into %T: %v (data=%s)", out, err, string(data))
+	}
+}
+
+// TestMCP_ErrorSurfacesAPIMessage: a REST 4xx body must reach the MCP
+// caller verbatim inside the isError text content — self-describing
+// errors (the enumerated field-code list, invalid params) are how an
+// agent recovers in one turn. Guards the full stack: real proxy
+// backend -> httptest mvd-api returning the standard error envelope ->
+// registerTools -> real go-sdk client session.
+func TestMCP_ErrorSurfacesAPIMessage(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":{"code":"invalid_param","message":"unknown field code loc; valid codes: li (location), h (health)"}}`))
+	}))
+	defer api.Close()
+	b := newProxyBackend(api.URL, "", 5*time.Second)
+	sess := testMCPSession(t, b)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := sess.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "getStateAt",
+		Arguments: map[string]any{"demoId": "gameId:42", "time": 0.3, "fields": []string{"loc"}},
+	})
+	if err != nil {
+		t.Fatalf("CallTool must not fail at the protocol level: %v", err)
+	}
+	if !res.IsError {
+		t.Fatalf("expected isError=true, got %+v", res)
+	}
+	var text string
+	for _, c := range res.Content {
+		if tc, ok := c.(*mcp.TextContent); ok {
+			text += tc.Text
+		}
+	}
+	if !strings.Contains(text, "unknown field code loc") || !strings.Contains(text, "valid codes") {
+		t.Errorf("error text must carry the API message verbatim, got %q", text)
 	}
 }

@@ -50,9 +50,9 @@ func TestParseEntitiesText_ThreeEntities(t *testing.T) {
 // Reject garbage input without panicking.
 func TestParseEntitiesText_Malformed(t *testing.T) {
 	cases := []string{
-		`{ "classname" "foo"`,        // unterminated
-		`{ "classname" }`,            // missing value
-		`{{`,                         // bad nesting
+		`{ "classname" "foo"`, // unterminated
+		`{ "classname" }`,     // missing value
+		`{{`,                  // bad nesting
 	}
 	for _, c := range cases {
 		if _, err := ParseEntitiesText(c); err == nil {

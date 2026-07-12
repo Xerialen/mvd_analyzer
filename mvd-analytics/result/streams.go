@@ -15,6 +15,79 @@ type Streams struct {
 	// (lifts, doors, plats, trains). Schema v32; omitted when the demo has
 	// no movers.
 	Movers []MoverStream `json:"movers,omitempty"`
+
+	// Projectiles and Beams are the spatial weapon-fire streams for the map
+	// view (schema v40): every tracked rocket/grenade flight and every LG
+	// bolt. They are opt-in — built only when the shot-stream flag is set
+	// (qw-analyze -include projectiles,beams; the WASM map build) — so the
+	// default output and golden corpus stay lean. Omitted when not built.
+	Projectiles *ProjectileStreams `json:"projectiles,omitempty"`
+	Beams       *BeamStreams       `json:"beams,omitempty"`
+	// Nails is the nail-flight stream (ng/sng spikes), same columnar shape as
+	// Projectiles with Weapon == "nail". Doubly opt-in: built only when nail
+	// tracking is on AND shot streams are requested, since nails are far
+	// higher volume than rockets/grenades.
+	Nails *ProjectileStreams `json:"nails,omitempty"`
+
+	// LOSComputed records whether the (lazy) line-of-sight pass has run on
+	// this in-memory Result, so a caller (web overlay, -include los, the
+	// mvd-api /los endpoint) computes it on demand exactly once and does not
+	// retry on maps that genuinely have no LOS (no BSP). It latches for the
+	// lifetime of this Result value. The API's tier-2 gob is written once at
+	// parse (before any LOS pass), so a Result re-decoded from it starts with
+	// LOSComputed=false; but the API persists the computed LOS separately in
+	// its tier-3 artifact cache (mvd-api/internal/democache), so the /los pass
+	// is not re-run after a restart or eviction — the warm request splices the
+	// cached intervals and re-sets this latch. Excluded from JSON (`json:"-"`):
+	// consumers read presence/absence of PlayerStream.LOS itself, and the
+	// goldens stay agnostic to it. See analyzer.ComputeLOS and the "los" lazy
+	// artifact (analyzer/materialize.go).
+	LOSComputed bool `json:"-"`
+
+	// ShotStreamsComputed / NailsComputed latch the spatial weapon-fire streams:
+	// the eager build (shots.go buildSpatialStreams) sets each flag truthfully
+	// when its build flag (Registry.BuildShotStreams / BuildNails) was on, so a
+	// consumer can tell "streams built, possibly empty" from "streams never
+	// built". mvd-api turns both flags on for every parse (the always-full
+	// cache), and the WASM web build likewise; the default CLI parse leaves them
+	// off (lean output). There is no on-demand rebuild anymore — phase 12 folded
+	// the streams into the base parse and deleted the lazy "shot-streams"
+	// artifact. JSON-excluded — clients read presence/absence of the streams
+	// themselves.
+	ShotStreamsComputed bool `json:"-"`
+	NailsComputed       bool `json:"-"`
+}
+
+// ProjectileStreams is every tracked rocket/grenade flight as parallel
+// columns (one entry per flight). Flight i renders as a dot moving from
+// (Sx,Sy,Sz)[i] at Spawn[i] to (Ex,Ey,Ez)[i] at End[i], match-relative ms —
+// linear, which is exact for rockets and an approximation for bouncing
+// grenades. Weapon[i] is "rl" or "gl". Built only when shot streams are
+// requested (see Streams.Projectiles).
+type ProjectileStreams struct {
+	Weapon []string  `json:"w"`
+	Spawn  []int32   `json:"s"`
+	End    []int32   `json:"e"`
+	Sx     []float32 `json:"sx"`
+	Sy     []float32 `json:"sy"`
+	Sz     []float32 `json:"sz"`
+	Ex     []float32 `json:"ex"`
+	Ey     []float32 `json:"ey"`
+	Ez     []float32 `json:"ez"`
+}
+
+// BeamStreams is every Lightning Gun bolt (TE_LIGHTNING2) as parallel
+// columns. Beam i is the segment (Sx,Sy,Sz)[i] → (Ex,Ey,Ez)[i] flashed at
+// T[i] match-relative ms (Sx is the muzzle, Ex the trace endpoint). Built
+// only when shot streams are requested (see Streams.Beams).
+type BeamStreams struct {
+	T  []int32   `json:"t"`
+	Sx []float32 `json:"sx"`
+	Sy []float32 `json:"sy"`
+	Sz []float32 `json:"sz"`
+	Ex []float32 `json:"ex"`
+	Ey []float32 `json:"ey"`
+	Ez []float32 `json:"ez"`
 }
 
 // MoverStream is one brush-model entity's pose timeline (a lift, door,
@@ -62,11 +135,8 @@ type PlayerStream struct {
 	Armor     []ChangeI16 `json:"a,omitempty"`
 	ArmorType []ChangeStr `json:"at,omitempty"` // "ga"|"ya"|"ra"|""
 	Loc       []ChangeI16 `json:"li,omitempty"` // index into TimelineAnalysisResult.LocTable
-
-	// Active (selected) weapon as a change stream: the raw STAT_ACTIVEWEAPON
-	// id (the wielded weapon's IT_ bit), dedup'd against last value. Distinct
-	// from the RL/LG/… possession intervals below (which gun the player HOLDS,
-	// not which is currently OUT). Surfaced raw; consumers map the id.
+	// ActiveWeapon is the selected weapon's raw STAT_ACTIVEWEAPON IT_* bit,
+	// distinct from the inventory-presence intervals below.
 	ActiveWeapon []ChangeI16 `json:"w,omitempty"`
 
 	// Inventory presence as half-open intervals [Start, End). One entry
@@ -94,6 +164,52 @@ type PlayerStream struct {
 	// comparisons against PositionTrack.T — see PositionTrack comment).
 	Spawns []int32 `json:"sp,omitempty"`
 	Deaths []int32 `json:"d,omitempty"`
+
+	// LOS records when this player (the looker) had a clear line of sight
+	// to each other player, one LosTrack per opponent ever seen (schema
+	// v37). Line of sight is asymmetric — the looker's single eye point vs.
+	// the target's whole body — so A→B lives in A's LOS and B→A lives in
+	// B's, computed independently. Populated only on maps with a
+	// provisioned BSP (same gate as PositionTrack.H/Lq); absent otherwise.
+	// Raw transitions, no smoothing (surface authoritative data).
+	LOS []LosTrack `json:"los,omitempty"`
+
+	// PVS records when each other player was potentially visible to this player
+	// (the looker), reproducing exactly the server's per-client entity cull —
+	// i.e. whether a live mvdsv would have sent that opponent's entity to this
+	// player's client that frame (SV_PlayerVisibleToClient): the looker's fat PVS
+	// (CM_FatPVS of origin+view_ofs) intersected with the opponent's entity leaf
+	// set (its 1-unit-expanded bounding box, non-solid leaves), or always when
+	// the opponent overflows MAX_ENT_LEAFS. The recorded MVD does not carry this
+	// (the demo recorder sets pvs = NULL and stores every entity); it is
+	// reconstructed here from the position tracks. Same LosTrack shape, same lazy
+	// pass (analyzer.ComputeLOS) and BSP gate as LOS, schema v38. This same test
+	// gates the LOS raycast (cast only for potentially-visible pairs), so PVS ⊇
+	// LOS by construction. The gap between them (on the wire, but no clear ray)
+	// is an occlusion-tolerant proximity/awareness signal. Raw transitions, no
+	// smoothing.
+	PVS []LosTrack `json:"pvs,omitempty"`
+}
+
+// LosTrack is one looker's line-of-sight onto a single opponent, as the
+// half-open [Start, End) ms intervals (match-relative) during which the
+// looker had a clear sightline. It hangs off the looker's PlayerStream; Other
+// identifies the seen player.
+//
+// Other is the index into Streams.Players of the opponent (the seen player),
+// not a name — the compact index the viewer resolves back to a name. A looker
+// has at most one LosTrack per opponent; an opponent never seen is omitted.
+//
+// "Clear" means at least one of the 9 rays from the looker's eye
+// (origin + (0,0,22)) to the opponent's 8 bounding-box corners + box midpoint
+// reached the target without crossing CONTENTS_SOLID — worldspawn or any
+// active mover (door/lift/plat) posed in the way (bspvis.RayHitsSolid /
+// RayHitsSolidModel). Computed only while both players are alive. View
+// direction is not considered: this is geometric visibility, not whether the
+// opponent is within the looker's FOV.
+type LosTrack struct {
+	Other int16      `json:"o"`  // index into Streams.Players (the seen player)
+	Iv    []Interval `json:"iv"` // half-open [Start,End) ms the looker saw Other
 }
 
 // GlobalStream carries the match window plus the demo/wall-clock anchor —
@@ -115,6 +231,12 @@ type PlayerStream struct {
 type GlobalStream struct {
 	MatchStart int32 `json:"matchStart"` // always 0 — the match-relative time origin
 	MatchEnd   int32 `json:"matchEnd"`   // match end (≈ duration) in match-relative ms
+	// TimeBase is "demo" when no match start could be detected: nothing
+	// was rebased, so every timestamp in the whole Result is on the raw
+	// demo clock (t=0 = demo open, warmup included). Omitted on the
+	// normal match-relative result. We cannot invent a time origin —
+	// flagging honestly beats coercing (schema v52).
+	TimeBase string `json:"timeBase,omitempty"`
 	// DemoOffset is ms from demo open (demo t=0, ≈ countdown start) to match
 	// start; it bridges match-relative time and demo time.
 	DemoOffset int32 `json:"demoOffset,omitempty"`

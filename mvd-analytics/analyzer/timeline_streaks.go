@@ -1,6 +1,9 @@
 package analyzer
 
-import "sort"
+import (
+	"math"
+	"sort"
+)
 
 // detectFragStreaks computes the top N longest frag streaks (spawn-to-death runs)
 // ranked by number of frags. Each run starts at spawn and ends at death.
@@ -29,6 +32,25 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerU
 		sort.Float64s(deathsByName[name])
 	}
 
+	// Earliest credited frag per killer, from the canonical frag log.
+	// Serves two purposes below: evidence that a player was already
+	// alive before their first *recorded* spawn (the synthetic
+	// match-start spawn), and seeding allPlayers so a player who never
+	// died — and therefore has no spawn or death records at all — still
+	// gets a run. Mirrors the killEvents condition (no suicides/
+	// teamkills, no generic killers) so obituary noise can't fabricate
+	// a run for a non-player name.
+	fragEntries := a.coreFragEntries()
+	firstFragMs := make(map[string]int32)
+	for _, fe := range fragEntries {
+		if fe.IsSuicide || fe.IsTeamKill || isGenericPlayer(fe.Killer) {
+			continue
+		}
+		if t, ok := firstFragMs[fe.Killer]; !ok || fe.Time < t {
+			firstFragMs[fe.Killer] = fe.Time
+		}
+	}
+
 	// Build runs: pair each spawn with the next death
 	type run struct {
 		playerName string
@@ -46,10 +68,48 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerU
 	for name := range deathsByName {
 		allPlayers[name] = true
 	}
+	for name := range firstFragMs {
+		allPlayers[name] = true
+	}
 
 	for name := range allPlayers {
 		spawns := spawnsByName[name]
 		deaths := deathsByName[name]
+
+		// A player already alive when the match starts has no spawn
+		// recorded for that first life: the parser emits the initial
+		// SpawnEvent during warmup (first alive playerinfo sample),
+		// which handleSpawn drops as pre-match. Without a match-start
+		// spawn the run from match start to first death — often a
+		// player's longest — is never built, and a player who never
+		// died has no runs at all (gameId 224758: reload's 33-frag
+		// opening run). Synthesize the spawn whenever a death or a
+		// credited frag predates the first recorded spawn.
+		//
+		// Strictly after match start, not at it: KTX's match-start
+		// reset can surface as a DeathEvent at exactly StartTime
+		// (gameId 212260: nlk). That death is the reset, not the end
+		// of a real first life — synthesizing a spawn for it would
+		// pair the synthetic spawn with the *next* death and shift
+		// every later run of the player off by one life.
+		if a.timing.Started {
+			startMs := msTime(a.timing.StartTime)
+			firstSpawnMs := int32(math.MaxInt32)
+			if len(spawns) > 0 {
+				firstSpawnMs = msTime(spawns[0])
+			}
+			evidenceMs := int32(math.MaxInt32)
+			if len(deaths) > 0 {
+				evidenceMs = msTime(deaths[0])
+			}
+			if t, ok := firstFragMs[name]; ok && t < evidenceMs {
+				evidenceMs = t
+			}
+			if evidenceMs > startMs && evidenceMs < firstSpawnMs {
+				spawns = append([]float64{a.timing.StartTime}, spawns...)
+			}
+		}
+
 		di := 0
 
 		for _, spawnT := range spawns {
@@ -70,7 +130,7 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerU
 			if deathT > spawnT {
 				runs = append(runs, run{
 					playerName: name,
-					team:       names.TeamForName(name),
+					team:       a.core.TeamFor(name, names.TeamForName(name)),
 					spawnTime:  spawnT,
 					deathTime:  deathT,
 				})
@@ -79,7 +139,6 @@ func (a *TimelineAnalyzer) detectFragStreaks(topN int, names *NameTable, playerU
 	}
 
 	// For each run, count frags and determine effective weapon using FragEntries
-	fragEntries := a.coreFragEntries()
 	var allStreaks []FragStreakEvent
 
 	for _, r := range runs {

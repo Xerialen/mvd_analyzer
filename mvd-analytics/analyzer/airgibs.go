@@ -60,7 +60,14 @@ func airgibsPost(res *Result, co *CoreOutputs) {
 
 	locTable := res.TimelineAnalysis.LocTable
 	userIDs := res.TimelineAnalysis.PlayerUserIDs
+	// Prefer the player-stream team: the timeline stamps stream teams with the
+	// roster's synthetic name-per-player duel labels at birth (co.Names keeps
+	// the raw team). Outside duel mode the two sources agree; co.Names remains
+	// the fallback for players without a stream.
 	teamFor := func(name string) string {
+		if ps := streamByName[name]; ps != nil && ps.Team != "" {
+			return ps.Team
+		}
 		if co != nil && co.Names != nil {
 			return co.Names.TeamForName(name)
 		}
@@ -77,6 +84,9 @@ func airgibsPost(res *Result, co *CoreOutputs) {
 		}
 	}
 
+	// Damage.Events is match-gated at the source (the damage analyzer drops
+	// out-of-match hits), so this loop never sees a warmup / post-match rocket
+	// — do not reintroduce a time or in-match gate here.
 	var events []result.AirgibEvent
 	for _, d := range res.Damage.Events {
 		// Direct enemy rockets only — a rocket model striking the player.

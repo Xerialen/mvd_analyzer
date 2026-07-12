@@ -126,9 +126,7 @@ func (lw *liquidWalk) walk(nodeIdx int32, p1, p2 [3]float32) int {
 		return lwSolid
 	}
 	n := &lw.b.Nodes[nodeIdx]
-	if int(n.PlaneID) >= len(lw.b.Planes) {
-		return lwSolid
-	}
+	// Node.PlaneID is validated in LoadBytes, so the index is safe here.
 	pl := &lw.b.Planes[n.PlaneID]
 	t1 := pl.Normal.X*p1[0] + pl.Normal.Y*p1[1] + pl.Normal.Z*p1[2] - pl.Dist
 	t2 := pl.Normal.X*p2[0] + pl.Normal.Y*p2[1] + pl.Normal.Z*p2[2] - pl.Dist

@@ -81,17 +81,3 @@ func (b *BSP) PVSContains(pvsRow []byte, otherLeaf int) bool {
 	}
 	return pvsRow[byteIdx]&(1<<uint(bitIdx&7)) != 0
 }
-
-// CountPVSVisible returns the number of leaves with the bit set in
-// pvsRow. Useful for diagnostics.
-func CountPVSVisible(pvsRow []byte) int {
-	n := 0
-	for _, by := range pvsRow {
-		v := by
-		for v != 0 {
-			v &= v - 1
-			n++
-		}
-	}
-	return n
-}

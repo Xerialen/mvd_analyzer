@@ -1,0 +1,64 @@
+# systemd unit for mvd-mcp (MCP over streamable HTTP).
+#
+# The shim proxies to a running mvd-api on localhost. MCP itself is
+# UNAUTHENTICATED (web-chat friendly); the shim authenticates to mvd-api
+# with the operator-issued service key in MVD_API_KEY (from the
+# EnvironmentFile below), forwarded on every proxied call. Issue it with:
+#   mvd-api keys issue -auth-dir /opt/mvd/auth -service -note mvd-mcp
+#
+# EDIT before use: User=/Group=, the ExecStart binary path, -api if
+# mvd-api does not listen on :8080, and put MVD_API_KEY=qwmvd_… in
+# /etc/mvd/mcp.env (root-owned, 0600). The `-` prefix makes the file
+# optional so a no-auth (localhost-mode) mvd-api needs no key at all.
+#
+# Install: copy to /etc/systemd/system/mvd-mcp.service, then
+#   systemctl daemon-reload && systemctl enable --now mvd-mcp
+
+[Unit]
+Description=mvd-mcp — MCP streamable-HTTP server (proxies to mvd-api)
+After=network-online.target mvd-api.service
+Wants=network-online.target
+# Best-effort: prefer mvd-api up first, but mvd-mcp tolerates a cold API:
+# MCP initialize / tools-list succeed even with mvd-api down (they touch no
+# backend); only tool calls fail — with proxy connection errors — until
+# mvd-api is up.
+
+[Service]
+Type=simple
+User=mvd
+Group=mvd
+WorkingDirectory=/opt/mvd
+EnvironmentFile=-/etc/mvd/mcp.env
+
+# -http binds the MCP server; -api points at the local REST API. Caddy
+# routes /mcp* here (deploy/Caddyfile). The listen port MUST match that.
+#
+# -http binds loopback ONLY: Caddy is the sole public surface and must run
+# on this same box. A public bind (e.g. :8081) exposes anonymous plaintext
+# MCP directly and lets callers spoof X-Forwarded-For past Caddy — bind a
+# LAN/all-interfaces address only if you know why.
+ExecStart=/opt/mvd/bin/mvd-mcp \
+    -http 127.0.0.1:8081 \
+    -api http://localhost:8080
+
+Restart=on-failure
+RestartSec=2s
+
+# --- Hardening --------------------------------------------------------------
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+# The shim writes nothing to disk.
+ProtectClock=true
+
+[Install]
+WantedBy=multi-user.target

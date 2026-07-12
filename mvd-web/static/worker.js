@@ -135,9 +135,14 @@ initWasm().catch(err => {
 });
 
 onmessage = function(e) {
+    // reqId correlates each reply with its caller's pending promise on the
+    // main thread (see app.js pendingWorkerReqs). Echo it back on every
+    // request-scoped reply; the un-correlated init-failure 'error' above has
+    // no reqId and the main thread drops it.
+    const reqId = e.data.reqId;
     if (e.data.type === 'analyze') {
         if (!wasmReady) {
-            postMessage({ type: 'error', message: 'WASM not loaded yet' });
+            postMessage({ type: 'error', reqId, message: 'WASM not loaded yet' });
             return;
         }
         try {
@@ -177,7 +182,7 @@ onmessage = function(e) {
             // are built *after* the result is sent. The worker being busy
             // here does not block the main thread — the result message is
             // already queued for it and renders while we compute.
-            postMessage({ type: 'result', json: jsonStr, timings });
+            postMessage({ type: 'result', reqId, json: jsonStr, timings });
 
             // ---- Deferred: legacy 50ms buckets + region-control states ----
             // Schema v7: highResBuckets and regionControl.bucketStates are
@@ -188,25 +193,24 @@ onmessage = function(e) {
             try {
                 bucketsJSON = getDefaultBuckets();
             } catch (err) {
+                console.warn('[mvd-worker] getDefaultBuckets failed:', err);
                 bucketsJSON = '';
             }
             const bucketsMs = performance.now() - tBuckets;
 
+            // Region control states for the default region layout. The Go side
+            // still holds the analysed result, so an argument-less
+            // recomputeRegionControl() rebuilds the bucket states from its
+            // stored default regions — no need to JSON.parse the multi-MB
+            // result here just to hand the default regions straight back. On a
+            // non-binary team layout it returns an {"error":...} envelope,
+            // which applyDeferredBuckets tolerates (it skips when rs.error set).
             let regionStatesJSON = '';
             const tRegion = performance.now();
             try {
-                const parsed = JSON.parse(jsonStr);
-                const rc = parsed.timelineAnalysis && parsed.timelineAnalysis.regionControl;
-                if (rc && rc.regions && rc.teamA && rc.teamB) {
-                    const overrideJSON = JSON.stringify({
-                        regions: rc.regions.map(r => ({
-                            name: r.name,
-                            locs: [...new Set((r.points || []).map(p => p.name))],
-                        })),
-                    });
-                    regionStatesJSON = recomputeRegionControl(overrideJSON);
-                }
+                regionStatesJSON = recomputeRegionControl();
             } catch (err) {
+                console.warn('[mvd-worker] deferred recomputeRegionControl failed:', err);
                 regionStatesJSON = '';
             }
             const regionMs = performance.now() - tRegion;
@@ -217,9 +221,9 @@ onmessage = function(e) {
                 `recomputeRegionControl ${regionMs.toFixed(1)} ms`
             );
 
-            postMessage({ type: 'buckets', bucketsJSON, regionStatesJSON, bucketsMs, regionMs });
+            postMessage({ type: 'buckets', reqId, bucketsJSON, regionStatesJSON, bucketsMs, regionMs });
         } catch (err) {
-            postMessage({ type: 'error', message: err.message || String(err) });
+            postMessage({ type: 'error', reqId, message: err.message || String(err) });
         }
     } else if (e.data.type === 'recomputeRegions') {
         // recomputeRegionControl is a Go export living on this worker's
@@ -227,14 +231,32 @@ onmessage = function(e) {
         // from the main page would NameError — that's what the v6
         // shipping bug was — so the round-trip goes through here.
         if (!wasmReady) {
-            postMessage({ type: 'recompute_error', message: 'WASM not loaded yet' });
+            postMessage({ type: 'recompute_error', reqId, message: 'WASM not loaded yet' });
             return;
         }
         try {
             const jsonStr = recomputeRegionControl(e.data.overrideJSON);
-            postMessage({ type: 'recompute_result', json: jsonStr });
+            postMessage({ type: 'recompute_result', reqId, json: jsonStr });
         } catch (err) {
-            postMessage({ type: 'recompute_error', message: err.message || String(err) });
+            postMessage({ type: 'recompute_error', reqId, message: err.message || String(err) });
+        }
+    } else if (e.data.type === 'computeLos') {
+        // Line of sight is computed lazily on this worker (same reason as
+        // recomputeRegions — computeLineOfSight is a Go export on the worker
+        // scope). The map overlay asks for it on first toggle; the heavy
+        // raycast pass runs here so the main thread stays responsive.
+        if (!wasmReady) {
+            postMessage({ type: 'los_error', reqId, message: 'WASM not loaded yet' });
+            return;
+        }
+        try {
+            const tLos = performance.now();
+            const jsonStr = computeLineOfSight();
+            const losMs = performance.now() - tLos;
+            console.log(`[mvd-timing] computeLineOfSight ${losMs.toFixed(1)} ms`);
+            postMessage({ type: 'los_result', reqId, json: jsonStr });
+        } catch (err) {
+            postMessage({ type: 'los_error', reqId, message: err.message || String(err) });
         }
     }
 };

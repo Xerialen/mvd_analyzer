@@ -26,17 +26,17 @@ talks to it through a JS shim.
     XHR is still allowed inside Web Workers.
   - `wasm_exec.js` — Go runtime glue, copied from the Go toolchain at
     build time.
+  - `vendor/` — the frontend's only third-party runtime code, vendored
+    (no CDN): Cytoscape + fcose for the loc graph and the Rajdhani/Inter
+    web fonts. Pinned, sha256-recorded and committed; see
+    [`vendor/README.md`](static/vendor/README.md).
   - `maps/` — pre-generated per-map floor polygon JSON (version 2:
-    per-vertex x,y,z — drives the map's coloured floor plan). Committed; the
+    per-vertex x,y,z — drives the map tab's 3D view). Committed; the
     frontend fetches `maps/<basename>.json` at demo load.
-  - `maps3d/` — pre-generated per-map full worldspawn mesh (walls +
-    ceilings) as a compact little-endian binary (`M3D1` header + float32
-    triangle soup; see `mapgeom.EncodeMesh3D`). Drives the WebGL 3D shell;
-    fetched as `maps3d/<basename>.bin` at demo load. A starter set ships
-    (dm2/dm3/e1m2/schloss/phantoma); generate more with
-    `mapgen -mesh3d-out`.
-  - `lib/three/` — vendored Three.js (pinned, ESM) for the WebGL renderer.
-  - `map-gl.js` — the WebGL/Three.js 3D map renderer (`window.MapGL`).
+  - `maps3d/` — optional full worldspawn meshes (walls + ceilings) in
+    compact M3D1 binary form for dm2/dm3/e1m2/schloss/phantoma.
+  - `lib/three/` + `map-gl.js` — vendored Three.js and the opt-in WebGL
+    **Full shell** renderer retained from the Xerialen fork.
   - `probe.html` — tiny dev page used to probe runtime features.
 
 ## Build and deploy
@@ -55,7 +55,10 @@ dist/
   analyzer.wasm               ~4 MB, the WASM bundle
   wasm_exec.js                Go glue
   index.html, styles.css,
-  app.js, worker.js           frontend
+  app.js, map-gl.js,
+  worker.js                   frontend
+  lib/, maps3d/               optional WebGL full-shell assets
+  vendor/                     vendored Cytoscape + fcose + web fonts
   maps/                       pre-generated map geometry
   locs/                       .loc files copied from mvd-analytics/loc/data
   bsps/                       BSP files from `make bsps` for the locvis
@@ -78,7 +81,34 @@ A slim top bar (wordmark + commit-hash version + GitHub link) sits
 above a Grafana-style frame: a fixed left **sidebar** with one button
 per analysis tab, and a **main pane** that fills the rest of the
 viewport (no width cap). Sidebar order is `Search`, `Summary`,
-`Timeline`, `Chat`, `Map`, `Locs & Regions`, `Key Moments`, `Pack Drops`.
+`Timeline`, `Chat`, `Map`, `Locs & Regions`, `Key Moments`, `Pack Drops`,
+`Pickups`, `Aim Stats`.
+
+The **Aim Stats** tab (experimental) is a thin renderer over the Go-computed
+`result.aim` block: all-players accuracy tables (counts plus
+share-of-fires % columns, so players with different shot volumes compare
+directly) and — driven by a per-player picker inside the Crosshair placement
+panel, the only place it applies — a smoothed crosshair-density image
+(hitscan; a Gaussian-smoothed
+2-D histogram on canvas with a colorbar, hull box marked; radius 1 ≈ the
+hitbox edge, so it's range-comparable) split into LG and SG, per-axis
+**yaw / pitch marginal histograms** stacked under each image (zero-centered
+bins over the image's extents; their clamp edge bins keep the outliers the
+image drops, and the on-hull |n| ≤ 1 band is shaded), an LG shaft-time
+(ramp) histogram in the same style under the LG image (bars = hit % per
+100 ms cell on a dynamic labelled scale, bar opacity = sample size), a
+rocket direct/splash panel, and an LG-whiffs split. All geometry/attribution lives
+in `mvd-analytics/analyzer/aim.go`; the tab only bins and paints. Target
+attribution: hits use the server-confirmed victim (exact in duels and team
+games alike); misses are exact in duels and a labeled nearest-crosshair
+heuristic in team games, only among enemies alive at the fire time.
+A **Victims** filter (All / Enemy / Team / Self) slices every panel by who
+the shots hit — the tables read the Go-computed per-bucket counter slices
+(`WeaponAim.enemy/team/self`), the heatmaps/marginals filter samples by the
+per-sample `team` flag, and the LG ramp rescores its bars; **All** (the
+default) matches the server's authoritative numbers (KTX counts team and
+self hits too). Duels hide the Team option; Self (rl/gl self-splash —
+rocket jumps) has no crosshair samples, tables only.
 The **Key Moments** tab has three tables: powerup runs, longest frag
 streaks, and a full-width **Airborne Rocket Gibs** table — enemy rocket
 hits on airborne victims (`timelineAnalysis.airgibs`), sortable by any
@@ -141,7 +171,15 @@ requires decoding the whole demo — cheap to *read*, not cheap to *skip
 ahead to*.
 
 The WASM boundary is the only place that bridges Go and JS. The rest of
-the frontend is dependency-free JS plus a sprinkle of CSS.
+the frontend has **no runtime CDN dependencies**: its own vanilla JS plus
+a sprinkle of CSS, with Cytoscape + fcose (the Locs & Regions loc graph)
+and the Rajdhani/Inter web fonts vendored under
+[`static/vendor/`](static/vendor/README.md) — pinned, sha256-recorded,
+committed and copied to `dist/` by `make build`, so the app works when
+unpkg / Google Fonts are unreachable. To bump a vendored version: replace
+the file (keeping the version in its name), update the matching
+`<script>` / `<link>` in `index.html`, and update the row in
+`static/vendor/README.md` (see that file for the full procedure).
 
 ## Performance timing (console)
 
@@ -302,21 +340,12 @@ full-sync tick in `animatePlayback`.
 
 ## Map-tab 3D view
 
-**Renderer.** The tilted 3D view is drawn with **WebGL/Three.js**
-(`static/map-gl.js`, Three.js vendored under `static/lib/three/`), while
-the flat top-down view stays on the Canvas-2D path in `app.js`. `renderMap`
-routes between them: when `mapIs3D()` is true and the WebGL renderer is
-ready it pushes a per-frame snapshot (`glFrameState`) to `window.MapGL`
-and returns, so the legacy tilted-Canvas pass no longer runs. The two
-renderers share one data source — players, items, deaths, trails,
-occupancy, region-control, movers, liquids, loc floors/labels and
-learn-mode entities all read the same `mapState` / `result.streams`
-fields the 2D path uses, so 3D and 2D agree at any instant. The WebGL
-view loads a full worldspawn shell (walls + ceilings) from
-`static/maps3d/<map>.bin` (see below); maps without a `.bin` fall back to
-the coloured floor plan only. A small set of maps ships pre-generated
-(dm2, dm3, e1m2, schloss, phantoma); regenerate any map with
-`go run ./mvd-analytics/cmd/mapgen -bsp-dir <dir> -mesh3d-out mvd-web/static/maps3d -map <name>`.
+The current Canvas renderer remains the default because it carries the newest
+projectile, beam, nail, LOS and PVS overlays. **Full shell** is an explicit
+compatibility mode: on the five maps with a committed `maps3d/*.bin` it opens
+the fork's WebGL orbit view with the complete BSP worldspawn shell, including
+walls and ceilings. Other maps degrade to the colored floor geometry. Generate
+or refresh a shell with `mapgen -mesh3d-out mvd-web/static/maps3d -map <name>`.
 
 The map opens in a default **isometric** view — yaw 45°, tilted 55°
 from top-down (≈ the true isometric angle), so floors at different
@@ -405,6 +434,25 @@ speed (5 u/s per world unit) in the player's team colour, hidden below
 10 u/s. Both project the shaft through the orbit camera with a screen-space
 arrowhead at the projected tip, so they tilt correctly with the view.
 
+**LOS / PVS overlays** — two optional per-player toggles, **LOS** and
+**PVS**, draw inter-player visibility lines on the map (`drawLosLines` →
+`drawVisLines`). **LOS** is geometric line of sight: a line between two
+players who currently have a clear sightline (origin-to-origin ray
+against the map's BSP clip hull and any moving movers); it is
+directional, so a one-way sightline shows on the looker's side only.
+**PVS** is the server-reproduced potential-visibility set — whether a
+live mvdsv would have sent that opponent's entity to this player's client
+that frame (wire-exact against `SV_PlayerVisibleToClient`), regardless of
+occlusion. PVS ⊇ LOS by construction, so PVS draws first as thinner,
+fainter lines (`PVS_STYLE`) under the thicker LOS lines (`LOS_STYLE`),
+and the PVS-minus-LOS gap reads as occlusion-tolerant proximity. Both
+toggles ride **one** lazy compute pass over the already-parsed demo
+(`ensureLosComputed` → the `computeLineOfSight` worker export; the
+`mapState.losComputed` latch fills `losByPair` and `pvsByPair` together
+on first need), so the first toggle-on incurs the heaviest
+position-derived pass and later toggles are instant. BSP-gated — the
+toggles are inert on maps without a provisioned BSP.
+
 The floor model renders into an offscreen canvas keyed by the full camera
 state (`drawCachedWorld`); steady playback just blits it (~1 ms), only
 rotation/pan/zoom/focus changes re-render. The painter sort scatters
@@ -433,6 +481,21 @@ double-blend, no painter-sort flicker. A mover sampled `vis=false` is hidden. Mi
 either piece (older geometry, or a demo with no movers) is a graceful
 no-op. Code: `drawMovers` / `moverPoseAt` / `moverMeshFaces` /
 `drawMoverMesh`.
+
+**Weapon fire** — with `streams.projectiles` / `streams.beams` (schema
+v40, built by the WASM map analysis), rocket/grenade flights and LG bolts
+overlay the map during playback. Each in-flight rocket/grenade is a small
+dot interpolated along its spawn→despawn segment at the current time
+(orange for `rl`, green for `gl`); each LG bolt is a brief light-blue line
+from muzzle to impact, flashed for ~60 ms around its instant. Both are
+columnar parallel-array streams; absent (e.g. a non-WASM result that
+didn't build them) is a graceful no-op. Nails (`streams.nails`, small
+yellow dots) render the same way and are now built by the web parse too
+(`BuildNails` in `cmd/wasm/main.go`, added alongside `BuildShotStreams`):
+the map overlay lights up automatically and the Aim tab's ng/sng blocks
+fill in. Nails are the highest-volume stream but add only ~3–4% to the
+parse, all in browser memory (no extra download). Code: `drawProjectiles`
+/ `drawBeams` / `drawFlightDots`.
 
 **Liquids** — version-4 geometry also carries `liquids` (water/slime/lava
 volume meshes). Rendered as a shaded, depth-sorted translucent solid

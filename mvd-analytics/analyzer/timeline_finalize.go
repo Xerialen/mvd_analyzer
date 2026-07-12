@@ -76,15 +76,23 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// Resolve each frag to the identity that held the slot *at frag time*
 	// (resolveAt) so a player's pre-reconnect frags don't get relabelled
 	// with whoever later took their slot.
+	//
+	// Gate on a resolvable *name*, not team — same rationale as
+	// killEvents below. A duel player with an empty userinfo/demoinfo
+	// team (gameId 224758: iddQd) resolves to team "" for the whole
+	// match; team-gating silently dropped every one of their events, and
+	// the duel path could only paper over FragEvents by re-synthesising them
+	// from obituaries. Team stays best-effort: "" when unresolvable, rewritten
+	// to the player's name by the roster (co.TeamFor) in 1v1s.
 	fragEvents := make([]TimelineFragEvent, 0, len(a.rawFrags))
 	for _, raw := range a.rawFrags {
 		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
 
-		if team != "" {
+		if playerName != "" {
 			fragEvents = append(fragEvents, TimelineFragEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
-				Team:   team,
+				Team:   a.core.TeamFor(playerName, team),
 				Delta:  raw.Delta,
 			})
 		}
@@ -92,17 +100,17 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 
 	// Convert raw deaths to per-player death events for the frags/deaths
 	// drill-down. Same authoritative protocol DeathEvent source and same
-	// at-death-time identity resolution / team-gating as fragEvents, so a
+	// at-death-time identity resolution / name-gating as fragEvents, so a
 	// player's death count here matches their scoreboard deaths (and thus
 	// KTX efficiency = frags/(frags+deaths)).
 	deathEvents := make([]TimelineDeathEvent, 0, len(a.rawDeaths))
 	for _, raw := range a.rawDeaths {
 		playerName, team := a.resolveAt(raw.PlayerNum, msTime(raw.Time))
-		if team != "" {
+		if playerName != "" {
 			deathEvents = append(deathEvents, TimelineDeathEvent{
 				Time:   msTime(raw.Time),
 				Player: playerName,
-				Team:   team,
+				Team:   a.core.TeamFor(playerName, team),
 			})
 		}
 	}
@@ -115,7 +123,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// reconciles with byPlayer.kills and the kills-based efficiency.
 	// FragEntry.Time is already int32 ms.
 	//
-	// Unlike fragEvents/deathEvents we do NOT gate on a resolvable team:
+	// Like fragEvents/deathEvents we do NOT gate on a resolvable team:
 	// byPlayer.kills doesn't either, so gating here would silently drop a
 	// player's whole kill curve in POV demos where the name↔team join is
 	// incomplete (the consumer groups by player name and ignores team).
@@ -132,12 +140,33 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		killEvents = append(killEvents, TimelineKillEvent{
 			Time:   fe.Time,
 			Player: fe.Killer,
-			Team:   team,
+			Team:   a.core.TeamFor(fe.Killer, team),
 		})
 	}
 
+	// Effective match end, computed once and shared by the powerup-close
+	// pass (detectPowerupEvents) and the per-player stream finalize
+	// (buildStreamsResult → streams.finalize). Both flush still-open
+	// intervals at this instant, so they must agree — otherwise a demo cut
+	// before intermission closes quad/pent/ring at one time and rl/lg/gl/…
+	// at another (F13). timing.EndTime is the explicit end; without it we
+	// fall back to the GLOBAL latest position sample (not any single
+	// player's) so every player's intervals close at the same time. posT is
+	// int32 ms (schema v8); EndTime is float64 seconds, converted here.
+	matchEnd := a.timing.EndTime
+	if matchEnd == 0 {
+		for _, state := range a.playerState {
+			if n := len(state.streams.posT); n > 0 {
+				if t := float64(state.streams.posT[n-1]) * 0.001; t > matchEnd {
+					matchEnd = t
+				}
+			}
+		}
+	}
+	matchEndMs := msTime(matchEnd)
+
 	// Detect powerup pickup events for Key Moments
-	powerupEvents := a.detectPowerupEvents()
+	powerupEvents := a.detectPowerupEvents(matchEndMs)
 
 	// Count frags during each powerup run
 	for i := range powerupEvents {
@@ -186,7 +215,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// short-residence wall-bleed via the blip filter, and emit the
 	// resulting sparse Loc change stream into each player's stream
 	// builder. Returns the ordered locTable we'll ship in Result.
-	locTable, locIndex := a.resolveLocsAndFilterBlips()
+	locTable := a.resolveLocsAndFilterBlips()
 
 	// Trace each player's height above the floor beneath them at every
 	// native-rate position sample (schema v24). Runs per-slot before the
@@ -202,7 +231,6 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	if len(locTable) <= 1 {
 		locTable = nil
 	}
-	_ = locIndex // used by the regions builder below if regions are configured
 
 	// Build name -> UserID mapping for Hub viewer links. Key by the
 	// reconnect-unified identity active on each slot session, and skip
@@ -266,39 +294,26 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		PlayerSlots:   playerSlotsByName(slotToName),
 	}
 
-	matchEnd := a.timing.EndTime
-	if matchEnd == 0 {
-		// Fall back to latest position sample if timing didn't observe
-		// an explicit end (e.g. demo cut short before intermission).
-		// posT is int32 ms (schema v8); convert to seconds for the
-		// comparison against the float64 EndTime placeholder.
-		for _, state := range a.playerState {
-			if n := len(state.streams.posT); n > 0 {
-				if t := float64(state.streams.posT[n-1]) * 0.001; t > matchEnd {
-					matchEnd = t
-				}
-			}
-		}
-	}
+	// matchEnd (and matchEndMs) were computed once above and already fed the
+	// powerup-close pass; buildStreamsResult reuses the same value so weapon
+	// and powerup intervals close consistently (F13).
 	if streams := a.buildStreamsResult(slotToName, slotToTeam, a.timing.StartTime, matchEnd); streams != nil {
 		result.Streams = streams
 
 		// As of schema v23 the demo/wall-clock anchor lives on Streams.Global —
 		// it describes how to map a stream's match time to wall-clock time, so
 		// it belongs next to the match window rather than in TimelineAnalysis.
-
-		// Wall-clock anchor. The mvdhidden 0x000B block is the millisecond-
-		// accurate source; when it is absent, deriveDemoStartAnchor fills these
-		// from the whole-second serverinfo `epoch` cvar in post-processing.
-		if a.demoStartFromHidden {
-			result.Streams.Global.DemoStartUnixMs = a.demoStartUnixMs
-			result.Streams.Global.DemoStartAccuracyMs = 1
+		// The clock owns both the anchor (0x000B ms / serverinfo `epoch` secs)
+		// and the coalesced pauses; the timeline writes them here because it
+		// owns Streams.Global. AtMs is demo-relative at this point; rebaseToMatch
+		// (below) shifts it, and Global.MatchStart/MatchEnd/DemoOffset, once the
+		// match-start shift is applied.
+		if a.core != nil && a.core.Clock != nil {
+			clk := a.core.Clock
+			result.Streams.Global.DemoStartUnixMs = clk.DemoStartUnixMs
+			result.Streams.Global.DemoStartAccuracyMs = clk.DemoStartAccuracyMs
+			result.Streams.Global.Pauses = append([]TimelinePause(nil), clk.Pauses...)
 		}
-
-		// Coalesce paused_duration samples into per-pause segments. AtMs is
-		// demo-relative here; normalizeMatchRelativeTimes rebases it (and sets
-		// Global.DemoOffset) once the match-start shift is known.
-		result.Streams.Global.Pauses = coalescePauses(a.rawPauses)
 	}
 
 	// Region control: detect regions + resolve team labels. The
@@ -358,7 +373,247 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 			result.TimelineAnalysis.RegionControl = regionControl
 		}
 	}
+
+	// Born-correct timestamps: rebase every timeline-owned time field from the
+	// demo clock to match-relative, using the shift the clock published. This
+	// replaces the timeline's share of the old normalizeMatchRelativeTimes
+	// rebase; it runs here so the timeline's own artifacts leave Finalize
+	// already on the match clock (no post-hoc whole-Result pass).
+	if ms := a.core.MatchStartMs(); ms > 0 {
+		a.rebaseToMatch(result, ms)
+		synthesizeMatchStartSpawns(result.Streams)
+	} else {
+		flagDemoTimeBase(result)
+	}
+
+	// Duel: synthesise the frag-score timeline for a participant who never
+	// emitted svc_updatefrags (a frogbot) and so is absent from the frag-update
+	// stream above, sourcing their entries from the obituary-based frag log
+	// (result.Frags, which captures bots and humans identically). Runs after the
+	// rebase so both the existing FragEvents and the frag log are on the match
+	// clock. Formerly the normalizeDuelTeams FragEvents block.
+	a.synthesizeDuelFragEvents(result)
 	return nil
+}
+
+// playerSlotsByName inverts the slot-to-name mapping for export as the
+// stable join key between KDLOG edicts (slot+1) and canonical player names.
+// On a collision, the lowest slot wins deterministically.
+func playerSlotsByName(slotToName map[int]string) map[string]int {
+	if len(slotToName) == 0 {
+		return nil
+	}
+	out := make(map[string]int, len(slotToName))
+	for slot, name := range slotToName {
+		if prev, ok := out[name]; !ok || slot < prev {
+			out[name] = slot
+		}
+	}
+	return out
+}
+
+// synthesizeDuelFragEvents fills in a duel participant's frag-score timeline
+// from the obituary frag log when they never appeared as a killer in the
+// svc_updatefrags-derived FragEvents (the frogbot case). No-op outside duel
+// mode or when the frag log is empty. The synthesised entries carry team ==
+// name (the duel label) and are merged by time so consumers assuming a
+// monotonic slice keep working.
+func (a *TimelineAnalyzer) synthesizeDuelFragEvents(result *Result) {
+	if !a.core.IsDuel() || result.TimelineAnalysis == nil ||
+		result.Frags == nil || len(result.Frags.Frags) == 0 {
+		return
+	}
+	ta := result.TimelineAnalysis
+
+	existingPlayers := make(map[string]bool)
+	for _, fe := range ta.FragEvents {
+		existingPlayers[fe.Player] = true
+	}
+	missing := make(map[string]bool)
+	for _, name := range a.core.Roster.Participants() {
+		if !existingPlayers[name] {
+			missing[name] = true
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+
+	synthesised := make([]TimelineFragEvent, 0)
+	for _, fr := range result.Frags.Frags {
+		if fr.Killer == "" || !missing[fr.Killer] {
+			continue
+		}
+		delta := 1
+		if fr.IsSuicide || fr.IsTeamKill {
+			delta = -1
+		}
+		synthesised = append(synthesised, TimelineFragEvent{
+			Time:   fr.Time,
+			Player: fr.Killer,
+			Team:   fr.Killer, // duel: team == name
+			Delta:  delta,
+		})
+	}
+	if len(synthesised) > 0 {
+		ta.FragEvents = mergeFragEventsByTime(ta.FragEvents, synthesised)
+	}
+}
+
+// mergeFragEventsByTime merges two already-sorted TimelineFragEvent slices into
+// a single time-ordered slice. Used by synthesizeDuelFragEvents to splice the
+// obituary-sourced frogbot entries back into the existing frag-update series.
+func mergeFragEventsByTime(a, b []TimelineFragEvent) []TimelineFragEvent {
+	out := make([]TimelineFragEvent, 0, len(a)+len(b))
+	i, j := 0, 0
+	for i < len(a) && j < len(b) {
+		if a[i].Time <= b[j].Time {
+			out = append(out, a[i])
+			i++
+		} else {
+			out = append(out, b[j])
+			j++
+		}
+	}
+	out = append(out, a[i:]...)
+	out = append(out, b[j:]...)
+	return out
+}
+
+// rebaseToMatch shifts every timeline-owned timestamp in result from the demo
+// clock to match-relative (t' = t - matchStartMs), dropping warmup samples the
+// same way the old normalizeMatchRelativeTimes did. Only the timeline's own
+// artifacts are touched: the TimelineAnalysis event streams, Streams.Global's
+// match window / offset / pauses, and each player's + mover's stream. Shots'
+// spatial streams (Projectiles/Beams/Nails) are rebased by the shots node,
+// which produces them. Called only when a match start was detected (ms > 0),
+// mirroring the old rebase's early return.
+func (a *TimelineAnalyzer) rebaseToMatch(result *Result, matchStartMs int32) {
+	if ta := result.TimelineAnalysis; ta != nil {
+		for i := range ta.FragEvents {
+			ta.FragEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.DeathEvents {
+			ta.DeathEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.KillEvents {
+			ta.KillEvents[i].Time -= matchStartMs
+		}
+		for i := range ta.PowerupEvents {
+			ta.PowerupEvents[i].Time -= matchStartMs
+			ta.PowerupEvents[i].EndTime -= matchStartMs
+		}
+		for i := range ta.FragStreaks {
+			ta.FragStreaks[i].Time -= matchStartMs
+			ta.FragStreaks[i].EndTime -= matchStartMs
+		}
+	}
+
+	streams := result.Streams
+	if streams == nil {
+		return
+	}
+	// The match-window + wall-clock anchors on Streams.Global also rebase.
+	streams.Global.MatchStart -= matchStartMs
+	streams.Global.MatchEnd -= matchStartMs
+	if streams.Global.MatchStart < 0 {
+		streams.Global.MatchStart = 0
+	}
+	// Record the demo→match offset and rebase pause anchors to match time.
+	// AtMs only — DurationMs is a span, not a timestamp. Pauses during the
+	// countdown go negative; keep them, they still consume wall time the
+	// mapping must account for. DemoStartUnixMs is NOT shifted (it anchors
+	// demo open, not match start).
+	streams.Global.DemoOffset = matchStartMs
+	for i := range streams.Global.Pauses {
+		streams.Global.Pauses[i].AtMs -= matchStartMs
+	}
+	for pi := range streams.Players {
+		p := &streams.Players[pi]
+		p.Health = shiftAndFilterChangeI16(p.Health, matchStartMs)
+		p.Armor = shiftAndFilterChangeI16(p.Armor, matchStartMs)
+		p.ArmorType = shiftAndFilterChangeStr(p.ArmorType, matchStartMs)
+		p.Loc = shiftAndFilterChangeI16(p.Loc, matchStartMs)
+		p.ActiveWeapon = shiftAndFilterChangeI16(p.ActiveWeapon, matchStartMs)
+		p.Shells = shiftAndFilterChangeI16(p.Shells, matchStartMs)
+		p.Nails = shiftAndFilterChangeI16(p.Nails, matchStartMs)
+		p.Rockets = shiftAndFilterChangeI16(p.Rockets, matchStartMs)
+		p.Cells = shiftAndFilterChangeI16(p.Cells, matchStartMs)
+
+		p.RL = shiftAndFilterIntervals(p.RL, matchStartMs)
+		p.LG = shiftAndFilterIntervals(p.LG, matchStartMs)
+		p.GL = shiftAndFilterIntervals(p.GL, matchStartMs)
+		p.SSG = shiftAndFilterIntervals(p.SSG, matchStartMs)
+		p.SNG = shiftAndFilterIntervals(p.SNG, matchStartMs)
+		p.Quad = shiftAndFilterIntervals(p.Quad, matchStartMs)
+		p.Pent = shiftAndFilterIntervals(p.Pent, matchStartMs)
+		p.Ring = shiftAndFilterIntervals(p.Ring, matchStartMs)
+
+		p.Spawns = shiftAndFilterInts(p.Spawns, matchStartMs)
+		p.Deaths = shiftAndFilterInts(p.Deaths, matchStartMs)
+
+		if p.Position != nil {
+			shiftAndFilterPosition(p.Position, matchStartMs)
+		}
+	}
+	for mi := range streams.Movers {
+		shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
+	}
+}
+
+// flagDemoTimeBase marks a result whose match start could not be
+// detected: the per-producer rebase never ran, so every timestamp in
+// the whole Result stays on the raw demo clock. We cannot invent a
+// time origin — flag the result instead so a consumer can tell a
+// demo-clock result from a match-rebased one (D9, PLAN-api-usability).
+// The errors entry surfaces it in /overview without an extra field.
+func flagDemoTimeBase(result *Result) {
+	if result.Streams == nil {
+		return
+	}
+	result.Streams.Global.TimeBase = "demo"
+	result.Errors = append(result.Errors,
+		`no match start detected: all times are demo-relative (streams.global.timeBase="demo")`)
+}
+
+// matchStartSpawnDedupMs bounds the dedup window for the synthesized
+// match-start spawn. A player whose match-start respawn WAS visible on
+// the wire (dead when the countdown ended → real ≤0→>0 transition)
+// already has a spawn entry within a frame or two of t=0; a spawn any
+// later that follows an in-match death is a genuine respawn and must
+// not suppress the synthesis.
+const matchStartSpawnDedupMs = 1000
+
+// synthesizeMatchStartSpawns inserts the match-start spawn that the
+// parser's dead→alive detector structurally misses. KTX respawns every
+// player when the countdown ends (SM_PrepareClients → k_respawn(p,
+// false), ktx/src/match.c:881,972), but a player alive through the
+// countdown never crosses health ≤0→>0, so no SpawnEvent fires and the
+// first — most contested — spawn of the match is absent from Spawns.
+// Runs after rebaseToMatch (match-relative times, warmup spawns already
+// dropped). The health predicate really tests "was present at match
+// start": health is not recorded during warmup, so the t=0 carry entry
+// is the KTX respawn write (V=100) for every present player, dead or
+// alive at countdown end. The dedup does the actual split — a player
+// dead at countdown end has a wire-visible dead→alive spawn at ≈0 with
+// no in-match death before it, which suppresses the synthesis.
+// Same life-boundary policy as the FragStreak first-life synthesis.
+func synthesizeMatchStartSpawns(streams *Streams) {
+	if streams == nil {
+		return
+	}
+	for pi := range streams.Players {
+		p := &streams.Players[pi]
+		aliveAtStart := len(p.Health) > 0 && p.Health[0].T == 0 && p.Health[0].V > 0
+		if !aliveAtStart {
+			continue
+		}
+		if len(p.Spawns) > 0 && p.Spawns[0] <= matchStartSpawnDedupMs &&
+			!(len(p.Deaths) > 0 && p.Deaths[0] < p.Spawns[0]) {
+			continue // the match-start respawn was wire-visible
+		}
+		p.Spawns = append([]int32{0}, p.Spawns...)
+	}
 }
 
 // pauseCoalesceGapSec separates one pause from the next. mvdsv emits a
@@ -374,7 +629,7 @@ const pauseCoalesceGapSec = 0.5
 // segment per pause. AtMs is the frozen game time the pause sits at (the latest
 // sample time in the run — the plateau the demo clock holds while paused);
 // DurationMs is the summed real wall-clock time of the run. Times are
-// demo-relative here; normalizeMatchRelativeTimes rebases AtMs to match time.
+// demo-relative here; rebaseToMatch (this file) rebases AtMs to match time.
 func coalescePauses(samples []pauseSample) []TimelinePause {
 	if len(samples) == 0 {
 		return nil
@@ -444,24 +699,6 @@ func medoidLocations(locs []loc.Location) []MapLocation {
 		}
 		m := pts[best]
 		out = append(out, MapLocation{X: m.X, Y: m.Y, Z: m.Z, Name: m.Name})
-	}
-	return out
-}
-
-// playerSlotsByName inverts the slot->name mapping for export as
-// TimelineAnalysisResult.PlayerSlots (schema v38) — the join key between
-// KDLOG edicts (slot+1) and canonical player names. On a name collision the
-// lowest slot wins, matching the stream naming convention where later
-// duplicates are suffixed "name#slot".
-func playerSlotsByName(slotToName map[int]string) map[string]int {
-	if len(slotToName) == 0 {
-		return nil
-	}
-	out := make(map[string]int, len(slotToName))
-	for slot, name := range slotToName {
-		if prev, ok := out[name]; !ok || slot < prev {
-			out[name] = slot
-		}
 	}
 	return out
 }

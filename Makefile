@@ -26,7 +26,7 @@ LDFLAGS    := -ldflags "-s -w -X main.GitHash=$(GIT_HASH) -X main.GitTag=$(GIT_T
 .PHONY: build build-api build-mcp build-bin build-all-platforms \
         build-api-linux build-api-darwin build-api-windows \
         build-mcp-linux build-mcp-darwin build-mcp-windows \
-        bsps serve clean test fmt help
+        bsps serve clean test fmt artifacts-md help
 
 # Build the deployable web bundle into dist/.
 build:
@@ -43,6 +43,7 @@ build:
 	@cp $(STATIC_DIR)/map-gl.js $(DIST_DIR)/
 	@cp $(STATIC_DIR)/worker.js $(DIST_DIR)/
 	@cp -r $(STATIC_DIR)/lib $(DIST_DIR)/
+	@cp -r $(STATIC_DIR)/vendor $(DIST_DIR)/
 	@cp -r $(STATIC_DIR)/maps $(DIST_DIR)/
 	@if [ -d $(STATIC_DIR)/maps3d ]; then cp -r $(STATIC_DIR)/maps3d $(DIST_DIR)/; fi
 	@echo "Copying loc corpus from $(LOC_DATA)..."
@@ -125,6 +126,11 @@ clean:
 fmt:
 	go fmt ./mvd-reader/... ./mvd-analytics/... ./mvd-api/... ./mvd-mcp/... ./mvd-web/...
 
+# Regenerate the committed artifact catalog from the DAG node metadata. A
+# drift test (analyzer/manifest_test.go) fails CI if this is stale.
+artifacts-md:
+	go run ./mvd-analytics/cmd/qw-analyze -artifacts-md > mvd-analytics/ARTIFACTS.md
+
 # Help.
 help:
 	@echo "MVD Analyzer — five-module workspace"
@@ -141,4 +147,5 @@ help:
 	@echo "  test                Run tests across every module"
 	@echo "  clean               Remove dist/"
 	@echo "  fmt                 Format code across every module"
+	@echo "  artifacts-md        Regenerate mvd-analytics/ARTIFACTS.md from the DAG metadata"
 	@echo "  help                Show this help"

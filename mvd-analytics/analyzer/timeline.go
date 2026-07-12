@@ -42,24 +42,11 @@ type TimelineAnalyzer struct {
 	rawDeaths        []deathEvent // Raw death events (player num, time)
 	rawSpawns        []deathEvent // Raw spawn events (reusing deathEvent type)
 	timing           MatchTimingDetector
-	// demoStartUnixMs is the wall-clock (Unix epoch ms) at demo open,
-	// captured from the mvdhidden 0x000B block. demoStartFromHidden records
-	// that the millisecond-accurate source was present, so Finalize can set
-	// the accuracy and the epoch-cvar fallback (in deriveDemoStartAnchor)
-	// knows not to overwrite it.
-	demoStartUnixMs     int64
-	demoStartFromHidden bool
-	// rawPauses collects every mvdhidden 0x000A paused_duration sample
-	// (demo-relative time + real wall-clock ms for that idle frame), in
-	// arrival order. Finalize coalesces contiguous runs into per-pause
-	// segments (TimelineAnalysis.Pauses). Captured unconditionally — pauses
-	// during the countdown matter for the wall-clock mapping too.
-	rawPauses       []pauseSample
-	locFinder       *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
-	clipHull        *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
-	visBSP          *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
-	blipThresholdMs int                        // Per-player loc smoothing threshold, 0 disables
-	regionsOverride []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
+	locFinder        *locvis.Finder             // Visibility-aware loc finder for map (nil if no .loc file)
+	clipHull         *mapclip.Hull              // Worldspawn player clip hull for floor-height traces (nil if no clip corpus for map)
+	visBSP           *bspvis.BSP                // Hull-0 render BSP for liquid state / liquid-surface queries (nil if no BSP for map)
+	blipThresholdMs  int                        // Per-player loc smoothing threshold, 0 disables
+	regionsOverride  []config.MapRegionOverride // Optional caller-supplied region defs (e.g. CLI -regions). When non-nil, overrides config.RegionsForMap.
 	// movers is each inline brush-model entity's wire-state timeline
 	// (origin + visibility at demo-relative ms), accumulated from
 	// MoverSpawn/MoverState events — NOT gated on match start, the
@@ -228,28 +215,6 @@ func (a *TimelineAnalyzer) OnEvent(event events.Event) error {
 	case *events.PlayerPositionEvent:
 		// Track player positions
 		a.handlePositionUpdate(e)
-	case *events.DemoStartTimestampEvent:
-		// mvdhidden 0x000B: server wall-clock (Unix epoch ms) at demo open,
-		// the millisecond-accurate anchor for the demo timeline. Keep the
-		// first one we see; the block is written once near demo start.
-		//
-		// Some 2026 demos carry a 0x000B block whose 1–2 byte payload is
-		// NOT a Unix-ms timestamp (values like 61 / 11701 observed in corpus
-		// games 211805 and 212545, both of which also carry a correct
-		// whole-second `epoch` cvar). Decoded as a wall clock those land in
-		// 1970, and a consumer cannot tell them apart from a real anchor — so
-		// accept the block only when it falls in a plausible epoch-ms window;
-		// otherwise leave the anchor to the `epoch` fallback in
-		// deriveDemoStartAnchor.
-		if !a.demoStartFromHidden && plausibleDemoStartUnixMs(e.UnixMs) {
-			a.demoStartUnixMs = e.UnixMs
-			a.demoStartFromHidden = true
-		}
-	case *events.PausedDurationEvent:
-		// mvdhidden 0x000A: one real-ms sample per idle frame while the game
-		// clock is paused. Collect raw; Finalize coalesces into per-pause
-		// segments. See pauseSample.
-		a.rawPauses = append(a.rawPauses, pauseSample{Time: e.Time, DurationMs: e.DurationMs})
 	case *events.MoverSpawnEvent:
 		a.handleMoverSpawn(e)
 	case *events.MoverStateEvent:
@@ -362,10 +327,9 @@ func (a *TimelineAnalyzer) handleStatUpdate(e *events.StatUpdateEvent) error {
 		state.ammo.cells = e.Value
 		state.streams.recordCells(msTime(e.Time), int16(e.Value))
 	case events.StatActiveWeapon:
-		// The selected/active weapon id (STAT_ACTIVEWEAPON — the wielded
-		// weapon's IT_ bit). Unlike health/armor there is no sane upper
-		// bound to reject against (IT_AXE = 4096); surface the raw value
-		// and let the consumer map the bit to a weapon.
+		// STAT_ACTIVEWEAPON is the wielded weapon's raw IT_* bit. Unlike
+		// health and armor, values such as IT_AXE (4096) are valid and must
+		// not be clamped.
 		state.streams.recordActiveWeapon(msTime(e.Time), int16(e.Value))
 	}
 	return nil
@@ -397,26 +361,14 @@ func (a *TimelineAnalyzer) handleSpawn(e *events.SpawnEvent) {
 	state.isDead = false
 }
 
-// resolveAt resolves a wire slot to its (name, team) at time tMs using
-// the reconnect-aware CoreOutputs session table, with the same fallback
-// chain the timeline has always used: userinfo (ctx.Players), then the
-// last-seen userinfo name (playerNames), then a name→team lookup in the
-// demoinfo NameTable. Centralises what fragEvents / powerups / streaks
-// all need so a player's pre-reconnect events resolve to the player who
-// was actually on the slot then, not the slot's final occupant.
+// resolveAt resolves a wire slot to its (name, team) at time tMs via the
+// canonical ResolveSlotAt chain (session table → userinfo → name→team
+// backfill), then adds the timeline-only last-resort fallback of the
+// last-seen userinfo name (playerNames) for a slot the shared chain couldn't
+// name. Used by fragEvents / powerups / streaks.
 func (a *TimelineAnalyzer) resolveAt(slot int, tMs int32) (name, team string) {
-	if a.core != nil {
-		id := a.core.SlotIdentityAt(slot, tMs)
-		name, team = id.Name, id.Team
-	}
-	if name == "" {
-		if p := a.ctx.Players[slot]; p != nil {
-			name = p.Name
-			if team == "" {
-				team = p.Team
-			}
-		}
-	}
+	info := ResolveSlotAt(a.core, a.ctx.Players, slot, tMs)
+	name, team = info.Name, info.Team
 	if name == "" {
 		if n, ok := a.playerNames[slot]; ok {
 			name = n

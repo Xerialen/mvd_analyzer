@@ -1,17 +1,22 @@
-# mvd-api HTTP reference
+# mvdanalyzer-api — HTTP integration guide
 
 Integration guide for building **custom web frontends and tools** on top
-of `mvd-api` — the hosted REST surface over QuakeWorld demo analytics.
+of **mvdanalyzer-api** (the `mvd-api` server binary) — the hosted REST
+surface over QuakeWorld demo analytics.
 
-This document owns the **HTTP surface**: endpoints, parameters, response
-*semantics*, units, caching, and task recipes. It does **not** restate
-field shapes — the authoritative reference for every response *type*
-(field names, vocabulary codes, reducer registry, JSON shapes) is
+This document is the **high-level guide**: getting started, the
+cross-cutting conventions (units, caching, errors, auth, CORS), how to
+choose the right endpoint, and task recipes. It deliberately does NOT
+enumerate endpoints or restate shapes — that reference exists exactly
+once, in the OpenAPI 3.1 document the server itself serves at
+**`/openapi.yaml`** (browsable at **`/docs`**): every route, parameter,
+full field-level response schema, and error code, pinned to the code by
+drift tests and validated against golden-corpus responses. Deep
+field-level *semantics* of the analysis output (the Result contract
+shared with the Go library and WASM builds) live in
 [`mvd-analytics/RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md).
-When an endpoint returns a `view.XxxView` or `result.XxxResult`, follow
-the link to that doc for the field-by-field shape. JSON snippets here are
-**real captured output** (trimmed with `…`), shown for orientation, not
-as a second schema.
+JSON snippets here are **real captured output** (trimmed with `…`),
+shown for orientation, not as a second schema.
 
 For the operator-facing view (flags, cache layout, build, smoke tests)
 see [`README.md`](README.md). For the MCP wrapper see
@@ -42,6 +47,13 @@ GET  /v1/demos/gameId:12345/<detail>     → drill into a specific panel
 Everything else is served from the cached `*Result`, typically
 sub-millisecond.
 
+A machine-readable **OpenAPI 3.1** description of the whole surface is
+served at **`GET /openapi.yaml`** (embedded in the binary; drift tests pin
+its routes, error codes and enums to the code, and its response schemas
+are validated against golden-corpus responses), with a browsable viewer
+at **`GET /docs`** (vendored RapiDoc — no external requests). Both are
+reachable without an API key.
+
 ---
 
 ## 2. Conventions (read this once)
@@ -55,6 +67,7 @@ track which is which:
 |---|---|---|
 | **Query inputs** `from` / `to` / `time` | **seconds** (float) | `?from=105&to=110`, `?time=105` |
 | **View envelope** times | **seconds** (float) | `events[].t=101.298`, `state-at.t=105`, `stream-slice.startTime=105`, row-bucket `.t=120`, loc-trail `s`/`e`=`1.015` |
+| **`/overview`** times | **int32 milliseconds** | `duration`, `matchStart`, `matchEnd`, `topStreaks[].start`/`.duration`, `topPowerups[].start`/`.duration`, `timing.*` |
 | **Raw stream entries** embedded in `/stream-slice` | **int32 milliseconds** | `h:[{ "t":105000, "v":-7 }]`, `pos.t:[105001,…]`, `rl:[{ "s":105000,"e":105182 }]` |
 | **Columnar buckets** axis | **int32 milliseconds** | `startMs`, `windowMs`, `time(i)=startMs+i*windowMs` |
 
@@ -76,24 +89,51 @@ weapon / item / kind / loc / layout tokens.
 - **`players`, `fields`, `types`** — comma-separated lists; URL-decode
   once. Omit `players` to get all; omit `fields`/`types` to get the
   endpoint's default set.
-- **`weapon`** — comma-separated weapon tokens (`rl,lg,…`) on `/frags`,
+- **`weapons`** — comma-separated weapon tokens (`rl,lg,…`) on `/frags`,
   `/damage`, `/backpacks`, `/weapon-pickups`. A CSV set on every one of
   them since schema v36 (`/backpacks` previously took a single value).
+  The pre-16.2 singular spelling `weapon` remains an accepted legacy
+  alias; `weapons` wins when both are present.
 - **`reducers`** (`/buckets`) — comma-separated `field=name` pairs, e.g.
   `reducers=h=min,a=last`. Names come from the reducer registry in
   RESULT_SCHEMA.md.
 - **`from` / `to`** — match-relative **seconds**. Omit for the whole
-  match.
+  match. Honoured by `events`, `stream-slice`, `loc-trails`, `chat`,
+  `region-control`, and (schema-unchanged) `frags` / `damage`.
+- **`summary`** (`/frags`, `/damage`, `/aim`, `/items`) — `1`/`true` drops
+  the big per-event log / sample arrays / phase timeline and returns only
+  the aggregates.
+- **`dmg`** (`/damage`) — which damage **family** to return:
+  `raw` (the unbound wire value, byte-stable pre-v54 shape), `bounded`
+  (KTX's scoreboard reconstruction — armor absorbed + health capped to the
+  victim's remaining health, in the raw field names), or `both` (raw plus
+  additive `bounded` fields). The default is **`bounded`** for both
+  summaries and the full log (effective damage is what the scoreboard
+  means; raw overkill is the opt-in). A *defaulted* request on a demo
+  whose reconstruction was skipped (midair / instagib / dmgfrags modes)
+  falls back to `raw`; an *explicit* `dmg=bounded` there is a
+  `422 bounded_unavailable`. Unfiltered bounded summaries source the
+  per-player figures from KTX's exact scoreboard (`boundedSource: "ktx"`).
 - **`time`** — match-relative **seconds**; **required** on `/state-at`.
 - **`windowMs`** — integer milliseconds (`/buckets`, `/region-control`).
+  ⚠️ **Defaults to 50 ms when omitted** — on a 20-minute match that is
+  ~24,000 windows per field per player. Always pass an explicit
+  `windowMs` sized to your question (the hosted MCP layer injects 5000).
+  Note the unit split *within one call*: `windowMs` is **ms** while
+  `from`/`to` are **seconds**.
+- **There is deliberately no `limit`/`offset` pagination** on the
+  per-demo endpoints: the data is time-series, so the size controls are
+  the `from`/`to` window, `players`/`fields` scoping, and `summary`.
+  (`searchGames`-style pagination exists only on the hub search, which
+  is not part of this API.)
 - **`loc`** — `name` (default) resolves loc indices to names; `index`
   returns the raw `LocTable` index for index-based math (decode via
   `/loc-table`). Honoured by `buckets`, `events`, `stream-slice`,
   `state-at`, `loc-trails`.
 - **`layout`** (`/buckets` only) — `column` (default, compact) or `row`.
-  See §4.10.
+  See the `/buckets` operation in `/docs`.
 
-The valid **field codes** (`h`, `a`, `rl`, `pos`, `view`, `hgt`, `lq`,
+The valid **field codes** (`h`, `a`, `w`, `rl`, `pos`, `view`, `hgt`, `lq`,
 `vel`, `sp`, `d`, …) and **reducer names** are listed once in
 [RESULT_SCHEMA.md §Field vocabulary / Reducer registry](../mvd-analytics/RESULT_SCHEMA.md#field-vocabulary).
 Note (schema v31+): `pos` is **strictly x/y/z** (+ the per-sample loc
@@ -116,7 +156,7 @@ no-floor sentinel is `-1000000000` (was `-2147483648`).
 
 ### 2.3 Caching (use it — the data is immutable)
 
-Successful 2xx responses set:
+Successful 2xx responses on the **per-demo** endpoints set:
 
 ```
 Cache-Control: public, max-age=86400, immutable
@@ -129,6 +169,27 @@ A demo's analysis never changes for a given schema version, so frontends
 should cache aggressively and send `If-None-Match: "<etag>"` for a cheap
 `304`. A schema bump changes the ETag suffix and invalidates client
 caches automatically.
+
+Two families carry a **different ETag shape**:
+
+- The generic artifact endpoint uses a **finer per-artifact** form
+  `"<sha>-<name>@v<schemaVersion>"` (e.g. `"abc…-frag@v49"`), so a client can
+  revalidate one artifact independently.
+- The binary-static endpoints `/v1/artifacts` and `/v1/graph` depend
+  only on the schema version, so their ETag is `"artifacts-v<n>"` /
+  `"graph-v<n>"` (no sha). They set `Cache-Control` + `ETag` +
+  `X-Schema-Version` but **no `X-Cache`** (nothing demo-cached to report).
+- The per-map endpoints `/v1/maps/{map}/entities` and `/geometry` are
+  demo-independent statics: ETags `"ents-<map>-v<corpusVersion>"` and
+  `"geo-<map>-<size>"`, with **only** `Cache-Control` + `ETag` (no
+  `X-Schema-Version` / `X-Cache`).
+
+`POST /v1/demos/{id}` (the warm-up call) is a non-cacheable action: it
+returns `X-Cache` / `X-Schema-Version` but **no** `Cache-Control` / `ETag`.
+Error responses carry `Cache-Control: no-store` and no `ETag`.
+
+Every response — success or error — also carries `X-Request-Id: <hex>`,
+a per-request id echoed in the server access log (see §2.4).
 
 ### 2.4 Errors
 
@@ -143,16 +204,32 @@ Non-2xx responses use a stable envelope:
 | 400 | `invalid_demo_id` | malformed `{id}` |
 | 400 | `invalid_param` | malformed **or rejected** query parameter — bad number, malformed `reducers` pair, unknown `loc`/`layout` token, unknown `fields` code, or unknown reducer name |
 | 400 | `missing_param` | required param absent (e.g. `time` on `/state-at`) |
+| 401 | `unauthorized` | **auth mode only** — missing / invalid / revoked API key on a protected route. Carries `WWW-Authenticate: Bearer`. The body is deliberately generic and never says whether the key was absent vs revoked (see §2.5). |
+| 429 | `rate_limited` | **auth mode only** — per-key rate limit exceeded. Carries `Retry-After: <seconds>`; wait that long and retry (see §2.5). |
 | 404 | `demo_not_found` | hub has no row for this gameId |
 | 404 | `map_unavailable` | no entity corpus / geometry for this map (`/v1/maps/{map}/…`) |
+| 404 | `artifact_unknown` | no servable artifact of that name (`/v1/demos/{id}/artifacts/{name}`) |
 | 422 | `demoinfo_unavailable` | non-KTX server or aborted match |
 | 422 | `metadata_unavailable` | no fullserverinfo / countdown centerprint |
 | 422 | `frags_unavailable` | no frag log |
 | 422 | `damage_unavailable` | no KTX `mvdhidden_dmgdone` damage stream |
+| 422 | `bounded_unavailable` | `dmg=bounded` on a demo whose bounded reconstruction was skipped (midair / instagib / dmgfrags mode) |
+| 422 | `shots_unavailable` | no shot data (no weapon fires decoded) |
+| 422 | `aim_unavailable` | no aim data (needs shots + position/view streams) |
 | 422 | `locgraph_unavailable` | no position track |
+| 422 | `opening_unavailable` | no detected match start (`/v1/demos/{id}/artifacts/opening`) |
 | 422 | `region_control_unavailable` | no region-control layout for this map |
+| 422 | `airgibs_unavailable` | no timeline analysis (BSP-less maps return `[]`, not this) |
 | 502 | `hub_upstream` | network / 5xx from the hub |
-| 500 | `internal` / `panic` | unexpected |
+| 500 | `internal` | unexpected server error (see below) |
+
+**5xx bodies are generic.** A `500 internal` never echoes the underlying
+error text (it can embed local cache paths or upstream URLs). The body is a
+fixed message plus the request id — `"internal server error (request id
+<hex>)"` — and the real error is logged server-side keyed by that same
+`X-Request-Id`. Quote the id when reporting a problem. `4xx` messages stay
+specific and safe (they're user-actionable and path-free). The former
+`panic` code is gone: a handler panic is now a plain `500 internal`.
 
 (Schema v36 folded the former `view_error` code into `invalid_param`: a
 bad query parameter is one error class regardless of whether it failed
@@ -171,10 +248,67 @@ when there's nothing, never `422`.
 
 ### 2.5 Authentication
 
-None. Data is public and read-only. The optional
-`Authorization: Bearer <label>` header (or `?label=`) is **not
-validated** — it's a non-secret source tag for the access log
-(`web-community`, `cli-script`, …).
+mvd-api runs in one of two modes, chosen by the operator's `-auth-dir` flag.
+
+**No-auth (localhost) mode — the default.** No key is required. The optional
+`Authorization: Bearer <label>` header (or `?label=`) is **not validated** —
+it's a non-secret source tag for the access log (`web-community`,
+`cli-script`, …). This is the historical behaviour and is unchanged.
+
+**Keyed (hosted) mode.** When the operator runs with `-auth-dir DIR`, every
+route under `/v1/` — plus `POST /v1/demos/{id}` — requires an API key:
+
+```
+Authorization: Bearer qwmvd_<...>
+```
+
+- Keys look like `qwmvd_` followed by a URL-safe base64 blob. **The key is a
+  secret** — treat it like a password: send it only over HTTPS, never put it
+  in a URL, a query string, or a public repo. The server stores only a hash;
+  a lost key cannot be recovered, only re-issued.
+- Missing, malformed, or revoked keys get `401 unauthorized` with
+  `WWW-Authenticate: Bearer`. The body never distinguishes those cases.
+- Exempt from the key requirement: `GET /healthz`, `GET /v1/version`,
+  `GET /openapi.yaml` + `GET /docs` (the API description and its viewer —
+  the public contract, embedded bytes only), the `/portal/*` prefix (its
+  own sign-in), and any `OPTIONS` preflight.
+- **`GET /v1/auth/check`** → `204 No Content` for a live key, `401` otherwise.
+  Use it to test a key without side effects:
+  `curl -sSD- -o/dev/null -H "Authorization: Bearer qwmvd_…" https://host/v1/auth/check`.
+- Requests are rate-limited **per key** (not per IP). Over the limit →
+  `429 rate_limited` + `Retry-After: <seconds>`. Two classes exist: normal
+  (portal) keys and looser `service` keys (issued to first-party apps).
+
+**Getting a key.** On a deployment that runs with `-portal`, a user signs in
+with Discord at **`https://<host>/portal`** and self-services one key (sign in
+→ *Generate key* → copy it once). Regenerating revokes the old key. First-party
+apps get a `service` key from the operator instead (the `keys` CLI). See
+[mvd-api/README.md — "The Discord key portal"](README.md#the-discord-key-portal-getting-a-key)
+for the full flow. The portal is off unless the operator enables it.
+
+### 2.6 CORS (browser clients)
+
+The API is CORS-enabled for any origin — it's read-only and
+unauthenticated, so `*` is safe:
+
+```
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: ETag, X-Cache, X-Schema-Version, X-Request-Id
+```
+
+`Expose-Headers` is what lets browser JS actually read those response
+headers (notably `ETag`, for conditional GETs). Preflight `OPTIONS` on any
+path returns `204` with `Access-Control-Allow-Methods: GET, POST, OPTIONS`,
+`Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match`,
+and `Access-Control-Max-Age`. Preflight needs no auth.
+
+**CORS + auth interaction.** In keyed mode, CORS still runs *outside* the
+auth check, so an `OPTIONS` preflight is answered (`204`, no key) before auth
+is consulted — a browser's automatic preflight never fails on the missing
+`Authorization` header. The actual `GET`/`POST` that follows still needs the
+key. `Access-Control-Allow-Origin: *` and a credentialed `Authorization`
+header coexist because the key travels as a plain header, not a cookie (the
+CORS credentials mode that `*` forbids applies to cookies, not bearer tokens).
 
 ---
 
@@ -202,360 +336,27 @@ Concrete consequences:
 
 ---
 
-## 4. Endpoint reference
-
-Headers (`X-Cache`, `ETag`, …) and the error envelope from §2 apply to
-all endpoints and aren't repeated.
-
-### 4.1 `POST /v1/demos/{id}` — loadDemo
-
-Warm the cache and resolve the canonical id. Idempotent.
-
-```jsonc
-{ "demoId": "sha:abc…", "sha256": "abc…", "fromCache": true, "schemaVersion": 37 }
-```
-
-Use `demoId` for subsequent calls to skip the gameId→sha lookup.
-
-### 4.2 `GET /v1/demos/{id}/overview` — getOverview
-
-Curated "what was this match" summary, cheap enough to call first. Best
-single call to populate a match header and decide which panels to show.
-
-```jsonc
-{
-  "schemaVersion": 37,
-  "map": "dm6", "gameDir": "qw",
-  "mode": "4on4",            // omitempty
-  "duration": 613.4,         // seconds
-  "matchStart": 0, "matchEnd": 613.4,
-  "teams":   [ { "name": "Die", "frags": 89 }, … ],          // sorted desc
-  "players": [ { "name": "bps", "team": "Die", "frags": 35, "kills": 38, "deaths": 21, "suicides": 2 }, … ], // corrected scoreboard; sorted by frags desc
-  "topStreaks":  [ { "player":"bps","weapon":"rl","length":7,"start":234.1,"duration":18.3 } ], // ≤5
-  "topPowerups": [ { "player":"milton","type":"quad","start":412.0,"duration":29.7,"frags":5 } ], // ≤5
-  "locCount": 47,
-  "hasRegionControl": true,   // false ⇒ hide the region panel
-  "timing": {                 // omitempty; demo-open wall-clock anchor (from streams.global)
-    "demoOffset": 10125,           // ms, demo open → match start
-    "demoStartUnixMs": 1780756716100,  // server clock at demo open
-    "demoStartAccuracyMs": 1,          // 1 = mvdhidden 0x000B ms block; 1000 = `epoch` cvar
-    "pauses": [ { "atMs": 18340, "durationMs": 6641 } ]  // omitempty; per-pause segments
-  },
-  "playerUserIDs": { "bps": 123 },  // for hub.quakeworld.nu/games/<id>?track=<userId>
-  "errors": [ … ]             // omitempty; non-empty ⇒ degraded analysis
-}
-```
-
-`topStreaks`/`topPowerups` cap at 5; for the full lists use `/events`.
-Composed in [`overview.go`](overview.go).
-
-**Wall-clock mapping.** Use `timing` to convert any match-relative game
-time `g` (ms) to a real-world clock — handy for syncing voice tracks or
-stream overlays. The game clock freezes during a pause, so fold the pauses
-in:
-
-```
-wallClockMs = demoStartUnixMs + demoOffset + g + Σ pauses[i].durationMs (atMs ≤ g)
-              (±demoStartAccuracyMs)
-```
-
-`timing` is omitted when the demo carries no wall-clock source; `pauses` is
-omitted when the match had none. See
-[RESULT_SCHEMA.md → GlobalStream](../mvd-analytics/RESULT_SCHEMA.md#globalstream).
-
-### 4.3 `GET /v1/demos/{id}/demoinfo`
-
-KTX scoreboard, **verbatim** from the server — per-player weapon
-accuracy, kills/deaths/TK, damage, sprees, item counts. Shape:
-`result.DemoInfoResult` →
-[RESULT_SCHEMA.md §DemoInfoResult](../mvd-analytics/RESULT_SCHEMA.md#demoinforesult-demoinfo).
-`422 demoinfo_unavailable` on non-KTX demos.
-
-### 4.4 `GET /v1/demos/{id}/metadata`
-
-Full `fullserverinfo` cvars + parsed KTX match settings (timelimit,
-mode, antilag, midair, instagib, …). Shape: `result.MetadataResult` →
-[RESULT_SCHEMA.md §MetadataResult](../mvd-analytics/RESULT_SCHEMA.md#metadataresult-metadata).
-
-### 4.5 `GET /v1/demos/{id}/frags`
-
-Params: `players`, `weapon`. Total + per-player + per-weapon breakdown +
-the full chronological kill log. Shape: `result.FragResult` →
-[RESULT_SCHEMA.md §FragResult](../mvd-analytics/RESULT_SCHEMA.md#fragresult-frags).
-For a kill feed with obituary text, prefer `/events?types=frag`.
-
-### 4.5b `GET /v1/demos/{id}/damage`
-
-Params: `players`, `weapon`. Per-hit damage reconstructed from the KTX
-`mvdhidden_dmgdone` stream: total + per-player (`given`/`taken`/team/self,
-per-weapon, and the **EWep** victim-weapon buckets
-`enemyVsSg/enemyVsMid/enemyVsLg/enemyVsRl/enemyVsBoth` where
-`ewep = lg+rl+both` = damage dealt to enemies *holding* RL/LG) +
-attacker→victim `matrix` + the full chronological `events` log +
-`telefrags` + `stomps` + a `scoreboard` cross-check against the KTX
-end-of-match totals. Shape: `result.DamageResult` →
-[RESULT_SCHEMA.md §DamageResult](../mvd-analytics/RESULT_SCHEMA.md#damageresult-damage).
-
-**Units:** damage is **unbound** (includes overkill), so totals run
-higher than the KTX scoreboard, which bounds each hit to the victim's
-remaining health — see the `scoreboard` deltas (each pairs an `stream*`
-unbound figure with the `score*` bounded KTX figure). The `weapon` filter
-matches the **attacker's** weapon; the EWep buckets are keyed on the
-**victim's** held weapons. `players` matches attacker OR victim. For the
-raw time-ordered log alone use `/events?types=damage`.
-
-**Positional kills** — telefrags (deathtype `tele`, the `9999` instakill
-sentinel) and stomps (deathtype `stomp`, landing on a head) — are
-**excluded** from every damage figure (a telefrag's 9999 would otherwise
-dominate `given`/`byWeapon`/`ewep`/`totalDamage`; a stomp is a movement
-kill, not a weapon). They are listed separately under `telefrags` /
-`stomps`, counted per-player in `byPlayer.<name>.telefrags` / `.stomps`,
-and exposed as the opt-in `telefrag` / `stomp` events (see §4.8). The
-`weapon` filter treats their implicit weapon as `tele` / `stomp`. The
-kill itself still appears in `/frags` and as a `frag` event.
-
-### 4.6 `GET /v1/demos/{id}/loc-graph`
-
-Per-map loc adjacency graph (nodes + directed transitions, with optional
-combat-posture weights). Shape: `result.LocGraphResult` →
-[RESULT_SCHEMA.md §LocGraphResult](../mvd-analytics/RESULT_SCHEMA.md#locgraphresult-locgraph).
-
-### 4.7 `GET /v1/demos/{id}/backpacks`, `/items`, `/weapon-pickups`
-
-KTX-hint-derived item analytics:
-
-- **`/backpacks`** (`players`, `weapon`) — RL/LG drops. `[]result.BackpackDrop`.
-- **`/items`** (`items`, `players`, `kinds`) — per-item pickup/respawn
-  timeline. `result.ItemsResult`.
-- **`/weapon-pickups`** (`players`, `weapon`, `source`) — slot-weapon
-  acquisitions with kills-before-next-death; joins to backpacks via
-  `backpackEnt`. `[]result.WeaponPickup`.
-
-Shapes in
-[RESULT_SCHEMA.md §Items / Backpacks / WeaponPickups](../mvd-analytics/RESULT_SCHEMA.md#itemsresult-items).
-
-> The map's static designed layout is **per-map data**, served only by
-> `GET /v1/maps/{map}/entities` (§4.16) — it is identical for every demo on
-> a map. The demo-scoped `/v1/demos/{id}/map-entities` was **removed in
-> schema v36**; a caller holding a demo id reads the map name from
-> `/overview` first. For the per-match pickup timeline use `/items`.
-
-### 4.8 `GET /v1/demos/{id}/events`
-
-Params: `from`, `to`, `players`, `types`, `loc`. A merged, time-sorted
-event log. Shape: `view.EventsView`.
-
-`types` selects event kinds; the **default set** (when `types` is empty)
-is `frag,powerup,streak,spawn,death,weapon,item,chat`. High-frequency
-state events `health`, `armor`, `loc`, and per-hit `damage` are
-**excluded by default** — pass them explicitly to opt in. A `damage`
-event carries `detail{ victim, damage, weapon, isSplash?, isEnv?,
-isSelf?, isTeam?, victimWep? }`; `players` matches its attacker or
-victim. For aggregates use `/damage` instead.
-
-`telefrag` and `stomp` are also **opt-in** (the kill already appears as a
-`frag` event, so they're left out of the default feed to avoid doubling
-the kill count). Each carries `detail{ victim, isTeam? }` with `player` =
-the killer.
-
-```jsonc
-// ?types=spawn,death&from=100&to=160
-{ "events": [
-  { "t": 101.298, "type": "death", "player": "diehuman" },
-  { "t": 102.367, "type": "spawn", "player": "diehuman" },
-  { "t": 104.199, "type": "death", "player": "sailorman" },
-  …
-] }
-```
-
-Envelope `t` is **seconds**. Some types carry a `detail` object (e.g. a
-`loc` event's `{ "loc": "RA" }`, or `{ "li": 7 }` with `loc=index`).
-This is the authoritative source for spawn/death life events.
-
-### 4.9 `GET /v1/demos/{id}/stream-slice`
-
-Params: `from`, `to`, `players`, `fields`, `loc`. Returns the **raw,
-unreduced** change entries falling in `[from, to)`, plus a synthetic
-carry-forward entry at the window start showing the value on entry;
-intervals overlapping the window are clamped. Shape: `view.StreamSliceView`.
-
-This is the faithful, native-rate view — the one to use for replay
-scrubbers and detail charts.
-
-```jsonc
-// ?players=sailorman&fields=h,pos&from=105&to=106
-{ "startTime": 105, "endTime": 106,          // SECONDS
-  "players": [ {
-    "name": "sailorman",
-    "h":   [ { "t": 105000, "v": -7 }, { "t": 105182, "v": 100 } ],   // ms, value
-    "pos": { "t": [105001,105014,105027,…],  // ms — 70 samples in this 1s window
-             "x": [-1072,-1071.875,-1071.5,…], "y": […], "z": […] }  // x/y/z float32 units
-  } ] }
-```
-
-```jsonc
-// ?players=sailorman&fields=rl&from=105&to=110   (interval field)
-{ "startTime": 105, "endTime": 110,
-  "players": [ { "name": "sailorman",
-    "rl": [ { "s": 105000, "e": 105182 }, { "s": 106834, "e": 110000 } ] } ] }  // ms
-```
-
-```jsonc
-// ?players=sailorman&fields=view,hgt,lq&from=105&to=106   (position-derived)
-{ "startTime": 105, "endTime": 106,
-  "players": [ { "name": "sailorman",
-    // each projects into its own sibling track with its own t axis
-    "view": { "t": [105001,105014,…], "vp": [288,289,…], "vya": [16384,16390,…] }, // raw angle16
-    "hgt":  { "t": [105001,105014,…], "h":  [0,0,40.96875,…] }, // float32 units above floor (BSP only)
-    "lq":   { "t": [105001,105014,…], "lq": [0,0,5,…] },     // 0 dry, else (type<<2)|level
-    "vel":  { "t": [105001,105014,…], "vx": [312.5,318.27,…], "vy": [-44.6,…], "vz": [0,…] } } ] }  // float32 units/sec
-```
-
-⚠️ Entry `t` / `s` / `e` are **int32 ms** even though the envelope
-`startTime`/`endTime` are seconds (see §2.1). With `fields=sp,d` you get
-the raw spawn/death ms-timestamp arrays clipped to the window.
-
-### 4.10 `GET /v1/demos/{id}/buckets`
-
-Params: `windowMs`, `from`, `to`, `players`, `fields`, `reducers`,
-`includeTeam`, `loc`, `layout`. One **reduced** value per `windowMs`
-window per field — the shape for charts and heatmaps. Default reducer is
-`first` (value at window start); override with `reducers`.
-
-**`layout=column` (default)** → `view.ColumnarBuckets`: one dense typed
-array per `(player, field)` over the player's active span, implicit time
-axis `time(i) = startMs + i*windowMs` (**ms**), `0`/`1` `alive[]` mask,
-booleans as `0`/`1`, loc always the raw `li` index. Compact; best for
-series reads. Full shape:
-[RESULT_SCHEMA.md §Columnar layout](../mvd-analytics/RESULT_SCHEMA.md#columnar-layout-viewbucketscolumnar-rest-layoutcolumn).
-
-**`layout=row`** → `view.BucketsView`: one self-describing object per
-bucket. Easier to read, larger.
-
-```jsonc
-// ?layout=row&windowMs=120000&fields=h,a&players=sailorman
-{ "windowMs": 120000, "buckets": [
-  { "t": 0,   "p": { "sailorman": { "h": 100, "a": 200 } } },   // bucket t = SECONDS
-  { "t": 120, "p": { "sailorman": { "h": 100, "a": 0 } } }, … ] }
-```
-
-A partial trailing bucket carries `"partial": true`. For a point-in-time
-read, prefer `/state-at` over indexing into buckets.
-
-### 4.11 `GET /v1/demos/{id}/state-at`
-
-Params: `time` (**required**, seconds), `players`, `fields`, `loc`.
-Resolves each field at `time`: change streams carry-forward (latest
-entry `≤ time`), intervals report `true` iff `time` ∈ an interval,
-position is the nearest sample. Shape: `view.StateAtView`.
-
-```jsonc
-// ?time=105&players=sailorman&fields=h,a,rl,pos
-{ "t": 105,                                   // SECONDS
-  "players": { "sailorman": {
-    "h": -7, "a": 0, "rl": true,              // h<0 ⇒ dead at t (died 104.199)
-    "pos": { "x": -1072, "y": -348.5, "z": 216.125 } } } }  // float32 units
-```
-
-### 4.12 `GET /v1/demos/{id}/loc-trails`
-
-Params: `from`, `to`, `players`, `minDwellMs`, `loc`. Per-player loc
-residences with dwell spans; `minDwellMs` folds short blips into adjacent
-residences. Shape: `view.LocTrailsView`.
-
-```jsonc
-// ?players=sailorman
-{ "players": [ { "name": "sailorman", "sequence": [
-  { "s": 0,     "e": 1.015, "loc": "tunnel" },        // s/e = SECONDS
-  { "s": 1.015, "e": 2.638, "loc": "tunnel.LG" },
-  { "s": 2.638, "e": 3.427, "loc": "spiral" }, … ] } ] }
-```
-
-### 4.13 `GET /v1/demos/{id}/region-control`
-
-Params: `windowMs`, `from`, `to`. Per-region control share + per-player
-attribution, re-derived at the requested resolution; `from`/`to`
-(match-relative seconds, omit for the whole match) clip the computation to
-a sub-window — e.g. "who controlled QUAD between 4:00 and 6:00". Shape:
-`result.RegionControlResult` →
-[RESULT_SCHEMA.md §RegionControlResult](../mvd-analytics/RESULT_SCHEMA.md#regioncontrolresult-regioncontrol).
-`422 region_control_unavailable` when the map has no region layout (check
-`overview.hasRegionControl` first).
-
-```jsonc
-// ?windowMs=10000
-{ "teamA": "blue", "teamB": "red",
-  "regions": [ { "name": "QUAD", … }, … ],
-  "stats": { "QUAD": {
-    "teamAControl": 10, "teamBControl": 8.3, "empty": 78.3, …,   // percent
-    "byPlayer": { "sailorman": { "team":"red","armed":3,"unarmed":1 }, … } } } }
-```
-
-### 4.14 `GET /v1/demos/{id}/loc-table`
-
-The interned loc-name decoder for `loc=index` mode: `{ "locTable":
-[…] }`, index 0 = `""` (no-loc). Fetch once per demo, then decode `li`
-indices client-side.
-
-### 4.15 `GET /v1/demos/{id}/chat`, `/healthz`, `/v1/version`
-
-- **`/chat`** (`from`, `to`, `players`, `types`) — chat + teamsay only;
-  `[]result.MatchEvent`.
-- **`/healthz`** — `{ "ok": true, "schemaVersion": 37 }`.
-- **`/v1/version`** — `{ "hash", "tag", "buildDate" }`.
-
-### 4.16 Per-map static data — `GET /v1/maps/{map}/…`
-
-Per-map data addressed by map name directly (no demo needed) — handy for
-UIs that have a map name from `/overview` or a match listing.
-
-- **`GET /v1/maps/{map}/entities`** (`types`, `kinds`) — the map's
-  **static designed layout**: item spawns, player spawnpoints, teleport
-  destinations/sources, buttons, with type + location, read from the
-  embedded BSP entity corpus (identical for every demo on the map).
-  Shape: `result.MapEntitiesResult` →
-  [RESULT_SCHEMA.md §MapEntitiesResult](../mvd-analytics/RESULT_SCHEMA.md#mapentitiesresult-mapentities).
-  Aliases are resolved (`phantombase` → `phantoma`). `404 map_unavailable`
-  when no corpus exists. For the per-match pickup timeline use
-  `/demos/{id}/items`.
-
-  ```jsonc
-  // ?types=item,teleportSrc,teleportDst&kinds=weapon
-  { "map": "dm6", "entities": [
-    { "type": "item", "class": "weapon_rocketlauncher", "kind": "rl",
-      "name": "RA", "x": 1216, "y": -64, "z": 24, "loc": "RA" },
-    // brush entity: anchored at bbox centre, carries the trigger volume
-    { "type": "teleportSrc", "class": "trigger_teleport", "name": "GA",
-      "x": 248, "y": -1784, "z": 83, "loc": "GA", "target": "t2",
-      "bounds": { "min": [229,-1807,24], "max": [267,-1761,142] } },
-    { "type": "teleportDst", "class": "info_teleport_destination",
-      "name": "MH", "x": -512, "y": 480, "z": 24, "loc": "MH",
-      "targetName": "t2" }
-  ] }
-  ```
-
-  `types` ∈ `item,spawn,teleportDst,teleportSrc,button,door`; `kinds` is an
-  item category (`armor,mega,health,powerup,weapon,ammo`) or a raw kind.
-  Brush entities (`teleportSrc`/`button`/`door`) carry a `bounds` volume;
-  link a teleporter's entrance to its exit via `teleportSrc.target` ==
-  `teleportDst.targetName`.
-- **`GET /v1/maps/{map}/geometry`** — streams the per-map floor-polygon
-  geometry JSON (`mapgeom.MapRegions`: `{ map, version, bounds, locs:[{
-  name, z, tris:[…] }], walls?:[…], liquids?:[{ kind, tris:[…] }],
-  submodels?:[{ id, tris:[…] }], pruned?:{ demos, points, facesDropped } }`)
-  for renderers. `tris` is a flat float list, 9 per triangle (x,y,z per
-  vertex) since `version` 2; version-1 files carried 6 (XY only, with the
-  region-median `z` as the only height hint). `version` 3 adds the
-  optional top-level `walls` (same 9-float triangle layout, vertical
-  faces) for occluding 3D renders. `version` 4 adds optional `liquids`
-  (water/slime/lava volume meshes, `kind` one of those three),
-  `submodels` (brush-model lifts/doors keyed by their `*id` index, posed
-  at runtime from the result's mover streams) and a `pruned` provenance
-  block on usage-pruned files. All fields are presence-based, so a v4
-  reader handles older files and vice-versa. Served from the server's
-  `-maps-dir`; `404 map_unavailable` when unset or the map is missing.
-  **REST-only — not an MCP tool** (the payload is large, up to tens of
-  MB). Immutable cache + ETag; send `If-None-Match` for a 304.
+## 4. Endpoint reference — served by the API itself
+
+The per-endpoint reference lives in the OpenAPI 3.1 document embedded in
+the server, so it cannot drift from the running code:
+
+- **`GET /openapi.yaml`** — machine-readable: all operations, reusable
+  parameters, full field-level response schemas, the error-code /
+  artifact / field-code enums. Drift tests pin it to the router and the
+  code enums; a golden-corpus validation test checks every response
+  schema against real responses.
+- **`GET /docs`** — the same document rendered as a browsable reference
+  (vendored RapiDoc; try-it console with Bearer auth; no external
+  requests).
+
+Both are reachable without an API key. Operation semantics that used to
+be spelled out here — filtering/recompute rules, unit seams, the
+artifact node↔resultKey mapping table, availability behaviour — are in
+the operations' descriptions there. Field-level semantics of the
+underlying Result sections stay in
+[`RESULT_SCHEMA.md`](../mvd-analytics/RESULT_SCHEMA.md), which the
+server also renders standalone at **`GET /docs/result-schema`**.
 
 ---
 

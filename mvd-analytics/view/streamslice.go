@@ -109,10 +109,10 @@ func StreamSlice(r *result.Result, opts StreamSliceOptions) (*StreamSliceView, e
 	// Global.Match* is int32 ms (schema v8); public view API is
 	// float64 seconds — convert once at the entry.
 	if end == 0 {
-		end = float64(r.Streams.Global.MatchEnd) * 0.001
+		end = secs(r.Streams.Global.MatchEnd)
 	}
 	if start == 0 {
-		start = float64(r.Streams.Global.MatchStart) * 0.001
+		start = secs(r.Streams.Global.MatchStart)
 	}
 	pf := newPlayerFilter(opts.Players)
 	locTable := locTableOf(r)
@@ -337,6 +337,10 @@ func sliceInts(stream []int32, start, end float64) []int32 {
 // player is, so it rides with the position). Height (h) and liquid (lq)
 // are NOT included here since schema v31: request them via the `hgt` /
 // `lq` field codes (sliceHeight / sliceLiquid).
+//
+// PositionTrack column checklist site 7 (view-layer kind/slice/columnar
+// plumbing — slicePosition and its sibling slice*/columnar projectors);
+// see the checklist in result/coord.go (PositionTrack.MarshalJSON).
 func slicePosition(pt *result.PositionTrack, start, end float64) *result.PositionTrack {
 	if pt == nil {
 		return nil

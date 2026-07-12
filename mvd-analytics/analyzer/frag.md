@@ -80,8 +80,8 @@ named). Per-player **deaths** come from the authoritative protocol
   requiring the two to agree so a lone alias can't misattribute. A few
   may stay unattributed when the position/score evidence is ambiguous.
 - The teamkill recompute path runs **after** demoinfo finalises (Frag
-  is registered after DemoInfo in the core slice). If the demoinfo
-  block is missing, live verdicts are kept as-is.
+  declares a `requires` edge on `demoinfo`, so the DAG schedules it
+  later). If the demoinfo block is missing, live verdicts are kept as-is.
 - **Pentagram-deflect kills are invisible here.** When an enemy telefrags
   a player holding 666 (pentagram), KTX deflects it — the telefragger
   dies and the obituary reads `"Satan's power deflects X's telefrag"`

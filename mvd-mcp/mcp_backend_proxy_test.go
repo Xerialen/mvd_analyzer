@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -63,6 +64,19 @@ func cannedAPI(t *testing.T, recordAuth *string) *httptest.Server {
 	})
 	mux.HandleFunc("GET /v1/demos/{id}/weapon-pickups", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`[]`))
+	})
+	// Stage-4 generic artifact surface.
+	mux.HandleFunc("GET /v1/artifacts", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"schemaVersion":49,"artifacts":[{"name":"frag","servable":true,"resultKey":"frags"}]}`))
+	})
+	mux.HandleFunc("GET /v1/demos/{id}/artifacts/{name}", func(w http.ResponseWriter, r *http.Request) {
+		name := r.PathValue("name")
+		if name == "bogus" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":{"code":"artifact_unknown","message":"no servable artifact"}}`))
+			return
+		}
+		fmt.Fprintf(w, `{%q:{"ok":true}}`, name)
 	})
 
 	srv := httptest.NewServer(mux)
@@ -134,12 +148,12 @@ func TestProxy_GetBuckets_WindowMs(t *testing.T) {
 	}
 }
 
-// TestProxy_GetBuckets_MCPDefaultIs1s verifies that omitting
-// WindowMs in the MCP input forwards windowMs=1000 to the REST API
+// TestProxy_GetBuckets_MCPDefaultIs5s verifies that omitting
+// WindowMs in the MCP input forwards windowMs=5000 to the REST API
 // (not 50, which is what the API itself defaults to). This is the
 // MCP-side ergonomic default to keep buckets responses
 // LLM-readable.
-func TestProxy_GetBuckets_MCPDefaultIs1s(t *testing.T) {
+func TestProxy_GetBuckets_MCPDefaultIs5s(t *testing.T) {
 	srv := cannedAPI(t, nil)
 	b := newProxyBackend(srv.URL, "", 5*time.Second)
 	out, err := b.GetBuckets(context.Background(), GetBucketsInput{DemoID: "gameId:42"})
@@ -147,8 +161,8 @@ func TestProxy_GetBuckets_MCPDefaultIs1s(t *testing.T) {
 		t.Fatalf("GetBuckets: %v", err)
 	}
 	m := out.(map[string]any)
-	if m["windowMs"].(float64) != 1000 {
-		t.Errorf("MCP default windowMs=%v; want 1000 (proxy must inject)", m["windowMs"])
+	if m["windowMs"].(float64) != 5000 {
+		t.Errorf("MCP default windowMs=%v; want 5000 (proxy must inject)", m["windowMs"])
 	}
 }
 
@@ -179,7 +193,7 @@ func TestProxy_GetBuckets_LayoutForwarded(t *testing.T) {
 	}
 }
 
-func TestProxy_GetRegionControl_MCPDefaultIs1s(t *testing.T) {
+func TestProxy_GetRegionControl_MCPDefaultIs5s(t *testing.T) {
 	var seenQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seenQuery = r.URL.RawQuery
@@ -191,8 +205,8 @@ func TestProxy_GetRegionControl_MCPDefaultIs1s(t *testing.T) {
 	if _, err := b.GetRegionControl(context.Background(), GetRegionControlInput{DemoID: "gameId:42"}); err != nil {
 		t.Fatalf("GetRegionControl: %v", err)
 	}
-	if !strings.Contains(seenQuery, "windowMs=1000") {
-		t.Errorf("expected windowMs=1000 in query; got %q", seenQuery)
+	if !strings.Contains(seenQuery, "windowMs=5000") {
+		t.Errorf("expected windowMs=5000 in query; got %q", seenQuery)
 	}
 }
 
@@ -233,6 +247,129 @@ func TestProxy_EmptyLabel_NoAuthHeader(t *testing.T) {
 	}
 }
 
+// TestProxy_DemoPathValidation covers F5: a model-supplied demoId that
+// isn't a canonical gameId:N / sha:HEX — in particular one carrying '/' or
+// '?' — is rejected before any HTTP call, so it can't reroute the request.
+func TestProxy_DemoPathValidation(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	bad := []string{
+		"",                          // empty
+		"gameId:42/frags?players=x", // path-splice reroute
+		"gameId:42#frag",            // fragment
+		"sha:xyz",                   // not 64 hex
+		"../secrets",                // traversal
+		"gameId:",                   // missing number
+		"gameId:0x10",               // non-decimal
+	}
+	for _, id := range bad {
+		if _, err := b.GetOverview(ctx, GetOverviewInput{DemoID: id}); err == nil {
+			t.Errorf("GetOverview(%q): expected validation error, got nil", id)
+		}
+	}
+	if hits != 0 {
+		t.Errorf("invalid demoIds reached the backend %d times; want 0", hits)
+	}
+
+	// Canonical ids pass through untouched.
+	for _, id := range []string{"gameId:42", "sha:" + strings.Repeat("a", 64), "sha:" + strings.Repeat("A", 64)} {
+		if _, err := b.GetOverview(ctx, GetOverviewInput{DemoID: id}); err != nil {
+			t.Errorf("GetOverview(%q): valid id rejected: %v", id, err)
+		}
+	}
+	if hits != 3 {
+		t.Errorf("valid ids reached backend %d times; want 3", hits)
+	}
+}
+
+// TestProxy_GetBackpacks_WeaponCSV covers F7a: Weapon is a []string set
+// forwarded as CSV, matching REST /backpacks (was a single string).
+func TestProxy_GetBackpacks_WeaponCSV(t *testing.T) {
+	var seenQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.RawQuery
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	if _, err := b.GetBackpacks(context.Background(), GetBackpacksInput{
+		DemoID: "gameId:42", Weapons: []string{"rl", "lg"},
+	}); err != nil {
+		t.Fatalf("GetBackpacks: %v", err)
+	}
+	vals, _ := url.ParseQuery(seenQuery)
+	// Pins the wire param: the proxy sends the canonical `weapons` (the
+	// 16.2 rename); REST keeps `weapon` as a legacy alias for old clients.
+	if vals.Get("weapons") != "rl,lg" {
+		t.Errorf("weapons=%q; want rl,lg (CSV set)", vals.Get("weapons"))
+	}
+}
+
+func TestProxy_ListArtifacts(t *testing.T) {
+	srv := cannedAPI(t, nil)
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	out, err := b.ListArtifacts(context.Background(), ListArtifactsInput{})
+	if err != nil {
+		t.Fatalf("ListArtifacts: %v", err)
+	}
+	m, ok := out.(map[string]any)
+	if !ok {
+		t.Fatalf("expected object, got %T", out)
+	}
+	if _, ok := m["artifacts"].([]any); !ok {
+		t.Errorf("missing artifacts array: %v", m)
+	}
+}
+
+func TestProxy_GetArtifact(t *testing.T) {
+	srv := cannedAPI(t, nil)
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	// Happy path: the body comes back under the artifact name's key.
+	out, err := b.GetArtifact(context.Background(), GetArtifactInput{DemoID: "gameId:42", Name: "los"})
+	if err != nil {
+		t.Fatalf("GetArtifact: %v", err)
+	}
+	if _, ok := out.(map[string]any)["los"]; !ok {
+		t.Errorf("expected los key, got %v", out)
+	}
+
+	// Unknown name → the mvd-api 404 surfaces as a proxyError.
+	if _, err := b.GetArtifact(context.Background(), GetArtifactInput{DemoID: "gameId:42", Name: "bogus"}); err == nil {
+		t.Error("expected error for unknown artifact")
+	}
+}
+
+// A malformed artifact name (path-splice / traversal) is rejected before any
+// HTTP call, like the demoId validation (F5).
+func TestProxy_GetArtifact_NameValidation(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	for _, name := range []string{"", "../secrets", "frag/../x", "Frag", "a b", "frags?x=1"} {
+		if _, err := b.GetArtifact(ctx, GetArtifactInput{DemoID: "gameId:42", Name: name}); err == nil {
+			t.Errorf("GetArtifact(name=%q): expected validation error", name)
+		}
+	}
+	if hits != 0 {
+		t.Errorf("invalid names reached the backend %d times; want 0", hits)
+	}
+}
+
 // Smoke test that all the view endpoints decode without error.
 func TestProxy_AllView(t *testing.T) {
 	srv := cannedAPI(t, nil)
@@ -242,7 +379,8 @@ func TestProxy_AllView(t *testing.T) {
 	if _, err := b.GetEvents(ctx, GetEventsInput{DemoID: "gameId:42"}); err != nil {
 		t.Errorf("GetEvents: %v", err)
 	}
-	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42"}); err != nil {
+	// stream-slice requires a window at the MCP layer (size guard).
+	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42", StartTime: 60, EndTime: 90}); err != nil {
 		t.Errorf("GetStreamSlice: %v", err)
 	}
 	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:42"}); err != nil {
@@ -294,5 +432,234 @@ func TestProxy_ListEndpointsWrapped(t *testing.T) {
 				t.Errorf("%s: len(%s)=%d; want %d", tc.name, tc.key, len(arr), tc.want)
 			}
 		})
+	}
+}
+
+// TestProxy_SummaryDefaultsTrue: damage/aim/items default summary=1 at
+// the MCP layer (D1, PLAN-api-usability) and annotate the defaulted
+// response with a hint; an explicit summary:false suppresses both.
+func TestProxy_SummaryDefaultsTrue(t *testing.T) {
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.Query()
+		w.Write([]byte(`{"totalDamage":1}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	fv := false
+	tv := true
+	calls := []struct {
+		name string
+		call func(summary *bool) (any, error)
+	}{
+		{"damage", func(s *bool) (any, error) {
+			return b.GetDamage(context.Background(), GetDamageInput{DemoID: "gameId:42", Summary: s})
+		}},
+		{"aim", func(s *bool) (any, error) {
+			return b.GetAim(context.Background(), GetAimInput{DemoID: "gameId:42", Summary: s})
+		}},
+		{"items", func(s *bool) (any, error) {
+			return b.GetItems(context.Background(), GetItemsInput{DemoID: "gameId:42", Summary: s})
+		}},
+	}
+	for _, c := range calls {
+		// Unset -> summary=1 + hint.
+		out, err := c.call(nil)
+		if err != nil {
+			t.Fatalf("%s(nil): %v", c.name, err)
+		}
+		if seenQuery.Get("summary") != "1" {
+			t.Errorf("%s(nil): summary param = %q, want 1", c.name, seenQuery.Get("summary"))
+		}
+		if _, ok := out.(map[string]any)["hint"]; !ok {
+			t.Errorf("%s(nil): defaulted summary response missing hint", c.name)
+		}
+		// Explicit false -> no summary param, no hint.
+		out, err = c.call(&fv)
+		if err != nil {
+			t.Fatalf("%s(false): %v", c.name, err)
+		}
+		if seenQuery.Has("summary") {
+			t.Errorf("%s(false): summary param sent = %q, want absent", c.name, seenQuery.Get("summary"))
+		}
+		if _, ok := out.(map[string]any)["hint"]; ok {
+			t.Errorf("%s(false): unexpected hint on full response", c.name)
+		}
+		// Explicit true -> summary=1 but NO hint (caller knew).
+		out, err = c.call(&tv)
+		if err != nil {
+			t.Fatalf("%s(true): %v", c.name, err)
+		}
+		if seenQuery.Get("summary") != "1" {
+			t.Errorf("%s(true): summary param = %q, want 1", c.name, seenQuery.Get("summary"))
+		}
+		if _, ok := out.(map[string]any)["hint"]; ok {
+			t.Errorf("%s(true): hint added despite explicit summary", c.name)
+		}
+	}
+}
+
+// TestProxy_GetDamage_DmgForwarded: the dmg family selector reaches the
+// REST query when set, and stays out of it when empty so the REST
+// summary-aware default resolution applies.
+func TestProxy_GetDamage_DmgForwarded(t *testing.T) {
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.Query()
+		w.Write([]byte(`{"totalDamage":1}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	fv := false
+	if _, err := b.GetDamage(context.Background(), GetDamageInput{DemoID: "gameId:42", Dmg: "bounded", Summary: &fv}); err != nil {
+		t.Fatalf("GetDamage(bounded): %v", err)
+	}
+	if seenQuery.Get("dmg") != "bounded" {
+		t.Errorf("dmg=%q; want bounded", seenQuery.Get("dmg"))
+	}
+
+	if _, err := b.GetDamage(context.Background(), GetDamageInput{DemoID: "gameId:42", Summary: &fv}); err != nil {
+		t.Fatalf("GetDamage(empty dmg): %v", err)
+	}
+	if seenQuery.Has("dmg") {
+		t.Errorf("empty dmg must not be forwarded (REST default resolves); got %q", seenQuery.Get("dmg"))
+	}
+}
+
+// TestProxy_TimeWindowsForwarded: the new from/to params reach the REST
+// query for items / backpacks / weapon-pickups / region-control.
+func TestProxy_TimeWindowsForwarded(t *testing.T) {
+	var seenPath string
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenPath = r.URL.Path
+		seenQuery = r.URL.Query()
+		if strings.Contains(r.URL.Path, "backpacks") || strings.Contains(r.URL.Path, "weapon-pickups") {
+			w.Write([]byte(`[]`))
+			return
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	fv := false
+	if _, err := b.GetItems(ctx, GetItemsInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60, Summary: &fv}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("items window = %q..%q (%s)", seenQuery.Get("from"), seenQuery.Get("to"), seenPath)
+	}
+	if _, err := b.GetBackpacks(ctx, GetBackpacksInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("backpacks window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
+	}
+	if _, err := b.GetWeaponPickups(ctx, GetWeaponPickupsInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("weapon-pickups window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
+	}
+	if _, err := b.GetRegionControl(ctx, GetRegionControlInput{DemoID: "gameId:1", StartTime: 5, EndTime: 60}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("from") != "5" || seenQuery.Get("to") != "60" {
+		t.Errorf("region-control window = %q..%q", seenQuery.Get("from"), seenQuery.Get("to"))
+	}
+	if seenQuery.Get("windowMs") != "5000" {
+		t.Errorf("region-control windowMs = %q, want the 5000 MCP default preserved", seenQuery.Get("windowMs"))
+	}
+}
+
+// TestProxy_ListArtifacts_CompactsManifest: the MCP surface trims the
+// manifest to servable artifacts and routing-relevant fields; the DAG
+// edges and internal nodes stay on REST /v1/artifacts + /v1/graph.
+func TestProxy_ListArtifacts_CompactsManifest(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"schemaVersion":52,"artifacts":[
+			{"name":"clock","servable":false,"mutates":false,"requires":[],"provides":["clock"],"cost":"light","lazy":false,"description":"internal"},
+			{"name":"opening","servable":true,"mutates":true,"requires":["timeline","items"],"provides":["opening"],"resultKey":"opening","cost":"light","lazy":false,"description":"Match opening."}
+		]}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	out, err := b.ListArtifacts(context.Background(), ListArtifactsInput{})
+	if err != nil {
+		t.Fatalf("ListArtifacts: %v", err)
+	}
+	arts := out.(map[string]any)["artifacts"].([]any)
+	if len(arts) != 1 {
+		t.Fatalf("non-servable node survived compaction: %+v", arts)
+	}
+	row := arts[0].(map[string]any)
+	if row["name"] != "opening" || row["resultKey"] != "opening" || row["description"] == nil {
+		t.Errorf("compact row missing routing fields: %+v", row)
+	}
+	for _, gone := range []string{"requires", "provides", "mutates", "servable"} {
+		if _, ok := row[gone]; ok {
+			t.Errorf("compact row still carries %q", gone)
+		}
+	}
+	if v := out.(map[string]any)["schemaVersion"]; v.(float64) != 52 {
+		t.Errorf("envelope fields must pass through, got schemaVersion=%v", v)
+	}
+}
+
+// TestProxy_StreamSliceRequiresWindow: the MCP layer refuses an
+// unwindowed slice (native-rate whole-match dump) with a routing hint;
+// either bound alone satisfies the guard.
+func TestProxy_StreamSliceRequiresWindow(t *testing.T) {
+	srv := cannedAPI(t, nil)
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	_, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42"})
+	if err == nil || !strings.Contains(err.Error(), "time window") {
+		t.Fatalf("unwindowed slice must be refused with guidance, got %v", err)
+	}
+	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42", EndTime: 30}); err != nil {
+		t.Errorf("endTime-only window must pass: %v", err)
+	}
+	if _, err := b.GetStreamSlice(ctx, GetStreamSliceInput{DemoID: "gameId:42", StartTime: 500}); err != nil {
+		t.Errorf("startTime-only window must pass: %v", err)
+	}
+}
+
+// TestProxy_LocTrailsDwellDefault: MCP injects minDwellMs=250 when the
+// caller is silent (flicker filter); explicit 0 opts back into raw.
+func TestProxy_LocTrailsDwellDefault(t *testing.T) {
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.Query()
+		w.Write([]byte(`{"players":[]}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+	ctx := context.Background()
+
+	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:1"}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("minDwellMs") != "250" {
+		t.Errorf("defaulted minDwellMs = %q, want 250", seenQuery.Get("minDwellMs"))
+	}
+	zero := 0
+	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:1", MinDwellMs: &zero}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Has("minDwellMs") {
+		t.Errorf("explicit 0 must suppress the param (raw trails), sent %q", seenQuery.Get("minDwellMs"))
+	}
+	custom := 1000
+	if _, err := b.GetLocTrails(ctx, GetLocTrailsInput{DemoID: "gameId:1", MinDwellMs: &custom}); err != nil {
+		t.Fatal(err)
+	}
+	if seenQuery.Get("minDwellMs") != "1000" {
+		t.Errorf("explicit minDwellMs = %q, want 1000", seenQuery.Get("minDwellMs"))
 	}
 }

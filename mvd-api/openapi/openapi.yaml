@@ -1,0 +1,5707 @@
+# mvd-api — OpenAPI 3.1 description of the REST surface.
+#
+# FORMATTING IS LOAD-BEARING. mvd-api/openapi_test.go scans this file
+# line-wise:
+#   - path items are "  /path:" (2-space indent), methods "    get:" (4-space);
+#   - the marker comments (artifact-enum, error-code-enum, field-code-enum)
+#     delimit enum blocks pinned to the code;
+#   - info.version must equal result.CurrentSchemaVersion.
+# Keep those conventions when editing, or the drift tests will fail loudly.
+#
+# This file is THE per-endpoint reference and must stay self-contained:
+# it is served to external integrators who cannot follow repo-relative
+# file references, so inline semantics here rather than pointing at
+# API.md (high-level guide + recipes only). Deep Result internals may
+# link to /docs/result-schema — RESULT_SCHEMA.md served by this API.
+# Response shapes are authored from the view/result structs and are
+# validated against real golden-corpus responses by openapi_validate_test.go.
+openapi: 3.1.0
+info:
+  title: mvdanalyzer-api
+  version: "57"
+  summary: QuakeWorld MVD demo analysis REST API
+  description: |
+    REST host for the mvd-analyzer pipeline: point it at a demo
+    (`gameId:N` from hub.quakeworld.nu, or `sha:HEX` of the demo file) and
+    read curated analysis sections — frags, damage, aim, item timelines,
+    positional streams — as JSON.
+
+    ### Time units — the one real gotcha
+    Query inputs `from` / `to` / `time` are match-relative **seconds**
+    (float). View-synthesised outputs (event lists, window bounds, trail
+    dwell spans, row-bucket timestamps) are **seconds**; anything copied
+    verbatim from the stored schema (change-stream / interval / position
+    arrays, the columnar bucket grid, `/overview` times) is **int32
+    milliseconds**. Scale ms→s by `* 0.001`.
+
+    ### Caching
+    Per-demo 2xx responses carry `Cache-Control: public, max-age=86400,
+    immutable` and an `ETag` of the form `"<sha>-v<schemaVersion>"`
+    (per-artifact: `"<sha>-<name>@v<n>"`; binary-statics: `"<kind>-v<n>"`).
+    A demo's analysis never changes for a given schema version — cache
+    aggressively and revalidate with `If-None-Match` for cheap 304s.
+
+    ### Availability — the 422 rule
+    Object-shaped sections that need a demo capability return
+    `422 <section>_unavailable` when the demo structurally lacks the signal
+    (non-KTX server, no position track, …). Treat these as "panel
+    unavailable for this demo", not failures. Always-computable list
+    sections (`/items`, `/backpacks`, `/weapon-pickups`, `/chat`) return
+    200 with an empty body instead.
+
+    ### Parameter conventions
+    Query parameter **names** are case-insensitive (canonical spelling is
+    camelCase). CSV parameters are comma-separated lists. Player-name
+    values are case-sensitive (QW names are case-significant); weapon /
+    item / kind / loc / layout tokens are case-insensitive.
+
+    This document is the complete per-endpoint reference. Deep
+    field-level semantics of the underlying analysis (the Result
+    contract shared with the Go library and WASM builds) are served by
+    this API at [/docs/result-schema](/docs/result-schema)
+    (raw markdown: /docs/result-schema.md).
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: /
+    description: Same origin — correct for localhost and the hosted deployment alike.
+security:
+  - bearerKey: []
+tags:
+  - name: meta
+    description: Liveness, build stamp, auth check, this spec.
+  - name: demo
+    description: Demo identity, warm-up, and curated summaries.
+  - name: combat
+    description: Frags, damage, shots, aim.
+  - name: items
+    description: Item spawners, backpacks, weapon pickups.
+  - name: timeline
+    description: Unified events, chat, region control, key moments.
+  - name: positional
+    description: Position-derived views — buckets, slices, state-at, trails, LOS.
+  - name: streams
+    description: Raw projectile / beam / nail flight streams.
+  - name: artifacts
+    description: The analyzer DAG surface — manifest, graph, generic artifact accessor.
+  - name: maps
+    description: Per-map static data (no demo needed).
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      tags: [meta]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Server is up.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+  /openapi.yaml:
+    get:
+      operationId: getOpenAPISpec
+      tags: [meta]
+      summary: This document
+      description: >
+        The OpenAPI 3.1 description of this server, embedded in the binary.
+        ETag is a content hash; revalidate with If-None-Match.
+      security: []
+      responses:
+        "200":
+          description: The spec.
+          content:
+            application/yaml:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+  /docs:
+    get:
+      operationId: getDocsPage
+      tags: [meta]
+      summary: Browsable API reference
+      description: >
+        Interactive reference for this spec (vendored RapiDoc; no external
+        requests). Point a browser here.
+      security: []
+      responses:
+        "200":
+          description: The viewer page.
+          content:
+            text/html:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+  /docs/result-schema:
+    get:
+      operationId: getResultSchemaPage
+      tags: [meta]
+      summary: Result schema reference
+      description: >
+        RESULT_SCHEMA.md — the field-level reference for the analysis
+        output (vocabulary codes, stream forms, per-section field
+        tables, schema version history) — rendered as a standalone page
+        (vendored renderer, no external requests). Raw markdown at
+        /docs/result-schema.md.
+      security: []
+      responses:
+        "200":
+          description: The rendered reference.
+          content:
+            text/html:
+              schema: { type: string }
+        "304": { $ref: "#/components/responses/NotModified" }
+  /v1/version:
+    get:
+      operationId: getVersion
+      tags: [meta]
+      summary: Build stamp
+      security: []
+      responses:
+        "200":
+          description: Build identity of the running binary.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Version" }
+  /v1/auth/check:
+    get:
+      operationId: checkAuthKey
+      tags: [meta]
+      summary: Validate the presented API key
+      description: >
+        204 when the Bearer key is valid. Deliberately NOT auth-exempt —
+        this route is the check itself. In no-auth (localhost) mode it
+        always succeeds.
+      responses:
+        "204":
+          description: Key accepted.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /v1/artifacts:
+    get:
+      operationId: listArtifacts
+      tags: [artifacts]
+      summary: Analyzer DAG artifact manifest
+      description: >
+        Every DAG node (name, requires, provides, mutates, lazy, cost,
+        resultKey, servable, description). Static per binary; ETag
+        `"artifacts-v<schemaVersion>"`.
+      responses:
+        "200":
+          description: The manifest.
+          headers: &staticHeaders
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Schema-Version: { $ref: "#/components/headers/XSchemaVersion" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtifactsManifest" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+  /v1/graph:
+    get:
+      operationId: getGraph
+      tags: [artifacts]
+      summary: Analyzer DAG as JSON
+      description: >
+        Nodes (cost / resultKey / lazy) + artifact edges, exactly
+        `analyzer.ExportGraph("json")`. Static per binary; ETag
+        `"graph-v<schemaVersion>"`.
+      responses:
+        "200":
+          description: The graph.
+          headers: *staticHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Graph" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+  /v1/demos/{id}:
+    post:
+      operationId: loadDemo
+      tags: [demo]
+      summary: Warm the cache for a demo (idempotent)
+      description: >
+        Resolves + parses the demo into the cache and returns identity
+        metadata. Optional: every per-demo GET auto-loads on cache miss —
+        use this only to warm up or to learn the SHA behind a gameId.
+        Non-cacheable action: no Cache-Control/ETag on the response.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: Demo identity + cache state.
+          headers:
+            X-Cache: { $ref: "#/components/headers/XCache" }
+            X-Schema-Version: { $ref: "#/components/headers/XSchemaVersion" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoadResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/overview:
+    get:
+      operationId: getOverview
+      tags: [demo]
+      summary: Curated match summary
+      description: >
+        Map, teams, corrected scoreboard, top streaks, top powerup runs,
+        timing, data-quality `errors[]`. UNITS SEAM: overview times are
+        int32 MILLISECONDS (verbatim from the stored schema). `teams` and
+        `players` are frag-sorted descending — index 0 is the winner.
+        Wall-clock mapping: `timing` converts a match-relative game time g
+        (ms) to real time — the game clock freezes during pauses, so
+        wallClockMs = demoStartUnixMs + demoOffset + g + the durations of
+        pauses at or before g (±demoStartAccuracyMs). `timing` is omitted
+        when the demo carries no wall-clock source; `pauses` when the
+        match had none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The overview.
+          headers: &perDemoHeaders
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Cache: { $ref: "#/components/headers/XCache" }
+            X-Schema-Version: { $ref: "#/components/headers/XSchemaVersion" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Overview" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/demoinfo:
+    get:
+      operationId: getDemoInfo
+      tags: [demo]
+      summary: KTX demoinfo block (verbatim pass-through)
+      description: >
+        Per-player weapon accuracy, kills/deaths, damage, sprees, item
+        pickup counts, RL/LG transfers — exactly as KTX reported them.
+        KTX UNITS ISLAND: integer seconds on KTX's own clock; `timelimit`
+        is minutes; item `{took, time}` is count + cumulative-hold seconds.
+        Unavailable (422 `demoinfo_unavailable`) on non-KTX servers or
+        pre-match aborts.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The KTX demoinfo section.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoInfo" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/metadata:
+    get:
+      operationId: getMetadata
+      tags: [demo]
+      summary: Server cvars + KTX match settings
+      description: >
+        Full serverinfo cvars plus parsed match settings (timelimit,
+        fraglimit, antilag, midair, …). 422 `metadata_unavailable` when the
+        demo has no fullserverinfo / countdown centerprint.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The metadata section.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Metadata" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/frags:
+    get:
+      operationId: getFrags
+      tags: [combat]
+      summary: Frag aggregates + kill log
+      description: >
+        Top-level frag aggregates plus the full kill log. When any scoping
+        filter (players / weapon / from / to) is active, ALL aggregates are
+        recomputed from the filtered log so they stay consistent with the
+        entries shown. 422 `frags_unavailable` when the demo has no frag log.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: Aggregates + kill log (log omitted with `summary`).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Frags" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/damage:
+    get:
+      operationId: getDamage
+      tags: [combat]
+      summary: Damage log + aggregates
+      description: >
+        Per-hit damage log plus aggregates (matrix, per-weapon, given/taken)
+        and the KTX-scoreboard cross-check. Positional kills — telefrags and
+        stomps — are excluded from the byWeapon/matrix/totalDamage figures
+        and listed separately, but their kill value DOES fold into
+        given/taken and, on enemy kills, the EWep victim-weapon buckets
+        (no fold at all on skipped:* demos — pure exclusion there).
+        Two damage families (schema v54), selected by `dmg`: the RAW family is
+        the unbound wire value (includes overkill), so totals run higher than
+        the KTX scoreboard; the BOUNDED family reconstructs KTX-scoreboard
+        semantics (armor absorbed + health capped to victim health). `boundedMode`
+        reports whether that reconstruction ran (`standard`) or was skipped
+        (`skipped:midair` / `skipped:instagib` / `skipped:dmgfrags`, where the
+        server mode rewrites the take in ways the wire does not expose). On a
+        telefrag/stomp the folded value appears as `bounded` (and `damage` when
+        the raw fold differs) on the telefrags[]/stomps[] entries. Per-player
+        EWep buckets slice enemy-given damage by what the victim held:
+        enemyVsSg/enemyVsMid/enemyVsLg/enemyVsRl/enemyVsBoth, with
+        ewep = lg+rl+both. Filters recompute aggregates like /frags. An unset
+        `dmg` defaults to `bounded` for both the summary and the full log; an
+        unfiltered bounded/both SUMMARY sources its per-player bounded figures
+        from the exact KTX end-of-match scoreboard when the demo carries
+        demoInfo (`boundedSource` echoes `ktx` vs `reconstructed`; `taken` and
+        the enemyVs* buckets stay reconstructed). 422 `damage_unavailable`
+        without the KTX mvdhidden_dmgdone stream, or `bounded_unavailable` for
+        an EXPLICIT `dmg=bounded` on a skipped:* demo (a DEFAULTED bounded there
+        falls back to raw).
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+        - $ref: "#/components/parameters/Dmg"
+      responses:
+        "200":
+          description: Aggregates + per-hit log (log omitted with `summary`).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Damage" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/shots:
+    get:
+      operationId: getShots
+      tags: [combat]
+      summary: Per-fire weapon stream
+      description: >
+        Every detected weapon fire with time/player/weapon/source, hit +
+        victims where linkable, per-player aggregates, and the KTX
+        reconciliation cross-check. No query parameters. 422
+        `shots_unavailable` when no weapon fires were decoded.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The shots section.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Shots" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/aim:
+    get:
+      operationId: getAim
+      tags: [combat]
+      summary: Per-player aim analysis
+      description: >
+        Per-weapon effectiveness (SG/SSG pellet stats, RL/GL direct/splash,
+        the LG near/blocked/out-of-range whiff split), columnar
+        crosshair-error samples, and the LG ramp series. A from/to window
+        recomputes aim over the shots in that window; `summary` drops the
+        big crosshair/lgRamp blocks. 422 `aim_unavailable` without shots +
+        position/view streams.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: The aim section (columnar blocks omitted with `summary`).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Aim" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/loc-graph:
+    get:
+      operationId: getLocGraph
+      tags: [positional]
+      summary: Per-map loc adjacency graph
+      description: >
+        Which locs are reachable from which, weighted by observed traversal.
+        422 `locgraph_unavailable` when no position track was emitted.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The loc graph.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocGraph" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/chat:
+    get:
+      operationId: getChat
+      tags: [timeline]
+      summary: Chat-only event slice
+      description: >
+        Chat messages with speaker/team, mirrored from result.MatchEvent
+        (Time, Type, Player, Team, Message, MessageClean). Always 200 —
+        empty list when nothing matches.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/ChatTypes"
+      responses:
+        "200":
+          description: Matching chat events.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chat" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/backpacks:
+    get:
+      operationId: getBackpacks
+      tags: [items]
+      summary: RL/LG backpack drops
+      description: >
+        Backpack drops from KTX's drop hint: time, dropper, weapon
+        (rl/lg), origin XYZ, resolved loc, and the server ent number that
+        joins to /weapon-pickups. Always 200 — empty when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Matching backpack drops.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Backpacks" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/items:
+    get:
+      operationId: getItems
+      tags: [items]
+      summary: Per-item pickup/respawn timeline
+      description: >
+        One entry per tracked spawner (unique name like `ya_1`, kind token,
+        world position + nearest loc) with its phase timeline
+        (availableFrom, takenBy/takenAt, respawnAt). `from`/`to` keep
+        phases OVERLAPPING the window; `summary` returns per-item take
+        aggregates (takenCount, byPlayer, firstTake) instead of phases.
+        Warmup pickups rebase to negative times; `availableFrom: 0` means
+        "available since match start". Always 200 — empty when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/ItemsFilter"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Kinds"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Summary"
+      responses:
+        "200":
+          description: Item timelines, or per-item aggregates with `summary`.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Items" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/weapon-pickups:
+    get:
+      operationId: getWeaponPickups
+      tags: [items]
+      summary: Slot-weapon acquisitions + effectiveness
+      description: >
+        Every slot-weapon acquisition (world spawners + RL/LG backpacks)
+        with kills-before-next-death effectiveness. Backpack pickups carry
+        the dropper and the ent number joining to /backpacks. Always 200 —
+        empty when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Weapons"
+        - $ref: "#/components/parameters/WeaponsLegacy"
+        - $ref: "#/components/parameters/Source"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Matching pickups.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeaponPickups" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/buckets:
+    get:
+      operationId: getBuckets
+      tags: [positional]
+      summary: Time-bucketed position/stat samples
+      description: >
+        Per-player field series reduced into fixed windows. ⚠️ `windowMs`
+        defaults to 50 ms — on a 20-minute match that is ~24,000 windows
+        per field per player; always pass a windowMs sized to your
+        question. `layout=column` (default) returns the compact columnar
+        grid (int32 ms axis); `layout=row` returns row objects (float
+        seconds `t`).
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/WindowMs"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/Reducers"
+        - $ref: "#/components/parameters/IncludeTeam"
+        - $ref: "#/components/parameters/Loc"
+        - $ref: "#/components/parameters/Layout"
+      responses:
+        "200":
+          description: Bucketed series (columnar or row layout).
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Buckets" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/events:
+    get:
+      operationId: getEvents
+      tags: [timeline]
+      summary: Unified event stream
+      description: >
+        Discrete match events (frags, spawns, pickups, powerups, streaks,
+        chat, …) in one time-ordered list. `detail` is polymorphic per
+        event type. Omit `types` for the default set (includes `pickup`).
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/EventTypes"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: Matching events.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Events" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/stream-slice:
+    get:
+      operationId: getStreamSlice
+      tags: [positional]
+      summary: Raw per-player stream slice
+      description: >
+        Verbatim slices of the stored per-player streams (change-stream /
+        interval / position tracks) for a time window. Entries are int32
+        MILLISECONDS (raw schema); the envelope times are seconds.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: The slice.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StreamSlice" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/state-at:
+    get:
+      operationId: getStateAt
+      tags: [positional]
+      summary: Point-in-time player state
+      description: >
+        Every requested field carried forward to the instant `time`
+        (match-relative seconds; REQUIRED — missing returns 400
+        missing_param). Field selector codes are the same registry as
+        /buckets and /stream-slice, except `sp`/`d` are rejected (spawns
+        and deaths have no point-in-time meaning — use /events); note the
+        `li` code renders as output key `loc`.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/TimeRequired"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: Per-player state at the instant.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StateAt" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/los:
+    get:
+      operationId: getLOS
+      tags: [positional]
+      summary: Per-player line-of-sight intervals (lazy)
+      description: >
+        LOS/PVS interval sets per player. The heaviest position-derived
+        pass — computed lazily on first request, then cached (tier-3
+        artifact). Always 200: `los` omitted for a player with no
+        sightlines; empty for every player when the map's BSP was not
+        provisioned.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: Per-player LOS/PVS intervals.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Los" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/streams/projectiles:
+    get:
+      operationId: getProjectiles
+      tags: [streams]
+      summary: Rocket/grenade flight stream
+      description: >
+        The raw projectile flight stream. Body is `{"projectiles": …}`,
+        null when the demo has none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The stream.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Projectiles" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/streams/beams:
+    get:
+      operationId: getBeams
+      tags: [streams]
+      summary: LG bolt stream
+      description: >
+        The raw lightning-bolt stream. Body is `{"beams": …}`, null when
+        none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The stream.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Beams" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/streams/nails:
+    get:
+      operationId: getNails
+      tags: [streams]
+      summary: Nail flight stream (ng/sng)
+      description: >
+        The raw nail flight stream — the highest-volume stream. Body is
+        `{"nails": …}`, null when none.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The stream.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Nails" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/loc-trails:
+    get:
+      operationId: getLocTrails
+      tags: [positional]
+      summary: Per-player loc dwell trails
+      description: >
+        Consecutive loc residences per player as `[s,e)` spans (float
+        seconds). `minDwellMs` filters out blips shorter than the
+        threshold.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/MinDwellMs"
+        - $ref: "#/components/parameters/Players"
+        - $ref: "#/components/parameters/Loc"
+      responses:
+        "200":
+          description: The trails.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocTrails" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/loc-table:
+    get:
+      operationId: getLocTable
+      tags: [positional]
+      summary: Interned loc-name table
+      description: >
+        The decoder for `li` indices returned by the loc-bearing views in
+        index mode (`?loc=index`). Index 0 is the "" no-loc sentinel.
+        Empty array when the demo carried no loc data.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The table.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocTable" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/region-control:
+    get:
+      operationId: getRegionControl
+      tags: [timeline]
+      summary: Region-control timeline
+      description: >
+        Team control of named map regions over time, windowed by
+        `windowMs` (⚠️ defaults to 50 ms — pass an explicit window). 422
+        `region_control_unavailable` when the map has no region layout.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/WindowMs"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: The control timeline.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegionControl" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/airgibs:
+    get:
+      operationId: getAirgibs
+      tags: [timeline]
+      summary: Airgib key moments
+      description: >
+        Every direct enemy rocket hit on an airborne victim above the
+        height threshold, sorted by height descending. Empty (not an
+        error) when the map's BSP was not provisioned at parse time. 422
+        `airgibs_unavailable` when the demo has no timeline analysis.
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+      responses:
+        "200":
+          description: The airgib list.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Airgibs" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/DemoNotFound" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/demos/{id}/artifacts/{name}:
+    get:
+      operationId: getArtifact
+      tags: [artifacts]
+      summary: Generic artifact accessor
+      description: |
+        Materialise and serve any servable artifact by DAG node name. The
+        response is a single-key envelope — the key is the artifact's
+        **resultKey, NOT the node name**. Accepts NO query parameters
+        (parameterised reads are the curated endpoints) — any parameter
+        returns 400 invalid_param. Unknown / non-servable names 404
+        artifact_unknown. Capability-gated artifacts return their
+        section-specific 422 code. ETag is the finer per-artifact form
+        `"<sha>-<name>@v<n>"`.
+
+        | DAG node | curated route | body key (resultKey) | when the demo lacks it |
+        |---|---|---|---|
+        | demoinfo | /demoinfo | demoInfo | 422 demoinfo_unavailable |
+        | frag | /frags | frags | 422 frags_unavailable |
+        | metadata | /metadata | metadata | 422 metadata_unavailable |
+        | match | — (feeds /overview) | match | 200, null body value |
+        | messages | /chat (filtered view) | messages | 200, null body value |
+        | timeline | — (feeds /events, /buckets, /region-control) | timelineAnalysis | 200, null body value |
+        | items | /items (filtered view) | items | 200, null body value |
+        | damage | /damage | damage | 422 damage_unavailable |
+        | shots | /shots | shots | 422 shots_unavailable |
+        | map-entities | /v1/maps/{map}/entities (per-map form) | mapEntities | 200, null body value |
+        | backpacks | /backpacks (filtered view) | backpacks | 200, null/[] |
+        | weapon-pickups | /weapon-pickups (filtered view) | weaponPickups | 200, null/[] |
+        | aim | /aim | aim | 422 aim_unavailable |
+        | loc-graph | /loc-graph | locGraph | 422 locgraph_unavailable |
+        | opening | — (artifact only) | opening | 422 opening_unavailable |
+        | los | /los | — (serves the /los body, no envelope key) | 200, empty lists |
+      parameters:
+        - $ref: "#/components/parameters/DemoId"
+        - $ref: "#/components/parameters/ArtifactName"
+      responses:
+        "200":
+          description: Single-key artifact envelope.
+          headers: *perDemoHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtifactEnvelope" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: Unknown demo (`demo_not_found`) or unknown/non-servable artifact name (`artifact_unknown`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "422": { $ref: "#/components/responses/Unavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+        "502": { $ref: "#/components/responses/HubUpstream" }
+  /v1/maps/{map}/entities:
+    get:
+      operationId: getMapEntitiesByMap
+      tags: [maps]
+      summary: Static map entity layout
+      description: >
+        Items, spawns, teleporters, buttons, doors for a map from the
+        embedded corpus — no demo needed, identical for every demo on the
+        map (a caller holding a demo id reads the map name from /overview
+        first; the per-match pickup timeline is /items). ETag
+        `"ents-<map>-v<corpusVersion>"`.
+      parameters:
+        - $ref: "#/components/parameters/MapName"
+        - $ref: "#/components/parameters/EntityTypes"
+        - $ref: "#/components/parameters/Kinds"
+      responses:
+        "200":
+          description: The entity list.
+          headers: &mapStaticHeaders
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Request-Id: { $ref: "#/components/headers/XRequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MapEntities" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/MapUnavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+  /v1/maps/{map}/geometry:
+    get:
+      operationId: getMapGeometry
+      tags: [maps]
+      summary: Per-map floor-polygon geometry
+      description: >
+        Streams the per-map floor-polygon geometry JSON (large; REST-only,
+        no MCP tool). 404 `map_unavailable` when geometry is not
+        provisioned on this server or unknown for the map. ETag
+        `"geo-<map>-<size>"`.
+      parameters:
+        - $ref: "#/components/parameters/MapName"
+      responses:
+        "200":
+          description: The geometry document.
+          headers: *mapStaticHeaders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MapGeometry" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/MapUnavailable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/Internal" }
+components:
+  securitySchemes:
+    bearerKey:
+      type: http
+      scheme: bearer
+      description: >
+        API key as `Authorization: Bearer <key>`. Required only when the
+        server runs in auth mode (the hosted deployment); localhost /
+        no-auth mode accepts every request and treats the header as an
+        unvalidated source label for the access log. Exempt even in auth
+        mode: /healthz, /v1/version, /openapi.yaml, /docs.
+  parameters:
+    DemoId:
+      name: id
+      in: path
+      required: true
+      description: >
+        Demo identity: `gameId:N` (a hub.quakeworld.nu game id, positive
+        integer) or `sha:HEX` (lowercase-insensitive 64-hex SHA-256 of the
+        demo file). Every per-demo endpoint auto-resolves and auto-loads
+        on cache miss.
+      schema:
+        type: string
+        pattern: "^(gameId:[0-9]+|sha:[0-9a-fA-F]{64})$"
+      examples:
+        byGameId: { value: "gameId:145060" }
+        bySha: { value: "sha:ffda58010f3ab43c020dfd267dd90ba6775ec8e6f0b969ade82ca15d9162f57d" }
+    ArtifactName:
+      name: name
+      in: path
+      required: true
+      description: >
+        DAG node name of a servable artifact (see GET /v1/artifacts).
+        Note the body key of the response is the artifact's `resultKey`,
+        which may differ from this name.
+      schema:
+        type: string
+        enum:
+          # artifact-enum:begin — pinned to analyzer.ArtifactManifest() (servable only) by TestOpenAPIArtifactEnumCurrent
+          - demoinfo
+          - frag
+          - metadata
+          - match
+          - messages
+          - timeline
+          - items
+          - damage
+          - shots
+          - map-entities
+          - backpacks
+          - weapon-pickups
+          - aim
+          - loc-graph
+          - opening
+          - los
+          # artifact-enum:end
+    MapName:
+      name: map
+      in: path
+      required: true
+      description: Map name, e.g. `dm3` (normalized server-side).
+      schema: { type: string }
+    From:
+      name: from
+      in: query
+      description: >
+        Window start, match-relative SECONDS (float). 0 / omitted = no
+        lower bound. Endpoints treat the window as inclusive on both ends.
+      schema: { type: number, minimum: 0 }
+    To:
+      name: to
+      in: query
+      description: >
+        Window end, match-relative SECONDS (float). 0 / omitted = no
+        upper bound.
+      schema: { type: number, minimum: 0 }
+    Players:
+      name: players
+      in: query
+      description: >
+        CSV of player display names. Case-SENSITIVE (QW names are
+        case-significant). Omit for all players. Filter semantics are
+        per-endpoint (e.g. killer-or-victim on /frags, speaker on /chat).
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Weapons:
+      name: weapons
+      in: query
+      description: >
+        CSV of weapon codes (case-insensitive). Codes: rl, lg, gl, ssg,
+        sng, ng, sg, axe; on /damage the pseudo-codes tele/stomp select
+        the positional instant kills (which carry no real weapon).
+        /backpacks accepts rl/lg only; /weapon-pickups
+        rl,lg,gl,ssg,sng,ng. The pre-16.2 singular spelling `weapon` is
+        an accepted legacy alias; `weapons` wins when both are present.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    WeaponsLegacy:
+      name: weapon
+      in: query
+      deprecated: true
+      description: >
+        Deprecated legacy alias of `weapons` (the pre-16.2 singular
+        spelling). Ignored when `weapons` is present.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Summary:
+      name: summary
+      in: query
+      description: >
+        `1`/`true` drops the big per-event log / sample arrays / phase
+        timeline and returns only the aggregates.
+      schema: { type: boolean }
+    ItemsFilter:
+      name: items
+      in: query
+      description: >
+        CSV restricting to items whose Name or Kind matches
+        (case-insensitive). A kind token matches every instance ("ya" →
+        ya_1, ya_2); an instance name ("ya_1") matches one.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Kinds:
+      name: kinds
+      in: query
+      description: >
+        CSV of item categories — armor, mega, health, powerup, weapon,
+        ammo — or raw kind tokens (ra, quad). Case-insensitive.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Source:
+      name: source
+      in: query
+      description: Restrict weapon pickups by provenance.
+      schema:
+        type: string
+        enum: [world, backpack, unknown]
+    ChatTypes:
+      name: types
+      in: query
+      description: >
+        CSV of message types; defaults to `chat,teamsay`. Pass a subset to
+        narrow.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    EventTypes:
+      name: types
+      in: query
+      description: >
+        CSV of event types: frag, powerup, streak, spawn, death, weapon,
+        item, chat, pickup (the default set), plus the opt-in
+        high-frequency / dedicated lenses damage, health, armor, loc,
+        telefrag, stomp. Omit for the default set.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    EntityTypes:
+      name: types
+      in: query
+      description: >
+        CSV of entity types: item, spawn, teleportDst, teleportSrc,
+        button, door.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    Fields:
+      name: fields
+      in: query
+      description: >
+        CSV of field selector codes. Omit for the default set (everything
+        except the opt-in view/hgt/lq/vel). NOTE: the selector code `li`
+        renders as output key `loc` in name mode — `loc` is NOT a selector
+        code. Unknown codes 400 with the full vocabulary enumerated.
+      style: form
+      explode: false
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            # field-code-enum:begin — pinned to view/fields.go by TestOpenAPIFieldCodesCurrent
+            - h
+            - a
+            - at
+            - li
+            - w
+            - pos
+            - view
+            - hgt
+            - lq
+            - vel
+            - rl
+            - lg
+            - gl
+            - ssg
+            - sng
+            - q
+            - pe
+            - r
+            - sh
+            - nl
+            - rk
+            - cl
+            - sp
+            - d
+            # field-code-enum:end
+    Loc:
+      name: loc
+      in: query
+      description: >
+        Loc rendering — `name` (default) resolves loc indices to names;
+        `index` returns raw LocTable indices (decode via /loc-table).
+      schema:
+        type: string
+        enum: [name, index]
+    Layout:
+      name: layout
+      in: query
+      description: >
+        /buckets response layout — `column` (default, compact columnar
+        grid) or `row` (row objects).
+      schema:
+        type: string
+        enum: [column, row]
+    Dmg:
+      name: dmg
+      in: query
+      description: >
+        Damage family (schema v55). `raw` — the unbound wire values in the
+        v53 field layout, with v54 fold semantics (given/taken include the
+        telefrag/stomp folds on standard demos; the kill entries keep their
+        fold fields and boundedMode survives). `bounded` — KTX-scoreboard semantics (armor
+        absorbed + health capped to remaining) materialized into the same
+        field names; an EXPLICIT `dmg=bounded` is a 422 `bounded_unavailable`
+        on midair / instagib / dmgfrags demos, whose server mode makes the
+        reconstruction impossible. `both` —
+        the raw fields plus per-player `bounded` nests and a per-event
+        `bounded`. Default (unset): `bounded`, for both `summary=true` and the
+        full log — a defaulted bounded on a skipped:* demo falls back to `raw`
+        rather than 422.
+      schema:
+        type: string
+        enum: [raw, bounded, both]
+    Reducers:
+      name: reducers
+      in: query
+      description: >
+        CSV of `field=reducerName` pairs overriding the per-field default
+        reducer, e.g. `reducers=h=min,a=last`. Registry: first (default
+        for most fields — value at window start), last, mean, min, max,
+        dominant (most common value), held-any, majority, any. Unknown
+        names 400.
+      schema: { type: string }
+    IncludeTeam:
+      name: includeTeam
+      in: query
+      description: Include each player's team in the bucket envelope.
+      schema: { type: boolean }
+    WindowMs:
+      name: windowMs
+      in: query
+      description: >
+        Window size, integer MILLISECONDS. ⚠️ Defaults to 50 ms — on a
+        20-minute match that is ~24,000 windows per field per player.
+        Always pass a windowMs sized to your question. Note the unit split
+        within one call: windowMs is ms while from/to are seconds.
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+    MinDwellMs:
+      name: minDwellMs
+      in: query
+      description: Drop loc residences shorter than this many milliseconds.
+      schema:
+        type: integer
+        minimum: 0
+    TimeRequired:
+      name: time
+      in: query
+      required: true
+      description: The instant to sample, match-relative SECONDS (float).
+      schema: { type: number }
+  headers:
+    ETag:
+      description: >
+        Strong validator. Per-demo `"<sha>-v<schemaVersion>"`; per-artifact
+        `"<sha>-<name>@v<n>"`; binary-static `"<kind>-v<n>"`; map-static
+        `"ents-<map>-v<n>"` / `"geo-<map>-<size>"`; spec/docs content hash.
+      schema: { type: string }
+    XCache:
+      description: Which cache tier served the demo — HIT, WARM, or MISS.
+      schema:
+        type: string
+        enum: [HIT, WARM, MISS]
+    XSchemaVersion:
+      description: result.CurrentSchemaVersion of the serving binary.
+      schema: { type: string }
+    XRequestId:
+      description: >
+        Per-request id echoed in the server access log; quote it when
+        reporting a problem.
+      schema: { type: string }
+  responses:
+    NotModified:
+      description: >
+        Not Modified — the If-None-Match validator matched; the cached
+        representation is current.
+    BadRequest:
+      description: >
+        Malformed `{id}` (`invalid_demo_id`), malformed or rejected query
+        parameter (`invalid_param`), or required parameter absent
+        (`missing_param`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Unauthorized:
+      description: >
+        Auth mode only — missing / invalid / revoked API key
+        (`unauthorized`). Carries `WWW-Authenticate: Bearer`. The body is
+        deliberately generic.
+      headers:
+        WWW-Authenticate:
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    DemoNotFound:
+      description: The hub has no row for this gameId (`demo_not_found`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    MapUnavailable:
+      description: >
+        No entity corpus / geometry for this map (`map_unavailable`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Unavailable:
+      description: >
+        The demo structurally lacks the signal this section needs
+        (`<section>_unavailable` — the operation description names the
+        specific code). Expected for some demos; treat as "panel
+        unavailable", not failure.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    RateLimited:
+      description: >
+        Auth mode only — per-key rate limit exceeded (`rate_limited`).
+        Carries `Retry-After` (seconds); wait and retry.
+      headers:
+        Retry-After:
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    HubUpstream:
+      description: Network error / 5xx from the hub (`hub_upstream`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Internal:
+      description: >
+        Unexpected server error (`internal`). The body is generic — a
+        fixed message plus the request id; the real error is logged
+        server-side keyed by X-Request-Id.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  schemas:
+    ErrorEnvelope:
+      type: object
+      description: Stable error envelope for every non-2xx JSON response.
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code: { $ref: "#/components/schemas/ErrorCode" }
+            message:
+              type: string
+              description: >
+                Human-readable and user-actionable for 4xx; generic (request
+                id only) for 5xx.
+    ErrorCode:
+      type: string
+      description: Machine-readable error class.
+      enum:
+        # error-code-enum:begin — pinned to the writeError/writeUnavailable call sites by TestOpenAPIErrorCodesCurrent
+        - aim_unavailable
+        - airgibs_unavailable
+        - artifact_unknown
+        - bounded_unavailable
+        - damage_unavailable
+        - demo_not_found
+        - demoinfo_unavailable
+        - frags_unavailable
+        - hub_upstream
+        - internal
+        - invalid_demo_id
+        - invalid_param
+        - locgraph_unavailable
+        - map_unavailable
+        - metadata_unavailable
+        - missing_param
+        - opening_unavailable
+        - rate_limited
+        - region_control_unavailable
+        - shots_unavailable
+        - unauthorized
+        # error-code-enum:end
+    Health:
+      type: object
+      required: [ok, schemaVersion]
+      additionalProperties: false
+      properties:
+        ok: { type: boolean }
+        schemaVersion: { type: integer }
+    Version:
+      type: object
+      required: [hash, tag, buildDate]
+      additionalProperties: false
+      properties:
+        hash: { type: string, description: Git commit hash of the build. }
+        tag: { type: string, description: Git tag, if any. }
+        buildDate: { type: string }
+    LoadResult:
+      type: object
+      required: [demoId, sha256, fromCache, schemaVersion]
+      additionalProperties: false
+      properties:
+        demoId:
+          type: string
+          description: Canonical `sha:HEX` id — use it for subsequent calls.
+        sha256: { type: string }
+        fromCache: { type: boolean }
+        schemaVersion: { type: integer }
+    ArtifactsManifest:
+      type: object
+      required: [schemaVersion, artifacts]
+      additionalProperties: false
+      properties:
+        schemaVersion: { type: integer }
+        artifacts:
+          type: array
+          items: { $ref: "#/components/schemas/ArtifactMeta" }
+    ArtifactMeta:
+      type: object
+      description: One analyzer DAG node, as listed in ARTIFACTS.md.
+      required: [name, mutates, lazy, cost, servable]
+      additionalProperties: false
+      properties:
+        name: { type: string, description: DAG node name. }
+        requires:
+          type: [array, "null"]
+          items: { type: string }
+        provides:
+          type: [array, "null"]
+          items: { type: string }
+        mutates: { type: boolean }
+        lazy: { type: boolean }
+        cost:
+          type: string
+          enum: [light, heavy]
+        resultKey:
+          type: string
+          description: >
+            Top-level Result JSON key (the generic artifact endpoint's body
+            key). Empty = internal / no direct section.
+        servable: { type: boolean }
+        description: { type: string }
+    # --- Per-endpoint response schemas (full field-level).
+    # Bootstrapped from the Go structs (result/, view/, mvd-api Overview)
+    # via reflection and hand-curated; every schema is validated against
+    # real golden-corpus responses by openapi_validate_test.go, so shape
+    # drift fails tests. Deep field semantics: /docs/result-schema (the
+    # served RESULT_SCHEMA.md; do not add repo-relative file refs in
+    # rendered descriptions).
+    Overview:
+      additionalProperties: false
+      properties:
+        duration:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        errors:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+        filePath:
+          type: string
+        gameDir:
+          type: string
+        hasRegionControl:
+          type: boolean
+        locCount:
+          type: integer
+        map:
+          type: string
+        matchEnd:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        matchStart:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        matchtag:
+          type: string
+        mode:
+          type: string
+        playerUserIDs:
+          additionalProperties:
+            type: integer
+          type: object
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              deaths:
+                type: integer
+              frags:
+                type: integer
+              kills:
+                type: integer
+              name:
+                type: string
+              suicides:
+                type: integer
+              team:
+                type: string
+            required:
+              - name
+              - frags
+              - kills
+              - deaths
+              - suicides
+            type: object
+          type:
+            - "null"
+            - array
+        schemaVersion:
+          type: integer
+        teams:
+          items:
+            additionalProperties: false
+            properties:
+              frags:
+                type: integer
+              name:
+                type: string
+            required:
+              - name
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+        timing:
+          additionalProperties: false
+          properties:
+            demoOffset:
+              maximum: 2.147483647e+09
+              minimum: -2.147483648e+09
+              type: integer
+            demoStartAccuracyMs:
+              maximum: 2.147483647e+09
+              minimum: -2.147483648e+09
+              type: integer
+            demoStartUnixMs:
+              type: integer
+            pauses:
+              items:
+                additionalProperties: false
+                properties:
+                  atMs:
+                    maximum: 2.147483647e+09
+                    minimum: -2.147483648e+09
+                    type: integer
+                  durationMs:
+                    maximum: 2.147483647e+09
+                    minimum: -2.147483648e+09
+                    type: integer
+                required:
+                  - atMs
+                  - durationMs
+                type: object
+              type:
+                - "null"
+                - array
+          type:
+            - "null"
+            - object
+        topPowerups:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              frags:
+                type: integer
+              player:
+                type: string
+              start:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              team:
+                type: string
+              type:
+                type: string
+            required:
+              - player
+              - type
+              - start
+              - duration
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+        topStreaks:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              length:
+                type: integer
+              player:
+                type: string
+              start:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              team:
+                type: string
+              weapon:
+                type: string
+            required:
+              - player
+              - length
+              - start
+              - duration
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - schemaVersion
+        - duration
+        - matchStart
+        - matchEnd
+        - players
+        - locCount
+        - hasRegionControl
+      type: object
+    Metadata:
+      additionalProperties: false
+      properties:
+        countdownText:
+          type: string
+        matchSettings:
+          additionalProperties: false
+          properties:
+            airstep:
+              type: boolean
+            antilag:
+              type: integer
+            deathmatch:
+              type: integer
+            dmgfrags:
+              type: boolean
+            fraglimit:
+              type: integer
+            instagib:
+              type: boolean
+            matchtag:
+              type: string
+            midair:
+              type: boolean
+            mode:
+              type: string
+            noItems:
+              type: boolean
+            noweapon:
+              type: string
+            overtime:
+              type: string
+            powerups:
+              type: string
+            socdv2:
+              type: string
+            spawnK:
+              type:
+                - "null"
+                - integer
+            spawnmodel:
+              type: string
+            teamplay:
+              type: integer
+            timelimit:
+              type: integer
+            vwep:
+              type: boolean
+            yawnmode:
+              type: boolean
+          type:
+            - "null"
+            - object
+        serverInfo:
+          additionalProperties:
+            type: string
+          type: object
+      type: object
+    DemoInfo:
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+        demo:
+          type: string
+        duration:
+          type: integer
+        fraglimit:
+          type: integer
+        hostname:
+          type: string
+        ip:
+          type: string
+        map:
+          type: string
+        mode:
+          type: string
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              bot:
+                additionalProperties: false
+                properties:
+                  customised:
+                    type: boolean
+                  skill:
+                    type: integer
+                required:
+                  - skill
+                  - customised
+                type:
+                  - "null"
+                  - object
+              bottomColor:
+                type: integer
+              control:
+                type: number
+              dmg:
+                additionalProperties: false
+                properties:
+                  enemy-weapons:
+                    type: integer
+                  given:
+                    type: integer
+                  self:
+                    type: integer
+                  taken:
+                    type: integer
+                  taken-to-die:
+                    type: integer
+                  team:
+                    type: integer
+                  team-weapons:
+                    type: integer
+                required:
+                  - taken
+                  - given
+                type:
+                  - "null"
+                  - object
+              handicap:
+                type: integer
+              items:
+                additionalProperties:
+                  additionalProperties: false
+                  properties:
+                    time:
+                      type: integer
+                    took:
+                      type: integer
+                  type:
+                    - "null"
+                    - object
+                type: object
+              login:
+                type: string
+              name:
+                type: string
+              ping:
+                type: integer
+              speed:
+                additionalProperties: false
+                properties:
+                  avg:
+                    type: number
+                  max:
+                    type: number
+                type:
+                  - "null"
+                  - object
+              spree:
+                additionalProperties: false
+                properties:
+                  max:
+                    type: integer
+                  quad:
+                    type: integer
+                type:
+                  - "null"
+                  - object
+              stats:
+                additionalProperties: false
+                properties:
+                  deaths:
+                    type: integer
+                  frags:
+                    type: integer
+                  kills:
+                    type: integer
+                  spawn-frags:
+                    type: integer
+                  suicides:
+                    type: integer
+                  tk:
+                    type: integer
+                required:
+                  - frags
+                  - deaths
+                type:
+                  - "null"
+                  - object
+              team:
+                type: string
+              topColor:
+                type: integer
+              weapons:
+                additionalProperties:
+                  additionalProperties: false
+                  properties:
+                    acc:
+                      additionalProperties: false
+                      properties:
+                        attacks:
+                          type: integer
+                        hits:
+                          type: integer
+                        real:
+                          type: integer
+                        virtual:
+                          type: integer
+                      required:
+                        - attacks
+                        - hits
+                      type:
+                        - "null"
+                        - object
+                    damage:
+                      additionalProperties: false
+                      properties:
+                        enemy:
+                          type: integer
+                        team:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    deaths:
+                      type: integer
+                    kills:
+                      additionalProperties: false
+                      properties:
+                        enemy:
+                          type: integer
+                        self:
+                          type: integer
+                        team:
+                          type: integer
+                        total:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    pickups:
+                      additionalProperties: false
+                      properties:
+                        dropped:
+                          type: integer
+                        spawn-taken:
+                          type: integer
+                        spawn-total-taken:
+                          type: integer
+                        taken:
+                          type: integer
+                        total-taken:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                  type:
+                    - "null"
+                    - object
+                type: object
+              xferLG:
+                type: integer
+              xferRL:
+                type: integer
+            required:
+              - name
+              - team
+            type: object
+          type:
+            - "null"
+            - array
+        port:
+          type: integer
+        rawJson:
+          type: string
+        teams:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+        timelimit:
+          type: integer
+        version:
+          type: integer
+      type: object
+    Frags:
+      additionalProperties: false
+      properties:
+        byPlayer:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              byWeapon:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              deaths:
+                type: integer
+              kills:
+                type: integer
+              teamkills:
+                type: integer
+            required:
+              - kills
+              - deaths
+              - byWeapon
+            type:
+              - "null"
+              - object
+          type:
+            - object
+            - "null"
+        byWeapon:
+          additionalProperties:
+            type: integer
+          type:
+            - object
+            - "null"
+        frags:
+          items:
+            additionalProperties: false
+            properties:
+              isSuicide:
+                type: boolean
+              isTeamKill:
+                type: boolean
+              killer:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              weapon:
+                type: string
+            required:
+              - time
+              - killer
+              - victim
+              - weapon
+            type: object
+          type:
+            - "null"
+            - array
+        totalFrags:
+          type: integer
+      required:
+        - totalFrags
+        - frags
+        - byWeapon
+        - byPlayer
+      type: object
+    Damage:
+      additionalProperties: false
+      properties:
+        boundedMode:
+          description: >
+            Whether the bounded family was reconstructed — `standard`, or a
+            `skipped:*` reason when the server mode rewrites the take in ways
+            the wire does not expose (every bounded field is then absent).
+            Survives a raw view.
+          type: string
+          enum: [standard, "skipped:midair", "skipped:instagib", "skipped:dmgfrags"]
+        boundedSource:
+          description: >
+            Where a SUMMARY response's per-player bounded figures came from —
+            `ktx` when substituted with KTX's exact end-of-match scoreboard
+            totals (demoInfo dmg + weapons[].damage.enemy), else
+            `reconstructed`. Present only on an unfiltered summary that serves
+            the bounded family (`dmg=bounded` or `dmg=both`); absent on the
+            full-log, filtered, and raw responses. NOTE `taken` and the
+            enemyVs* buckets stay reconstructed even when `ktx` (KTX has no
+            matching split), so they may not sum exactly to the substituted
+            `given`.
+          type: string
+          enum: [ktx, reconstructed]
+        byPlayer:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              bounded:
+                description: >
+                  The same damage figures under KTX bounded-scoreboard
+                  semantics (dmg=both only). A flat nest carrying just the
+                  damage-figure fields — no telefrags/stomps/bounded of its
+                  own. Absent on a raw view and when the reconstruction was
+                  skipped (see boundedMode).
+                additionalProperties: false
+                properties:
+                  byWeapon:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  enemyVsBoth:
+                    type: integer
+                  enemyVsLg:
+                    type: integer
+                  enemyVsMid:
+                    type: integer
+                  enemyVsRl:
+                    type: integer
+                  enemyVsSg:
+                    type: integer
+                  ewep:
+                    type: integer
+                  given:
+                    type: integer
+                  givenSelf:
+                    type: integer
+                  givenTeam:
+                    type: integer
+                  taken:
+                    type: integer
+                  takenEnv:
+                    type: integer
+                required:
+                  - given
+                  - taken
+                  - givenTeam
+                  - givenSelf
+                  - takenEnv
+                  - byWeapon
+                  - enemyVsSg
+                  - enemyVsMid
+                  - enemyVsLg
+                  - enemyVsRl
+                  - enemyVsBoth
+                  - ewep
+                type: object
+              byWeapon:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              enemyVsBoth:
+                type: integer
+              enemyVsLg:
+                type: integer
+              enemyVsMid:
+                type: integer
+              enemyVsRl:
+                type: integer
+              enemyVsSg:
+                type: integer
+              ewep:
+                type: integer
+              given:
+                type: integer
+              givenSelf:
+                type: integer
+              givenTeam:
+                type: integer
+              stomps:
+                type: integer
+              taken:
+                type: integer
+              takenEnv:
+                type: integer
+              telefrags:
+                type: integer
+            required:
+              - given
+              - taken
+              - givenTeam
+              - givenSelf
+              - takenEnv
+              - byWeapon
+              - enemyVsSg
+              - enemyVsMid
+              - enemyVsLg
+              - enemyVsRl
+              - enemyVsBoth
+              - ewep
+            type:
+              - "null"
+              - object
+          type:
+            - object
+            - "null"
+        byWeapon:
+          additionalProperties:
+            type: integer
+          type:
+            - object
+            - "null"
+        dmg:
+          description: >
+            Which family this payload carries — `both` as stored (raw fields +
+            bounded nests) or `bounded` when the bounded family was
+            materialized into the raw field names. Absent on a raw view.
+          type: string
+          enum: [both, bounded]
+        events:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              bounded:
+                description: >
+                  This hit under KTX bounded semantics (armor + health capped
+                  to remaining). Omitted means equal to `damage` (the common
+                  no-overkill case); 0 is a real value — a hit whose health
+                  share was fully nullified (pent / teamplay). Present only on
+                  dmg=both.
+                type: integer
+              damage:
+                type: integer
+              isEnv:
+                type: boolean
+              isSelf:
+                type: boolean
+              isSplash:
+                type: boolean
+              isTeam:
+                type: boolean
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              victimWep:
+                type: string
+              weapon:
+                type: string
+            required:
+              - time
+              - attacker
+              - victim
+              - weapon
+              - damage
+            type: object
+          type:
+            - "null"
+            - array
+        matrix:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              byWeapon:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              damage:
+                type: integer
+              victim:
+                type: string
+            required:
+              - attacker
+              - victim
+              - damage
+              - byWeapon
+            type: object
+          type:
+            - "null"
+            - array
+        scoreboard:
+          additionalProperties: false
+          properties:
+            byPlayer:
+              additionalProperties:
+                additionalProperties: false
+                properties:
+                  bounded:
+                    description: >
+                      The bounded-reconstruction side of the reconciliation
+                      (dmg=both only): our bounded figures against the same KTX
+                      scoreboard, where near-equality is the correctness
+                      signal. streamTaken here is ENEMY-ONLY (KTX dmg_t).
+                      Absent on a raw view / when reconstruction was skipped.
+                    additionalProperties: false
+                    properties:
+                      scoreTeam:
+                        type: integer
+                      streamEwep:
+                        type: integer
+                      streamGiven:
+                        type: integer
+                      streamTaken:
+                        type: integer
+                      streamTeam:
+                        type: integer
+                    required:
+                      - streamGiven
+                      - streamTaken
+                      - streamEwep
+                      - streamTeam
+                      - scoreTeam
+                    type: object
+                  scoreEwep:
+                    type: integer
+                  scoreGiven:
+                    type: integer
+                  scoreTaken:
+                    type: integer
+                  streamEwep:
+                    type: integer
+                  streamGiven:
+                    type: integer
+                  streamTaken:
+                    type: integer
+                required:
+                  - streamGiven
+                  - scoreGiven
+                  - streamTaken
+                  - scoreTaken
+                  - streamEwep
+                  - scoreEwep
+                type:
+                  - "null"
+                  - object
+              type:
+                - object
+                - "null"
+          required:
+            - byPlayer
+          type:
+            - "null"
+            - object
+        stomps:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              bounded:
+                description: >
+                  Reconstructed kill value folded into the bounded aggregates.
+                  Absent exactly when the fold was skipped (boundedMode
+                  skipped:*); 0 is a real value — a teamplay-nullified stomp
+                  with no armor.
+                type: integer
+              damage:
+                description: >
+                  The RAW-family fold value when it differs from `bounded`
+                  (a stomp whose bounded arithmetic capped below the wire
+                  value). Omitted means equal to `bounded`.
+                type: integer
+              isTeam:
+                type: boolean
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              victimWep:
+                description: >
+                  Victim's weapon class (sg|mid|lg|rl|both) at hit time, on
+                  enemy kills only — so a re-aggregation can reproduce the
+                  EnemyVs*/EWep fold. Omitted on team/self/world kills.
+                type: string
+            required:
+              - time
+              - attacker
+              - victim
+            type: object
+          type:
+            - "null"
+            - array
+        telefrags:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              bounded:
+                description: >
+                  Reconstructed kill value (victim's full armor + remaining
+                  health; armor alone for the pent-vs-pent dtTELE3 variant,
+                  where KTX zeroes the health share) folded into the bounded
+                  aggregates. Absent exactly when the fold was skipped
+                  (boundedMode skipped:*).
+                type: integer
+              damage:
+                description: >
+                  The RAW-family fold value when it differs from `bounded`
+                  (telefrags fold the same number into both families, so this
+                  is normally omitted).
+                type: integer
+              isTeam:
+                type: boolean
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              victimWep:
+                description: >
+                  Victim's weapon class (sg|mid|lg|rl|both) at hit time, on
+                  enemy kills only. Omitted on team/self/world kills.
+                type: string
+            required:
+              - time
+              - attacker
+              - victim
+            type: object
+          type:
+            - "null"
+            - array
+        totalDamage:
+          type: integer
+      required:
+        - totalDamage
+        - events
+        - byWeapon
+        - byPlayer
+        - matrix
+      type: object
+    Shots:
+      additionalProperties: false
+      properties:
+        byPlayer:
+          items:
+            additionalProperties: false
+            properties:
+              byWeapon:
+                items:
+                  additionalProperties: false
+                  properties:
+                    accuracy:
+                      type: number
+                    enemyHits:
+                      type: integer
+                    hits:
+                      type: integer
+                    selfHits:
+                      type: integer
+                    shots:
+                      type: integer
+                    teamHits:
+                      type: integer
+                    weapon:
+                      type: string
+                  required:
+                    - weapon
+                    - shots
+                  type: object
+                type:
+                  - "null"
+                  - array
+              player:
+                type: string
+              team:
+                type: string
+              total:
+                type: integer
+            required:
+              - player
+              - total
+              - byWeapon
+            type: object
+          type:
+            - "null"
+            - array
+        reconciliation:
+          additionalProperties: false
+          properties:
+            byPlayer:
+              additionalProperties:
+                items:
+                  additionalProperties: false
+                  properties:
+                    ktxAttacks:
+                      type: integer
+                    ktxHits:
+                      type: integer
+                    streamAttacks:
+                      type: integer
+                    streamShots:
+                      type: integer
+                    weapon:
+                      type: string
+                  required:
+                    - weapon
+                    - streamShots
+                    - streamAttacks
+                    - ktxAttacks
+                    - ktxHits
+                  type: object
+                type:
+                  - "null"
+                  - array
+              type:
+                - object
+                - "null"
+          required:
+            - byPlayer
+          type:
+            - "null"
+            - object
+        shots:
+          items:
+            additionalProperties: false
+            properties:
+              hit:
+                type: boolean
+              player:
+                type: string
+              source:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victimKinds:
+                items:
+                  type: string
+                type:
+                  - "null"
+                  - array
+              victims:
+                items:
+                  type: string
+                type:
+                  - "null"
+                  - array
+              weapon:
+                type: string
+            required:
+              - time
+              - player
+              - weapon
+              - source
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - shots
+      type: object
+    Aim:
+      additionalProperties: false
+      properties:
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              crosshair:
+                additionalProperties: false
+                properties:
+                  dist:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  dpitch:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  dyaw:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  hit:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                  npitch:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  nyaw:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  team:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                  tgt:
+                    items:
+                      type: string
+                    type:
+                      - "null"
+                      - array
+                  w:
+                    items:
+                      type: string
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - w
+                  - dyaw
+                  - dpitch
+                  - nyaw
+                  - npitch
+                  - dist
+                  - hit
+                  - tgt
+                type:
+                  - "null"
+                  - object
+              lgRamp:
+                additionalProperties: false
+                properties:
+                  hit:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                  since:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  team:
+                    items:
+                      type: boolean
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - since
+                  - hit
+                type:
+                  - "null"
+                  - object
+              mode:
+                type: string
+              player:
+                type: string
+              team:
+                type: string
+              weapons:
+                items:
+                  additionalProperties: false
+                  properties:
+                    blocked:
+                      type: integer
+                    direct:
+                      type: integer
+                    enemy:
+                      additionalProperties: false
+                      properties:
+                        direct:
+                          type: integer
+                        full:
+                          type: integer
+                        hits:
+                          type: integer
+                        miss:
+                          type: integer
+                        partial:
+                          type: integer
+                        pelletHits:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    full:
+                      type: integer
+                    hits:
+                      type: integer
+                    miss:
+                      type: integer
+                    missed:
+                      type: integer
+                    outOfRange:
+                      type: integer
+                    partial:
+                      type: integer
+                    pelletHits:
+                      type: integer
+                    pellets:
+                      type: integer
+                    self:
+                      additionalProperties: false
+                      properties:
+                        direct:
+                          type: integer
+                        full:
+                          type: integer
+                        hits:
+                          type: integer
+                        miss:
+                          type: integer
+                        partial:
+                          type: integer
+                        pelletHits:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    shots:
+                      type: integer
+                    splash:
+                      type: integer
+                    team:
+                      additionalProperties: false
+                      properties:
+                        direct:
+                          type: integer
+                        full:
+                          type: integer
+                        hits:
+                          type: integer
+                        miss:
+                          type: integer
+                        partial:
+                          type: integer
+                        pelletHits:
+                          type: integer
+                      type:
+                        - "null"
+                        - object
+                    unresolved:
+                      type: integer
+                    weapon:
+                      type: string
+                  required:
+                    - weapon
+                    - shots
+                    - hits
+                  type: object
+                type:
+                  - "null"
+                  - array
+            required:
+              - player
+              - mode
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - players
+      type: object
+    LocGraph:
+      additionalProperties: false
+      properties:
+        edges:
+          items:
+            additionalProperties: false
+            properties:
+              armed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              byPlayer:
+                additionalProperties:
+                  type: integer
+                type:
+                  - object
+                  - "null"
+              byTeam:
+                additionalProperties:
+                  type: integer
+                type: object
+              from:
+                type: string
+              kind:
+                type: string
+              pent:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              quad:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              to:
+                type: string
+              total:
+                type: integer
+              unarmed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: integer
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                  total:
+                    type: integer
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+            required:
+              - from
+              - to
+              - kind
+              - total
+              - byPlayer
+            type: object
+          type:
+            - "null"
+            - array
+        locs:
+          items:
+            additionalProperties: false
+            properties:
+              armed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              byPlayer:
+                additionalProperties:
+                  type: number
+                type:
+                  - object
+                  - "null"
+              byTeam:
+                additionalProperties:
+                  type: number
+                type: object
+              name:
+                type: string
+              pent:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              quad:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              total:
+                type: number
+              unarmed:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      type: number
+                    type:
+                      - object
+                      - "null"
+                  byTeam:
+                    additionalProperties:
+                      type: number
+                    type: object
+                  total:
+                    type: number
+                required:
+                  - total
+                  - byPlayer
+                type:
+                  - "null"
+                  - object
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - name
+              - x
+              - "y"
+              - z
+              - total
+              - byPlayer
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - locs
+        - edges
+      type: object
+    MatchEvent:
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+        messageClean:
+          type: string
+        player:
+          type: string
+        team:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        type:
+          type: string
+        victim:
+          type: string
+        weapon:
+          type: string
+      required:
+        - time
+        - type
+        - player
+        - team
+        - message
+      type: object
+    BackpackDrop:
+      additionalProperties: false
+      properties:
+        entNum:
+          type: integer
+        loc:
+          type: string
+        origin:
+          items:
+            type: number
+          maxItems: 3
+          minItems: 3
+          type: array
+        player:
+          type: string
+        team:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        weapon:
+          type: string
+      required:
+        - time
+        - player
+        - weapon
+        - origin
+        - entNum
+      type: object
+    WeaponPickup:
+      additionalProperties: false
+      properties:
+        backpackEnt:
+          type: integer
+        dropTime:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        dropper:
+          type: string
+        dropperTeam:
+          type: string
+        hadBefore:
+          type: boolean
+        inferred:
+          type: boolean
+        kills:
+          type: integer
+        nextDeathTime:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        player:
+          type: string
+        source:
+          type: string
+        team:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        weapon:
+          type: string
+      required:
+        - time
+        - player
+        - weapon
+        - source
+        - hadBefore
+        - kills
+      type: object
+    ItemsTimelines:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            additionalProperties: false
+            properties:
+              entNum:
+                type: integer
+              kind:
+                type: string
+              loc:
+                type: string
+              name:
+                type: string
+              phases:
+                items:
+                  additionalProperties: false
+                  properties:
+                    availableFrom:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    respawnAt:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    takenAt:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    takenBy:
+                      type: string
+                    team:
+                      type: string
+                  required:
+                    - availableFrom
+                  type: object
+                type:
+                  - "null"
+                  - array
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - name
+              - kind
+              - entNum
+              - x
+              - "y"
+              - z
+              - phases
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - items
+      type: object
+    ItemsSummary:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            additionalProperties: false
+            properties:
+              byPlayer:
+                additionalProperties:
+                  type: integer
+                type: object
+              entNum:
+                type: integer
+              firstTake:
+                additionalProperties: false
+                properties:
+                  t:
+                    type: number
+                  takenBy:
+                    type: string
+                  team:
+                    type: string
+                required:
+                  - t
+                type:
+                  - "null"
+                  - object
+              kind:
+                type: string
+              loc:
+                type: string
+              name:
+                type: string
+              takenCount:
+                type: integer
+            required:
+              - name
+              - kind
+              - entNum
+              - takenCount
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - items
+      type: object
+    AirgibEvent:
+      additionalProperties: false
+      properties:
+        attacker:
+          type: string
+        attackerTeam:
+          type: string
+        attackerUserID:
+          type: integer
+        damage:
+          type: integer
+        height:
+          type: number
+        heightAboveAttacker:
+          type: number
+        lethal:
+          type: boolean
+        loc:
+          type: string
+        time:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        victim:
+          type: string
+        victimTeam:
+          type: string
+        victimUserID:
+          type: integer
+      required:
+        - time
+        - attacker
+        - victim
+        - height
+        - damage
+      type: object
+    RegionControl:
+      additionalProperties: false
+      properties:
+        bucketStates:
+          additionalProperties:
+            type: string
+          type: object
+        regions:
+          items:
+            additionalProperties: false
+            properties:
+              centroidX:
+                type: number
+              centroidY:
+                type: number
+              locs:
+                items:
+                  type: string
+                type:
+                  - "null"
+                  - array
+              name:
+                type: string
+              points:
+                items:
+                  additionalProperties: false
+                  properties:
+                    name:
+                      type: string
+                    x:
+                      type: number
+                    "y":
+                      type: number
+                    z:
+                      type: number
+                  required:
+                    - x
+                    - "y"
+                    - z
+                    - name
+                  type: object
+                type:
+                  - "null"
+                  - array
+            required:
+              - name
+              - locs
+              - points
+              - centroidX
+              - centroidY
+            type: object
+          type:
+            - "null"
+            - array
+        stats:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              byPlayer:
+                additionalProperties:
+                  additionalProperties: false
+                  properties:
+                    armed:
+                      type: integer
+                    team:
+                      type: string
+                    unarmed:
+                      type: integer
+                  required:
+                    - team
+                    - armed
+                    - unarmed
+                  type: object
+                type: object
+              contested:
+                type: number
+              empty:
+                type: number
+              teamAControl:
+                type: number
+              teamAWeakControl:
+                type: number
+              teamBControl:
+                type: number
+              teamBWeakControl:
+                type: number
+              weakContested:
+                type: number
+            required:
+              - teamAControl
+              - teamAWeakControl
+              - contested
+              - weakContested
+              - empty
+              - teamBWeakControl
+              - teamBControl
+            type: object
+          type: object
+        teamA:
+          type: string
+        teamB:
+          type: string
+      required:
+        - regions
+      type: object
+    ProjectileStreams:
+      additionalProperties: false
+      properties:
+        e:
+          items:
+            maximum: 2.147483647e+09
+            minimum: -2.147483648e+09
+            type: integer
+          type:
+            - "null"
+            - array
+        ex:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ey:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ez:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        s:
+          items:
+            maximum: 2.147483647e+09
+            minimum: -2.147483648e+09
+            type: integer
+          type:
+            - "null"
+            - array
+        sx:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sy:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sz:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        w:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+      required:
+        - w
+        - s
+        - e
+        - sx
+        - sy
+        - sz
+        - ex
+        - ey
+        - ez
+      type: object
+    BeamStreams:
+      additionalProperties: false
+      properties:
+        ex:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ey:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        ez:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sx:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sy:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        sz:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+        t:
+          items:
+            maximum: 2.147483647e+09
+            minimum: -2.147483648e+09
+            type: integer
+          type:
+            - "null"
+            - array
+      required:
+        - t
+        - sx
+        - sy
+        - sz
+        - ex
+        - ey
+        - ez
+      type: object
+    LosTrack:
+      additionalProperties: false
+      properties:
+        iv:
+          items:
+            additionalProperties: false
+            properties:
+              e:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              s:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - s
+              - e
+            type: object
+          type:
+            - "null"
+            - array
+        o:
+          maximum: 32767
+          minimum: -32768
+          type: integer
+      required:
+        - o
+        - iv
+      type: object
+    MapEntities:
+      additionalProperties: false
+      properties:
+        entities:
+          items:
+            additionalProperties: false
+            properties:
+              bounds:
+                additionalProperties: false
+                properties:
+                  max:
+                    items:
+                      type: number
+                    maxItems: 3
+                    minItems: 3
+                    type: array
+                  min:
+                    items:
+                      type: number
+                    maxItems: 3
+                    minItems: 3
+                    type: array
+                required:
+                  - min
+                  - max
+                type:
+                  - "null"
+                  - object
+              class:
+                type: string
+              kind:
+                type: string
+              loc:
+                type: string
+              name:
+                type: string
+              spawnflags:
+                type: integer
+              target:
+                type: string
+              targetName:
+                type: string
+              type:
+                type: string
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - type
+              - class
+              - name
+              - x
+              - "y"
+              - z
+            type: object
+          type:
+            - "null"
+            - array
+        map:
+          type: string
+      required:
+        - map
+        - entities
+      type: object
+    TimelineAnalysis:
+      additionalProperties: false
+      properties:
+        airgibs:
+          items:
+            additionalProperties: false
+            properties:
+              attacker:
+                type: string
+              attackerTeam:
+                type: string
+              attackerUserID:
+                type: integer
+              damage:
+                type: integer
+              height:
+                type: number
+              heightAboveAttacker:
+                type: number
+              lethal:
+                type: boolean
+              loc:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              victim:
+                type: string
+              victimTeam:
+                type: string
+              victimUserID:
+                type: integer
+            required:
+              - time
+              - attacker
+              - victim
+              - height
+              - damage
+            type: object
+          type:
+            - "null"
+            - array
+        deathEvents:
+          items:
+            additionalProperties: false
+            properties:
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - player
+              - team
+            type: object
+          type:
+            - "null"
+            - array
+        fragEvents:
+          items:
+            additionalProperties: false
+            properties:
+              delta:
+                type: integer
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - player
+              - team
+              - delta
+            type: object
+          type:
+            - "null"
+            - array
+        fragStreaks:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              endTime:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              ewep:
+                type: string
+              frags:
+                type: integer
+              playerName:
+                type: string
+              playerUserID:
+                type: integer
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - endTime
+              - playerName
+              - playerUserID
+              - team
+              - frags
+              - duration
+              - ewep
+            type: object
+          type:
+            - "null"
+            - array
+        killEvents:
+          items:
+            additionalProperties: false
+            properties:
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - player
+              - team
+            type: object
+          type:
+            - "null"
+            - array
+        locTable:
+          items:
+            type: string
+          type:
+            - "null"
+            - array
+        locationData:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              x:
+                type: number
+              "y":
+                type: number
+              z:
+                type: number
+            required:
+              - x
+              - "y"
+              - z
+              - name
+            type: object
+          type:
+            - "null"
+            - array
+        playerUserIDs:
+          additionalProperties:
+            type: integer
+          type: object
+        playerSlots:
+          description: Canonical player name to demo slot; KDLOG edict is slot + 1.
+          additionalProperties:
+            type: integer
+          type: object
+        powerupEvents:
+          items:
+            additionalProperties: false
+            properties:
+              duration:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              endTime:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              frags:
+                type: integer
+              playerName:
+                type: string
+              playerSlot:
+                type: integer
+              playerUserID:
+                type: integer
+              powerupType:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - time
+              - endTime
+              - playerName
+              - playerSlot
+              - playerUserID
+              - team
+              - powerupType
+              - duration
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+        regionControl:
+          additionalProperties: false
+          properties:
+            bucketStates:
+              additionalProperties:
+                type: string
+              type: object
+            regions:
+              items:
+                additionalProperties: false
+                properties:
+                  centroidX:
+                    type: number
+                  centroidY:
+                    type: number
+                  locs:
+                    items:
+                      type: string
+                    type:
+                      - "null"
+                      - array
+                  name:
+                    type: string
+                  points:
+                    items:
+                      additionalProperties: false
+                      properties:
+                        name:
+                          type: string
+                        x:
+                          type: number
+                        "y":
+                          type: number
+                        z:
+                          type: number
+                      required:
+                        - x
+                        - "y"
+                        - z
+                        - name
+                      type: object
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - name
+                  - locs
+                  - points
+                  - centroidX
+                  - centroidY
+                type: object
+              type:
+                - "null"
+                - array
+            stats:
+              additionalProperties:
+                additionalProperties: false
+                properties:
+                  byPlayer:
+                    additionalProperties:
+                      additionalProperties: false
+                      properties:
+                        armed:
+                          type: integer
+                        team:
+                          type: string
+                        unarmed:
+                          type: integer
+                      required:
+                        - team
+                        - armed
+                        - unarmed
+                      type: object
+                    type: object
+                  contested:
+                    type: number
+                  empty:
+                    type: number
+                  teamAControl:
+                    type: number
+                  teamAWeakControl:
+                    type: number
+                  teamBControl:
+                    type: number
+                  teamBWeakControl:
+                    type: number
+                  weakContested:
+                    type: number
+                required:
+                  - teamAControl
+                  - teamAWeakControl
+                  - contested
+                  - weakContested
+                  - empty
+                  - teamBWeakControl
+                  - teamBControl
+                type: object
+              type: object
+            teamA:
+              type: string
+            teamB:
+              type: string
+          required:
+            - regions
+          type:
+            - "null"
+            - object
+      type: object
+    Match:
+      additionalProperties: false
+      properties:
+        duration:
+          maximum: 2.147483647e+09
+          minimum: -2.147483648e+09
+          type: integer
+        gameDir:
+          type: string
+        map:
+          type: string
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              deaths:
+                type: integer
+              frags:
+                type: integer
+              kills:
+                type: integer
+              name:
+                type: string
+              suicides:
+                type: integer
+              team:
+                type: string
+            required:
+              - name
+              - team
+              - frags
+              - kills
+              - deaths
+              - suicides
+            type: object
+          type:
+            - "null"
+            - array
+        teams:
+          items:
+            additionalProperties: false
+            properties:
+              frags:
+                type: integer
+              name:
+                type: string
+            required:
+              - name
+              - frags
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - map
+        - gameDir
+        - duration
+        - players
+      type: object
+    Messages:
+      additionalProperties: false
+      properties:
+        events:
+          items:
+            additionalProperties: false
+            properties:
+              message:
+                type: string
+              messageClean:
+                type: string
+              player:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+              type:
+                type: string
+              victim:
+                type: string
+              weapon:
+                type: string
+            required:
+              - time
+              - type
+              - player
+              - team
+              - message
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - events
+      type: object
+    Opening:
+      additionalProperties: false
+      properties:
+        firstTakes:
+          items:
+            additionalProperties: false
+            properties:
+              entNum:
+                type: integer
+              item:
+                type: string
+              kind:
+                type: string
+              loc:
+                type: string
+              takenBy:
+                type: string
+              team:
+                type: string
+              time:
+                maximum: 2.147483647e+09
+                minimum: -2.147483648e+09
+                type: integer
+            required:
+              - item
+              - kind
+              - entNum
+              - time
+              - takenBy
+            type: object
+          type:
+            - "null"
+            - array
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              loc:
+                type: string
+              name:
+                type: string
+              team:
+                type: string
+            required:
+              - name
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - players
+        - firstTakes
+      type: object
+    Events:
+      type: object
+      description: >
+        /events body — a flat, time-ordered event list. detail keys vary
+        by event type (the well-known keys are typed below and validated
+        when present); detail is omitted for spawn/death without a loc
+        sample. Event types: armor, chat, damage, death, frag, health,
+        item, loc, pickup, powerup, spawn, stomp, streak, telefrag,
+        weapon.
+      required: [events]
+      additionalProperties: false
+      properties:
+        events:
+          type: [array, "null"]
+          items:
+            type: object
+            required: [t, type]
+            additionalProperties: false
+            properties:
+              t:
+                type: number
+                description: Match-relative seconds.
+              type: { type: string }
+              player: { type: string }
+              detail:
+                type: object
+                additionalProperties: true
+                properties:
+                  team: { type: string }
+                  delta: { type: integer, description: frag delta (frag) or value change (health/armor) }
+                  value: { type: integer, description: new value (health/armor/loc index) }
+                  bounded: { type: integer, description: reconstructed bounded kill value (telefrag/stomp events); absent when the bounded reconstruction was skipped; 0 is a real nullified-stomp value }
+                  powerup: { type: string }
+                  endTime: { type: number, description: seconds (powerup/streak) }
+                  frags: { type: integer, description: frags during the powerup run }
+                  length: { type: integer, description: streak length }
+                  duration: { type: number, description: streak duration, seconds }
+                  weapon: { type: string }
+                  victim: { type: string }
+                  damage: { type: integer }
+                  isSplash: { type: boolean }
+                  isEnv: { type: boolean }
+                  isSelf: { type: boolean }
+                  isTeam: { type: boolean }
+                  victimWep: { type: string }
+                  gain: { type: string, description: weapon/item code gained (interval start) }
+                  lose: { type: string, description: weapon/item code lost (interval end) }
+                  item: { type: string, description: spawner instance name (pickup), e.g. ya_1 }
+                  kind: { type: string }
+                  entNum: { type: integer }
+                  source:
+                    type: string
+                    enum: [world, backpack, unknown]
+                  dropper: { type: string }
+                  loc: { type: string }
+                  li: { type: integer, description: raw LocTable index (loc=index mode) }
+                  text: { type: string, description: chat message }
+                  clean: { type: string, description: chat message, color codes stripped }
+    BucketsRow:
+      additionalProperties: false
+      properties:
+        buckets:
+          items:
+            additionalProperties: false
+            properties:
+              p:
+                additionalProperties:
+                  additionalProperties: true
+                  type: object
+                type:
+                  - object
+                  - "null"
+              partial:
+                type: boolean
+              t:
+                type: number
+              team:
+                additionalProperties:
+                  additionalProperties: true
+                  type: object
+                type: object
+            required:
+              - t
+              - p
+            type: object
+          type:
+            - "null"
+            - array
+        windowMs:
+          type: integer
+      required:
+        - windowMs
+        - buckets
+      type: object
+    BucketsColumnar:
+      type: object
+      description: >
+        Column-major buckets (layout=column, the default). The time axis is
+        implicit: time(i) = startMs + i*windowMs (int32 ms). Each player
+        object inlines its dense columns at the top level keyed by field
+        code; boolean columns (and the alive mask) serialize as 0/1.
+      required: [windowMs, startMs, count]
+      additionalProperties: false
+      properties:
+        windowMs: { type: integer }
+        startMs: { type: integer }
+        count: { type: integer }
+        partialLastMs:
+          type: integer
+          description: Shorter end of the final bucket when the match length is not a multiple of windowMs.
+        locTable:
+          type: array
+          description: >
+            Legend for the raw li columns — the demo's interned loc-name
+            table (index 0 is the "" no-loc sentinel; identical to
+            /loc-table). Present iff an li column is in the output, so
+            columnar responses decode locally without a /loc-table call
+            (v53).
+          items: { type: string }
+        players:
+          type: object
+          additionalProperties:
+            type: object
+            description: >
+              One player's dense columns over their active span
+              [first, first+n). Reserved keys first/n/alive/validFrom;
+              every other key is a requested field-code column (or a
+              position/view sub-column like x/y/z, vp/vya, vx/vy/vz) of
+              length n — numeric, string (at), or 0/1 series.
+            required: [first, n, alive]
+            properties:
+              first: { type: integer }
+              n: { type: integer }
+              alive:
+                type: array
+                items: { type: integer, minimum: 0, maximum: 1 }
+              validFrom:
+                type: object
+                description: >
+                  Absolute bucket index from which a late-starting column
+                  is valid; leading slots hold a typed zero and must be
+                  treated as absent.
+                additionalProperties: { type: integer }
+            additionalProperties:
+              type: array
+              items:
+                type: [number, string]
+        teams:
+          type: object
+          additionalProperties:
+            type: object
+            description: >
+              One team's per-bucket aggregate counters as dense integer
+              columns of length count, keyed by counter name; armor-by-type
+              sub-columns nest under abt.
+            properties:
+              abt:
+                type: object
+                additionalProperties:
+                  type: array
+                  items: { type: integer }
+            additionalProperties:
+              type: array
+              items: { type: integer }
+    StreamSlice:
+      additionalProperties: false
+      properties:
+        endTime:
+          type: number
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              a:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              at:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      type: string
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              w:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              cl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              d:
+                items:
+                  maximum: 2.147483647e+09
+                  minimum: -2.147483648e+09
+                  type: integer
+                type:
+                  - "null"
+                  - array
+              gl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              h:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              hgt:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              lg:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              li:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              loc:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      type: string
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              lq:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              name:
+                type: string
+              nl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              pe:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              pos:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              q:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              r:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              rk:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              rl:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              sh:
+                items:
+                  additionalProperties: false
+                  properties:
+                    t:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    v:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                  required:
+                    - t
+                    - v
+                  type: object
+                type:
+                  - "null"
+                  - array
+              sng:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              sp:
+                items:
+                  maximum: 2.147483647e+09
+                  minimum: -2.147483648e+09
+                  type: integer
+                type:
+                  - "null"
+                  - array
+              ssg:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    s:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+              vel:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              view:
+                additionalProperties: false
+                properties:
+                  h:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  li:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  lq:
+                    items:
+                      maximum: 127
+                      minimum: -128
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  t:
+                    items:
+                      maximum: 2.147483647e+09
+                      minimum: -2.147483648e+09
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vp:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vx:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vy:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  vya:
+                    items:
+                      maximum: 32767
+                      minimum: -32768
+                      type: integer
+                    type:
+                      - "null"
+                      - array
+                  vz:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  x:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  "y":
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                  z:
+                    items:
+                      type: number
+                    type:
+                      - "null"
+                      - array
+                required:
+                  - t
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+            required:
+              - name
+            type: object
+          type:
+            - "null"
+            - array
+        startTime:
+          type: number
+      required:
+        - startTime
+        - endTime
+        - players
+      type: object
+    StateAt:
+      additionalProperties: false
+      properties:
+        players:
+          additionalProperties:
+            additionalProperties: false
+            properties:
+              a:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              at:
+                type:
+                  - "null"
+                  - string
+              w:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              cl:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              gl:
+                type:
+                  - "null"
+                  - boolean
+              h:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              hgt:
+                type:
+                  - "null"
+                  - number
+              lg:
+                type:
+                  - "null"
+                  - boolean
+              li:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              loc:
+                type:
+                  - "null"
+                  - string
+              lq:
+                maximum: 127
+                minimum: -128
+                type:
+                  - "null"
+                  - integer
+              nl:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              pe:
+                type:
+                  - "null"
+                  - boolean
+              pos:
+                additionalProperties: false
+                properties:
+                  x:
+                    type: number
+                  "y":
+                    type: number
+                  z:
+                    type: number
+                required:
+                  - x
+                  - "y"
+                  - z
+                type:
+                  - "null"
+                  - object
+              q:
+                type:
+                  - "null"
+                  - boolean
+              r:
+                type:
+                  - "null"
+                  - boolean
+              rk:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              rl:
+                type:
+                  - "null"
+                  - boolean
+              sh:
+                maximum: 32767
+                minimum: -32768
+                type:
+                  - "null"
+                  - integer
+              sng:
+                type:
+                  - "null"
+                  - boolean
+              ssg:
+                type:
+                  - "null"
+                  - boolean
+              vel:
+                additionalProperties: false
+                properties:
+                  vx:
+                    type: number
+                  vy:
+                    type: number
+                  vz:
+                    type: number
+                required:
+                  - vx
+                  - vy
+                  - vz
+                type:
+                  - "null"
+                  - object
+              view:
+                additionalProperties: false
+                properties:
+                  vp:
+                    maximum: 32767
+                    minimum: -32768
+                    type: integer
+                  vya:
+                    maximum: 32767
+                    minimum: -32768
+                    type: integer
+                required:
+                  - vp
+                  - vya
+                type:
+                  - "null"
+                  - object
+            type: object
+          type:
+            - object
+            - "null"
+        t:
+          type: number
+      required:
+        - t
+        - players
+      type: object
+    LocTrails:
+      additionalProperties: false
+      properties:
+        players:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              sequence:
+                items:
+                  additionalProperties: false
+                  properties:
+                    e:
+                      type: number
+                    li:
+                      maximum: 32767
+                      minimum: -32768
+                      type:
+                        - "null"
+                        - integer
+                    loc:
+                      type: string
+                    s:
+                      type: number
+                  required:
+                    - s
+                    - e
+                  type: object
+                type:
+                  - "null"
+                  - array
+            required:
+              - name
+              - sequence
+            type: object
+          type:
+            - "null"
+            - array
+      required:
+        - players
+      type: object
+    MapGeometry:
+      additionalProperties: false
+      properties:
+        bounds:
+          additionalProperties: false
+          properties:
+            maxX:
+              type: number
+            maxY:
+              type: number
+            minX:
+              type: number
+            minY:
+              type: number
+          required:
+            - minX
+            - maxX
+            - minY
+            - maxY
+          type: object
+        liquids:
+          items:
+            additionalProperties: false
+            properties:
+              kind:
+                type: string
+              tris:
+                items:
+                  type: number
+                type:
+                  - "null"
+                  - array
+            required:
+              - kind
+              - tris
+            type: object
+          type:
+            - "null"
+            - array
+        locs:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              tris:
+                items:
+                  type: number
+                type:
+                  - "null"
+                  - array
+              z:
+                type: number
+            required:
+              - name
+              - z
+              - tris
+            type: object
+          type:
+            - "null"
+            - array
+        map:
+          type: string
+        pruned:
+          additionalProperties: false
+          properties:
+            demos:
+              type: integer
+            facesDropped:
+              type: integer
+            points:
+              type: integer
+          required:
+            - demos
+            - points
+            - facesDropped
+          type:
+            - "null"
+            - object
+        submodels:
+          items:
+            additionalProperties: false
+            properties:
+              id:
+                type: integer
+              tris:
+                items:
+                  type: number
+                type:
+                  - "null"
+                  - array
+            required:
+              - id
+              - tris
+            type: object
+          type:
+            - "null"
+            - array
+        version:
+          type: integer
+        walls:
+          items:
+            type: number
+          type:
+            - "null"
+            - array
+      required:
+        - map
+        - version
+        - bounds
+        - locs
+      type: object
+    # --- Wrappers over the generated struct schemas: bare-array bodies,
+    # layout/summary unions, single-key stream envelopes, and the generic
+    # artifact envelope union.
+    Chat:
+      type: array
+      description: >
+        /chat body — chat events, verbatim result.MatchEvent entries
+        (time is int32 ms). [] when nothing matches.
+      items: { $ref: "#/components/schemas/MatchEvent" }
+    Backpacks:
+      type: array
+      description: /backpacks body — RL/LG backpack drops; [] when none.
+      items: { $ref: "#/components/schemas/BackpackDrop" }
+    WeaponPickups:
+      type: array
+      description: /weapon-pickups body — slot-weapon acquisitions; [] when none.
+      items: { $ref: "#/components/schemas/WeaponPickup" }
+    Airgibs:
+      type: array
+      description: >
+        /airgibs body — airgib key moments sorted by height descending;
+        [] on BSP-less maps.
+      items: { $ref: "#/components/schemas/AirgibEvent" }
+    Items:
+      description: >
+        /items body — per-item phase timelines, or per-item take
+        aggregates when summary is set.
+      anyOf: # not oneOf: an empty {"items": []} matches both branches
+        - $ref: "#/components/schemas/ItemsTimelines"
+        - $ref: "#/components/schemas/ItemsSummary"
+    Buckets:
+      description: >
+        /buckets body — the compact columnar grid (layout=column, the
+        default) or row objects (layout=row).
+      oneOf:
+        - $ref: "#/components/schemas/BucketsColumnar"
+        - $ref: "#/components/schemas/BucketsRow"
+    Los:
+      type: object
+      description: >
+        /los body (and the lazy `los` artifact) — per-player LOS/PVS
+        interval sets. `los`/`pvs` are omitted for a player with no
+        sightlines and empty on maps without a provisioned BSP.
+      required: [players]
+      additionalProperties: false
+      properties:
+        players:
+          type: array
+          items:
+            type: object
+            required: [name]
+            additionalProperties: false
+            properties:
+              name: { type: string }
+              los:
+                type: array
+                items: { $ref: "#/components/schemas/LosTrack" }
+              pvs:
+                type: array
+                items: { $ref: "#/components/schemas/LosTrack" }
+    Projectiles:
+      type: object
+      required: [projectiles]
+      additionalProperties: false
+      properties:
+        projectiles:
+          description: Rocket/grenade flight stream; null when the demo has none.
+          oneOf:
+            - $ref: "#/components/schemas/ProjectileStreams"
+            - type: "null"
+    Beams:
+      type: object
+      required: [beams]
+      additionalProperties: false
+      properties:
+        beams:
+          description: LG bolt stream; null when the demo has none.
+          oneOf:
+            - $ref: "#/components/schemas/BeamStreams"
+            - type: "null"
+    Nails:
+      type: object
+      required: [nails]
+      additionalProperties: false
+      properties:
+        nails:
+          description: Nail flight stream; null when the demo has none.
+          oneOf:
+            - $ref: "#/components/schemas/ProjectileStreams"
+            - type: "null"
+    LocTable:
+      type: object
+      required: [locTable]
+      additionalProperties: false
+      properties:
+        locTable:
+          type: array
+          description: Interned loc names; index 0 is the "" no-loc sentinel.
+          items: { type: string }
+    Graph:
+      type: object
+      description: The analyzer DAG — analyzer.ExportGraph("json").
+      required: [nodes, edges]
+      additionalProperties: false
+      properties:
+        nodes:
+          type: [array, "null"]
+          items:
+            type: object
+            required: [name, requires, provides, mutates, lazy, depth, cost, resultKey]
+            additionalProperties: false
+            properties:
+              name: { type: string }
+              requires:
+                type: [array, "null"]
+                items: { type: string }
+              provides:
+                type: [array, "null"]
+                items: { type: string }
+              mutates: { type: boolean }
+              lazy: { type: boolean }
+              depth: { type: integer }
+              cost:
+                type: string
+                enum: [light, heavy]
+              resultKey: { type: string }
+        edges:
+          type: [array, "null"]
+          items:
+            type: object
+            required: [from, to, artifact]
+            additionalProperties: false
+            properties:
+              from: { type: string }
+              to: { type: string }
+              artifact: { type: string }
+    ArtifactEnvelope:
+      description: >
+        GET /v1/demos/{id}/artifacts/{name} body — a single-key envelope
+        keyed by the artifact's resultKey (see GET /v1/artifacts; the key
+        is NOT the node name — e.g. node `frag` serves `{"frags": …}`).
+        Raw list/object sections (match, messages, timeline, items,
+        map-entities, backpacks, weapon-pickups) may be null at 200 for
+        demos without the signal; capability-gated artifacts return their
+        422 code instead. The lazy `los` artifact serves the /los body
+        shape (no resultKey).
+      oneOf:
+        - type: object
+          required: [demoInfo]
+          additionalProperties: false
+          properties:
+            demoInfo: { $ref: "#/components/schemas/DemoInfo" }
+        - type: object
+          required: [frags]
+          additionalProperties: false
+          properties:
+            frags: { $ref: "#/components/schemas/Frags" }
+        - type: object
+          required: [metadata]
+          additionalProperties: false
+          properties:
+            metadata: { $ref: "#/components/schemas/Metadata" }
+        - type: object
+          required: [damage]
+          additionalProperties: false
+          properties:
+            damage: { $ref: "#/components/schemas/Damage" }
+        - type: object
+          required: [shots]
+          additionalProperties: false
+          properties:
+            shots: { $ref: "#/components/schemas/Shots" }
+        - type: object
+          required: [aim]
+          additionalProperties: false
+          properties:
+            aim: { $ref: "#/components/schemas/Aim" }
+        - type: object
+          required: [locGraph]
+          additionalProperties: false
+          properties:
+            locGraph: { $ref: "#/components/schemas/LocGraph" }
+        - type: object
+          required: [opening]
+          additionalProperties: false
+          properties:
+            opening: { $ref: "#/components/schemas/Opening" }
+        - type: object
+          required: [match]
+          additionalProperties: false
+          properties:
+            match:
+              oneOf:
+                - $ref: "#/components/schemas/Match"
+                - type: "null"
+        - type: object
+          required: [messages]
+          additionalProperties: false
+          properties:
+            messages:
+              oneOf:
+                - $ref: "#/components/schemas/Messages"
+                - type: "null"
+        - type: object
+          required: [timelineAnalysis]
+          additionalProperties: false
+          properties:
+            timelineAnalysis:
+              oneOf:
+                - $ref: "#/components/schemas/TimelineAnalysis"
+                - type: "null"
+        - type: object
+          required: [items]
+          additionalProperties: false
+          properties:
+            items:
+              oneOf:
+                - $ref: "#/components/schemas/ItemsTimelines"
+                - type: "null"
+        - type: object
+          required: [mapEntities]
+          additionalProperties: false
+          properties:
+            mapEntities:
+              oneOf:
+                - $ref: "#/components/schemas/MapEntities"
+                - type: "null"
+        - type: object
+          required: [backpacks]
+          additionalProperties: false
+          properties:
+            backpacks:
+              type: [array, "null"]
+              items: { $ref: "#/components/schemas/BackpackDrop" }
+        - type: object
+          required: [weaponPickups]
+          additionalProperties: false
+          properties:
+            weaponPickups:
+              type: [array, "null"]
+              items: { $ref: "#/components/schemas/WeaponPickup" }
+        - $ref: "#/components/schemas/Los"

@@ -1,0 +1,72 @@
+# systemd unit for mvd-api (REST + Discord key portal).
+#
+# EDIT before use:
+#   - User=/Group=       a dedicated unprivileged account (create it).
+#   - WorkingDirectory=  where the binary + cache live.
+#   - ExecStart path     where `make build` placed dist/mvd-api.
+#   - -portal-base-url   your public https origin (matches the Caddy domain).
+#   - flag values        cache budget / parse concurrency / rate classes.
+#
+# Secrets (DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, PORTAL_COOKIE_SECRET)
+# come from EnvironmentFile — NEVER put them in ExecStart flags: flags are
+# visible in `ps` (PLAN-hosting D9). The file is root-owned 0600.
+#
+# Install: copy to /etc/systemd/system/mvd-api.service, then
+#   systemctl daemon-reload && systemctl enable --now mvd-api
+
+[Unit]
+Description=mvd-api — QuakeWorld MVD analytics REST API + Discord key portal
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mvd
+Group=mvd
+WorkingDirectory=/opt/mvd
+
+# Discord client id/secret + portal cookie HMAC secret arrive here, not on
+# the command line. See deploy/README.md for the file's contents.
+EnvironmentFile=/etc/mvd/secrets.env
+
+# -auth-dir enables API-key auth; -portal enables the Discord portal (needs
+# the three env vars above). Tune -cache-max-bytes / -max-parses to the box;
+# -rate-*/-burst-* set the per-key token buckets (user vs service class).
+#
+# -addr binds loopback ONLY: Caddy is the sole public surface and must run
+# on this same box (its XFF rewrite assumes direct backend access is
+# impossible). Bind a LAN/all-interfaces address (e.g. :8080) only if you
+# know why — a public bind lets callers spoof X-Forwarded-For past Caddy.
+ExecStart=/opt/mvd/bin/mvd-api serve \
+    -addr 127.0.0.1:8080 \
+    -cache-dir /opt/mvd/cache \
+    -cache-max-bytes 21474836480 \
+    -max-parses 2 \
+    -auth-dir /opt/mvd/auth \
+    -rate-user 5 -burst-user 20 \
+    -rate-service 50 -burst-service 200 \
+    -portal \
+    -portal-base-url https://qw.example.com \
+    -log-format json
+
+Restart=on-failure
+RestartSec=2s
+
+# --- Hardening --------------------------------------------------------------
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+# The cache + key store are the only writable paths the service needs.
+ReadWritePaths=/opt/mvd/cache /opt/mvd/auth
+
+[Install]
+WantedBy=multi-user.target

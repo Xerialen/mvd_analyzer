@@ -17,3 +17,7 @@ mvd-analytics/testdata/cache/
 # Emacs autosave / lock files.
 **/#*#
 **/.#*
+
+# compiled binaries accidentally buildable in-tree
+mvd-mcp/mvd-mcp
+mvd-web/wasm

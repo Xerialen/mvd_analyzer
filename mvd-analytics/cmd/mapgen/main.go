@@ -1,8 +1,10 @@
 // mapgen is a developer tool that parses Quake 1 BSP files and writes
-// two kinds of per-map JSON:
+// three kinds of per-map output:
 //
 //   - -out-dir: per-loc walkable-floor polygon geometry (the viewer
 //     renders real floor geometry instead of the loc convex-hull blob).
+//   - -mesh3d-out: full worldspawn solid-shell binaries for the optional
+//     WebGL view (walls and ceilings as M3D1 triangle soup).
 //   - -entities-out: the static map-entity corpus (mapents) — item
 //     spawns, player spawnpoints, teleport destinations/sources, buttons
 //     — classified from the BSP entity lump and named by nearest loc.
@@ -33,10 +35,10 @@ import (
 	"strings"
 
 	"github.com/mvd-analyzer/mvd-analytics/analyzer"
+	"github.com/mvd-analyzer/mvd-analytics/loc"
 	"github.com/mvd-analyzer/mvd-analytics/mapbsp"
 	"github.com/mvd-analyzer/mvd-analytics/mapclip"
 	"github.com/mvd-analyzer/mvd-analytics/mapgen/bsp"
-	"github.com/mvd-analyzer/mvd-analytics/loc"
 	"github.com/mvd-analyzer/mvd-analytics/mapgen/mapgeom"
 	"github.com/mvd-analyzer/mvd-analytics/result"
 )
@@ -54,7 +56,7 @@ func main() {
 	pruneZTol := flag.Float64("prune-z-tol", 16.0, "usage pruning: max |faceZ - sampleZ| (world units); raise for slope-heavy maps")
 	flag.Parse()
 
-	if *outDir == "" && *entitiesOut == "" && *mesh3dOut == "" {
+	if *outDir == "" && *mesh3dOut == "" && *entitiesOut == "" {
 		fmt.Fprintln(os.Stderr, "mapgen: nothing to do — set -out-dir, -mesh3d-out and/or -entities-out")
 		flag.Usage()
 		os.Exit(2)
@@ -108,7 +110,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "mapgen: -demos has no effect without -out-dir (pruning only touches geometry)")
 		} else {
 			mapbsp.SetDir(*bspDir) // so the analyzer computes per-sample H/Lq
-			usageByMap = collectUsage(*demosDir, *verbose)
+			usageByMap, err = collectUsage(*demosDir, *verbose)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "mapgen: walk demos-dir: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 	params := mapgeom.DefaultParams()
@@ -187,6 +193,30 @@ func processOne(path, name, outDir, mesh3dOut, entitiesOut string, verbose bool,
 	return nil
 }
 
+// emitMesh3D writes the full worldspawn shell for the optional WebGL view.
+// It is independent from the per-loc floor JSON: walls and ceilings omitted
+// by the floor extractor are exactly the geometry the full shell preserves.
+func emitMesh3D(path, name, mesh3dOut string, verbose bool) error {
+	parsed, err := bsp.Parse(path)
+	if err != nil {
+		return fmt.Errorf("parse bsp: %w", err)
+	}
+	mesh := mapgeom.BuildMesh3D(name, parsed)
+	if len(mesh.Tris) == 0 {
+		return fmt.Errorf("no 3D mesh extracted (faces=%d skipped=%d)", mesh.Faces, mesh.Skipped)
+	}
+	blob := mapgeom.EncodeMesh3D(mesh)
+	outPath := filepath.Join(mesh3dOut, name+".bin")
+	if err := os.WriteFile(outPath, blob, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", outPath, err)
+	}
+	if verbose {
+		fmt.Fprintf(os.Stderr, "  3d   %s: faces=%d tris=%d skipped=%d bytes=%d\n",
+			name, mesh.Faces, len(mesh.Tris)/9, mesh.Skipped, len(blob))
+	}
+	return nil
+}
+
 func emitGeometry(path, name string, finder *loc.Finder, outDir string, verbose bool, usage *mapgeom.FloorUsage, params mapgeom.Params) error {
 	parsed, err := bsp.Parse(path)
 	if err != nil {
@@ -234,41 +264,17 @@ func emitGeometry(path, name string, finder *loc.Finder, outDir string, verbose 
 	return nil
 }
 
-// emitMesh3D parses the BSP and writes the full worldspawn solid shell as a
-// maps3d/<name>.bin binary blob for the WebGL renderer. Independent of the
-// per-loc floor JSON (-out-dir): a face the floor extractor drops as a wall or
-// ceiling is exactly what the 3D shell needs.
-func emitMesh3D(path, name, mesh3dOut string, verbose bool) error {
-	parsed, err := bsp.Parse(path)
-	if err != nil {
-		return fmt.Errorf("parse bsp: %w", err)
-	}
-	mesh := mapgeom.BuildMesh3D(name, parsed)
-	if len(mesh.Tris) == 0 {
-		return fmt.Errorf("no 3D mesh extracted (faces=%d skipped=%d)", mesh.Faces, mesh.Skipped)
-	}
-	blob := mapgeom.EncodeMesh3D(mesh)
-	outPath := filepath.Join(mesh3dOut, name+".bin")
-	if err := os.WriteFile(outPath, blob, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", outPath, err)
-	}
-	if verbose {
-		fmt.Fprintf(os.Stderr, "  3d   %s: faces=%d tris=%d skipped=%d bounds=[%.0f..%.0f, %.0f..%.0f, %.0f..%.0f] bytes=%d\n",
-			name, mesh.Faces, len(mesh.Tris)/9, mesh.Skipped,
-			mesh.Bounds.MinX, mesh.Bounds.MaxX, mesh.Bounds.MinY, mesh.Bounds.MaxY,
-			mesh.Bounds.MinZ, mesh.Bounds.MaxZ, len(blob))
-	}
-	return nil
-}
-
 // collectUsage analyzes every demo under demosDir and groups the resulting
 // floor-contact points by normalized map name. The supporting surface
 // beneath a player at sample i is exactly (X, Y, Z − PlayerFeetOffset − H);
 // samples with no floor (H == NoFloor) or where the player is in a liquid
 // (Lq level ≥ 1 — liquid-supported, not floor) are skipped. A demo that
 // fails to analyze is logged and skipped rather than aborting the run.
-func collectUsage(demosDir string, verbose bool) map[string]*mapgeom.FloorUsage {
-	paths := findDemos(demosDir)
+func collectUsage(demosDir string, verbose bool) (map[string]*mapgeom.FloorUsage, error) {
+	paths, err := findDemos(demosDir)
+	if err != nil {
+		return nil, err
+	}
 	if verbose {
 		fmt.Fprintf(os.Stderr, "mapgen: pruning from %d demos under %s\n", len(paths), demosDir)
 	}
@@ -317,13 +323,15 @@ func collectUsage(demosDir string, verbose bool) map[string]*mapgeom.FloorUsage 
 			}
 		}
 	}
-	return out
+	return out, nil
 }
 
-// findDemos returns every .mvd / .mvd.gz path under root.
-func findDemos(root string) []string {
+// findDemos returns every .mvd / .mvd.gz path under root. A walk error
+// (e.g. a typo'd -demos path) is propagated so the run fails rather than
+// silently emitting an unpruned corpus, matching findBSPs.
+func findDemos(root string) ([]string, error) {
 	var out []string
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -337,6 +345,5 @@ func findDemos(root string) []string {
 		return nil
 	})
 	sort.Strings(out)
-	return out
+	return out, err
 }
-

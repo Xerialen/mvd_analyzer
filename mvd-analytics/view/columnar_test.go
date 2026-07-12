@@ -293,6 +293,49 @@ func TestColumnarLiIndexAlways(t *testing.T) {
 	if _, present := p1.Cols["loc"]; present {
 		t.Fatal("columnar must not emit resolved loc names")
 	}
+	// v53: the envelope ships the interned name table as the legend for
+	// the raw indices, so a consumer decodes locally instead of making a
+	// /loc-table round trip.
+	if got, want := cb.LocTable, []string{"", "rl", "ya"}; len(got) != len(want) ||
+		got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+		t.Fatalf("LocTable legend = %v, want %v", got, want)
+	}
+}
+
+// TestColumnarLocTableOnlyWithLiColumn: the legend rides along iff an
+// "li" column is actually in the output — no li field requested (or no
+// player with loc data) means no legend.
+func TestColumnarLocTableOnlyWithLiColumn(t *testing.T) {
+	r := &result.Result{
+		Streams: &result.Streams{
+			Players: []result.PlayerStream{{
+				Name:   "p1",
+				Health: []result.ChangeI16{{T: 0, V: 100}},
+				Loc:    []result.ChangeI16{{T: 0, V: 2}},
+				Spawns: []int32{0},
+			}},
+			Global: result.GlobalStream{MatchStart: 0, MatchEnd: 10000},
+		},
+		TimelineAnalysis: &result.TimelineAnalysisResult{LocTable: []string{"", "rl", "ya"}},
+	}
+	// li not requested → no legend.
+	cb, err := BucketsColumnar(r, BucketsOptions{WindowMs: 1000, Fields: []string{FieldHealth}})
+	if err != nil {
+		t.Fatalf("BucketsColumnar: %v", err)
+	}
+	if cb.LocTable != nil {
+		t.Fatalf("LocTable = %v without an li column, want nil", cb.LocTable)
+	}
+	// li requested but the demo carried no loc data → no li column, no legend.
+	r.Streams.Players[0].Loc = nil
+	r.TimelineAnalysis = nil
+	cb, err = BucketsColumnar(r, BucketsOptions{WindowMs: 1000, Fields: []string{FieldHealth, FieldLoc}})
+	if err != nil {
+		t.Fatalf("BucketsColumnar: %v", err)
+	}
+	if cb.LocTable != nil {
+		t.Fatalf("LocTable = %v with no loc data, want nil", cb.LocTable)
+	}
 }
 
 // TestColumnarOmitsFieldlessPlayer: a player with no value for any

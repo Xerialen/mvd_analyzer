@@ -113,10 +113,10 @@ func Buckets(r *result.Result, opts BucketsOptions) (*BucketsView, error) {
 	start := opts.StartTime
 	end := opts.EndTime
 	if end == 0 {
-		end = float64(r.Streams.Global.MatchEnd) * 0.001
+		end = secs(r.Streams.Global.MatchEnd)
 	}
 	if start == 0 {
-		start = float64(r.Streams.Global.MatchStart) * 0.001
+		start = secs(r.Streams.Global.MatchStart)
 	}
 	if end <= start {
 		return &BucketsView{WindowMs: windowMs, Buckets: nil}, nil
@@ -424,7 +424,9 @@ func fastReduce(p *result.PlayerStream, field, reducer string, bStart, bEnd floa
 // without building the slice: the carry value (last change at/before
 // bStart) if any, else the first in-window change, else nil.
 func firstChangeI16(stream []result.ChangeI16, bStart, bEnd float64) any {
-	if stream == nil {
+	// len, not nil: an empty-but-non-nil stream (a player with no readings,
+	// or any JSON round-trip of one) must not panic on stream[0] below.
+	if len(stream) == 0 {
 		return nil
 	}
 	if carry := indexI16AtOrBefore(stream, int32(bStart*1000)); carry >= 0 {
@@ -440,7 +442,7 @@ func firstChangeI16(stream []result.ChangeI16, bStart, bEnd float64) any {
 
 // firstChangeStr is firstChangeI16 for string change streams.
 func firstChangeStr(stream []result.ChangeStr, bStart, bEnd float64) any {
-	if stream == nil {
+	if len(stream) == 0 { // len, not nil — see firstChangeI16
 		return nil
 	}
 	if carry := indexStrAtOrBefore(stream, int32(bStart*1000)); carry >= 0 {
@@ -590,12 +592,12 @@ func positionSamples(p *result.PlayerStream, bStart, bEnd float64) []Sample {
 		if t >= bEndMs {
 			break
 		}
-		out = append(out, Sample{T: float64(t) * 0.001, V: positionTriple(pt, i)})
+		out = append(out, Sample{T: secs(t), V: positionTriple(pt, i)})
 	}
 	if len(out) == 0 && firstIn > 0 {
 		// Gap bucket — fall back to the latest sample before bStart.
 		idx := firstIn - 1
-		out = append(out, Sample{T: float64(pt.T[idx]) * 0.001, V: positionTriple(pt, idx)})
+		out = append(out, Sample{T: secs(pt.T[idx]), V: positionTriple(pt, idx)})
 	}
 	return out
 }
@@ -739,11 +741,11 @@ func columnSamples(pt *result.PositionTrack, bStart, bEnd float64, valAt func(i 
 		if t >= bEndMs {
 			break
 		}
-		out = append(out, Sample{T: float64(t) * 0.001, V: valAt(i)})
+		out = append(out, Sample{T: secs(t), V: valAt(i)})
 	}
 	if len(out) == 0 && firstIn > 0 {
 		idx := firstIn - 1
-		out = append(out, Sample{T: float64(pt.T[idx]) * 0.001, V: valAt(idx)})
+		out = append(out, Sample{T: secs(pt.T[idx]), V: valAt(idx)})
 	}
 	return out
 }
@@ -762,7 +764,7 @@ func eventListSamples(p *result.PlayerStream, field string, bStart, bEnd float64
 		if t < bStartMs || t >= bEndMs {
 			continue
 		}
-		ts := float64(t) * 0.001
+		ts := secs(t)
 		out = append(out, Sample{T: ts, V: ts})
 	}
 	return out
@@ -774,7 +776,7 @@ func changeSamplesI16(stream []result.ChangeI16, bStart, bEnd float64) []Sample 
 	out := make([]Sample, 0, 4)
 	carry := indexI16AtOrBefore(stream, bStartMs)
 	if carry >= 0 {
-		out = append(out, Sample{T: float64(stream[carry].T) * 0.001, V: stream[carry].V})
+		out = append(out, Sample{T: secs(stream[carry].T), V: stream[carry].V})
 	}
 	startIdx := carry + 1
 	if startIdx < 0 {
@@ -788,7 +790,7 @@ func changeSamplesI16(stream []result.ChangeI16, bStart, bEnd float64) []Sample 
 		if c.T >= bEndMs {
 			break
 		}
-		out = append(out, Sample{T: float64(c.T) * 0.001, V: c.V})
+		out = append(out, Sample{T: secs(c.T), V: c.V})
 	}
 	return out
 }
@@ -799,7 +801,7 @@ func changeSamplesStr(stream []result.ChangeStr, bStart, bEnd float64) []Sample 
 	out := make([]Sample, 0, 4)
 	carry := indexStrAtOrBefore(stream, bStartMs)
 	if carry >= 0 {
-		out = append(out, Sample{T: float64(stream[carry].T) * 0.001, V: stream[carry].V})
+		out = append(out, Sample{T: secs(stream[carry].T), V: stream[carry].V})
 	}
 	startIdx := carry + 1
 	if startIdx < 0 {
@@ -813,7 +815,7 @@ func changeSamplesStr(stream []result.ChangeStr, bStart, bEnd float64) []Sample 
 		if c.T >= bEndMs {
 			break
 		}
-		out = append(out, Sample{T: float64(c.T) * 0.001, V: c.V})
+		out = append(out, Sample{T: secs(c.T), V: c.V})
 	}
 	return out
 }

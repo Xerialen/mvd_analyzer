@@ -1,6 +1,10 @@
 package analyzer
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mvd-analyzer/mvd-reader/events"
+)
 
 // TestPlausibleDemoStartUnixMs guards the range check that rejects the
 // non-timestamp 0x000B payloads seen in the corpus (61, 11701) while
@@ -25,74 +29,83 @@ func TestPlausibleDemoStartUnixMs(t *testing.T) {
 	}
 }
 
-// TestDeriveDemoStartAnchor exercises the wall-clock anchor fallback:
-// TimelineAnalyzer.Finalize sets Streams.Global.DemoStartUnixMs/AccuracyMs=1
-// from the mvdhidden 0x000B block; deriveDemoStartAnchor only fills in the
-// whole-second serverinfo `epoch` cvar when 0x000B was absent, and never
-// overwrites the finer source. (Schema v23 moved the anchor to Streams.Global.)
-func TestDeriveDemoStartAnchor(t *testing.T) {
-	const epochSecs = 1780260653 // 2026-05-31T20:50:53Z, whole seconds
+// TestClockDemoStartAnchor exercises the wall-clock anchor the clock derives
+// and publishes on co.Clock: the millisecond-accurate mvdhidden 0x000B block
+// (accuracy 1) wins, else the whole-second serverinfo `epoch` cvar
+// (accuracy 1000), else nothing. The timeline writes these onto
+// Streams.Global; here we assert the clock's derivation directly. This folds
+// in the fallback the deleted deriveDemoStartAnchor post-processor owned.
+func TestClockDemoStartAnchor(t *testing.T) {
+	const (
+		epochSecs   = 1780260653 // 2026-05-31T20:50:53Z, whole seconds
+		hiddenMs    = 1780260653484
+		fullEpoch   = `fullserverinfo "\epoch\1780260653\maxfps\77"`
+		fullNoEpoch = `fullserverinfo "\maxfps\77\timelimit\10"`
+		fullGarbage = `fullserverinfo "\epoch\not-a-number\maxfps\77"`
+	)
 
 	tests := []struct {
 		name         string
-		streams      *Streams
-		serverInfo   map[string]string
+		events       []events.Event
 		wantUnixMs   int64
 		wantAccuracy int32
 	}{
 		{
-			name:         "no streams is a no-op",
-			streams:      nil,
-			serverInfo:   map[string]string{"epoch": "1780260653"},
-			wantUnixMs:   0,
-			wantAccuracy: 0,
-		},
-		{
-			name:         "0x000B already set — epoch must not overwrite",
-			streams:      &Streams{Global: GlobalStream{DemoStartUnixMs: 1780260653484, DemoStartAccuracyMs: 1}},
-			serverInfo:   map[string]string{"epoch": "1780260653"},
-			wantUnixMs:   1780260653484,
+			name:         "0x000B present — epoch must not overwrite",
+			events:       []events.Event{&events.StuffTextEvent{Command: fullEpoch}, &events.DemoStartTimestampEvent{UnixMs: hiddenMs}},
+			wantUnixMs:   hiddenMs,
 			wantAccuracy: 1,
 		},
 		{
 			name:         "epoch fallback when 0x000B absent",
-			streams:      &Streams{},
-			serverInfo:   map[string]string{"epoch": "1780260653"},
+			events:       []events.Event{&events.StuffTextEvent{Command: fullEpoch}},
+			wantUnixMs:   epochSecs * 1000,
+			wantAccuracy: 1000,
+		},
+		{
+			name:         "implausible 0x000B falls back to epoch",
+			events:       []events.Event{&events.StuffTextEvent{Command: fullEpoch}, &events.DemoStartTimestampEvent{UnixMs: 61}},
 			wantUnixMs:   epochSecs * 1000,
 			wantAccuracy: 1000,
 		},
 		{
 			name:         "no epoch and no 0x000B — anchor stays absent",
-			streams:      &Streams{},
-			serverInfo:   map[string]string{"maxfps": "77"},
+			events:       []events.Event{&events.StuffTextEvent{Command: fullNoEpoch}},
 			wantUnixMs:   0,
 			wantAccuracy: 0,
 		},
 		{
 			name:         "garbage epoch is ignored",
-			streams:      &Streams{},
-			serverInfo:   map[string]string{"epoch": "not-a-number"},
+			events:       []events.Event{&events.StuffTextEvent{Command: fullGarbage}},
 			wantUnixMs:   0,
 			wantAccuracy: 0,
+		},
+		{
+			name:         "mid-game serverinfo epoch update wins (last write)",
+			events:       []events.Event{&events.ServerInfoEvent{Key: "epoch", Value: "1780260653"}},
+			wantUnixMs:   epochSecs * 1000,
+			wantAccuracy: 1000,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res := &Result{Streams: tc.streams}
-			if tc.serverInfo != nil {
-				res.Metadata = &MetadataResult{ServerInfo: tc.serverInfo}
+			a := NewClockAnalyzer()
+			for _, e := range tc.events {
+				if err := a.OnEvent(e); err != nil {
+					t.Fatalf("OnEvent: %v", err)
+				}
 			}
-			deriveDemoStartAnchor(res, nil)
-
-			if tc.streams == nil {
-				return // nothing to assert beyond "did not panic"
+			co := &CoreOutputs{}
+			a.PopulateCore(co)
+			if co.Clock == nil {
+				t.Fatal("clock not published")
 			}
-			if tc.streams.Global.DemoStartUnixMs != tc.wantUnixMs {
-				t.Errorf("DemoStartUnixMs = %d, want %d", tc.streams.Global.DemoStartUnixMs, tc.wantUnixMs)
+			if co.Clock.DemoStartUnixMs != tc.wantUnixMs {
+				t.Errorf("DemoStartUnixMs = %d, want %d", co.Clock.DemoStartUnixMs, tc.wantUnixMs)
 			}
-			if tc.streams.Global.DemoStartAccuracyMs != tc.wantAccuracy {
-				t.Errorf("DemoStartAccuracyMs = %d, want %d", tc.streams.Global.DemoStartAccuracyMs, tc.wantAccuracy)
+			if co.Clock.DemoStartAccuracyMs != tc.wantAccuracy {
+				t.Errorf("DemoStartAccuracyMs = %d, want %d", co.Clock.DemoStartAccuracyMs, tc.wantAccuracy)
 			}
 		})
 	}

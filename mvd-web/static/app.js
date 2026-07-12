@@ -86,10 +86,27 @@ let currentResult = null;
 
 const worker = new Worker('worker.js');
 let wasmReady = false;
-let analyzeResolve = null;
-let analyzeReject = null;
-let recomputeResolve = null;
-let recomputeReject = null;
+
+// Worker RPC correlation. Each request carries a monotonic `reqId` that the
+// worker echoes back on its reply; pending resolvers are keyed by that id in
+// `pendingWorkerReqs` so two in-flight calls on the same lane (e.g. the user
+// clicking two search rows, or a region recompute issued before the previous
+// reply lands) can no longer cross-wire — the old single-slot resolvers let
+// the first reply settle the second caller and dropped the second reply,
+// hanging one promise forever. Non-correlated broadcasts (the deferred
+// 'buckets' message, the WASM-load-failure 'error') carry no reqId and are
+// handled without a lookup.
+let nextWorkerReqId = 1;
+const pendingWorkerReqs = new Map(); // reqId -> { resolve, reject }
+
+// takePendingWorkerReq pops the resolver pair for a correlated reply. Returns
+// undefined for an unknown/absent id (a superseded-and-already-settled request
+// or a non-correlated message), so a stray reply is dropped without throwing.
+function takePendingWorkerReq(reqId) {
+    const p = pendingWorkerReqs.get(reqId);
+    if (p) pendingWorkerReqs.delete(reqId);
+    return p;
+}
 
 // ─── Load-timing instrumentation ────────────────────────────────────────────
 // Structured per-stage timing for the demo load path, printed to the console
@@ -155,7 +172,7 @@ function finishLoadTiming() {
 }
 
 // Hide the wasm-loading overlay. When auto-loading a demo from a URL
-// (?gameId=...), keep it up through the demo download/analyse so the
+// (?gameId=... or ?demoUrl=...), keep it up through download/analyse so the
 // user never sees a half-populated Search/Summary tab in the
 // background — displayResults() calls hideLoadingOverlay() once the
 // pipeline has finished.
@@ -197,38 +214,32 @@ worker.onmessage = (e) => {
             tag.appendChild(a);
             tag.appendChild(document.createTextNode(`) — ${v.date}`));
         }
-    } else if (e.data.type === 'result') {
-        if (analyzeResolve) {
-            analyzeResolve({
-                json: e.data.json,
-                timings: e.data.timings,
-            });
-            analyzeResolve = null;
-            analyzeReject = null;
-        }
     } else if (e.data.type === 'buckets') {
         // Deferred 50ms bucket + region-control payload — arrives a few
         // seconds after 'result'. Stash it and render the Timeline/Map
-        // tabs that displayResults intentionally skipped.
+        // tabs that displayResults intentionally skipped. Not request-
+        // correlated (broadcast follow-up to the analyze), so no reqId lookup.
         applyDeferredBuckets(e.data);
-    } else if (e.data.type === 'error') {
-        if (analyzeReject) {
-            analyzeReject(new Error(e.data.message));
-            analyzeResolve = null;
-            analyzeReject = null;
-        }
-    } else if (e.data.type === 'recompute_result') {
-        if (recomputeResolve) {
-            recomputeResolve(e.data.json);
-            recomputeResolve = null;
-            recomputeReject = null;
-        }
-    } else if (e.data.type === 'recompute_error') {
-        if (recomputeReject) {
-            recomputeReject(new Error(e.data.message));
-            recomputeResolve = null;
-            recomputeReject = null;
-        }
+    } else if (
+        e.data.type === 'result' ||
+        e.data.type === 'recompute_result' ||
+        e.data.type === 'los_result'
+    ) {
+        // Correlated success reply — hand the whole message to the caller's
+        // resolver, which pulls the fields it needs (json/timings). Keyed by
+        // reqId so it always settles its own caller.
+        const pending = takePendingWorkerReq(e.data.reqId);
+        if (pending) pending.resolve(e.data);
+    } else if (
+        e.data.type === 'error' ||
+        e.data.type === 'recompute_error' ||
+        e.data.type === 'los_error'
+    ) {
+        // Correlated failure reply. The WASM-load-failure 'error' emitted
+        // before any analyze is issued carries no reqId → no pending entry →
+        // dropped (matches the previous null-resolver behaviour).
+        const pending = takePendingWorkerReq(e.data.reqId);
+        if (pending) pending.reject(new Error(e.data.message));
     }
 };
 
@@ -239,26 +250,29 @@ worker.onmessage = (e) => {
 // result.timelineAnalysis.bucketView by applyDeferredBuckets.
 function analyzeInWorker(bytes, filename) {
     return new Promise((resolve, reject) => {
-        analyzeResolve = (payload) => {
-            try {
-                const tParse = performance.now();
-                const result = JSON.parse(payload.json);
-                if (loadTiming) {
-                    loadTiming.parseMs = performance.now() - tParse;
-                    loadTiming.worker = payload.timings || null;
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => {
+                try {
+                    const tParse = performance.now();
+                    const result = JSON.parse(payload.json);
+                    if (loadTiming) {
+                        loadTiming.parseMs = performance.now() - tParse;
+                        loadTiming.worker = payload.timings || null;
+                    }
+                    // Buckets / region states arrive later via the 'buckets'
+                    // message and are stashed by applyDeferredBuckets — the
+                    // summary renders without waiting for them.
+                    resolve(result);
+                } catch (e) {
+                    reject(e);
                 }
-                // Buckets / region states arrive later via the 'buckets'
-                // message and are stashed by applyDeferredBuckets — the
-                // summary renders without waiting for them.
-                resolve(result);
-            } catch (e) {
-                reject(e);
-            }
-        };
-        analyzeReject = reject;
+            },
+            reject,
+        });
         // Transfer the ArrayBuffer (zero-copy)
         worker.postMessage(
-            { type: 'analyze', bytes: bytes.buffer, filename },
+            { type: 'analyze', reqId, bytes: bytes.buffer, filename },
             [bytes.buffer]
         );
     });
@@ -319,9 +333,27 @@ function applyDeferredBuckets(data) {
 // that's why edited region stats stayed stale before this lane existed.
 function recomputeInWorker(overrideJSON) {
     return new Promise((resolve, reject) => {
-        recomputeResolve = resolve;
-        recomputeReject = reject;
-        worker.postMessage({ type: 'recomputeRegions', overrideJSON });
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => resolve(payload.json),
+            reject,
+        });
+        worker.postMessage({ type: 'recomputeRegions', reqId, overrideJSON });
+    });
+}
+
+// computeLosInWorker asks the worker to run the lazy line-of-sight pass on the
+// already-parsed demo (computeLineOfSight is a Go export on the worker scope).
+// Resolves with the JSON array of per-player {name, los, pvs} tracks (one pass
+// fills both the actual-sightline and potential-visibility metrics).
+function computeLosInWorker() {
+    return new Promise((resolve, reject) => {
+        const reqId = nextWorkerReqId++;
+        pendingWorkerReqs.set(reqId, {
+            resolve: (payload) => resolve(payload.json),
+            reject,
+        });
+        worker.postMessage({ type: 'computeLos', reqId });
     });
 }
 
@@ -435,8 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab(requestedTab);
     } // else: leave the HTML default (Search) active.
 
-    // Auto-load demo if URL has ?gameId= (canonical), ?hub= (legacy) or
-    // ?demoUrl= (direct .mvd URL — the lab-dashboard integration).
+    // Auto-load by Hub id or by a direct same-origin/CORS-open MVD URL.
     if (hubId || demoUrl) {
         if (hubId) document.getElementById('hub-input').value = hubId;
         const autoLoad = () => (hubId ? loadFromHub() : loadFromDemoUrl(demoUrl));
@@ -468,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (hasSearch) {
         writeSearchFiltersToForm(urlFilters);
-        if (!hubId) {
+        if (!hubId && !demoUrl) {
             if (!requestedTab) switchTab('search');
             runSearch();
         }
@@ -483,8 +514,7 @@ function setCurrentTime(time) {
     mapState.renderDirty = true;
     updateUnifiedCursor();
     updateUnifiedTimeDisplay();
-    updateTimeIndicators();
-    updateTeamStatus();
+    updateTimeIndicators(); // tail-calls updateTeamStatus() when range > 0
     updateMapLegend();
     updateRegionStatus();
     updateItemsPanelStatus(mapState.currentTime);
@@ -683,6 +713,8 @@ function setupTabs() {
                     renderChatMessages();
                 } else if (tabName === 'loc-graph') {
                     renderLocGraph();
+                } else if (tabName === 'aimstats') {
+                    renderAimStats();
                 }
             };
             renderForTab();
@@ -796,9 +828,8 @@ async function loadGameFromHub(game) {
     displayResults(result);
 }
 
-// Load a demo straight from a URL — the lab-dashboard integration path
-// (?demoUrl=/demos/files/...mvd on the local hub). Same-origin (or CORS-open)
-// fetch, no hub metadata: the filename comes from the path.
+// Load a demo directly from a URL. This supports local Dragonbot lab links
+// such as ?demoUrl=/demos/files/match.mvd without requiring Hub metadata.
 async function loadFromDemoUrl(demoUrl) {
     const status = document.getElementById('upload-status');
     try {
@@ -898,6 +929,26 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Sum stats.frags per team over a demoInfo.players array, returning a
+// { teamName: totalFrags } map. Players with no team bucket under
+// `emptyTeamKey` (default '' — the topbar/team-order convention; the Teams
+// panel passes 'unknown' so a teamless bucket renders with a visible label).
+function teamFragTotals(players, emptyTeamKey = '') {
+    const totals = {};
+    for (const p of (players || [])) {
+        const t = p.team || emptyTeamKey;
+        totals[t] = (totals[t] || 0) + (p.stats?.frags || 0);
+    }
+    return totals;
+}
+
+// Return a new array of players sorted by stats.frags descending. The sort is
+// stable (equal-frag players keep input order); this frag-sorted order is the
+// canonical TEAM_COLORS source, so its semantics must not change.
+function sortByFragsDesc(players) {
+    return [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+}
+
 function updateTopbarDemoInfo(result) {
     const el = document.getElementById('topbar-demo-info');
     if (!el) return;
@@ -912,12 +963,9 @@ function updateTopbarDemoInfo(result) {
     if (teams.length < 2 && demoInfo?.teams) teams = [...demoInfo.teams];
     if (teams.length < 2 && result?.match?.teams) teams = result.match.teams.map(t => t.name);
 
-    const teamScores = {};
+    let teamScores = {};
     if (demoInfo?.players) {
-        for (const p of demoInfo.players) {
-            const t = p.team || '';
-            teamScores[t] = (teamScores[t] || 0) + (p.stats?.frags || 0);
-        }
+        teamScores = teamFragTotals(demoInfo.players);
     } else if (result?.match?.teams) {
         for (const t of result.match.teams) teamScores[t.name] = t.frags || 0;
     }
@@ -1047,9 +1095,9 @@ function displayResults(result) {
     displayMatchSettings(result.metadata?.matchSettings);
     displayServerInfo(result.metadata?.serverInfo);
 
-    // Duel-mode styling: the Go-side `normalizeDuelTeams` pass has
-    // already rewritten every team reference to the player's name for
-    // 1v1 demos. Now collapse the redundant "Per Team" panels and the
+    // Duel-mode styling: the Go-side `roster` core node has already
+    // stamped every team reference as the player's name for 1v1 demos
+    // (born-correct). Now collapse the redundant "Per Team" panels and the
     // Teams summary box in the UI so the viewer only sees the per-player
     // tables. Detected by checking whether every player's team equals
     // their own name (a property only true after the Go-side rewrite).
@@ -1071,11 +1119,7 @@ function displayResults(result) {
             teams = result.match.teams.map(t => t.name);
         }
         if (teams.length >= 2 && demoInfo?.players) {
-            const teamFrags = {};
-            for (const p of demoInfo.players) {
-                const t = p.team || '';
-                teamFrags[t] = (teamFrags[t] || 0) + (p.stats?.frags || 0);
-            }
+            const teamFrags = teamFragTotals(demoInfo.players);
             teams.sort((a, b) => (teamFrags[b] || 0) - (teamFrags[a] || 0));
         }
         timelineState.teams = teams;
@@ -1136,6 +1180,9 @@ function displayResults(result) {
 
     // Loc Graph
     timeRender('initLocGraphView', () => initLocGraphView(result));
+
+    // Aim Stats (experimental) — builds the player picker and renders result.aim.
+    timeRender('initAimStatsView', () => initAimStatsView(result));
 
     // Make all static tables sortable
     document.querySelectorAll('.stats-table').forEach(makeSortable);
@@ -1233,15 +1280,9 @@ function displayTeamsFromDemoInfo(demoInfo) {
     const container = document.getElementById('teams-list');
     container.innerHTML = '';
 
-    // Calculate team scores from players
-    const teamScores = {};
-    for (const player of demoInfo.players || []) {
-        const team = player.team || 'unknown';
-        if (!teamScores[team]) {
-            teamScores[team] = 0;
-        }
-        teamScores[team] += player.stats?.frags || 0;
-    }
+    // Calculate team scores from players (teamless players bucket as 'unknown'
+    // so they render with a visible label in this panel).
+    const teamScores = teamFragTotals(demoInfo.players, 'unknown');
 
     // Use timelineState.teams order for consistent colors, fall back to score sort
     let ordered;
@@ -1378,21 +1419,24 @@ function displayPlayerStats(players) {
 // Everything else (the per-player scoreboard, weapon stats, item
 // pickups) still renders normally.
 //
-// Detection: the Go `normalizeDuelTeams` pass rewrites every participant
-// team field to their own name for duels, so we can detect duel mode
-// reliably by checking whether every demoInfo player has `team ===
-// name`. This avoids depending on the metadata mode string, which can
-// be "duel" / "1on1" / "LGC" / "Hoony" / missing entirely depending on
+// Detection: the Go `roster` core node stamps every participant team field
+// as their own name for duels (and only for exactly-2-player matches — see
+// newRoster in analyzer/roster.go), so we can detect duel mode reliably by
+// checking whether the two demoInfo players each have
+// `team === name`. This avoids depending on the metadata mode string, which
+// can be "duel" / "1on1" / "LGC" / "Hoony" / missing entirely depending on
 // the server flavour.
-function applyDuelModeUI(result) {
-    const players = result.demoInfo?.players || [];
-    const isDuel = players.length === 2 && players.every(p => p.team === p.name);
+function isDuel(result) {
+    const players = result?.demoInfo?.players || [];
+    return players.length === 2 && players.every(p => p.team === p.name);
+}
 
+function applyDuelModeUI(result) {
     // Toggle a class on <body> so CSS can drive the hiding. Using a
     // class (instead of inline style writes) means the UI can re-render
     // cleanly on demo reload without leaking stale display:none values
     // onto unrelated elements.
-    document.body.classList.toggle('duel-mode', isDuel);
+    document.body.classList.toggle('duel-mode', isDuel(result));
 }
 
 // Long-form names for KTX spawn algorithms (k_spw values). Mirrors
@@ -1559,7 +1603,7 @@ function formatWeaponCells(weapon) {
 }
 
 function displayItemsTable(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
 
     renderTableRows('items-body', sorted, player => {
@@ -1617,12 +1661,26 @@ function displayScoreboardFallback(byPlayer, players) {
 
     playerData.sort((a, b) => b.frags - a.frags);
 
+    // This fallback path has no demoinfo, hence no handicap data — always hide
+    // the handicap column, mirroring displayPlayerStats (there is no default
+    // CSS hiding .handicap-col).
+    document.querySelectorAll('#scoreboard .handicap-col').forEach(el => {
+        el.style.display = 'none';
+    });
+
     playerData.forEach(player => {
         const tr = document.createElement('tr');
+        // One cell per #scoreboard header, in header order (index.html):
+        // Player, Team, HC, Frags, Eff, Kills, RL K, LG K, Deaths, TK, Bores,
+        // Dmg, Taken, Ewep, ToDie, Ping. '-' fillers for stats this fallback
+        // (frag-log only, no demoinfo) cannot supply.
         tr.innerHTML = `
             <td>${escapeHtml(player.name)}</td>
             <td>${escapeHtml(player.team)}</td>
+            <td class="handicap-col" style="display: none;">-</td>
             <td>${player.frags}</td>
+            <td>-</td>
+            <td>-</td>
             <td>-</td>
             <td>-</td>
             <td>${player.deaths}</td>
@@ -1668,7 +1726,7 @@ function groupByTeam(players) {
 // ─── Per-team aggregate tables ─────────────────────────────────────────────
 
 function displayPlayerStatsTeams(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
     // Same accurate-count sourcing as displayPlayerStats so the team totals
@@ -1719,7 +1777,7 @@ function displayPlayerStatsTeams(players) {
 }
 
 function displayWeaponStatsTeamsTable(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
     const wNames = ['sg', 'ssg', 'sng', 'gl', 'rl', 'lg'];
@@ -1749,7 +1807,7 @@ function displayWeaponStatsTeamsTable(players) {
 }
 
 function displayItemsTeamsTable(players) {
-    const sorted = [...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0));
+    const sorted = sortByFragsDesc(players);
     const teamOrder = getTeamOrder(sorted);
     const groups = groupByTeam(sorted);
     const fmtPu = (took, time) => time > 0 ? `${took} (${time}s)` : `${took}`;
@@ -1856,7 +1914,7 @@ function displayKeyMoments(result) {
                 const fromTime = Math.max(0, Math.floor(event.time + demoOff) - 10);
                 const toTime = Math.floor(event.endTime + demoOff) + 5;
                 const trackId = event.playerUserID || event.playerSlot;
-                const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+                const viewerUrl = hubReplayUrl({ gameId: hubInfo.gameId, from: fromTime, to: toTime, track: trackId });
                 watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
             }
 
@@ -1908,7 +1966,7 @@ function displayKeyMoments(result) {
                 const fromTime = Math.max(0, Math.floor(streak.time + demoOff));
                 const toTime = Math.floor(streak.endTime + demoOff) + 3;
                 const trackId = streak.playerUserID || 0;
-                const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+                const viewerUrl = hubReplayUrl({ gameId: hubInfo.gameId, from: fromTime, to: toTime, track: trackId });
                 watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
             }
 
@@ -1937,69 +1995,44 @@ function displayKeyMoments(result) {
     displayAirgibs(result);
 }
 
-// Airgib table state: the raw events plus the active client-side sort.
-// Default sort is height-above-shooter descending — the vertical gap
-// the rocket climbed is what makes a hit look spectacular. (The
-// analyzer ships the list ordered by floor height; the table re-sorts
-// client-side and is re-sortable by any column.)
-const airgibState = { data: [], hubInfo: null, sortKey: 'aboveShooter', sortDir: 'desc', bound: false };
-
+// Render the airborne-rocket-gib table. Default view is height-above-shooter
+// descending — the vertical gap the rocket climbed is what makes a hit look
+// spectacular (the analyzer ships the list ordered by floor height). The table
+// is re-sortable by any column through the shared makeSortable machinery: the
+// numeric/raw columns carry data-sort-value so display strings ("1:23", rounded
+// heights) don't mis-sort, and the header indicator is reset to the default
+// each load so a fresh demo always opens on the aboveShooter-desc view.
 function displayAirgibs(result) {
+    const table = document.getElementById('airgibs-table');
     const body = document.getElementById('airgibs-body');
     const empty = document.getElementById('airgibs-empty');
-    if (!body) return;
+    if (!table || !body) return;
 
+    const hubInfo = currentResult?.hubInfo || null;
     // time is int32 ms on the raw result; keep a seconds copy for seek/hub.
-    airgibState.data = (result.timelineAnalysis?.airgibs || []).map(a => ({
-        ...a,
-        timeSec: a.time * 0.001,
-    }));
-    airgibState.hubInfo = currentResult?.hubInfo || null;
+    const data = (result.timelineAnalysis?.airgibs || []).map(a => ({ ...a, timeSec: a.time * 0.001 }));
 
-    if (!airgibState.bound) {
-        initAirgibSorting();
-        airgibState.bound = true;
-    }
-
-    if (airgibState.data.length === 0) {
+    if (data.length === 0) {
         body.innerHTML = '';
         empty.style.display = 'block';
         return;
     }
     empty.style.display = 'none';
-    renderAirgibs();
-}
 
-function renderAirgibs() {
-    const body = document.getElementById('airgibs-body');
-    if (!body) return;
-    const { data, sortKey, sortDir, hubInfo } = airgibState;
-    const dir = sortDir === 'asc' ? 1 : -1;
+    // Reset the header indicators to the default (aboveShooter desc) and lay
+    // the rows out in that order; makeSortable takes over on click.
+    table.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc', 'sort-active'));
+    const aboveTh = table.querySelector('thead th[data-sort="aboveShooter"]');
+    if (aboveTh) aboveTh.classList.add('sort-desc');
+    data.sort((a, b) => ((b.heightAboveAttacker ?? 0) - (a.heightAboveAttacker ?? 0)) || (a.time - b.time));
 
-    const sorted = data.slice().sort((a, b) => {
-        let av, bv;
-        switch (sortKey) {
-            case 'attacker': return dir * (a.attacker || '').localeCompare(b.attacker || '') || (a.time - b.time);
-            case 'victim':   return dir * (a.victim || '').localeCompare(b.victim || '') || (a.time - b.time);
-            case 'loc':      return dir * (a.loc || '').localeCompare(b.loc || '') || (a.time - b.time);
-            case 'lethal':   av = a.lethal ? 1 : 0; bv = b.lethal ? 1 : 0; break;
-            case 'time':     av = a.time; bv = b.time; break;
-            // Absent on the wire means dead-level 0 (omitempty), or the
-            // rare missing shooter sample — both sort as the neutral 0.
-            case 'aboveShooter':
-                av = a.heightAboveAttacker ?? 0;
-                bv = b.heightAboveAttacker ?? 0;
-                break;
-            case 'height':
-            default:         av = a.height; bv = b.height; break;
-        }
-        if (av < bv) return -dir;
-        if (av > bv) return dir;
-        return a.time - b.time; // stable tiebreak
-    });
-
+    // heightAboveAttacker is omitted on the wire for a dead-level 0 (omitempty)
+    // and when the shooter had no position sample near the hit — the neutral 0
+    // covers both. Heights are float32 units; display rounds to 1 decimal while
+    // data-sort-value keeps the raw value for sorting.
+    const round1 = v => Math.round(v * 10) / 10;
     body.innerHTML = '';
-    sorted.forEach(a => {
+    for (const a of data) {
         const tr = document.createElement('tr');
 
         let watchCell = '-';
@@ -2008,59 +2041,28 @@ function renderAirgibs() {
             const fromTime = Math.max(0, Math.floor(a.timeSec + demoOff) - 5);
             const toTime = Math.floor(a.timeSec + demoOff) + 3;
             const trackId = a.attackerUserID || 0; // shooter perspective
-            const viewerUrl = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${fromTime}&to=${toTime}&track=${trackId}`;
+            const viewerUrl = hubReplayUrl({ gameId: hubInfo.gameId, from: fromTime, to: toTime, track: trackId });
             watchCell = `<a href="${viewerUrl}" target="_blank" class="viewer-link">Hub</a>`;
         }
 
         const lethalCell = a.lethal ? '<span class="airgib-lethal">gib</span>' : '';
-        // heightAboveAttacker is omitted on the wire for a dead-level 0
-        // (omitempty) and when the shooter had no position sample near
-        // the hit — render the neutral 0 for both. Heights are float32
-        // units; round to 1 decimal for display (sorting uses the raw
-        // values above).
-        const round1 = v => Math.round(v * 10) / 10;
-        const aboveShooterCell = round1(a.heightAboveAttacker ?? 0);
+        const aboveShooter = a.heightAboveAttacker ?? 0;
 
         tr.innerHTML = `
-            <td>${round1(a.height)}</td>
-            <td>${aboveShooterCell}</td>
+            <td data-sort-value="${a.height}">${round1(a.height)}</td>
+            <td data-sort-value="${aboveShooter}">${round1(aboveShooter)}</td>
             <td>${escapeHtml(a.attacker || 'Unknown')}</td>
             <td>${escapeHtml(a.victim || 'Unknown')}</td>
             <td>${escapeHtml(a.loc || '-')}</td>
-            <td>${lethalCell}</td>
-            <td class="time-cell time-link">${formatDuration(a.timeSec)}</td>
+            <td data-sort-value="${a.lethal ? 1 : 0}">${lethalCell}</td>
+            <td class="time-cell time-link" data-sort-value="${a.time}">${formatDuration(a.timeSec)}</td>
             <td>${watchCell}</td>
         `;
         tr.querySelector('.time-link').addEventListener('click', () => setCurrentTime(a.timeSec));
         body.appendChild(tr);
-    });
+    }
 
-    updateAirgibSortIndicators();
-}
-
-function updateAirgibSortIndicators() {
-    document.querySelectorAll('#airgibs-table thead th[data-sort]').forEach(th => {
-        th.classList.remove('sort-active', 'sort-asc', 'sort-desc');
-        if (th.dataset.sort === airgibState.sortKey) {
-            th.classList.add('sort-active', airgibState.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
-        }
-    });
-}
-
-function initAirgibSorting() {
-    document.querySelectorAll('#airgibs-table thead th[data-sort]').forEach(th => {
-        th.addEventListener('click', () => {
-            const key = th.dataset.sort;
-            if (airgibState.sortKey === key) {
-                airgibState.sortDir = airgibState.sortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                airgibState.sortKey = key;
-                // Text columns read better ascending; numerics descending.
-                airgibState.sortDir = (key === 'attacker' || key === 'victim' || key === 'loc') ? 'asc' : 'desc';
-            }
-            renderAirgibs();
-        });
-    });
+    makeSortable(table);
 }
 
 function getPowerupDisplay(type) {
@@ -2201,7 +2203,7 @@ function renderPickupsTables(result) {
 
 function computePickupsState(result) {
     const players = result.demoInfo?.players || [];
-    const teamOrder = getTeamOrder([...players].sort((a, b) => (b.stats?.frags || 0) - (a.stats?.frags || 0)));
+    const teamOrder = getTeamOrder(sortByFragsDesc(players));
     const playerByName = new Map(players.map(p => [p.name, p]));
 
     const items = result.items?.items || [];
@@ -2240,11 +2242,21 @@ function computePickupsState(result) {
         }
     }
 
+    // Whether the demo carries KTX's own pickup counters (weapons[].pickups
+    // / items[].took). When present they are authoritative and the verify
+    // cells display them; old / non-KTX demos fall back to the
+    // analytics-derived counts.
+    const hasKtxWeaponCounters = players.some(p =>
+        p.weapons && Object.values(p.weapons).some(w => w && w.pickups));
+    const hasKtxItemCounters = players.some(p =>
+        p.items && Object.keys(p.items).length > 0);
+
     return {
         result, players, teamOrder, playerByName,
         weaponEntsByKind, itemEntsByKind,
         entityCountsByPlayer, entityCountsByTeam,
         weaponPickups: result.weaponPickups || [],
+        hasKtxWeaponCounters, hasKtxItemCounters,
     };
 }
 
@@ -2405,14 +2417,19 @@ function weaponCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
                 ? ((pk['taken'] || 0) - (pk['spawn-taken'] || 0))
                 : ((pk['total-taken'] || 0) - (pk['spawn-total-taken'] || 0));
         }
-        return makeVerifyCell(ana, primary, null);
+        return makeVerifyCell(ana, primary, null, state.hasKtxWeaponCounters);
     }
     // weap-verify (Σ for hasPack, or single combined cell otherwise).
     let ana;
     if (pickupsMode === 'first') {
-        // first-per-life from weaponPickups (any source for hasPack; world-only entries otherwise).
+        // first-per-life from weaponPickups. hasPack verifies against KTX
+        // `taken` (any source); non-pack weapons verify against
+        // `spawn-taken` (world items only), so unknown-source records
+        // (weapon-stay synthesis that couldn't tie the grant to a pad)
+        // must not inflate the count.
         ana = state.weaponPickups.filter(w =>
-            w.weapon === spec.kind && matches(w) && !w.hadBefore).length;
+            w.weapon === spec.kind && matches(w) && !w.hadBefore
+            && (spec.hasPack || w.source === 'world')).length;
     } else {
         ana = 0;
         const list = state.weaponEntsByKind.get(spec.kind) || [];
@@ -2432,7 +2449,7 @@ function weaponCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
         }
         detail = pickupsSumDetail(detail, pickupsWeaponDetail(p, spec.ktxName));
     }
-    return makeVerifyCell(ana, primary, detail);
+    return makeVerifyCell(ana, primary, detail, state.hasKtxWeaponCounters);
 }
 
 function itemCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
@@ -2447,7 +2464,7 @@ function itemCellFor(col, isTeam, key, entMap, scopedPlayers, state) {
     for (const ent of col.entNums) ana += (entMap.get(ent) || 0);
     let primary = 0;
     for (const p of scopedPlayers) primary += (p.items?.[spec.ktxName]?.took || 0);
-    return makeVerifyCell(ana, primary, null);
+    return makeVerifyCell(ana, primary, null, state.hasKtxItemCounters);
 }
 
 function makeTh(html) {
@@ -2462,33 +2479,37 @@ function makeTd(html) {
     return td;
 }
 
-// makeVerifyCell renders the analyser count silently when it matches
-// KTX (cell looks like a regular count) and red+✗ when it disagrees.
-// Tooltip is always present so the per-counter breakdown is one hover
-// away even on matched cells.
-function makeVerifyCell(ana, ktxPrimary, detail) {
+// makeVerifyCell renders the KTX-authoritative counter as the cell
+// value when the demo carries one — KTX counted every touch server-side,
+// while the analytics reconstruction is known-imperfect in weapon-stay
+// modes (see mvd-analytics/analyzer/weapon_pickups.md), so a divergence
+// is expected, not an error, and gets no warning styling. The tooltip
+// acknowledges the analytics-derived count (still the right source for
+// timestamped / per-entity questions). Demos without KTX counters
+// (old / non-KTX servers) fall back to the analytics count, trusted
+// with its imperfections.
+function makeVerifyCell(ana, ktxPrimary, detail, hasKtx) {
     const td = document.createElement('td');
+    const shown = hasKtx ? ktxPrimary : ana;
     if (ana === 0 && ktxPrimary === 0 && (!detail || Object.values(detail).every(v => v === 0))) {
         td.innerHTML = '<span class="muted">·</span>';
         return td;
     }
-    if (ana === ktxPrimary) {
-        td.textContent = String(ana);
-    } else {
-        td.className = 'pickups-verify-bad';
-        const diff = ana - ktxPrimary;
-        const sign = diff > 0 ? `+${diff}` : `${diff}`;
-        td.innerHTML = `${ana}<span class="pickups-verify-mark"> ✗ ktx ${ktxPrimary} (${sign})</span>`;
-    }
-    if (detail) {
-        const lines = [`analyzer: ${ana}`];
-        for (const [field, val] of Object.entries(detail)) {
-            lines.push(`ktx ${field}: ${val}`);
+    td.textContent = String(shown);
+    const lines = [];
+    if (hasKtx) {
+        if (detail) {
+            for (const [field, val] of Object.entries(detail)) {
+                lines.push(`ktx ${field}: ${val}`);
+            }
+        } else {
+            lines.push(`ktx: ${ktxPrimary}`);
         }
-        td.title = lines.join('\n');
+        lines.push(`analytics: ${ana}`);
     } else {
-        td.title = `analyzer: ${ana}\nktx: ${ktxPrimary}`;
+        lines.push(`analytics: ${ana}`, 'no KTX pickup counters in this demo');
     }
+    td.title = lines.join('\n');
     return td;
 }
 
@@ -2592,7 +2613,7 @@ function renderPackDropRows() {
         if (!trackId) return '-';
         const f = Math.max(0, Math.floor(from + demoOff));
         const t = Math.floor(to + demoOff);
-        const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${f}&to=${t}&track=${trackId}`;
+        const url = hubReplayUrl({ gameId: hubInfo.gameId, from: f, to: t, track: trackId });
         return `<a href="${url}" target="_blank" class="viewer-link">Hub</a>`;
     };
 
@@ -2679,13 +2700,6 @@ function getWeaponName(code) {
         'slime': 'Slime'
     };
     return names[code] || code;
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Escape a single character for HTML
@@ -2782,14 +2796,12 @@ function formatQuakeMessage(text) {
 
 // Timeline Analysis State
 let timelineState = {
-    buckets: [],
     bucketView: null,      // column-major ColumnarBuckets (50ms) from getDefaultBuckets
     highResDuration: 0.05, // High-res bucket interval
     events: [],
     duration: 0,
     matchStartTime: 0,
     teams: [],
-    overviewBucketSize: 5, // Aggregate to 5-second buckets for overview
     segment: null, // { start, end } or null for full match - selected time segment
     dragging: false, // Is user dragging to select a segment on overview?
     dragStartTime: 0 // Time at drag start
@@ -2947,6 +2959,7 @@ function resetUIToCleanState() {
     mapState.lastRenderedBucket = null;
     mapState.renderDirty = false;
     mapState.followPlayer = null;
+    mapState._regionIconCache = null; // composited region-status icons (per demo)
     if ('controlRegions' in mapState) mapState.controlRegions = null;
     if ('rcResult' in mapState) mapState.rcResult = null;
     if ('locToRegion' in mapState) mapState.locToRegion = {};
@@ -3050,7 +3063,9 @@ function displayTimelineAnalysis(result) {
     timelineState.demoOffset = (result.streams?.global?.demoOffset || 0) * 0.001;
     timelineState.duration = (result.match?.duration || 600000) * 0.001;
     timelineState.events = (result.messages?.events || []).map(e => ({ ...e, time: e.time * 0.001 }));
-    timelineState.fragEvents = (timeline?.fragEvents || []).map(f => ({ ...f, time: f.time * 0.001 })); // Frag events from stat tracking
+    // Sorted by time once here so prepScoreData / precomputeFragCounts don't
+    // each re-sort a clone on every render (pan-drag re-renders many times/sec).
+    timelineState.fragEvents = (timeline?.fragEvents || []).map(f => ({ ...f, time: f.time * 0.001 })).sort((a, b) => a.time - b.time); // Frag events from stat tracking
     timelineState.deathEvents = (timeline?.deathEvents || []).map(d => ({ ...d, time: d.time * 0.001 })); // Per-player deaths (every death) for the frags/deaths drill-down
     timelineState.killEvents = (timeline?.killEvents || []).map(k => ({ ...k, time: k.time * 0.001 })); // Per-player enemy kills (killer-keyed) for the frags/deaths drill-down
     timelineState.backpacks = (result.backpacks || []).map(d => ({ ...d, time: d.time * 0.001 })); // RL/LG drops from KTX hint
@@ -3061,14 +3076,15 @@ function displayTimelineAnalysis(result) {
         duration: (ev.duration || 0) * 0.001,
     }));
 
-    // Set shared current time to start (all times are now match-relative, starting at 0)
-    mapState.currentTime = 0;
+    // Note: the shared playhead (mapState.currentTime) is initialised to 0 by
+    // resetUIToCleanState at the start of each demo load. It is deliberately
+    // NOT reset here — displayTimelineAnalysis is re-run by applyDeferredBuckets
+    // seconds after load, and a reset there would clobber a ?t= deep link or
+    // any early scrubbing the user did during the deferred-bucket window.
 
     // Update legend team names
     if (teams.length >= 2) {
         const setTextIfExists = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        setTextIfExists('legend-team-a', teams[0] + ' ↑');
-        setTextIfExists('legend-team-b', teams[1] + ' ↓');
         setTextIfExists('team-a-chat-title', `${teams[0]} Chat`);
         setTextIfExists('team-b-chat-title', `${teams[1]} Chat`);
         setTextIfExists('legend-health-team-a', teams[0] + ' ↑');
@@ -3296,6 +3312,66 @@ function drawXAxisTicks(ctx, { W, Wcss, dpr, graphH, startTime, endTime }) {
     }
 }
 
+// Output-driven (scanline) sampler shared by the diverging + mini stacked
+// renderers. Returns a closure that, given a query time, walks a monotonic
+// cursor over the sorted `points` (step function / hold-last) and returns
+// the active point (or null before the first point / past the last point's
+// declared dt). Walking the *output* (one call per pixel column) makes
+// "every column is drawn" structural and gives a draw cost that scales with
+// canvas width, not bucket count — empty buckets no longer leave un-painted
+// vertical stripes through the bars.
+function makeScanlineSampler(points) {
+    let cursor = -1;
+    return (tQuery) => {
+        while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
+        if (cursor < 0) return null;
+        const pt = points[cursor];
+        // Last point: cap at its declared dt so we don't paint past the end
+        // of the data when the view extends slightly beyond it.
+        if (cursor === points.length - 1) {
+            const endT = pt.t + (pt.dt || 0);
+            if (endT > 0 && tQuery > endT) return null;
+        }
+        return pt;
+    };
+}
+
+// Fill one 1px-wide stacked column of segments, snapping each segment
+// boundary to a pixel row so stacked segments meet on exact rows instead of
+// anti-aliased fractional ones. `from` is the baseline y (device px); `dir`
+// is -1 to stack upward, +1 downward; `scale` is the full-height pixel span
+// that maps to `maxValue`. Shared by renderDivergingGraph / renderMiniStack /
+// renderMiniDiverging.
+function fillStackedColumn(ctx, px, segs, from, dir, scale, maxValue) {
+    if (!segs) return;
+    let yAcc = from;
+    let yPrev = Math.round(from);
+    for (const seg of segs) {
+        if (seg.h > 0) {
+            yAcc += dir * ((seg.h / maxValue) * scale);
+            const yCur = Math.round(yAcc);
+            const segH = (yCur - yPrev) * dir;
+            if (segH > 0) {
+                ctx.fillStyle = seg.color;
+                ctx.fillRect(px, Math.min(yPrev, yCur), 1, segH);
+            }
+            yPrev = yCur;
+        }
+    }
+}
+
+// Diverging-graph layout, in CSS px. renderDivergingGraph multiplies these
+// by dpr for device-pixel drawing; the weapon-graph hit-tester
+// (attachWeaponGraphTooltip) consumes them directly since its cursor coords
+// are CSS px. One source of truth so the renderer and hit-tester can never
+// drift apart.
+const DIVERGING_GRAPH_LAYOUT = {
+    H: 200,           // total canvas height
+    AXIS_H: 20,       // bottom x-axis strip
+    PAD: 4,           // inner padding
+    DROP_STRIP_H: 8,  // reserved drop-dot strip at top/bottom of plot
+};
+
 // Render a diverging bar graph on a canvas.
 //   dataPoints: [{t, dt, up: [{h, color}], down: [{h, color}]}]
 //   dropMarks:  [{time, color, isTop}] (optional, e.g. RL/LG backpack drops
@@ -3309,22 +3385,22 @@ function renderDivergingGraph(canvasId, {
     yTopLabel, yBottomLabel,
     dropMarks,
 }) {
-    const setup = setupGraphCanvas(canvasId, 200);
+    const setup = setupGraphCanvas(canvasId, DIVERGING_GRAPH_LAYOUT.H);
     if (!setup) return;
     const { ctx, Wcss, W, H, dpr } = setup;
 
-    // Constants below are in device pixels — multiply by dpr so the
-    // displayed (CSS-px) size of axes / padding / dots / fonts matches
-    // what the previous CSS-px-coordinate version drew.
-    const AXIS_H = Math.round(20 * dpr);
-    const PAD = Math.round(4 * dpr);
+    // Constants below are in device pixels — multiply the shared CSS-px
+    // layout by dpr so the displayed (CSS-px) size of axes / padding / dots
+    // / fonts matches what the previous CSS-px-coordinate version drew.
+    const AXIS_H = Math.round(DIVERGING_GRAPH_LAYOUT.AXIS_H * dpr);
+    const PAD = Math.round(DIVERGING_GRAPH_LAYOUT.PAD * dpr);
     const graphH = H - AXIS_H;
     // Drop-mark strips live in a reserved zone at the top and bottom of
     // the plot area so weapon bars can never grow into them — the
     // weapons bar height scales with max players-per-team, so without
     // this reservation a high-rollout 5v5 snapshot could paint bars
     // straight through the dots. Sized for one row of ~6 px dots.
-    const DROP_STRIP_H = Math.round(8 * dpr);
+    const DROP_STRIP_H = Math.round(DIVERGING_GRAPH_LAYOUT.DROP_STRIP_H * dpr);
     const hasDropMarks = !!(dropMarks && dropMarks.length);
     const stripZone = hasDropMarks ? DROP_STRIP_H + Math.round(2 * dpr) : 0;
     const midY = PAD + (graphH - PAD) / 2;
@@ -3348,79 +3424,17 @@ function renderDivergingGraph(canvasId, {
     ctx.stroke();
 
     if (duration > 0 && dataPoints && dataPoints.length > 0) {
-        // Output-driven (scanline) rendering: for each pixel column,
-        // sample the data at that pixel's time via a monotonic cursor
-        // (step function / hold-last) and paint a 1-pixel-wide column.
-        // Replaces the older data-driven loop where we rasterised each
-        // bucket as a fillRect of bw px — that was correct when bw ≥ 1
-        // but skipped points whose `up` and `down` were both empty,
-        // leaving the canvas pixel column un-painted; gaps in the data
-        // surfaced as visible vertical stripes. Walking the *output*
-        // makes "every column is drawn" structural and gives a draw
-        // cost that scales with canvas width, not bucket count.
-        let cursor = -1;
-        const sampleAt = (tQuery) => {
-            while (cursor + 1 < dataPoints.length && dataPoints[cursor + 1].t <= tQuery) {
-                cursor++;
-            }
-            if (cursor < 0) return null;
-            const pt = dataPoints[cursor];
-            // Last point: cap at its declared dt so we don't paint past
-            // the end of the data when the view extends slightly beyond it.
-            if (cursor === dataPoints.length - 1) {
-                const endT = pt.t + (pt.dt || 0);
-                if (endT > 0 && tQuery > endT) return null;
-            }
-            return pt;
-        };
-
+        // Scanline hold-last rendering: sample each pixel column via a
+        // monotonic cursor and paint a 1px column. Team A stacks up from
+        // the center, team B stacks down. See makeScanlineSampler /
+        // fillStackedColumn for the sampling + integer-snap details.
+        const sampleAt = makeScanlineSampler(dataPoints);
         for (let px = 0; px < W; px++) {
             const tPx = startTime + (px / W) * duration;
             const pt = sampleAt(tPx);
             if (pt == null) continue;
-
-            // Stack segments with integer-aligned y boundaries: track
-            // the boundary in floating point but snap each fillRect
-            // edge to a pixel row, using the previous segment's snapped
-            // edge as the next segment's start. Stacked segments then
-            // meet on exact pixel rows instead of anti-aliased
-            // fractional ones.
-
-            // Up segments (team A, above center).
-            let yAcc = midY;
-            let yPrev = Math.round(midY);
-            if (pt.up) {
-                for (const seg of pt.up) {
-                    if (seg.h > 0) {
-                        yAcc -= (seg.h / maxValue) * barH;
-                        const yCur = Math.round(yAcc);
-                        const segH = yPrev - yCur;
-                        if (segH > 0) {
-                            ctx.fillStyle = seg.color;
-                            ctx.fillRect(px, yCur, 1, segH);
-                        }
-                        yPrev = yCur;
-                    }
-                }
-            }
-
-            // Down segments (team B, below center).
-            yAcc = midY;
-            yPrev = Math.round(midY);
-            if (pt.down) {
-                for (const seg of pt.down) {
-                    if (seg.h > 0) {
-                        yAcc += (seg.h / maxValue) * barH;
-                        const yCur = Math.round(yAcc);
-                        const segH = yCur - yPrev;
-                        if (segH > 0) {
-                            ctx.fillStyle = seg.color;
-                            ctx.fillRect(px, yPrev, 1, segH);
-                        }
-                        yPrev = yCur;
-                    }
-                }
-            }
+            fillStackedColumn(ctx, px, pt.up, midY, -1, barH, maxValue);
+            fillStackedColumn(ctx, px, pt.down, midY, 1, barH, maxValue);
         }
     }
 
@@ -3656,36 +3670,12 @@ function renderMiniStack(canvasId, { startTime, endTime, points, maxValue, heigh
     const duration = endTime - startTime;
     if (duration <= 0 || !points || points.length === 0 || maxValue <= 0) return;
 
-    let cursor = -1;
-    const sampleAt = (tQuery) => {
-        while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
-        if (cursor < 0) return null;
-        const pt = points[cursor];
-        if (cursor === points.length - 1) {
-            const endT = pt.t + (pt.dt || 0);
-            if (endT > 0 && tQuery > endT) return null;
-        }
-        return pt;
-    };
-
+    const sampleAt = makeScanlineSampler(points);
     for (let px = 0; px < W; px++) {
         const tPx = startTime + (px / W) * duration;
         const pt = sampleAt(tPx);
-        if (!pt || !pt.up) continue;
-        let yAcc = baseY;
-        let yPrev = Math.round(baseY);
-        for (const seg of pt.up) {
-            if (seg.h > 0) {
-                yAcc -= (seg.h / maxValue) * usableH;
-                const yCur = Math.round(yAcc);
-                const segH = yPrev - yCur;
-                if (segH > 0) {
-                    ctx.fillStyle = seg.color;
-                    ctx.fillRect(px, yCur, 1, segH);
-                }
-                yPrev = yCur;
-            }
-        }
+        if (!pt) continue;
+        fillStackedColumn(ctx, px, pt.up, baseY, -1, usableH, maxValue);
     }
 }
 
@@ -3858,43 +3848,14 @@ function renderMiniDiverging(canvasId, { startTime, endTime, points, maxValue, h
 
     const duration = endTime - startTime;
     if (duration > 0 && points && points.length && maxValue > 0) {
-        let cursor = -1;
-        const sampleAt = (tQuery) => {
-            while (cursor + 1 < points.length && points[cursor + 1].t <= tQuery) cursor++;
-            if (cursor < 0) return null;
-            const pt = points[cursor];
-            if (cursor === points.length - 1) {
-                const endT = pt.t + (pt.dt || 0);
-                if (endT > 0 && tQuery > endT) return null;
-            }
-            return pt;
-        };
+        const sampleAt = makeScanlineSampler(points);
         for (let px = 0; px < W; px++) {
             const tPx = startTime + (px / W) * duration;
             const pt = sampleAt(tPx);
             if (!pt) continue;
-            // Up (net frags, above center).
-            let yAcc = midY, yPrev = midY;
-            if (pt.up) for (const seg of pt.up) {
-                if (seg.h > 0) {
-                    yAcc -= (seg.h / maxValue) * halfH;
-                    const yCur = Math.round(yAcc);
-                    const segH = yPrev - yCur;
-                    if (segH > 0) { ctx.fillStyle = seg.color; ctx.fillRect(px, yCur, 1, segH); }
-                    yPrev = yCur;
-                }
-            }
-            // Down (deaths, below center).
-            yAcc = midY; yPrev = midY;
-            if (pt.down) for (const seg of pt.down) {
-                if (seg.h > 0) {
-                    yAcc += (seg.h / maxValue) * halfH;
-                    const yCur = Math.round(yAcc);
-                    const segH = yCur - yPrev;
-                    if (segH > 0) { ctx.fillStyle = seg.color; ctx.fillRect(px, yPrev, 1, segH); }
-                    yPrev = yCur;
-                }
-            }
+            // Up (net frags, above center); down (deaths, below center).
+            fillStackedColumn(ctx, px, pt.up, midY, -1, halfH, maxValue);
+            fillStackedColumn(ctx, px, pt.down, midY, 1, halfH, maxValue);
         }
     }
 
@@ -4072,7 +4033,7 @@ function renderWeaponsPerPlayer(startTime, endTime) {
 // ─── Data preparation: Score ────────────────────────────────────────────────
 
 function prepScoreData(startTime, endTime, teams) {
-    const fragEvents = (timelineState.fragEvents || []).slice().sort((a, b) => a.time - b.time);
+    const fragEvents = timelineState.fragEvents || []; // pre-sorted at intake
     if (teams.length < 2) return { points: [], max: 10 };
     let score = 0;
     for (const f of fragEvents) {
@@ -4161,34 +4122,54 @@ function graphMouseToTime(canvas, clientX) {
 }
 
 // One global drag tracker shared by all installed canvases — avoids attaching
-// a mousemove listener per canvas.
-const graphPanState = { canvas: null, lastX: 0 };
+// a mousemove listener per canvas. Pan updates are coalesced to one per
+// animation frame: a raw mousemove stream would otherwise run
+// setViewRange → updateDetailView (five graph preps/renders, each resizing its
+// canvas) dozens of times per second.
+const graphPanState = { canvas: null, lastX: 0, pendingX: 0, rafId: 0 };
 let graphPanGlobalsInstalled = false;
+
+// Apply the accumulated pan since the last processed frame. Runs from the rAF
+// scheduled by mousemove, and synchronously from mouseup to flush the final
+// cursor position exactly.
+function processGraphPan() {
+    graphPanState.rafId = 0;
+    const c = graphPanState.canvas;
+    if (!c) return;
+    const rect = c.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const [start, end] = currentViewRange();
+    const secPerPx = (end - start) / rect.width;
+    const dx = graphPanState.pendingX - graphPanState.lastX;
+    if (dx === 0) return;
+    graphPanState.lastX = graphPanState.pendingX;
+    setViewRange(start - dx * secPerPx, end - dx * secPerPx);
+    // Pin the playhead to its on-screen position while panning: shift the
+    // current time by the amount the window actually moved (after the
+    // [0,duration] clamp), so the indicator line stays put and the unified
+    // caret + clock + map follow. Not zoomed ⇒ the window can't move ⇒
+    // applied === 0 ⇒ the playhead holds.
+    const [newStart] = currentViewRange();
+    const applied = newStart - start;
+    if (applied !== 0) setCurrentTime(mapState.currentTime + applied);
+}
 
 function ensureGraphPanGlobals() {
     if (graphPanGlobalsInstalled) return;
     graphPanGlobalsInstalled = true;
     document.addEventListener('mousemove', (e) => {
-        const c = graphPanState.canvas;
-        if (!c) return;
-        const rect = c.getBoundingClientRect();
-        if (rect.width <= 0) return;
-        const [start, end] = currentViewRange();
-        const secPerPx = (end - start) / rect.width;
-        const dx = e.clientX - graphPanState.lastX;
-        graphPanState.lastX = e.clientX;
-        setViewRange(start - dx * secPerPx, end - dx * secPerPx);
-        // Pin the playhead to its on-screen position while panning: shift the
-        // current time by the amount the window actually moved (after the
-        // [0,duration] clamp), so the indicator line stays put and the unified
-        // caret + clock + map follow. Not zoomed ⇒ the window can't move ⇒
-        // applied === 0 ⇒ the playhead holds.
-        const [newStart] = currentViewRange();
-        const applied = newStart - start;
-        if (applied !== 0) setCurrentTime(mapState.currentTime + applied);
+        if (!graphPanState.canvas) return;
+        graphPanState.pendingX = e.clientX;
+        if (!graphPanState.rafId) graphPanState.rafId = requestAnimationFrame(processGraphPan);
     });
     document.addEventListener('mouseup', () => {
         if (!graphPanState.canvas) return;
+        // Flush any pending pan so the drag ends exactly where the cursor is.
+        if (graphPanState.rafId) {
+            cancelAnimationFrame(graphPanState.rafId);
+            graphPanState.rafId = 0;
+            processGraphPan();
+        }
         graphPanState.canvas.style.cursor = 'grab';
         graphPanState.canvas = null;
     });
@@ -4218,6 +4199,7 @@ function installGraphPanZoom(canvasId) {
         if (e.button !== 0) return;
         graphPanState.canvas = canvas;
         graphPanState.lastX = e.clientX;
+        graphPanState.pendingX = e.clientX;
         canvas.style.cursor = 'grabbing';
         e.preventDefault();
     });
@@ -4702,15 +4684,18 @@ function buildFullChat() {
     // timelineState.events was already converted to seconds at intake in
     // displayTimelineAnalysis, so use that pre-converted copy here.
     // `duration` (timelineState.duration) is also seconds.
-    const seen = new Map();
-    const events = (timelineState.events || []).filter(e => {
-        if (e.time < 0 || e.time > duration) return false;
-        const key = e.message;
-        const prevTime = seen.get(key);
-        if (prevTime !== undefined && Math.abs(e.time - prevTime) < 3) return false;
-        seen.set(key, e.time);
-        return true;
-    });
+    //
+    // No client-side text dedup: the only real duplication source — KTX
+    // sprints each say/say_team line once per recipient, all sharing one
+    // wire-ms — is already collapsed upstream by messages.go's seenChat on an
+    // exact (time,type,player,message) key (the documented CLAUDE.md filter
+    // exception; see mvd-reader/MVD_FORMAT.md §chat). Obituaries are broadcast
+    // once and pass through verbatim. A previous 3s message-text filter here
+    // also swallowed authentic repeats (a player re-sending the same bind, or
+    // two genuinely identical deaths within 3s), violating the
+    // surface-authoritative-data rule, so it was removed. Only clip to the
+    // match window.
+    const events = (timelineState.events || []).filter(e => e.time >= 0 && e.time <= duration);
 
     const killEvents = [];
     const teamAEvents = [];
@@ -4733,22 +4718,31 @@ function buildFullChat() {
         renderChatTimeAxisFull(axisContainer);
     }
 
-    // Add current-time line inside the scroll inner (scrolls with content)
+    // Add current-time line inside the scroll inner (scrolls with content).
+    // resetUIToCleanState clears the message containers but not this persistent
+    // wrapper, so guard against re-appending a duplicate line on every rebuild
+    // (each demo load re-runs buildFullChat); reuse the existing one.
     const scrollInner = viewport.querySelector('.chat-scroll-inner');
-    if (scrollInner) {
+    if (scrollInner && !document.getElementById('chat-current-time-line')) {
         const line = document.createElement('div');
         line.className = 'chat-current-time-line';
         line.id = 'chat-current-time-line';
         scrollInner.appendChild(line);
     }
 
-    // Scroll listener: only mark user scrolling if it's not our programmatic scroll
-    viewport.addEventListener('scroll', () => {
-        if (_chatProgrammaticScroll) return;
-        chatUserScrolling = true;
-        if (_chatScrollTimer) clearTimeout(_chatScrollTimer);
-        _chatScrollTimer = setTimeout(() => { chatUserScrolling = false; }, 2000);
-    }, { passive: true });
+    // Scroll listener: only mark user scrolling if it's not our programmatic
+    // scroll. The viewport persists across demo loads, so wire the listener
+    // exactly once (mirrors the _toggleWired pattern) — a fresh listener per
+    // rebuild would accumulate one per demo.
+    if (!viewport._scrollWired) {
+        viewport._scrollWired = true;
+        viewport.addEventListener('scroll', () => {
+            if (_chatProgrammaticScroll) return;
+            chatUserScrolling = true;
+            if (_chatScrollTimer) clearTimeout(_chatScrollTimer);
+            _chatScrollTimer = setTimeout(() => { chatUserScrolling = false; }, 2000);
+        }, { passive: true });
+    }
 
     chatRendered = true;
     updateChatTimeLine();
@@ -4852,39 +4846,63 @@ function updateDetailGraph(startTime, endTime) {
     }
 }
 
-// Mousemove tooltip on the weapon-graph canvas: highlights the drop
-// dot under the cursor and shows {player, weapon, loc, time}. Layout
-// constants must match renderDivergingGraph (PAD, AXIS_H, DROP_STRIP_H).
-function attachWeaponGraphTooltip() {
-    const canvas = document.getElementById('detail-graph-canvas');
-    if (!canvas || canvas._weaponTipAttached) return;
-    canvas._weaponTipAttached = true;
+// Generic canvas hover-tooltip. Creates one `.canvas-tooltip` div inside the
+// canvas's positioned parent, runs `hitTest(mx, my)` (canvas-local CSS px) on
+// every mousemove, and — when it returns a truthy hit — fills the tip with
+// `renderHtml(hit)` and clamp-positions it near the cursor (kept inside the
+// wrapper's right edge). Idempotent per canvas. Shared by the weapon-graph
+// drop-dot and powerup-span tooltips; the loc-graph tooltip is intentionally
+// NOT built on this (it rides Cytoscape's own node/edge mouseover events and
+// renderedPosition, not a raw canvas hit-test).
+function attachCanvasTooltip(canvas, hitTest, renderHtml) {
+    if (!canvas || canvas._canvasTipAttached) return;
+    canvas._canvasTipAttached = true;
 
-    const wrapper = canvas.parentElement; // .detail-graph-outer (positioned)
+    const wrapper = canvas.parentElement; // positioned ancestor
     const tip = document.createElement('div');
     tip.className = 'canvas-tooltip';
     tip.style.display = 'none';
     wrapper.appendChild(tip);
 
-    const HIT_R     = 6;   // hit radius (slightly larger than dot radius=3)
-    const HIT_DY    = 8;   // vertical tolerance — generous so users can hover near
-    const PAD       = 4;
-    const AXIS_H    = 20;
-    const H         = 200;
-    const graphH    = H - AXIS_H;
-    const DROP_STRIP_H = 8;
-    const topY    = PAD + DROP_STRIP_H / 2;
-    const bottomY = graphH - PAD - DROP_STRIP_H / 2;
-
     canvas.addEventListener('mousemove', (e) => {
-        const s = weaponGraphHitState;
-        if (!s.W || !s.dropMarks.length) { tip.style.display = 'none'; return; }
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-        const duration = s.endTime - s.startTime;
-        if (duration <= 0) { tip.style.display = 'none'; return; }
+        const hit = hitTest(mx, my);
+        if (!hit) { tip.style.display = 'none'; return; }
+        tip.innerHTML = renderHtml(hit);
+        tip.style.display = 'block';
+        // Position offset from cursor; clamp inside the wrapper so the tip
+        // doesn't get cut off near the right edge.
+        const tipW = tip.offsetWidth || 200;
+        const wrapW = wrapper.clientWidth;
+        let left = mx + 12;
+        if (left + tipW > wrapW) left = mx - tipW - 12;
+        tip.style.left = left + 'px';
+        tip.style.top  = (my + 12) + 'px';
+    });
+    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
 
+// Hover tooltip on the weapon-graph canvas: highlights the drop dot under
+// the cursor and shows {player, weapon, loc, time}. Layout comes from the
+// shared DIVERGING_GRAPH_LAYOUT (same source the renderer scales by dpr).
+function attachWeaponGraphTooltip() {
+    const canvas = document.getElementById('detail-graph-canvas');
+    if (!canvas) return;
+
+    const HIT_R  = 6;   // hit radius (slightly larger than dot radius=3)
+    const HIT_DY = 8;   // vertical tolerance — generous so users can hover near
+    const { H, AXIS_H, PAD, DROP_STRIP_H } = DIVERGING_GRAPH_LAYOUT;
+    const graphH  = H - AXIS_H;
+    const topY    = PAD + DROP_STRIP_H / 2;
+    const bottomY = graphH - PAD - DROP_STRIP_H / 2;
+
+    const hitTest = (mx, my) => {
+        const s = weaponGraphHitState;
+        if (!s.W || !s.dropMarks.length) return null;
+        const duration = s.endTime - s.startTime;
+        if (duration <= 0) return null;
         let best = null;
         let bestDx = HIT_R + 1;
         for (const m of s.dropMarks) {
@@ -4897,25 +4915,18 @@ function attachWeaponGraphTooltip() {
                 best = m;
             }
         }
+        return best;
+    };
 
-        if (!best) { tip.style.display = 'none'; return; }
-
+    const renderHtml = (best) => {
         const d = best.drop;
         const weapon = (d.weapon || '').toUpperCase();
         const locLine = d.loc ? `<div>Loc: ${escapeHtml(d.loc)}</div>` : '';
-        tip.innerHTML = `<div><strong>${escapeHtml(d.player || '?')}</strong> dropped <strong>${weapon}</strong></div>
+        return `<div><strong>${escapeHtml(d.player || '?')}</strong> dropped <strong>${weapon}</strong></div>
 ${locLine}<div>Time: ${formatDuration(d.time)}</div>`;
-        tip.style.display = 'block';
-        // Position offset from cursor; clamp inside the wrapper so the tip
-        // doesn't get cut off near the right edge.
-        const tipW = tip.offsetWidth || 200;
-        const wrapW = wrapper.clientWidth;
-        let left = mx + 12;
-        if (left + tipW > wrapW) left = mx - tipW - 12;
-        tip.style.left = left + 'px';
-        tip.style.top  = (my + 12) + 'px';
-    });
-    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    };
+
+    attachCanvasTooltip(canvas, hitTest, renderHtml);
 }
 
 function updateHealthArmorGraph(startTime, endTime) {
@@ -5181,54 +5192,38 @@ function updatePowerupTimeline(startTime, endTime) {
 // PowerupEvent metadata (player, team, frags, duration).
 function attachPowerupTimelineTooltip() {
     const canvas = document.getElementById('powerup-canvas');
-    if (!canvas || canvas._powerupTipAttached) return;
-    canvas._powerupTipAttached = true;
 
-    const wrapper = canvas.parentElement; // .region-timeline-outer (positioned)
-    const tip = document.createElement('div');
-    tip.className = 'canvas-tooltip';
-    tip.style.display = 'none';
-    wrapper.appendChild(tip);
-
-    canvas.addEventListener('mousemove', (e) => {
+    const hitTest = (mx, my) => {
         const s = powerupGraphHitState;
-        if (!s.W || !s.rows.length) { tip.style.display = 'none'; return; }
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+        if (!s.W || !s.rows.length) return null;
         const duration = s.endTime - s.startTime;
-        if (duration <= 0) { tip.style.display = 'none'; return; }
-
+        if (duration <= 0) return null;
         // Row index by Y; gracefully ignore the axis strip below the rows.
         const rowIdx = Math.floor(my / RC_ROW_H);
-        if (rowIdx < 0 || rowIdx >= s.rows.length) { tip.style.display = 'none'; return; }
+        if (rowIdx < 0 || rowIdx >= s.rows.length) return null;
         const row = s.rows[rowIdx];
-
-        // Find the span whose [start, end] window contains the cursor x.
+        // Find the first span whose [start, end] window contains the cursor x.
         let hit = null;
         for (const sp of row.spans) {
             const x1 = ((sp.start - s.startTime) / duration) * s.W;
             const x2 = ((sp.end   - s.startTime) / duration) * s.W;
             if (mx >= x1 && mx <= x2) { hit = sp; break; }
         }
-        if (!hit || !hit.event) { tip.style.display = 'none'; return; }
+        if (!hit || !hit.event) return null;
+        return { row, sp: hit };
+    };
 
-        const ev = hit.event;
+    const renderHtml = ({ row, sp }) => {
+        const ev = sp.event;
         const player = escapeHtml(ev.playerName || 'Unknown');
         const team   = ev.team ? `<div>Team: ${escapeHtml(ev.team)}</div>` : '';
         const dur    = (ev.duration != null) ? `${Math.round(ev.duration)}s` : '?';
-        tip.innerHTML = `<div><strong>${escapeHtml(row.name)}</strong> · <strong>${player}</strong></div>
+        return `<div><strong>${escapeHtml(row.name)}</strong> · <strong>${player}</strong></div>
 ${team}<div>Frags: ${ev.frags || 0}</div>
 <div>Duration: ${dur}</div>`;
-        tip.style.display = 'block';
-        const tipW = tip.offsetWidth || 200;
-        const wrapW = wrapper.clientWidth;
-        let left = mx + 12;
-        if (left + tipW > wrapW) left = mx - tipW - 12;
-        tip.style.left = left + 'px';
-        tip.style.top  = (my + 12) + 'px';
-    });
-    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    };
+
+    attachCanvasTooltip(canvas, hitTest, renderHtml);
 }
 
 function updateRegionControlTimeline(startTime, endTime) {
@@ -5318,7 +5313,7 @@ function updateTeamStatus() {
                 hasRL: isDead ? false : (data.rl ?? data.hasRL ?? false),
                 hasLG: isDead ? false : (data.lg ?? data.hasLG ?? false),
                 hasQuad: isDead ? false : (data.q ?? data.hasQuad ?? false),
-                hasPent: isDead ? false : (data.pent ?? data.hasPent ?? false),
+                hasPent: isDead ? false : (data.pe ?? false),
                 hasRing: isDead ? false : (data.r ?? data.hasRing ?? false),
                 frags: fragCounts[name] || 0,
             });
@@ -5397,6 +5392,19 @@ function updateTeamStatus() {
 
 // ─── Hub Watch Link Helper ──────────────────────────────────────────────────
 
+// Build a hub.quakeworld.nu replay URL. `to` is optional — omit it for a
+// single "jump here" link (buildHubWatchLink) and pass it for a windowed
+// clip (powerups / streaks / airgibs / pack drops). Callers do their own
+// demoOffset conversion + window padding (each surface pads differently),
+// then hand the final demo-relative from/to/track here so the URL scheme
+// lives in exactly one place.
+function hubReplayUrl({ gameId, from, to, track }) {
+    let url = `https://hub.quakeworld.nu/games/?gameId=${gameId}&from=${from}`;
+    if (to != null) url += `&to=${to}`;
+    url += `&track=${track}`;
+    return url;
+}
+
 function buildHubWatchLink(playerName, time, hubInfo, playerUserIDs) {
     if (!hubInfo || !hubInfo.gameId) return '';
     const trackId = playerUserIDs[playerName];
@@ -5404,7 +5412,7 @@ function buildHubWatchLink(playerName, time, hubInfo, playerUserIDs) {
     // Our times are match-relative (0 = match start). Hub uses demo-relative time
     // (includes countdown/warmup), so add demoOffset to convert.
     const from = Math.floor(time + (timelineState.demoOffset || 0));
-    const url = `https://hub.quakeworld.nu/games/?gameId=${hubInfo.gameId}&from=${from}&track=${trackId}`;
+    const url = hubReplayUrl({ gameId: hubInfo.gameId, from, track: trackId });
     return `<a href="${url}" target="_blank" class="hub-watch-link" title="Watch in Hub">hub</a>`;
 }
 
@@ -5485,11 +5493,10 @@ function resolvePlayerLoc(data, locations) {
 let precomputedFrags = []; // [{ time, cumulative }]
 
 function precomputeFragCounts() {
-    const fragEvents = timelineState.fragEvents || [];
+    const sorted = timelineState.fragEvents || []; // pre-sorted at intake
     precomputedFrags = [];
-    if (fragEvents.length === 0) return;
+    if (sorted.length === 0) return;
 
-    const sorted = fragEvents.slice().sort((a, b) => a.time - b.time);
     const running = {}; // player -> cumulative frags
 
     for (const fe of sorted) {
@@ -5498,17 +5505,24 @@ function precomputeFragCounts() {
     }
 }
 
-function getFragsAtTime(time) {
-    if (precomputedFrags.length === 0) return {};
-    // Binary search for last entry with time <= target
-    let lo = 0, hi = precomputedFrags.length - 1;
-    if (time < precomputedFrags[0].time) return {};
+// Largest index i in a time-sorted container such that accessor(arr, i) <= t,
+// or -1 when t precedes the first element (or the container is empty). Works
+// over arrays of objects (accessor reads a field, e.g. (a, i) => a[i].time)
+// and over parallel arrays where `arr` IS the key array ((a, i) => a[i]).
+function lowerBoundIndex(arr, t, accessor) {
+    let lo = 0, hi = arr.length - 1;
+    if (hi < 0 || accessor(arr, 0) > t) return -1;
     while (lo < hi) {
         const mid = (lo + hi + 1) >> 1;
-        if (precomputedFrags[mid].time <= time) lo = mid;
+        if (accessor(arr, mid) <= t) lo = mid;
         else hi = mid - 1;
     }
-    return precomputedFrags[lo].cumulative;
+    return lo;
+}
+
+function getFragsAtTime(time) {
+    const idx = lowerBoundIndex(precomputedFrags, time, (a, i) => a[i].time);
+    return idx < 0 ? {} : precomputedFrags[idx].cumulative;
 }
 
 // =============================================================================
@@ -6035,6 +6049,13 @@ let mapState = {
     playerSymbols: {}, // playerName -> { symbol, team, teamIdx }
     showViewArrows: false,      // per-player 3D view-direction arrows (opt-in)
     showVelArrows: false,       // per-player 3D velocity arrows (opt-in)
+    showLos: false,             // line-of-sight debug lines between players (opt-in)
+    showPvs: false,             // potential-visibility (PVS) lines, thinner than LOS (opt-in)
+    fullShell: false,           // optional WebGL full BSP shell; Canvas 3D stays default
+    losByPair: {},              // looker name -> { target name -> [{s,e} intervals] } (schema v37)
+    pvsByPair: {},              // looker name -> { target name -> [{s,e} intervals] } (schema v38)
+    losComputed: false,         // lazy LOS/PVS pass has run for this demo (one pass fills both)
+    losPending: false,          // a computeLos worker round-trip is in flight
     initialized: false,
     lastRenderedBucket: null, // Skip redundant redraws
     renderDirty: false,       // Force redraw on track toggle/reset/etc
@@ -6151,11 +6172,9 @@ function applyMapGeometry(geom) {
     // references so the control overlay doesn't keep pointing at the
     // previous (stale-tris) group objects.
     mapState.locationGroups = processLocationGroups(mapState.locations);
-    // Hand the per-loc floor plan to the WebGL renderer (coloured floors + loc
-    // labels — the static base of the 3D map overlays).
     if (window.MapGL) {
         window.MapGL.setFloors(glFloorData());
-        window.MapGL.setSubmodels(mapState.submodelMeshes || {}); // mover meshes
+        window.MapGL.setSubmodels(mapState.submodelMeshes || {});
     }
     if (mapState.rcResult) {
         applyRegionConfig(); // also calls renderMap
@@ -6189,6 +6208,9 @@ function initMapView(result) {
     mapState.canvas = document.getElementById('map-canvas');
     if (!mapState.canvas) return;
     mapState.ctx = mapState.canvas.getContext('2d');
+    mapState.fullShell = false;
+    const fullShellBtn = document.getElementById('map-full-shell-toggle');
+    if (fullShellBtn) fullShellBtn.classList.remove('active');
 
     // Get location data from timeline analysis
     const timeline = result.timelineAnalysis;
@@ -6228,6 +6250,21 @@ function initMapView(result) {
         }
     }
 
+    // Spatial weapon-fire streams (schema v40): rocket/grenade flights
+    // (projectiles) and LG bolts (beams), as parallel columns. Present only
+    // when the analysis built them (WASM map build); absent → graceful no-op.
+    mapState.projectiles = (result.streams && result.streams.projectiles) || null;
+    mapState.beams = (result.streams && result.streams.beams) || null;
+    mapState.nails = (result.streams && result.streams.nails) || null;
+
+    // Line of sight is computed lazily (it is the heaviest position-derived
+    // pass), so it is NOT in the parsed result. The map's LOS overlay requests
+    // it from the worker on first toggle; reset the cache here.
+    mapState.losByPair = {};
+    mapState.pvsByPair = {};
+    mapState.losComputed = false;
+    mapState.losPending = false;
+
     // Static map-entity corpus (result.mapEntities) for the "learn map" view.
     mapState.mapEntities = (result.mapEntities && Array.isArray(result.mapEntities.entities))
         ? result.mapEntities.entities : [];
@@ -6257,15 +6294,11 @@ function initMapView(result) {
                 console.log(`[mvd-timing] map geometry fetch (async): ${(performance.now() - tGeom).toFixed(1)} ms`);
                 if (!geom || !Array.isArray(geom.locs) || geom.locs.length === 0) return;
                 applyMapGeometry(geom);
-                // Feed liquid volumes to the WebGL renderer (the full shell it
-                // loads from maps3d/ deliberately omits them).
                 if (window.MapGL) window.MapGL.setLiquids(geom.liquids || []);
             })
             .catch(() => {});
-        // Full worldspawn shell (walls + ceilings) for the WebGL 3D view,
-        // independent of the floor-plan JSON above.
         if (window.MapGL) {
-            window.MapGL.resetEntities(); // new demo → fresh roster
+            window.MapGL.resetEntities();
             window.MapGL.loadMap(mapBasename);
         }
     }
@@ -6346,9 +6379,6 @@ function initMapView(result) {
     // Populate the Follow-player dropdown with current players.
     rebuildFollowSelect();
 
-    // Build powerup event list
-    buildMapPowerupList(result);
-
     // Build item list panel (armors, weapons, MH, powerups with live
     // up/down status — present for KTX demos, auto-hidden otherwise).
     renderItemsPanel();
@@ -6356,10 +6386,10 @@ function initMapView(result) {
     // Reset trail checkboxes
     document.querySelectorAll('.map-player-trail-cb').forEach(cb => { cb.checked = false; });
 
-    // Initial render at match start
-    mapState.currentTime = 0;
-    const slider = document.getElementById('map-timeline-slider');
-    if (slider) slider.value = 0;
+    // On first load resetUIToCleanState has set currentTime to 0; on the
+    // deferred re-init (applyDeferredBuckets) it holds the user's scrub
+    // position or a ?t= deep link, which must survive — so currentTime is
+    // deliberately NOT reset to 0 here.
 
     // Initialize region control data
     initRegionControl(result);
@@ -6903,8 +6933,6 @@ function resizeMapCanvas() {
     canvas.height = Math.round(cssH * dpr);
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
-    // Mirror the footprint onto the WebGL canvas so the 3D renderer shares the
-    // exact CSS size of the 2D map (backing store handled by MapGL.resize).
     const glc = document.getElementById('map-gl-canvas');
     if (glc) {
         glc.style.width = cssW + 'px';
@@ -6951,7 +6979,6 @@ function resetMapView() {
     _wtc.zMid = _wtc.zMidDefault || 0;
     // Back to the default isometric view (also syncs the 3D button and redraws).
     setMapCamera(MAP_DEFAULT_YAW, MAP_3D_DEFAULT_PITCH);
-    // Re-frame the WebGL camera too (it has its own orbit independent of _wtc).
     if (window.MapGL && window.MapGL.isReady()) window.MapGL.resetCamera();
 }
 
@@ -7387,12 +7414,28 @@ function updateRegionStatus() {
     }
 }
 
-// Build a composited canvas icon: player circle+letter with RL/LG weapon icons in corners
+// Build a composited canvas icon: player circle+letter with RL/LG weapon icons
+// in corners. The icon is a pure function of the player's identity (letter +
+// team colour) and current badge set, so it's cached per (name, badge-set):
+// updateRegionStatus runs on every setCurrentTime and every 200 ms during
+// playback, and without the cache each tick allocated + repainted a fresh
+// canvas per player. A player occupies exactly one region per frame, so a
+// cached node is appended at most once per render — no double-attach. Keyed by
+// name so distinct players never share a node; the cache is cleared per demo.
 function buildPlayerRegionIcon(player) {
     const sym = player.sym;
+    const letter = sym?.symbol || player.name.charAt(0).toUpperCase();
+    const teamColor = TEAM_COLORS[sym?.teamIdx ?? player.teamIdx] || TEAM_COLORS[0];
+    const badges = getActiveBadges(player.data);
+
+    const cache = mapState._regionIconCache || (mapState._regionIconCache = new Map());
+    const key = `${player.name}|${letter}|${teamColor}|${badges.join(',')}`;
+    let canvas = cache.get(key);
+    if (canvas) return canvas;
+
     const dpr = window.devicePixelRatio || 1;
     const size = 40;
-    const canvas = document.createElement('canvas');
+    canvas = document.createElement('canvas');
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
     canvas.style.width = size + 'px';
@@ -7402,16 +7445,14 @@ function buildPlayerRegionIcon(player) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // Draw player symbol centered — fresh-drawn so it's crisp at DPR.
-    const letter = sym?.symbol || player.name.charAt(0).toUpperCase();
-    const teamColor = TEAM_COLORS[sym?.teamIdx ?? player.teamIdx] || TEAM_COLORS[0];
     drawPlayerSymbolAt(ctx, letter, teamColor, size / 2, size / 2, PLAYER_SYMBOL_BASE_SIZE);
 
     // Draw status badges around player symbol
-    const badges = getActiveBadges(player.data);
     if (badges.length > 0) {
         drawBadgesAroundCenter(ctx, badges, size / 2, size / 2, 14, 5);
     }
 
+    cache.set(key, canvas);
     return canvas;
 }
 
@@ -7583,18 +7624,10 @@ function moverPoseAt(m, tMs) {
     const t = m.t;
     const n = t ? t.length : 0;
     if (n === 0) return null;
-    let idx;
-    if (tMs <= t[0]) idx = 0;
-    else if (tMs >= t[n - 1]) idx = n - 1;
-    else {
-        let lo = 0, hi = n - 1;
-        idx = 0;
-        while (lo <= hi) {
-            const mid = (lo + hi) >> 1;
-            if (t[mid] <= tMs) { idx = mid; lo = mid + 1; }
-            else hi = mid - 1;
-        }
-    }
+    // Clamp times before the first sample to it (strictly increasing tracks,
+    // so this matches the previous tMs<=t[0] guard exactly).
+    let idx = lowerBoundIndex(t, tMs, (a, i) => a[i]);
+    if (idx < 0) idx = 0;
     return { x: m.x[idx], y: m.y[idx], z: m.z[idx], vis: m.vis[idx] };
 }
 
@@ -7688,6 +7721,66 @@ function drawMovers(ctx) {
         const active = players.length > 0 && playerOnMover(pose, m.sub, players);
         drawMoverMesh(ctx, mesh, m.sub, pose, active);
     }
+}
+
+// Colours for the weapon-fire overlays.
+const PROJECTILE_COLORS = { rl: '#ff7733', gl: '#66cc44' };
+const NAIL_COLOR = '#ffe066';
+const BEAM_COLOR = 'rgba(150, 200, 255, 0.85)';
+// A beam flashes for this half-window (ms) around its instant.
+const BEAM_FLASH_MS = 60;
+
+// drawFlightDots draws each flight (rocket/grenade/nail) live at the current
+// time as a dot interpolated along its spawn→despawn segment (linear — exact
+// for the straight-flying rocket, approximate for grenades/nails). Columns are
+// the parallel arrays of a ProjectileStreams (schema v40).
+function drawFlightDots(ctx, pr, radius, colorOf) {
+    if (!pr || !Array.isArray(pr.s) || pr.s.length === 0) return;
+    const tMs = mapState.currentTime * 1000;
+    ctx.save();
+    for (let i = 0; i < pr.s.length; i++) {
+        const t0 = pr.s[i], t1 = pr.e[i];
+        if (tMs < t0 || tMs > t1) continue;
+        const f = t1 > t0 ? (tMs - t0) / (t1 - t0) : 0;
+        const x = pr.sx[i] + (pr.ex[i] - pr.sx[i]) * f;
+        const y = pr.sy[i] + (pr.ey[i] - pr.sy[i]) * f;
+        const z = pr.sz[i] + (pr.ez[i] - pr.sz[i]) * f;
+        const p = worldToCanvas(x, y, z);
+        ctx.fillStyle = colorOf(pr.w[i]);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// drawProjectiles draws rocket/grenade flights (and nails when present —
+// nails are opt-in, so usually absent) at the current playback time.
+function drawProjectiles(ctx) {
+    drawFlightDots(ctx, mapState.projectiles, 3, (w) => PROJECTILE_COLORS[w] || '#ffffff');
+    drawFlightDots(ctx, mapState.nails, 1.5, () => NAIL_COLOR);
+}
+
+// drawBeams draws each LG bolt active near the current time as a short-lived
+// line from muzzle to impact. Columns are parallel arrays in mapState.beams.
+function drawBeams(ctx) {
+    const bm = mapState.beams;
+    if (!bm || !Array.isArray(bm.t) || bm.t.length === 0) return;
+    const tMs = mapState.currentTime * 1000;
+    ctx.save();
+    ctx.strokeStyle = BEAM_COLOR;
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < bm.t.length; i++) {
+        if (Math.abs(bm.t[i] - tMs) > BEAM_FLASH_MS) continue;
+        const a = worldToCanvas(bm.sx[i], bm.sy[i], bm.sz[i]);
+        const ax = a.x, ay = a.y;
+        const b = worldToCanvas(bm.ex[i], bm.ey[i], bm.ez[i]);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+    }
+    ctx.restore();
 }
 
 // drawMoverMesh draws one posed mover as a single flat translucent silhouette
@@ -7911,6 +8004,12 @@ function drawLocationLayer(ctx) {
     // Movers (lifts/doors/plats) posed at the current time — above the region
     // fills and below the outlines/labels.
     drawMovers(ctx);
+
+    // Weapon-fire overlays at the current time: rocket/grenade flights as
+    // moving dots, LG bolts as brief beams. No-op unless the spatial streams
+    // were built (WASM map build).
+    drawProjectiles(ctx);
+    drawBeams(ctx);
 
     // Thin grey outlines around each traced region — drawn after all fills so
     // they sit on top and stay visible regardless of adjacent region tinting.
@@ -8169,8 +8268,8 @@ function glFrameState(time) {
                 pitch: typeof d.vp === 'number' ? d.vp * ANGLE16_TO_RAD : 0,
                 vx: d.vx, vy: d.vy, vz: d.vz,
                 color: hexToInt(TEAM_COLORS[teamIdx] || TEAM_COLORS[0]),
-                health: d.health, armor: d.armor,
-                dead: typeof d.health === 'number' && d.health <= 0,
+                health: d.h ?? d.health, armor: d.a ?? d.armor,
+                dead: typeof (d.h ?? d.health) === 'number' && (d.h ?? d.health) <= 0,
                 symbol: sym ? sym.symbol : (name[0] || '?').toUpperCase(),
                 // Held-item badges (Q/RL/LG/armor/MH/PE/Ring) as coloured dots.
                 badges: getActiveBadges(d).map(b => ({
@@ -8332,7 +8431,7 @@ function glFrameState(time) {
 function syncMapGL() {
     const gl = window.MapGL;
     if (!gl) return;
-    if (mapIs3D()) {
+    if (mapIs3D() && mapState.fullShell) {
         if (!gl.isReady()) {
             const glc = document.getElementById('map-gl-canvas');
             if (!glc) return;
@@ -8342,6 +8441,13 @@ function syncMapGL() {
             glc.style.height = h + 'px';
             gl.init(glc);
             gl.resize(w, h, mapState.dpr || 1);
+            // The module may have loaded after initMapView's async geometry
+            // setup. Re-send all static state at the lazy-init seam so direct
+            // demo deep links cannot open an empty shell.
+            gl.loadMap(mapState.mapBasename);
+            gl.setFloors(glFloorData());
+            gl.setSubmodels(mapState.submodelMeshes || {});
+            gl.setLiquids((mapState.mapGeometry && mapState.mapGeometry.liquids) || []);
         }
         gl.show();
     } else if (gl.isReady()) {
@@ -8355,17 +8461,10 @@ function renderMap(time) {
 
     if (!ctx || !canvas) return;
 
-    // Route 3D ↔ 2D between the WebGL renderer and the Canvas path. Done before
-    // the skip-redraw gate so the surface toggle is never missed.
+    // The current Canvas renderer remains the default. Full shell is an
+    // explicit compatibility mode preserving the fork's WebGL walls/ceilings.
     syncMapGL();
-
-    // Feed the WebGL renderer this frame's entities (players/items/deaths) so
-    // the 3D view matches the 2D timeline at this instant. Pushed every call
-    // (not gated by the 2D skip below) so scrubbing and playback both update.
-    // When WebGL owns the 3D view, skip the legacy tilted Canvas pass entirely
-    // (it would render hidden under the GL surface) — the Canvas path now only
-    // serves the flat top-down 2D view.
-    if (mapIs3D() && window.MapGL && window.MapGL.isReady()) {
+    if (mapState.fullShell && mapIs3D() && window.MapGL && window.MapGL.isReady()) {
         window.MapGL.renderFrame(glFrameState(time));
         return;
     }
@@ -8448,6 +8547,10 @@ function renderMap(time) {
 
     // Draw tracks (per-player visibility controlled by enabledPlayers)
     drawTracks(ctx, time);
+
+    // Line-of-sight debug overlay (opt-in): connects players who can see each
+    // other at the current time. Drawn under the player symbols.
+    drawLosLines(ctx, time, playerData);
 
     // Z-depth pass for items + players: overlapping players occlude by z
     // (higher deck on top), and an item whose z is clearly higher than a
@@ -8620,18 +8723,10 @@ function streamPosAt(name, tMs) {
     if (!pos || !pos.t || pos.t.length === 0) return null;
     const t = pos.t;
     const n = t.length;
-    let idx;
-    if (tMs <= t[0]) idx = 0;
-    else if (tMs >= t[n - 1]) idx = n - 1;
-    else {
-        let lo = 0, hi = n - 1;
-        idx = 0;
-        while (lo <= hi) {
-            const mid = (lo + hi) >> 1;
-            if (t[mid] <= tMs) { idx = mid; lo = mid + 1; }
-            else hi = mid - 1;
-        }
-    }
+    // Clamp times before the first sample to it (dense, strictly increasing
+    // tracks, so this matches the previous tMs<=t[0] guard exactly).
+    let idx = lowerBoundIndex(t, tMs, (a, i) => a[i]);
+    if (idx < 0) idx = 0;
     let h = null;
     if (pos.h && pos.h.length === n && pos.h[idx] !== MAP_NO_FLOOR) h = pos.h[idx];
     const out = { x: pos.x[idx], y: pos.y[idx], z: pos.z[idx], h };
@@ -9295,16 +9390,128 @@ function updateItemsPanelStatus(time) {
     }
 }
 
-// Binary search: find index of last point with t <= time
+// Index of the last point with t <= time, or -1 if time precedes the first.
 function trailIndexAtTime(points, time) {
-    let low = 0, high = points.length - 1;
-    if (high < 0 || points[0].t > time) return -1;
-    while (low < high) {
-        const mid = (low + high + 1) >> 1;
-        if (points[mid].t <= time) low = mid;
-        else high = mid - 1;
+    return lowerBoundIndex(points, time, (a, i) => a[i].t);
+}
+
+// ensureLosComputed runs the lazy line-of-sight pass once via the worker, then
+// builds mapState.losByPair / pvsByPair and re-renders. One pass fills both LOS
+// and PVS (the reply carries los and pvs per player), so the LOS and PVS
+// overlays share this latch. The button shows a pending state while the
+// (potentially multi-second on a 4on4) raycast pass runs in the worker — the
+// main thread stays responsive. On a BSP-less map the reply has no intervals;
+// losComputed still latches so we don't re-ask.
+async function ensureLosComputed(losBtn) {
+    mapState.losPending = true;
+    if (losBtn) losBtn.classList.add('pending');
+    try {
+        const json = await computeLosInWorker();
+        const players = JSON.parse(json);
+        if (players && players.error) throw new Error(players.error);
+        mapState.losByPair = buildVisByPair(players, 'los');
+        mapState.pvsByPair = buildVisByPair(players, 'pvs');
+        mapState.losComputed = true;
+    } catch (err) {
+        console.warn('computeLineOfSight:', err.message);
+        // Leave losComputed false so a later toggle can retry.
+    } finally {
+        mapState.losPending = false;
+        if (losBtn) losBtn.classList.remove('pending');
+        mapState.renderDirty = true;
+        renderMap(mapState.currentTime);
     }
-    return low;
+}
+
+// buildVisByPair flattens the worker's per-player [{name, los/pvs:[{o,iv}]}]
+// reply into byPair[lookerName][targetName] = [{s,e},…] for the given field
+// ('los' or 'pvs'). The track's o indexes the players array; resolve it to that
+// player's name. Both metrics are asymmetric, so each direction is stored under
+// its own looker.
+function buildVisByPair(players, field) {
+    const byPair = {};
+    if (!Array.isArray(players)) return byPair;
+    const idxToName = players.map(p => p && p.name);
+    for (const p of players) {
+        if (!p || !Array.isArray(p[field])) continue;
+        const byTarget = (byPair[p.name] ||= {});
+        for (const tr of p[field]) {
+            const other = idxToName[tr.o];
+            if (other != null && Array.isArray(tr.iv)) byTarget[other] = tr.iv;
+        }
+    }
+    return byPair;
+}
+
+// losCovers reports whether the half-open [s,e) interval list (ascending,
+// match-relative ms) covers tMs. Linear is fine — a pair has few intervals.
+function losCovers(iv, tMs) {
+    if (!iv) return false;
+    for (let i = 0; i < iv.length; i++) {
+        if (tMs >= iv[i].s && tMs < iv[i].e) return true;
+        if (iv[i].s > tMs) break;
+    }
+    return false;
+}
+
+// Line-of-sight / PVS debug colours. White when both players see each other;
+// the one-way case is coloured by which of the pair (as ordered in the name
+// list) is the sole seer — red = the first, blue = the second. The colours are
+// debug-arbitrary, not team colours. The PVS palette is the same hues at a
+// lower alpha so the (much denser) potential-visibility lines read as a faint
+// backdrop under the solid LOS lines.
+const LOS_STYLE = {
+    width: 3,
+    mutual: 'rgba(255,255,255,0.65)',
+    first: 'rgba(255,80,80,0.65)',
+    second: 'rgba(90,150,255,0.65)',
+};
+const PVS_STYLE = {
+    width: 1.5,
+    mutual: 'rgba(255,255,255,0.35)',
+    first: 'rgba(255,80,80,0.35)',
+    second: 'rgba(90,150,255,0.35)',
+};
+
+// drawVisLines draws a line between every player pair whose byPair intervals
+// currently cover the playhead, styled per `style` (width + mutual/one-way
+// colours). Endpoints sit at eye height (origin + 22) for visual honesty.
+// White = mutual; red/blue = one-way.
+function drawVisLines(ctx, byPair, time, playerData, style) {
+    if (!byPair || !playerData) return;
+    const tMs = time * 1000;
+    const names = Object.keys(playerData);
+    ctx.save();
+    ctx.lineWidth = style.width;
+    for (let i = 0; i < names.length; i++) {
+        const a = names[i], pa = playerData[a];
+        if (!pa || typeof pa.x !== 'number') continue;
+        for (let j = i + 1; j < names.length; j++) {
+            const b = names[j], pb = playerData[b];
+            if (!pb || typeof pb.x !== 'number') continue;
+            const aSeesB = losCovers(byPair[a] && byPair[a][b], tMs);
+            const bSeesA = losCovers(byPair[b] && byPair[b][a], tMs);
+            if (!aSeesB && !bSeesA) continue;
+            const ea = worldToCanvasNew(pa.x, pa.y, pa.z + 22);
+            const eb = worldToCanvasNew(pb.x, pb.y, pb.z + 22);
+            ctx.strokeStyle = (aSeesB && bSeesA) ? style.mutual
+                : aSeesB ? style.first : style.second;
+            ctx.beginPath();
+            ctx.moveTo(ea.x, ea.y);
+            ctx.lineTo(eb.x, eb.y);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+// drawLosLines renders the PVS overlay (thin, faint — potential visibility)
+// underneath the LOS overlay (solid — actual sightline), each gated by its own
+// toggle. PVS first so LOS lines draw on top. No-op unless data is present
+// (BSP-backed maps only).
+function drawLosLines(ctx, time, playerData) {
+    if (mapState.showPvs) drawVisLines(ctx, mapState.pvsByPair, time, playerData, PVS_STYLE);
+    if (mapState.showLos) drawVisLines(ctx, mapState.losByPair, time, playerData, LOS_STYLE);
 }
 
 function drawTracks(ctx, time) {
@@ -9550,6 +9757,20 @@ function setupMapTrailControls() {
         });
     }
 
+    const fullShellBtn = document.getElementById('map-full-shell-toggle');
+    if (fullShellBtn) {
+        fullShellBtn.addEventListener('click', () => {
+            mapState.fullShell = !mapState.fullShell;
+            fullShellBtn.classList.toggle('active', mapState.fullShell);
+            if (mapState.fullShell && !mapIs3D()) {
+                setMapCamera(MAP_DEFAULT_YAW, MAP_3D_DEFAULT_PITCH);
+            } else {
+                mapState.renderDirty = true;
+                renderMap(mapState.currentTime);
+            }
+        });
+    }
+
     const viewArrowsBtn = document.getElementById('map-view-arrows');
     if (viewArrowsBtn) {
         viewArrowsBtn.addEventListener('click', () => {
@@ -9567,6 +9788,34 @@ function setupMapTrailControls() {
             velArrowsBtn.classList.toggle('active', mapState.showVelArrows);
             mapState.renderDirty = true;
             renderMap(mapState.currentTime);
+        });
+    }
+
+    const losBtn = document.getElementById('map-los');
+    if (losBtn) {
+        losBtn.addEventListener('click', () => {
+            mapState.showLos = !mapState.showLos;
+            losBtn.classList.toggle('active', mapState.showLos);
+            mapState.renderDirty = true;
+            renderMap(mapState.currentTime);
+            // Compute LOS lazily the first time it is switched on.
+            if (mapState.showLos && !mapState.losComputed && !mapState.losPending) {
+                ensureLosComputed(losBtn);
+            }
+        });
+    }
+
+    const pvsBtn = document.getElementById('map-pvs');
+    if (pvsBtn) {
+        pvsBtn.addEventListener('click', () => {
+            mapState.showPvs = !mapState.showPvs;
+            pvsBtn.classList.toggle('active', mapState.showPvs);
+            mapState.renderDirty = true;
+            renderMap(mapState.currentTime);
+            // PVS rides on the same lazy pass as LOS; compute on first need.
+            if (mapState.showPvs && !mapState.losComputed && !mapState.losPending) {
+                ensureLosComputed(pvsBtn);
+            }
         });
     }
 
@@ -10005,8 +10254,7 @@ function populateLocGraphFilter(result) {
     const players = (result.demoInfo && result.demoInfo.players) || [];
 
     // Hide team options in duel mode (team name == player name for every player).
-    const isDuel = players.length > 0 && players.every(p => p.team === p.name);
-    if (!isDuel) {
+    if (!isDuel(result)) {
         for (const t of teams) opts.push({ value: 'team:' + t, label: 'Team: ' + t });
     }
     for (const p of players) {
@@ -10391,6 +10639,10 @@ function updateDynamicLabelSize() {
 // Click: show a tooltip with top-5 connections. Hover: fade the rest of the
 // graph so the node's neighborhood is clear.
 function attachLocGraphInteractions(cy) {
+    // NB: not built on attachCanvasTooltip — this rides Cytoscape's own
+    // node/edge mouseover delegation and renderedPosition (plus a graph-fade
+    // side effect), not a raw canvas mousemove hit-test, so the shared helper
+    // wouldn't fit without contortion.
     // Tooltip DOM — created lazily, reused across hovers.
     const container = document.getElementById('locgraph-canvas');
     if (!locGraphState.tooltip) {
@@ -10467,12 +10719,6 @@ function edgeTooltipHtml(edge) {
     return `<div><strong>${escapeHtml(from)} → ${escapeHtml(to)}</strong> (${kind})</div>
 <div>Total transitions: ${total}</div>
 ${rows}`;
-}
-
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
 }
 
 // Kept as a thin compatibility shim: the tab-switch handler and old callers
@@ -10615,8 +10861,7 @@ function buildLocHeatmap(result, metric) {
         .sort((a, b) => (W(b).total || 0) - (W(a).total || 0));
     if (baseLocs.length === 0) return null;
 
-    const isDuel = players.length > 0 && players.every(p => p.team === p.name);
-    const hasTeams = !isDuel && teams.length >= 2 && !(teams.length === 1 && teams[0] === '');
+    const hasTeams = !isDuel(result) && teams.length >= 2 && !(teams.length === 1 && teams[0] === '');
 
     // Columns carry `members` so a cell value is uniformly sum(byPlayer[m]);
     // `kind` ('team' | 'player') drives the title wording. `label` is the short
@@ -10803,12 +11048,689 @@ function renderHeatmapTable(tableId, theadRowId, tbodyId, data, firstColLabel) {
             const style = rgb ? ` style="background: rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]}); color: ${contrastInk(rgb)}"` : '';
             const title = data.cellTitle ? data.cellTitle(columns[ci], row, ci) : '';
             const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-            tds.push(`<td class="${cls.join(' ')}"${style} data-sort-value="${cell.p}"${titleAttr}>${Math.round(cell.p)}%</td>`);
+            // Cells default to "<p>%"; pass data.cellText to show another unit
+            // (e.g. a raw count) while keeping cell.p as the sort key.
+            const text = data.cellText ? data.cellText(cell) : `${Math.round(cell.p)}%`;
+            tds.push(`<td class="${cls.join(' ')}"${style} data-sort-value="${cell.p}"${titleAttr}>${text}</td>`);
         });
         return tds.join('');
     });
 
     makeSortable(table);
+}
+
+// ─── Aim Stats Tab (experimental) ─────────────────────────────────────────
+//
+// Thin renderer over result.aim, which is computed in Go
+// (mvd-analytics/analyzer/aim.go): per-player columnar crosshair-error samples
+// (hitscan), LG ramp, rocket direct/splash, and LG reach. This layer only bins
+// + paints — all geometry, target attribution and classification live in the
+// analytics layer so every client (CLI / API / web) shares one truth.
+
+// Crosshair extents in Quake units at the target, shared by the density
+// image and the marginal histograms. Both axes use the same scale, so the
+// player's collision box (32 wide × 56 tall) draws true to shape. Yaw is
+// wider because horizontal aim is the story.
+const AIM_X_HALF = 96; // ±3 hull widths
+const AIM_Y_HALF = 64;
+const AIM_HIST_BIN = 4;     // marginal-histogram bin width, qu
+const AIM_HULL_HALF_W = 16; // player collision box half-extents
+const AIM_HULL_HALF_H = 28;
+
+// Crosshair offset in Quake units at the target: the signed angular error
+// projected at the sample's eye→target distance (dist·sin θ — sign-safe at
+// any angle, ≈ dist·tan θ at the small angles that matter). x is flipped so
+// enemy-right reads right (+dyaw is enemy-left in Quake).
+const AIM_DEG = Math.PI / 180;
+const aimOffX = (c, i) => -Math.sin(c.dyaw[i] * AIM_DEG) * c.dist[i];
+const aimOffY = (c, i) => Math.sin(c.dpitch[i] * AIM_DEG) * c.dist[i];
+
+// Selected player for the per-player panels (heatmap + ramp). The weapon
+// tables are all-players and don't depend on it.
+let aimPlayer = null;
+let aimPlayersList = [];
+
+// Victim-class filter for the whole tab: 'all' | 'enemy' | 'team' | 'self'.
+// 'all' is the default — it preserves the server-parity numbers (KTX counts
+// team and self hits too).
+let aimVictimFilter = 'all';
+
+// initAimStatsView runs once per demo: build the player chip selector + the
+// victim filter + the (player-independent) weapon tables, then render the
+// per-player panels.
+function initAimStatsView(result) {
+    aimPlayer = null;
+    aimVictimFilter = 'all';
+    buildAimChips(result);
+    buildAimVictimToggle(result);
+    renderAimWeaponTables(result);
+    renderAimStats();
+}
+
+// buildAimChips renders a team-coloured chip per player. Click selects; Left/
+// Right arrow keys (with the strip focused) step prev/next for quick A/B
+// comparison.
+function buildAimChips(result) {
+    const box = document.getElementById('aim-player-chips');
+    if (!box) return;
+    box.innerHTML = '';
+    const players = (result && result.aim && result.aim.players) || [];
+    aimPlayersList = players.map(p => p.player);
+    if (!aimPlayersList.includes(aimPlayer)) aimPlayer = aimPlayersList[0] || null;
+    const teamOrder = getTeamOrder([]);
+    players.forEach(p => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'aim-chip';
+        btn.dataset.player = p.player;
+        btn.textContent = p.player;
+        const ti = teamOrder.indexOf(p.team || '');
+        if (ti >= 0 && ti < TEAM_COLORS.length) btn.style.borderBottomColor = TEAM_COLORS[ti];
+        btn.addEventListener('click', () => { aimPlayer = p.player; renderAimStats(); box.focus(); });
+        box.appendChild(btn);
+    });
+    if (!box._aimWired) {
+        box.addEventListener('keydown', e => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            e.preventDefault();
+            if (!aimPlayersList.length) return;
+            let i = aimPlayersList.indexOf(aimPlayer);
+            i = (i + (e.key === 'ArrowRight' ? 1 : -1) + aimPlayersList.length) % aimPlayersList.length;
+            aimPlayer = aimPlayersList[i];
+            renderAimStats();
+        });
+        box._aimWired = true;
+    }
+}
+
+// buildAimVictimToggle wires the Enemy/Team/Self/All filter buttons (static
+// in the HTML) and hides the Team option in duels — there are no teammates,
+// while Enemy vs All still differ via RL/GL self-splash.
+function buildAimVictimToggle(result) {
+    const box = document.getElementById('aim-victim-toggle');
+    if (!box) return;
+    const players = (result && result.aim && result.aim.players) || [];
+    const duel = players.length > 0 && players.every(p => p.mode === 'duel');
+    const teamBtn = box.querySelector('.aim-chip[data-kind="team"]');
+    if (teamBtn) teamBtn.style.display = duel ? 'none' : '';
+    if (duel && aimVictimFilter === 'team') aimVictimFilter = 'all';
+    if (!box._aimWired) {
+        box.querySelectorAll('.aim-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                aimVictimFilter = btn.dataset.kind;
+                renderAimWeaponTables(currentResult);
+                renderAimStats();
+            });
+        });
+        box._aimWired = true;
+    }
+}
+
+function renderAimStats() {
+    const result = currentResult;
+    const aim = result && result.aim;
+    const hasData = !!(aim && aim.players && aim.players.length);
+
+    const tab = document.getElementById('tab-aimstats');
+    const es = tab ? tab.querySelector('.empty-state') : null;
+    if (es) es.style.display = result ? 'none' : '';
+    const empty = document.getElementById('aim-empty');
+    if (empty) empty.style.display = (result && !hasData) ? '' : 'none';
+    ['aim-controls', 'aim-accuracy-panel', 'aim-heatmap-panel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = hasData ? '' : 'none';
+    });
+    if (!hasData) return;
+
+    if (!aim.players.some(p => p.player === aimPlayer)) aimPlayer = aim.players[0].player;
+    const pa = aim.players.find(p => p.player === aimPlayer);
+    const box = document.getElementById('aim-player-chips');
+    if (box) box.querySelectorAll('.aim-chip').forEach(b => b.classList.toggle('active', b.dataset.player === aimPlayer));
+    const vt = document.getElementById('aim-victim-toggle');
+    if (vt) vt.querySelectorAll('.aim-chip').forEach(b => b.classList.toggle('active', b.dataset.kind === aimVictimFilter));
+
+    renderAimMode(pa);
+    renderAimHeatmap(pa);
+}
+
+function renderAimMode(pa) {
+    const el = document.getElementById('aim-mode');
+    if (!el) return;
+    el.textContent = pa.mode === 'duel'
+        ? 'Target attribution: duel (exact — one enemy; hits use the confirmed victim)'
+        : 'Target attribution: team game (hits → confirmed victim; misses → nearest-crosshair-enemy heuristic)';
+}
+
+// Column descriptors: {h: header, t: tooltip, cell: (WeaponAim) -> html}. The
+// Player column is prepended automatically (with the team-coloured stripe).
+// Every count column has a share-of-fires % twin: counts depend on how much a
+// player fired, so the percentages are what compare across players. hit% keeps
+// the accuracy colour classes; the miss-type shares stay plain (high ≠ good
+// is weapon-dependent).
+const pctCell = p => `<span class="${getAccuracyClass(p)}">${p.toFixed(1)}%</span>`;
+const pctPlain = p => `${p.toFixed(1)}%`;
+const shotShare = (n, w) => pctPlain(w.shots ? (n || 0) / w.shots * 100 : 0);
+const AIM_COL = {
+    shots: { h: 'Shots', t: 'Trigger pulls', cell: w => w.shots },
+    hits: { h: 'Hits', t: 'Fires that connected', cell: w => w.hits },
+    hitPct: { h: 'Hit %', t: 'Share of fires that connected', cell: w => pctCell(w.shots ? w.hits / w.shots * 100 : 0) },
+    fired: { h: 'Pellets Fired', t: 'Pellets fired (6 SG / 14 SSG per shot)', cell: w => w.pellets || 0 },
+    pHit: { h: 'Pellets Hit', t: 'Pellets that hit (matches the server)', cell: w => w.pelletHits || 0 },
+    pAcc: { h: 'Pellet %', t: 'Per-pellet accuracy', cell: w => pctCell(w.pellets ? (w.pelletHits || 0) / w.pellets * 100 : 0) },
+    full: { h: 'Full', t: 'Fires where every pellet hit', cell: w => w.full || 0 },
+    partial: { h: 'Partial', t: 'Fires where some but not all pellets hit', cell: w => w.partial || 0 },
+    miss: { h: 'Miss', t: 'Fires where no pellet hit', cell: w => w.miss || 0 },
+    fullPct: { h: 'Full %', t: 'Share of fires where every pellet hit', cell: w => shotShare(w.full, w) },
+    partialPct: { h: 'Partial %', t: 'Share of fires where some but not all pellets hit', cell: w => shotShare(w.partial, w) },
+    missPct: { h: 'Miss %', t: 'Share of fires where no pellet hit', cell: w => shotShare(w.miss, w) },
+    direct: { h: 'Direct', t: 'Direct contacts (matches the server)', cell: w => w.direct || 0 },
+    splash: { h: 'Splash', t: 'Hits from splash only', cell: w => w.splash || 0 },
+    missed: { h: 'Missed', t: 'Fires that hit nothing', cell: w => w.missed || 0 },
+    directPct: { h: 'Direct %', t: 'Share of fires that hit directly', cell: w => shotShare(w.direct, w) },
+    splashPct: { h: 'Splash %', t: 'Share of fires that hit via splash only', cell: w => shotShare(w.splash, w) },
+    missedPct: { h: 'Missed %', t: 'Share of fires that hit nothing', cell: w => shotShare(w.missed, w) },
+    blocked: { h: 'Blocked', t: 'Miss — the beam would have hit an enemy in range, but an object stopped it short', cell: w => w.blocked || 0 },
+    lgMiss: { h: 'Miss', t: 'Miss — aim error, no enemy on the beam\'s line', cell: w => w.miss || 0 },
+    far: { h: 'Far', t: 'Miss — the enemy was on the beam\'s line but beyond its ~600u reach', cell: w => w.outOfRange || 0 },
+    unres: { h: 'Unresolved', t: 'Miss that could not be classified — no beam matched this fire (needs the beam stream / shooter position at fire time)', cell: w => w.unresolved || 0 },
+    blockedPct: { h: 'Blocked %', t: 'Share of fires denied by an object in the way', cell: w => shotShare(w.blocked, w) },
+    lgMissPct: { h: 'Miss %', t: 'Share of fires missed on aim', cell: w => shotShare(w.miss, w) },
+    farPct: { h: 'Far %', t: 'Share of fires denied by beam range', cell: w => shotShare(w.outOfRange, w) },
+};
+// Per-weapon column order: counts first, then the share-of-fires block.
+// SG/SSG lead with the pellet stats.
+const AIM_TABLE_COLS = {
+    lg: ['shots', 'hits', 'lgMiss', 'blocked', 'far', 'unres', 'hitPct', 'lgMissPct', 'blockedPct', 'farPct'],
+    sg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
+    ssg: ['fired', 'pHit', 'pAcc', 'shots', 'hits', 'full', 'partial', 'miss', 'hitPct', 'fullPct', 'partialPct', 'missPct'],
+    rl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
+    gl: ['shots', 'hits', 'direct', 'splash', 'missed', 'hitPct', 'directPct', 'splashPct', 'missedPct'],
+    // Nails (web parse only — the WASM build turns on BuildNails). Nail
+    // accuracy is approximate (svc_nails fires in bursts, one damage credited
+    // per pull), so ng/sng show only the generic shots/hits/hitPct counters —
+    // no direct/splash/pellet split, which nails don't carry.
+    ng: ['shots', 'hits', 'hitPct'],
+    sng: ['shots', 'hits', 'hitPct'],
+};
+const AIM_WEAPON_ORDER = ['lg', 'sg', 'ssg', 'rl', 'gl', 'ng', 'sng'];
+
+// aimWeaponView projects a WeaponAim onto the active victim filter so the
+// AIM_COL cell functions stay bucket-agnostic. The analyzer emits the enemy
+// split only when it differs from the top-level counters, so its absence
+// means enemy == all; team/self splits are absent when that bucket never
+// connected (zeros). Shots (and pellets fired) are filter-independent —
+// per-bucket splash/missed derive from them (splash = hits − direct,
+// missed = shots − hits). LG miss/blocked/far ride through unchanged:
+// misses have no victim, so they don't move with the filter (the lg miss
+// bucket shares the `miss` field with the pellet split, so it must dodge
+// the pellet projection below).
+function aimWeaponView(w) {
+    if (!w || aimVictimFilter === 'all') return w;
+    if (aimVictimFilter === 'enemy' && !w.enemy) return w;
+    const s = (aimVictimFilter === 'enemy' ? w.enemy
+        : aimVictimFilter === 'team' ? w.team : w.self) || {};
+    const hits = s.hits || 0, direct = s.direct || 0;
+    return {
+        ...w, hits, direct,
+        pelletHits: s.pelletHits || 0,
+        full: s.full || 0, partial: s.partial || 0,
+        miss: w.weapon === 'lg' ? (w.miss || 0) : (s.miss || 0),
+        splash: Math.max(0, hits - direct),
+        missed: (w.shots || 0) - hits,
+    };
+}
+
+// renderAimWeaponTables builds one table per weapon, rows = players (all who
+// fired anything; "-" where they didn't fire this weapon), team-coloured like
+// the Summary tab. Player-independent (re-rendered when the victim filter
+// changes).
+function renderAimWeaponTables(result) {
+    const container = document.getElementById('aim-weapon-tables');
+    if (!container) return;
+    container.innerHTML = '';
+    const players = (result && result.aim && result.aim.players) || [];
+    if (!players.length) return;
+    const teamOrder = getTeamOrder([]); // canonical frag-sorted order (= Summary)
+
+    for (const wn of AIM_WEAPON_ORDER) {
+        const cols = (AIM_TABLE_COLS[wn] || []).map(k => AIM_COL[k]);
+        const rows = players.map(pa => ({
+            player: pa.player, team: pa.team,
+            w: aimWeaponView((pa.weapons || []).find(x => x.weapon === wn) || null),
+        }));
+        if (!rows.some(r => r.w)) continue; // weapon nobody fired → no table
+        rows.sort((a, b) => (b.w ? b.w.shots : -1) - (a.w ? a.w.shots : -1));
+
+        const head = '<th>Player</th>' +
+            cols.map(c => `<th title="${escapeHtml(c.t)}">${escapeHtml(c.h)}</th>`).join('');
+        const naCells = '<td class="aim-na">-</td>'.repeat(cols.length);
+        let body = '';
+        rows.forEach(r => {
+            const ti = teamOrder.indexOf(r.team || '');
+            const color = (ti >= 0 && ti < TEAM_COLORS.length) ? TEAM_COLORS[ti] : '';
+            const stripe = color ? ` style="border-left: 3px solid ${color}"` : '';
+            const tds = `<td>${escapeHtml(r.player)}</td>` +
+                (r.w ? cols.map(c => `<td>${c.cell(r.w)}</td>`).join('') : naCells);
+            body += `<tr${stripe}>${tds}</tr>`;
+        });
+
+        const block = document.createElement('div');
+        block.className = 'aim-weapon-block';
+        block.innerHTML = `<h4>${escapeHtml(getWeaponName(wn))}</h4>` +
+            `<table class="stats-table aim-weapon-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+        container.appendChild(block);
+        makeSortable(block.querySelector('table'));
+    }
+}
+
+// renderAimHeatmap draws one crosshair-placement density image per weapon
+// (LG, SG): a Gaussian-smoothed 2-D histogram of the normalized samples,
+// rendered on canvas with the shared viridis ramp plus a colorbar — the
+// MATLAB imagesc look. Split by weapon because SG/SSG pellet spread smears
+// its cloud far wider than LG, and mixing them hides each.
+function renderAimHeatmap(pa) {
+    renderAimHeatmapWeapon(pa, 'lg', 'aim-heatmap-lg');
+    renderAimHeatmapWeapon(pa, 'sg', 'aim-heatmap-sg');
+}
+
+// aimSampleInFilter applies the victim filter to one crosshair sample. Only
+// hits can be team-attributed (misses attribute to enemies by construction),
+// and hitscan samples can never be self-hits — so 'self' matches nothing.
+function aimSampleInFilter(c, i) {
+    switch (aimVictimFilter) {
+        case 'enemy': return !(c.team && c.team[i]);
+        case 'team': return !!(c.team && c.team[i]);
+        case 'self': return false;
+        default: return true;
+    }
+}
+
+function aimNodataText(weapon) {
+    const W = weapon.toUpperCase();
+    switch (aimVictimFilter) {
+        case 'enemy': return `No ${W} samples on enemies for this player.`;
+        case 'team': return `No ${W} samples on teammates for this player.`;
+        case 'self': return 'Self-hits are RL/GL splash only — no hitscan samples.';
+        default: return `No ${W} fired by this player.`;
+    }
+}
+
+function renderAimHeatmapWeapon(pa, weapon, prefix) {
+    const nodata = document.getElementById(`${prefix}-nodata`);
+    const canvas = document.getElementById(`${prefix}-canvas`);
+    const c = pa.crosshair;
+    const idx = [];
+    if (c && c.t) {
+        for (let i = 0; i < c.t.length; i++) {
+            if (c.w[i] === weapon && aimSampleInFilter(c, i)) idx.push(i);
+        }
+    }
+    if (nodata) {
+        nodata.style.display = idx.length ? 'none' : '';
+        if (!idx.length) nodata.textContent = aimNodataText(weapon);
+    }
+    if (canvas) canvas.style.display = idx.length ? '' : 'none';
+    renderAimHistRow(prefix, c, idx, weapon === 'lg' ? pa.lgRamp : null);
+    if (!idx.length || !canvas) return;
+    drawAimDensity(canvas, c, idx);
+}
+
+// Density-image parameters. The fine grid is what gets smoothed and painted;
+// the hover grid is coarser so the read-out counts are meaningful.
+const AIM_IMG_CELL = 2;      // fine-grid bin, qu at the target
+const AIM_IMG_SIGMA = 1.4;   // gaussian σ, in fine cells
+const AIM_IMG_SCALE = 5;     // display px per fine cell
+const AIM_HOVER_BIN = 8;     // hover read-out bin, qu at the target
+
+function aimClampIndex(v, n) { return Math.max(0, Math.min(n - 1, v)); }
+
+// Zero density keeps the surface colour and the lowest densities fade into
+// the ramp — matching the table heatmaps, where empty cells keep the page
+// background and only real values get the shared viridis heatColorRGB.
+const AIM_IMG_FADE = 0.04; // density fraction over which the ramp fades in
+
+function aimSurfaceRGB(canvas) {
+    const m = (getComputedStyle(canvas).backgroundColor || '')
+        .match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    return m ? [+m[1], +m[2], +m[3]] : [26, 26, 46]; // --bg-deep fallback
+}
+
+function aimDensityRGB(t, bg) {
+    const rgb = heatColorRGB(t);
+    const a = Math.min(1, t / AIM_IMG_FADE);
+    for (let i = 0; i < 3; i++) rgb[i] = Math.round(bg[i] + (rgb[i] - bg[i]) * a);
+    return rgb;
+}
+
+function drawAimDensity(canvas, c, idx) {
+    const nx = Math.round(2 * AIM_X_HALF / AIM_IMG_CELL);
+    const ny = Math.round(2 * AIM_Y_HALF / AIM_IMG_CELL);
+    const hx = Math.round(2 * AIM_X_HALF / AIM_HOVER_BIN);
+    const hy = Math.round(2 * AIM_Y_HALF / AIM_HOVER_BIN);
+    const grid = new Float32Array(nx * ny);
+    const hShots = new Uint32Array(hx * hy), hHits = new Uint32Array(hx * hy);
+    // x/y are the enemy's offset relative to the crosshair in qu at the
+    // target (enemy-right reads on the right, top = up). Samples beyond the
+    // extents are dropped rather than clamped: a clamp pile-up paints a
+    // bright rim on the smoothed image. The marginal histograms keep clamp
+    // edge bins, so the rare outliers stay visible there.
+    for (const i of idx) {
+        const x = aimOffX(c, i), y = aimOffY(c, i);
+        if (Math.abs(x) > AIM_X_HALF || Math.abs(y) > AIM_Y_HALF) continue;
+        const xi = aimClampIndex(Math.floor((x + AIM_X_HALF) / AIM_IMG_CELL), nx);
+        const yi = aimClampIndex(Math.floor((AIM_Y_HALF - y) / AIM_IMG_CELL), ny);
+        grid[yi * nx + xi]++;
+        const hxi = aimClampIndex(Math.floor((x + AIM_X_HALF) / AIM_HOVER_BIN), hx);
+        const hyi = aimClampIndex(Math.floor((AIM_Y_HALF - y) / AIM_HOVER_BIN), hy);
+        hShots[hyi * hx + hxi]++;
+        if (c.hit[i]) hHits[hyi * hx + hxi]++;
+    }
+
+    // Separable gaussian blur, kernel normalized to sum 1 so values keep the
+    // shots-per-cell unit (edge cells replicate — they are clamp catch-alls).
+    const r = Math.ceil(3 * AIM_IMG_SIGMA);
+    const kern = new Float32Array(2 * r + 1);
+    let ksum = 0;
+    for (let i = -r; i <= r; i++) {
+        kern[i + r] = Math.exp(-(i * i) / (2 * AIM_IMG_SIGMA * AIM_IMG_SIGMA));
+        ksum += kern[i + r];
+    }
+    for (let i = 0; i < kern.length; i++) kern[i] /= ksum;
+    const tmp = new Float32Array(nx * ny);
+    for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
+        let s = 0;
+        for (let d = -r; d <= r; d++) s += kern[d + r] * grid[y * nx + aimClampIndex(x + d, nx)];
+        tmp[y * nx + x] = s;
+    }
+    const sm = new Float32Array(nx * ny);
+    let max = 0;
+    for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
+        let s = 0;
+        for (let d = -r; d <= r; d++) s += kern[d + r] * tmp[aimClampIndex(y + d, ny) * nx + x];
+        sm[y * nx + x] = s;
+        if (s > max) max = s;
+    }
+
+    // Paint the fine grid at 1px/cell offscreen, then upscale with bilinear
+    // smoothing onto the display canvas — the imagesc-with-interp look.
+    const img = document.createElement('canvas');
+    img.width = nx;
+    img.height = ny;
+    const ictx = img.getContext('2d');
+    const idata = ictx.createImageData(nx, ny);
+    const bg = aimSurfaceRGB(canvas);
+    for (let p = 0; p < nx * ny; p++) {
+        const rgb = aimDensityRGB(max ? sm[p] / max : 0, bg);
+        idata.data[4 * p] = rgb[0];
+        idata.data[4 * p + 1] = rgb[1];
+        idata.data[4 * p + 2] = rgb[2];
+        idata.data[4 * p + 3] = 255;
+    }
+    ictx.putImageData(idata, 0, 0);
+
+    const ML = 34, MT = 8, MB = 20, GAP = 10, CB = 14, MR = 40;
+    const PW = nx * AIM_IMG_SCALE, PH = ny * AIM_IMG_SCALE;
+    const W = ML + PW + GAP + CB + MR, H = MT + PH + MB;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(img, ML, MT, PW, PH);
+
+    const px = x => ML + (x + AIM_X_HALF) / (2 * AIM_X_HALF) * PW;
+    const py = y => MT + (AIM_Y_HALF - y) / (2 * AIM_Y_HALF) * PH;
+    const crisp = v => Math.round(v) + 0.5;
+
+    // Dead-center cross + the player collision box, true to shape (32 wide ×
+    // 56 tall), plus a dashed outline at the corner-on silhouette (the axis-
+    // aligned box viewed diagonally reads √2 wider; same height).
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(crisp(px(0)), MT);
+    ctx.lineTo(crisp(px(0)), MT + PH);
+    ctx.moveTo(ML, crisp(py(0)));
+    ctx.lineTo(ML + PW, crisp(py(0)));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.strokeRect(crisp(px(-AIM_HULL_HALF_W)), crisp(py(AIM_HULL_HALF_H)),
+        px(AIM_HULL_HALF_W) - px(-AIM_HULL_HALF_W),
+        py(-AIM_HULL_HALF_H) - py(AIM_HULL_HALF_H));
+    const dw = AIM_HULL_HALF_W * Math.SQRT2;
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.strokeRect(crisp(px(-dw)), crisp(py(AIM_HULL_HALF_H)),
+        px(dw) - px(-dw), py(-AIM_HULL_HALF_H) - py(AIM_HULL_HALF_H));
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeRect(crisp(ML), crisp(MT), PW, PH);
+
+    // Axis ticks every hull-width (32 qu), labelled in qu.
+    ctx.fillStyle = '#8892a6';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let x = -AIM_X_HALF; x <= AIM_X_HALF; x += 32) {
+        ctx.fillRect(crisp(px(x)) - 0.5, MT + PH, 1, 3);
+        ctx.fillText(String(x), px(x), MT + PH + 5);
+    }
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let y = -AIM_Y_HALF; y <= AIM_Y_HALF; y += 32) {
+        ctx.fillRect(ML - 3, crisp(py(y)) - 0.5, 3, 1);
+        ctx.fillText(String(y), ML - 6, py(y));
+    }
+
+    // Colorbar: 0 → max shots per fine cell (smoothed), same ramp including
+    // the fade-to-surface bottom so bar and image agree exactly.
+    const bx = ML + PW + GAP;
+    for (let i = 0; i < PH; i++) {
+        const rgb = aimDensityRGB(1 - i / (PH - 1), bg);
+        ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx.fillRect(bx, MT + i, CB, 1);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeRect(crisp(bx), crisp(MT), CB, PH);
+    const fmtBar = v => (v >= 10 ? String(Math.round(v)) : v.toFixed(1));
+    ctx.fillStyle = '#8892a6';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fmtBar(max), bx + CB + 4, MT + 4);
+    ctx.fillText(fmtBar(max / 2), bx + CB + 4, MT + PH / 2);
+    ctx.fillText('0', bx + CB + 4, MT + PH - 3);
+
+    // Hover read-out: shot/hit counts in the coarse bin under the cursor.
+    canvas._aimHover = { hShots, hHits, hx, hy, ML, MT, PW, PH, W, H };
+    if (!canvas._aimWired) {
+        canvas.addEventListener('mousemove', e => {
+            const d = canvas._aimHover;
+            if (!d) return;
+            const rect = canvas.getBoundingClientRect();
+            // max-width:100% can render the canvas below its intrinsic CSS
+            // size; map cursor px back into the unscaled ML/PW space or the
+            // reported bin drifts on narrow layouts.
+            const sx = rect.width ? d.W / rect.width : 1;
+            const sy = rect.height ? d.H / rect.height : 1;
+            const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sy;
+            if (mx < d.ML || mx >= d.ML + d.PW || my < d.MT || my >= d.MT + d.PH) {
+                canvas.title = '';
+                return;
+            }
+            const xi = aimClampIndex(Math.floor((mx - d.ML) / d.PW * d.hx), d.hx);
+            const yi = aimClampIndex(Math.floor((my - d.MT) / d.PH * d.hy), d.hy);
+            const s = d.hShots[yi * d.hx + xi], h = d.hHits[yi * d.hx + xi];
+            const fmt = v => (v > 0 ? '+' : '') + v.toFixed(0);
+            const xlo = -AIM_X_HALF + xi * AIM_HOVER_BIN;
+            const yhi = AIM_Y_HALF - yi * AIM_HOVER_BIN;
+            const range = `x ${fmt(xlo)}…${fmt(xlo + AIM_HOVER_BIN)} qu, y ${fmt(yhi - AIM_HOVER_BIN)}…${fmt(yhi)} qu`;
+            canvas.title = s
+                ? `${range}: ${s} shot${s === 1 ? '' : 's'}, ${h} hit (${Math.round(h / s * 100)}%)`
+                : `${range}: no shots`;
+        });
+        canvas._aimWired = true;
+    }
+}
+
+// Marginal histograms under each crosshair image: the same qu-at-target
+// samples projected onto one axis at a time. Yaw flips x so enemy-right
+// reads right (matching the image); pitch plots ascending so enemy-above
+// reads right. Out-of-range samples clamp into the edge bins (unlike the
+// image, which drops them — a 1-D strip has room for catch-all bins without
+// smearing), and an odd bin count centers the middle bin on zero (dead
+// center). bandHalf is the hull half-extent shaded as "on the hitbox" —
+// half-width for yaw, half-height for pitch.
+function renderAimHistRow(prefix, c, idx, ramp) {
+    const row = document.getElementById(`${prefix}-hists`);
+    if (!row) return;
+    row.style.display = idx.length ? '' : 'none';
+    row.innerHTML = '';
+    if (!idx.length) return;
+    row.appendChild(buildAimHist('Yaw', 'enemy left ← → right', 'qu',
+        AIM_X_HALF, AIM_HIST_BIN, i => aimOffX(c, i), c, idx, AIM_HULL_HALF_W));
+    row.appendChild(buildAimHist('Pitch', 'enemy below ← → above', 'qu',
+        AIM_Y_HALF, AIM_HIST_BIN, i => aimOffY(c, i), c, idx, AIM_HULL_HALF_H));
+    if (ramp && ramp.since && ramp.since.length) row.appendChild(buildAimRampHist(ramp));
+}
+
+function buildAimHist(name, dirNote, unit, half, w, val, c, idx, bandHalf) {
+    // Bin i is centered on (i − mid)·w: the middle bin straddles zero and the
+    // outermost bin centers sit exactly at ±half (edges overhang by w/2).
+    const mid = Math.round(half / w);
+    const nb = 2 * mid + 1;
+    const span = nb * w;
+    const binOf = v => Math.max(0, Math.min(nb - 1, mid + Math.round(v / w)));
+    const bins = Array.from({ length: nb }, () => ({ shots: 0, hits: 0 }));
+    let max = 0;
+    for (const i of idx) {
+        const b = bins[binOf(val(i))];
+        b.shots++;
+        if (c.hit[i]) b.hits++;
+        if (b.shots > max) max = b.shots;
+    }
+
+    const box = document.createElement('div');
+    box.className = 'aim-hist';
+    const title = document.createElement('div');
+    title.className = 'aim-hist-title';
+    title.innerHTML = `${name} <span class="aim-sel-note">${dirNote}</span>`;
+    box.appendChild(title);
+
+    const plot = document.createElement('div');
+    plot.className = 'aim-hist-plot';
+    const band = document.createElement('div');
+    band.className = 'aim-hist-band';
+    band.style.left = `${((span / 2 - bandHalf) / span) * 100}%`;
+    band.style.width = `${(2 * bandHalf / span) * 100}%`;
+    plot.appendChild(band);
+    const zero = document.createElement('div');
+    zero.className = 'aim-hist-zero';
+    plot.appendChild(zero);
+
+    bins.forEach((b, bi) => {
+        const col = document.createElement('div');
+        col.className = 'aim-hist-col';
+        const lo = (bi - mid) * w - w / 2;
+        col.title = `${lo.toFixed(0)} … ${(lo + w).toFixed(0)} ${unit}: ` +
+            `${b.shots} shot${b.shots === 1 ? '' : 's'}` +
+            (b.shots ? `, ${b.hits} hit (${Math.round(b.hits / b.shots * 100)}%)` : '');
+        const fill = document.createElement('div');
+        fill.className = 'aim-hist-fill';
+        fill.style.height = `${max ? (b.shots / max) * 100 : 0}%`;
+        if (b.shots > 0) fill.style.minHeight = '2px';
+        col.appendChild(fill);
+        plot.appendChild(col);
+    });
+    box.appendChild(plot);
+
+    const axis = document.createElement('div');
+    axis.className = 'aim-hist-axis';
+    axis.innerHTML = `<span>−${half}</span><span>0</span><span>+${half} ${unit}</span>`;
+    box.appendChild(axis);
+    return box;
+}
+
+// The LG ramp (result.aim lgRamp, computed in Go: time since the shaft
+// opened per fire, fires < 150 ms apart grouped into one shaft — one fire ==
+// one 100 ms LG cell, so the bins align with the cell cadence) shown as a
+// third histogram under the LG image, same style as the marginals: bars =
+// the bin's hit-rate on a dynamic y scale (max bin hit % rounded up to the
+// next 10%, labelled in a small gutter), hover for the counts. A bin with
+// fires but no hits keeps a 2px stub so it reads as 0%, not as no data.
+// The last bin collects longer shafts.
+const AIM_RAMP_BIN = 100; // ms
+const AIM_RAMP_BINS = 12; // 0-1100 ms, then 1100+
+
+function buildAimRampHist(ramp) {
+    // Score each fire under the victim filter: ramp.team flags fires that
+    // connected but hit no enemy (teammate-only), so enemy = hit && !team,
+    // team = hit && team. The denominator stays all LG fires — the ramp is
+    // hit% of fires, whatever they hit.
+    const rampHitAt = i => {
+        const t = !!(ramp.team && ramp.team[i]);
+        if (aimVictimFilter === 'enemy') return ramp.hit[i] && !t;
+        if (aimVictimFilter === 'team') return ramp.hit[i] && t;
+        return ramp.hit[i];
+    };
+    const bins = Array.from({ length: AIM_RAMP_BINS }, () => ({ shots: 0, hits: 0 }));
+    for (let i = 0; i < ramp.since.length; i++) {
+        const b = bins[Math.min(AIM_RAMP_BINS - 1, Math.floor(ramp.since[i] / AIM_RAMP_BIN))];
+        b.shots++;
+        if (rampHitAt(i)) b.hits++;
+    }
+    const pctOf = b => (b.shots ? b.hits / b.shots * 100 : 0);
+    const yMax = Math.max(10, Math.ceil(Math.max(...bins.map(pctOf)) / 10) * 10);
+    const maxShots = Math.max(...bins.map(b => b.shots));
+
+    const box = document.createElement('div');
+    box.className = 'aim-hist';
+    const title = document.createElement('div');
+    title.className = 'aim-hist-title';
+    title.innerHTML = 'Ramp <span class="aim-sel-note">hit % by time since the shaft opened; fires &lt; 150 ms apart are one shaft; faint = few fires</span>';
+    box.appendChild(title);
+
+    const plot = document.createElement('div');
+    plot.className = 'aim-hist-plot';
+    bins.forEach((b, bi) => {
+        const col = document.createElement('div');
+        col.className = 'aim-hist-col';
+        const lo = bi * AIM_RAMP_BIN;
+        const range = bi === AIM_RAMP_BINS - 1 ? `${lo}+ ms` : `${lo}…${lo + AIM_RAMP_BIN} ms`;
+        const pct = pctOf(b);
+        col.title = `${range}: ${b.shots} shot${b.shots === 1 ? '' : 's'}` +
+            (b.shots ? `, ${b.hits} hit (${Math.round(pct)}%)` : '');
+        const fill = document.createElement('div');
+        fill.className = 'aim-hist-fill';
+        fill.style.height = `${pct / yMax * 100}%`;
+        // A tall bar from a handful of fires is weak evidence: fade bars by
+        // sample size (sqrt keeps the steeply-decaying tail readable, the
+        // floor keeps every non-empty bin visible). Exact counts on hover.
+        fill.style.opacity = (0.25 + 0.75 * Math.sqrt(b.shots / maxShots)).toFixed(2);
+        if (b.shots > 0) fill.style.minHeight = '2px';
+        col.appendChild(fill);
+        plot.appendChild(col);
+    });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'aim-hist-ywrap';
+    const yaxis = document.createElement('div');
+    yaxis.className = 'aim-hist-yaxis';
+    yaxis.innerHTML = `<span>${yMax}%</span><span>0</span>`;
+    wrap.appendChild(yaxis);
+    wrap.appendChild(plot);
+    box.appendChild(wrap);
+
+    const axis = document.createElement('div');
+    axis.className = 'aim-hist-axis aim-hist-axis-inset';
+    axis.innerHTML = `<span>0</span><span>${AIM_RAMP_BINS * AIM_RAMP_BIN / 2}</span>` +
+        `<span>${(AIM_RAMP_BINS - 1) * AIM_RAMP_BIN}+ ms</span>`;
+    box.appendChild(axis);
+    return box;
 }
 
 // ─── Playback Engine ──────────────────────────────────────────────────────
@@ -10911,48 +11833,9 @@ function animatePlayback() {
     if (now - _lastFullSyncTime > 200) {
         _lastFullSyncTime = now;
         mapState.renderDirty = true;
-        updateTimeIndicators();
-        updateTeamStatus();
+        updateTimeIndicators(); // tail-calls updateTeamStatus() when range > 0
         updateMapLegend();
         updateRegionStatus();
         updateItemsPanelStatus(mapState.currentTime);
-    }
-}
-
-function buildMapPowerupList(result) {
-    const list = document.getElementById('map-powerup-events');
-    if (!list) return;
-
-    list.innerHTML = '';
-
-    // Prefer timelineState.powerupEvents (already converted ms→s at intake
-    // in displayTimelineAnalysis). Fall back to the raw schema field with
-    // its own conversion so the panel still renders if displayResults runs
-    // displayMap before displayTimelineAnalysis on some path.
-    const events = timelineState.powerupEvents && timelineState.powerupEvents.length
-        ? timelineState.powerupEvents
-        : (result.timelineAnalysis?.powerupEvents || []).map(ev => ({
-              ...ev,
-              time: ev.time * 0.001,
-          }));
-
-    if (events.length === 0) {
-        list.innerHTML = '<li style="color: #666; font-style: italic;">No powerup events</li>';
-        return;
-    }
-
-    for (const event of events) {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span class="time-cell">${formatDuration(event.time)}</span>
-            <span class="powerup-cell ${event.powerupType}">${getPowerupDisplay(event.powerupType)}</span>
-            <span>${escapeHtml(event.playerName || 'Unknown')}</span>
-        `;
-        li.addEventListener('click', () => {
-            setCurrentTime(event.time);
-            markMapDirty();
-            renderMap(mapState.currentTime);
-        });
-        list.appendChild(li);
     }
 }

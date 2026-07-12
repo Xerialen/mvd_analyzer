@@ -5,6 +5,1329 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## Unreleased (Xerialen upstream sync)
+
+- **Tactical decisions (schema v57).** `qw-analyze -decision-log
+  <server.log>` resolves Komodobot KDLOG ground truth against the demo;
+  `-infer-decisions` emits pickup-anchored inferred goals when no sidecar is
+  available. Both produce the optional top-level `decisions` section, while
+  `timelineAnalysis.playerSlots` supplies the stable KDLOG edict join key.
+  A verbatim real mvdsv+KTX log excerpt golden-pins anchor, goal, enemy, and
+  evade grammar. The resolver runs before optional position columns are
+  stripped, so decision locations and state snapshots remain populated.
+- **Selected weapon stream (schema v56).** `streams.players[]` gains `w`, a
+  sparse `ChangeI16` stream carrying the raw `STAT_ACTIVEWEAPON` IT_* bit.
+  This is the weapon currently wielded, distinct from the existing RL/LG/etc.
+  inventory-presence intervals. The `w` field code is available in buckets,
+  stream-slice, and state-at views with the standard carry-forward reducer.
+  Values are surfaced raw without an armor-style clamp (`IT_AXE = 4096`).
+
+- **Direct demo deep links.** The web analyzer accepts `?demoUrl=<url>` and
+  downloads/analyzes that MVD directly, preserving the fork's Dragonbot lab
+  dashboard integration.
+- **Optional full BSP shell.** The fork's WebGL/Three.js shell is retained
+  behind the **Full shell** map control for dm2, dm3, e1m2, schloss, and
+  phantoma. Upstream's current Canvas 3D stays the default (and therefore keeps
+  its newer projectile/beam/nail/LOS/PVS overlays); the opt-in mode preserves
+  the full walls-and-ceilings orbit view without regressing that default.
+
+## Unreleased (branch `phase-16.3`)
+
+- **The bounded damage family (schema v55).** Damage now ships in **two
+  families**. The **raw** family is the v53 shape — the full hit
+  including overkill, capped only at 9999, exactly the wire value
+  (`unbound_dmg_dealt`, written mid-frame in `T_Damage`,
+  `combat.c:795`). The new **bounded** family reconstructs KTX's own
+  scoreboard `dmg_dealt` (`combat.c:783`) per hit — armor absorbed plus
+  the health portion capped at the victim's remaining health — which
+  until now existed only as `demoInfo`'s end-of-match totals. The
+  additions are purely additive; every raw field is byte-stable except
+  the tele/stomp fold-in below.
+  - **Death-value reconstruction.** The wire hides the bounded value but
+    reveals it almost exactly. A hit the victim **survives** has no
+    overkill, so `bounded == raw` identically — no health knowledge
+    needed, only that no death happened this frame. A **killing** hit's
+    overkill is the end-of-frame death broadcast KTX writes (`health -=
+    take`, then the negative leftover or `-1`; `combat.c:944,983-985`):
+    `bounded = raw + deathValue`, the armor share cancelling out of the
+    `save + take` identity (verified per-hit exact, and the death
+    broadcast shares the killing hit's demo timestamp on all 10923
+    corpus deaths). Same-frame multi-hit deaths cascade the one death
+    value across the frame's hits in wire (application) order, last to
+    first. Two wire limits force an approximate shadow-health fallback:
+    KTX clamps a corpse's health at `-99` (`combat.c:259`), and a tight
+    death→respawn hides the death value behind the respawn's positive
+    health (recovered from the authoritative `DeathEvent`). The
+    nullification rules the wire ignores are unchanged (pent/`tp`
+    mates+self bounded to armor, `tp4` to 0, all skipped for a suicide),
+    read from serverinfo with `tp_num()` semantics; godmode is
+    unobservable and ignored.
+  - **Telefrags and stomps fold their honest damage into
+    `given`/`givenTeam`/`taken`** — and nothing else. KTX's scoreboard
+    accumulation has no tele/stomp exclusion (`combat.c:1046-1076`, both
+    map to `wpNONE`), so our fold-free exclusion was exactly the
+    corpus-visible residual — every player whose KTX `dmg.team` exceeded
+    our `givenTeam` had dealt a team telefrag. A telefrag folds its
+    **bounded** reconstruction (victim's full armor + remaining health —
+    the wire 9999 is a kill guarantee, not a measurement) into the raw
+    family too; a stomp is a real ~10 HP `T_Damage` and folds wire (raw)
+    / reconstruction (bounded). Both stay out of `events`, `byWeapon`,
+    `matrix`, `ewep` and `totalDamage` (KTX's `weapons[].damage`
+    excludes them too); each `telefrags[]`/`stomps[]` entry now carries
+    the folded `bounded`/`damage` and the `victimWep` class it landed
+    in.
+  - **Spawn-state inference.** A tele/stomp victim is alive by
+    definition (`tdeath_touch` requires `ISLIVE`), so a non-positive
+    health shadow means the respawn beat the end-of-frame stat
+    broadcast: the reconstruction reads that victim from spawn state
+    (100 health, no armor, spawn inventory) instead of the stale corpse
+    shadow — the same wire-invisibility as the match-start spawn.
+  - **Skipped modes.** `k_midair` / `k_instagib` / `k_dmgfrags` rewrite
+    `take` unobservably, so bounded is skipped outright there rather
+    than emitted wrong: `damage.boundedMode = "skipped:<mode>"`, no
+    tele/stomp fold-in, and a `dmg=bounded` request returns the new
+    `422 bounded_unavailable`.
+  - **Corpus validation.** `TestBoundedReconciliationCorpus` reconciles
+    the reconstruction against `demoInfo` on every corpus demo — per
+    player (`given`/`taken`/`ewep`/`team`) and per weapon
+    (`weapons[].damage.enemy`/`team`). The death-value model tightens the
+    given/taken reconciliation ~2.5×: tolerances are re-pinned at measured
+    max + headroom (given/taken/per-weapon ±40, measured 16/15/18; ewep
+    ±150, measured 131; team ±10, measured 1). The remaining residuals are
+    the multi-hit cascade save split, the `-99` clamp / masked-death shadow
+    fallback, and — for ewep only — the victim-item one-frame window (a
+    same-frame RL/LG pickup reclassifying a hit's victim-weapon bucket,
+    independent of the health arithmetic). The dm3 pent-deflect
+    (`Satan's power deflects nlk's telefrag`) is pinned as live coverage.
+    A loose warning-mode variant landed in the diagnostic harness.
+  - **REST / MCP surface.** `/damage` gains `dmg=raw|bounded|both`
+    (`raw` = the byte-stable v53 shape; `both` = the stored shape;
+    `bounded` = the bounded family materialized into the raw field
+    names). The default (unset `dmg`) is **`bounded` for both the summary
+    and the full log** — the KTX-scoreboard number a reader almost always
+    wants; `raw` and `both` stay explicit opt-ins. MCP `getDamage` takes
+    the same `dmg` input and forwards it, so an unadorned `getDamage`
+    (MCP defaults `summary=true`) serves the bounded family. An invalid
+    `dmg` is a `400 invalid_param`; an **explicit** `dmg=bounded` on a
+    skipped demo is the `422 bounded_unavailable` (a new drift-tested
+    error code), while a **defaulted** bounded there falls back to `raw`
+    (whose `boundedMode` explains the absence) instead of erroring. The
+    view-layer filtered recompute reproduces both families exactly,
+    including the tele/stomp fold.
+  - **KTX-exact bounded on a summary.** An unfiltered bounded/both
+    **summary** now sources its per-player bounded figures — `given`,
+    `givenTeam`, `givenSelf`, `ewep`, per-weapon `byWeapon` — from KTX's
+    exact end-of-match scoreboard (`demoInfo.players[].dmg` +
+    `weapons[].damage.enemy`) when the demo carries `demoInfo`, since the
+    per-hit reconstruction is only best-effort. A new
+    `boundedSource: "ktx" | "reconstructed"` field records which. The
+    substitution is partial: `taken` (KTX is enemy-only; ours is
+    all-sources) and the `enemyVs*` buckets (KTX has no split) stay
+    reconstructed, so on a `ktx` summary they may not sum exactly to the
+    substituted `given`. Filtered/windowed summaries and the full-log
+    response have no KTX counterpart and stay fully reconstructed.
+  - Goldens regenerate at branch end (they stay v53 until then, so the
+    served-spec validation augments the fixture Result with a synthetic
+    bounded family in the meantime). See
+    [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for the
+    field-level reference.
+
+## Unreleased (branch `phase-16.2`)
+
+- **GDPR disclosure: privacy policy + terms of use on the portal (no
+  schema change).** `/portal/privacy` and `/portal/terms`, linked from
+  every portal page footer and acknowledged at the sign-in panel. The
+  privacy policy states the audited facts: Discord `identify` scope
+  only (id + username stored with the key record), keys stored as
+  SHA-256 hashes shown once, strictly-necessary `/portal`-scoped
+  cookies only (1 h session), access logs with best-effort IP for
+  operations/abuse (kept up to one year), public hub.quakeworld.nu demos
+  as the content source, Discord + hub as the only third parties, and
+  the GDPR rights/contact channel. Pinned by portal tests; operator
+  review notes embedded in the template.
+
+- **RESULT_SCHEMA served standalone; portal points at the self-served
+  docs; public name is mvdanalyzer-api (no schema change).**
+  `GET /docs/result-schema` renders `RESULT_SCHEMA.md` (embedded from
+  the mvd-analytics module root, rendered by vendored marked 12.0.2 —
+  no CDN; raw markdown at `/docs/result-schema.md`; GitHub-style
+  heading anchors so internal `#links` work; repo-relative links
+  rewritten to GitHub). The OpenAPI spec's deep-contract link now
+  points there instead of GitHub. The portal landing links `/docs`,
+  `/openapi.yaml` and `/docs/result-schema`, gains a short MCP section
+  (endpoint `<origin>/mcp`, no key needed, one-line client-add
+  example), and keeps exactly one GitHub link (source/issues) — pinned
+  by a landing-page test. The API's public name is **mvdanalyzer-api**
+  (spec title, docs pages, portal); the server binary and module stay
+  `mvd-api`.
+
+- **The served OpenAPI spec is now the single per-endpoint reference;
+  API.md slims to a high-level guide (docs only).** `/openapi.yaml` +
+  `/docs` are self-contained — no more dead repo-file references in
+  rendered descriptions (reducer registry, tele/stomp pseudo-codes, the
+  artifact mapping table, the overview wall-clock formula are inlined;
+  the one external link is an absolute GitHub URL to RESULT_SCHEMA.md
+  for deep Result internals). API.md drops its ~700-line §4 endpoint
+  reference (three-way duplication with the spec and RESULT_SCHEMA.md)
+  and keeps getting-started, conventions, endpoint-choice, and recipes.
+  Spec examples use a real demo (`gameId:145060` and its SHA).
+
+- **Columnar buckets carry their own loc legend (schema v53).** The
+  `/buckets` `layout=column` envelope — the REST and MCP default — gains
+  `locTable`, the demo's interned loc-name table, present iff an `li`
+  column is in the output. Columnar deliberately keeps the compact raw
+  `li` index instead of repeating name strings per bucket, but that
+  meant the default `getBuckets` handed an MCP agent undecodable
+  integers and forced a `getLocTable` round trip + join. The legend
+  makes columnar responses loc-self-contained; `loc=index` workflows
+  and `/loc-table` are unchanged. View-shape-only change; the bump
+  exists so schemaVersion-keyed immutable ETags stop revalidating
+  pre-legend bodies. RESULT_SCHEMA's version-history table also gains
+  the v51/v52 rows that 16.1 omitted.
+
+- **OpenAPI 3.1 spec + `/docs` viewer; `weapons` param rename (no schema
+  change).** Phase 16.2 — the REST surface now ships a machine-readable
+  contract for external integrators:
+  - **`GET /openapi.yaml`** serves a hand-authored OpenAPI 3.1
+    description of all 35 operations with **full field-level response
+    schemas**, embedded in the binary. It is pinned to the code by
+    drift tests (route parity with the router in both directions,
+    error-code/artifact/field-code enums, `info.version` =
+    schemaVersion) and its response schemas are **validated against
+    real golden-corpus responses** through the real router — ~50 cases
+    covering every operation, the shape-changing param variants
+    (`summary`, `layout`, `loc=index`, all field codes) and every error
+    class. **`GET /docs`** is a browsable reference over it (vendored
+    RapiDoc, no CDN). Both auth-exempt.
+  - **`weapons` replaces the singular `weapon` query param** on
+    `/frags`, `/damage`, `/backpacks`, `/weapon-pickups`. REST keeps
+    `weapon` as an accepted legacy alias (canonical wins when both are
+    present), so existing integrations keep working. **The MCP tool
+    input field is renamed outright** (`weapon` → `weapons` on
+    getFrags/getDamage/getBackpacks/getWeaponPickups) — MCP clients
+    re-read schemas per session; hardcoded callers must rename.
+  - Tool-description papercuts: getOverview names the winner
+    (frag-sorted, index 0), getDamage/getAim lead with their MCP
+    `summary=true` default and state the telefrag exclusion once, the
+    items/weapon-pickups/backpacks trio cross-links its division of
+    labour, and the generic-artifact operation gains the full node-name
+    ↔ curated-route ↔ `resultKey` ↔ 422-code table (in the served spec).
+  - Robustness fallout from the validation harness: the buckets
+    first-value reducers no longer panic on empty-but-non-nil change
+    streams.
+
+## Unreleased (branch `phase-16.1`)
+
+- **Fresh-eyes review fixes: the remaining size footguns + doc drift
+  (no schema change).** Two independent no-history design reviews of
+  the MCP and REST surfaces (both verdicts: sound); their confirmed
+  findings:
+  - `getStreamSlice` now **requires a time window at the MCP layer**
+    (either bound suffices; REST stays unwindowed) — an unwindowed
+    slice is native-rate entries for the whole match, the exact class
+    of payload the windowMs/summary defaults exist to prevent.
+    `getLocTrails` defaults `minDwellMs` to **250** at the MCP layer
+    (explicit `0` restores the raw stream) — raw trails are dominated
+    by nearest-loc boundary flicker.
+  - `/weapon-pickups` `source` is now validated like the other enum
+    params: a typo (`source=backpak`) 400s with the valid values
+    instead of silently matching nothing.
+  - Doc truth: API.md documents the **50 ms REST `windowMs` default**
+    (with a warning), the deliberate no-pagination stance, the scoped
+    per-endpoint cache-header sets, the map-endpoint ETag shapes, and
+    the missing `opening_unavailable` error row; the MCP README's
+    `listArtifacts` section now shows the trimmed shape, the events
+    default-type list includes `pickup`, and `getFrags` explains why
+    its `summary` default is deliberately the opposite of its
+    siblings'. `windowMs`/`minDwellMs` docs now contrast ms vs the
+    seconds-typed window params in the same call.
+
+- **listArtifacts goes routing-only at the MCP layer; timeline artifact
+  gets a size warning (no schema change).** External-review follow-ups:
+  `listArtifacts` now returns servable artifacts only, trimmed to
+  `{name, resultKey, cost, lazy, description}` — the DAG edges and
+  internal nodes stay on REST `/v1/artifacts`/`/v1/graph` where they
+  serve the dev story. The `timeline` node description now warns it is
+  one of the largest sections and points at the windowed views. The
+  reported "opaque MCP error" regression did not reproduce: two new
+  end-to-end tests (in-memory + streamable HTTP, real go-sdk client)
+  pin that REST 4xx bodies — including the enumerated field-code list —
+  arrive verbatim in the isError text.
+
+- **Friction + correctness edges (schema v52,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream C).**
+  - **No-match-start demos are flagged, not coerced (v52):** when no
+    match start is detected the rebase never runs and every timestamp
+    stays on the raw demo clock — previously indistinguishable from a
+    rebased result. `streams.global` now carries `timeBase: "demo"`
+    (omitted normally) and `errors[]` gains a matching notice, so
+    `/overview` surfaces it.
+  - **Unknown field codes now teach the vocabulary:** the
+    `state-at`/`buckets`/`stream-slice` field error enumerates every
+    valid code with a gloss (`li (location), h (health), …`). The
+    classic `loc`-vs-`li` trap is also documented in the MCP tool
+    schemas (the selector code is `li`; the `loc=` param picks name-
+    vs-index rendering). No aliases, by decision (D6 amended).
+  - **Float-artifact fix on the view envelope (D8 amended):** all view
+    ms→seconds conversions now divide by 1000 (IEEE division is
+    correctly rounded) instead of multiplying by the inexact `0.001`
+    — `13.155000000000001` becomes `13.155` across events, trails,
+    buckets, stream-slice. Values change at most one ulp; shapes
+    unchanged.
+  - **Doc-debt:** the stale `result/shots.go` comments claiming the
+    stream is not match-gated (pre-v50) are fixed; RESULT_SCHEMA
+    documents the `demoInfo` time island (KTX seconds on KTX's clock)
+    and the items phase time sentinels; powerup events in the events
+    view no longer echo the derivable `duration` (the Result keeps
+    it); `getOverview`'s description spells out the ms-out/seconds-in
+    units seam.
+
+- **Filter + summary pass over the item/pickup endpoints and MCP-layer
+  token-lean defaults (no schema change,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream B).**
+  - `/items` gains `from`/`to` (keeps phases **overlapping** the window)
+    and `summary=true` (per-item `{takenCount, byPlayer, firstTake}`
+    with takes counted **inside** the window) — "who took X in the
+    opening minute" no longer fetches the full-match phase timeline.
+    `/backpacks` and `/weapon-pickups` gain `from`/`to` on the
+    drop/pickup time. The MCP proxy now forwards `startTime`/`endTime`
+    for `getRegionControl` (REST already accepted them; the proxy
+    silently dropped them).
+  - **MCP `windowMs` default is now 5 s (was 1 s)** for `getBuckets`
+    and `getRegionControl`: a 20-min match at 1 s is ~1200 buckets per
+    field per player — 5 s resolves the trend/control questions a
+    bucketed timeline answers (shortest interesting run, a quad, is
+    30 s) at a fifth of the payload. Pass `windowMs` explicitly for
+    finer resolution; REST keeps its 50 ms default.
+  - **MCP defaults diverge from REST toward token-lean (D1):**
+    `getDamage`, `getAim`, and `getItems` now default `summary: true`
+    at the MCP layer only — REST keeps full logs by default. A
+    defaulted summary response carries a `hint` field telling the agent
+    to pass `summary: false` for the dropped detail. Precedent: the
+    proxy's existing `windowMs` 50→1000 override.
+  - **`searchGames` goes compact and paginates honestly:** rows now
+    project each roster entry to `{name, team, frags}` (the verbatim
+    hub rows — per-player ping, color arrays, name_color — return with
+    `roster: true`), and the response gains `total` (all matching rows,
+    via PostgREST `count=exact`) alongside the page-local `count`.
+    Tool descriptions now also document that `loadDemo` is optional
+    (analysis tools auto-load `gameId:N` on first use).
+
+- **The match opening becomes first-class (schema v51,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream A).** Three
+  related changes driven by the first real hosted-MCP agent session
+  (an opening-race question cost ~45 tool calls of timestamp
+  cross-referencing):
+  - **Initial-spawn bug fix.** KTX respawns every player when the
+    countdown ends (`SM_PrepareClients` → `k_respawn`,
+    ktx/src/match.c:881,972), but a player alive through the countdown
+    never crosses health ≤0→>0, so the parser's dead→alive detector
+    missed the first — most contested — spawn of the match. The
+    timeline now synthesizes a `t=0` spawn in `streams.players[].sp`
+    for every player alive at match start whose respawn wasn't
+    wire-visible.
+  - **`pickup` events with full identity.** `/events` (and MCP
+    `getEvents`) gains a default `pickup` type joined from the
+    authoritative `items` / `weaponPickups` sections:
+    `detail{item (ya_1 vs ya_2), kind, entNum, loc, source
+    (world/backpack/unknown), dropper?}` — "which YA / which RL pad"
+    no longer needs a second call and timestamp cross-referencing.
+    `spawn` events now carry `detail{loc}` when the location is
+    resolvable (sampled just after the teleport landing; absent on
+    maps without a .loc corpus).
+  - **New `opening` artifact.** A post-processor projects each
+    player's match-start spawn loc plus the first in-match take of
+    every contested spawner (armors, mega, powerups, RL/LG) into
+    `Result.Opening` — served via `GET /v1/demos/{id}/artifacts/opening`
+    and MCP `getArtifact('opening')` with zero new tools. One small
+    call per demo answers the opening-race question class.
+
+## 2026-07-09
+
+- **Hosted MCP is now unauthenticated (no schema change).** `mvd-mcp -http`
+  no longer requires (or validates) a per-request `Authorization` key — web AI
+  chat connectors can use the bare `/mcp` URL. The shim instead authenticates
+  itself to `mvd-api` with an operator-issued service key (`MVD_API_KEY` env
+  var), forwarded on every proxied REST call; the REST API keeps full API-key
+  auth, and that one key's service rate class throttles all anonymous MCP
+  traffic. A client that does present a `qwmvd_…` bearer gets it forwarded
+  instead (own bucket + log identity); non-`qwmvd_` bearers (e.g. platform
+  OAuth tokens) are ignored. In stdio mode `MVD_API_KEY` now also supersedes
+  `-label`, so a local shim can talk to an auth-enabled `mvd-api`.
+
+- **`getFrags` / `getDamage` (`/frags`, `/damage`): filters now narrow ALL
+  aggregates + new `from`/`to` window + `summary` mode; damage output is now
+  match-only (schema v50).** Changes to the frag/damage endpoints and their
+  MCP tools:
+  - **Filters narrow every aggregate (bug fix).** Previously a `players` /
+    `weapon` filter only narrowed the per-event log and the `byPlayer` keys,
+    leaving `totalFrags` / `totalDamage` / `byWeapon` / `matrix` at their
+    unfiltered values — an internally inconsistent response. Now, when any
+    scoping filter is active, every aggregate is **recomputed from the filtered
+    log** so it matches exactly the entries shown. With no filter the
+    authoritative stored totals are returned unchanged (byte-identical to
+    before) — the unfiltered path is untouched. Filtered damage responses now
+    also populate `matrix` / `events` (previously left null). Filtered frag
+    aggregates are log-sourced and may differ from the unfiltered totals for
+    reconnect / unresolved-name edge cases (documented in API.md §4.5/4.5b).
+  - **`from` / `to` time window** (REST; `startTime` / `endTime` on the MCP
+    tools) — match-relative **seconds**, keep only frags/hits in the window.
+    The seconds→ms conversion now rounds to the nearest ms (`0.29s`→`290ms`),
+    not truncating.
+  - **`summary`** — drop the big per-event log and return only the aggregates
+    (avoids overflowing an LLM context). Orthogonal to the filters.
+  - **Damage output is now match-only (schema v50 bump).** The per-hit
+    `damage.events` log is **gated to in-match at the source** (the damage
+    analyzer), matching the aggregates — out-of-match (warmup / post-match)
+    hits are dropped everywhere and no longer exposed. This makes the filter's
+    all-players recompute reproduce the stored aggregates **exactly** (closing
+    a filtered over-count where the ungated log double-counted warmup hits),
+    lets the aim analysis read exactly-in-match damage (removing an approximate
+    `[0,matchEnd]` self-window), and fixes a latent bug where
+    `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs.
+    Goldens regenerated: `damage.events` arrays shrink; some `aim` splits and
+    `airgibs` lists shift on demos with out-of-match rocket hits. Frags are
+    unaffected (they already gated at the analyzer).
+  - **Telefrags / stomps are match-only, match-clock, and exclude team
+    kills.** The `damage.telefrags` / `damage.stomps` arrays are gated to
+    in-match at the source, and a **team** telefrag/stomp is no longer credited
+    to the attacker's `telefrags` / `stomps` counter (mirroring the team-kill
+    convention the view already applied) — so the filtered counters match the
+    stored totals. Their `time` is now **match-relative ms** like
+    `damage.events`: only the per-hit log was rebased before, leaving the
+    positional-kill arrays on the demo clock, contradicting the schema and the
+    `from`/`to` window / telefrag+stomp event lenses that compare against
+    match-relative bounds. The in-match gate now keys off the match **timestamp
+    range** (the detector's final start/end) rather than a live match-phase
+    flag sampled per record, fixing a same-frame race: a kill on the exact
+    match-start frame — decoded before the same-frame "Fight" print flipped the
+    detector — was wrongly dropped, and now appears at match-relative `t=0`
+    (the inclusive upper bound likewise keeps a hit on the exact match-end
+    frame, which KTX itself scored). Goldens: telefrag/stomp times shift by
+    `-demoOffset`; a couple of start/end-frame entries reappear with the
+    counters they imply.
+  - **All analytics streams are match-only now, except chat.** The `shots`
+    stream is gated to in-match at the source (warmup / prewar / post-match
+    fires dropped; the `Shot.warmup` field is removed — no out-of-match shot
+    survives). The shots gate keys off the same match **timestamp range** as
+    damage, so a fire on the exact match-start/-end frame is kept rather than
+    lost to the same same-frame race. Frags, damage, telefrags/stomps, shots,
+    positions, pickups, items and backpacks are all match-only; **chat is the
+    deliberate exception** (pre-game talk is kept). This makes it impossible
+    for a consumer to accidentally mix warmup data into match analytics.
+  - **Windowing consistency + bound validation nits.** `chat` now rounds its
+    `from`/`to` seconds→ms to the nearest ms like the other windowed sections
+    (it truncated before, off by up to 1 ms); a windowed / players-scoped
+    `aim` that matches no shooter returns `players: []`, not `null`, matching
+    the filtered-empty-log convention; and the REST layer now rejects a NaN /
+    Inf / negative / int32-ms-overflowing `from` / `to` / `time` with a `400
+    invalid_param` instead of letting the bad float→int32 conversion silently
+    filter everything behind a `200`.
+
+- **`getAim` (`/aim`): `players` / `from` / `to` / `summary` filters (no schema
+  change).** The aim endpoint and its MCP tool used to return everything
+  (~70 KB), overflowing an LLM context. New query-layer filters, consistent
+  with the frag/damage discipline above:
+  - **`summary`** (bool) — return only the compact per-player `weapons`
+    aggregates, dropping the large per-fire `crosshair` + `lgRamp` sample
+    arrays. The overflow fix; recommended default for the MCP tool.
+  - **`players`** (csv) — scope to named shooters. With no time window this
+    selects their **match-wide** stored aim (same as `getFrags?players=`).
+  - **`from` / `to`** (REST; `startTime` / `endTime` on the MCP tool) —
+    match-relative **seconds**. Setting a window **recomputes** aim over the
+    shots in it, so every figure (weapons accuracy, RL/GL direct/splash, LG
+    ramp, crosshair samples) scopes to the window consistently. With no window
+    the stored aim is returned unchanged (no recompute).
+  - **Refactor: the aim computation core moved to package `aimcore`**
+    (`aimcore.Compute`), imported by both the analyzer (fills `res.Aim` once)
+    and the view layer (windowed variants) without an import cycle. The stored
+    aim is **byte-identical** to before (goldens unchanged) — the extraction
+    preserved behaviour exactly. No schema bump (`CurrentSchemaVersion` stays
+    50); the `AimResult` struct is untouched.
+
+## 2026-07-08
+
+- **Fix: cold demo loads failed with a 502 `hub_upstream` hash mismatch.** The hub's `demo_sha256` is the hash of the *uncompressed* `.mvd`, but the CDN serves gzip and the phase-3 integrity check hashed the gzipped download — so every un-cached `loadDemo`/`POST /v1/demos/{id}` was rejected. The check now authenticates the *decompressed* content (or a raw `.mvd` fallback) against `demo_sha256`; corruption is still rejected. mvd-api change; redeploy it.
+
+- **mvd-mcp: array/map tool filters fixed (`players`, `fields`, `types`, `weapon`, `items`, `kinds`, `reducers`).** jsonschema-go reflected every nilable slice/map to a `["null", X]` type union; some MCP clients coerce a union to a string, silently disabling those filters. Tool input schemas now advertise a plain `{"type":"array"}`/`{"type":"object"}` (null stripped). No API/output change; rebuild+redeploy `mvd-mcp` and reconnect the client to pick up the new schemas.
+
+- **mvd-mcp over streamable HTTP + deploy templates (no schema change;
+  transport/auth layer).** The MCP shim gains a hosted mode; stdio is unchanged.
+  - **`mvd-mcp -http ADDR`.** Serves MCP over streamable HTTP (go-sdk
+    `NewStreamableHTTPHandler`, Stateless) instead of stdio, for hosting the
+    service publicly. Empty `-http` keeps today's stdio behaviour byte-identical;
+    the two transports are mutually exclusive. No new dependencies.
+  - **Per-request API-key auth.** Every MCP request must carry
+    `Authorization: Bearer qwmvd_…`. An outer gate validates the key against
+    `mvd-api`'s `GET /v1/auth/check` (fail-closed; `401` + `WWW-Authenticate:
+    Bearer` otherwise) — this single gate also protects the `searchGames` tool,
+    which bypasses `mvd-api`. On success the key is forwarded on every proxied
+    REST call, so `mvd-api` stays the single point of validation; a key revoked
+    mid-session stops working on the next call. `-label` is ignored in HTTP
+    mode. The handler is mounted at `/mcp` (and `/mcp/`), with an
+    unauthenticated `GET /healthz`.
+  - **Deploy templates (`deploy/`).** A `Caddyfile` (TLS, `/mcp*` → mvd-mcp,
+    rest → mvd-api, real-client-IP `X-Forwarded-For`), `mvd-api.service` /
+    `mvd-mcp.service` systemd units (hardened, secrets via `EnvironmentFile`),
+    and a provisioning `README.md` runbook with a smoke-test checklist. Tracked
+    templates, not run by CI.
+  - **Documented omission.** `/los`, `/shots`, `/streams/*`, and `/airgibs`
+    still have no curated MCP tool (adding them is deferred); noted in the
+    mvd-mcp README.
+
+- **mvd-api Discord key portal + key-store cross-process lock (no schema
+  change; transport/auth layer).** Optional, off by default — nothing changes
+  for existing localhost users, and analytics output is untouched.
+  - **The portal (`internal/portal`).** With `-portal -portal-base-url URL`
+    (plus `-auth-dir` and the `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` /
+    `PORTAL_COOKIE_SECRET` env vars), the server serves a one-page portal at
+    `/portal` where a user signs in with Discord (OAuth2 scope `identify` only)
+    and self-services one API key. `POST /portal/key` shows the full key once
+    and revokes any prior key for that user. Without `-portal`, the `/portal`
+    routes are not registered at all (they 404) and the server is unchanged.
+  - **Session security.** The only server-trusted state is a 1-hour
+    HMAC-SHA256-signed session cookie (no server-side store); the OAuth `state`
+    nonce is double-submitted against a signed cookie (CSRF); all cookies are
+    `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/portal`. The Discord username
+    is HTML-escaped (`html/template`), and neither the cookie secret nor the
+    Discord client secret ever reaches a log line, error body, or page. The
+    portal adds **no new dependencies** (stdlib `net/http` OAuth, `crypto/hmac`,
+    `html/template`, `embed`). Cookie `Secure` follows the `-portal-base-url`
+    scheme — `https` ⇒ Secure (production), `http` ⇒ non-Secure (local dev
+    only, since a browser will not send a Secure cookie over http); the server
+    logs a startup warning whenever cookies are non-Secure.
+  - **Key store cross-process lock.** `internal/authkeys` mutations
+    (`Issue`/`Revoke`) now take a cross-process `flock` and reload `keys.json`
+    under the lock before writing, so the portal (issuing inside the live
+    server) and a concurrent `keys` CLI can no longer clobber each other's
+    writes. Reads stay lock-free. A new `ActiveByDiscordID` accessor backs the
+    portal's key-status display.
+  - **Deferred (manual, needs an operator-provisioned Discord app):** the
+    end-to-end run against the real Discord OAuth flow. CI proves the flow with
+    an httptest Discord stub.
+
+- **mvd-api API keys + auth middleware (no schema change; transport/auth
+  layer).** Optional, off by default — nothing changes for existing localhost
+  users, and analytics output is untouched.
+  - **Two modes.** Without `-auth-dir` the server is unauthenticated, exactly
+    as before (the `Authorization: Bearer <label>` value stays a non-secret
+    access-log tag). With `-auth-dir DIR`, every `/v1/*` route and
+    `POST /v1/demos/{id}` requires `Authorization: Bearer qwmvd_…`; missing /
+    invalid / revoked keys get a generic `401` + `WWW-Authenticate: Bearer`.
+    Exempt: `/healthz`, `/v1/version`, `/portal/*`, and `OPTIONS` preflight
+    (CORS answers preflight before auth, so browsers are unaffected).
+  - **Key store.** New `internal/authkeys`: one atomic-written `keys.json`
+    holding only SHA-256 hashes of keys (`qwmvd_` + 32 random bytes,
+    base64url). The plaintext key is shown once at issuance and never
+    persisted; lookups are constant-time hash compares. One active key per
+    Discord user (re-issuing revokes the prior one).
+  - **`keys` CLI.** `mvd-api keys issue|revoke|list -auth-dir DIR` manages the
+    store directly; `list` shows hash prefixes + metadata, never a full key or
+    hash.
+  - **Per-key rate limiting.** Token bucket per key hash (stdlib, no new
+    dependency), split into `user` and looser `service` classes
+    (`-rate-user`/`-burst-user`, `-rate-service`/`-burst-service`); over-limit
+    → `429` + `Retry-After`. This closes the rate-limit half of the F15
+    throttle by keying on the validated API key rather than the spoofable IP.
+  - **`GET /v1/auth/check`** → `204` for a live key, `401` otherwise (key
+    self-test; also the MCP-HTTP pre-validation hook).
+  - **Secret safety.** In auth mode the raw key is never logged — the access
+    log's identity becomes the key's note / Discord name / hash-prefix. The
+    `401`/`429` bodies are generic and leak nothing about key state.
+  - **Hardening.** `-auth-dir` is force-tightened to `0700` on open (so a
+    pre-existing loose dir can't leave key metadata world-listable), a corrupt
+    `keys.json` fails loudly at startup rather than presenting an empty store,
+    auth exemptions are path-cleaned (no `/portal/..`-style traversal past the
+    key gate), and an unknown top-level subcommand now errors instead of
+    silently booting a server (`serve` is still the default).
+
+- **Analytics pipeline: the core/derived/post-processor "tiers" are collapsed
+  into one task model (no schema bump, `Result` byte-identical).** The tiers
+  were a pre-DAG remnant — once the topological sort over declared
+  `Requires`/`Provides` edges took over ordering, the tier label no longer
+  drove anything. `RegisterCore`/`RegisterDerived` merge into a single
+  `Register`; every node is now just a task with declared edges, differing only
+  in whether it reads events (analyzer) or only refines the assembled `Result`
+  (post-processor), plus the one lazy node (`los`). API-visible changes, both
+  in the DAG-introspection surface only (not demo analytics):
+  - `GET /v1/artifacts` manifest entries **no longer carry `tier`** — the only
+    real distinction it conflated (lazy vs eager) is already the `lazy` flag.
+  - `GET /v1/graph` nodes **replace `tier` with `depth`** (the node's layer in
+    the dependency DAG), and `qw-analyze -graph mermaid` now groups nodes into
+    depth layers instead of tier subgraphs (`los` marked with a dashed outline).
+  - `ARTIFACTS.md` drops its `Tier` column (regenerated).
+
+## 2026-07-07
+
+- **mvd-api hosting-prep hardening (no schema change; transport/ops
+  hardening).** Prerequisites for exposing the API publicly; nothing in
+  the analytics output changes.
+  - **Cache quota + GC.** New `-cache-max-bytes` (default 20 GiB; `0`
+    disables). A background sweep evicts the oldest tier-1 MVDs, tier-2
+    gobs and tier-3 artifact gobs (ordered by mtime, bumped on every
+    cache hit — atime is unreliable on relatime/noatime mounts) once the
+    disk budget is exceeded, never blocking the request path. Startup
+    deletes tier-2 trees orphaned by past schema/format bumps (including
+    legacy suffix-less `v<N>` trees), stale-version tier-3 gobs (also the
+    retired `shot-streams@*` ones), and stale atomic-write temp files.
+    New `mvd-api cache stats` and `mvd-api cache prune [-max-bytes |
+    -older-than | -all]` ops subcommands.
+  - **Parse throttle.** New `-max-parses` (default `max(1, NumCPU/2)`): a
+    semaphore bounds concurrent heavy cold operations so a storm of
+    distinct cold demos can't spawn unbounded parallel work. It covers
+    both the cold download+parse and the on-demand LOS raycast (no schema
+    change), closing the unauthenticated-CPU-exhaustion path on
+    `/los`/`/artifacts/los`. Cache hits are unaffected; rate limiting
+    proper arrives with API keys. `cache prune` gains `-dry-run` and
+    rejects the silent no-op `-max-bytes 0`.
+  - **Capped hub reads.** Demo downloads (CDN and `demo_source_url`) are
+    read through a 64 MiB `io.LimitReader`, so a broken or hostile
+    upstream can't OOM the process; over-cap responses are upstream
+    errors (`502`), never `404`.
+  - **CORS.** Permissive `Access-Control-Allow-Origin: *` with
+    `Expose-Headers` (ETag/X-Cache/X-Schema-Version/X-Request-Id) and
+    `OPTIONS` preflight, so browser clients on any origin can call the
+    API (API.md §2.6).
+  - **Error hygiene.** Every response carries `X-Request-Id`; `5xx`
+    bodies are now a generic message + that id (the real error, which can
+    embed cache paths / upstream URLs, goes to the server log only) —
+    covering the curated endpoints, the generic artifact endpoint, and
+    panics (the `panic` error code folds into `internal`). `4xx` messages
+    stay specific. Also: `POST /v1/demos/{id}` no longer carries
+    `Cache-Control`/`ETag`; error bodies no longer carry a stray `ETag`;
+    `/los` and `/artifacts/los` return `{"players":[]}` (not `null`) when
+    a demo has no streams; `/v1/maps/{map}/entities` now honours
+    case-insensitive `types`/`kinds` param names.
+
+- **API: the spatial weapon-fire streams are now built on every parse instead
+  of behind a lazy re-parse (no schema bump, response bodies unchanged).**
+  mvd-api parses each demo with `BuildShotStreams`+`BuildNails` on
+  (`internal/democache` `defaultParse`), so the projectile/beam/nail streams and
+  the stream-enriched `shots`/`aim` blocks are baked into the cached `Result`.
+  This costs ~+3–4% parse time and ~+5% cache size and **deletes** the lazy
+  `shot-streams` artifact, its full second parse on first request (2.4–5 s), the
+  two-state Shots/Aim, the degrade path, and the shipped caching bug it caused.
+  Behavioural notes for callers:
+  - **`/shots`, `/aim`, `/streams/{projectiles,beams,nails}` no longer pay a
+    second parse on the first request** — they are plain reads off the base
+    Result. Their bodies are byte-identical to before for a warm enriched demo
+    (mvd-api has served the enriched bodies on every request since phase 5.3).
+  - **The `X-Shot-Streams: unavailable` degrade header (and its
+    `Cache-Control: no-store`) is removed.** There is no rebuild that can fail on
+    evicted bytes anymore. Callers that sniffed the header should stop.
+  - **Local API caches re-parse each demo once.** The tier-2 path gained an
+    internal cache-format suffix (`results/v<N>f2/…`, `resultCacheFormat` in
+    `internal/democache/paths.go`) so lean pre-phase-12 gobs are never served as
+    full; they are ignored and re-parsed on next touch. No schema bump — the
+    ETag stays `"<sha>-v49"`. Stale `shot-streams@*.gob` tier-3 side-gobs are
+    inert until the hosting-prep GC reaps them.
+  - `los` is untouched: it stays a genuinely lazy tier-3 artifact (its ~2.5 s
+    raycast has no in-pipeline consumer). The generic artifact endpoint, the DAG
+    manifest, `-graph`, `ARTIFACTS.md`, and the mvd-mcp `getArtifact` vocabulary
+    drop `shot-streams` (now 22 nodes, 1 lazy).
+- **Web: the WASM parse now also builds nails (`BuildNails`), so the nail map
+  overlay lights up automatically and the Aim tab gains ng/sng rows** (generic
+  `shots`/`hits`/`hit %` columns — nail accuracy is approximate, so no
+  direct/splash split). Adds ~+3–4% to the in-browser parse, no extra download.
+
+- **Internal: the two fix-up post-processors now produce named FINAL
+  artifacts instead of anonymously patching an earlier node (DAG contract
+  clarification, no schema bump, byte-identical output).** Telefrag-teamkill
+  recovery (node renamed `recover-telefrag-teamkills` → **`frags-final`**,
+  publishing artifact **`frags:final`**) still appends the recovered kills to
+  the raw `frag` log; scoreboard-stats (node renamed `scoreboard-stats` →
+  **`match-final`**, publishing **`match:final`**) still folds the corrected
+  kills/deaths/suicides into `match`. The win is the dependency vocabulary:
+  `match-final` now **requires `frags:final`** (not the raw `frag`), so any
+  future in-pipeline consumer of the recovered log or corrected scoreboard
+  binds it by the semantic `:final` name and can never silently get the
+  pre-fix-up value. The raw `frag` / `match` nodes keep their served
+  `frags` / `match` resultKeys (the JSON is final by serve time since all
+  nodes run); the `timeline` node deliberately stays a consumer of the RAW
+  `frag` log (streaks / kill events are built pre-recovery, matching every
+  golden). Both fix-ups still write in place, so both keep `Mutates:true` —
+  the `:final` artifact name is what disambiguates *which* value. Regenerated
+  [`ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md) and the README DAG diagram; the
+  `/v1/artifacts`, `/v1/graph`, and `-graph` surfaces (unmerged phase branches
+  only) show the new names. No Result/schema change.
+
+- **Internal: analyzer output is now a tested pure function of the demo
+  (order-independence hardening, no schema bump).** The pipeline is an
+  explicit DAG (`analyzer/dag.go`) executed in a topological order whose
+  tie-break froze the legacy registration order; that made order-freedom a
+  believed-but-unenforced property. It is now enforced: `Result.Errors`
+  (previously appended in execution order — stream abort, then per-node
+  Finalize / post-processor failures) is canonicalised at the end of
+  `analyzeSource` (stream-abort entry first, then lexicographic), and a new
+  `TestOrderIndependence` runs representative corpus demos under the default
+  order plus seeded-random valid topological orders and asserts the
+  marshalled Result is byte-identical — which also continuously verifies the
+  declared edge list is complete (an undeclared cross-node read shows up as
+  a byte diff). An opt-in `TestPhaseTimingsReport` (`MVDA_TIMINGS=1`)
+  aggregates per-node timings and reports the DAG critical path vs the
+  serial Finalize+post tail. Diagnostics only; goldens are unchanged.
+
+- **API: automatic artifact surface — the DAG is now self-describing and
+  generically servable (additive endpoints, no schema bump).** The analyzer
+  DAG is exposed as data (`analyzer.ArtifactManifest`), and mvd-api gains three
+  additive routes: `GET /v1/artifacts` (the manifest — every node's name, tier,
+  cost, `lazy`, requires/provides, `resultKey`, `servable`, description; static,
+  ETag `"artifacts-v<n>"`), `GET /v1/graph` (the DAG as `{nodes,edges}`, static),
+  and `GET /v1/demos/{id}/artifacts/{name}` — a generic accessor that
+  materialises and serves any servable artifact by name. The generic endpoint is
+  a closed registry (unknown/internal names → `404 artifact_unknown`; no user
+  input reaches the filesystem beyond the validated name), accepts **no** query
+  params (parameterised reads stay the view endpoints → `400 invalid_param`), and
+  carries a finer per-artifact ETag `"<sha>-<name>@v<n>"`; eager artifacts reuse
+  the curated 422-vs-200 availability convention, the two lazy artifacts route
+  through `EnsureLOS`/`EnsureShotStreams` (same degrade + bodies as `/los`,
+  `/shots`). mvd-mcp gains two matching tools — `listArtifacts` and
+  `getArtifact` — so a **new** analytics artifact becomes reachable everywhere
+  with zero new hand-written endpoints or tools; the curated tools/endpoints stay
+  the ergonomic surface and are byte-unchanged. New generated catalog
+  [`mvd-analytics/ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md)
+  (`make artifacts-md`, drift-tested). Per-deployment Heavy-disable knob deferred.
+  No schema bump.
+
+- **API: lazy artifacts (LOS, shot-streams) now persist across restarts and
+  cache evictions — new tier-3 per-artifact cache (no schema change).** The two
+  hand-rolled lazy passes are generalised into the DAG engine as `lazy` nodes
+  (`los`, `shot-streams`), registered by name behind one `LazyArtifact`
+  registry (`analyzer/materialize.go`) and shown in a fourth `-graph` tier.
+  mvd-api gains a third cache tier — `artifacts/<sha[:2]>/<sha>/<name>@v<EV>.gob`
+  — so a lazy compute (the multi-second LOS raycast, or the full MVD re-parse
+  behind `/shots`, `/aim`, `/streams/*`) is written to disk on first request
+  and spliced back on later ones, surviving a process restart or an LRU
+  eviction (closes API follow-up F8b). Both `EnsureLOS` (new) and
+  `EnsureShotStreams` run one generic flow: latch → tier-3 load → else compute
+  → write tier-3, serialised per demo SHA. The F12 single-variant shot-stream
+  rebuild and the `X-Shot-Streams: unavailable` degrade are preserved exactly
+  — the degrade now fires only when *both* the tier-3 artifact and the tier-1
+  bytes are absent. `/los`, `/shots`, `/aim`, `/streams/*` are byte-identical
+  from a client's view (status, bodies, ETags, `X-Cache`). `EV` is the current
+  schema version, so a schema bump invalidates tier 3 exactly like tier 2. No
+  schema bump.
+
+- **Analytics: team labels born correct; the whole-Result duel rewrite is
+  gone (no schema change, byte-identical output).** A new `roster` core
+  node (the last core node) owns the canonical player/team table with the
+  duel (player-name-as-team) rewrite folded in: it publishes the duel
+  verdict, the participant set, and `TeamFor(name, rawTeam)`. Every
+  producer stamps its final team label through `co.TeamFor` at emission —
+  streams, timeline events, messages, item/weapon/backpack pickups, and
+  the shot fire log (whose victim-kind classification is now duel-aware at
+  birth, so the shared-colour-team enemy/team fold happens once, correctly,
+  instead of being reclassified afterwards). The two result-restructuring
+  duties move to the analyzers that own those results: the DemoInfo team
+  rewrite into `RosterAnalyzer`, and the `Match.Players` participant
+  rebuild — including the demoinfo-authoritative merge that recovers a
+  teamless frogbot the spectator gate drops — into `MatchAnalyzer`. The
+  `normalizeDuelTeams` post-processor (which had to enumerate every
+  team-labelled field by hand and grew four more sections in v45/v46) and
+  the `isDuelResult` helper are deleted; `DamageAnalyzer` reads the duel
+  verdict from the roster it already used at birth. The `teams:final` DAG
+  barrier retires with it. Verified byte-identical on the golden corpus
+  (the three 1on1 goldens are the referees); the shared-colour and bot
+  duels the corpus lacks are pinned by ported unit tests.
+
+## 2026-07-06
+
+- **Analytics: timestamps born match-relative; the whole-Result time
+  rebase is gone (no schema change, byte-identical output).** A new
+  `clock` core node owns the match time base (match start/end, demo
+  offset, pauses, wall-clock anchor — absorbing the old
+  demo-start-anchor pass). Every producer converts demo-clock ms to
+  match-relative ms against `co.Clock` in its own Finalize, so the
+  `normalizeMatchRelativeTimes` post-processor — which had to enumerate
+  every timestamped field by hand and silently missed newly added ones
+  (the v48 killEvents bug) — is deleted, along with
+  `deriveDemoStartAnchor`. The `epoch:match` DAG barrier retires with
+  it. Verified byte-identical on the golden corpus and on off-corpus
+  demos including pause-carrying and reconnect demos.
+- **Analytics pipeline: explicit dependency DAG + `qw-analyze -graph`
+  (no schema change).** The analyzer/post-processor execution order was
+  previously implicit — four different mechanisms expressed ordering and
+  only one was checked, so a wrong registration order was a silent data
+  bug. Each node now declares the artifacts it Requires and Provides
+  (`mvd-analytics/analyzer/dag.go`); `NewDefaultRegistry` validates the
+  wiring at construction (every dependency has exactly one provider, no
+  cycles — a typo panics with a message naming the offending artifact and
+  node) and derives the execution order from it with a deterministic
+  topological sort. The derived order is byte-identical to the historical
+  registration order (asserted by a structural test), so the `Result` is
+  unchanged. New `qw-analyze -graph mermaid` / `-graph json` prints the
+  pipeline DAG (nodes, edges, tiers) without needing a demo.
+- **Web Aim Stats: LG Unresolved column, accurate hover on narrow
+  layouts, DYaw sign docs (no schema change).**
+  - The LG table gains an `Unresolved` column (whiffs no beam matched), so
+    the LG miss classes visibly sum to shots − hits instead of silently
+    falling short.
+  - The crosshair-density hover now maps cursor position through the
+    rendered/intrinsic size ratio, and the image keeps its aspect ratio
+    when a narrow panel shrinks it — previously the reported bin (and its
+    shot/hit counts) drifted and the bitmap distorted horizontally.
+  - The schema docs for `crosshair.dyaw` had the sign convention backwards
+    ("right positive"); positive is enemy-left (Quake yaw grows
+    counterclockwise). The web's plotting flip was already correct; the
+    docs now match it. SSG crosshair samples remain deliberately
+    unrendered (SG + LG panels only).
+- **mvd-api: deterministic /shots + /aim responses; panic-proof demo
+  loading (no schema change).**
+  - The shot-stream rebuild now builds projectiles, beams and nails in a
+    single variant. Previously nails were a separate server-side latch:
+    after any client passed `?nails=1`, plain `GET /shots` and `GET /aim`
+    served nail-linked bodies under the same immutable ETag — and reverted
+    after an LRU eviction. Responses are now a pure function of the URL.
+    The `/shots` `nails` parameter is deprecated (accepted and ignored);
+    ng/sng fires were always included, and their flight-linking + accuracy
+    now always is too.
+  - A panicking demo parse no longer releases concurrent requests for the
+    same demo with a nil result and nil error (a cascade of confusing
+    nil-dereference 500s); all callers now receive a real error and the
+    panic stack is logged.
+- **Aim/shots correctness batch (schema v49; value fixes, no shape
+  change).** Four fixes from the deferred aim/shots review:
+  - The Aim tab's RL/GL direct/splash/missed split now appears on every
+    default parse. It was accidentally gated on the opt-in
+    `streams.projectiles` payload, which is emission-only — the projectile
+    linking the split actually needs runs on every parse, so the block was
+    absent everywhere except `-include projectiles` runs.
+  - Warmup and post-match damage no longer leaks into those splits: the
+    damage records feeding aim's pellet and direct counters are windowed
+    to match time, so a warmup direct rocket no longer inflates `direct`
+    and deflates `splash`.
+  - Duels where both players share a colour team (e.g. both "green") no
+    longer classify every hit on the opponent as team damage. Damage is
+    classified duel-aware at birth, restoring airgibs, the aim enemy
+    splits, the damage matrix, `victimWep` and the EWep buckets on such
+    demos — all previously empty or folded into `givenTeam`.
+  - Shots player identity uses the canonical slot resolver, backfilling
+    a missing team from the demoinfo name table like damage/frags do.
+  - A player who reconnects after the match ends no longer shows 0 frags
+    on the corrected scoreboard: the server re-initializes the returning
+    slot with `svc_updatefrags 0` during intermission, which clobbered the
+    tracked final score (v48's removal of the 0-frag filter had surfaced
+    these corrupted zeros — previously the same players were silently
+    missing from `match.players` altogether). Frag tracking now freezes at
+    match end; mid-match reconnects were already safe because KTX
+    re-asserts the restored count itself.
+  - Doc drift cleanup: the LG fire signal is `TE_LIGHTNING2` beams
+    (`source: "beam"`), not the never-shipped "ammo" detection; rl/gl
+    fires are linked, not "left unlinked"; `Dist` is muzzle-based.
+  - The structural invariant test now covers every event-carrying result
+    section (shots, damage, messages, frags, pickups, backpacks, item
+    phases, aim) — not just `timelineAnalysis`.
+
+## 2026-07-05
+
+- **Web: chat shows every authentic message (no schema change).** The chat
+  panel silently dropped any message whose exact text repeated within three
+  seconds. The wire-level duplication that filter targeted (KTX sprints each
+  say once per recipient at one wire timestamp) is already collapsed upstream
+  by the analyzer's exact-key dedupe, so the web filter was only swallowing
+  authentic repeats — a re-sent bind, two identical obituaries in quick
+  succession. Removed; only the match-window clip remains.
+- **Single obituary parser; timeline frag weapon codes corrected (no schema
+  change).** The obituary/suicide pattern table lived twice — once for the
+  frag log (`frags`), once for the timeline message stream
+  (`messages.events[type=frag]`) — and the two had drifted. The timeline copy
+  is now generated from the same table the frag log uses, so for the affected
+  obituary lines the timeline stream's `weapon` now matches `frags[]` exactly.
+  Consumer-visible corrections in `messages.events` (the frag log was already
+  correct):
+  - drowning self-kills now carry weapon `water` (was `drown`), matching the
+    documented FragEntry vocabulary;
+  - the unknown-cause self-kill "X somehow becomes bored with life" is now
+    `suicide` (was mislabelled `rl` by the shorter-substring fallthrough);
+  - CRMod obituaries ("blown to chunks", "shish-kebabed", "disembowled",
+    "gets intimate", "warm fuzzy feeling") and KTX `k_spawnicide` self-kills
+    ("shiny spawn point", "baby factory", "poor life choices") now produce a
+    timeline frag event instead of being dropped or mislabelled.
+  These lines are rare (env/CRMod/spawnicide), so the golden corpus output is
+  byte-identical; the fix is verified by unit tests. Internal cleanup in the
+  same change: one canonical slot→identity resolver (`ResolveSlotAt`) replaces
+  five drifted per-analyzer copies, and one `parseInfoString` helper replaces
+  three duplicated serverinfo walkers.
+
+- **One entity-delta wire-layout implementation; FTE parse fixes (no
+  schema change).** The parser's entity-baseline and entity-delta
+  layouts each had a decode copy and a separate byte-skip copy that had
+  drifted apart; they are now a single reader each (`readBaselineBody`
+  for the baseline body, `readDeltaBits` + `readEntityDelta` for the
+  delta), and `svc_spawnstatic` / `svc_fte_spawnstatic2` decode through
+  that same code and discard rather than re-skipping by hand. Three
+  FTE-only divergences between the old copies are fixed by construction
+  to match ezquake (`cl_ents.c`) and mvdsv (`sv_ents.c`): the FTE
+  "evenmorebits" byte is read only when an FTE extension was negotiated
+  (the `svc_fte_spawnbaseline2` / `svc_fte_spawnstatic2` path previously
+  read it unconditionally, misaligning a non-FTE stream), and the
+  transparency / colour-mod fields are gated on the negotiated
+  `FTE_PEXT_TRANS` / `FTE_PEXT_COLOURMOD` (previously consumed on the
+  flag bit alone). Only demos that negotiated FTE entity extensions are
+  affected — none exist in the golden corpus, which stays byte-identical,
+  so the schema is unchanged (v48).
+
+- **Dev-CLI correctness fixes (no schema change).**
+  - `qw-analyze -view state-at -time 0` (and `-time 0s`) now queries match
+    start instead of erroring with "requires -time"; flag presence is
+    tracked separately from the zero value.
+  - `mapgen` now fails the run when its `-demos` directory can't be walked
+    (e.g. a typo'd path) instead of silently emitting an unpruned corpus,
+    matching the existing `-bsp-dir` behaviour.
+
+- **mvd-api / mvd-mcp hardening for hosted use (no schema change; REST
+  surface semantics + one MCP tool-schema change).** Prerequisites for
+  running the API/MCP on the internet for third-party apps:
+  - **Downloaded demo bytes are verified against their SHA before
+    caching.** A cold download now hashes the `.mvd.gz` bytes and rejects
+    them as `hub_upstream` (502) if they don't match the hub-claimed
+    `demo_sha256` that keys the cache, the `sha:` address, and the ETag —
+    a corrupted CDN object can no longer poison the cache permanently.
+  - **Hub "not found" is classified by error identity, not message
+    text.** A new `hubfetch.ErrNotFound` sentinel + `errors.Is` replaces
+    two `strings.Contains(err, "not found")` checks, so a hub 5xx whose
+    body merely contains "not found" is now correctly a 502 (was
+    misreported as `demo_not_found` 404).
+  - **Model-supplied `demoId` is validated + escaped in the MCP proxy.**
+    All demo-scoped tool calls route through a `demoPath` helper that
+    rejects anything but a canonical `gameId:N` / `sha:HEX` and
+    PathEscapes it, so an id containing `/`, `?`, or `#` can no longer
+    reroute a request to a different endpoint.
+  - **Per-demo lazy computes no longer serialize globally.** `/los` and
+    the on-demand shot-stream rebuild (`/shots`, `/aim`, `/streams/*`)
+    now lock per demo SHA (shared `KeyedMutex` helper) instead of one
+    server-wide mutex each, so a request for demo B does not queue behind
+    demo A's multi-second pass. (Disk persistence of the computed
+    artifacts is deliberately out of scope here.)
+  - **Cache correctness nits.** A resolved-`GameInfo` map entry that
+    previously leaked for process life when a demo was served from a
+    warm tier is now drained unconditionally; `GetResult` documents that
+    a cold fetch runs its hub download + parse to completion regardless
+    of the caller's context (the singleflight shares one computation, so
+    the first caller's cancellation must not poison the others).
+  - **The stream-enriched endpoints signal a degrade instead of serving
+    silently-incomplete data.** When the tier-1 MVD bytes are missing so
+    the opt-in weapon-fire streams can't be rebuilt, `/shots`, `/aim`,
+    and `/streams/*` now set `X-Shot-Streams: unavailable` (+
+    `Cache-Control: no-store`) rather than quietly returning the lean
+    result.
+  - **MCP tool-schema change:** `getBackpacks`'s `weapon` input is now a
+    `string[]` set (forwarded as CSV), matching REST `/backpacks` since
+    v36 (was a single string); `getEvents`'s `types` schema now lists the
+    opt-in `damage` / `telefrag` / `stomp` kinds.
+  - **Docs:** API.md's `/overview` example is corrected to int32
+    milliseconds (the code has emitted ms since v24) with an added §2.1
+    units row; the §2.4 error table gains `shots_unavailable` /
+    `aim_unavailable`; and stale `schemaVersion: 36` examples are updated
+    to 48.
+
+- **Clean end-of-demo, and truncated demos become visible (no schema
+  change).** The standard MVD termination — `svc_disconnect
+  "EndOfDemo"` — now surfaces through `events.Source.Next` as `io.EOF`
+  (the value the Source contract always promised) instead of a hard
+  error the analytics registry silently swallowed; any tail events in
+  that final message are drained before EOF. A *non*-EOF `Next` error
+  (a truncated or corrupt stream) now records `"event stream aborted:
+  …"` into `result.errors`, and a failed region-control pass records
+  `"region control: …"` there too, so a partial parse is
+  distinguishable from a clean one. Previously-ignored read/skip errors
+  inside the parser (sound/baseline/download skips, serverdata movevars,
+  entity-diff emits) now propagate instead of silently misaligning the
+  decode cursor, and a truncated known command is reported as
+  `parse_error` naming the command rather than `unknown_svc`. No value
+  changes on well-formed demos — the golden corpus is byte-identical
+  (its `EndOfDemo` message carries no tail events); the new `errors`
+  entries appear only on broken demos, so the schema version is
+  unchanged (v48).
+
+- **Timeline, scoreboard and duel-detection correctness fixes (schema
+  v48).** Five bugs in already-emitted values, no field-shape change:
+  - **Kill events were on the wrong clock and mislabeled in duels.**
+    `timelineAnalysis.killEvents` shipped demo-relative (each kill
+    ~`demoOffset`, typically ~10 s, later than the matching
+    `deathEvents`) and, in 1v1s, tagged with a raw colour team like
+    `"red"` instead of the player name — the two post-processors that
+    rebase time and rewrite duel teams both skipped it. The Timeline
+    per-player drill-down plots `killEvents − deathEvents` on one axis,
+    so every kill drew displaced and duel team colours were wrong. Now
+    `killEvents` is match-relative and duel-team-labelled exactly like
+    its sibling streams. A new structural invariant test over the golden
+    corpus enforces this for *every* timeline event stream, so a future
+    field that forgets a post-processor fails loudly instead of shipping
+    wrong.
+  - **A chat line could start or end the match.** Match-start/-end
+    detection scanned every print for substrings like "go!" / "game
+    over", including player chat: a pre-match "go go go!" started
+    recording warmup, a mid-match "gg game over" froze every stat and
+    stream for the rest of the demo. Chat prints (level 3) are now
+    ignored for match timing; only broadcast prints move the match
+    window. The obituary parser likewise rejects chat-level prints, so a
+    say containing " rides " can't inject a phantom frag.
+  - **CRMod super-shotgun kills were mislabeled.** "X eats 2 scoops of
+    Y's lead shot" was matched by the generic grenade " eats " pattern
+    first, so the kill came out as weapon `gl` with a phantom killer
+    "2 scoops of Y". It is now correctly `ssg` with killer Y.
+  - **0-frag players no longer vanish; team games aren't mistaken for
+    duels.** A player who legitimately finished on exactly 0 frags was
+    dropped from `match.players`/`match.teams`. That is fixed
+    (surface-authoritative-data), and duel detection now trusts
+    `demoInfo.players` as authoritative — so a 2on2 in which two players
+    end on 0 frags is no longer misread as a 1v1 and team-renamed.
+    To keep actual spectators from leaking in once the 0-frag filter is
+    gone, the reader now parses the server-set `*spectator` userinfo
+    star key (mvdsv strips the client's bare `spectator` key before
+    broadcast, so the old bare-key check never matched in MVDs) and
+    recomputes the flag on every full userinfo update the way ezquake
+    does, so a slot reused after a spectator disconnects doesn't
+    inherit a stale flag.
+  - **Consistent powerup interval end times.** On a demo cut before
+    intermission, quad/pent/ring runs were closed at each player's last
+    position sample while weapon intervals closed at the global last
+    sample; both now use one shared effective match end.
+
+- **Crosshair placement plots in true Quake units.** The Aim Stats
+  density images and yaw/pitch marginals plotted hull-normalized error
+  (each axis divided by the target's angular half-extent), so one x
+  unit was ~16-23 qu while one y unit was 28 qu, and the "hull" box
+  drew as a square. Both now plot the offset in Quake units at the
+  target's range (derived from the existing `dyaw`/`dpitch`/`dist`
+  columns — no schema change), the axes share one scale, and the
+  solid outlined box is the player's collision box true to shape (32
+  wide × 56 tall), with a dashed outline at its corner-on silhouette
+  (~45 qu wide — the axis-aligned box reads √2 wider viewed
+  diagonally). Extents ±96 qu × ±64 qu, ticks every hull-width (32
+  qu), hover read-outs and histogram bins in qu.
+
+- **LG whiff split reclassified: miss / blocked / far (schema v47).**
+  The split classified from the beam endpoint only, so every beam that
+  stopped on geometry short of its ~600u max range counted as `blocked`
+  — including shafts fired into a wall with nobody behind them, which
+  made Blocked % implausibly high. Now a whiff only counts as blocked
+  or out of range when the shooter was on target: `blocked` = the beam
+  stopped short on geometry and its extension to full range crosses a
+  live enemy's collision hull (in range — the obstruction denied a
+  would-be hit); `outOfRange` = the beam ran its full length and its
+  extension to infinity crosses a live enemy's hull (denied by reach);
+  `miss` = every other whiff, a plain aim error with no enemy on the
+  beam's line (shares the `miss` field with the SG/SSG pellet split). The
+  endpoint-proximity `nearMiss` field is **removed** — with blocked
+  detection on the beam line, the near/wide distinction among aim
+  errors carried no signal. The Aim Stats LG table now shows Miss /
+  Blocked / Far (+ share-of-fires %) with reworded tooltips. Only
+  beam-enriched parses are affected (the split needs `streams.beams`),
+  so the golden corpus is untouched.
+
+## 2026-07-04
+
+- **Timeline frag/death events no longer dropped for players with no
+  resolvable team.** `timelineAnalysis.fragEvents` and `.deathEvents`
+  gated on a resolvable team, so a duel player whose userinfo *and*
+  KTX demoinfo team are both empty lost every entry: gameId 224758
+  (iddQd, 34 deaths missing from the frags/deaths drill-down) and the
+  bravado golden (speedball, 7 deaths). FragEvents were partially
+  papered over by the duel post-processor's frogbot synthesis (rebuilt
+  from obituaries); DeathEvents had no such fallback. Both exports now
+  gate on a resolvable *name* — matching `killEvents`' documented
+  rationale — with `team` best-effort (`""` when unresolvable,
+  rewritten to the player's own name by duel normalization in 1v1s).
+  Audited the remaining team-keyed consumers for the same class of
+  loss: weapon pickups / items / messages fallback-fill instead of
+  dropping, and aim, airgibs, loc graph, and region control are
+  (re)computed after duel normalization, so they were already correct.
+
+- **Frag streaks now include the opening life.** A player already alive
+  when the match begins has no spawn recorded for that first life (the
+  parser's initial SpawnEvent fires during warmup and is dropped as
+  pre-match), so the spawn-to-death run from match start to first death
+  never entered `timelineAnalysis.fragStreaks` — a player who never
+  died had no streak at all (gameId 224758: reload's 33-frag run was
+  missing). The streak detector now synthesizes a match-start spawn
+  when a death or credited frag predates a player's first recorded
+  spawn — strictly after match start, since KTX's match-start reset can
+  surface as a death at exactly `StartTime` (gameId 212260) and must
+  not shift the spawn/death pairing. Opening runs read `time: 0`
+  (match-relative).
+
+- **Weapon-stay pickup recovery (schema v46).** In weapon-stay modes
+  (serverinfo `deathmatch` 2/3/5 or `coop` — dmm3, the standard
+  duel/2on2 mode, included) KTX never emits `//ktx took` for weapons
+  and the weapon entity never leaves the wire, so `result.weaponPickups`
+  contained **zero world weapon pickups** on those demos and weapon
+  `items` timelines never closed a phase. Both analyzers now synthesize
+  the pickups from STAT_ITEMS weapon-bit 0→1 transitions: weapon_pickups
+  records kind-level entries (`inferred: true`; `source: "world"` when
+  the picker was in touch range of a matching pad during the stat-lag
+  window, else the new `"unknown"` — typically a non-RL/LG backpack
+  grant), and items.go closes the matched entity's phase as a
+  zero-length unavailability (`takenAt == respawnAt`; the weapon never
+  left the map). Spawn-loadout bursts and `//ktx bp` grants are
+  deduplicated. Verified against KTX's own per-player counters
+  (`TookWeaponHandler` increments before the weapon-stay early return,
+  so `demoInfo.players[].weapons[].pickups.*` were always correct).
+
+- **Pickups tab: KTX counters are the displayed numbers.** The
+  weapon/item verify cells now show the KTX-authoritative counter as
+  the cell value and acknowledge the analytics-derived count in the
+  tooltip, instead of showing the analytics count and flagging
+  divergence red. Rationale: in weapon-stay demos the analytics
+  reconstruction is known-imperfect (wire-invisible grab-then-die
+  coalescing, pad-vs-pack ambiguity), so a small divergence is
+  expected, not an error — while the analytics stream stays the right
+  source for timestamped/per-entity questions (the per-entity `@ loc`
+  columns are unchanged). Demos without KTX pickup counters (old /
+  non-KTX servers) fall back to the analytics counts, trusted as-is.
+
+- **Duel team normalization now covers pickup/shot data (v46).** In 1v1
+  demos `normalizeDuelTeams` rewrites every player's team to their own
+  name, but `items` phase teams, `weaponPickups` team/dropperTeam,
+  `backpacks` team, `shots` stream/byPlayer teams (feeding `aim` teams),
+  and `airgibs` attacker/victim teams kept the raw pre-normalization
+  strings — so the Pickups tab's per-team aggregation bucketed duel
+  pickups under stale colour labels and showed zero rows. All are now
+  rewritten in the duel pass (airgibs sources teams from the normalized
+  player streams). The pass also reclassifies `shots[].victimKinds`
+  `"team"` → `"enemy"` and folds the per-weapon `teamHits` bucket into
+  `enemyHits` (v45's `victimKindOf` compares raw team strings, so a duel
+  where both players share a colour team classified every opponent hit
+  as team damage; in a 1v1 any non-self victim is an enemy — exact, since
+  the single opponent pair classifies uniformly). Aim's enemy/team splits
+  inherit the correction via `aimPost` ordering. The web Pickups tab's
+  per-team tables also join the existing duel-mode hide
+  (`team-aggregate-table`), matching the other per-team stats tables.
+
+- **Pickup attribution: touch-instant sampling + measured 128 u gate
+  (v46).** The Layer-4 distance corroborator now samples each player's
+  position from the per-frame history at the entity-removal instant
+  (which is the touch frame) instead of a latest-only sample up to
+  250 ms stale, and all proximity consumers (corroborator, insta-regrab
+  picker, weapon-stay classifiers) share one 128 u touch gate — genuine
+  touches measure 54-104 u across the corpus, non-touch same-room grabs
+  ≥150 u. A handful of beyond-gate guesses become honestly unattributed.
+
+- **Shots/aim: enemy / team / self victim classification + Aim Stats
+  Victims cycle** (schema v45). Every linked victim is now classified
+  relative to the shooter — `enemy`, `team` (same non-empty team, not
+  self) or `self` (own wire slot: rl/gl self-splash, i.e. rocket jumps) —
+  mirroring the damage layer's `isSelf`/`isTeam` semantics, per victim
+  per fire (one rocket can splash an enemy, a teammate and the shooter at
+  once and counts in every bucket it has a victim in). `Shot` gains
+  `victimKinds`, `WeaponShots` gains `enemyHits`/`teamHits`/`selfHits`,
+  the aim crosshair/ramp samples gain a `team` column, and `WeaponAim`
+  gains `enemy`/`team`/`self` counter slices (`WeaponAimSplit`: hits,
+  pellet splits, direct — see RESULT_SCHEMA.md for the emission rules).
+  All additive; `hits`/`accuracy` stay all-victims for KTX scoreboard
+  parity. The Aim Stats tab gains a **Victims** filter
+  (All / Enemy / Team / Self) that slices the weapon tables, the
+  crosshair heatmaps + marginals and the LG ramp; **All** (default)
+  preserves the previous numbers, and **Enemy** is the first view where
+  rocket jumps no longer inflate RL hit % (they were always counted as
+  hits — now visible under Self). Duels hide the Team option (no
+  teammates); Self shows tables only (hitscan cannot self-hit, so there
+  are no self crosshair samples). The MCP `getAim` tool and `/aim` +
+  `/shots` endpoints carry the new fields automatically. Tab layout
+  reworked alongside: the Victims strip sits at the top of the tab, the
+  LG and SG crosshair blocks sit side by side where the pane is wide
+  enough (stacking on narrow panes), and the player picker moved into
+  the Crosshair placement panel — the only place it applies.
+
+- **Aim: hits attribute to the confirmed victim** (schema v44). The v43
+  liveness gate excluded the victim of a killing blow from attribution —
+  the kill lands in the same frame the victim dies, so `losAliveAt` read
+  the victim as already dead at the fire time. In team games the sample
+  went to the nearest *other* live enemy, producing impossible
+  "hits" tens of hull-widths off target (the big far-edge bars with
+  nonzero hit counts in the Aim Stats marginal histograms — verified on
+  hub demo 223930: 78 of 79 LG edge-bin hits were killing blows, the 79th
+  a team-damage hit, while the beams ended inside the actual victim's
+  hull); duels dropped their killing-blow samples entirely. Crosshair
+  samples of hit shots now attribute to the server-confirmed victim
+  (nearest by crosshair error when a pellet fire hit several), with no
+  liveness gate and no enemy filter (team damage is a confirmed target —
+  `tgt` can then name a teammate); misses keep the live-enemy
+  nearest-crosshair heuristic. Duels gain one crosshair sample per
+  hitscan kill; the web attribution note now spells out the hit/miss
+  split.
+
+- **API: `/shots` endpoint + complete `/aim`; MCP: `getAim`** (no schema
+  change). New `GET /v1/demos/{id}/shots` serves the per-fire weapon stream
+  (`result.Shots`: linked hits/victims, per-player aggregates, KTX
+  reconciliation; `nails=1` opts into ng/sng fires). `/aim` and `/shots` are
+  served from the stream-enriched parse (`EnsureShotStreams` re-parses on
+  first request, then caches — the rebuilt `Shots`/`Aim` blocks are grafted
+  onto the cached result), so the stream-derived aim blocks (RL/GL
+  direct/splash, the LG near/blocked/out-of-range split) are now always
+  present over the API instead of silently absent. New
+  `GET /v1/demos/{id}/airgibs` serves the Key Moments airgib list
+  (`timelineAnalysis.airgibs` — the last Result block with no endpoint);
+  empty, not an error, on maps without a provisioned BSP. The MCP server
+  adds a `getAim` tool (aim stats only — the raw per-fire stream stays
+  API/JSON-only by design).
+
+- **Wider BSP corpus + phantom map-alias fix.** `scripts/fetch-bsps.sh`
+  now provisions the most-played 1on1/2on2 community maps from a
+  hub.quakeworld.nu sample (ztndm3, metron, toxicity, dad2, catalyst,
+  nova, pocket, katt, shifter, spinev2, zeal), so loc attribution,
+  map geometry and the BSP-gated visibility metrics light up on them.
+  Removed the `phantombase → phantoma` map alias in
+  `mvd-analytics/loc/loader.go`: the phantom family (`phantom` /
+  `phantoma` / `phantombase`) are distinct map versions and now each
+  resolve to their own loc/entity/geometry data. Previously the alias
+  routed the ~1000-game `phantombase` corpus through the 23-game
+  `phantoma` data; this touched every `NormalizeMapName` consumer — loc,
+  mapents, mapbsp, and the `/v1/maps/{map}` endpoint. Only the dominant
+  `phantombase` BSP is fetched; the low-play predecessors are not.
+
+## 2026-07-03
+
+- **Aim: alive-gated attribution + density image, marginal histograms,
+  share-of-fires columns** (schema v43).
+  Crosshair-error target attribution now skips enemies who are dead at the
+  fire time (same liveness rule as line of sight, `losAliveAt` over the
+  spawn/death streams). Dead players keep streaming position samples — the
+  death-anim body — so a corpse sitting near the crosshair could previously
+  win nearest-crosshair attribution in team games and log a guaranteed-miss
+  sample; a duel fire while the lone enemy is dead now emits no sample at
+  all (the per-weapon fire counts still include it). No field changes —
+  sample counts and targets shift on team demos. The web Aim Stats tab
+  replaces the crosshair grid with a **smoothed density image** per weapon
+  (LG and SG): a Gaussian-smoothed 2-D histogram on canvas (the shared
+  viridis ramp anchored to the page background at zero, like the table
+  heatmaps; no external deps) with hull box + dead-center overlays, axis
+  ticks and a colorbar in shots per bin; hover reads exact shot/hit counts.
+  Under each image, two **marginal histograms**: the same normalized
+  samples projected onto one axis at a time — yaw (enemy left ↔ right) and
+  pitch (enemy below ↔ above) — zero-centered bins, with the |n| ≤ 1
+  on-hull band shaded and a dead-center rule. Image and histograms share
+  the same extents (yaw ±6, pitch ±4); samples outside them are dropped
+  from the image (a clamp pile-up would paint a bright rim) but stay
+  visible in the histograms' clamp edge bins. The LG ramp panel is folded
+  into the LG block as a third histogram in the same style (hit % by time
+  since the shaft opened, hover for per-bin counts; `lgRamp` in the
+  schema is unchanged), and the histograms stack vertically. All binning
+  stays client-side. The per-weapon accuracy
+  tables add **share-of-fires % columns** next to every count (LG
+  near/blocked/far, RL/GL direct/splash/missed, SG/SSG full/partial/miss)
+  so players with different shot volumes compare directly.
+
+## 2026-06-28
+
+- **Aim analytics** (schema v41–v42). A new top-level `aim` block: per-player aim
+  metrics derived as a post-processor from `shots` + `streams`
+  (position/view interpolated at fire time) + `damage` + LG `beams`. Columnar
+  per-shot **crosshair-error samples** for hitscan (sg/ssg/lg) — both signed
+  degrees off the enemy and a version normalized by the target's angular size
+  (range-comparable; radius 1 ≈ the hitbox edge); an **LG ramp-onto-target**
+  series (ms since shaft start + hit); **rocket direct/splash** counts; and an
+  **LG reach/whiff** classification (near miss vs blocked vs unresolved).
+  Target attribution is exact in duels (`mode: "duel"`) and a labeled
+  nearest-crosshair-enemy heuristic in team games (`mode: "team"`). Computed
+  by default for every client (CLI / API / web) — the crosshair + ramp blocks
+  always; the rocket + reach blocks when the projectile/beam streams were
+  built (the WASM map build, `qw-analyze -include projectiles,beams`). The web
+  UI adds an experimental **Aim Stats** tab that renders the block: a rich
+  per-weapon table (SG/SSG pellets hit/fired + full/partial/whiff fires, RL/GL
+  direct/splash/missed, LG near-aim/blocked whiffs — the pellet and direct
+  figures match the server's authoritative stats), a hitscan
+  crosshair-placement heatmap (shot density, normalized so ±1 = the hull edge),
+  and an LG ramp chart. Also adds a reusable
+  `result.PositionTrack.SampleAt` interpolating
+  sampler (position + shortest-arc view angle + velocity) other position-
+  derived analytics can adopt. The web table is one table per weapon with
+  players on the rows (team-coloured like the Summary tab), and the heatmap is
+  split into LG and SG. Shots gained `warmup` (v42) — fires outside the match;
+  the aim analysis is match-time and excludes them, matching `shots.byPlayer`.
+
+## 2026-06-27
+
+- **Weapon-fire map overlay** (schema v40). Two opt-in spatial streams under
+  `streams` for the 3D map view: `projectiles` (every tracked rocket/grenade
+  flight as a spawn→despawn segment + times) and `beams` (every LG
+  `TE_LIGHTNING2` bolt as a muzzle→impact segment + time), both columnar.
+  They are **off by default** — sizeable in a team game (thousands of beams)
+  — and built only on request: `qw-analyze -include projectiles,beams`, and
+  the WASM map build (where the result stays in browser memory, so no extra
+  download). The map renders rockets/grenades as moving dots and LG bolts as
+  brief beams at the playback cursor (`drawProjectiles` / `drawBeams`). The
+  REST API serves them as three independent, build-on-demand endpoints —
+  `GET /v1/demos/{id}/streams/{projectiles|beams|nails}` — re-parsing the
+  cached demo on the first request and latching the result (like `/los`).
+
+- **Nail (ng/sng) tracking** (schema v40, opt-in). A separate, highest-volume
+  request (`qw-analyze -include nails`) that decodes nails — spike packet
+  entities on `sv_nailhack` servers (the common case), or the `svc_nails` /
+  `svc_nails2` stream otherwise — brackets each nail's flight, links ng/sng
+  fires to their nail damage (`hit`/`victims`, approximate: per-fire linking
+  credits one of SNG's two nails), and emits a `streams.nails` map overlay.
+  Off everywhere by default — including the web map — so nails are never
+  downloaded unless explicitly requested. Per-player nail hit counts track
+  KTX's within a small margin across the corpus.
+
+- **Per-shot weapon-fire stream** (schema v39). New top-level `shots`
+  result: who fired what weapon, at exactly what match-relative ms — the
+  foundation for accuracy metrics (including over short intervals) and for
+  external analysis correlating crosshair/aim movement with when shots were
+  taken (join a shot's `time` against `streams.players[].pos` view
+  angles/velocity).
+  - **Detection.** SG/SSG/RL/GL/NG/SNG fires come from `svc_sound` on the
+    shooter's `CHAN_WEAPON` — the sound carries the firing entity, so
+    attribution is exact and works on **any** QW server (not just KTX), and
+    the distinct fire wavs disambiguate RL vs GL where ammo deltas cannot.
+    (The Quake sound filenames are historically mismatched: the rocket
+    launcher fires `sgun1.wav`, the nailgun fires `rocket1i.wav`.) LG has no
+    per-shot fire sound, so it is counted from its `TE_LIGHTNING2` beam —
+    emitted once per fire tick and carrying the firing entity directly
+    (`source:"beam"`). One beam == one LG attack == one cell, so LG counts
+    match KTX `acc.attacks` exactly. The beam decode also surfaces the
+    muzzle→impact geometry as `BeamEvent` (for map rendering).
+  - **Truthful cross-linking.** Instantaneous hitscan fires (sg/ssg/lg) are
+    linked to the damage they caused in the **same server frame** via the
+    KTX `mvdhidden_dmgdone` stream (`hit`/`victims`). Rocket/grenade fires
+    (rl/gl) are linked by **entity flight tracking**: the projectile entity
+    brackets the flight (`spawn → despawn`), so a fire is matched to its
+    launch frame (by muzzle) and its impact damage to the shooter's
+    same-weapon damage at the despawn frame — which disambiguates *which*
+    fire caused *which* impact when several rockets are in flight (a naive
+    "next damage" link cannot). Across the corpus, rl/gl connect-counts
+    match KTX's authoritative `real` hit counts to within one. Nail fires
+    (ng/sng) ride a separate stream and stay unlinked for now.
+  - New parser events `ProjectileSpawnEvent` / `ProjectileDespawnEvent`
+    track rocket (`progs/missile.mdl`) and grenade (`progs/grenade.mdl`)
+    entities by their recycled entity number.
+  - **Validation built in.** A `reconciliation` block cross-checks detected
+    counts against KTX's authoritative `acc.attacks`; across the golden
+    corpus the converted `streamAttacks` matches KTX exactly (a 4on4 game
+    reconciles 42/42 player×weapon rows), with LG occasionally off by a
+    single cell at a death/discharge boundary.
+  - New parser events: `svc_sound` is decoded into `SoundEvent` and
+    `svc_soundlist` is captured to resolve fired sounds to weapons.
+
+- **Line-of-sight & potential-visibility metrics** (schema v37–v38,
+  [#94](https://github.com/galfthan/mvd_analyzer/pull/94)). Two new
+  per-opponent visibility tracks on `PlayerStream`, both computed lazily
+  on first request (the heaviest position-derived pass, BSP-gated — only
+  on maps with a provisioned BSP; absent from the default parse):
+  - **`PlayerStream.LOS`** (v37) — geometric **line of sight**: intervals
+    during which a player has a clear ray to an opponent (eye point at
+    `origin + (0,0,22)`, nine rays against the BSP clip hull and moving
+    movers, the opponent's bounding-box corners + centre). Directional, so
+    asymmetric one-way sightlines are preserved; gated to live players
+    (alive from match start, not the first recorded spawn).
+  - **`PlayerStream.PVS`** (v38) — server-reproduced **potential
+    visibility**: whether a live mvdsv would have sent that opponent's
+    entity to this player's client at that frame, made wire-exact against
+    `SV_PlayerVisibleToClient` (fat PVS of `origin + view_ofs` vs. the
+    target's entity-leaf set, with the `MAX_ENT_LEAFS` overflow gate).
+    PVS ⊇ LOS by construction; the **PVS-minus-LOS gap** is an
+    occlusion-tolerant proximity/awareness signal, not a sightline.
+
+  Surfaced three ways: the REST/MCP **`/v1/demos/{id}/los`** endpoint
+  (returns both `los` and `pvs`), the CLI, and the **web map overlay** —
+  two per-player toggles (**LOS**, **PVS**) that draw inter-player lines
+  on the 3D map tab (PVS as thin faint lines beneath the thicker LOS
+  lines), both filled by one lazy pass and cached client-side. Both
+  metrics are `omitempty`/absent on non-BSP maps, so the schema bump is
+  additive for existing consumers.
+
 ## 2026-06-20
 
 - **API contract cleanup** (schema v36). Consolidates the REST/MCP

@@ -59,7 +59,7 @@ func LocTrails(r *result.Result, opts LocTrailsOptions) (*LocTrailsView, error) 
 	}
 	end := opts.EndTime
 	if end == 0 {
-		end = float64(r.Streams.Global.MatchEnd) * 0.001
+		end = secs(r.Streams.Global.MatchEnd)
 	}
 	pf := newPlayerFilter(opts.Players)
 	out := &LocTrailsView{}
@@ -133,8 +133,8 @@ func buildTrailRaw(stream []result.ChangeI16, windowStart, windowEnd float64, lo
 			continue
 		}
 		out = append(out, TrailEntry{
-			Start: float64(segStart) * 0.001,
-			End:   float64(segEnd) * 0.001,
+			Start: secs(segStart),
+			End:   secs(segEnd),
 			Loc:   locName,
 			li:    c.V,
 		})

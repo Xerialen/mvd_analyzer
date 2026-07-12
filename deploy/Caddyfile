@@ -1,0 +1,49 @@
+# Caddyfile — reverse proxy for mvd-api + mvd-mcp (PLAN-hosting D9).
+#
+# Caddy terminates TLS (automatic HTTPS via Let's Encrypt), routes
+# /mcp* to the MCP HTTP server and everything else to the REST API, and
+# rewrites X-Forwarded-For to the REAL client IP so mvd-api's access log
+# (middleware.go clientIP) records the caller, not Caddy.
+#
+# EDIT: set MVD_DOMAIN in the environment (or replace {$MVD_DOMAIN} with
+# your domain literal). Point DNS A/AAAA at this host first; Caddy
+# provisions the certificate on first request.
+#
+#   MVD_DOMAIN=qw.example.com caddy run --config /etc/caddy/Caddyfile
+#
+# Port map (must match the systemd units in this directory):
+#   mvd-api  -> localhost:8080   (REST, portal, /v1/auth/check)
+#   mvd-mcp  -> localhost:8081   (MCP streamable HTTP at /mcp)
+
+{$MVD_DOMAIN} {
+	# --- MCP streamable HTTP --------------------------------------------
+	# mvd-mcp serves the handler at exactly /mcp (and /mcp/); the path is
+	# passed through unchanged (no strip), matching mcp_http.go's mcpPath.
+	# The MCP server's own /healthz is NOT proxied here (only /mcp* is);
+	# probe it directly on localhost:8081/healthz from the host. Public
+	# /healthz below routes to mvd-api.
+	handle /mcp* {
+		reverse_proxy localhost:8081 {
+			# Overwrite XFF with the direct client IP Caddy observed, so a
+			# spoofed inbound X-Forwarded-For cannot survive to the backend.
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# --- REST API + Discord portal --------------------------------------
+	# Everything else (/v1/*, /portal/*, /healthz, /v1/version) -> mvd-api.
+	handle {
+		reverse_proxy localhost:8080 {
+			# Same XFF rewrite: mvd-api's clientIP() trusts the FIRST XFF
+			# entry (middleware.go), so it must be the real client, set by
+			# the trusted edge (this Caddy), never an inbound spoof.
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Access log to stdout (journald captures it under the caddy unit).
+	log {
+		output stdout
+		format console
+	}
+}

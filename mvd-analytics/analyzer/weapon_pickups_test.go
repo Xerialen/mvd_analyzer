@@ -8,7 +8,7 @@ import (
 
 func newTestWeaponPickupsAnalyzer() (*WeaponPickupsAnalyzer, *Context) {
 	a := NewWeaponPickupsAnalyzer()
-	ctx := &Context{FragsBySlot: map[int]int{}}
+	ctx := &Context{}
 	_ = a.Init(ctx)
 	a.timing.Started = true
 	return a, ctx
@@ -235,6 +235,252 @@ func TestWeaponPickups_FreshPickupAfterDeathIsItsOwnGrant(t *testing.T) {
 	}
 	if ps[1].HadBefore || ps[1].Kills != 2 {
 		t.Errorf("life-2 pickup = %+v, want hadBefore=false kills=2", ps[1])
+	}
+}
+
+// Weapon-stay (dmm3): no //ktx took fires for weapons, so the pickup
+// must be synthesized from the STAT_ITEMS flip. The picker stood on
+// the RL pad → source="world", inferred=true, hadBefore=false, and
+// kill credit flows exactly as for a hint-based pickup.
+func TestWeaponPickups_WeaponStaySynthesisWorld(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "ace", Team: "red"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 100, Kind: "rl", Origin: [3]float32{500, 500, 100}, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: wpItShotgun, Time: 5}) // seeds baseline
+	_ = a.OnEvent(&events.PlayerPositionEvent{PlayerNum: 0, Origin: [3]float32{510, 500, 100}, Time: 9.9})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: wpItShotgun | wpItRocketLauncher, Time: 10})
+	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 30})
+
+	a.core = &CoreOutputs{FragEntries: []FragEntry{
+		{Time: 12000, Killer: "ace", Victim: "x", Weapon: "rl"},
+		{Time: 40000, Killer: "ace", Victim: "y", Weapon: "rl"}, // post-death
+	}}
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want 1 pickup, got %d: %+v", len(ps), ps)
+	}
+	p := ps[0]
+	if p.Weapon != "rl" || p.Source != "world" || !p.Inferred || p.HadBefore {
+		t.Errorf("got %+v, want weapon=rl source=world inferred=true hadBefore=false", p)
+	}
+	if p.Kills != 1 {
+		t.Errorf("Kills = %d, want 1 (one RL frag before next death)", p.Kills)
+	}
+}
+
+// Weapon-stay: a backpack grant flips the same STAT_ITEMS bit, but the
+// //ktx bp hint precedes the flip on the wire — exactly one record must
+// come out, with source="backpack".
+func TestWeaponPickups_WeaponStayBackpackNotDoubleCounted(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "dropper", Team: "red"}
+	ctx.Players[1] = &events.PlayerInfo{Slot: 1, Name: "thief", Team: "blue"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatItems, Value: 0, Time: 5}) // seeds baseline
+	_ = a.OnEvent(&events.BackpackDropHintEvent{BackpackEnt: 200, ItemFlags: 32, PlayerEnt: 1, Time: 10})
+	_ = a.OnEvent(&events.BackpackPickupHintEvent{BackpackEnt: 200, PlayerEnt: 2, Time: 11})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 1, StatIndex: events.StatItems, Value: wpItRocketLauncher, Time: 11.2})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want exactly 1 pickup (no stat-flip duplicate), got %d: %+v", len(ps), ps)
+	}
+	if ps[0].Source != "backpack" || ps[0].Player != "thief" || ps[0].Inferred {
+		t.Errorf("got %+v, want source=backpack player=thief inferred=false", ps[0])
+	}
+}
+
+// Weapon-stay: a flip with no weapon pad anywhere near the picker (a
+// non-RL/LG backpack grant, which has no hint in any mode) is recorded
+// with source="unknown" rather than guessed to be a world grab.
+func TestWeaponPickups_WeaponStayFlipAwayFromPadIsUnknown(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 100, Kind: "gl", Origin: [3]float32{5000, 5000, 100}, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 0, Time: 5})
+	_ = a.OnEvent(&events.PlayerPositionEvent{PlayerNum: 0, Origin: [3]float32{0, 0, 0}, Time: 9.9})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: wpItGrenadeLauncher, Time: 10})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want 1 pickup, got %d", len(ps))
+	}
+	if ps[0].Source != "unknown" || !ps[0].Inferred {
+		t.Errorf("got %+v, want source=unknown inferred=true", ps[0])
+	}
+}
+
+// Weapon-stay: a spawn loadout that grants weapons (dmm5-style) must
+// not read as pickups — whether the loadout stat lands just before the
+// SpawnEvent (dead-state absorb) or just after it (spawn window; the
+// update lands in the respawn frame).
+func TestWeaponPickups_WeaponStaySpawnLoadoutNotRecorded(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\5"`, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 0, Time: 5})
+	// STAT-before-SPAWN ordering: loadout lands while still flagged dead.
+	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 10})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems,
+		Value: wpItShotgun | wpItSuperShotgun, Time: 20})
+	_ = a.OnEvent(&events.SpawnEvent{PlayerNum: 0, Time: 20})
+	// SPAWN-before-STAT ordering: loadout lands in the respawn frame.
+	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 30})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 0, Time: 30})
+	_ = a.OnEvent(&events.SpawnEvent{PlayerNum: 0, Time: 40})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems,
+		Value: wpItShotgun | wpItSuperShotgun | wpItRocketLauncher, Time: 40.02})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	if len(r.WeaponPickups) != 0 {
+		t.Fatalf("want 0 pickups from spawn loadouts, got %+v", r.WeaponPickups)
+	}
+}
+
+// The kill.mvd regression: the wire's death frame orders
+// DEATH → loadout STAT → SPAWN. The death resets the flip baseline and
+// the loadout update re-seeds it; the spawn must NOT wipe that seed,
+// or the player's first pickup of the new life reads as a silent
+// re-seed and is lost.
+func TestWeaponPickups_WeaponStayPickupAfterDeathFrameRecorded(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 100, Kind: "rl", Origin: [3]float32{0, 0, 0}, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1 | wpItRocketLauncher, Time: 5}) // seed: holds RL
+	// Death frame, exact wire order observed in kill.mvd:
+	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 13.8})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1, Time: 13.8}) // respawn loadout (SG only)
+	_ = a.OnEvent(&events.SpawnEvent{PlayerNum: 0, Time: 13.8})
+	// First pickup of the new life, well past the spawn window.
+	_ = a.OnEvent(&events.PlayerPositionEvent{PlayerNum: 0, Origin: [3]float32{10, 0, 0}, Time: 15.0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1 | wpItRocketLauncher, Time: 15.1})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want 1 pickup (post-respawn RL grab), got %d: %+v", len(ps), ps)
+	}
+	if ps[0].Weapon != "rl" || ps[0].Source != "world" || !ps[0].Inferred {
+		t.Errorf("got %+v, want weapon=rl source=world inferred=true", ps[0])
+	}
+}
+
+// Grab-then-die (hub game 224763): the player touches the pad and is
+// killed inside one stat interval; the death-frame flush puts the flip
+// after the DeathEvent at the same timestamp. KTX counted the touch,
+// so the flip must be recorded despite the dead flag — while a flip
+// arriving later in the dead window (respawn bookkeeping) must not.
+func TestWeaponPickups_WeaponStayDeathFrameGrabRecorded(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 100, Kind: "rl", Origin: [3]float32{0, 0, 0}, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1, Time: 5})
+	_ = a.OnEvent(&events.PlayerPositionEvent{PlayerNum: 0, Origin: [3]float32{10, 0, 0}, Time: 9.99})
+	// Death frame: DEATH then the flip at the same timestamp.
+	_ = a.OnEvent(&events.DeathEvent{PlayerNum: 0, Time: 10})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1 | wpItRocketLauncher, Time: 10})
+	// Later, still dead: a bookkeeping flip must be absorbed.
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1 | wpItRocketLauncher | wpItLightning, Time: 11.5})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want exactly the death-frame RL grab, got %d: %+v", len(ps), ps)
+	}
+	if ps[0].Weapon != "rl" || ps[0].Source != "world" || !ps[0].Inferred {
+		t.Errorf("got %+v, want weapon=rl source=world inferred=true", ps[0])
+	}
+}
+
+// The flip baseline must be maintained through warmup: when a player's
+// first in-match STAT_ITEMS update is already the pickup (the spawn
+// burst landed before the match-start print), seeding on it would
+// swallow the grant.
+func TestWeaponPickups_WeaponStayWarmupBaselineCarries(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	a.timing.Started = false // exercise the warmup phase explicitly
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 100, Kind: "rl", Origin: [3]float32{0, 0, 0}, Time: 0})
+	// Warmup: baseline seeds (SG only) before the match starts.
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1, Time: 8})
+	a.timing.Started = true
+	// First in-match update IS the RL grant.
+	_ = a.OnEvent(&events.PlayerPositionEvent{PlayerNum: 0, Origin: [3]float32{10, 0, 0}, Time: 9.9})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 1 | wpItRocketLauncher, Time: 10})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want 1 pickup (warmup-seeded baseline), got %d: %+v", len(ps), ps)
+	}
+	if ps[0].Weapon != "rl" || !ps[0].Inferred {
+		t.Errorf("got %+v, want weapon=rl inferred=true", ps[0])
+	}
+}
+
+// Non-weapon-stay mode (dmm1): the synthesis gate stays off; a
+// STAT_ITEMS flip on its own produces nothing (the //ktx took hint
+// pipeline owns dmm1 pickups).
+func TestWeaponPickups_NoSynthesisInDmm1(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\1"`, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 0, Time: 5})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: wpItRocketLauncher, Time: 10})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	if len(r.WeaponPickups) != 0 {
+		t.Fatalf("want 0 pickups (no synthesis in dmm1), got %+v", r.WeaponPickups)
+	}
+}
+
+// Defensive path: if a //ktx took hint arrives *after* the stat flip
+// already synthesized a record, the record is upgraded in place (the
+// hint is authoritative) instead of appending a duplicate.
+func TestWeaponPickups_LateHintUpgradesInferredRecord(t *testing.T) {
+	a, ctx := newTestWeaponPickupsAnalyzer()
+	ctx.Players[0] = &events.PlayerInfo{Slot: 0, Name: "p"}
+
+	_ = a.OnEvent(&events.StuffTextEvent{Command: `fullserverinfo "\deathmatch\3"`, Time: 0})
+	_ = a.OnEvent(&events.ItemSpawnEvent{EntNum: 100, Kind: "rl", Origin: [3]float32{0, 0, 0}, Time: 0})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: 0, Time: 5})
+	_ = a.OnEvent(&events.PlayerPositionEvent{PlayerNum: 0, Origin: [3]float32{10, 0, 0}, Time: 9.9})
+	_ = a.OnEvent(&events.StatUpdateEvent{PlayerNum: 0, StatIndex: events.StatItems, Value: wpItRocketLauncher, Time: 10})
+	_ = a.OnEvent(&events.ItemPickupHintEvent{ItemEnt: 100, PlayerEnt: 1, Time: 10.1})
+
+	r := &Result{}
+	_ = a.Finalize(r)
+	ps := r.WeaponPickups
+	if len(ps) != 1 {
+		t.Fatalf("want 1 pickup (late hint upgrades, not duplicates), got %d: %+v", len(ps), ps)
+	}
+	if ps[0].Source != "world" || ps[0].Inferred || ps[0].HadBefore {
+		t.Errorf("got %+v, want source=world inferred=false hadBefore=false", ps[0])
 	}
 }
 

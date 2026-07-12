@@ -2,6 +2,7 @@ package mvd
 
 import (
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -98,7 +99,7 @@ func (d *Decoder) NextMessage() (*DemoMessage, error) {
 			PlayerNum:   playerNum,
 		},
 		TimeMs: d.timeMs,
-		Time:   float64(d.timeMs) * 0.001,
+		Time:   d.CurrentTime(),
 	}
 
 	// Handle each message type
@@ -137,23 +138,11 @@ func (d *Decoder) NextMessage() (*DemoMessage, error) {
 		}
 		msg.Payload = payload
 
-	case DemSingle, DemStats:
-		// Player number is already extracted from type byte
+	case DemSingle, DemStats, DemAll, DemRead:
+		// Same wire layout for all four: size-prefixed payload. For
+		// dem_single/dem_stats the player number is already extracted
+		// from the type byte.
 
-		// Read payload size (4 bytes)
-		size, err := d.reader.ReadUint32()
-		if err != nil {
-			return nil, err
-		}
-
-		// Read payload
-		payload, err := d.reader.ReadBytes(int(size))
-		if err != nil {
-			return nil, err
-		}
-		msg.Payload = payload
-
-	case DemAll, DemRead:
 		// Read payload size (4 bytes)
 		size, err := d.reader.ReadUint32()
 		if err != nil {
@@ -173,7 +162,7 @@ func (d *Decoder) NextMessage() (*DemoMessage, error) {
 		return nil, errors.New("unexpected dem_cmd in MVD file")
 
 	default:
-		return nil, errors.New("unknown message type")
+		return nil, fmt.Errorf("unknown message type %d at stream offset %d", messageType, d.reader.Offset())
 	}
 
 	return msg, nil

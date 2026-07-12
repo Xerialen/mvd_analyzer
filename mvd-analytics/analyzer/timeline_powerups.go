@@ -7,26 +7,33 @@ import "sort"
 // interval becomes one PowerupEvent. Replaces v6's per-bucket scan;
 // the streamBuilder already records open / close transitions exactly
 // at the events that flipped them, so this is just a translation.
-func (a *TimelineAnalyzer) detectPowerupEvents() []PowerupEvent {
+//
+// matchEndMs is the single effective match end computed once in Finalize
+// and shared with buildStreamsResult's stream finalize, so a still-open
+// powerup run closes at the same instant as the weapon intervals (F13).
+func (a *TimelineAnalyzer) detectPowerupEvents(matchEndMs int32) []PowerupEvent {
 	if len(a.playerState) == 0 {
 		return nil
 	}
 
+	// Iterate slots in ascending order so the event list is built in a
+	// fixed order before sorting; a Go map range over a.playerState would
+	// otherwise shuffle same-ms ties across runs (and under GOMAXPROCS
+	// variation), which the stable sort below then locks in.
+	slots := make([]int, 0, len(a.playerState))
+	for slot := range a.playerState {
+		slots = append(slots, slot)
+	}
+	sort.Ints(slots)
+
 	events := []PowerupEvent{}
-	for slot, state := range a.playerState {
+	for _, slot := range slots {
+		state := a.playerState[slot]
 		if state == nil {
 			continue
 		}
-		// Close any still-open intervals at the timing detector's end
-		// time (or the latest position sample) so finalize doesn't
-		// drop ongoing powerup runs. All time arithmetic is int32 ms;
-		// EndTime is float64 seconds and is converted at the boundary.
-		var matchEndMs int32
-		if a.timing.EndTime > 0 {
-			matchEndMs = msTime(a.timing.EndTime)
-		} else if len(state.streams.posT) > 0 {
-			matchEndMs = state.streams.posT[len(state.streams.posT)-1]
-		}
+		// Close any still-open intervals at the shared match end so finalize
+		// doesn't drop ongoing powerup runs.
 		state.streams.quad.closeAtMatchEnd(matchEndMs)
 		state.streams.pent.closeAtMatchEnd(matchEndMs)
 		state.streams.ring.closeAtMatchEnd(matchEndMs)
@@ -41,7 +48,10 @@ func (a *TimelineAnalyzer) detectPowerupEvents() []PowerupEvent {
 		appendRuns(state.streams.ring.closed, "ring")
 	}
 
-	sort.Slice(events, func(i, j int) bool {
+	// Stable sort by start time; equal-time events keep the deterministic
+	// build order above (slot ascending, then quad→pent→ring, then interval
+	// order) so the output is byte-stable.
+	sort.SliceStable(events, func(i, j int) bool {
 		return events[i].Time < events[j].Time
 	})
 	return events
@@ -66,6 +76,7 @@ func (a *TimelineAnalyzer) createPowerupEvent(slot int, powerupType string, star
 	// (startTime), so a quad/pent/ring run picked up before a reconnect
 	// is credited to the right player.
 	event.PlayerName, event.Team = a.resolveAt(slot, startTime)
+	event.Team = a.core.TeamFor(event.PlayerName, event.Team)
 	if event.PlayerUserID == 0 {
 		if player := a.ctx.Players[slot]; player != nil && player.UserID != 0 {
 			event.PlayerUserID = player.UserID

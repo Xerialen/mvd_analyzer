@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "scorecardsEqual": "8/8",
+    "gatesEqual": "8/8",
+    "completeResolvedEqual": "5/8",
+    "controlMeanElapsedSeconds": 1.139,
+    "candidateMeanElapsedSeconds": 1.065,
+    "controlMeanMaxRssKiB": 83686,
+    "candidateMeanMaxRssKiB": 89260,
+    "controlMeanAnalysisBytes": 17372853,
+    "candidateMeanAnalysisBytes": 17666168
+  },
+  "matches": [
+    {"match":"m01","control":{"elapsedSeconds":1.19,"maxRssKiB":83464,"analysisBytes":17115003,"analysisSha256":"4d3380d65aa798ccffac7a988efa24b1afe3aa0206f435fd27b9a673c0252858","resolvedSha256":"d7590f97e6272633b71b2fd659782a75a509c03da4ee3687e6a24b53343a90d6"},"candidate":{"elapsedSeconds":1.05,"maxRssKiB":91632,"analysisBytes":17366137,"analysisSha256":"982e53fc5cf2d1c931150450d400d3afec5efcd886ea87a7f604cd057e46db59","resolvedSha256":"1837f67216b89d090e068554b43db0d82f5bc2edb85ec0835d1e4d3fb7a236ec"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":false},
+    {"match":"m02","control":{"elapsedSeconds":1.12,"maxRssKiB":87912,"analysisBytes":17531402,"analysisSha256":"232035987723aee1595471ea978737408e6743ee97cd15cb416b4171c76ae4c9","resolvedSha256":"49aaa1e844e5dd77d4fb621b89fbc899e47005702d1da8c070a1ea5ae89018d5"},"candidate":{"elapsedSeconds":1.03,"maxRssKiB":77268,"analysisBytes":17853936,"analysisSha256":"5cfbef7c3507a0c5746c9629f75e4877476ed79bae3faa07fa0004b93b4cd1d7","resolvedSha256":"49aaa1e844e5dd77d4fb621b89fbc899e47005702d1da8c070a1ea5ae89018d5"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":true},
+    {"match":"m03","control":{"elapsedSeconds":1.17,"maxRssKiB":81208,"analysisBytes":17521184,"analysisSha256":"ca38ea14d09ec8b1a2e7ae919335fa62131d75ee24709fe29ed2eea4abeb8444","resolvedSha256":"c8329ed1665cb56f0cdf39eb532a158e18f1c03f87bb09ce3792d65dd886ead3"},"candidate":{"elapsedSeconds":1.11,"maxRssKiB":95176,"analysisBytes":17861599,"analysisSha256":"afb8068fb0bf3b030c4007faff8e069c42fa528d7dc11950888bc071b6bbce42","resolvedSha256":"c8329ed1665cb56f0cdf39eb532a158e18f1c03f87bb09ce3792d65dd886ead3"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":true},
+    {"match":"m04","control":{"elapsedSeconds":1.12,"maxRssKiB":85132,"analysisBytes":17273634,"analysisSha256":"c39520497abf5824fb4ca41edc31d685c250fc1ac9b899156cf53ec4f81eef74","resolvedSha256":"eaca312a2872d7acdda0428b43bd346ac26bed2ccb59d12e39e2f02d9129c70c"},"candidate":{"elapsedSeconds":1.03,"maxRssKiB":86160,"analysisBytes":17515666,"analysisSha256":"0878f85b4ea72516bfe6d576ead9aa4ff786ab318afe0101bf22b3d0bba3e84c","resolvedSha256":"eaca312a2872d7acdda0428b43bd346ac26bed2ccb59d12e39e2f02d9129c70c"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":true},
+    {"match":"m05","control":{"elapsedSeconds":1.07,"maxRssKiB":74068,"analysisBytes":17110616,"analysisSha256":"c6df8e05635e5964c91e625d5e155c2c43d677a23c6c1a7746de2e7fb81f2450","resolvedSha256":"718dd7f381e908aca48971b988caad3308c3a4f20d101dce7db11d2100a2c233"},"candidate":{"elapsedSeconds":1.00,"maxRssKiB":84716,"analysisBytes":17396276,"analysisSha256":"5d65b772570ff29b20c056d86151f94a271d9be322ad6bbbeb3c3f8b1f5fdfa3","resolvedSha256":"718dd7f381e908aca48971b988caad3308c3a4f20d101dce7db11d2100a2c233"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":true},
+    {"match":"m06","control":{"elapsedSeconds":1.15,"maxRssKiB":85184,"analysisBytes":17428000,"analysisSha256":"c07f72a54e80116656291d00c86b2dcc1127e58f36b5574f51ffd9d57613e8ce","resolvedSha256":"00514c4a2add7c890463110fc3e620d094acf16ade7b8217a8ab3ceff9c4767e"},"candidate":{"elapsedSeconds":1.10,"maxRssKiB":93292,"analysisBytes":17703954,"analysisSha256":"007950ce5fa9c992b5bde4fa86ba759145bd66b3cd32c17ce4028caf612340f6","resolvedSha256":"42b119416417d206e34dfb2af9a27af67d8054450bcd82a7fbd37e399aee524a"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":false},
+    {"match":"m07","control":{"elapsedSeconds":1.16,"maxRssKiB":88192,"analysisBytes":17539143,"analysisSha256":"def84e7613f748c020d0524b50e815a28e59601ae6d54c94cd2f5943e2b7676f","resolvedSha256":"ed39126c14430eb2f14a519fbce18920b08cd27ccbf57b69510d9eaa9e43f278"},"candidate":{"elapsedSeconds":1.15,"maxRssKiB":94704,"analysisBytes":17863302,"analysisSha256":"8cced8e5ec80021164cd538b5c46ef8842398074c7c02b36d06fd4e2e9ffe91f","resolvedSha256":"5d8b732db636322c50c8e6aae24c6d108c0c384bc6d3bdf229c077cacd49d7b2"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":false},
+    {"match":"m08","control":{"elapsedSeconds":1.13,"maxRssKiB":84332,"analysisBytes":17463842,"analysisSha256":"bc7dfe9acc744914d0efb48401240ff2538f2538e37ff299d469d524548f64bb","resolvedSha256":"b8b07585e67b9fa5567217567608084ee50a4449b625ac3e66101d31c272b511"},"candidate":{"elapsedSeconds":1.05,"maxRssKiB":91132,"analysisBytes":17768475,"analysisSha256":"58242ac57274a35d7fa25fa38fc9437ba87ac174dc611a4aa85e852886259e57","resolvedSha256":"b8b07585e67b9fa5567217567608084ee50a4449b625ac3e66101d31c272b511"},"scorecardEqual":true,"gatesEqual":true,"resolvedEqual":true}
+  ],
+  "nonEqualFields": {
+    "m01": {
+      "cause": "schema-v50 match gating removes one negative-time warmup engagement",
+      "changes": {
+        "engagements.count": [163,162],
+        "engagements.initiated": [117,116],
+        "engagements.initiatedAdv": [41,40],
+        "engagements.outcomes.disengaged": [54,53],
+        "engagements.perBot.drgn-4": [8,7]
+      }
+    },
+    "m06": {
+      "cause": "match-end gating changes only the final detail row",
+      "changes": {
+        "engagements.details[179].dmgGiven": [156,136],
+        "engagements.details[179].endMs": [600170,599657]
+      }
+    },
+    "m07": {
+      "cause": "match-end gating changes only the final detail row",
+      "changes": {
+        "engagements.details[189].dmgTaken": [96,72],
+        "engagements.details[189].endMs": [600143,599934]
+      }
+    }
+  }
+}

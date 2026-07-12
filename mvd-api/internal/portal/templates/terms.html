@@ -1,0 +1,33 @@
+{{define "terms.html"}}{{template "head" .}}
+<h1>Terms of use</h1>
+<p class="muted">
+  mvdanalyzer-api is a free community service for QuakeWorld demo
+  analytics, provided by its operator in their spare time. By signing in
+  or using the API you accept these terms.
+</p>
+
+<h2>The service</h2>
+<p class="muted">
+  The service is provided <strong>as is</strong>, with no warranty of
+  availability, accuracy or fitness for any purpose. The API surface is
+  versioned (see the <a href="/docs">reference</a>) but may change, and
+  the service may be throttled, suspended or discontinued at any time.
+</p>
+
+<h2>Your key, your requests</h2>
+<p class="muted">
+  API keys are personal: keep yours secret, don't share it, and
+  regenerate it if it leaks. Requests are rate-limited per key. Automated
+  use is welcome within those limits; deliberate circumvention of rate
+  limits, abusive load, or use of the service to harass community members
+  may result in key revocation.
+</p>
+
+<h2>Data</h2>
+<p class="muted">
+  The analytics served derive from publicly available community demo
+  recordings; you may use the responses freely, but re-publication should
+  credit the QuakeWorld community sources. Handling of personal data is
+  described in the <a href="/portal/privacy">privacy policy</a>.
+</p>
+{{template "foot" .}}{{end}}

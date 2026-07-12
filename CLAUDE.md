@@ -16,11 +16,14 @@ The docs that matter, in priority order:
 | Doc | Scope |
 |---|---|
 | [`README.md`](README.md) | Top-level: architecture, event list, result schema shape, repo layout, known limitations |
+| [`RELEASE_NOTES.md`](RELEASE_NOTES.md) | Feature-level changelog, newest first, keyed by schema version + merge date. Add an entry for every user-visible change / schema bump. |
 | [`mvd-reader/README.md`](mvd-reader/README.md) | Layer 1: event table + derivation notes, Source implementation guide |
 | [`mvd-analytics/README.md`](mvd-analytics/README.md) | Layer 2: registered analyzers, Result schema, how to add an analyzer, MH / items semantics |
 | [`mvd-analytics/RESULT_SCHEMA.md`](mvd-analytics/RESULT_SCHEMA.md) | **Authoritative** field-level reference for the Result JSON + view shapes, field vocabulary, reducer registry, time units. The single source of truth for response *shapes*. |
+| [`mvd-analytics/ARTIFACTS.md`](mvd-analytics/ARTIFACTS.md) | Generated DAG artifact catalog (`make artifacts-md`) — never hand-edit; a drift test pins it to the code. |
+| [`mvd-analytics/WRITING_AN_ANALYZER.md`](mvd-analytics/WRITING_AN_ANALYZER.md) | Contributor tutorial: add an analyzer end-to-end (inputs, interfaces, dag.go node declaration, eager vs lazy, checklist). |
 | [`mvd-api/README.md`](mvd-api/README.md) | REST host: flags, cache layout, endpoint quick-index, build |
-| [`mvd-api/API.md`](mvd-api/API.md) | HTTP integration reference for frontends/tools: per-endpoint params + semantics + units + recipes. Cross-links RESULT_SCHEMA.md for shapes (does not restate them). |
+| [`mvd-api/API.md`](mvd-api/API.md) | High-level HTTP integration guide: getting started, conventions (units/caching/errors/auth), endpoint-choice guide, recipes. The per-endpoint reference is `mvd-api/openapi/openapi.yaml` (served at `/openapi.yaml` + `/docs`, drift-tested + golden-validated) — keep it self-contained; don't re-grow endpoint docs in API.md. |
 | [`mvd-web/README.md`](mvd-web/README.md) | Layer 3: build targets, dist/ layout, map-tab overlay behaviour, loc corpus fetch |
 | [`mvd-reader/MVD_FORMAT.md`](mvd-reader/MVD_FORMAT.md) | MVD binary format reference — every svc_* we decode, entity-state item tracking, derived events, ezquake/mvdsv line refs |
 
@@ -32,7 +35,8 @@ The docs that matter, in priority order:
    limitations list if consumers can see the change.
 
 **When you change the schema**, bump `CurrentSchemaVersion` in
-`mvd-analytics/result/result.go` and mention the bump in the commit message.
+`mvd-analytics/result/result.go`, mention the bump in the commit message,
+and add a `RELEASE_NOTES.md` entry describing the change.
 
 **When you delete or move files**, fix every README / doc cross-reference
 that pointed at them. `grep -r` before committing.
@@ -91,7 +95,7 @@ belongs in the frontend.
      `mvd-analytics/analyzer/` (backpacks, duel normalisation, items,
      loc graph, metadata, obituaries, pickup invariants, timeline +
      blip filter, weapon pickups, floor-height traces),
-     `mvd-analytics/internal/hubfetch/`,
+     `mvd-analytics/hubfetch/`,
      `mvd-analytics/mapgen/{bsp,mapgeom}/`, and `mvd-analytics/mapclip/`.
   2. **Golden corpus** — `mvd-analytics/analyzer/golden_test.go` reads
      `mvd-analytics/testdata/corpus.json` (a manifest of hub.quakeworld.nu

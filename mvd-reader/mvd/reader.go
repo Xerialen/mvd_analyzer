@@ -97,7 +97,8 @@ func (br *BinaryReader) ReadByte() (byte, error) {
 	return br.buf[0], nil
 }
 
-// ReadBytes reads n bytes into a new slice
+// ReadBytes reads n bytes into a freshly allocated slice — safe to retain.
+// Contrast BufferReader.ReadBytes, which returns an aliased sub-slice.
 func (br *BinaryReader) ReadBytes(n int) ([]byte, error) {
 	buf := make([]byte, n)
 	_, err := io.ReadFull(br.r, buf)
@@ -145,11 +146,11 @@ func (br *BinaryReader) ReadString() (string, error) {
 }
 
 // The remaining typed readers all delegate to the shared free functions.
-func (br *BinaryReader) ReadInt8() (int8, error)        { return readInt8(br) }
-func (br *BinaryReader) ReadInt16() (int16, error)      { return readInt16(br) }
-func (br *BinaryReader) ReadInt32() (int32, error)      { return readInt32(br) }
-func (br *BinaryReader) ReadFloat32() (float32, error)  { return readFloat32(br) }
-func (br *BinaryReader) ReadCoord() (float32, error)    { return readCoord(br) }
+func (br *BinaryReader) ReadInt8() (int8, error)       { return readInt8(br) }
+func (br *BinaryReader) ReadInt16() (int16, error)     { return readInt16(br) }
+func (br *BinaryReader) ReadInt32() (int32, error)     { return readInt32(br) }
+func (br *BinaryReader) ReadFloat32() (float32, error) { return readFloat32(br) }
+func (br *BinaryReader) ReadCoord() (float32, error)   { return readCoord(br) }
 func (br *BinaryReader) ReadFloatCoord() (float32, error) {
 	return br.ReadFloat32()
 }
@@ -198,7 +199,10 @@ func (br *BufferReader) ReadByte() (byte, error) {
 	return b, nil
 }
 
-// ReadBytes reads n bytes
+// ReadBytes reads n bytes and returns a sub-slice that ALIASES the
+// underlying buffer (no copy — deliberate, this is the hot path). Callers
+// that retain the bytes past the current message must copy; contrast
+// BinaryReader.ReadBytes, which allocates.
 func (br *BufferReader) ReadBytes(n int) ([]byte, error) {
 	if br.offset+n > len(br.data) {
 		return nil, io.EOF
@@ -251,11 +255,11 @@ func (br *BufferReader) ReadString() (string, error) {
 }
 
 // The remaining typed readers all delegate to the shared free functions.
-func (br *BufferReader) ReadInt8() (int8, error)         { return readInt8(br) }
-func (br *BufferReader) ReadInt16() (int16, error)       { return readInt16(br) }
-func (br *BufferReader) ReadInt32() (int32, error)       { return readInt32(br) }
-func (br *BufferReader) ReadFloat32() (float32, error)   { return readFloat32(br) }
-func (br *BufferReader) ReadCoord() (float32, error)     { return readCoord(br) }
+func (br *BufferReader) ReadInt8() (int8, error)       { return readInt8(br) }
+func (br *BufferReader) ReadInt16() (int16, error)     { return readInt16(br) }
+func (br *BufferReader) ReadInt32() (int32, error)     { return readInt32(br) }
+func (br *BufferReader) ReadFloat32() (float32, error) { return readFloat32(br) }
+func (br *BufferReader) ReadCoord() (float32, error)   { return readCoord(br) }
 func (br *BufferReader) ReadFloatCoord() (float32, error) {
 	return br.ReadFloat32()
 }

@@ -1,6 +1,6 @@
 package result
 
-// Decisions is the tactical-decision section (schema v38): what a player
+// Decisions is the tactical-decision section (schema v57): what a player
 // DECIDED, as opposed to what happened. Two sources share the record shape
 // so bot-logged and human-inferred decisions are directly comparable:
 //

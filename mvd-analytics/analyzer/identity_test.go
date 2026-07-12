@@ -46,7 +46,7 @@ func TestIdentity_ReconnectDifferentSlot_DemoinfoJoin(t *testing.T) {
 		{Name: "biggz", Team: "jah"},
 	}}
 	co := runIdentity(t, di,
-		userinfo(7, 8, "rusti", 5),  // rusti, first half, slot 7
+		userinfo(7, 8, "rusti", 5),    // rusti, first half, slot 7
 		userinfo(2, 14, "rusti", 609), // rusti reconnects on slot 2
 		userinfo(7, 15, "Luk", 766),   // slot 7 reused by a phantom
 	)

@@ -407,24 +407,279 @@ package result
 //     removal (not additive); the view query API is unaffected.
 //
 // v37:
-//   - PlayerStream gains ActiveWeapon []ChangeI16 (json "w"): the raw
-//     STAT_ACTIVEWEAPON id (the wielded weapon's IT_ bit) as a sparse
-//     change stream dedup'd against last value, mirroring the Armor stat
-//     path. Recorded raw with no upper-bound clamp (IT_AXE = 4096 exceeds
-//     the armor cap). Additive (omitempty); absent when the source carried
-//     no active-weapon stat. Also registered as the `w` view query field
-//     (buckets / state-at / stream-slice).
+//   - PlayerStream gains LOS []LosTrack: per-opponent line-of-sight as
+//     half-open [Start,End) ms intervals during which the looker had a clear
+//     sightline (origin+(0,0,22) eye → any of the opponent's 8 bbox corners +
+//     midpoint), blocked by worldspawn solids or any active mover posed in
+//     the way. Asymmetric (A→B in A's stream, B→A in B's); Other indexes
+//     Streams.Players. Computed against the visibility BSP, so present only on
+//     maps with a provisioned BSP (same gate as PositionTrack.H/Lq). Additive
+//     (omitempty); absent on BSP-less maps. View direction is not considered.
+//     Computed lazily (analyzer.ComputeLOS) — NOT during the default parse,
+//     since it is the heaviest position-derived pass — and so absent unless a
+//     consumer requested it (web LOS overlay, qw-analyze -include los,
+//     mvd-api /los). The Streams.LOSComputed guard (gob-only, json:"-") makes
+//     it idempotent.
 //
 // v38:
-//   - New top-level Decisions section (result/decisions.go): tactical
-//     decisions, either resolved from a Komodobot KDLOG server-log sidecar
-//     (source "kdlog", qw-analyze -decision-log) or reverse-engineered from
-//     the demo alone (source "inferred", qw-analyze -infer-decisions).
-//     Additive (omitempty); absent unless one of those inputs was given.
-//   - TimelineAnalysisResult gains PlayerSlots (map name -> demo slot),
-//     the join key between KDLOG edicts (slot+1) and canonical stream
-//     names. Additive (omitempty).
-const CurrentSchemaVersion = 38
+//   - PlayerStream gains PVS []LosTrack alongside LOS: per-opponent
+//     potentially-visible-set intervals reproducing the server's per-client
+//     entity cull (mvdsv SV_PlayerVisibleToClient) — the looker's fat PVS
+//     (CM_FatPVS of origin+view_ofs) ∩ the opponent's entity leaf set (expanded
+//     box, non-solid), or always when it overflows MAX_ENT_LEAFS. I.e. whether a
+//     live server would have sent that opponent to the client (the recorded MVD
+//     itself stores every entity, pvs = NULL). Same LosTrack shape, same lazy
+//     pass (analyzer.ComputeLOS), BSP gate and Streams.LOSComputed guard as LOS.
+//     This test also gates the LOS raycast, so PVS ⊇ LOS by construction: the
+//     gap is the occlusion-tolerant "on the wire but no clear ray" signal.
+//     Additive (omitempty); absent on BSP-less maps and on the default parse.
+//
+// v39:
+//   - New top-level Shots *ShotsResult: a per-shot weapon-fire stream
+//     (who fired what, at exactly what match-relative ms) derived from
+//     svc_sound CHAN_WEAPON fire sounds (SG/SSG/RL/GL/NG/SNG) and LG cell
+//     decrements, with same-frame hitscan→damage linking (sg/ssg/lg) and a
+//     diagnostic reconciliation against KTX acc.attacks. Additive
+//     (omitempty); the stream is present whenever any fire is detected,
+//     even on non-KTX servers (no damage stream → no hit links).
+//
+// v40:
+//   - Streams gains two opt-in spatial weapon-fire streams for the map view:
+//     Streams.Projectiles (every tracked rocket/grenade flight as
+//     spawn→despawn segments + times) and Streams.Beams (every LG
+//     TE_LIGHTNING2 bolt as a muzzle→impact segment + time). Both are built
+//     only when requested (qw-analyze -include projectiles,beams; the WASM
+//     map build) so the default output and goldens stay lean. Additive
+//     (omitempty); absent from the default parse.
+//
+// v41:
+//   - New top-level Aim (*AimResult): per-player aim analysis derived as a
+//     post-process from Shots + Streams (interpolated position/view at fire
+//     time) + Damage + the LG beam stream — normalized crosshair-error
+//     samples (hitscan), LG ramp-onto-target, rocket direct/splash, LG
+//     reach/whiff. Additive (omitempty); the crosshair/ramp blocks compute
+//     by default, the rocket/reach blocks only when their streams were built.
+//
+// v42:
+//   - Shot gains Warmup: true for fires outside the match (prewar / warmup /
+//     post-match). The shot stream still keeps them; ByPlayer and the aim
+//     analysis exclude them. Additive (omitempty).
+//
+// v43:
+//   - Aim target attribution gates candidates on being alive at fire time
+//     (losAliveAt over the spawn/death streams). Dead players keep streaming
+//     position samples (the death-anim body), so a corpse could previously
+//     win nearest-crosshair attribution in team games. No field changes;
+//     crosshair sample counts/targets shift on team demos, and a duel fire
+//     while the lone enemy is dead no longer emits a sample.
+//
+// v44:
+//   - Aim crosshair samples of hit shots attribute to the server-confirmed
+//     victim (nearest by crosshair error when a pellet fire hit several),
+//     bypassing the v43 liveness gate and the enemy filter. The killing blow
+//     lands in the same frame the victim dies, so the liveness gate read the
+//     victim as already dead at the fire time and attributed the shot to the
+//     nearest *other* live enemy — hits appeared tens of hull-widths off
+//     target in team games, and duels dropped their killing-blow samples
+//     entirely. No field changes; hit samples' tgt/dyaw/dpitch/nyaw/npitch/
+//     dist shift, and duels gain one sample per hitscan kill.
+//
+// v45:
+//   - Victim-class classification on the shots/aim pipeline, mirroring the
+//     Damage layer's IsSelf/IsTeam semantics. Shot gains VictimKinds
+//     (parallel to Victims: "enemy"/"team"/"self", omitted when all-enemy);
+//     WeaponShots gains EnemyHits/TeamHits/SelfHits (overlapping buckets —
+//     a multi-victim fire counts in each bucket it has a victim in);
+//     CrosshairSamples and LGRampSamples gain a Team column; WeaponAim gains
+//     Enemy/Team/Self *WeaponAimSplit hit-counter slices. All additive
+//     (omitempty) — Hits/Accuracy stay all-victims for KTX parity.
+//
+// v46:
+//   - Weapon-stay recovery (serverinfo deathmatch 2/3/5, or coop — the
+//     standard duel/2on2 dmm3 included): KTX never emits `//ktx took` for
+//     weapons in those modes and the weapon entity never leaves the wire,
+//     so world weapon pickups were previously absent entirely. They are now
+//     synthesized from STAT_ITEMS weapon-bit 0→1 transitions. WeaponPickup
+//     gains Inferred (marks synthesized entries) and the Source vocabulary
+//     gains "unknown" (a flip with no weapon pad in touch range — typically
+//     a non-RL/LG backpack grant, which has no hint in any mode).
+//   - ItemTimeline weapon phases in weapon-stay demos use a zero-length
+//     unavailability convention: TakenAt == RespawnAt, with the next phase
+//     opening at the same instant (the weapon never left the map).
+//   - Duel team normalization now also rewrites Items phase teams,
+//     WeaponPickups Team/DropperTeam, Backpacks Team, Shots stream/ByPlayer
+//     teams (and transitively Aim teams), and Airgibs attacker/victim teams
+//     — previously these kept the raw pre-normalization team strings in 1v1
+//     demos, so team-keyed pickup aggregation bucketed under stale labels.
+//     It also reclassifies Shot.VictimKinds "team" → "enemy" (folding the
+//     WeaponShots TeamHits bucket into EnemyHits): victimKindOf compares
+//     raw team strings, so a duel where both players share a colour team
+//     classified every opponent hit as "team". Aim's enemy/team splits
+//     follow via aimPost ordering.
+//   - Item pickup attribution: the Layer-4 distance corroborator samples
+//     positions from the per-frame history at the touch instant and all
+//     proximity consumers share a measured 128 u touch gate (was a 256 u
+//     stale-sample bound) — a handful of beyond-gate distance attributions
+//     become honestly unattributed phases.
+//
+// v47:
+//   - LG miss reclassification (WeaponAim). A miss only counts as Blocked
+//     or OutOfRange when the shooter was on target: Blocked = the beam
+//     stopped short of its ~600 u max range on geometry and its extension
+//     to full range crosses a live enemy's collision hull (a would-be hit
+//     denied by the obstruction); OutOfRange = the beam ran its full
+//     length and its extension to infinity crosses a live enemy's hull
+//     (denied by reach). Previously every short-of-max-range beam whose
+//     endpoint wasn't near an enemy was Blocked (even fired into a wall
+//     with nobody behind) and every full-length beam was OutOfRange.
+//     NearMiss is removed: with blocked detection on the beam line, the
+//     near/wide distinction among plain aim errors carried no signal —
+//     all remaining whiffs land in the lg `miss` bucket (field shared
+//     with the SG/SSG per-pellet Miss). LG invariant becomes
+//     Hits + Blocked + Miss + OutOfRange + Unresolved == Shots.
+//
+// v48: correctness fixes to already-emitted values (no field shape change).
+//   - timelineAnalysis.killEvents are now on the match-relative clock and
+//     carry duel team labels, exactly like the sibling deathEvents/
+//     fragEvents streams (both post-processors previously skipped them):
+//     each kill was ~demoOffset ms late and, in 1v1s, tagged with a raw
+//     colour team instead of the player name.
+//   - Chat lines can no longer start or end the match: the match-timing
+//     detector ignores PRINT_CHAT (level 3), so a pre-match "go!" or a
+//     mid-match "gg game over" say no longer flips the match window (which
+//     would shift matchStart/matchEnd and freeze/warp every stream).
+//   - The CRMod "eats 2 scoops of" super-shotgun obituary is reachable
+//     again: those kills were mislabeled `gl` with a phantom "2 scoops of X"
+//     killer; now `ssg` with the real killer name.
+//   - match.players/match.teams no longer drop players who finished on
+//     exactly 0 frags (surface-authoritative-data); and duel detection trusts
+//     demoInfo.players as authoritative, so a 2on2 in which two players end
+//     on 0 frags is no longer misclassified as a duel and team-renamed.
+//     Paired reader fix so spectators don't leak in instead: the full
+//     userinfo parser now reads the server-set `*spectator` star key
+//     (mvdsv strips the bare `spectator` key before broadcast) and resets
+//     the flag on every full update, ezquake-style.
+//   - Powerup interval end times use the same effective match end as the
+//     weapon intervals on demos cut before intermission (were the per-player
+//     last sample vs the global max).
+//
+// v49: aim/shots correctness fixes (no field shape change).
+//   - aim.players[].weapons rl/gl direct/splash/missed is present on every
+//     default parse: the block was gated on the opt-in streams.projectiles
+//     emission, while the projectile linking it actually needs runs on every
+//     parse — it now gates on linking evidence (any linked rl/gl fire).
+//   - The damage records feeding aim's pellet and direct splits are windowed
+//     to match time [0, matchEnd]: warmup and post-match damage no longer
+//     inflates direct (and deflates splash).
+//   - Duel damage classification: in a 1v1 where both players share a
+//     non-empty colour team, damage.events[].isTeam was true for every hit
+//     on the opponent — contradicting the duel-normalized shots victimKinds,
+//     silently emptying timelineAnalysis.airgibs and zeroing the aim enemy
+//     splits, and folding all given damage into givenTeam (empty matrix,
+//     empty victimWep buckets). DamageAnalyzer now classifies duel hits as
+//     enemy at birth, so events, aggregates, matrix and EWep buckets are
+//     consistent with the rest of the duel-normalized result.
+//   - Shots identity resolution uses the canonical ResolveSlotAt chain,
+//     which backfills an empty team from the demoinfo name table even when
+//     the name resolved (parity with damage/frags).
+//   - match.players[].frags no longer clobbered by a post-match reconnect:
+//     the svc_updatefrags scoreboard is frozen at match end, so a slot
+//     re-init to 0 during intermission cannot erase the final score (the
+//     v48 removal of the 0-frag filter had surfaced these corrupted zeros
+//     as if they were real scores).
+//
+// v50: damage.events is now match-gated at the source.
+//   - The per-hit damage.events log previously carried out-of-match (warmup /
+//     post-match) hits while the aggregates gated them out. The analyzer now
+//     drops out-of-match hits before appending to events, so the events log
+//     and the aggregates are built from the same in-match hit set. This
+//     removes the aim [0,matchEnd] self-window (v49) — aim reads exactly-in-
+//     match damage — and fixes a latent airgibs bug that counted warmup /
+//     post-match rocket airgibs (it iterated events with no gate). No field
+//     shape change; damage.events arrays shrink by the out-of-match hits.
+//
+// v51: the match opening becomes first-class (PLAN-api-usability 16.1-A).
+//   - streams.players[].sp gains the match-start spawn. KTX respawns every
+//     player when the countdown ends (SM_PrepareClients → k_respawn,
+//     ktx/src/match.c:881,972), but a player alive through the countdown
+//     never crosses health ≤0→>0, so the parser's dead→alive detector
+//     missed the first — most contested — spawn of the match. The timeline
+//     now synthesizes a t=0 spawn for every player alive at match start
+//     whose respawn wasn't wire-visible.
+//   - Adds Result.Opening ("opening" artifact): each player's match-start
+//     spawn location plus the first in-match take of every contested
+//     spawner (armors, mega, powerups, RL/LG) — a pure projection of
+//     items + streams kept small for one-call fetches.
+//   - The events view (not stored, documented here for the contract) gains
+//     the default "pickup" type — identity-rich pickups joined from
+//     items[].phases (world takes, per-spawner ya_1/ya_2 naming) and
+//     weaponPickups (backpack/unknown grants) — and spawn events now carry
+//     the spawn location in detail.
+//
+// v52: no-match-start demos are flagged, not coerced.
+//   - streams.global gains timeBase: "demo" (omitted normally) when no match
+//     start was detected. On such demos the per-producer rebase never runs,
+//     so every timestamp in the Result is on the raw demo clock — previously
+//     indistinguishable from a match-rebased result. A matching entry is
+//     appended to errors[] so /overview surfaces it without a new field.
+//
+// v53: columnar buckets become loc-self-contained (view shape only — no
+//
+//	stored field changes; bumped so the immutable schemaVersion-keyed
+//	ETags stop revalidating the pre-legend bodies).
+//	- The /buckets layout=column envelope gains locTable: the demo's
+//	  interned loc-name legend, present iff an "li" column is in the
+//	  output. Columnar keeps the compact raw index (unlike row mode,
+//	  which resolves names per bucket); the legend lets a consumer —
+//	  notably an MCP agent on the columnar default — decode locally
+//	  instead of a /loc-table round trip.
+//
+// v54: the bounded damage family (additive).
+//   - The wire carries only KTX's UNBOUND damage (overkill-inclusive,
+//     ktx/src/combat.c:795); the scoreboard's BOUNDED dmg_dealt (armor
+//     absorbed + health damage capped to remaining health, combat.c:783)
+//     is now reconstructed per hit from tracked victim armor/health state.
+//     damage.events[].bounded (omitted when equal to damage; 0 is a real
+//     value — a pent/teamplay-nullified hit), damage.byPlayer.<p>.bounded
+//     (a nested PlayerDamage mirroring the damage figures), and
+//     damage.scoreboard deltas gain a bounded nest incl. streamTeam /
+//     scoreTeam (dmg.team reconciliation only becomes meaningful with the
+//     bounded family). damage.dmg ("both") and damage.boundedMode
+//     ("standard", or "skipped:midair|instagib|dmgfrags" when the server
+//     mode rewrites T_Damage unobservably — no bounded fields then).
+//   - Telefrags and stomps fold their BOUNDED damage into given/givenTeam/
+//     taken in both families (telefrag: armor+health — the wire 9999 is a
+//     sentinel; stomp: the honest ~10 HP wire value through the normal
+//     arithmetic), matching KTX's own accumulation (combat.c:1046-1076
+//     has no tele/stomp exclusion). telefrags[]/stomps[] entries carry the
+//     per-kill bounded value. ByWeapon/Matrix/EWep/TotalDamage still
+//     exclude them (KTX wpNONE — demostats weapons[].damage excludes them
+//     too).
+//
+// v55: bounded damage becomes death-value-exact (reconstruction change only).
+//   - No field-shape change. The bounded value no longer caps the health
+//     share against a drifting per-hit health shadow.
+//   - A SURVIVED hit is bounded == raw by identity (no overkill); a KILLING
+//     hit's overkill is the end-of-frame death broadcast, so bounded is raw
+//     plus the (negative) death value (armor cancels; combat.c:944,983).
+//   - Residual approximations remain: same-frame multi-hit deaths cascade
+//     one death value across the frame's hits (approximate save split); the
+//     -99 corpse-health clamp (combat.c:259) and respawn-masked deaths fall
+//     back to the shadow-health cap.
+//   - Corpus given/taken reconcile ~2.5× tighter (max |Δ| 16/15 vs 44/44);
+//     ewep/team bands unchanged (the victim-item one-frame window).
+//
+// v56: PlayerStream gains the selected-weapon change stream.
+//   - ActiveWeapon (JSON "w") carries the raw STAT_ACTIVEWEAPON IT_* bit.
+//   - The view-layer field code "w" exposes it in buckets, stream-slice,
+//     and state-at responses with normal carry-forward semantics.
+//
+// v57: optional tactical decisions and the KDLOG join key.
+//   - Decisions contains either Komodobot KDLOG ground truth or
+//     pickup-anchored inference, selected by qw-analyze flags.
+//   - TimelineAnalysisResult.PlayerSlots maps canonical names to demo slots,
+//     allowing KDLOG edicts to join onto analyzer player identities.
+const CurrentSchemaVersion = 57
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -446,9 +701,12 @@ type Result struct {
 	LocGraph         *LocGraphResult         `json:"locGraph,omitempty"`
 	Items            *ItemsResult            `json:"items,omitempty"`
 	Damage           *DamageResult           `json:"damage,omitempty"`
+	Shots            *ShotsResult            `json:"shots,omitempty"`
+	Aim              *AimResult              `json:"aim,omitempty"`
 	MapEntities      *MapEntitiesResult      `json:"mapEntities,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
+	Opening          *OpeningResult          `json:"opening,omitempty"`
 	Streams          *Streams                `json:"streams,omitempty"`
 	Decisions        *Decisions              `json:"decisions,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`

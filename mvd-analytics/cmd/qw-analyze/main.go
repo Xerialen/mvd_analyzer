@@ -1,4 +1,4 @@
-// qw-analyze is a command-line consumer of the qwanalytics pipeline.
+// qw-analyze is a command-line consumer of the mvd-analytics pipeline.
 // It reads an MVD demo file and writes the analysis result in one of
 // several formats — full JSON (the stable result-schema contract),
 // markdown (a human-readable summary suitable as a seed for an AI
@@ -24,6 +24,7 @@
 //	qw-analyze -view state-at -time 432.5 demo.mvd.gz
 //	qw-analyze -view trails -min-dwell 500ms demo.mvd.gz
 //	qw-analyze -view region-control -bucket 1s demo.mvd.gz
+//	qw-analyze -graph mermaid                            # print the pipeline DAG (no demo)
 //	qw-analyze -bulk demos/ -out-dir analyses/          # batch mode
 package main
 
@@ -57,11 +58,12 @@ type viewOptions struct {
 	eventTypes  []string
 	minDwell    time.Duration
 	timeAt      time.Duration
+	timeSet     bool // -time was given (distinguishes an explicit -time 0 from "flag missing")
 	includeTeam bool
 	include     map[string]bool // -include positions etc. for -view full
 
-	decisionLog    string // -decision-log: KDLOG sidecar to resolve (schema v38)
-	inferDecisions bool   // -infer-decisions: pickup-anchored inference (schema v38)
+	decisionLog    string // -decision-log: KDLOG sidecar to resolve
+	inferDecisions bool   // -infer-decisions: pickup-anchored inference
 }
 
 func main() {
@@ -73,7 +75,7 @@ func main() {
 
 	viewName := flag.String("view", "full", "view: full | buckets | events | trails | stream-slice | state-at | region-control")
 	bucketStr := flag.String("bucket", "50ms", "bucket duration for -view buckets / region-control (e.g. 50ms, 1s, 10s)")
-	fieldsStr := flag.String("fields", "", "comma-separated field codes (see qwanalytics/view docs)")
+	fieldsStr := flag.String("fields", "", "comma-separated field codes (see mvd-analytics/view docs)")
 	reducerArgs := stringListFlag("reducer", "field=name reducer override; repeatable (e.g. -reducer h=min)")
 	fromStr := flag.String("from", "", "start time (match-relative; e.g. 30s, 1m30s)")
 	toStr := flag.String("to", "", "end time")
@@ -82,15 +84,36 @@ func main() {
 	minDwellStr := flag.String("min-dwell", "0", "drop transitions shorter than this for -view trails")
 	timeStr := flag.String("time", "", "time for -view state-at (required)")
 	includeTeam := flag.Bool("include-team", false, "emit per-team aggregates on -view buckets")
-	includeStr := flag.String("include", "", "comma-separated position-track columns for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity")
-	decisionLog := flag.String("decision-log", "", "path to a server log with KDLOG lines (Komodobot kbot-0.23.0-dlog+); resolved into the decisions section (-format json, full view)")
-	inferDecisions := flag.Bool("infer-decisions", false, "reverse-engineer pickup-anchored goal decisions from the demo alone into the decisions section (ignored when -decision-log is given)")
+	includeStr := flag.String("include", "", "comma-separated extras for -view full: positions (x/y/z+loc), view (pitch/yaw), height, liquid, velocity; los (line-of-sight + pvs potential-visibility intervals, computed on request); projectiles, beams (spatial rocket/grenade-flight and LG-beam streams for the map); nails (ng/sng nail tracking — links ng/sng fires to damage + nail map stream; high volume)")
+	decisionLog := flag.String("decision-log", "", "path to a server log with KDLOG lines; resolved into decisions for JSON full view")
+	inferDecisions := flag.Bool("infer-decisions", false, "infer pickup-anchored goal decisions from the demo (ignored when -decision-log is given)")
+	graphFmt := flag.String("graph", "", "print the analyzer dependency graph (mermaid | json) and exit; no demo argument needed")
+	artifactsMD := flag.Bool("artifacts-md", false, "print the generated artifact catalog (ARTIFACTS.md) and exit; no demo argument needed")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: qw-analyze [options] <demo.mvd | demo.mvd.gz | directory>\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	// -graph dumps the pipeline's dependency DAG and exits; it needs no demo.
+	if *graphFmt != "" {
+		out, err := analyzer.ExportGraph(*graphFmt)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "qw-analyze:", err)
+			os.Exit(2)
+		}
+		fmt.Println(out)
+		return
+	}
+
+	// -artifacts-md regenerates the committed artifact catalog and exits; it
+	// needs no demo (the manifest is static per binary). `make artifacts-md`
+	// redirects this into mvd-analytics/ARTIFACTS.md.
+	if *artifactsMD {
+		fmt.Print(analyzer.ArtifactsMarkdown())
+		return
+	}
 
 	if flag.NArg() != 1 {
 		flag.Usage()
@@ -113,7 +136,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "qw-analyze:", err)
 		os.Exit(2)
 	}
-
 	vopts.decisionLog = *decisionLog
 	vopts.inferDecisions = *inferDecisions
 
@@ -191,6 +213,7 @@ func parseViewOptions(viewName, bucketStr, fieldsStr string, reducerArgs []strin
 			return nil, fmt.Errorf("bad -time: %w", err)
 		}
 		v.timeAt = d
+		v.timeSet = true
 	}
 	for _, opt := range splitCSV(includeStr) {
 		v.include[opt] = true
@@ -232,10 +255,24 @@ func runOne(path string, w io.Writer, format string, pretty bool, regionsOverrid
 	}
 }
 
-func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.MapRegionOverride, vopts *viewOptions) error {
+// analyzeOptions controls the optional registry/parser knobs analyzePath
+// enables before running the pipeline. The zero value is the plain
+// analyze used by -format md and the non-full -view paths; -format json
+// -include ... turns individual knobs on. Keeping them here means a new
+// -include knob is wired in one place, not copied into each dumper.
+type analyzeOptions struct {
+	buildShotStreams bool // -include projectiles/beams: spatial rocket/grenade/LG streams
+	buildNails       bool // -include nails: svc_nails decode + ng/sng nail linkage (also flips the parser)
+	computeLOS       bool // -include los: run the lazy line-of-sight/PVS pass after analyze
+}
+
+// analyzePath opens the demo, runs the default registry with the region
+// override and any requested knobs, and returns the finalised Result.
+// Shared by dumpJSON, dumpView and dumpMarkdown.
+func analyzePath(path string, regionsOverride []config.MapRegionOverride, opts analyzeOptions) (*result.Result, error) {
 	src, err := mvdsource.Open(path)
 	if err != nil {
-		return fmt.Errorf("open %s: %w", path, err)
+		return nil, fmt.Errorf("open %s: %w", path, err)
 	}
 	defer src.Close()
 
@@ -243,20 +280,43 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 	if regionsOverride != nil {
 		reg.SetRegionsOverride(regionsOverride)
 	}
+	if opts.buildShotStreams {
+		reg.BuildShotStreams = true
+	}
+	// AnalyzeSource takes a pre-opened source, so the parser's nail decode
+	// is enabled here rather than inside the registry.
+	if opts.buildNails {
+		reg.BuildNails = true
+		src.Parser().SetDecodeNails(true)
+	}
 	res, err := reg.AnalyzeSource(src, filepath.Base(path))
+	if err != nil {
+		return nil, err
+	}
+	// Line of sight is computed lazily (the heaviest position-derived pass);
+	// the same pass also fills the PVS tracks, so los and pvs appear together.
+	if opts.computeLOS {
+		analyzer.ComputeLOS(res)
+	}
+	return res, nil
+}
+
+func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.MapRegionOverride, vopts *viewOptions) error {
+	var opts analyzeOptions
+	if vopts != nil {
+		opts.buildShotStreams = vopts.include["projectiles"] || vopts.include["beams"]
+		opts.buildNails = vopts.include["nails"]
+		opts.computeLOS = vopts.include["los"]
+	}
+	res, err := analyzePath(path, regionsOverride, opts)
 	if err != nil {
 		return err
 	}
 
-	// Decisions (schema v38): resolve the KDLOG sidecar, or infer from the
-	// demo alone, BEFORE stripping position columns — the resolver reads the
-	// in-memory loc/position streams.
-	if vopts != nil && vopts.decisionLog != "" {
-		if err := decisions.AttachKDLog(res, vopts.decisionLog); err != nil {
-			res.Errors = append(res.Errors, err.Error())
-		}
-	} else if vopts != nil && vopts.inferDecisions {
-		decisions.AttachInferred(res)
+	// Resolve decisions before optional stream columns are stripped: both
+	// KDLOG enrichment and inference use the in-memory position/loc tracks.
+	if vopts != nil {
+		attachDecisions(res, vopts.decisionLog, vopts.inferDecisions)
 	}
 
 	// Position-track columns are opt-in: by default strip the whole
@@ -279,20 +339,25 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 	return enc.Encode(res)
 }
 
+// attachDecisions is the full-JSON CLI integration seam. A KDLOG sidecar is
+// authoritative when both modes are requested; open/parse failures stay
+// non-fatal in Result.Errors, matching the analyzer's partial-result contract.
+func attachDecisions(res *result.Result, decisionLog string, infer bool) {
+	if decisionLog != "" {
+		if err := decisions.AttachKDLog(res, decisionLog); err != nil {
+			res.Errors = append(res.Errors, err.Error())
+		}
+		return
+	}
+	if infer {
+		decisions.AttachInferred(res)
+	}
+}
+
 // dumpView analyses the demo, runs the requested view function on the
 // finalised Result, and writes its JSON to w.
 func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverride, vopts *viewOptions, pretty bool) error {
-	src, err := mvdsource.Open(path)
-	if err != nil {
-		return fmt.Errorf("open %s: %w", path, err)
-	}
-	defer src.Close()
-
-	reg := analyzer.NewDefaultRegistry()
-	if regionsOverride != nil {
-		reg.SetRegionsOverride(regionsOverride)
-	}
-	res, err := reg.AnalyzeSource(src, filepath.Base(path))
+	res, err := analyzePath(path, regionsOverride, analyzeOptions{})
 	if err != nil {
 		return err
 	}
@@ -343,7 +408,7 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 		return enc.Encode(ssv)
 
 	case "state-at":
-		if vopts.timeAt == 0 {
+		if !vopts.timeSet {
 			return fmt.Errorf("-view state-at requires -time")
 		}
 		v, err := view.StateAt(res, view.StateAtOptions{
@@ -469,17 +534,7 @@ func dumpEvents(path string, w io.Writer) error {
 }
 
 func dumpMarkdown(path string, w io.Writer, regionsOverride []config.MapRegionOverride) error {
-	src, err := mvdsource.Open(path)
-	if err != nil {
-		return fmt.Errorf("open %s: %w", path, err)
-	}
-	defer src.Close()
-
-	reg := analyzer.NewDefaultRegistry()
-	if regionsOverride != nil {
-		reg.SetRegionsOverride(regionsOverride)
-	}
-	res, err := reg.AnalyzeSource(src, filepath.Base(path))
+	res, err := analyzePath(path, regionsOverride, analyzeOptions{})
 	if err != nil {
 		return err
 	}

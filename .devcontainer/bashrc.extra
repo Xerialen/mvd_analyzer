@@ -1,0 +1,17 @@
+# Shared interactive-shell extras for the mvd-analyzer dev container.
+# Sourced from ~/.bashrc. Preferences only — personal identity (git
+# name/email) and secrets (GH_TOKEN) come from the host environment via
+# devcontainer.json, not from here.
+
+# Go toolchain + user-installed binaries on PATH. Also set in the image, but
+# repeated here so tmux panes / nested interactive shells pick it up reliably.
+export PATH="/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"
+
+# Default to a colour-capable terminal if the host didn't provide one.
+export TERM="${TERM:-xterm-256color}"
+
+# Quality-of-life aliases.
+alias ll='ls -alF --color=auto'
+alias la='ls -A --color=auto'
+alias gd='git diff'
+alias gst='git status -sb'

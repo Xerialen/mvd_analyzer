@@ -6,13 +6,41 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// demoIDRe accepts exactly the two canonical demo-id forms mvd-api's
+// ParseDemoID accepts: "gameId:N" and "sha:HEX" (64 hex). Anything else —
+// in particular a value containing '/', '?', or '#' — is rejected before
+// it can be spliced into a proxy URL path.
+var demoIDRe = regexp.MustCompile(`^(gameId:\d+|sha:[0-9a-fA-F]{64})$`)
+
+// artifactNameRe accepts the kebab-case artifact names the DAG uses
+// (lowercase letters, digits, hyphens). Validated before splicing into the
+// proxy path so a malformed name can't reroute the request; the mvd-api
+// closed registry does the authoritative "is this servable" check (404).
+var artifactNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+
+// demoPath builds the "/v1/demos/<id><suffix>" proxy path for a
+// model-supplied demoID. It validates the id against the canonical forms
+// and PathEscapes it, so a malicious or malformed id (e.g.
+// "gameId:42/frags?players=x") cannot reroute the request to a different
+// endpoint (F5). suffix is a fixed, trusted path tail like "/overview" or
+// "". PathEscape leaves ':' intact, so a valid id is unchanged.
+func demoPath(demoID, suffix string) (string, error) {
+	if demoID == "" {
+		return "", errors.New("demoId required")
+	}
+	if !demoIDRe.MatchString(demoID) {
+		return "", fmt.Errorf("invalid demoId %q (want gameId:N or sha:HEX)", demoID)
+	}
+	return "/v1/demos/" + url.PathEscape(demoID) + suffix, nil
+}
 
 // proxyBackend implements MCPBackend by forwarding every tool call to
 // a running mvd-api. Uses stdlib http.Client; one retry on transient
@@ -111,12 +139,13 @@ func (p *proxyBackend) do(ctx context.Context, method, path string, query url.Va
 
 func shouldRetry(resp *http.Response, err error) bool {
 	if err != nil {
+		// Retry any transport error except a caller-driven cancel/timeout: a
+		// retry there would just race the same dead deadline. We deliberately
+		// do not distinguish net.Error from other errors — a non-net error out
+		// of http.Client.Do (e.g. a redirect-policy or body-read failure) is
+		// still worth one more attempt, and the retry budget is small.
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return false
-		}
-		var netErr net.Error
-		if errors.As(err, &netErr) {
-			return true
 		}
 		return true
 	}
@@ -171,6 +200,80 @@ func (p *proxyBackend) fetchOpaqueList(ctx context.Context, method, path string,
 	return map[string]any{key: out}, nil
 }
 
+// query is a url.Values with conditional setters that mirror the REST
+// param encoding: each setter no-ops on its zero value, so an unset MCP
+// input stays out of the query string and the REST default applies. set
+// writes unconditionally, for the few always-present params (state-at
+// time, the defaulted windowMs). Build with query{}, then convert to
+// url.Values when handing it to do/fetchOpaque.
+type query url.Values
+
+func (q query) set(key, val string) { q[key] = []string{val} }
+
+// csv joins a set as CSV, matching the REST parseCSV surface.
+func (q query) csv(key string, vals []string) {
+	if len(vals) > 0 {
+		q.set(key, strings.Join(vals, ","))
+	}
+}
+
+// seconds encodes a match-relative time; 0 means "unset" (as every REST
+// from/to defaults to the full window).
+func (q query) seconds(key string, sec float64) {
+	if sec != 0 {
+		q.set(key, secStr(sec))
+	}
+}
+
+// summaryDefaultTrue resolves the MCP-layer summary default (D1,
+// PLAN-api-usability): a caller who says nothing gets summary=true —
+// token-lean by default; REST keeps its full-log default. Returns the
+// resolved value plus whether it was defaulted (a defaulted summary
+// response gets a hint so agents can self-serve the full data).
+func summaryDefaultTrue(v *bool) (val, defaulted bool) {
+	if v == nil {
+		return true, true
+	}
+	return *v, false
+}
+
+// withSummaryHint annotates a summary-by-default response with how to
+// get the dropped detail. Only fires when the caller didn't ask for the
+// summary explicitly, and only on object bodies.
+func withSummaryHint(out any, add bool, dropped string) any {
+	if !add {
+		return out
+	}
+	if m, ok := out.(map[string]any); ok {
+		m["hint"] = "summary=true is the MCP default; pass summary:false for " + dropped
+	}
+	return out
+}
+
+// intv encodes a non-zero integer.
+func (q query) intv(key string, n int) {
+	if n != 0 {
+		q.set(key, strconv.Itoa(n))
+	}
+}
+
+// str encodes a non-empty string.
+func (q query) str(key, val string) {
+	if val != "" {
+		q.set(key, val)
+	}
+}
+
+// boolean encodes a true flag as "1"; false stays out of the query string so
+// the REST default (false) applies.
+func (q query) boolean(key string, v bool) {
+	if v {
+		q.set(key, "1")
+	}
+}
+
+func secStr(sec float64) string { return strconv.FormatFloat(sec, 'f', -1, 64) }
+
 // --- MCPBackend impl ---
 
 func (p *proxyBackend) LoadDemo(ctx context.Context, in LoadDemoInput) (*LoadDemoOutput, error) {
@@ -179,7 +282,10 @@ func (p *proxyBackend) LoadDemo(ctx context.Context, in LoadDemoInput) (*LoadDem
 		return nil, err
 	}
 	var out LoadDemoOutput
-	if err := p.do(ctx, "POST", "/v1/demos/"+id, nil, &out); err != nil {
+	// PathEscape the constructed id: the sha branch below lowercases the
+	// model-supplied SHA256 but does not validate it, so escape it before it
+	// reaches the URL path (F5). PathEscape leaves ':' intact.
+	if err := p.do(ctx, "POST", "/v1/demos/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -197,294 +303,350 @@ func loadDemoToPathID(in LoadDemoInput) (string, error) {
 }
 
 func (p *proxyBackend) GetOverview(ctx context.Context, in GetOverviewInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/overview")
+	if err != nil {
+		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/overview", nil)
+	return p.fetchOpaque(ctx, "GET", path, nil)
 }
 
 func (p *proxyBackend) GetDemoInfo(ctx context.Context, in GetDemoInfoInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/demoinfo")
+	if err != nil {
+		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/demoinfo", nil)
+	return p.fetchOpaque(ctx, "GET", path, nil)
 }
 
 func (p *proxyBackend) GetMetadata(ctx context.Context, in GetMetadataInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/metadata")
+	if err != nil {
+		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/metadata", nil)
+	return p.fetchOpaque(ctx, "GET", path, nil)
 }
 
 func (p *proxyBackend) GetFrags(ctx context.Context, in GetFragsInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/frags")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Weapon) > 0 {
-		q.Set("weapon", strings.Join(in.Weapon, ","))
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/frags", q)
+	q := query{}
+	q.csv("players", in.Players)
+	q.csv("weapons", in.Weapons)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.boolean("summary", in.Summary)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/damage")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
+	q := query{}
+	q.csv("players", in.Players)
+	q.csv("weapons", in.Weapons)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	// Empty dmg stays out of the query so the REST summary-aware default
+	// resolution applies (both under the summary default, raw otherwise).
+	q.str("dmg", in.Dmg)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	// With dmg unset the REST default is now "bounded" for BOTH the summary
+	// and the full log, so the family no longer flips on summary:false —
+	// following the hint keeps the same bounded family. The hint just names
+	// the dropped detail.
+	return withSummaryHint(out, defaulted && summary, "the per-hit events log"), err
+}
+
+func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) {
+	path, err := demoPath(in.DemoID, "/aim")
+	if err != nil {
+		return nil, err
 	}
-	if len(in.Weapon) > 0 {
-		q.Set("weapon", strings.Join(in.Weapon, ","))
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/damage", q)
+	q := query{}
+	q.csv("players", in.Players)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the per-fire crosshair + lgRamp arrays"), err
 }
 
 func (p *proxyBackend) GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/loc-graph")
+	if err != nil {
+		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/loc-graph", nil)
+	return p.fetchOpaque(ctx, "GET", path, nil)
 }
 
 func (p *proxyBackend) GetChat(ctx context.Context, in GetChatInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/chat")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if in.StartTime != 0 {
-		q.Set("from", strconv.FormatFloat(in.StartTime, 'f', -1, 64))
-	}
-	if in.EndTime != 0 {
-		q.Set("to", strconv.FormatFloat(in.EndTime, 'f', -1, 64))
-	}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Types) > 0 {
-		q.Set("types", strings.Join(in.Types, ","))
-	}
-	return p.fetchOpaqueList(ctx, "GET", "/v1/demos/"+in.DemoID+"/chat", q, "messages")
+	q := query{}
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.csv("players", in.Players)
+	q.csv("types", in.Types)
+	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "messages")
 }
 
 func (p *proxyBackend) GetBackpacks(ctx context.Context, in GetBackpacksInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/backpacks")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if in.Weapon != "" {
-		q.Set("weapon", in.Weapon)
-	}
-	return p.fetchOpaqueList(ctx, "GET", "/v1/demos/"+in.DemoID+"/backpacks", q, "backpacks")
+	q := query{}
+	q.csv("players", in.Players)
+	q.csv("weapons", in.Weapons)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "backpacks")
 }
 
 func (p *proxyBackend) GetItems(ctx context.Context, in GetItemsInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/items")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if len(in.Items) > 0 {
-		q.Set("items", strings.Join(in.Items, ","))
-	}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Kinds) > 0 {
-		q.Set("kinds", strings.Join(in.Kinds, ","))
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/items", q)
+	q := query{}
+	q.csv("items", in.Items)
+	q.csv("players", in.Players)
+	q.csv("kinds", in.Kinds)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the full phase timeline"), err
 }
 
 func (p *proxyBackend) GetMapEntitiesByMap(ctx context.Context, in GetMapEntitiesByMapInput) (any, error) {
 	if in.Map == "" {
 		return nil, errors.New("map required")
 	}
-	q := url.Values{}
-	if len(in.Types) > 0 {
-		q.Set("types", strings.Join(in.Types, ","))
-	}
-	if len(in.Kinds) > 0 {
-		q.Set("kinds", strings.Join(in.Kinds, ","))
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/maps/"+url.PathEscape(in.Map)+"/entities", q)
+	q := query{}
+	q.csv("types", in.Types)
+	q.csv("kinds", in.Kinds)
+	return p.fetchOpaque(ctx, "GET", "/v1/maps/"+url.PathEscape(in.Map)+"/entities", url.Values(q))
 }
 
 func (p *proxyBackend) GetWeaponPickups(ctx context.Context, in GetWeaponPickupsInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/weapon-pickups")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Weapon) > 0 {
-		q.Set("weapon", strings.Join(in.Weapon, ","))
-	}
-	if in.Source != "" {
-		q.Set("source", in.Source)
-	}
-	return p.fetchOpaqueList(ctx, "GET", "/v1/demos/"+in.DemoID+"/weapon-pickups", q, "pickups")
+	q := query{}
+	q.csv("players", in.Players)
+	q.csv("weapons", in.Weapons)
+	q.str("source", in.Source)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "pickups")
 }
 
 func (p *proxyBackend) GetBuckets(ctx context.Context, in GetBucketsInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/buckets")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	// MCP default: 1 s windows. The REST API still defaults to 50 ms
-	// when omitted, but for the typical MCP consumer 50 ms emits ~24K
-	// buckets / 4on4 — far too verbose for an LLM context. Explicit
-	// override (windowMs: 50) reaches the finer resolution.
+	// MCP default: 5 s windows. The REST API still defaults to 50 ms when
+	// omitted, but 50 ms emits ~24K buckets / 4on4 — far too verbose for an
+	// LLM context — and even 1 s is ~1200 buckets per field per player on a
+	// 20-min match. 5 s resolves everything a bucketed timeline answers
+	// (trends, control; the shortest interesting run — a quad — is 30 s);
+	// finer questions belong to getStateAt / getEvents / getStreamSlice.
+	// Explicit override (windowMs: 1000, 50, ...) reaches finer resolution.
 	windowMs := in.WindowMs
 	if windowMs <= 0 {
-		windowMs = 1000
+		windowMs = 5000
 	}
-	q.Set("windowMs", strconv.Itoa(windowMs))
-	if in.StartTime != 0 {
-		q.Set("from", strconv.FormatFloat(in.StartTime, 'f', -1, 64))
-	}
-	if in.EndTime != 0 {
-		q.Set("to", strconv.FormatFloat(in.EndTime, 'f', -1, 64))
-	}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Fields) > 0 {
-		q.Set("fields", strings.Join(in.Fields, ","))
-	}
+	q := query{}
+	q.intv("windowMs", windowMs)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.csv("players", in.Players)
+	q.csv("fields", in.Fields)
 	if len(in.Reducers) > 0 {
 		pairs := make([]string, 0, len(in.Reducers))
 		for k, v := range in.Reducers {
 			pairs = append(pairs, k+"="+v)
 		}
-		q.Set("reducers", strings.Join(pairs, ","))
+		q.set("reducers", strings.Join(pairs, ","))
 	}
 	if in.IncludeTeam {
-		q.Set("includeTeam", "1")
+		q.set("includeTeam", "1")
 	}
-	if in.Loc != "" {
-		q.Set("loc", in.Loc)
-	}
-	if in.Layout != "" {
-		q.Set("layout", in.Layout)
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/buckets", q)
+	q.str("loc", in.Loc)
+	q.str("layout", in.Layout)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetEvents(ctx context.Context, in GetEventsInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/events")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if in.StartTime != 0 {
-		q.Set("from", strconv.FormatFloat(in.StartTime, 'f', -1, 64))
-	}
-	if in.EndTime != 0 {
-		q.Set("to", strconv.FormatFloat(in.EndTime, 'f', -1, 64))
-	}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Types) > 0 {
-		q.Set("types", strings.Join(in.Types, ","))
-	}
-	if in.Loc != "" {
-		q.Set("loc", in.Loc)
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/events", q)
+	q := query{}
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.csv("players", in.Players)
+	q.csv("types", in.Types)
+	q.str("loc", in.Loc)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetStreamSlice(ctx context.Context, in GetStreamSliceInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	// MCP-layer size guard (same family as the windowMs / summary
+	// defaults): an unwindowed slice is native-rate change entries for
+	// every requested field of every player over the whole match — the
+	// biggest payload this service can emit, and never what an agent
+	// wants blind. REST /stream-slice stays unwindowed for programs.
+	if in.StartTime == 0 && in.EndTime == 0 {
+		return nil, errors.New("stream-slice needs a time window at the MCP layer: pass startTime and/or endTime (match-relative seconds; keep windows tens of seconds). For whole-match overviews use getBuckets; for one instant use getStateAt")
 	}
-	q := url.Values{}
-	if in.StartTime != 0 {
-		q.Set("from", strconv.FormatFloat(in.StartTime, 'f', -1, 64))
+	path, err := demoPath(in.DemoID, "/stream-slice")
+	if err != nil {
+		return nil, err
 	}
-	if in.EndTime != 0 {
-		q.Set("to", strconv.FormatFloat(in.EndTime, 'f', -1, 64))
-	}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Fields) > 0 {
-		q.Set("fields", strings.Join(in.Fields, ","))
-	}
-	if in.Loc != "" {
-		q.Set("loc", in.Loc)
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/stream-slice", q)
+	q := query{}
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.csv("players", in.Players)
+	q.csv("fields", in.Fields)
+	q.str("loc", in.Loc)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetStateAt(ctx context.Context, in GetStateAtInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/state-at")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	q.Set("time", strconv.FormatFloat(in.Time, 'f', -1, 64))
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if len(in.Fields) > 0 {
-		q.Set("fields", strings.Join(in.Fields, ","))
-	}
-	if in.Loc != "" {
-		q.Set("loc", in.Loc)
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/state-at", q)
+	q := query{}
+	q.set("time", secStr(in.Time)) // required — always sent, even for time=0
+	q.csv("players", in.Players)
+	q.csv("fields", in.Fields)
+	q.str("loc", in.Loc)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetLocTrails(ctx context.Context, in GetLocTrailsInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/loc-trails")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	if in.StartTime != 0 {
-		q.Set("from", strconv.FormatFloat(in.StartTime, 'f', -1, 64))
+	q := query{}
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.csv("players", in.Players)
+	// MCP default: 250 ms dwell filter. Raw trails are dominated by
+	// nearest-loc flicker at region boundaries; an agent reading a
+	// residence list wants where the player WAS, not every boundary
+	// graze. Explicit 0 opts back into the raw stream (REST default).
+	minDwell := 250
+	if in.MinDwellMs != nil {
+		minDwell = *in.MinDwellMs
 	}
-	if in.EndTime != 0 {
-		q.Set("to", strconv.FormatFloat(in.EndTime, 'f', -1, 64))
+	if minDwell > 0 {
+		q.set("minDwellMs", strconv.Itoa(minDwell))
 	}
-	if len(in.Players) > 0 {
-		q.Set("players", strings.Join(in.Players, ","))
-	}
-	if in.MinDwellMs > 0 {
-		q.Set("minDwellMs", strconv.Itoa(in.MinDwellMs))
-	}
-	if in.Loc != "" {
-		q.Set("loc", in.Loc)
-	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/loc-trails", q)
+	q.str("loc", in.Loc)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
 func (p *proxyBackend) GetLocTable(ctx context.Context, in GetLocTableInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/loc-table")
+	if err != nil {
+		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/loc-table", nil)
+	return p.fetchOpaque(ctx, "GET", path, nil)
+}
+
+func (p *proxyBackend) ListArtifacts(ctx context.Context, _ ListArtifactsInput) (any, error) {
+	out, err := p.fetchOpaque(ctx, "GET", "/v1/artifacts", nil)
+	if err != nil {
+		return nil, err
+	}
+	return compactArtifactManifest(out), nil
+}
+
+// compactArtifactManifest trims the REST manifest to what an MCP agent
+// can act on: fetchable artifacts and the fields that matter for
+// picking one (name, resultKey, cost, lazy, description). The
+// requires/provides/mutates edges describe pipeline wiring — the dev
+// story, told by ARTIFACTS.md and /v1/graph — and non-servable nodes
+// cannot be fetched at all, so both are noise at this surface (same
+// MCP-vs-REST split as the summary/windowMs defaults). Unexpected
+// shapes pass through untouched.
+func compactArtifactManifest(out any) any {
+	m, ok := out.(map[string]any)
+	if !ok {
+		return out
+	}
+	arts, ok := m["artifacts"].([]any)
+	if !ok {
+		return out
+	}
+	compact := make([]any, 0, len(arts))
+	for _, a := range arts {
+		row, ok := a.(map[string]any)
+		if !ok {
+			continue
+		}
+		if servable, _ := row["servable"].(bool); !servable {
+			continue
+		}
+		c := make(map[string]any, 5)
+		for _, k := range []string{"name", "resultKey", "cost", "lazy", "description"} {
+			if v, ok := row[k]; ok {
+				c[k] = v
+			}
+		}
+		compact = append(compact, c)
+	}
+	m["artifacts"] = compact
+	return m
+}
+
+func (p *proxyBackend) GetArtifact(ctx context.Context, in GetArtifactInput) (any, error) {
+	if in.Name == "" {
+		return nil, errors.New("name required")
+	}
+	if !artifactNameRe.MatchString(in.Name) {
+		return nil, fmt.Errorf("invalid artifact name %q", in.Name)
+	}
+	path, err := demoPath(in.DemoID, "/artifacts/"+url.PathEscape(in.Name))
+	if err != nil {
+		return nil, err
+	}
+	return p.fetchOpaque(ctx, "GET", path, nil)
 }
 
 func (p *proxyBackend) GetRegionControl(ctx context.Context, in GetRegionControlInput) (any, error) {
-	if in.DemoID == "" {
-		return nil, errors.New("demoId required")
+	path, err := demoPath(in.DemoID, "/region-control")
+	if err != nil {
+		return nil, err
 	}
-	q := url.Values{}
-	// Same MCP-vs-REST default split as GetBuckets — 1 s buckets are
-	// the right granularity for an LLM reading region-control state
-	// strings; pass windowMs explicitly to override.
+	// Same MCP-vs-REST default split as GetBuckets — 5 s buckets keep the
+	// per-region bucketStates strings readable (a 20-min match is 240
+	// chars per region instead of 1200); pass windowMs explicitly to
+	// override.
 	windowMs := in.WindowMs
 	if windowMs <= 0 {
-		windowMs = 1000
+		windowMs = 5000
 	}
-	q.Set("windowMs", strconv.Itoa(windowMs))
-	return p.fetchOpaque(ctx, "GET", "/v1/demos/"+in.DemoID+"/region-control", q)
+	q := query{}
+	q.intv("windowMs", windowMs)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }

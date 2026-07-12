@@ -226,6 +226,19 @@ func (p *Parser) updateStat(playerNum, statIndex, value int, time float64, timeM
 		case mvd.StatItems:
 			stats.Items = value
 		case mvd.StatFrags:
+			// No FragUpdateEvent is emitted here — and that is correct, not an
+			// omission. mvdsv never transports frags through STAT_FRAGS in the
+			// MVD stream: MVD_WriteStats builds the dem_stats delta array
+			// (mvdsv/src/sv_send.c:1243-1303) and SV_UpdateClientStats builds
+			// the client one (sv_send.c:837-897), and neither ever assigns
+			// stats[STAT_FRAGS] (index 1, left commented out at
+			// bothdefs.h:66). Frags reach the demo only via svc_updatefrags —
+			// SV_UpdateToReliableMessages on every in-game change
+			// (sv_send.c:996-1003) and the initial gamestate flush
+			// (sv_demo.c:1489-1492) — which parseUpdateFrags already turns
+			// into a FragUpdateEvent. This defensive arm keeps the vitals
+			// mirror in sync should a non-mvdsv recorder ever set STAT_FRAGS,
+			// but the analytics FragsBySlot consumer relies on svc_updatefrags.
 			if p.players[playerNum] != nil {
 				p.players[playerNum].Frags = value
 			}

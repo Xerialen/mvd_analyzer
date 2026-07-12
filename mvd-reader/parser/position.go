@@ -108,8 +108,12 @@ func (p *Parser) parsePlayerInfo(r *mvd.BufferReader, time float64, timeMs int32
 		}
 	}
 
-	// Only emit position event if we have valid position data
-	// (skip if all coordinates are zero - likely uninitialized)
+	// Deliberate filter (see "surface authoritative data" in CLAUDE.md):
+	// an exact-(0,0,0) origin is a protocol artifact, not a position —
+	// slots that have not spawned yet diff against the zero baseline, so
+	// their svc_playerinfo carries the world origin. No real map places a
+	// player at exactly (0,0,0), and letting it through would inject a
+	// bogus teleport-to-origin sample into every position track.
 	if origin[0] != 0 || origin[1] != 0 || origin[2] != 0 {
 		if err := p.emit(&PlayerPositionEvent{
 			PlayerNum: int(playerNum),
@@ -158,35 +162,51 @@ func skipPlayerInfoRemainder(r *mvd.BufferReader, floatCoords bool) error {
 	if err != nil {
 		return err
 	}
-	r.Skip(1) // frame
+	if err := r.Skip(1); err != nil { // frame
+		return err
+	}
 
 	// Origin components
 	for i := 0; i < 3; i++ {
 		if flags&(mvd.DFOrigin<<i) != 0 {
 			if floatCoords {
-				r.Skip(4)
+				if err := r.Skip(4); err != nil {
+					return err
+				}
 			} else {
-				r.Skip(2)
+				if err := r.Skip(2); err != nil {
+					return err
+				}
 			}
 		}
 	}
 	// Angle components
 	for i := 0; i < 3; i++ {
 		if flags&(mvd.DFAngles<<i) != 0 {
-			r.Skip(2) // angle16
+			if err := r.Skip(2); err != nil { // angle16
+				return err
+			}
 		}
 	}
 	if flags&mvd.DFModel != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	if flags&mvd.DFSkinNum != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	if flags&mvd.DFEffects != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	if flags&mvd.DFWeaponFrame != 0 {
-		r.Skip(1)
+		if err := r.Skip(1); err != nil {
+			return err
+		}
 	}
 	return nil
 }

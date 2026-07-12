@@ -11,6 +11,14 @@ package result
 //     see ktx/src/items.c:2471. Only RL/LG packs emit this hint —
 //     SSG/NG/SNG/GL-only packs have no wire-level pickup signal and
 //     do not appear here.
+//   - In weapon-stay modes (serverinfo deathmatch 2/3/5, or coop) KTX
+//     never emits `//ktx took` for weapons (weapon_touch returns before
+//     the stuffcmd, ktx/src/items.c:1046-1052), so entries are instead
+//     synthesized from STAT_ITEMS weapon-bit 0→1 transitions and marked
+//     Inferred. Source is "world" when the picker passed within pickup
+//     range of a matching weapon spawn entity during the stat-lag
+//     window, else "unknown" (typically a non-RL/LG backpack grant,
+//     which has no hint in any mode).
 //
 // Kills is credited only to the pickup that actually granted the
 // weapon (HadBefore=false). Redundant grabs (HadBefore=true — the
@@ -25,8 +33,9 @@ type WeaponPickup struct {
 	Player        string `json:"player"`
 	Team          string `json:"team,omitempty"`
 	Weapon        string `json:"weapon"` // "rl","lg","gl","ssg","sng","ng"
-	Source        string `json:"source"` // "world" | "backpack"
+	Source        string `json:"source"` // "world" | "backpack" | "unknown"
 	HadBefore     bool   `json:"hadBefore"`
+	Inferred      bool   `json:"inferred,omitempty"` // synthesized from a STAT_ITEMS flip (weapon-stay recovery), not a KTX hint
 	Kills         int    `json:"kills"`
 	NextDeathTime int32  `json:"nextDeathTime,omitempty"` // ms; 0 if picker never died before match end
 

@@ -1,4 +1,4 @@
-// Package decisions builds the Result.Decisions section (schema v38): the
+// Package decisions builds the Result.Decisions section (schema v57): the
 // tactical-decision layer. Two producers share the DecisionRecord shape:
 //
 //   - AttachKDLog: joins a Komodobot KDLOG server-log sidecar (structured
@@ -109,15 +109,13 @@ func ResolveKDLog(res *result.Result, r io.Reader) (*result.Decisions, error) {
 	lineNo := 0
 	for scanner.Scan() {
 		lineNo++
-		line := scanner.Text()
-		// The harness prefixes server.log lines with a wall-clock stamp —
-		// find the KDLOG token anywhere and slice the line from there.
-		if i := strings.Index(line, "KDLOG_ANCHOR "); i >= 0 {
-			rx.anchor(line[i:])
+		line := kdlogPayload(scanner.Text())
+		if strings.HasPrefix(line, "KDLOG_ANCHOR ") {
+			rx.anchor(line)
 			continue
 		}
-		if i := strings.Index(line, "KDLOG "); i >= 0 {
-			if rec, ok := rx.record(line[i:], lineNo); ok {
+		if strings.HasPrefix(line, "KDLOG ") {
+			if rec, ok := rx.record(line, lineNo); ok {
 				dec.Records = append(dec.Records, rec)
 			}
 		}
@@ -127,6 +125,21 @@ func ResolveKDLog(res *result.Result, r io.Reader) (*result.Decisions, error) {
 	}
 	sort.SliceStable(dec.Records, func(i, j int) bool { return dec.Records[i].T < dec.Records[j].T })
 	return dec, nil
+}
+
+// kdlogPayload accepts a telemetry token only at the start of the logical
+// console payload. mvdsv/KTX may prepend one or more bracketed timestamp/source
+// fields; ordinary prose containing "non-KDLOG" must remain ignored.
+func kdlogPayload(line string) string {
+	line = strings.TrimSpace(line)
+	for strings.HasPrefix(line, "[") {
+		i := strings.IndexByte(line, ']')
+		if i < 0 {
+			return ""
+		}
+		line = strings.TrimSpace(line[i+1:])
+	}
+	return line
 }
 
 // resolver holds the per-demo lookup tables for the KDLOG -> vocabulary join.

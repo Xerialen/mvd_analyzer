@@ -111,6 +111,11 @@ func (s *supabaseClient) Search(ctx context.Context, in SearchGamesInput) (any, 
 	req.Header.Set("apikey", s.apiKey)
 	req.Header.Set("Authorization", "Bearer "+s.apiKey)
 	req.Header.Set("accept-profile", "public")
+	// Ask PostgREST for the total match count (Content-Range: 0-19/1234)
+	// so pagination is honest: `count` is rows-in-this-page, `total` is
+	// all matching rows. With a count preference PostgREST may answer
+	// 206 Partial Content for a partial page — that is success here.
+	req.Header.Set("Prefer", "count=exact")
 
 	resp, err := s.http.Do(req)
 	if err != nil {
@@ -118,7 +123,7 @@ func (s *supabaseClient) Search(ctx context.Context, in SearchGamesInput) (any, 
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 		return nil, fmt.Errorf("hub search: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
@@ -126,12 +131,68 @@ func (s *supabaseClient) Search(ctx context.Context, in SearchGamesInput) (any, 
 	if err := json.Unmarshal(body, &games); err != nil {
 		return nil, fmt.Errorf("hub search: decode: %w", err)
 	}
-	return map[string]any{
+	if !in.Roster {
+		compactRosters(games)
+	}
+	out := map[string]any{
 		"limit":  limit,
 		"offset": in.Offset,
 		"count":  len(games),
 		"games":  games,
-	}, nil
+	}
+	if total, ok := parseContentRangeTotal(resp.Header.Get("Content-Range")); ok {
+		out["total"] = total
+	}
+	return out, nil
+}
+
+// compactRosters projects each game row's players array down to
+// {name, team, frags} in place. The verbatim hub rows carry per-player
+// ping, color arrays, name_color, team_color and is_bot — detail an
+// agent picking demos never reads and that multiplies the payload ~4x
+// (roster:true opts back in). Non-object entries pass through verbatim.
+func compactRosters(games []any) {
+	for _, g := range games {
+		row, ok := g.(map[string]any)
+		if !ok {
+			continue
+		}
+		players, ok := row["players"].([]any)
+		if !ok {
+			continue
+		}
+		compact := make([]any, 0, len(players))
+		for _, pl := range players {
+			pm, ok := pl.(map[string]any)
+			if !ok {
+				compact = append(compact, pl)
+				continue
+			}
+			c := make(map[string]any, 3)
+			for _, k := range []string{"name", "team", "frags"} {
+				if v, ok := pm[k]; ok {
+					c[k] = v
+				}
+			}
+			compact = append(compact, c)
+		}
+		row["players"] = compact
+	}
+}
+
+// parseContentRangeTotal extracts the total from a PostgREST
+// Content-Range header ("0-19/1234", or "*/0" for an empty result).
+// ok=false when the header is absent or the total is unknown ("/*").
+func parseContentRangeTotal(cr string) (int, bool) {
+	i := strings.LastIndexByte(cr, '/')
+	if i < 0 {
+		return 0, false
+	}
+	total, err := strconv.Atoi(cr[i+1:])
+	if err != nil {
+		return 0, false
+	}
+	return total, true
 }
 
 var _ searcher = (*supabaseClient)(nil)

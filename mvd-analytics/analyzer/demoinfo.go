@@ -202,41 +202,41 @@ func (a *DemoInfoAnalyzer) parseBlocks() *DemoInfoResult {
 
 // DemoInfoRaw is the raw JSON structure from KTX
 type DemoInfoRaw struct {
-	Version   int                    `json:"version"`
-	Date      string                 `json:"date"`
-	Map       string                 `json:"map"`
-	Hostname  string                 `json:"hostname"`
-	IP        string                 `json:"ip"`
-	Port      int                    `json:"port"`
-	Matchtag  string                 `json:"matchtag,omitempty"`
-	Mode      string                 `json:"mode,omitempty"`
-	Timelimit int                    `json:"tl,omitempty"`
-	Fraglimit int                    `json:"fl,omitempty"`
-	Deathmatch int                   `json:"dm,omitempty"`
-	Teamplay  int                    `json:"tp,omitempty"`
-	Duration  int                    `json:"duration"`
-	Demo      string                 `json:"demo,omitempty"`
-	Teams     []string               `json:"teams,omitempty"`
-	Players   []DemoInfoPlayerRaw    `json:"players"`
+	Version    int                 `json:"version"`
+	Date       string              `json:"date"`
+	Map        string              `json:"map"`
+	Hostname   string              `json:"hostname"`
+	IP         string              `json:"ip"`
+	Port       int                 `json:"port"`
+	Matchtag   string              `json:"matchtag,omitempty"`
+	Mode       string              `json:"mode,omitempty"`
+	Timelimit  int                 `json:"tl,omitempty"`
+	Fraglimit  int                 `json:"fl,omitempty"`
+	Deathmatch int                 `json:"dm,omitempty"`
+	Teamplay   int                 `json:"tp,omitempty"`
+	Duration   int                 `json:"duration"`
+	Demo       string              `json:"demo,omitempty"`
+	Teams      []string            `json:"teams,omitempty"`
+	Players    []DemoInfoPlayerRaw `json:"players"`
 }
 
 // DemoInfoPlayerRaw is the raw player structure from KTX JSON
 type DemoInfoPlayerRaw struct {
-	TopColor    int                          `json:"top-color"`
-	BottomColor int                          `json:"bottom-color"`
-	Ping        int                          `json:"ping"`
-	Login       string                       `json:"login"`
-	Name        string                       `json:"name"`
-	Team        string                       `json:"team"`
-	Stats       *DemoInfoStats               `json:"stats,omitempty"`
-	Dmg         *DemoInfoDmg                 `json:"dmg,omitempty"`
-	XferRL      int                          `json:"xferRL,omitempty"`
-	XferLG      int                          `json:"xferLG,omitempty"`
-	Spree       *DemoInfoSpree               `json:"spree,omitempty"`
-	Control     float64                      `json:"control,omitempty"`
-	Speed       *DemoInfoSpeed               `json:"speed,omitempty"`
-	Handicap    int                          `json:"handicap,omitempty"`
-	Bot         *DemoInfoBot                 `json:"bot,omitempty"`
+	TopColor    int                           `json:"top-color"`
+	BottomColor int                           `json:"bottom-color"`
+	Ping        int                           `json:"ping"`
+	Login       string                        `json:"login"`
+	Name        string                        `json:"name"`
+	Team        string                        `json:"team"`
+	Stats       *DemoInfoStats                `json:"stats,omitempty"`
+	Dmg         *DemoInfoDmg                  `json:"dmg,omitempty"`
+	XferRL      int                           `json:"xferRL,omitempty"`
+	XferLG      int                           `json:"xferLG,omitempty"`
+	Spree       *DemoInfoSpree                `json:"spree,omitempty"`
+	Control     float64                       `json:"control,omitempty"`
+	Speed       *DemoInfoSpeed                `json:"speed,omitempty"`
+	Handicap    int                           `json:"handicap,omitempty"`
+	Bot         *DemoInfoBot                  `json:"bot,omitempty"`
 	Weapons     map[string]*DemoInfoWeaponRaw `json:"weapons,omitempty"`
 	Items       map[string]*DemoInfoItemRaw   `json:"items,omitempty"`
 }

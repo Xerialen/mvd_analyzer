@@ -26,10 +26,10 @@ func TestParseDemoID(t *testing.T) {
 	const goodSHA = "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
 
 	cases := []struct {
-		in       string
-		want     DemoID
-		wantErr  bool
-		errSub   string
+		in      string
+		want    DemoID
+		wantErr bool
+		errSub  string
 	}{
 		{"gameId:42", DemoID{Kind: "gameId", GameID: 42}, false, ""},
 		{"sha:" + goodSHA, DemoID{Kind: "sha256", SHA: goodSHA}, false, ""},
@@ -192,8 +192,11 @@ func (s *stubParser) parse(_ context.Context, mvd []byte, filename string) (*res
 // --- GetResult flows ---
 
 const (
-	testSHA = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-	testMVD = "BOGUS-MVD-BYTES" // stub parser doesn't actually parse
+	// testSHA must be the real sha256 of testMVD: the cold-download path now
+	// verifies downloaded bytes against the SHA that keys the cache (F1), so a
+	// mismatching fixture would be rejected as ErrHubUpstream.
+	testSHA = "8bc625ab64dbbeaf872e4491c46fb110d4143c97daf87ddfbca52ff188c86886"
+	testMVD = "BOGUS-MVD-BYTES" // sha256 == testSHA; stub parser doesn't actually parse
 )
 
 func newTestCache(t *testing.T, hub *hubfetch.Client, parser *stubParser) (*Cache, string) {
@@ -391,6 +394,58 @@ func TestGetResult_HubUpstreamError(t *testing.T) {
 	_, _, err := c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 42})
 	if !errors.Is(err, ErrHubUpstream) {
 		t.Errorf("expected ErrHubUpstream, got %v", err)
+	}
+}
+
+// TestGetResult_SHAMismatch_NotCached covers F1: a hub that claims one
+// demo_sha256 but serves bytes hashing to something else (corrupted CDN
+// object / wrong source URL) must be rejected as ErrHubUpstream and must
+// not poison the cache under the claimed sha.
+func TestGetResult_SHAMismatch_NotCached(t *testing.T) {
+	hub := newFakeHub()
+	defer hub.Close()
+	// Claim testSHA, but serve bytes that do not hash to it.
+	hub.addGame(42, testSHA, "CORRUPT-BYTES-DO-NOT-MATCH-testSHA")
+
+	parser := &stubParser{}
+	c, root := newTestCache(t, hub.hubClient(), parser)
+
+	_, _, err := c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 42})
+	if !errors.Is(err, ErrHubUpstream) {
+		t.Fatalf("expected ErrHubUpstream on sha mismatch, got %v", err)
+	}
+	if _, statErr := os.Stat(mvdPath(root, testSHA)); statErr == nil {
+		t.Errorf("mismatched bytes were cached at %s — must not be", mvdPath(root, testSHA))
+	}
+	if parser.calls.Load() != 0 {
+		t.Errorf("parser ran on a mismatched download: calls=%d", parser.calls.Load())
+	}
+}
+
+// TestGetResult_HubUpstream_BodyContainsNotFound covers F2: a hub 5xx
+// whose body text merely contains "not found" must classify as an upstream
+// outage (ErrHubUpstream), never as a genuine 404 (ErrDemoNotFound).
+func TestGetResult_HubUpstream_BodyContainsNotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("upstream failure: resource not found in backend store"))
+	}))
+	defer srv.Close()
+
+	hub := hubfetch.NewClient()
+	hub.SupabaseURL = srv.URL
+	hub.CDNBase = srv.URL + "/cdn"
+
+	parser := &stubParser{}
+	c := New(t.TempDir(), hub)
+	c.Parse = parser.parse
+
+	_, _, err := c.GetResult(context.Background(), DemoID{Kind: "gameId", GameID: 42})
+	if errors.Is(err, ErrDemoNotFound) {
+		t.Fatalf("a 5xx body containing 'not found' was misclassified as ErrDemoNotFound: %v", err)
+	}
+	if !errors.Is(err, ErrHubUpstream) {
+		t.Fatalf("expected ErrHubUpstream, got %v", err)
 	}
 }
 

@@ -567,6 +567,109 @@ func parseModelList(r *BufferReader) string {
 
 ---
 
+## svc_soundlist (46) - Sound Precache List
+
+Mirrors `svc_modellist` exactly, but for sound paths. Index 0 is the
+reserved null sound, so a `svc_sound` `sound_num` of N indexes the Nth
+precached path. The parser keeps this table (`p.soundList`) so it can
+resolve a fired sound back to its path (e.g. `"weapons/rocket1i.wav"`).
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_soundlist (46)
+1       1     start_index (usually 0)
+?       var   sound_1 (string, e.g., "weapons/sgun1.wav")
+...
+?       var   sound_N (string)
+?       1     empty string (0x00 terminator)
+?       1     next_index (for continuation, usually 0)
+```
+
+## svc_sound (6) - Start Sound
+
+Plays a sound on an entity's channel. The **entity number is packed into
+the channel word**, so the message tells us *who* made the sound, not just
+where — this is what makes weapon-fire sounds a truthful per-shot signal
+(the firing player is `ent - 1`).
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_sound (6)
+1       2     channel (short)         <- bit field, see below
+var     [1]   volume        (only if channel & 0x8000 / SND_VOLUME)
+var     [1]   attenuation   (only if channel & 0x4000 / SND_ATTENUATION)
+var     1     sound_num               <- index into svc_soundlist
+var     var   origin (3 coords, short or float)
+```
+
+Every offset after the channel word is variable: it depends on which of
+the two optional bytes the flag bits enable.
+
+Channel-word decode (ezquake `cl_parse.c`): `ent = (channel >> 3) & 1023;
+channel &= 7`. The 3-bit channel index is the Quake `CHAN_*` value —
+`CHAN_WEAPON` (1) carries every weapon fire (ktx `weapons.c`).
+
+**Weapon-fire sounds.** KTX fires each weapon with a distinct precached
+wav, so the resolved `Name` identifies the weapon. The Quake sound
+filenames are historically mismatched with the weapons that play them —
+note especially that the **rocket launcher** fires `sgun1.wav` and the
+**nailgun** fires `rocket1i.wav`:
+
+| Sound path | Weapon | KTX fire function |
+|---|---|---|
+| `weapons/guncock.wav` | sg | `W_FireShotgun` |
+| `weapons/shotgn2.wav` | ssg | `W_FireSuperShotgun` |
+| `weapons/sgun1.wav` | **rl** | `W_FireRocket` |
+| `weapons/grenade.wav` | gl | `W_FireGrenade` |
+| `weapons/rocket1i.wav` | **ng** | `W_FireSpikes` |
+| `weapons/spike2.wav` | sng | `W_FireSuperSpikes` |
+| `weapons/coilgun.wav` | sg (instagib) | instagib rail |
+
+The lightning gun has **no** per-shot fire sound (`lstart.wav` plays once
+per burst on `CHAN_AUTO`; `lhit.wav` is throttled hit feedback), so LG fire
+is counted from its lightning beam instead (see `svc_temp_entity` below).
+The grenade *bounce* (`bounce.wav`), ricochets (`ric*`), spike tinks
+(`tink1`) and axe sounds are not fires.
+
+---
+
+## svc_temp_entity (23) - Temporary Entity
+
+A one-shot visual effect (explosion, gunshot puff, blood, lightning beam).
+The byte layout depends on the type:
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_temp_entity (23)
+1       1     te_type
+
+// Point effects (TE_SPIKE/SUPERSPIKE/EXPLOSION/TAREXPLOSION/...):
+2       6/12  3 coords (origin)
+// TE_GUNSHOT (2), TE_BLOOD (12): 1-byte count, then 3 coords
+// Lightning beams (TE_LIGHTNING1=5 / 2=6 / 3=9):
+2       2     entity (short)        <- the entity drawing the beam
+4       6/12  3 coords (start)
+?       6/12  3 coords (end)
+```
+
+The parser decodes the **lightning beams** into `BeamEvent` (firing entity +
+start/end) and consumes every other type for its known length; an unknown
+type bails rather than guessing a length and drifting the cursor.
+
+**Player Lightning Gun.** `TE_LIGHTNING2` is the bolt KTX writes once per LG
+fire tick (`ktx/src/weapons.c` `W_FireLightning`), carrying the firing
+entity, the muzzle (`start`) and the hitscan trace endpoint (`end`). Because
+it is emitted in the same function that increments the accuracy counter — and
+LG *discharge* (firing in water) returns before that point and writes no beam
+— the beam count equals KTX `acc.attacks` exactly. The `shots` analyzer uses
+it as the authoritative per-shot LG signal (`Ent-1` is the shooter).
+`TE_LIGHTNING1/3` are non-player bolts and are not counted as LG fire.
+
+---
+
 ## svc_playerinfo (42) - Player State Update
 
 This is the core message type for player positions in MVD. The format differs between MVD and standard QWD.
@@ -849,7 +952,7 @@ The userinfo string is backslash-delimited key-value pairs:
 | `topcolor` | Top color (0-13) | `"4"` |
 | `bottomcolor` | Bottom color (0-13) | `"4"` |
 | `skin` | Skin name | `"base"` |
-| `spectator` | "1" if spectator | `"1"` |
+| `*spectator` | "1" if spectator. Server-set star key: mvdsv strips the client's `spectator` key and re-adds it as `*spectator` before broadcast (`sv_main.c` `SV_UserinfoChanged`/connection path), so MVD userinfo strings only carry the star spelling. Absent key = not a spectator — a full `svc_updateuserinfo` must clear a previously set flag (ezquake `CL_ProcessUserInfo`, `cl_parse.c`). | `"1"` |
 | `*client` | Client software | `"ezQuake 3.6"` |
 
 ### Parsing Userinfo
@@ -1719,9 +1822,22 @@ When a player walks in lava:
 
 ## Damage Tracking Details
 
+> **Now implemented.** The reconstruction sketched below is realised in
+> `mvd-analytics/analyzer/damage.go` (schema v54): `boundedDamage` mirrors
+> `T_Damage`, driven by per-slot shadow vitals (health/armor tracked from
+> `StatHealth`/`StatArmor`, checkpointed on every accepted stat update and
+> decremented for same-frame multi-hits). It emits both families — the raw
+> wire value and the **bounded** KTX-scoreboard value — per hit. One
+> refinement the sketch predates: a telefrag/stomp victim is alive by
+> definition (`tdeath_touch` requires `ISLIVE`), so a non-positive health
+> shadow means the respawn beat the end-of-frame stat broadcast; the
+> reconstruction then reads the victim from **spawn state** (100 health, no
+> armor, spawn inventory) rather than the stale corpse shadow. See
+> `RESULT_SCHEMA.md`'s `DamageResult` section for the resulting fields.
+
 ### MVD vs KTX Damage Values
 
-MVD files contain **raw/unbound damage** values, which includes overkill damage. KTX mod's stats track **effective damage** capped at the victim's health.
+MVD files contain **raw/unbound damage** values, which includes overkill damage. KTX mod's stats track **effective (bounded) damage** capped at the victim's health.
 
 | Type | Description | Example |
 |------|-------------|---------|
@@ -1729,21 +1845,41 @@ MVD files contain **raw/unbound damage** values, which includes overkill damage.
 | **Effective Damage** (KTX) | Damage capped at victim's current health | Victim has 50 HP → 50 counted |
 | **Overkill** | Difference: raw - effective | 120 - 50 = 70 overkill |
 
-**KTX Source Reference** (`combat.c:786-834`):
+**KTX Source Reference** (`combat.c`):
 ```c
-// Line 786: Raw damage before health capping
+// Line 620/634: armor share, then dmg_dealt = armor absorbed (save)
+save = newceil(targ->s.v.armortype * damage);   // capped at armorvalue
+dmg_dealt += save;
+
+// Line 719: virtual_take captured here, PRE-nullification (max(0, take))
+virtual_take = max(0, take);
+
+// Line 757: unbound snapshot = the armor-absorbed total so far
 unbound_dmg_dealt = dmg_dealt;
 
-// Line 804: Effective damage capped at victim's health
-dmg_dealt += bound(0, virtual_take, targ->s.v.health);
+// Lines 768-782: the two families diverge on the health share —
+//   unbound adds virtual_take (uncapped, pre-nullification),
+//   bounded adds bound(0, take, health) (capped, nullification-aware)
+unbound_dmg_dealt += virtual_take;
+dmg_dealt        += bound(0, take, targ->s.v.health);
 
-// Lines 830-834: Write unbound damage to MVD hidden message
+// Line 795: the wire value = save + virtual_take, clamped to [0,9999]
+unbound_dmg_dealt = bound(0, unbound_dmg_dealt, 9999);
+
+// Lines 801-805: write the UNBOUND value to the MVD hidden message
 WriteShort(MSG_MULTICAST, mvdhidden_dmgdone);
 WriteShort(MSG_MULTICAST, damage_flags | targ->deathtype);
 WriteShort(MSG_MULTICAST, NUM_FOR_EDICT(attacker));
 WriteShort(MSG_MULTICAST, NUM_FOR_EDICT(targ));
 WriteShort(MSG_MULTICAST, (short)unbound_dmg_dealt);
 ```
+
+**Key wire fact**: the value on the wire is `save + virtual_take`
+(armor absorbed + the health share captured *before* pent / teamplay
+nullification), clamped to 9999 — never the bounded `dmg_dealt`. The
+bounded family (`combat.c:783`, accumulated into the scoreboard at
+`combat.c:1046-1076`) has to be reconstructed from tracked vitals; it
+cannot be read off the wire.
 
 ### Damage Capping Algorithm
 
@@ -2314,6 +2450,8 @@ The entity-update stream is the **protocol-level ground truth** for pickup-item 
 
 **MVD-specific invariant**: MVD recording sets `pvs = NULL` (`mvdsv/src/sv_ents.c:851`), so PVS culling does *not* apply. The only filter on whether an entity appears in a packet is `modelindex != 0`. That means "entity absent from packet" is **equivalent** to "item was picked up" — it is NOT a "camera can't see it" artefact the way it would be on a live client.
 
+**Weapon-stay exception**: the equivalence above does **not** hold for weapons in weapon-stay modes (`deathmatch 2/3/5`, coop — including dmm3, the standard duel/2on2 mode). There `weapon_touch` returns via its `leave` branch (`ktx/src/items.c:835, 1046-1052`) before the model clear, so the weapon entity keeps its model forever and **no `Taken` transition is ever emitted for it** — a pickup's only wire signals are the picker's STAT_ITEMS bit 0→1 flip (`svc_updatestat`, broadcast for every player in an MVD), the `weapons/pkup.wav` sound, and the (usually msg-filtered) PRINT_LOW line. Non-weapon items clear their model in every mode except `deathmatch 2`.
+
 **Item classification from baselines** — model paths are standard Quake 1 (id Software originals), not KTX-specific. Map from `(modelindex → model_path, skin)` to a compact kind:
 
 | Kind  | Model path                | Skin | Notes |
@@ -2349,7 +2487,31 @@ Resolve `modelindex` → path via the `svc_modellist` table. Index 0 is reserved
 3. On `svc_packetentities` (full) / `svc_deltapacketentities` (delta): maintain a rolling `currentEntities` map. Full packets replace it; deltas copy from previous and apply per-entity updates. `U_REMOVE` deletes; other flags update fields.
 4. Diff new frame vs previous frame per tracked item — emit `ItemStateEvent{EntNum, Kind, Taken: bool, Time}` on every visibility flip (present + modelindex > 0 → absent, or vice versa).
 
-Baselines seed the "initial" state so items at match start are already "up". Non-item entities (players, projectiles, lights) pass through the classifier as empty kind and are silently filtered — except inline brush-model entities, which feed the mover events below.
+Baselines seed the "initial" state so items at match start are already "up". Non-item entities (players, lights) pass through the item classifier as empty kind and are silently filtered — except inline brush-model entities (which feed the mover events below) and slow projectiles (which feed the projectile events below).
+
+### Projectile tracking via entity state
+
+Rockets and grenades are dynamic entities — `spawn()` + `setmodel()` in the QuakeC fire functions (`ktx/src/weapons.c` `W_FireRocket` → `progs/missile.mdl`, `W_FireGrenade` → `progs/grenade.mdl`), transmitted through the same `svc_packetentities` stream as items. Because MVD recording ignores PVS, every projectile appears for its whole flight, so its entity number **brackets the flight**: first sighting → `ProjectileSpawnEvent` (kind + muzzle origin), removal on impact/timeout → `ProjectileDespawnEvent` (last origin). The wire carries no owner field, so attribution is the analyzer's job — the projectile spawns at the firer's muzzle the same frame as their RL/GL fire sound, and the despawn frame co-locates with the explosion and `mvdhidden_dmgdone` damage, so a specific fire links to a specific impact (see `shots` analyzer).
+
+Unlike item/mover entnums (stable for the match), projectile entnums are **recycled**, so the per-ent classification is cleared on despawn and re-derived on the next spawn.
+
+**Nails.** Where nails travel depends on the server. Most modern servers run `sv_nailhack` (mvdsv `SV_AddNailUpdate` bails when it is set), which sends spikes (`progs/spike.mdl` / `progs/s_spike.mdl`) as ordinary packet entities — so the projectile tracker brackets them like rockets, tagged `"nail"` (weapon-agnostic; ng vs sng is resolved from the `DtNG`/`DtSNG` damage type, not the model). Without `sv_nailhack` the server uses the compact `svc_nails` / `svc_nails2` stream instead (see below). Either way, nail tracking is **opt-in** (`Parser.SetDecodeNails`) because of the volume; the default parse ignores nails.
+
+### svc_nails (43) / svc_nails2 (54) — Nail projectiles
+
+The compact spike stream (mvdsv `SV_EmitNailUpdate`, ezquake `CL_ParseProjectiles`). One message carries the full live nail set for the frame. `svc_nails2` is the MVD-recording variant: it prefixes each nail with a 1-byte id (the entity colormap, recycled `& 255`) that is stable while the nail lives, so a consumer can bracket each nail's flight across frames.
+
+```
+Offset  Size  Field
+------  ----  -----
+0       1     svc_nails (43) | svc_nails2 (54)
+1       1     count
+// per nail:
+[1]     [1]   id          (svc_nails2 only)
+?       6     bits[0..5]  — packed origin (12/12/12) + angles (4/8)
+```
+
+Origin unpack (whole-unit precision): `x = ((bits[0] + ((bits[1] & 15) << 8)) << 1) - 4096`, `y = (((bits[1] >> 4) + (bits[2] << 4)) << 1) - 4096`, `z = ((bits[3] + ((bits[4] & 15) << 8)) << 1) - 4096`. The parser decodes these into `NailsFrameEvent` only when `SetDecodeNails` is enabled; otherwise it consumes the payload (`count × 6` or `× 7` bytes) without emitting.
 
 **Inline brush-model entities (movers).** An entity whose model path is `"*N"` references submodel N of the map BSP itself (the `dmodel_t` array) rather than a separate model file: func_plat, func_door, func_train, func_button, func_wall, func_illusionary. Their geometry is compiled in world coordinates; the entity origin is a *translation offset* from that compiled position (a door at rest has origin `0 0 0`), which is exactly how the client poses their collision hulls for prediction (`CL_SetSolidEntities`, ezquake `cl_ents.c` — `VectorCopy(state->origin, physent.origin)` and trace in model-local space). Trigger volumes are also `"*N"` submodels in the BSP but never appear in the entity stream: Quake progs `InitTrigger` (`subs.qc`) clears `modelindex`/`model` after `setmodel`, and mvdsv only writes entities with a non-zero modelindex and model string (`sv_ents.c:790`). MVD packets have no PVS filtering, so every visible mover is in every frame; delta compression means its origin is re-sent only when it changes. The parser synthesises:
 
@@ -2363,6 +2525,8 @@ Baselines seed the "initial" state so items at match start are already "up". Non
 1. **Hint-driven (preferred when KTX emits one).** When a `//ktx took` arrives for an entity that's still in "taken" state from the previous pickup (no wire respawn observed since), it can only be an insta-regrab — record the pickup immediately with the slot from the hint as authoritative attribution. Covers MH, GA/YA/RA, the six slot weapons, and Quad/Pent/Ring on KTX servers. Same logic applies to MH (the previous holder's `heldMHs` slot is transferred to the new picker so the existing rot tracker stamps `RespawnAt` on the right phase).
 
 2. **Stat-delta-driven (fallback for non-hinted kinds).** For items KTX doesn't hint (small healths, ammo boxes): after every `Taken=true(ent, T)`, schedule a synthesis check at `T + respawnSec[kind]`; if a unique player has stat-delta evidence consistent with the kind near that time *and* their position was within touch radius of the entity origin, record a synthetic pickup. The classifier accepts any positive `STAT_HEALTH` delta in [1, 25] as h15-or-h25 evidence — KTX's `T_Heal` (`ktx/src/items.c:184`) caps health at 100, so a pickup at 80 HP yields a +20 delta but `tooks` still increments. The chain-forward path is disabled for MH because its predicted respawn is rot-dependent.
+
+3. **Weapon-stay recovery (weapons in `deathmatch 2/3/5` / coop).** Weapons in those modes have neither hints nor `Taken` transitions (see the weapon-stay exception above), so every grant is recovered from its STAT_ITEMS weapon-bit 0→1 flip: `weapon_pickups.go` records the kind-level pickup (world / unknown, classified by pad proximity over the stat-lag window), and `items.go` closes the matching entity's phase as a zero-length unavailability (`TakenAt == RespawnAt`) attributed to the nearest in-range pad. The flip baseline is maintained through warmup and reset on death (the respawn loadout re-seeds it silently — the wire orders `DEATH → loadout STAT → SPAWN` within the death frame, so spawn must not reset it), grants within a short window after a spawn are dropped as loadout, and `//ktx bp` grants are deduplicated — so warmup inventories, spawn loadouts and pack pickups don't read as pad grabs.
 
 Both paths terminate cleanly: a wire `Taken=false` cancels any pending schedule (the entity genuinely respawned without being re-grabbed). The mvd-analytics implementation lives in [`mvd-analytics/analyzer/items.go`](../mvd-analytics/analyzer/items.go) (`recordSyntheticTakeFromHint` / `processSyntheticRespawns` / `findSyntheticPicker`); on the project's hub corpus, 9 of 10 demos match KTX's authoritative `demoInfo.players[*].items[*].took` exactly across every hinted kind (the lone residual is two same-magnitude small healths contested in a single frame).
 
@@ -2502,7 +2666,7 @@ The server is pushing a console command into the client. There are three classes
     | Directive | Source | Meaning |
     |---|---|---|
     | `//ktx matchstart` | `ktx/src/match.c:1249` | Fires once when warmup ends and the match begins |
-    | `//ktx took <ent> <respawn_sec> <player_ent>` | `ktx/src/items.c:355, 541, 1048, 2074, 2083` | Item picked up. `respawn_sec` is the nominal timer (0 for MH pending rot, 20 for armors, 30 for weapons, 60/180/240/300 for powerups depending on mode). Pinning the touch to `player_ent` makes this the **authoritative pickup-attribution signal** for every competitive item type (MH, GA/YA/RA, RL/LG/GL/SSG/SNG/NG, Quad/Pent/Ring). Does *not* fire for small healths (15/25) or in `deathmatch 2`. |
+    | `//ktx took <ent> <respawn_sec> <player_ent>` | `ktx/src/items.c:355, 541, 1048, 2074, 2083` | Item picked up. `respawn_sec` is the nominal timer (0 for MH pending rot, 20 for armors, 30 for weapons, 60/180/240/300 for powerups depending on mode). Pinning the touch to `player_ent` makes this the **authoritative pickup-attribution signal** for every competitive item type (MH, GA/YA/RA, RL/LG/GL/SSG/SNG/NG, Quad/Pent/Ring). Does *not* fire for small healths (15/25) or in `deathmatch 2` — and, **for weapons only**, does not fire in any weapon-stay mode (`deathmatch 2/3/5`, coop): `weapon_touch` returns through its `leave` branch (`ktx/src/items.c:835, 1046-1052`) *before* the stuffcmd, so dmm3 duel/2on2 demos carry no weapon `//ktx took` at all. Armors / health / powerups still emit it in dmm3. |
     | `//ktx timer <ent> <respawn_sec>` | `ktx/src/items.c:406` | MH rot finished — the delayed 20 s respawn timer is now armed |
     | `//ktx drop <ent> <item_flags> <player_ent>` | `ktx/src/items.c:2740` | Player dropped a weapon (backpack spawned). `item_flags` is the QW items bitfield — `32 = IT_ROCKET_LAUNCHER`, `64 = IT_LIGHTNING`. Only fires for RL/LG packs. |
     | `//ktx bp <backpack_ent> <player_ent>` | `ktx/src/items.c:2471` | Backpack picked up. Symmetric to `//ktx drop` — fires only when the pack contains RL or LG, so drop/pickup pairs share `backpack_ent`. This is the **only** reliable backpack-pickup attribution signal: the entity-state stream shows visibility flutter for backpack edicts that is indistinguishable from fast regrabs. |
@@ -2519,7 +2683,7 @@ The server is pushing a console command into the client. There are three classes
     - `//ktx bp` only fires for RL/LG packs (line above), so SSG/NG/SNG/GL/ammo-only packs have no `//ktx`-driven attribution.
     - The fallback signal — `BackpackPickupPrintEvent` from KTX's `"You get "` opener — is `G_sprint(PRINT_LOW)`, which `SV_ClientPrintf` (`mvdsv/src/sv_send.c:225`) drops *before* the MVD-write step when the picking client has `messagelevel >= 1`. Competitive players overwhelmingly run `msg 2`, so on a typical 4on4 / duel **the pickup-print bytes are never written to the demo file** — see [Per-client pickup prints — and the PRINT_LOW filter](#per-client-pickup-prints--and-the-print_low-filter).
 
-    Net result on a competitive MVD: there is **no authoritative wire signal** for non-RL/LG backpack pickups. The demo still carries indirect evidence — the picker's STAT_ITEMS bit flips on for the gained weapon, and STAT_SHELLS / STAT_NAILS / STAT_ROCKETS / STAT_CELLS all jump to reflect the absorbed ammo, both arriving as ordinary `svc_updatestat` per-slot — so a heuristic analyzer could correlate stat deltas with nearby `BackpackDropHintEvent` edicts to attribute these pickups by proximity and timing. No analyzer in this repo ships that logic today; `result.Backpacks` and `result.WeaponPickups` consequently cover only the RL/LG domain.
+    Net result on a competitive MVD: there is **no authoritative wire signal** for non-RL/LG backpack pickups. The demo still carries indirect evidence — the picker's STAT_ITEMS bit flips on for the gained weapon, and STAT_SHELLS / STAT_NAILS / STAT_ROCKETS / STAT_CELLS all jump to reflect the absorbed ammo, both arriving as ordinary `svc_updatestat` per-slot — so a heuristic analyzer could correlate stat deltas with nearby `BackpackDropHintEvent` edicts to attribute these pickups by proximity and timing. In **weapon-stay modes** (`deathmatch 2/3/5`, coop) mvd-analytics ships exactly that class of recovery: `weapon_pickups.go` synthesizes kind-level pickups from STAT_ITEMS bit flips (a flip with no weapon pad in touch range surfaces as `source: "unknown"` — almost always one of these packs). In non-weapon-stay modes no analyzer ships the correlation logic today; `result.Backpacks` and hint-driven `result.WeaponPickups` entries consequently cover only the RL/LG domain there.
 
     The `<ent>` number is a stable server edict index for the match. `<player_ent>` is `slot + 1` (edict 0 is world, edicts 1..maxclients are the player slots).
 3. **`play sound/file.wav`** style commands — countdown beeps, intermission music. Safe to ignore.
@@ -2820,6 +2984,12 @@ Offset  Size  Field
 6       1     svc_disconnect (2)
 7       var   "EndOfDemo" (null-terminated string)
 ```
+
+Only a `svc_disconnect` whose text is exactly `"EndOfDemo"` is the clean end
+marker (mvdsv writes it at `sv_demo.c:974-977`); the reader maps it to
+`io.EOF`. A `svc_disconnect` carrying any *other* text is a non-standard or
+inter-map disconnect — ezquake keeps parsing a multi-map MVD past it
+(`cl_parse.c:3673-3685`), and so does this reader.
 
 ---
 

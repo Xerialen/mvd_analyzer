@@ -38,13 +38,13 @@ func TestExtractKillerName(t *testing.T) {
 
 func TestNormalizePlayerName(t *testing.T) {
 	cases := map[string]string{
-		"":                   "",
-		"alice":              "alice",
-		"Alice":              "alice",
-		"bad.rotker":         "badrotker",
-		"BadRotker":          "badrotker",
-		".N3ophyt3.":         "n3ophyt3",
-		"[ServeMe] Bot 7":    "servemebot7",
+		"":                "",
+		"alice":           "alice",
+		"Alice":           "alice",
+		"bad.rotker":      "badrotker",
+		"BadRotker":       "badrotker",
+		".N3ophyt3.":      "n3ophyt3",
+		"[ServeMe] Bot 7": "servemebot7",
 	}
 	for in, want := range cases {
 		if got := normalizePlayerName(in); got != want {

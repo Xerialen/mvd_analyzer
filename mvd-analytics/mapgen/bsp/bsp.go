@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"math"
 	"os"
 )
@@ -64,34 +63,15 @@ func ParseBytes(data []byte) (*BSP, error) {
 		return nil, fmt.Errorf("bsp: unsupported version %d (expected %d, \"BSP2\", or \"2PSB\")", version, Q1BSPVersion)
 	}
 
-	// Read lump directory: 15 entries of (offset, length) int32.
-	type dentry struct {
-		offset int32
-		length int32
-	}
-	var dirs [numLumps]dentry
-	for i := 0; i < numLumps; i++ {
-		base := 4 + i*8
-		dirs[i].offset = int32(binary.LittleEndian.Uint32(data[base : base+4]))
-		dirs[i].length = int32(binary.LittleEndian.Uint32(data[base+4 : base+8]))
-	}
-
-	lumpBytes := func(idx int) ([]byte, error) {
-		d := dirs[idx]
-		if d.offset < 0 || d.length < 0 {
-			return nil, fmt.Errorf("bsp: lump %d has negative offset/length", idx)
-		}
-		end := int64(d.offset) + int64(d.length)
-		if end > int64(len(data)) {
-			return nil, fmt.Errorf("bsp: lump %d extends past EOF (%d > %d)", idx, end, len(data))
-		}
-		return data[d.offset:end], nil
-	}
-
+	// The lump directory (version word + 15 dentries) is read per lump by
+	// the shared, bounds-checked lumpBytes helper (entities.go). The strict
+	// version sniff above has already rejected everything lumpBytes would
+	// accept but this geometry parser won't (HL v30), so it is safe to use
+	// here for the geometry lumps too.
 	bsp := &BSP{Version: version}
 
 	// PLANES
-	planeBytes, err := lumpBytes(lumpPlanes)
+	planeBytes, err := lumpBytes(data, lumpPlanes)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +93,7 @@ func ParseBytes(data []byte) (*BSP, error) {
 	}
 
 	// VERTEXES
-	vertBytes, err := lumpBytes(lumpVertexes)
+	vertBytes, err := lumpBytes(data, lumpVertexes)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +113,7 @@ func ParseBytes(data []byte) (*BSP, error) {
 	// FACES — layout depends on BSP flavor. v29 dface_t is 20 bytes
 	// with 16-bit indices; BSP2/29a dface29a_t is 28 bytes with all
 	// indices widened to 32 bits. Styles and lightofs stay the same.
-	faceBytes, err := lumpBytes(lumpFaces)
+	faceBytes, err := lumpBytes(data, lumpFaces)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +154,7 @@ func ParseBytes(data []byte) (*BSP, error) {
 
 	// EDGES — v29 uses 2×uint16 (4 bytes); BSP2/29a uses 2×uint32
 	// (8 bytes).
-	edgeBytes, err := lumpBytes(lumpEdges)
+	edgeBytes, err := lumpBytes(data, lumpEdges)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +182,7 @@ func ParseBytes(data []byte) (*BSP, error) {
 	}
 
 	// SURFEDGES
-	seBytes, err := lumpBytes(lumpSurfedges)
+	seBytes, err := lumpBytes(data, lumpSurfedges)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +195,7 @@ func ParseBytes(data []byte) (*BSP, error) {
 	}
 
 	// MODELS
-	modelBytes, err := lumpBytes(lumpModels)
+	modelBytes, err := lumpBytes(data, lumpModels)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +223,7 @@ func ParseBytes(data []byte) (*BSP, error) {
 	// (8-byte record); BSP2/2PSB widen children to 2×int32 (12-byte
 	// record). Children are signed: negative values are CONTENTS_* leaf
 	// codes, not node indices, so int16 children are sign-extended.
-	clipBytes, err := lumpBytes(lumpClipnodes)
+	clipBytes, err := lumpBytes(data, lumpClipnodes)
 	if err != nil {
 		return nil, err
 	}
@@ -272,10 +252,10 @@ func ParseBytes(data []byte) (*BSP, error) {
 	// texture name (liquids, triggers). They must never break floor
 	// extraction, so unlike the lumps above a parse problem here degrades
 	// to empty slices rather than erroring.
-	if tb, err := lumpBytes(lumpTexinfo); err == nil {
+	if tb, err := lumpBytes(data, lumpTexinfo); err == nil {
 		bsp.Texinfos = parseTexinfos(tb)
 	}
-	if mb, err := lumpBytes(lumpMiptex); err == nil {
+	if mb, err := lumpBytes(data, lumpMiptex); err == nil {
 		bsp.TexNames = parseMiptexNames(mb)
 	}
 
@@ -341,7 +321,3 @@ func nulString(b []byte) string {
 func readF32(b []byte) float32 {
 	return math.Float32frombits(binary.LittleEndian.Uint32(b))
 }
-
-// Assert io.Reader-friendly path for completeness (currently unused but
-// keeps the package honest — ParseBytes is the workhorse).
-var _ = io.EOF
