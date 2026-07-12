@@ -14,7 +14,6 @@ package decisions
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/mvd-analyzer/mvd-analytics/result"
@@ -84,12 +83,11 @@ func TestGoldenServerLog(t *testing.T) {
 		t.Fatalf("record census wrong: got %v want goal=1 enemy=1 evade=1 play=6 total=9 (errors: %v)", census, dec.Errors)
 	}
 
-	// This one error is a benign fixture artifact: the synthetic noise line
-	// "another non-KDLOG console line" contains the substring "KDLOG " (inside
-	// "non-KDLOG"), so the loose KDLOG matcher treats it as a typeless record.
-	// It is NOT brain emit; asserting it documents the matcher's behavior.
-	if len(dec.Errors) != 1 || !strings.Contains(dec.Errors[0], "without type") {
-		t.Fatalf("want exactly 1 'without type' error, got %d: %v", len(dec.Errors), dec.Errors)
+	// Console prose containing the substring "non-KDLOG" is noise, not a
+	// telemetry record. Only a real line-start token (after an optional server
+	// timestamp) may enter the parser.
+	if len(dec.Errors) != 0 {
+		t.Fatalf("want no errors from non-KDLOG console noise, got %d: %v", len(dec.Errors), dec.Errors)
 	}
 
 	g := recByType(t, dec, "goal")

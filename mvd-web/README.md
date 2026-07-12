@@ -33,6 +33,10 @@ talks to it through a JS shim.
   - `maps/` — pre-generated per-map floor polygon JSON (version 2:
     per-vertex x,y,z — drives the map tab's 3D view). Committed; the
     frontend fetches `maps/<basename>.json` at demo load.
+  - `maps3d/` — optional full worldspawn meshes (walls + ceilings) in
+    compact M3D1 binary form for dm2/dm3/e1m2/schloss/phantoma.
+  - `lib/three/` + `map-gl.js` — vendored Three.js and the opt-in WebGL
+    **Full shell** renderer retained from the Xerialen fork.
   - `probe.html` — tiny dev page used to probe runtime features.
 
 ## Build and deploy
@@ -51,7 +55,9 @@ dist/
   analyzer.wasm               ~4 MB, the WASM bundle
   wasm_exec.js                Go glue
   index.html, styles.css,
-  app.js, worker.js           frontend
+  app.js, map-gl.js,
+  worker.js                   frontend
+  lib/, maps3d/               optional WebGL full-shell assets
   vendor/                     vendored Cytoscape + fcose + web fonts
   maps/                       pre-generated map geometry
   locs/                       .loc files copied from mvd-analytics/loc/data
@@ -333,6 +339,13 @@ visual. The panel updates live during playback via the 200 ms
 full-sync tick in `animatePlayback`.
 
 ## Map-tab 3D view
+
+The current Canvas renderer remains the default because it carries the newest
+projectile, beam, nail, LOS and PVS overlays. **Full shell** is an explicit
+compatibility mode: on the five maps with a committed `maps3d/*.bin` it opens
+the fork's WebGL orbit view with the complete BSP worldspawn shell, including
+walls and ceilings. Other maps degrade to the colored floor geometry. Generate
+or refresh a shell with `mapgen -mesh3d-out mvd-web/static/maps3d -map <name>`.
 
 The map opens in a default **isometric** view — yaw 45°, tilted 55°
 from top-down (≈ the true isometric angle), so floors at different

@@ -1,2 +1,5 @@
-# Golden KDLOG fixture: preserve the exact LF bytes from the real server log.
+# 3D map mesh blobs are binary — never apply line-ending (CRLF) normalization.
+mvd-web/static/maps3d/*.bin binary
+
+# Golden KDLOG fixture: keep exact LF bytes (verbatim real server.log lines).
 mvd-analytics/decisions/testdata/golden-server.log text eol=lf

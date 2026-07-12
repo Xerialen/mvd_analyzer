@@ -7,6 +7,14 @@
     <!-- Rajdhani + Inter, vendored from Google Fonts (see vendor/README.md). -->
     <link rel="stylesheet" href="vendor/fonts/fonts.css">
     <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "./lib/three/three.module.js",
+        "three/addons/": "./lib/three/addons/"
+      }
+    }
+    </script>
     <!-- Cytoscape.js for the Loc Graph tab, vendored (no runtime CDN). Load
          order matters: cytoscape first, then the fcose dependency chain
          (layout-base -> cose-base -> cytoscape-fcose, each reads the
@@ -539,6 +547,7 @@
                     <div class="map-main-content">
                         <div class="map-canvas-container">
                             <canvas id="map-canvas" width="850" height="850"></canvas>
+                            <canvas id="map-gl-canvas" width="850" height="850" style="display:none;position:absolute;top:0;left:0;"></canvas>
                             <div id="map-no-data" class="map-no-data" style="display: none;">
                                 <p>No location data available for this map.</p>
                                 <p>Player positions will still be shown.</p>
@@ -604,6 +613,7 @@
                         <button id="map-los" title="Line-of-sight: lines between players who can see each other (white = mutual, red/blue = one-way). BSP-backed maps only.">LOS</button>
                         <button id="map-pvs" title="Potential visibility (PVS): thin lines between players the server would have sent to each other on the wire (mvdsv per-client entity cull — fat PVS vs the opponent's box leaves). Superset of LOS; the gap (in PVS but not LOS) means same vis region without a direct sightline. BSP-backed maps only.">PVS</button>
                         <button id="map-3d-toggle" title="Tilt the map into 3D — right-drag (or Ctrl+drag) to rotate freely">3D</button>
+                        <button id="map-full-shell-toggle" title="Optional WebGL full BSP shell (walls + ceilings) on supported maps; standard 3D remains the default">Full shell</button>
                         <button id="map-reset-view" title="Reset pan / zoom / rotation">Reset view</button>
                         <button id="map-fullscreen" title="Toggle fullscreen">Fullscreen</button>
                     </div>
@@ -1002,5 +1012,6 @@
     </div>
 
     <script src="app.js"></script>
+    <script type="module" src="map-gl.js"></script>
 </body>
 </html>

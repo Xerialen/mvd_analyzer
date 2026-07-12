@@ -31,7 +31,7 @@ Fork-specific disposition:
 | `STAT_ACTIVEWEAPON` stream | Ported as schema v56 (`PlayerStream.w`) across analyzer, views, REST/OpenAPI, MCP, docs, and goldens. |
 | KDLOG + inferred tactical decisions | Ported as schema v57 with the real server-log golden fixture, CLI flags, player-slot join, docs, and end-to-end tests. |
 | `?demoUrl=` Dragonbot lab deep link | Ported and browser-tested against a real MVD plus a 404 edge case. |
-| Fork Three.js renderer | Not replayed. Current upstream already has the newer map/overlay implementation; replacing it with the older fork renderer would be a regression risk. |
+| Fork Three.js full BSP shell | Preserved as an opt-in **Full shell** mode for the five committed maps. Upstream's newer Canvas 3D remains the default so its projectile/beam/nail/LOS/PVS overlays are not displaced. |
 
 ## Dragonbot A/B
 
@@ -74,10 +74,15 @@ Resolved-detail differences:
   damage total move when post-match evidence is excluded. Scorecard, gates,
   and all engagement aggregates are unchanged.
 
-Conclusion: Dragonbot's headline experimental history remains comparable.
-Analyses that consume individual engagement rows should record the analyzer
-schema/hash and must not mix v38 and v57 rows as if they had identical window
-semantics.
+Conclusion for this selected eight-match plane only: its headline scorecards
+remain comparable. This does not establish equivalence for the other 40 s10b
+matches, other maps/modes, or earlier Dragonbot history. Analyses that consume
+individual engagement rows should record the analyzer schema/hash and must not
+mix v38 and v57 rows as if they had identical window semantics.
+
+The fixed corpus manifest, exact commands, binary/output hashes, raw comparison
+summary, selection rationale, and evidence limits are committed under
+[`evidence/upstream-sync/`](evidence/upstream-sync/README.md).
 
 ## API and portal impact
 
@@ -103,7 +108,9 @@ Important client effects:
   and web modules.
 - Analyzer corpus: all ten goldens pass; v56 changes were semantically limited
   to schema + `w`, and v57 changes to schema + `playerSlots`.
-- Real KDLOG: 1,129 records resolved, 0 errors, 8 player slots.
+- Real KDLOG: 1,129 records resolved, 0 errors, 8 player slots (manual CLI
+  end-to-end run); package golden and CLI attachment/precedence tests are
+  durable in the suite.
 - Real inference: 220 records, 0 errors, same demo.
 - Web: WASM build passes; direct URL loaded and rendered the real dm3 match in
   Chrome. Missing URL produced `Error: Demo fetch failed: 404 ...` and hid the

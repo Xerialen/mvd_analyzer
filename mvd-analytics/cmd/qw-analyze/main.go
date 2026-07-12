@@ -315,12 +315,8 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 
 	// Resolve decisions before optional stream columns are stripped: both
 	// KDLOG enrichment and inference use the in-memory position/loc tracks.
-	if vopts != nil && vopts.decisionLog != "" {
-		if err := decisions.AttachKDLog(res, vopts.decisionLog); err != nil {
-			res.Errors = append(res.Errors, err.Error())
-		}
-	} else if vopts != nil && vopts.inferDecisions {
-		decisions.AttachInferred(res)
+	if vopts != nil {
+		attachDecisions(res, vopts.decisionLog, vopts.inferDecisions)
 	}
 
 	// Position-track columns are opt-in: by default strip the whole
@@ -341,6 +337,21 @@ func dumpJSON(path string, w io.Writer, pretty bool, regionsOverride []config.Ma
 		enc.SetIndent("", "  ")
 	}
 	return enc.Encode(res)
+}
+
+// attachDecisions is the full-JSON CLI integration seam. A KDLOG sidecar is
+// authoritative when both modes are requested; open/parse failures stay
+// non-fatal in Result.Errors, matching the analyzer's partial-result contract.
+func attachDecisions(res *result.Result, decisionLog string, infer bool) {
+	if decisionLog != "" {
+		if err := decisions.AttachKDLog(res, decisionLog); err != nil {
+			res.Errors = append(res.Errors, err.Error())
+		}
+		return
+	}
+	if infer {
+		decisions.AttachInferred(res)
+	}
 }
 
 // dumpView analyses the demo, runs the requested view function on the

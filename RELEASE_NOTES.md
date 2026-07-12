@@ -24,7 +24,12 @@ detail.
 
 - **Direct demo deep links.** The web analyzer accepts `?demoUrl=<url>` and
   downloads/analyzes that MVD directly, preserving the fork's Dragonbot lab
-  dashboard integration without replacing upstream's current map renderer.
+  dashboard integration.
+- **Optional full BSP shell.** The fork's WebGL/Three.js shell is retained
+  behind the **Full shell** map control for dm2, dm3, e1m2, schloss, and
+  phantoma. Upstream's current Canvas 3D stays the default (and therefore keeps
+  its newer projectile/beam/nail/LOS/PVS overlays); the opt-in mode preserves
+  the full walls-and-ceilings orbit view without regressing that default.
 
 ## Unreleased (branch `phase-16.3`)
 

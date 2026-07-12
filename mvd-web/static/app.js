@@ -6051,6 +6051,7 @@ let mapState = {
     showVelArrows: false,       // per-player 3D velocity arrows (opt-in)
     showLos: false,             // line-of-sight debug lines between players (opt-in)
     showPvs: false,             // potential-visibility (PVS) lines, thinner than LOS (opt-in)
+    fullShell: false,           // optional WebGL full BSP shell; Canvas 3D stays default
     losByPair: {},              // looker name -> { target name -> [{s,e} intervals] } (schema v37)
     pvsByPair: {},              // looker name -> { target name -> [{s,e} intervals] } (schema v38)
     losComputed: false,         // lazy LOS/PVS pass has run for this demo (one pass fills both)
@@ -6171,6 +6172,10 @@ function applyMapGeometry(geom) {
     // references so the control overlay doesn't keep pointing at the
     // previous (stale-tris) group objects.
     mapState.locationGroups = processLocationGroups(mapState.locations);
+    if (window.MapGL) {
+        window.MapGL.setFloors(glFloorData());
+        window.MapGL.setSubmodels(mapState.submodelMeshes || {});
+    }
     if (mapState.rcResult) {
         applyRegionConfig(); // also calls renderMap
     } else {
@@ -6203,6 +6208,9 @@ function initMapView(result) {
     mapState.canvas = document.getElementById('map-canvas');
     if (!mapState.canvas) return;
     mapState.ctx = mapState.canvas.getContext('2d');
+    mapState.fullShell = false;
+    const fullShellBtn = document.getElementById('map-full-shell-toggle');
+    if (fullShellBtn) fullShellBtn.classList.remove('active');
 
     // Get location data from timeline analysis
     const timeline = result.timelineAnalysis;
@@ -6286,8 +6294,13 @@ function initMapView(result) {
                 console.log(`[mvd-timing] map geometry fetch (async): ${(performance.now() - tGeom).toFixed(1)} ms`);
                 if (!geom || !Array.isArray(geom.locs) || geom.locs.length === 0) return;
                 applyMapGeometry(geom);
+                if (window.MapGL) window.MapGL.setLiquids(geom.liquids || []);
             })
             .catch(() => {});
+        if (window.MapGL) {
+            window.MapGL.resetEntities();
+            window.MapGL.loadMap(mapBasename);
+        }
     }
 
     // Show/hide no-data message
@@ -6920,6 +6933,12 @@ function resizeMapCanvas() {
     canvas.height = Math.round(cssH * dpr);
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
+    const glc = document.getElementById('map-gl-canvas');
+    if (glc) {
+        glc.style.width = cssW + 'px';
+        glc.style.height = cssH + 'px';
+        if (window.MapGL && window.MapGL.isReady()) window.MapGL.resize(cssW, cssH, dpr);
+    }
     updateWorldToCanvasTransform();
 }
 
@@ -6960,6 +6979,7 @@ function resetMapView() {
     _wtc.zMid = _wtc.zMidDefault || 0;
     // Back to the default isometric view (also syncs the 3D button and redraws).
     setMapCamera(MAP_DEFAULT_YAW, MAP_3D_DEFAULT_PITCH);
+    if (window.MapGL && window.MapGL.isReady()) window.MapGL.resetCamera();
 }
 
 // Reusable point to avoid GC — only use for immediate consumption, not storage
@@ -8165,11 +8185,289 @@ function drawDropD(ctx, x, y, weapon, alpha) {
     ctx.restore();
 }
 
+// hexToInt converts a '#rrggbb' string to the 0xRRGGBB integer Three.js wants.
+function hexToInt(hex) {
+    return parseInt(String(hex).replace('#', ''), 16) || 0;
+}
+
+// cssRgbToInt / cssAlpha parse the 'rgba(r, g, b, a)' strings getLocationColor
+// returns into the int colour + alpha the WebGL floor layer needs.
+function cssRgbToInt(str) {
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(String(str));
+    if (!m) return 0xaaaaaa;
+    return (parseInt(m[1], 10) << 16) | (parseInt(m[2], 10) << 8) | parseInt(m[3], 10);
+}
+function cssAlpha(str) {
+    const m = /rgba?\([^)]*,\s*([\d.]+)\s*\)/.exec(String(str));
+    return m ? parseFloat(m[1]) : 1;
+}
+
+// glFloorData assembles the static per-loc floor plan (coloured polygons +
+// label positions) for the WebGL renderer — the 3D equivalent of the 2D
+// drawLocationLayer floor fills. Rebuilt per demo when geometry resolves.
+function glFloorData() {
+    const locs = [];
+    for (const g of (mapState.locationGroups || [])) {
+        if (!g.tris) continue;
+        locs.push({
+            name: g.name,
+            tris: g.tris,
+            color: cssRgbToInt(g.color.fill),
+            // Floor fills are intentionally faint in 2D (painted on a dark
+            // canvas); lift the alpha so they read through the translucent shell.
+            alpha: Math.min(0.5, Math.max(0.18, cssAlpha(g.color.fill) * 3)),
+            textColor: cssRgbToInt(g.color.text),
+            centroid: g.centroid,
+        });
+    }
+    const backdrop = (mapState.mapGeometry && mapState.mapGeometry.backdropTris) || null;
+    return { locs, backdrop };
+}
+
+// Per-kind item colour for the 3D markers — mirrors ITEM_MARKER_STYLES (armors
+// use their fill; everything else its outline accent).
+const ITEM_GL_COLOR = {
+    ra: 0xff3232, ya: 0xffc800, ga: 0x00b400, mh: 0x00c853,
+    rl: 0xff6b6b, lg: 0x00d9ff, ssg: 0xaaaaaa, gl: 0xc78a3a,
+    ng: 0x8090a0, sng: 0xb48c64, quad: 0x0096ff, pent: 0xff0000, ring: 0xffeb3b,
+};
+
+// glFrameState assembles the per-frame entity snapshot the WebGL renderer
+// consumes. It reads from the same sources renderMap's 2D path uses
+// (augmentPlayerData over the time bucket, the position streams, the player
+// symbol/team table) so 3D and 2D agree exactly at any instant.
+function glFrameState(time) {
+    const bucket = findBucketAtTime(time);
+    const pd = bucket ? augmentPlayerData(bucket.p, time * 1000) : null;
+    const players = [];
+    if (pd) {
+        for (const name in pd) {
+            const d = pd[name];
+            if (!d) continue;
+            if (d.x === 0 && d.y === 0) continue; // no valid position this frame
+            const sym = mapState.playerSymbols[name];
+            const teamIdx = sym ? sym.teamIdx : 0;
+            // Floor surface beneath the player: the per-sample height H gives
+            // an exact readout (z − 24 − H); fall back to a floor-geometry
+            // scan when H is absent (matches drawPlayerFloorStem). fh can carry
+            // a NoFloor/garbage sentinel (e.g. unspawned players at intermission),
+            // so reject implausible values and leave floorZ null — the renderer
+            // then draws a short nub instead of a runaway stem.
+            let floorZ = null;
+            if (Number.isFinite(d.fh) && Math.abs(d.fh) < 8192) {
+                floorZ = d.z - PLAYER_ORIGIN_ABOVE_FLOOR - d.fh;
+            } else {
+                const f = playerFloorZ(name, d.x, d.y, d.z);
+                if (f !== null) floorZ = f;
+            }
+            if (floorZ !== null && (!Number.isFinite(floorZ) || Math.abs(d.z - floorZ) > 8192)) floorZ = null;
+            players.push({
+                name,
+                x: d.x, y: d.y, z: d.z, floorZ,
+                yaw: typeof d.vya === 'number' ? d.vya * ANGLE16_TO_RAD : null,
+                pitch: typeof d.vp === 'number' ? d.vp * ANGLE16_TO_RAD : 0,
+                vx: d.vx, vy: d.vy, vz: d.vz,
+                color: hexToInt(TEAM_COLORS[teamIdx] || TEAM_COLORS[0]),
+                health: d.h ?? d.health, armor: d.a ?? d.armor,
+                dead: typeof (d.h ?? d.health) === 'number' && (d.h ?? d.health) <= 0,
+                symbol: sym ? sym.symbol : (name[0] || '?').toUpperCase(),
+                // Held-item badges (Q/RL/LG/armor/MH/PE/Ring) as coloured dots.
+                badges: getActiveBadges(d).map(b => ({
+                    angle: b.angle * Math.PI / 180,
+                    color: cssRgbToInt(b.color || 'rgb(190,190,190)'),
+                })),
+            });
+        }
+    }
+
+    // Items: static positions, status (up/taken) varies with time — mirrors
+    // drawItemsAndPlayersZSorted's item pass.
+    const items = [];
+    const itemList = currentResult?.items?.items;
+    if (itemList) {
+        for (const it of itemList) {
+            const color = ITEM_GL_COLOR[it.kind];
+            if (color === undefined) continue;
+            items.push({
+                kind: it.kind, x: it.x, y: it.y, z: it.z, color,
+                up: itemStatus(it, time).up,
+                label: (ITEM_MARKER_STYLES[it.kind] && ITEM_MARKER_STYLES[it.kind].label) || it.kind,
+            });
+        }
+    }
+
+    // Recent death / drop markers — same DEATH_X_DURATION fade window the 2D
+    // path uses, so the 3D view shows the same transient X / backpack markers.
+    const deaths = [], drops = [];
+    for (const e of (mapState.deathEvents || [])) {
+        const dt = time - e.t;
+        if (dt < 0 || dt > DEATH_X_DURATION) continue;
+        deaths.push({ x: e.wx, y: e.wy, z: e.wz, color: hexToInt(TEAM_COLORS[e.teamIdx] || TEAM_COLORS[0]), alpha: 1 - dt / DEATH_X_DURATION });
+    }
+    for (const e of (mapState.dropEvents || [])) {
+        const dt = time - e.t;
+        if (dt < 0 || dt > DEATH_X_DURATION) continue;
+        drops.push({ x: e.wx, y: e.wy, z: e.wz, alpha: 1 - dt / DEATH_X_DURATION });
+    }
+
+    // Trails: the windowed movement history per enabled player, mirroring
+    // drawTracks. Each point carries `cut` = start a new segment here (the
+    // spawn point after a death, so the death→spawn gap isn't connected).
+    const trails = [];
+    const trailDuration = mapState.trailDuration;
+    for (const [name, points] of Object.entries(mapState.fullTrails || {})) {
+        if (!mapState.enabledPlayers[name] || points.length < 2) continue;
+        if (time < (mapState.trailStartTimes[name] || 0)) mapState.trailStartTimes[name] = time;
+        const endIdx = trailIndexAtTime(points, time);
+        if (endIdx < 1) continue;
+        const trailStart = Math.max(time - trailDuration, mapState.trailStartTimes[name] || 0);
+        let startIdx = trailIndexAtTime(points, trailStart);
+        if (startIdx < 0) startIdx = 0;
+        if (endIdx - startIdx < 1) continue;
+        const pts = [];
+        let afterDeath = false;
+        for (let i = startIdx; i <= endIdx; i++) {
+            const p = points[i];
+            let cut = false;
+            if (p.spawn) { cut = true; afterDeath = false; }
+            else if (afterDeath) { cut = true; }
+            pts.push({ x: p.wx, y: p.wy, z: p.wz, cut, tp: !!p.tp, spawn: !!p.spawn, death: !!p.death });
+            if (p.death) afterDeath = true;
+        }
+        trails.push({ color: hexToInt(TEAM_COLORS[points[0].teamIdx] || TEAM_COLORS[0]), pts });
+    }
+
+    // Occupied-region tint: which loc each player stands in, team-coloured
+    // (white when contested) — mirrors drawOccupiedRegionsOverlay.
+    const occupancy = [];
+    if (pd && typeof computeOccupiedGroupTeams === 'function') {
+        const occ = computeOccupiedGroupTeams(pd);
+        for (const [name, teams] of occ) {
+            const arr = [...teams];
+            occupancy.push({
+                name,
+                color: arr.length > 1 ? 0xebebf5 : hexToInt(TEAM_COLORS[arr[0]] || TEAM_COLORS[0]),
+                alpha: 0.34,
+            });
+        }
+    }
+
+    // Movers (lifts/doors/plats): per-frame pose offset of each brush submodel.
+    const movers = [];
+    const mv = mapState.movers || [];
+    for (let i = 0; i < mv.length; i++) {
+        const pose = moverPoseAt(mv[i], time * 1000);
+        if (!pose) continue;
+        movers.push({ i, sub: mv[i].sub, x: pose.x, y: pose.y, z: pose.z, vis: !!pose.vis });
+    }
+
+    // Region-control overlay (configured in Locs & Regions): tint each region's
+    // loc groups by controlling team. Folded into the occupancy list so the
+    // floor-overlay updater applies both. Mirrors drawRegionControlOverlay.
+    if (mapState.controlRegions && mapState.regionToGroups) {
+        const ctrl = getRegionControlAtTime(time);
+        if (ctrl) {
+            for (const region of mapState.controlRegions) {
+                const st = ctrl[region.name];
+                if (!st || st === 'empty') continue;
+                let color, alpha;
+                if (st === 'teamAControl') { color = hexToInt(TEAM_COLORS[0]); alpha = 0.3; }
+                else if (st === 'teamBControl') { color = hexToInt(TEAM_COLORS[1]); alpha = 0.3; }
+                else if (st === 'teamAWeakControl') { color = hexToInt(TEAM_COLORS[0]); alpha = 0.18; }
+                else if (st === 'teamBWeakControl') { color = hexToInt(TEAM_COLORS[1]); alpha = 0.18; }
+                else { color = 0xffffff; alpha = st === 'weakContested' ? 0.1 : 0.18; } // contested
+                // regionToGroups stores group objects, not names — key the
+                // floor-overlay tint by the group's normalized name.
+                for (const g of (mapState.regionToGroups[region.name] || [])) {
+                    if (g && g.name) occupancy.push({ name: g.name, color, alpha });
+                }
+            }
+        }
+    }
+
+    // Learn-mode static entities (item layout, spawns, teleporters, buttons,
+    // doors) + teleport arrows — gated by the Learn toggle and per-category
+    // filters, mirroring drawMapEntities.
+    const entities = [];
+    const teleArrows = [];
+    if (mapState.learnMode && Array.isArray(mapState.mapEntities)) {
+        const f = mapState.entityFilters || {};
+        for (const e of mapState.mapEntities) {
+            if (!f[entityCategory(e)]) continue;
+            let color, shape;
+            if (e.type === 'item') { color = ITEM_GL_COLOR[e.kind] ?? 0x9aa0b0; shape = 'item'; }
+            else if (e.type === 'spawn') { color = 0x888888; shape = 'spawn'; }
+            else if (e.type === 'teleportSrc') { color = 0xb388ff; shape = 'tsrc'; }
+            else if (e.type === 'teleportDst') { color = 0xb388ff; shape = 'tdst'; }
+            else if (e.type === 'button') { color = 0xff9800; shape = 'button'; }
+            else if (e.type === 'door') { color = 0xa1887f; shape = 'door'; }
+            else continue;
+            entities.push({ x: e.x, y: e.y, z: e.z, color, shape });
+        }
+        if (f.teleporter) {
+            for (const a of (mapState.teleportArrows || [])) {
+                teleArrows.push({ sx: a.sx, sy: a.sy, sz: a.sz, dx: a.dx, dy: a.dy, dz: a.dz });
+            }
+        }
+    }
+
+    // Follow target for the GL orbit camera (mirrors the 2D follow-player pan).
+    let follow = null;
+    if (mapState.followPlayer) {
+        const fp = players.find(p => p.name === mapState.followPlayer);
+        if (fp) follow = { x: fp.x, y: fp.y, z: fp.z };
+    }
+
+    return {
+        time, players, items, deaths, drops, trails, occupancy, movers, entities, teleArrows,
+        follow,
+        showVel: !!mapState.showVelArrows, showView: !!mapState.showViewArrows,
+    };
+}
+
+// syncMapGL: in 3D mode show the WebGL renderer (it draws on its own rAF loop)
+// and let it cover the 2D map; in top-down mode hide the GL surface so the
+// Canvas-2D path below renders. Lazily initialises MapGL on first 3D use.
+function syncMapGL() {
+    const gl = window.MapGL;
+    if (!gl) return;
+    if (mapIs3D() && mapState.fullShell) {
+        if (!gl.isReady()) {
+            const glc = document.getElementById('map-gl-canvas');
+            if (!glc) return;
+            const w = mapState.canvasCssW || 850;
+            const h = mapState.canvasCssH || 700;
+            glc.style.width = w + 'px';
+            glc.style.height = h + 'px';
+            gl.init(glc);
+            gl.resize(w, h, mapState.dpr || 1);
+            // The module may have loaded after initMapView's async geometry
+            // setup. Re-send all static state at the lazy-init seam so direct
+            // demo deep links cannot open an empty shell.
+            gl.loadMap(mapState.mapBasename);
+            gl.setFloors(glFloorData());
+            gl.setSubmodels(mapState.submodelMeshes || {});
+            gl.setLiquids((mapState.mapGeometry && mapState.mapGeometry.liquids) || []);
+        }
+        gl.show();
+    } else if (gl.isReady()) {
+        gl.hide();
+    }
+}
+
 function renderMap(time) {
     const ctx = mapState.ctx;
     const canvas = mapState.canvas;
 
     if (!ctx || !canvas) return;
+
+    // The current Canvas renderer remains the default. Full shell is an
+    // explicit compatibility mode preserving the fork's WebGL walls/ceilings.
+    syncMapGL();
+    if (mapState.fullShell && mapIs3D() && window.MapGL && window.MapGL.isReady()) {
+        window.MapGL.renderFrame(glFrameState(time));
+        return;
+    }
 
     // Skip redraw if same data bucket and nothing else changed — but NOT
     // during playback: positions come from the native-rate streams, so the
@@ -9456,6 +9754,20 @@ function setupMapTrailControls() {
             // right-drag / Ctrl+drag.
             setMapCamera(mapIs3D() ? 0 : MAP_DEFAULT_YAW,
                          mapIs3D() ? MAP_PITCH_MAX : MAP_3D_DEFAULT_PITCH);
+        });
+    }
+
+    const fullShellBtn = document.getElementById('map-full-shell-toggle');
+    if (fullShellBtn) {
+        fullShellBtn.addEventListener('click', () => {
+            mapState.fullShell = !mapState.fullShell;
+            fullShellBtn.classList.toggle('active', mapState.fullShell);
+            if (mapState.fullShell && !mapIs3D()) {
+                setMapCamera(MAP_DEFAULT_YAW, MAP_3D_DEFAULT_PITCH);
+            } else {
+                mapState.renderDirty = true;
+                renderMap(mapState.currentTime);
+            }
         });
     }
 

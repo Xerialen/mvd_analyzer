@@ -132,8 +132,8 @@ func (a *MatchAnalyzer) Finalize(result *Result) error {
 		// those gates are end-of-demo state, so a participant who goes
 		// spectator after the match (sub-out, post-game spec) is dropped here
 		// even though demoinfo lists them; recovering them needs the
-		// demoinfo-authoritative participant merge (see duel_normalize's
-		// Match.Players rebuild for the duel-mode version).
+		// demoinfo-authoritative participant merge (see rebuildDuelMatch below
+		// for the duel-mode implementation owned by this analyzer).
 		mr.Players = append(mr.Players, stat)
 
 		// Aggregate team frags

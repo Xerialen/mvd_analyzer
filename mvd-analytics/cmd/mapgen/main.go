@@ -1,8 +1,10 @@
 // mapgen is a developer tool that parses Quake 1 BSP files and writes
-// two kinds of per-map JSON:
+// three kinds of per-map output:
 //
 //   - -out-dir: per-loc walkable-floor polygon geometry (the viewer
 //     renders real floor geometry instead of the loc convex-hull blob).
+//   - -mesh3d-out: full worldspawn solid-shell binaries for the optional
+//     WebGL view (walls and ceilings as M3D1 triangle soup).
 //   - -entities-out: the static map-entity corpus (mapents) — item
 //     spawns, player spawnpoints, teleport destinations/sources, buttons
 //     — classified from the BSP entity lump and named by nearest loc.
@@ -44,6 +46,7 @@ import (
 func main() {
 	bspDir := flag.String("bsp-dir", "", "directory containing .bsp files (required)")
 	outDir := flag.String("out-dir", "mvd-web/static/maps", "output directory for geometry JSON; empty to skip geometry")
+	mesh3dOut := flag.String("mesh3d-out", "", "output directory for full-map 3D mesh binaries (maps3d); empty to skip")
 	entitiesOut := flag.String("entities-out", "", "output directory for per-map entity JSON (mapents corpus); empty to skip entities")
 	locDir := flag.String("loc-dir", "", "directory of .loc files; empty uses the embedded loc corpus (mvd-analytics/loc/data)")
 	mapFilter := flag.String("map", "", "process only the BSP whose basename (no extension) matches")
@@ -53,8 +56,8 @@ func main() {
 	pruneZTol := flag.Float64("prune-z-tol", 16.0, "usage pruning: max |faceZ - sampleZ| (world units); raise for slope-heavy maps")
 	flag.Parse()
 
-	if *outDir == "" && *entitiesOut == "" {
-		fmt.Fprintln(os.Stderr, "mapgen: nothing to do — set -out-dir and/or -entities-out")
+	if *outDir == "" && *mesh3dOut == "" && *entitiesOut == "" {
+		fmt.Fprintln(os.Stderr, "mapgen: nothing to do — set -out-dir, -mesh3d-out and/or -entities-out")
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -77,7 +80,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, dir := range []string{*outDir, *entitiesOut} {
+	for _, dir := range []string{*outDir, *mesh3dOut, *entitiesOut} {
 		if dir == "" {
 			continue
 		}
@@ -129,7 +132,7 @@ func main() {
 		if usageByMap != nil {
 			usage = usageByMap[loc.NormalizeMapName(name)]
 		}
-		if err := processOne(path, name, *outDir, *entitiesOut, *verbose, usage, params); err != nil {
+		if err := processOne(path, name, *outDir, *mesh3dOut, *entitiesOut, *verbose, usage, params); err != nil {
 			fmt.Fprintf(os.Stderr, "  fail %s: %v\n", name, err)
 			failed++
 			continue
@@ -160,7 +163,7 @@ func findBSPs(root string) ([]string, error) {
 	return out, err
 }
 
-func processOne(path, name, outDir, entitiesOut string, verbose bool, usage *mapgeom.FloorUsage, params mapgeom.Params) error {
+func processOne(path, name, outDir, mesh3dOut, entitiesOut string, verbose bool, usage *mapgeom.FloorUsage, params mapgeom.Params) error {
 	// Loc file is optional: without it, geometry routes every floor face
 	// into the unnamed backdrop bucket and entities fall back to
 	// kind/type names instead of loc names.
@@ -177,10 +180,39 @@ func processOne(path, name, outDir, entitiesOut string, verbose bool, usage *map
 			return err
 		}
 	}
+	if mesh3dOut != "" {
+		if err := emitMesh3D(path, name, mesh3dOut, verbose); err != nil {
+			return err
+		}
+	}
 	if entitiesOut != "" {
 		if err := emitEntities(path, name, finder, entitiesOut, verbose); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// emitMesh3D writes the full worldspawn shell for the optional WebGL view.
+// It is independent from the per-loc floor JSON: walls and ceilings omitted
+// by the floor extractor are exactly the geometry the full shell preserves.
+func emitMesh3D(path, name, mesh3dOut string, verbose bool) error {
+	parsed, err := bsp.Parse(path)
+	if err != nil {
+		return fmt.Errorf("parse bsp: %w", err)
+	}
+	mesh := mapgeom.BuildMesh3D(name, parsed)
+	if len(mesh.Tris) == 0 {
+		return fmt.Errorf("no 3D mesh extracted (faces=%d skipped=%d)", mesh.Faces, mesh.Skipped)
+	}
+	blob := mapgeom.EncodeMesh3D(mesh)
+	outPath := filepath.Join(mesh3dOut, name+".bin")
+	if err := os.WriteFile(outPath, blob, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", outPath, err)
+	}
+	if verbose {
+		fmt.Fprintf(os.Stderr, "  3d   %s: faces=%d tris=%d skipped=%d bytes=%d\n",
+			name, mesh.Faces, len(mesh.Tris)/9, mesh.Skipped, len(blob))
 	}
 	return nil
 }
