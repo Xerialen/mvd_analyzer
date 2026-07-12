@@ -512,8 +512,10 @@ func TestShots_WarmupGating(t *testing.T) {
 	r := &Result{}
 	_ = a.Finalize(r)
 
-	if len(r.Shots.Shots) != 2 {
-		t.Fatalf("stream shots = %d, want 2 (warmup + match)", len(r.Shots.Shots))
+	// Warmup fires are gated out of the stream at the source (match-only, like
+	// every analytics stream except chat), so only the match shot survives.
+	if len(r.Shots.Shots) != 1 {
+		t.Fatalf("stream shots = %d, want 1 (warmup dropped, match only)", len(r.Shots.Shots))
 	}
 	total := 0
 	for _, p := range r.Shots.ByPlayer {

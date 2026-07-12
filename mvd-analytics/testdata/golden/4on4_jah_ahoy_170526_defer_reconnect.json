@@ -42124,8 +42124,29 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "[nW].Veggie": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 64,
+            "rl": 1548,
+            "sg": 3473,
+            "sng": 117,
+            "ssg": 355
+          },
+          "enemyVsBoth": 417,
+          "enemyVsLg": 481,
+          "enemyVsMid": 881,
+          "enemyVsRl": 396,
+          "enemyVsSg": 3382,
+          "ewep": 1294,
+          "given": 5557,
+          "givenSelf": 266,
+          "givenTeam": 176,
+          "taken": 8047,
+          "takenEnv": 15
+        },
         "byWeapon": {
           "lg": 90,
           "rl": 1899,
@@ -42142,10 +42163,31 @@
         "given": 6327,
         "givenSelf": 269,
         "givenTeam": 188,
-        "taken": 9330,
+        "taken": 9437,
         "takenEnv": 15
       },
       "biggz": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 639,
+            "lg": 1618,
+            "rl": 864,
+            "sg": 4916,
+            "sng": 107,
+            "ssg": 236
+          },
+          "enemyVsBoth": 896,
+          "enemyVsLg": 614,
+          "enemyVsMid": 1626,
+          "enemyVsRl": 1187,
+          "enemyVsSg": 4057,
+          "ewep": 2697,
+          "given": 8380,
+          "givenSelf": 218,
+          "givenTeam": 257,
+          "taken": 8252,
+          "takenEnv": 45
+        },
         "byWeapon": {
           "gl": 729,
           "lg": 1800,
@@ -42167,6 +42209,27 @@
         "takenEnv": 45
       },
       "gandi": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 183,
+            "lg": 178,
+            "rl": 2551,
+            "sg": 2244,
+            "sng": 54,
+            "ssg": 943
+          },
+          "enemyVsBoth": 56,
+          "enemyVsLg": 328,
+          "enemyVsMid": 870,
+          "enemyVsRl": 990,
+          "enemyVsSg": 3909,
+          "ewep": 1374,
+          "given": 6153,
+          "givenSelf": 471,
+          "givenTeam": 241,
+          "taken": 6978,
+          "takenEnv": 15
+        },
         "byWeapon": {
           "gl": 262,
           "lg": 210,
@@ -42188,6 +42251,27 @@
         "takenEnv": 15
       },
       "nexus": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 824,
+            "ng": 9,
+            "rl": 1701,
+            "sg": 2299,
+            "sng": 811,
+            "ssg": 723
+          },
+          "enemyVsBoth": 696,
+          "enemyVsLg": 561,
+          "enemyVsMid": 724,
+          "enemyVsRl": 1103,
+          "enemyVsSg": 3283,
+          "ewep": 2360,
+          "given": 6367,
+          "givenSelf": 92,
+          "givenTeam": 312,
+          "taken": 7755,
+          "takenEnv": 35
+        },
         "byWeapon": {
           "lg": 930,
           "ng": 9,
@@ -42204,12 +42288,32 @@
         "ewep": 2553,
         "given": 7664,
         "givenSelf": 92,
-        "givenTeam": 258,
+        "givenTeam": 365,
         "taken": 9073,
-        "takenEnv": 35,
-        "telefrags": 1
+        "takenEnv": 35
       },
       "ocoini": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 100,
+            "lg": 275,
+            "rl": 2740,
+            "sg": 2607,
+            "sng": 72,
+            "ssg": 1507
+          },
+          "enemyVsBoth": 396,
+          "enemyVsLg": 1336,
+          "enemyVsMid": 1123,
+          "enemyVsRl": 1072,
+          "enemyVsSg": 3374,
+          "ewep": 2804,
+          "given": 7301,
+          "givenSelf": 167,
+          "givenTeam": 263,
+          "taken": 7847,
+          "takenEnv": 40
+        },
         "byWeapon": {
           "gl": 112,
           "lg": 300,
@@ -42231,6 +42335,27 @@
         "takenEnv": 40
       },
       "paniagua": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 314,
+            "lg": 1378,
+            "rl": 2029,
+            "sg": 3885,
+            "sng": 90,
+            "ssg": 312
+          },
+          "enemyVsBoth": 389,
+          "enemyVsLg": 445,
+          "enemyVsMid": 1449,
+          "enemyVsRl": 1950,
+          "enemyVsSg": 3775,
+          "ewep": 2784,
+          "given": 8008,
+          "givenSelf": 399,
+          "givenTeam": 206,
+          "taken": 9666,
+          "takenEnv": 40
+        },
         "byWeapon": {
           "gl": 381,
           "lg": 1740,
@@ -42247,12 +42372,32 @@
         "ewep": 3048,
         "given": 9770,
         "givenSelf": 426,
-        "givenTeam": 130,
+        "givenTeam": 206,
         "taken": 11334,
-        "takenEnv": 40,
-        "telefrags": 1
+        "takenEnv": 40
       },
       "rusti": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 107,
+            "lg": 959,
+            "rl": 2907,
+            "sg": 2188,
+            "sng": 118,
+            "ssg": 610
+          },
+          "enemyVsBoth": 406,
+          "enemyVsLg": 201,
+          "enemyVsMid": 1149,
+          "enemyVsRl": 1775,
+          "enemyVsSg": 3358,
+          "ewep": 2382,
+          "given": 6889,
+          "givenSelf": 129,
+          "givenTeam": 89,
+          "taken": 7947,
+          "takenEnv": 35
+        },
         "byWeapon": {
           "gl": 218,
           "lg": 1050,
@@ -42270,10 +42415,29 @@
         "given": 9093,
         "givenSelf": 163,
         "givenTeam": 90,
-        "taken": 9233,
+        "taken": 9309,
         "takenEnv": 35
       },
       "sailorman": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 1181,
+            "rl": 5776,
+            "sg": 3771,
+            "ssg": 745
+          },
+          "enemyVsBoth": 914,
+          "enemyVsLg": 1511,
+          "enemyVsMid": 1191,
+          "enemyVsRl": 1810,
+          "enemyVsSg": 6047,
+          "ewep": 4235,
+          "given": 11473,
+          "givenSelf": 388,
+          "givenTeam": 123,
+          "taken": 7688,
+          "takenEnv": 30
+        },
         "byWeapon": {
           "lg": 1260,
           "rl": 7772,
@@ -42302,16 +42466,8 @@
       "sng": 1566,
       "ssg": 6092
     },
+    "dmg": "both",
     "events": [
-      {
-        "attacker": "biggz",
-        "damage": 54,
-        "isSplash": true,
-        "time": -7531,
-        "victim": "ocoini",
-        "victimWep": "both",
-        "weapon": "gl"
-      },
       {
         "attacker": "biggz",
         "damage": 16,
@@ -42330,6 +42486,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 24,
         "time": 2708,
         "victim": "ocoini",
@@ -42346,6 +42503,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 24,
         "time": 4711,
         "victim": "ocoini",
@@ -42354,6 +42512,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 24,
         "time": 5231,
         "victim": "ocoini",
@@ -42362,6 +42521,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 4,
         "time": 5719,
         "victim": "ocoini",
@@ -42370,6 +42530,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 8,
         "time": 6238,
         "victim": "ocoini",
@@ -42466,6 +42627,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 25,
         "damage": 30,
         "time": 12588,
         "victim": "paniagua",
@@ -42490,6 +42652,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 27,
         "damage": 72,
         "time": 12830,
         "victim": "biggz",
@@ -42506,6 +42669,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 24,
         "time": 13623,
         "victim": "ocoini",
@@ -42522,6 +42686,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 16,
         "time": 14627,
         "victim": "ocoini",
@@ -42538,6 +42703,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 12,
         "time": 15147,
         "victim": "ocoini",
@@ -42554,6 +42720,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 4,
         "time": 15147,
         "victim": "ocoini",
@@ -42578,6 +42745,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 12,
         "time": 15632,
         "victim": "ocoini",
@@ -42586,6 +42754,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 24,
         "time": 16152,
         "victim": "ocoini",
@@ -42594,6 +42763,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 20,
         "time": 16952,
         "victim": "ocoini",
@@ -42602,6 +42772,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 16,
         "time": 17433,
         "victim": "ocoini",
@@ -42650,6 +42821,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 0,
         "damage": 111,
         "isSplash": true,
         "time": 22237,
@@ -42683,6 +42855,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 0,
         "damage": 12,
         "time": 22587,
         "victim": "ocoini",
@@ -42739,6 +42912,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 52,
         "damage": 64,
         "isTeam": true,
         "time": 24008,
@@ -42747,6 +42921,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 15,
         "damage": 16,
         "time": 24008,
         "victim": "rusti",
@@ -42763,6 +42938,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 12,
         "damage": 48,
         "time": 24528,
         "victim": "paniagua",
@@ -42819,6 +42995,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 24,
         "time": 26400,
         "victim": "biggz",
@@ -42827,6 +43004,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 88,
         "damage": 90,
         "isSplash": true,
         "time": 27263,
@@ -42884,6 +43062,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 26,
         "damage": 30,
         "time": 29514,
         "victim": "gandi",
@@ -42941,6 +43120,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 32218,
@@ -42950,6 +43130,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 3,
         "damage": 24,
         "time": 32500,
         "victim": "rusti",
@@ -42966,6 +43147,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 10,
         "damage": 77,
         "isSplash": true,
         "time": 32841,
@@ -42975,6 +43157,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 76,
         "damage": 83,
         "isSplash": true,
         "time": 32841,
@@ -43026,6 +43209,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 4,
         "damage": 24,
         "time": 35465,
         "victim": "paniagua",
@@ -43050,6 +43234,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 109,
         "isSplash": true,
         "time": 39202,
@@ -43118,6 +43303,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 6,
         "damage": 30,
         "isSelf": true,
         "isSplash": true,
@@ -43159,6 +43345,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 10,
         "damage": 30,
         "time": 43775,
         "victim": "rusti",
@@ -43247,6 +43434,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 76,
         "damage": 110,
         "time": 49422,
         "victim": "biggz",
@@ -43288,6 +43476,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 2,
         "damage": 24,
         "time": 50701,
         "victim": "ocoini",
@@ -43360,6 +43549,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 42,
         "damage": 56,
         "time": 54580,
         "victim": "[nW].Veggie",
@@ -43504,6 +43694,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 13,
         "damage": 20,
         "time": 61948,
         "victim": "gandi",
@@ -43512,6 +43703,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 23,
         "damage": 24,
         "time": 62153,
         "victim": "ocoini",
@@ -43624,6 +43816,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 16,
         "damage": 30,
         "time": 72178,
         "victim": "[nW].Veggie",
@@ -43672,6 +43865,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 100,
         "damage": 112,
         "isSplash": true,
         "time": 77907,
@@ -43681,6 +43875,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 38,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -43722,6 +43917,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 47,
         "damage": 53,
         "isSplash": true,
         "time": 81759,
@@ -43788,6 +43984,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 24,
         "time": 84772,
         "victim": "gandi",
@@ -43878,6 +44075,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 18,
         "damage": 46,
         "isSplash": true,
         "time": 87496,
@@ -43895,6 +44093,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 10,
         "damage": 24,
         "time": 88316,
         "victim": "ocoini",
@@ -43903,6 +44102,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 100,
         "damage": 110,
         "time": 92919,
         "victim": "ocoini",
@@ -43969,6 +44169,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 8,
         "damage": 16,
         "time": 95931,
         "victim": "ocoini",
@@ -44004,6 +44205,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 25,
         "damage": 59,
         "isSplash": true,
         "time": 99845,
@@ -44045,6 +44247,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 30,
         "time": 103832,
         "victim": "gandi",
@@ -44134,6 +44337,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 9,
         "damage": 20,
         "time": 109462,
         "victim": "[nW].Veggie",
@@ -44166,6 +44370,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 8,
         "damage": 24,
         "time": 111922,
         "victim": "gandi",
@@ -44247,6 +44452,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 12,
         "damage": 110,
         "time": 119467,
         "victim": "rusti",
@@ -44263,6 +44469,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 100,
         "damage": 110,
         "time": 119979,
         "victim": "biggz",
@@ -44280,6 +44487,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 56,
         "isSplash": true,
         "time": 121019,
@@ -44321,6 +44529,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 23,
         "damage": 24,
         "time": 122228,
         "victim": "paniagua",
@@ -44337,6 +44546,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 100,
         "damage": 110,
         "time": 123716,
         "victim": "rusti",
@@ -44426,6 +44636,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 37,
         "damage": 44,
         "isSplash": true,
         "time": 127192,
@@ -44452,6 +44663,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 28,
         "damage": 31,
         "isSelf": true,
         "isSplash": true,
@@ -44518,6 +44730,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 17,
         "damage": 30,
         "time": 134958,
         "victim": "sailorman",
@@ -44550,6 +44763,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 3,
         "damage": 20,
         "time": 137381,
         "victim": "paniagua",
@@ -44574,6 +44788,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 66,
         "damage": 77,
         "isSplash": true,
         "time": 138249,
@@ -44607,6 +44822,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 22,
         "damage": 110,
         "time": 138798,
         "victim": "sailorman",
@@ -44615,6 +44831,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 36,
         "damage": 39,
         "isSelf": true,
         "isSplash": true,
@@ -44712,6 +44929,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 24,
         "time": 144821,
         "victim": "gandi",
@@ -44728,6 +44946,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 20,
         "damage": 56,
         "isSplash": true,
         "isTeam": true,
@@ -44762,6 +44981,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 37,
         "damage": 56,
         "isSplash": true,
         "isTeam": true,
@@ -44851,6 +45071,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 32,
         "damage": 56,
         "time": 152207,
         "victim": "[nW].Veggie",
@@ -44859,6 +45080,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 89,
         "isSplash": true,
         "time": 153515,
@@ -44988,6 +45210,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 24,
         "time": 157990,
         "victim": "paniagua",
@@ -45029,6 +45252,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 15,
         "damage": 45,
         "isSplash": true,
         "time": 159060,
@@ -45055,6 +45279,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 7,
         "damage": 12,
         "time": 159816,
         "victim": "sailorman",
@@ -45119,6 +45344,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 52,
         "damage": 73,
         "isSplash": true,
         "time": 163310,
@@ -45200,6 +45426,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 30,
         "time": 167044,
         "victim": "paniagua",
@@ -45346,6 +45573,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 4,
         "damage": 24,
         "time": 169661,
         "victim": "biggz",
@@ -45378,6 +45606,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 9,
         "damage": 47,
         "isSplash": true,
         "isTeam": true,
@@ -45452,6 +45681,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 22,
         "damage": 24,
         "time": 174293,
         "victim": "ocoini",
@@ -45518,6 +45748,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 47,
         "damage": 53,
         "isSplash": true,
         "time": 176119,
@@ -45551,6 +45782,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 24,
         "time": 176810,
         "victim": "sailorman",
@@ -45567,6 +45799,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 10,
         "damage": 24,
         "time": 177598,
         "victim": "rusti",
@@ -45751,6 +45984,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 16,
         "damage": 67,
         "isSplash": true,
         "time": 188684,
@@ -45776,6 +46010,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 4,
         "damage": 20,
         "time": 189094,
         "victim": "paniagua",
@@ -45808,6 +46043,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 72,
         "damage": 110,
         "time": 191075,
         "victim": "ocoini",
@@ -45931,6 +46167,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 16,
         "damage": 24,
         "time": 195598,
         "victim": "ocoini",
@@ -45987,6 +46224,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 27,
         "damage": 50,
         "isSplash": true,
         "time": 203168,
@@ -45996,6 +46234,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 56,
         "damage": 72,
         "time": 203168,
         "victim": "biggz",
@@ -46174,6 +46413,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 8,
         "damage": 24,
         "time": 209949,
         "victim": "biggz",
@@ -46198,6 +46438,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 18,
         "damage": 24,
         "time": 211192,
         "victim": "rusti",
@@ -46230,6 +46471,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 18,
         "time": 214682,
         "victim": "rusti",
@@ -46238,6 +46480,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 26,
         "damage": 53,
         "isSelf": true,
         "isSplash": true,
@@ -46287,6 +46530,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 30,
         "time": 216378,
         "victim": "biggz",
@@ -46359,6 +46603,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 18,
         "time": 221948,
         "victim": "rusti",
@@ -46433,6 +46678,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 21,
         "damage": 30,
         "time": 226166,
         "victim": "nexus",
@@ -46497,6 +46743,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 23,
         "damage": 24,
         "time": 232165,
         "victim": "sailorman",
@@ -46521,6 +46768,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 72,
         "damage": 110,
         "time": 238017,
         "victim": "rusti",
@@ -46637,6 +46885,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 105,
         "damage": 110,
         "time": 244440,
         "victim": "nexus",
@@ -46654,6 +46903,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 4,
         "damage": 24,
         "time": 244925,
         "victim": "rusti",
@@ -46718,6 +46968,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 2,
         "damage": 104,
         "isSplash": true,
         "time": 246133,
@@ -46743,6 +46994,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 44,
         "damage": 48,
         "time": 249315,
         "victim": "nexus",
@@ -46831,6 +47083,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 7,
         "damage": 24,
         "time": 256168,
         "victim": "gandi",
@@ -46855,6 +47108,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 76,
         "damage": 80,
         "time": 261511,
         "victim": "rusti",
@@ -46871,6 +47125,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 23,
         "damage": 24,
         "time": 263229,
         "victim": "nexus",
@@ -46904,6 +47159,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 35,
         "damage": 110,
         "time": 265759,
         "victim": "rusti",
@@ -47032,6 +47288,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 12,
         "damage": 24,
         "time": 275138,
         "victim": "gandi",
@@ -47064,6 +47321,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 13,
         "damage": 30,
         "time": 276589,
         "victim": "ocoini",
@@ -47089,6 +47347,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 4,
         "damage": 24,
         "time": 278875,
         "victim": "nexus",
@@ -47130,6 +47389,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 95,
         "damage": 110,
         "time": 288311,
         "victim": "rusti",
@@ -47215,6 +47475,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 94,
         "damage": 110,
         "time": 294185,
         "victim": "ocoini",
@@ -47232,6 +47493,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 294322,
         "victim": "nexus",
@@ -47264,6 +47526,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 16,
         "damage": 44,
         "isSplash": true,
         "time": 299113,
@@ -47299,6 +47562,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 15,
         "damage": 24,
         "time": 301711,
         "victim": "[nW].Veggie",
@@ -47331,6 +47595,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 10,
         "damage": 30,
         "time": 306872,
         "victim": "[nW].Veggie",
@@ -47363,6 +47628,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 56,
         "damage": 90,
         "isSplash": true,
         "time": 308365,
@@ -47372,6 +47638,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 10,
         "damage": 12,
         "time": 309889,
         "victim": "paniagua",
@@ -47380,6 +47647,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 100,
         "damage": 110,
         "time": 310754,
         "victim": "[nW].Veggie",
@@ -47461,6 +47729,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 20,
         "damage": 24,
         "time": 316805,
         "victim": "paniagua",
@@ -47469,6 +47738,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 70,
         "isSplash": true,
         "time": 316980,
@@ -47478,6 +47748,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 18,
         "damage": 22,
         "isSelf": true,
         "isSplash": true,
@@ -47511,6 +47782,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 24,
         "time": 320085,
         "victim": "rusti",
@@ -47519,6 +47791,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 20,
         "damage": 24,
         "time": 321956,
         "victim": "paniagua",
@@ -47536,6 +47809,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 43,
         "isSelf": true,
         "isSplash": true,
@@ -47561,6 +47835,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 20,
         "damage": 24,
         "time": 322719,
         "victim": "sailorman",
@@ -47569,6 +47844,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 0,
         "damage": 16,
         "time": 322925,
         "victim": "paniagua",
@@ -47593,6 +47869,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 72,
         "time": 324451,
         "victim": "rusti",
@@ -47649,6 +47926,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 0,
         "damage": 16,
         "time": 329695,
         "victim": "paniagua",
@@ -47657,6 +47935,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 28,
         "damage": 56,
         "time": 329801,
         "victim": "ocoini",
@@ -47689,6 +47968,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 15,
         "damage": 16,
         "time": 332202,
         "victim": "rusti",
@@ -47801,6 +48081,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 53,
         "damage": 72,
         "isSplash": true,
         "time": 340811,
@@ -47900,6 +48181,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 13,
         "damage": 110,
         "time": 345770,
         "victim": "biggz",
@@ -47934,6 +48216,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 24,
         "damage": 110,
         "time": 349400,
         "victim": "[nW].Veggie",
@@ -47966,6 +48249,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 40,
         "damage": 52,
         "time": 350265,
         "victim": "biggz",
@@ -47982,6 +48266,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 3,
         "damage": 4,
         "time": 355304,
         "victim": "ocoini",
@@ -48071,6 +48356,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 40,
         "damage": 110,
         "time": 358048,
         "victim": "sailorman",
@@ -48144,6 +48430,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 29,
         "damage": 30,
         "time": 359123,
         "victim": "nexus",
@@ -48160,6 +48447,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 23,
         "damage": 24,
         "time": 359776,
         "victim": "biggz",
@@ -48208,6 +48496,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 28,
         "damage": 32,
         "time": 365751,
         "victim": "sailorman",
@@ -48256,6 +48545,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 6,
         "damage": 18,
         "time": 372050,
         "victim": "ocoini",
@@ -48361,6 +48651,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 87,
         "damage": 88,
         "isSplash": true,
         "time": 390007,
@@ -48370,6 +48661,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 72,
         "damage": 262,
         "isSplash": true,
         "time": 393097,
@@ -48438,6 +48730,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 56,
         "damage": 110,
         "time": 397599,
         "victim": "nexus",
@@ -48455,6 +48748,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 40,
         "damage": 45,
         "isSplash": true,
         "time": 397980,
@@ -48513,6 +48807,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 54,
         "damage": 94,
         "isSplash": true,
         "time": 400112,
@@ -48595,6 +48890,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 16,
         "damage": 59,
         "isSplash": true,
         "time": 402399,
@@ -48708,6 +49004,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 4,
         "damage": 24,
         "time": 408758,
         "victim": "biggz",
@@ -48757,6 +49054,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 12,
         "damage": 24,
         "time": 409586,
         "victim": "gandi",
@@ -48773,6 +49071,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 68,
         "isSplash": true,
         "time": 410138,
@@ -48791,6 +49090,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 70,
         "damage": 73,
         "isSplash": true,
         "time": 411242,
@@ -48882,6 +49182,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 2,
         "damage": 16,
         "time": 415927,
         "victim": "sailorman",
@@ -48906,6 +49207,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 9,
         "damage": 24,
         "time": 416826,
         "victim": "paniagua",
@@ -48954,6 +49256,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 24,
         "time": 419006,
         "victim": "ocoini",
@@ -49002,6 +49305,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 26,
         "damage": 30,
         "time": 423091,
         "victim": "nexus",
@@ -49067,6 +49371,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 10,
         "damage": 16,
         "time": 425101,
         "victim": "sailorman",
@@ -49083,6 +49388,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 72,
         "damage": 96,
         "time": 426211,
         "victim": "ocoini",
@@ -49123,6 +49429,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 96,
         "time": 429265,
         "victim": "sailorman",
@@ -49219,6 +49526,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 44,
         "damage": 56,
         "time": 433444,
         "victim": "nexus",
@@ -49227,6 +49535,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 40,
         "damage": 101,
         "isSplash": true,
         "time": 434037,
@@ -49277,6 +49586,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 40,
         "damage": 96,
         "time": 436671,
         "victim": "ocoini",
@@ -49293,6 +49603,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 59,
         "damage": 101,
         "isSplash": true,
         "time": 437402,
@@ -49463,6 +49774,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 22,
         "damage": 30,
         "time": 447855,
         "victim": "nexus",
@@ -49496,6 +49808,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 85,
         "damage": 96,
         "time": 450074,
         "victim": "[nW].Veggie",
@@ -49536,6 +49849,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 51,
         "damage": 96,
         "time": 451922,
         "victim": "sailorman",
@@ -49609,6 +49923,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 21,
         "damage": 70,
         "isSplash": true,
         "time": 455696,
@@ -49666,6 +49981,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 7,
         "damage": 12,
         "time": 457455,
         "victim": "biggz",
@@ -49699,6 +50015,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 54,
         "damage": 72,
         "isSplash": true,
         "time": 459701,
@@ -49733,6 +50050,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 10,
         "damage": 16,
         "time": 461943,
         "victim": "nexus",
@@ -49800,6 +50118,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 26,
         "damage": 91,
         "isSplash": true,
         "time": 469602,
@@ -49817,6 +50136,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 60,
         "damage": 86,
         "isSplash": true,
         "isTeam": true,
@@ -49842,6 +50162,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 5,
         "damage": 75,
         "isSplash": true,
         "time": 473065,
@@ -49949,6 +50270,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 22,
         "damage": 24,
         "time": 480303,
         "victim": "biggz",
@@ -49973,6 +50295,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 30,
         "time": 481998,
         "victim": "rusti",
@@ -50061,6 +50384,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 22,
         "damage": 24,
         "time": 484838,
         "victim": "biggz",
@@ -50085,6 +50409,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 29,
         "damage": 30,
         "time": 486083,
         "victim": "paniagua",
@@ -50093,6 +50418,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 100,
         "damage": 176,
         "time": 486153,
         "victim": "rusti",
@@ -50101,6 +50427,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 13,
         "damage": 30,
         "isTeam": true,
         "time": 486364,
@@ -50117,6 +50444,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 18,
         "damage": 24,
         "time": 487296,
         "victim": "[nW].Veggie",
@@ -50182,6 +50510,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 10,
         "damage": 30,
         "time": 491072,
         "victim": "paniagua",
@@ -50214,6 +50543,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 8,
         "damage": 24,
         "time": 494713,
         "victim": "biggz",
@@ -50240,6 +50570,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 24,
         "damage": 110,
         "time": 496970,
         "victim": "[nW].Veggie",
@@ -50265,6 +50596,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 4,
         "damage": 24,
         "time": 497841,
         "victim": "nexus",
@@ -50298,6 +50630,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "isSplash": true,
         "time": 499777,
@@ -50571,6 +50904,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 24,
         "time": 510748,
         "victim": "sailorman",
@@ -50579,6 +50913,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 2,
         "damage": 20,
         "time": 514215,
         "victim": "biggz",
@@ -50731,6 +51066,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 72,
         "damage": 110,
         "time": 522583,
         "victim": "nexus",
@@ -50812,6 +51148,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 9,
         "damage": 32,
         "time": 524725,
         "victim": "paniagua",
@@ -50876,6 +51213,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 17,
         "damage": 18,
         "time": 527702,
         "victim": "[nW].Veggie",
@@ -50932,6 +51270,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 95,
         "damage": 96,
         "isSplash": true,
         "time": 528740,
@@ -50989,6 +51328,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 28,
         "damage": 80,
         "isSplash": true,
         "time": 530499,
@@ -51127,6 +51467,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 3,
         "damage": 4,
         "time": 535337,
         "victim": "sailorman",
@@ -51151,6 +51492,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 27,
         "damage": 30,
         "time": 536205,
         "victim": "nexus",
@@ -51167,6 +51509,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 38,
         "damage": 49,
         "isSplash": true,
         "time": 537142,
@@ -51264,6 +51607,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 32,
         "damage": 70,
         "isSplash": true,
         "time": 540147,
@@ -51289,6 +51633,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 35,
         "damage": 36,
         "time": 541390,
         "victim": "nexus",
@@ -51322,6 +51667,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 45,
         "damage": 81,
         "isSplash": true,
         "time": 544780,
@@ -51483,6 +51829,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 25,
         "damage": 30,
         "time": 552925,
         "victim": "biggz",
@@ -51563,6 +51910,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 21,
         "damage": 48,
         "time": 558502,
         "victim": "paniagua",
@@ -51579,6 +51927,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 13,
         "damage": 30,
         "time": 560871,
         "victim": "ocoini",
@@ -51693,6 +52042,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 37,
         "damage": 56,
         "time": 564750,
         "victim": "ocoini",
@@ -51709,6 +52059,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 44,
         "damage": 85,
         "isSplash": true,
         "time": 565229,
@@ -51726,6 +52077,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 48,
         "time": 565984,
         "victim": "paniagua",
@@ -51775,6 +52127,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 72,
         "damage": 110,
         "time": 569598,
         "victim": "nexus",
@@ -51865,6 +52218,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 20,
         "damage": 80,
         "time": 573212,
         "victim": "biggz",
@@ -51907,6 +52261,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 52,
         "damage": 76,
         "isSplash": true,
         "time": 575212,
@@ -51972,6 +52327,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 10,
         "damage": 24,
         "time": 581897,
         "victim": "ocoini",
@@ -51988,6 +52344,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 11,
         "damage": 48,
         "time": 582278,
         "victim": "nexus",
@@ -52013,6 +52370,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 74,
         "damage": 91,
         "isSplash": true,
         "time": 583928,
@@ -52047,6 +52405,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 10,
         "damage": 80,
         "isSplash": true,
         "time": 587174,
@@ -52072,6 +52431,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 588317,
         "victim": "paniagua",
@@ -52136,6 +52496,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 30,
         "damage": 40,
         "time": 593641,
         "victim": "paniagua",
@@ -52152,6 +52513,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 595992,
@@ -52217,6 +52579,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 54,
         "damage": 66,
         "isSplash": true,
         "time": 600250,
@@ -52226,6 +52589,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 109,
         "isSplash": true,
         "isTeam": true,
@@ -52293,6 +52657,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 20,
         "time": 602848,
         "victim": "ocoini",
@@ -52317,6 +52682,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 4,
         "time": 604300,
         "victim": "ocoini",
@@ -52333,6 +52699,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 4,
         "time": 604300,
         "victim": "ocoini",
@@ -52349,6 +52716,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 59,
         "isSplash": true,
         "time": 604715,
@@ -52408,6 +52776,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 6,
         "damage": 30,
         "time": 606892,
         "victim": "paniagua",
@@ -52432,6 +52801,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 29,
         "damage": 83,
         "isSplash": true,
         "time": 607450,
@@ -52441,6 +52811,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 0,
         "damage": 8,
         "time": 607554,
         "victim": "ocoini",
@@ -52473,6 +52844,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 28,
         "damage": 30,
         "time": 610891,
         "victim": "nexus",
@@ -52555,6 +52927,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 50,
         "damage": 56,
         "time": 614817,
         "victim": "biggz",
@@ -52587,6 +52960,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 12,
         "damage": 16,
         "time": 619011,
         "victim": "nexus",
@@ -52604,6 +52978,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 58,
         "damage": 64,
         "time": 621085,
         "victim": "sailorman",
@@ -52644,6 +53019,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 3,
         "damage": 8,
         "time": 626283,
         "victim": "ocoini",
@@ -52676,6 +53052,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 30,
         "time": 627248,
         "victim": "sailorman",
@@ -52684,6 +53061,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 2,
         "damage": 4,
         "time": 627318,
         "victim": "ocoini",
@@ -52700,6 +53078,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 29,
         "damage": 96,
         "time": 628909,
         "victim": "ocoini",
@@ -52708,6 +53087,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 29,
         "damage": 96,
         "time": 629428,
         "victim": "ocoini",
@@ -52716,6 +53096,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 29,
         "damage": 96,
         "time": 629910,
         "victim": "ocoini",
@@ -52724,6 +53105,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 8,
         "damage": 96,
         "time": 630435,
         "victim": "ocoini",
@@ -52740,6 +53122,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 0,
         "damage": 32,
         "time": 630918,
         "victim": "ocoini",
@@ -52748,6 +53131,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 0,
         "damage": 96,
         "time": 631435,
         "victim": "ocoini",
@@ -52756,6 +53140,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 0,
         "damage": 32,
         "time": 631949,
         "victim": "ocoini",
@@ -52764,6 +53149,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 18,
         "damage": 24,
         "time": 632332,
         "victim": "rusti",
@@ -52857,6 +53243,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 40,
         "damage": 110,
         "time": 643941,
         "victim": "biggz",
@@ -52890,6 +53277,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 96,
         "damage": 98,
         "isSplash": true,
         "time": 645782,
@@ -52950,6 +53338,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 37,
         "damage": 42,
         "isSplash": true,
         "time": 648244,
@@ -52985,6 +53374,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 12,
         "time": 651017,
         "victim": "gandi",
@@ -52993,6 +53383,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 15,
         "damage": 78,
         "isSplash": true,
         "time": 651365,
@@ -53090,6 +53481,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 7,
         "damage": 30,
         "time": 655900,
         "victim": "ocoini",
@@ -53123,6 +53515,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 51,
         "damage": 110,
         "time": 658484,
         "victim": "[nW].Veggie",
@@ -53267,6 +53660,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 70,
         "damage": 72,
         "isSplash": true,
         "time": 661068,
@@ -53276,6 +53670,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 11,
         "damage": 28,
         "time": 661172,
         "victim": "nexus",
@@ -53380,6 +53775,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 20,
         "damage": 40,
         "time": 665035,
         "victim": "ocoini",
@@ -53444,6 +53840,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 39,
         "damage": 52,
         "time": 667761,
         "victim": "[nW].Veggie",
@@ -53527,6 +53924,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 14,
         "damage": 20,
         "time": 669584,
         "victim": "biggz",
@@ -53544,6 +53942,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 13,
         "damage": 58,
         "isSplash": true,
         "time": 671651,
@@ -53561,6 +53960,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 39,
         "damage": 95,
         "isSplash": true,
         "time": 672865,
@@ -53675,6 +54075,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 23,
         "damage": 24,
         "time": 677514,
         "victim": "[nW].Veggie",
@@ -53699,6 +54100,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 76,
         "isSplash": true,
         "time": 679560,
@@ -53806,6 +54208,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 30,
         "time": 683141,
         "victim": "biggz",
@@ -53846,6 +54249,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 24,
         "time": 684219,
         "victim": "ocoini",
@@ -53854,6 +54258,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 30,
         "time": 684286,
         "victim": "gandi",
@@ -53879,6 +54284,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 8,
         "time": 686282,
         "victim": "nexus",
@@ -53935,6 +54341,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 52,
         "damage": 71,
         "isSplash": true,
         "time": 689780,
@@ -53961,6 +54368,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 84,
         "damage": 92,
         "isSplash": true,
         "time": 692296,
@@ -54034,6 +54442,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 7,
         "damage": 8,
         "isTeam": true,
         "time": 694801,
@@ -54130,6 +54539,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 16,
         "damage": 55,
         "isSplash": true,
         "time": 697549,
@@ -54147,6 +54557,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 100,
         "damage": 101,
         "isSplash": true,
         "time": 698659,
@@ -54156,6 +54567,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 24,
         "time": 698974,
         "victim": "[nW].Veggie",
@@ -54236,6 +54648,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 4,
         "damage": 30,
         "time": 706238,
         "victim": "gandi",
@@ -54252,6 +54665,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 19,
         "damage": 93,
         "isSplash": true,
         "time": 706581,
@@ -54261,6 +54675,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 32,
         "damage": 44,
         "isSplash": true,
         "time": 706821,
@@ -54382,6 +54797,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 48,
         "damage": 57,
         "isSplash": true,
         "isTeam": true,
@@ -54399,6 +54815,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 26,
         "damage": 83,
         "isSplash": true,
         "time": 714081,
@@ -54515,6 +54932,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 56,
         "damage": 101,
         "isSplash": true,
         "time": 725414,
@@ -54640,6 +55058,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 23,
         "damage": 79,
         "isSplash": true,
         "time": 730355,
@@ -54657,6 +55076,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 35,
         "damage": 44,
         "time": 730773,
         "victim": "rusti",
@@ -54665,6 +55085,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 54,
         "damage": 97,
         "isSplash": true,
         "time": 731392,
@@ -54747,6 +55168,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 82,
         "damage": 98,
         "isSplash": true,
         "time": 734295,
@@ -54780,6 +55202,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 16,
         "time": 735058,
         "victim": "nexus",
@@ -54845,6 +55268,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 6,
         "damage": 81,
         "isSplash": true,
         "time": 736645,
@@ -54862,6 +55286,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 10,
         "damage": 30,
         "time": 737056,
         "victim": "ocoini",
@@ -54886,6 +55311,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 100,
         "damage": 103,
         "isSplash": true,
         "time": 738611,
@@ -54903,6 +55329,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 52,
         "damage": 110,
         "time": 741988,
         "victim": "paniagua",
@@ -54928,6 +55355,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 12,
         "damage": 24,
         "time": 743646,
         "victim": "[nW].Veggie",
@@ -55057,6 +55485,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 24,
         "time": 746968,
         "victim": "paniagua",
@@ -55073,6 +55502,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 39,
         "damage": 83,
         "isSplash": true,
         "time": 747246,
@@ -55106,6 +55536,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 19,
         "damage": 20,
         "time": 748106,
         "victim": "[nW].Veggie",
@@ -55276,6 +55707,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 8,
         "damage": 24,
         "time": 757274,
         "victim": "paniagua",
@@ -55284,6 +55716,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 84,
         "damage": 110,
         "time": 757415,
         "victim": "[nW].Veggie",
@@ -55292,6 +55725,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 5,
         "damage": 39,
         "isSelf": true,
         "isSplash": true,
@@ -55358,6 +55792,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 21,
         "damage": 80,
         "isSplash": true,
         "time": 760926,
@@ -55408,6 +55843,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 12,
         "damage": 54,
         "isSplash": true,
         "time": 762240,
@@ -55473,6 +55909,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 20,
         "damage": 24,
         "time": 764501,
         "victim": "[nW].Veggie",
@@ -55521,6 +55958,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 23,
         "damage": 24,
         "time": 767381,
         "victim": "gandi",
@@ -55537,6 +55975,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 102,
         "isSplash": true,
         "time": 767865,
@@ -55546,6 +55985,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 100,
         "damage": 110,
         "time": 767865,
         "victim": "rusti",
@@ -55578,6 +56018,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 30,
         "time": 769011,
         "victim": "[nW].Veggie",
@@ -55602,6 +56043,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 76,
         "damage": 92,
         "isSplash": true,
         "time": 769845,
@@ -55628,6 +56070,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 13,
         "damage": 16,
         "time": 770993,
         "victim": "nexus",
@@ -55636,6 +56079,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 22,
         "damage": 59,
         "isSplash": true,
         "time": 771305,
@@ -55653,6 +56097,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 100,
         "damage": 103,
         "isSplash": true,
         "time": 774148,
@@ -55720,6 +56165,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 23,
         "damage": 24,
         "time": 780248,
         "victim": "gandi",
@@ -55850,6 +56296,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 15,
         "damage": 66,
         "isSplash": true,
         "time": 781950,
@@ -55923,6 +56370,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 93,
         "damage": 99,
         "isSplash": true,
         "time": 784688,
@@ -55957,6 +56405,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 19,
         "damage": 20,
         "time": 786459,
         "victim": "biggz",
@@ -55990,6 +56439,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 29,
         "damage": 56,
         "time": 788088,
         "victim": "rusti",
@@ -56014,6 +56464,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 19,
         "damage": 20,
         "time": 789303,
         "victim": "nexus",
@@ -56064,6 +56515,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 35,
         "damage": 82,
         "isSplash": true,
         "time": 793600,
@@ -56073,6 +56525,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 44,
         "damage": 84,
         "isSplash": true,
         "time": 794466,
@@ -56140,6 +56593,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 45,
         "damage": 90,
         "isSplash": true,
         "time": 799858,
@@ -56173,6 +56627,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 120,
         "time": 800943,
         "victim": "[nW].Veggie",
@@ -56189,6 +56644,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 44,
         "damage": 84,
         "isSplash": true,
         "time": 801535,
@@ -56273,6 +56729,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 27,
         "damage": 45,
         "isSelf": true,
         "isSplash": true,
@@ -56290,6 +56747,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 120,
         "time": 807647,
         "victim": "[nW].Veggie",
@@ -56298,6 +56756,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 51,
         "damage": 101,
         "isSplash": true,
         "time": 808062,
@@ -56333,6 +56792,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 32,
         "damage": 70,
         "isSplash": true,
         "time": 809630,
@@ -56342,6 +56802,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 48,
         "damage": 56,
         "isSplash": true,
         "time": 809630,
@@ -56375,6 +56836,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 3,
         "damage": 4,
         "time": 811085,
         "victim": "gandi",
@@ -56407,6 +56869,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 8,
         "damage": 24,
         "time": 811781,
         "victim": "ocoini",
@@ -56415,6 +56878,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 100,
         "damage": 110,
         "time": 811989,
         "victim": "biggz",
@@ -56448,6 +56912,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 100,
         "damage": 110,
         "time": 814625,
         "victim": "gandi",
@@ -56496,6 +56961,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 12,
         "damage": 16,
         "time": 816815,
         "victim": "[nW].Veggie",
@@ -56593,6 +57059,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 41,
         "damage": 86,
         "isSplash": true,
         "time": 822911,
@@ -56634,6 +57101,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 44,
         "damage": 73,
         "isSplash": true,
         "time": 825066,
@@ -56707,6 +57175,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 8,
         "damage": 24,
         "time": 827876,
         "victim": "ocoini",
@@ -56740,6 +57209,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 28,
         "damage": 92,
         "isSplash": true,
         "time": 829603,
@@ -56797,6 +57267,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 110,
         "time": 831798,
         "victim": "rusti",
@@ -56862,6 +57333,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 12,
         "damage": 24,
         "time": 833390,
         "victim": "[nW].Veggie",
@@ -56974,6 +57446,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 16,
         "damage": 30,
         "time": 840046,
         "victim": "[nW].Veggie",
@@ -56982,6 +57455,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 36,
         "time": 840498,
         "victim": "rusti",
@@ -56999,6 +57473,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 52,
         "damage": 82,
         "isSplash": true,
         "time": 843858,
@@ -57032,6 +57507,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 21,
         "damage": 24,
         "time": 848847,
         "victim": "ocoini",
@@ -57057,6 +57533,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 64,
         "isSplash": true,
         "time": 850583,
@@ -57090,6 +57567,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 80,
         "damage": 328,
         "isSplash": true,
         "time": 851691,
@@ -57099,6 +57577,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 69,
         "damage": 80,
         "isSplash": true,
         "time": 851829,
@@ -57134,6 +57613,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 55,
         "damage": 56,
         "isSelf": true,
         "isSplash": true,
@@ -57159,6 +57639,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 19,
         "damage": 32,
         "time": 856406,
         "victim": "biggz",
@@ -57183,6 +57664,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 20,
         "damage": 30,
         "time": 861265,
         "victim": "biggz",
@@ -57271,6 +57753,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 25,
         "damage": 30,
         "time": 863654,
         "victim": "rusti",
@@ -57279,6 +57762,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 52,
         "damage": 347,
         "isSplash": true,
         "time": 863794,
@@ -57344,6 +57828,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 162,
         "damage": 207,
         "isSplash": true,
         "time": 876585,
@@ -57465,6 +57950,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 7,
         "damage": 24,
         "time": 878876,
         "victim": "ocoini",
@@ -57497,6 +57983,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 10,
         "damage": 12,
         "time": 880743,
         "victim": "[nW].Veggie",
@@ -57529,6 +58016,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 14,
         "damage": 30,
         "time": 895122,
         "victim": "gandi",
@@ -57635,6 +58123,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 30,
         "time": 897817,
         "victim": "nexus",
@@ -57651,6 +58140,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 28,
         "damage": 110,
         "time": 898440,
         "victim": "rusti",
@@ -57716,6 +58206,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 3,
         "damage": 20,
         "isTeam": true,
         "time": 900479,
@@ -57812,6 +58303,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 45,
         "damage": 74,
         "isSplash": true,
         "time": 901690,
@@ -57829,6 +58321,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 16,
         "damage": 24,
         "time": 902071,
         "victim": "rusti",
@@ -57837,6 +58330,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 92,
         "isSplash": true,
         "time": 902106,
@@ -57879,6 +58373,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 0,
         "damage": 20,
         "time": 904144,
         "victim": "nexus",
@@ -57911,6 +58406,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 2,
         "damage": 4,
         "time": 904665,
         "victim": "nexus",
@@ -58007,6 +58503,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 13,
         "damage": 24,
         "time": 905702,
         "victim": "paniagua",
@@ -58023,6 +58520,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 8,
         "damage": 24,
         "time": 906154,
         "victim": "nexus",
@@ -58063,6 +58561,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 4,
         "damage": 12,
         "time": 907712,
         "victim": "gandi",
@@ -58087,6 +58586,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 11,
         "damage": 12,
         "time": 909714,
         "victim": "sailorman",
@@ -58127,6 +58627,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 100,
         "damage": 110,
         "time": 914610,
         "victim": "rusti",
@@ -58183,6 +58684,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 8,
         "damage": 24,
         "time": 917225,
         "victim": "nexus",
@@ -58215,6 +58717,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 8,
         "time": 918231,
         "victim": "sailorman",
@@ -58263,6 +58766,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 4,
         "damage": 24,
         "time": 919654,
         "victim": "rusti",
@@ -58311,6 +58815,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 48,
         "damage": 55,
         "isSplash": true,
         "time": 925984,
@@ -58329,6 +58834,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 36,
         "damage": 120,
         "time": 927022,
         "victim": "sailorman",
@@ -58353,6 +58859,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 27,
         "damage": 120,
         "time": 927614,
         "victim": "ocoini",
@@ -58379,6 +58886,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 37,
         "damage": 111,
         "isSplash": true,
         "time": 927719,
@@ -58404,6 +58912,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 120,
         "time": 928758,
         "victim": "sailorman",
@@ -58412,6 +58921,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 100,
         "damage": 110,
         "time": 930520,
         "victim": "[nW].Veggie",
@@ -58453,6 +58963,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 96,
         "time": 932908,
         "victim": "[nW].Veggie",
@@ -58477,6 +58988,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 20,
         "time": 935297,
         "victim": "gandi",
@@ -58597,6 +59109,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 84,
         "damage": 96,
         "time": 941159,
         "victim": "[nW].Veggie",
@@ -58645,6 +59158,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 16,
         "damage": 24,
         "time": 942298,
         "victim": "biggz",
@@ -58685,6 +59199,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 18,
         "damage": 24,
         "time": 945068,
         "victim": "nexus",
@@ -58741,6 +59256,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 23,
         "damage": 24,
         "time": 951332,
         "victim": "gandi",
@@ -58959,6 +59475,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 16,
         "time": 958884,
         "victim": "biggz",
@@ -58975,6 +59492,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 25,
         "damage": 56,
         "time": 959295,
         "victim": "rusti",
@@ -59023,6 +59541,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 26,
         "damage": 30,
         "time": 960606,
         "victim": "ocoini",
@@ -59071,6 +59590,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 12,
         "damage": 24,
         "time": 963304,
         "victim": "nexus",
@@ -59079,6 +59599,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 9,
         "damage": 24,
         "time": 963650,
         "victim": "paniagua",
@@ -59087,6 +59608,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 41,
         "damage": 98,
         "isSplash": true,
         "time": 965974,
@@ -59256,6 +59778,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 12,
         "damage": 24,
         "time": 970996,
         "victim": "rusti",
@@ -59344,6 +59867,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 24,
         "time": 972654,
         "victim": "ocoini",
@@ -59360,6 +59884,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 44,
         "damage": 96,
         "time": 973896,
         "victim": "nexus",
@@ -59400,6 +59925,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 8,
         "damage": 56,
         "time": 976934,
         "victim": "sailorman",
@@ -59416,6 +59942,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 20,
         "damage": 24,
         "time": 978213,
         "victim": "paniagua",
@@ -59576,6 +60103,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 8,
         "damage": 18,
         "time": 982197,
         "victim": "paniagua",
@@ -59608,6 +60136,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 14,
         "damage": 48,
         "time": 983101,
         "victim": "[nW].Veggie",
@@ -59616,6 +60145,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 52,
         "damage": 96,
         "time": 984575,
         "victim": "nexus",
@@ -59640,6 +60170,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 16,
         "damage": 20,
         "time": 986061,
         "victim": "gandi",
@@ -59720,6 +60251,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 44,
         "damage": 56,
         "time": 988968,
         "victim": "paniagua",
@@ -59728,6 +60260,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 22,
         "damage": 56,
         "time": 989141,
         "victim": "[nW].Veggie",
@@ -59752,6 +60285,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 23,
         "damage": 24,
         "time": 990873,
         "victim": "sailorman",
@@ -59760,6 +60294,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 44,
         "damage": 120,
         "time": 991596,
         "victim": "ocoini",
@@ -59848,6 +60383,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 68,
         "damage": 120,
         "time": 995820,
         "victim": "[nW].Veggie",
@@ -59856,6 +60392,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 18,
         "damage": 32,
         "time": 996242,
         "victim": "nexus",
@@ -59888,6 +60425,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 24,
         "time": 997418,
         "victim": "paniagua",
@@ -59896,6 +60434,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 92,
         "damage": 110,
         "time": 999079,
         "victim": "sailorman",
@@ -60033,6 +60572,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 12,
         "damage": 18,
         "time": 1002750,
         "victim": "[nW].Veggie",
@@ -60057,6 +60597,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 20,
         "time": 1004547,
         "victim": "paniagua",
@@ -60121,6 +60662,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 10,
         "damage": 18,
         "time": 1006485,
         "victim": "sailorman",
@@ -60209,6 +60751,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 20,
         "time": 1014569,
         "victim": "sailorman",
@@ -60217,6 +60760,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 25,
         "damage": 57,
         "isSplash": true,
         "time": 1014569,
@@ -60234,6 +60778,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 22,
         "damage": 24,
         "time": 1016707,
         "victim": "rusti",
@@ -60274,6 +60819,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 29,
         "damage": 30,
         "time": 1019449,
         "victim": "[nW].Veggie",
@@ -60373,6 +60919,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 78,
         "damage": 82,
         "isSplash": true,
         "time": 1032516,
@@ -60398,6 +60945,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 100,
         "damage": 110,
         "time": 1032968,
         "victim": "[nW].Veggie",
@@ -60470,6 +61018,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 47,
         "damage": 72,
         "time": 1034186,
         "victim": "rusti",
@@ -60582,6 +61131,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 4,
         "damage": 82,
         "isSplash": true,
         "time": 1040253,
@@ -60664,6 +61214,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 27,
         "damage": 48,
         "time": 1043523,
         "victim": "paniagua",
@@ -60688,6 +61239,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 80,
         "damage": 96,
         "time": 1044842,
         "victim": "rusti",
@@ -60769,6 +61321,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 32,
         "time": 1046887,
         "victim": "paniagua",
@@ -60785,6 +61338,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 4,
         "damage": 110,
         "time": 1051154,
         "victim": "nexus",
@@ -60852,6 +61406,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 21,
         "damage": 110,
         "time": 1053638,
         "victim": "nexus",
@@ -60917,6 +61472,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 50,
         "damage": 91,
         "isSplash": true,
         "time": 1058347,
@@ -60950,6 +61506,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 3,
         "damage": 4,
         "time": 1059642,
         "victim": "sailorman",
@@ -61047,6 +61604,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 52,
         "damage": 110,
         "time": 1064403,
         "victim": "paniagua",
@@ -61072,6 +61630,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 40,
         "damage": 82,
         "isSplash": true,
         "time": 1064887,
@@ -61170,6 +61729,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 18,
         "time": 1068197,
         "victim": "gandi",
@@ -61274,6 +61834,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 8,
         "damage": 24,
         "time": 1070870,
         "victim": "paniagua",
@@ -61371,6 +61932,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 21,
         "damage": 24,
         "time": 1077787,
         "victim": "nexus",
@@ -61379,6 +61941,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 14,
         "damage": 20,
         "time": 1078137,
         "victim": "ocoini",
@@ -61387,6 +61950,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 1,
         "damage": 8,
         "time": 1080432,
         "victim": "gandi",
@@ -61470,6 +62034,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 72,
         "damage": 110,
         "time": 1093051,
         "victim": "biggz",
@@ -61486,6 +62051,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 39,
         "damage": 56,
         "time": 1093154,
         "victim": "paniagua",
@@ -61511,6 +62077,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 11,
         "damage": 30,
         "time": 1095302,
         "victim": "[nW].Veggie",
@@ -61551,6 +62118,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 32,
         "time": 1096270,
         "victim": "paniagua",
@@ -61639,6 +62207,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 96,
         "time": 1099252,
         "victim": "biggz",
@@ -61679,6 +62248,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 19,
         "damage": 20,
         "time": 1101576,
         "victim": "gandi",
@@ -61695,6 +62265,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 12,
         "damage": 90,
         "isSplash": true,
         "isTeam": true,
@@ -61768,6 +62339,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 28,
         "damage": 36,
         "time": 1106268,
         "victim": "paniagua",
@@ -61848,6 +62420,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 16,
         "damage": 24,
         "time": 1109588,
         "victim": "gandi",
@@ -61864,6 +62437,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 13,
         "damage": 24,
         "time": 1111049,
         "victim": "[nW].Veggie",
@@ -61969,6 +62543,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 19,
         "damage": 30,
         "time": 1115526,
         "victim": "nexus",
@@ -62001,6 +62576,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 3,
         "damage": 88,
         "isSplash": true,
         "isTeam": true,
@@ -62043,6 +62619,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 14,
         "damage": 30,
         "time": 1118256,
         "victim": "sailorman",
@@ -62068,6 +62645,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 16,
         "time": 1118741,
         "victim": "biggz",
@@ -62181,6 +62759,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 21,
         "damage": 76,
         "isSplash": true,
         "time": 1122683,
@@ -62239,6 +62818,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 16,
         "damage": 24,
         "time": 1125288,
         "victim": "biggz",
@@ -62281,6 +62861,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 4,
         "damage": 24,
         "time": 1128367,
         "victim": "[nW].Veggie",
@@ -62305,6 +62886,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 43,
         "damage": 52,
         "time": 1130435,
         "victim": "paniagua",
@@ -62379,6 +62961,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 52,
         "damage": 71,
         "isSplash": true,
         "time": 1139411,
@@ -62396,6 +62979,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 9,
         "damage": 20,
         "time": 1142236,
         "victim": "[nW].Veggie",
@@ -62429,6 +63013,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 27,
         "damage": 110,
         "time": 1144046,
         "victim": "nexus",
@@ -62550,6 +63135,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 19,
         "damage": 91,
         "isSplash": true,
         "time": 1147210,
@@ -62559,6 +63145,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 23,
         "damage": 24,
         "isSelf": true,
         "isSplash": true,
@@ -62640,6 +63227,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 63,
         "damage": 110,
         "time": 1149526,
         "victim": "paniagua",
@@ -62648,6 +63236,7 @@
       },
       {
         "attacker": "sailorman",
+        "bounded": 16,
         "damage": 30,
         "isSelf": true,
         "isSplash": true,
@@ -62673,6 +63262,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 10,
         "damage": 30,
         "time": 1150184,
         "victim": "nexus",
@@ -62739,6 +63329,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 47,
         "damage": 89,
         "isSplash": true,
         "time": 1152339,
@@ -62773,6 +63364,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 57,
         "damage": 96,
         "isSplash": true,
         "time": 1152825,
@@ -62815,6 +63407,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 76,
         "damage": 110,
         "time": 1153656,
         "victim": "nexus",
@@ -62864,6 +63457,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 25,
         "damage": 243,
         "isSplash": true,
         "time": 1156266,
@@ -62937,6 +63531,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 12,
         "damage": 16,
         "time": 1167247,
         "victim": "paniagua",
@@ -62961,6 +63556,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 68,
         "damage": 290,
         "isSplash": true,
         "time": 1173382,
@@ -62986,6 +63582,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 286,
         "damage": 366,
         "isSplash": true,
         "time": 1179363,
@@ -63036,6 +63633,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 6,
         "damage": 30,
         "time": 1180992,
         "victim": "sailorman",
@@ -63044,6 +63642,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 183,
         "damage": 275,
         "isSplash": true,
         "time": 1182084,
@@ -63093,6 +63692,7 @@
       },
       {
         "attacker": "gandi",
+        "bounded": 100,
         "damage": 110,
         "time": 1183368,
         "victim": "ocoini",
@@ -63117,6 +63717,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 1185018,
         "victim": "gandi",
@@ -63133,6 +63734,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 42,
         "damage": 96,
         "isSplash": true,
         "time": 1186683,
@@ -63142,6 +63744,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 1187049,
         "victim": "ocoini",
@@ -63175,6 +63778,7 @@
       },
       {
         "attacker": "rusti",
+        "bounded": 15,
         "damage": 59,
         "isSplash": true,
         "time": 1191408,
@@ -63201,6 +63805,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 26,
         "damage": 65,
         "isSplash": true,
         "time": 1192071,
@@ -63235,6 +63840,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 56,
         "damage": 110,
         "time": 1193627,
         "victim": "sailorman",
@@ -63294,6 +63900,7 @@
       },
       {
         "attacker": "[nW].Veggie",
+        "bounded": 14,
         "damage": 16,
         "time": 1196841,
         "victim": "rusti",
@@ -63318,6 +63925,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 7,
         "damage": 24,
         "time": 1198069,
         "victim": "nexus",
@@ -63326,6 +63934,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 96,
         "damage": 106,
         "isSplash": true,
         "time": 1198361,
@@ -63712,14 +64321,28 @@
     "scoreboard": {
       "byPlayer": {
         "[nW].Veggie": {
+          "bounded": {
+            "scoreTeam": 176,
+            "streamEwep": 1294,
+            "streamGiven": 5557,
+            "streamTaken": 7589,
+            "streamTeam": 176
+          },
           "scoreEwep": 1295,
           "scoreGiven": 5562,
           "scoreTaken": 7593,
           "streamEwep": 1510,
           "streamGiven": 6327,
-          "streamTaken": 9330
+          "streamTaken": 9437
         },
         "biggz": {
+          "bounded": {
+            "scoreTeam": 257,
+            "streamEwep": 2697,
+            "streamGiven": 8380,
+            "streamTaken": 7830,
+            "streamTeam": 257
+          },
           "scoreEwep": 2697,
           "scoreGiven": 8383,
           "scoreTaken": 7833,
@@ -63728,6 +64351,13 @@
           "streamTaken": 9745
         },
         "gandi": {
+          "bounded": {
+            "scoreTeam": 241,
+            "streamEwep": 1374,
+            "streamGiven": 6153,
+            "streamTaken": 6361,
+            "streamTeam": 241
+          },
           "scoreEwep": 1374,
           "scoreGiven": 6155,
           "scoreTaken": 6366,
@@ -63736,6 +64366,13 @@
           "streamTaken": 7862
         },
         "nexus": {
+          "bounded": {
+            "scoreTeam": 312,
+            "streamEwep": 2360,
+            "streamGiven": 6367,
+            "streamTaken": 7493,
+            "streamTeam": 312
+          },
           "scoreEwep": 2363,
           "scoreGiven": 6370,
           "scoreTaken": 7497,
@@ -63744,6 +64381,13 @@
           "streamTaken": 9073
         },
         "ocoini": {
+          "bounded": {
+            "scoreTeam": 263,
+            "streamEwep": 2804,
+            "streamGiven": 7301,
+            "streamTaken": 7440,
+            "streamTeam": 263
+          },
           "scoreEwep": 2804,
           "scoreGiven": 7302,
           "scoreTaken": 7442,
@@ -63752,6 +64396,13 @@
           "streamTaken": 10105
         },
         "paniagua": {
+          "bounded": {
+            "scoreTeam": 206,
+            "streamEwep": 2784,
+            "streamGiven": 8008,
+            "streamTaken": 9025,
+            "streamTeam": 206
+          },
           "scoreEwep": 2784,
           "scoreGiven": 8014,
           "scoreTaken": 9028,
@@ -63760,14 +64411,28 @@
           "streamTaken": 11334
         },
         "rusti": {
+          "bounded": {
+            "scoreTeam": 90,
+            "streamEwep": 2382,
+            "streamGiven": 6889,
+            "streamTaken": 7482,
+            "streamTeam": 89
+          },
           "scoreEwep": 2383,
           "scoreGiven": 6890,
           "scoreTaken": 7484,
           "streamEwep": 2626,
           "streamGiven": 9093,
-          "streamTaken": 9233
+          "streamTaken": 9309
         },
         "sailorman": {
+          "bounded": {
+            "scoreTeam": 123,
+            "streamEwep": 4235,
+            "streamGiven": 11473,
+            "streamTaken": 6908,
+            "streamTeam": 123
+          },
           "scoreEwep": 4237,
           "scoreGiven": 11477,
           "scoreTaken": 6910,
@@ -63780,14 +64445,16 @@
     "telefrags": [
       {
         "attacker": "paniagua",
+        "bounded": 76,
         "isTeam": true,
-        "time": 604788,
+        "time": 594540,
         "victim": "rusti"
       },
       {
         "attacker": "nexus",
+        "bounded": 107,
         "isTeam": true,
-        "time": 803953,
+        "time": 793705,
         "victim": "[nW].Veggie"
       }
     ],
@@ -93011,7 +93678,143 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 192,
+        "item": "ga_2",
+        "kind": "ga",
+        "loc": "Quad.low",
+        "takenBy": "paniagua",
+        "team": "jah",
+        "time": 1073
+      },
+      {
+        "entNum": 178,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "[nW].Veggie",
+        "team": "ahoy",
+        "time": 1595
+      },
+      {
+        "entNum": 171,
+        "item": "ga_1",
+        "kind": "ga",
+        "loc": "Pent",
+        "takenBy": "biggz",
+        "team": "jah",
+        "time": 1771
+      },
+      {
+        "entNum": 169,
+        "item": "pent",
+        "kind": "pent",
+        "loc": "Pent",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 2362
+      },
+      {
+        "entNum": 173,
+        "item": "ga_3",
+        "kind": "ga",
+        "loc": "RL",
+        "takenBy": "gandi",
+        "team": "jah",
+        "time": 2742
+      },
+      {
+        "entNum": 188,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "nexus",
+        "team": "ahoy",
+        "time": 3330
+      },
+      {
+        "entNum": 199,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "Ring",
+        "takenBy": "sailorman",
+        "team": "ahoy",
+        "time": 4294
+      },
+      {
+        "entNum": 175,
+        "item": "rl",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "gandi",
+        "team": "jah",
+        "time": 4328
+      },
+      {
+        "entNum": 203,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "sailorman",
+        "team": "ahoy",
+        "time": 5335
+      },
+      {
+        "entNum": 207,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "Pent.MH",
+        "takenBy": "ocoini",
+        "team": "ahoy",
+        "time": 7072
+      }
+    ],
+    "players": [
+      {
+        "loc": "Quad",
+        "name": "[nW].Veggie",
+        "team": "ahoy"
+      },
+      {
+        "loc": "RA.low",
+        "name": "nexus",
+        "team": "ahoy"
+      },
+      {
+        "loc": "RL",
+        "name": "ocoini",
+        "team": "ahoy"
+      },
+      {
+        "loc": "Ring.lift",
+        "name": "sailorman",
+        "team": "ahoy"
+      },
+      {
+        "loc": "Pent.MH",
+        "name": "biggz",
+        "team": "jah"
+      },
+      {
+        "loc": "Ring.tele",
+        "name": "gandi",
+        "team": "jah"
+      },
+      {
+        "loc": "Quad.low",
+        "name": "paniagua",
+        "team": "jah"
+      },
+      {
+        "loc": "GL.rox",
+        "name": "rusti",
+        "team": "jah"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -93775,18 +94578,6 @@
       }
     },
     "shots": [
-      {
-        "hit": true,
-        "player": "biggz",
-        "source": "sound",
-        "team": "jah",
-        "time": -9882,
-        "victims": [
-          "ocoini"
-        ],
-        "warmup": true,
-        "weapon": "gl"
-      },
       {
         "hit": true,
         "player": "biggz",
@@ -181207,6 +181998,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           12866
         ],
         "ssg": [
@@ -191998,6 +192790,7 @@
           }
         ],
         "sp": [
+          0,
           62843,
           1185833
         ],
@@ -202784,7 +203577,9 @@
           }
         ],
         "sng": [],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 100776,
@@ -211853,6 +212648,7 @@
           }
         ],
         "sp": [
+          0,
           73110,
           1187121,
           1199303
@@ -223289,6 +224085,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           1185978,
           1193666
         ],
@@ -234605,6 +235402,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           1186719,
           1191720
         ],
@@ -245234,6 +246032,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           63397,
           1188032,
           1194082
@@ -256718,6 +257517,7 @@
           }
         ],
         "sp": [
+          0,
           13519
         ],
         "ssg": [],

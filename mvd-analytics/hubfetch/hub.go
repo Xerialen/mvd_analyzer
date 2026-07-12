@@ -35,6 +35,13 @@ const (
 	CDNBase        = "https://d.quake.world"
 )
 
+// maxDownloadBytes caps how many bytes a single demo download may read
+// before the client rejects the response, so a broken or hostile upstream
+// (the CDN, or a hub-supplied demo_source_url) cannot OOM the process with
+// one oversized body. 64 MiB is far above any real MVD. A variable, not a
+// const, only so tests can shrink it to exercise the boundary cheaply.
+var maxDownloadBytes int64 = 64 << 20
+
 // ErrNotFound is returned by Resolve when the hub has no row for the
 // requested gameId (an empty result set). Callers should detect it with
 // errors.Is rather than matching the message, so a hub outage whose body
@@ -153,5 +160,18 @@ func (c *Client) fetch(u string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
-	return io.ReadAll(resp.Body)
+	// Read one byte past the cap: if we get maxDownloadBytes+1 bytes the body
+	// is over the limit (a body that is exactly at the cap reads as
+	// maxDownloadBytes and is accepted). Applies to both the CDN and the
+	// demo_source_url paths, since both call fetch. An over-cap read is a
+	// plain error here; democache wraps download failures as ErrHubUpstream
+	// (never ErrDemoNotFound).
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxDownloadBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxDownloadBytes {
+		return nil, fmt.Errorf("response exceeds %d-byte cap", maxDownloadBytes)
+	}
+	return data, nil
 }

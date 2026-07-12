@@ -1,9 +1,18 @@
-# mvd-mcp — stdio MCP shim for QuakeWorld demo analytics
+# mvd-mcp — MCP shim for QuakeWorld demo analytics
 
-`mvd-mcp` is a small (~5 MB) stdio MCP server that forwards every tool
-call as an HTTP request to a running [`mvd-api`](../mvd-api/README.md).
-It carries no analytics code of its own — the binary is a wire-protocol
+`mvd-mcp` is a small (~5 MB) MCP server that forwards every tool call as
+an HTTP request to a running [`mvd-api`](../mvd-api/README.md). It
+carries no analytics code of its own — the binary is a wire-protocol
 shim, and the response shapes are owned by `mvd-api`.
+
+It has two transports:
+
+- **stdio** (default) — one process per client, launched by the client
+  (Claude Desktop, Cursor, Claude Code). This is the local mode.
+- **streamable HTTP** (`-http ADDR`) — a long-lived server for hosted
+  use. MCP itself is unauthenticated; the shim authenticates to mvd-api
+  with its own service key. See [Hosted / HTTP mode](#hosted--http-mode)
+  below.
 
 Why split it from `mvd-api`?
 
@@ -18,15 +27,21 @@ Why split it from `mvd-api`?
 ## Usage
 
 ```
-mvd-mcp -api URL [-label TAG] [-timeout SECONDS]
+mvd-mcp -api URL [-label TAG] [-timeout SECONDS]       # stdio (default)
+mvd-mcp -http ADDR -api URL [-timeout SECONDS]         # streamable HTTP
 mvd-mcp version
 ```
 
 | Flag | Default | Description |
 |---|---|---|
 | `-api`      | (required) | Base URL of a running `mvd-api` (e.g. `https://mvd-api.example.com` or `http://localhost:8080`) |
-| `-label`    | `""`        | Non-secret request-source tag forwarded as `Authorization: Bearer <label>`. Used for access-log analytics on the API side. |
+| `-http`     | `""`        | Serve MCP over streamable HTTP on `ADDR` (e.g. `:8081`) instead of stdio. See [Hosted / HTTP mode](#hosted--http-mode). Mutually exclusive with stdio. |
+| `-label`    | `""`        | **stdio only.** Non-secret request-source tag forwarded as `Authorization: Bearer <label>`. Used for access-log analytics on the API side. Ignored in `-http` mode, and superseded by `MVD_API_KEY` when that is set. |
 | `-timeout`  | `60`        | Per-request HTTP timeout in seconds |
+
+| Env var | Description |
+|---|---|
+| `MVD_API_KEY` | API key forwarded as `Authorization: Bearer` on every proxied `mvd-api` call. Required (as an operator-issued **service** key) when the target `mvd-api` runs with `-auth-dir`; unnecessary against a local no-auth `mvd-api`. An env var, not a flag, so the secret never shows in `ps`. |
 
 ## Tool surface
 
@@ -71,11 +86,15 @@ vocabulary, and the reducer registry.
 
 The first twenty-one tools are **curated**: each wraps one analytics
 section with a hand-written description and (where useful)
-`players`/`weapon`/window filters — that ergonomics is the product
+`players`/`weapons`/window filters — that ergonomics is the product
 surface, and it stays. The last two are the **generic** DAG accessor:
-`listArtifacts` returns the pipeline manifest (every artifact's name,
-cost, `resultKey`, and whether it is `servable`), and `getArtifact`
-fetches one servable artifact by name. This is how the automatic API
+`listArtifacts` returns the fetchable-artifact catalog — servable
+artifacts only, trimmed to `{name, resultKey, cost, lazy, description}`
+at the MCP layer (the full DAG manifest with `requires`/`provides`
+edges and internal nodes stays on REST `/v1/artifacts` + `/v1/graph`) —
+and `getArtifact` fetches one servable artifact by name. Heed size
+notes in descriptions: `timeline` is one of the largest sections;
+prefer the windowed views (getEvents/getBuckets/getRegionControl). This is how the automatic API
 surface (plan §7) is realized here: a **new** analytics artifact becomes
 reachable through `getArtifact` with **zero** new hand-written tools,
 while the common sections keep their rich curated tools. Prefer the
@@ -86,6 +105,90 @@ takes no filters — parameterised reads are the curated view tools.
 Tool errors come back as MCP `isError: true` results with the
 upstream error message in `TextContent`. The model can read them and
 recover (e.g. by calling `loadDemo` first).
+
+### REST endpoints without an MCP tool
+
+A few `mvd-api` REST endpoints have **no** curated MCP tool yet:
+`/los`, `/shots`, `/streams/*`, and `/airgibs`. This asymmetry is
+deliberate for now — those views are large or specialised, and adding
+tools is deferred (they can still be fetched at the REST layer, and
+`/los` is reachable generically via `getArtifact name=los`). See
+[`../mvd-api/API.md`](../mvd-api/API.md) for the full endpoint list, or
+the machine-readable OpenAPI spec the server itself serves at
+`/openapi.yaml` (browsable at `/docs`).
+
+## Hosted / HTTP mode
+
+`mvd-mcp -http :8081 -api http://localhost:8080` serves MCP over
+**streamable HTTP** instead of stdio, for hosting the service on the
+public internet. This is the transport a remote client (Claude Code
+`--transport http`, or any streamable-HTTP MCP client) connects to.
+
+### Auth model
+
+**MCP requests need no authentication.** Requiring a per-request bearer
+key proved too cumbersome for the clients this transport exists for —
+web AI chat connectors (claude.ai, ChatGPT, …) that can't easily attach
+custom headers — and every tool is read-only over public demo data. API
+keys remain the model for the REST API, which is aimed at services and
+bulk integrations.
+
+Upstream, the shim authenticates *itself*: the operator issues one
+**service** key (`mvd-api keys issue -service -note mvd-mcp`) and hands
+it to the shim via the `MVD_API_KEY` env var. Every proxied REST call
+forwards it as `Authorization: Bearer`, so `mvd-api` keeps full key
+auth, and its per-key rate limit on that one key acts as the global
+throttle on anonymous MCP traffic.
+
+Two escape hatches:
+
+- A request that **does** carry `Authorization: Bearer qwmvd_…` has that
+  key forwarded upstream instead of the service key — per-key
+  attribution and rate limiting still work for keyed clients.
+- A bearer that is *not* a `qwmvd_` key (e.g. an OAuth token a chat
+  platform attaches on its own) is ignored rather than breaking the
+  session.
+
+The server also exposes a `GET /healthz` for liveness probes. The MCP
+handler is mounted at `/mcp` (and `/mcp/`).
+
+`-label` has no effect in HTTP mode; mvd-mcp logs a warning if it is set.
+
+### Client config
+
+Claude Code:
+
+```sh
+claude mcp add --transport http mvdanalyzer https://mvdanalyzer.com/mcp
+```
+
+JSON config form (e.g. `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "mvdanalyzer": {
+      "url": "https://mvdanalyzer.com/mcp"
+    }
+  }
+}
+```
+
+Web chat connectors (claude.ai custom connectors and the like) just take
+the URL `https://mvdanalyzer.com/mcp` — no headers or OAuth needed.
+
+For the full deployment (Caddy TLS, systemd units, provisioning runbook)
+see [`../deploy/README.md`](../deploy/README.md).
+
+### stdio vs. HTTP
+
+| | stdio (default) | HTTP (`-http`) |
+|---|---|---|
+| Transport | stdin/stdout | streamable HTTP |
+| Lifecycle | one process per client | one long-lived server |
+| MCP auth | none (local process) | none |
+| Upstream auth | `MVD_API_KEY`, else `-label` (non-secret tag) | `MVD_API_KEY` service key; per-request `qwmvd_` bearer overrides |
+| Use | local (Desktop/Cursor/Code) | hosted / remote |
 
 ### Input schemas
 
@@ -109,16 +212,22 @@ All fields optional; an empty filter returns the most recent matches.
 | `to`       | `string`   | — | ISO date upper bound, inclusive (YYYY-MM-DD) |
 | `limit`    | `int`      | 20 | Max rows; capped at 100 |
 | `offset`   | `int`      | 0 | Pagination offset |
+| `roster`   | `bool`     | `false` | `true` = verbatim hub rows with full roster detail (per-player `ping`, `color` arrays, `name_color`, `team_color`, `is_bot`). Default = compact rows: `players` projected to `{name, team, frags}`. |
 
-Output: `{ limit, offset, count, games: [hub_row, ...] }`. The hub
-row is the Supabase `v1_games` projection
-(`id, timestamp, mode, matchtag, map, teams, players, demo_sha256,
-demo_source_url`).
+Output: `{ limit, offset, count, total?, games: [row, ...] }`. `count`
+is the rows in THIS page; `total` is all matching rows (from the
+PostgREST `count=exact` preference — omitted if the hub doesn't report
+it). Page with `limit`/`offset` until `offset+count >= total`. Row
+fields: `id, timestamp, mode, matchtag, map, teams, players,
+demo_sha256, demo_source_url` (`players` compacted unless
+`roster: true`).
 
 #### `loadDemo({gameId | sha256})`
 
 Warms `mvd-api`'s cache for the demo and returns the canonical
-`demoId` (`sha:HEX`). Idempotent.
+`demoId` (`sha:HEX`). Idempotent — and **optional**: every analysis
+tool accepts `gameId:N` directly and auto-loads on first use; loadDemo
+just front-loads the parse cost.
 
 | Param | Type | Description |
 |---|---|---|
@@ -176,9 +285,18 @@ Frag aggregates + the full kill log. Cheaper than aggregating
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| `demoId`  | `string` (required) | — | — |
-| `players` | `string[]` | all | Restrict aggregates + log to entries involving these (killer OR victim) |
-| `weapon`  | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
+| `demoId`    | `string` (required) | — | — |
+| `players`   | `string[]` | all | Restrict aggregates + log to entries involving these (killer OR victim) |
+| `weapons`   | `string[]` | all | Restrict aggregates + log to these weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `ng`, `axe`, `sg`, …) |
+| `startTime` | `number` | match start | Window start, match-relative **seconds** (keep kills at `time ≥ startTime`) |
+| `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep kills at `time ≤ endTime`) |
+| `summary`   | `bool` | `false` | Return only aggregates, dropping the kill log. **Deliberately the opposite default from getDamage/getAim/getItems**: a kill log is one row per frag — small, and usually the point of the call. |
+
+When any scoping filter (`players` / `weapons` / `startTime` / `endTime`) is
+set, **every** aggregate is recomputed from the filtered kill log (consistent
+with the entries shown); with none set the authoritative stored totals are
+returned. Filtered aggregates are log-sourced and may differ slightly from the
+unfiltered totals for reconnect / unresolved-name edge cases.
 
 Output: `result.FragResult` —
 `{ totalFrags, byPlayer: {name: {kills, deaths, byWeapon}}, byWeapon: {weapon: count}, frags: [{time, killer, victim, weapon, isSuicide, isTeamKill}, ...] }`.
@@ -192,9 +310,23 @@ time-ordered per-hit log.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| `demoId`  | `string` (required) | — | — |
-| `players` | `string[]` | all | Restrict aggregates + log to entries involving these (attacker OR victim) |
-| `weapon`  | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
+| `demoId`    | `string` (required) | — | — |
+| `players`   | `string[]` | all | Restrict aggregates + log to entries involving these (attacker OR victim) |
+| `weapons`   | `string[]` | all | Restrict to these **attacker** weapon codes (`rl`, `lg`, `gl`, `ssg`, `sng`, `sg`, `tele`, …) |
+| `startTime` | `number` | match start | Window start, match-relative **seconds** (keep hits at `time ≥ startTime`) |
+| `endTime`   | `number` | match end | Window end, match-relative **seconds** (keep hits at `time ≤ endTime`) |
+| `summary`   | `bool` | **`true`** (MCP-only default) | Aggregates only, the big per-hit damage log dropped. Pass `false` for the full log (REST `/damage` defaults to the full log; the defaulted MCP response carries a `hint` field saying how to opt out). |
+
+The damage output — the aggregates AND the per-hit `events` log — is
+**match-only**: out-of-match (warmup / post-match) hits are dropped at the
+source and never appear (schema v50).
+
+When any scoping filter (`players` / `weapons` / `startTime` / `endTime`) is
+set, **every** aggregate (`totalDamage`, `byPlayer`, `byWeapon`, `matrix`) is
+recomputed from the filtered per-hit log — this also populates `matrix` /
+`events` on filtered responses (previously null). Because `events` is
+match-gated at the source, an all-players recompute reproduces the stored
+totals exactly. With none set the authoritative stored totals are returned.
 
 Output: `result.DamageResult` — `{ totalDamage, byWeapon, byPlayer: {name:
 {given, taken, givenTeam, givenSelf, takenEnv, byWeapon, enemyVsSg,
@@ -206,7 +338,7 @@ keyed on the **victim's** inventory. Amounts are **unbound** (include
 overkill; a telefrag reports 9999), so totals run higher than the KTX
 scoreboard — see `scoreboard` for the cross-check.
 
-#### `getAim({demoId})`
+#### `getAim({demoId, players?, startTime?, endTime?, summary?})`
 
 Per-player aim analysis. Start with `players[].weapons` (per-weapon
 shots/hits, SG/SSG pellet stats + full/partial/miss fires, RL/GL
@@ -216,9 +348,24 @@ the hitbox edge, with hit + attributed target) and `lgRamp` (per-LG-cell
 hit vs ms since the shaft opened) blocks are large — reach for them only
 when per-shot detail is needed.
 
+**`summary: true` is the MCP-layer default** — it returns just the compact
+per-player `weapons` aggregates and drops the large per-fire `crosshair` +
+`lgRamp` sample arrays, which otherwise dominate the payload and can overflow
+context. Pass `summary: false` for the full arrays (REST `/aim` defaults to
+the full shape; the defaulted MCP response carries a `hint` field saying how
+to opt out).
+
 | Param | Type | Description |
 |---|---|---|
 | `demoId` | `string` (required) | — |
+| `players` | `string[]` | scope to these shooters. With no time window, selects their **match-wide** aim; with a window, restricts the recompute. |
+| `startTime` | `float` | window start, match-relative **seconds**. Setting a window **recomputes** aim over the shots in it, so every figure (weapons, crosshair, lgRamp) scopes to the window. |
+| `endTime` | `float` | window end, match-relative seconds. |
+| `summary` | `bool` | **default `true` (MCP-only)**: only the `weapons` aggregates, the per-fire `crosshair`/`lgRamp` arrays dropped. Pass `false` for the full arrays. |
+
+With no time window the **stored** match-wide aim is served (no recompute);
+`players`/`summary` still apply. The `shots`/`damage` inputs aim derives from
+are already match-only, so aim never includes warmup / post-match fires.
 
 Output: `result.AimResult` — see
 [RESULT_SCHEMA.md §AimResult](../mvd-analytics/RESULT_SCHEMA.md#aimresult-aim).
@@ -262,7 +409,8 @@ structuredContent must be a JSON object.)
 |---|---|---|---|
 | `demoId`  | `string` (required) | — | — |
 | `players` | `string[]` | all | Restrict to drops by these dropper names |
-| `weapon`  | `string[]` | both | Dropped-weapon codes (`rl`, `lg`); forwarded as a CSV set, matching REST `/backpacks` |
+| `weapons` | `string[]` | both | Dropped-weapon codes (`rl`, `lg`); forwarded as a CSV set, matching REST `/backpacks` |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the drop time |
 
 Output: `{ backpacks: []result.BackpackDrop }` — each entry has `time`,
 `player` (dropper), `team`, `weapon` (`rl`/`lg`), `origin` (XYZ), `loc`
@@ -278,8 +426,15 @@ Output: `{ backpacks: []result.BackpackDrop }` — each entry has `time`,
 | `items`   | `string[]` | all | Item name or kind token, case-insensitive. A kind matches every instance of a type (`YA` → `ya_1`, `ya_2`; `RA`; `MH`; `Quad`; `Pent`; `Ring`; `RL`; `LG`; `GL`; `SSG`; `SNG`; `NG`); a suffixed name matches one instance (`ya_1`). |
 | `players` | `string[]` | all | Restrict phases to those taken by these names; phases with no `takenBy` survive |
 | `kinds`   | `string[]` | all | Category, case-insensitive: `armor`, `mega`, `health`, `powerup`, `weapon`, `ammo`. A raw kind token (`ra`, `quad`, …) also matches. |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**. Timeline mode keeps phases **overlapping** the window; summary mode counts takes **inside** it. `endTime: 60` = the opening minute. |
+| `summary` | `bool` | **`true`** (MCP-only default) | Per-item take aggregates `{takenCount, byPlayer, firstTake}` instead of the full phase timeline. Pass `false` for every phase (REST `/items` defaults to the timeline; the defaulted MCP response carries a `hint` field saying how to opt out). |
 
-Output: `result.ItemsResult` —
+Summary output: `{ items: [{ name, kind, entNum, loc?, takenCount,
+byPlayer?: {name: n}, firstTake?: { t, takenBy?, team? } }] }` — `t` in
+match-relative seconds. The one-call shape for "who took which YA, and
+who got there first".
+
+Timeline output (`summary: false`): `result.ItemsResult` —
 `{ items: [{ name, kind, entNum, x, y, z, loc, phases: [...] }, ...] }`.
 `name` is unique per item (suffixed when a map has several of a kind:
 `ya_1`, `ya_2`, `mh_1`); `kind` is the raw token (`ra`/`ya`/`mh`/`quad`/
@@ -292,8 +447,9 @@ Output: `result.ItemsResult` —
 |---|---|---|---|
 | `demoId`  | `string` (required) | — | — |
 | `players` | `string[]` | all | Restrict to picks by these names |
-| `weapon`  | `string[]` | all | `rl`, `lg`, `gl`, `ssg`, `sng`, `ng` |
+| `weapons` | `string[]` | all | `rl`, `lg`, `gl`, `ssg`, `sng`, `ng` |
 | `source`  | `string`   | both | `world` (spawner) or `backpack` (RL/LG drop) |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the pickup time |
 
 Output: `{ pickups: []result.WeaponPickup }` — each entry has `time`,
 `player`, `team`, `weapon`, `source`, `hadBefore`, `kills` (before
@@ -307,14 +463,14 @@ picker's next death), `nextDeathTime`, plus for backpack pickups
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`      | `string` (required) | — | — |
-| `windowMs`    | `int`     | **1000** (MCP default) | Bucket size in ms. The REST API itself defaults to 50 — the MCP proxy injects 1000 when caller omits, since 50 ms emits ~24K buckets per match (drowns an LLM context). Pass an explicit value to override either way. |
+| `windowMs`    | `int`     | **5000** (MCP default) | Bucket size in ms. The REST API itself defaults to 50 — the MCP proxy injects 5000 when the caller omits it: 50 ms emits ~24K buckets per match and even 1 s is ~1200 per field per player, while 5 s resolves the trend/control questions a bucketed timeline answers (a quad run is 30 s). Pass an explicit value (1000, 50, …) to override either way; for instants use getStateAt, for exact events getEvents. |
 | `startTime`   | `float64` | match start | Window start, match-relative seconds |
 | `endTime`     | `float64` | match end | Window end |
 | `players`     | `string[]` | all | Restrict to these player names |
 | `fields`      | `string[]` | all standard | Field codes — see RESULT_SCHEMA.md |
 | `reducers`    | `{[code]: name}` | per-field defaults | Reducer-name override per field |
 | `includeTeam` | `bool`    | `false` | Also emit per-team aggregates per bucket |
-| `loc`         | `string`  | `name` | Ignored for `layout=column` (always raw `li` index) |
+| `loc`         | `string`  | `name` | Ignored for `layout=column` (always the raw `li` index + a `locTable` legend in the envelope to decode it — no `getLocTable` call needed) |
 | `layout`      | `string`  | **`column`** | `column` = compact column-major `ColumnarBuckets` (one array per `(player,field)`, `time(i)=startMs+i*windowMs`, booleans 0/1); `row` = one self-describing object per bucket. Prefer column for series/trend reads; use `getStateAt` for snapshots. |
 
 Output: `view.ColumnarBuckets` (default) or `view.BucketsView` (`layout=row`)
@@ -328,7 +484,7 @@ Output: `view.ColumnarBuckets` (default) or `view.BucketsView` (`layout=row`)
 | `startTime` | `float64` | match start | — |
 | `endTime`   | `float64` | match end | — |
 | `players`   | `string[]` | all | — |
-| `types`     | `string[]` | discrete-event default set | `frag, powerup, streak, spawn, death, weapon, item, chat` (default), opt-in: `loc, health, armor, damage, telefrag, stomp` |
+| `types`     | `string[]` | discrete-event default set | `frag, powerup, streak, spawn, death, weapon, item, chat, pickup` (default), opt-in: `loc, health, armor, damage, telefrag, stomp` |
 
 Output: `view.EventsView` —
 `{ events: [{ t, type, player, detail }, …] }`. Per-type `detail`
@@ -339,8 +495,8 @@ keys are in RESULT_SCHEMA.md.
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`    | `string` (required) | — | — |
-| `startTime` | `float64` | match start | — |
-| `endTime`   | `float64` | match end | — |
+| `startTime` | `float64` | — | **At least one of startTime/endTime is required at the MCP layer** — an unwindowed slice is native-rate entries for the whole match, the biggest payload this service can emit. Keep windows tens of seconds. (REST `/stream-slice` stays unwindowed.) |
+| `endTime`   | `float64` | — | See `startTime`. |
 | `players`   | `string[]` | all | — |
 | `fields`    | `string[]` | all standard | — |
 
@@ -367,19 +523,20 @@ intervals to membership; position to nearest sample.
 |---|---|---|---|
 | `demoId`     | `string` (required) | — | — |
 | `players`    | `string[]` | all | — |
-| `minDwellMs` | `int`     | 0 | Drop transitions shorter than this; folded into neighbour |
+| `minDwellMs` | `int`     | **250** (MCP default; REST 0) | Drop residences shorter than this (nearest-loc flicker), folded into neighbour. Pass `0` explicitly for the raw stream. |
 | `startTime`  | `float64` | match start | — |
 | `endTime`    | `float64` | match end | — |
 
 Output: `view.LocTrailsView` —
 `{ players: [{ name, sequence: [{ s, e, loc }, …] }, …] }`.
 
-#### `getRegionControl({demoId, windowMs})`
+#### `getRegionControl({demoId, windowMs?, startTime?, endTime?})`
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `demoId`   | `string` (required) | — | — |
-| `windowMs` | `int` | **1000** (MCP default) | Bucket size for the per-region state strings. Same MCP-vs-REST split as `getBuckets`: REST default is 50, MCP proxy injects 1000 to keep `bucketStates` lengths manageable. |
+| `windowMs` | `int` | **5000** (MCP default) | Bucket size for the per-region state strings. Same MCP-vs-REST split as `getBuckets`: REST default is 50, MCP proxy injects 5000 to keep `bucketStates` lengths manageable (a 20-min match: 240 chars per region instead of 24K). |
+| `startTime`/`endTime` | `number` | full match | Match-relative **seconds**; windows the bucket range |
 
 Output: `result.RegionControlResult`. Errors with
 `region_control_unavailable` (HTTP 422) if the demo's map has no
@@ -389,10 +546,13 @@ region layout. See RESULT_SCHEMA.md for the encoding of
 
 #### `listArtifacts({})`
 
-No parameters. Output: the DAG manifest
-`{ schemaVersion, artifacts: [{ name, cost, lazy, requires,
-provides, mutates, resultKey, servable, description }, …] }`. Static per
-schema version. The authoritative catalog is the generated
+No parameters. Output: the fetchable-artifact catalog
+`{ schemaVersion, artifacts: [{ name, resultKey, cost, lazy,
+description }, …] }` — trimmed at the MCP layer to servable artifacts
+and routing-relevant fields (the full DAG manifest with
+`requires`/`provides`/`mutates` edges and internal nodes lives on REST
+`/v1/artifacts` + `/v1/graph`). Static per schema version. The
+authoritative catalog is the generated
 [`../mvd-analytics/ARTIFACTS.md`](../mvd-analytics/ARTIFACTS.md). Call
 this to discover artifacts beyond the curated tools.
 

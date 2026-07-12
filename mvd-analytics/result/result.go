@@ -587,7 +587,87 @@ package result
 //     re-init to 0 during intermission cannot erase the final score (the
 //     v48 removal of the 0-frag filter had surfaced these corrupted zeros
 //     as if they were real scores).
-const CurrentSchemaVersion = 49
+//
+// v50: damage.events is now match-gated at the source.
+//   - The per-hit damage.events log previously carried out-of-match (warmup /
+//     post-match) hits while the aggregates gated them out. The analyzer now
+//     drops out-of-match hits before appending to events, so the events log
+//     and the aggregates are built from the same in-match hit set. This
+//     removes the aim [0,matchEnd] self-window (v49) — aim reads exactly-in-
+//     match damage — and fixes a latent airgibs bug that counted warmup /
+//     post-match rocket airgibs (it iterated events with no gate). No field
+//     shape change; damage.events arrays shrink by the out-of-match hits.
+//
+// v51: the match opening becomes first-class (PLAN-api-usability 16.1-A).
+//   - streams.players[].sp gains the match-start spawn. KTX respawns every
+//     player when the countdown ends (SM_PrepareClients → k_respawn,
+//     ktx/src/match.c:881,972), but a player alive through the countdown
+//     never crosses health ≤0→>0, so the parser's dead→alive detector
+//     missed the first — most contested — spawn of the match. The timeline
+//     now synthesizes a t=0 spawn for every player alive at match start
+//     whose respawn wasn't wire-visible.
+//   - Adds Result.Opening ("opening" artifact): each player's match-start
+//     spawn location plus the first in-match take of every contested
+//     spawner (armors, mega, powerups, RL/LG) — a pure projection of
+//     items + streams kept small for one-call fetches.
+//   - The events view (not stored, documented here for the contract) gains
+//     the default "pickup" type — identity-rich pickups joined from
+//     items[].phases (world takes, per-spawner ya_1/ya_2 naming) and
+//     weaponPickups (backpack/unknown grants) — and spawn events now carry
+//     the spawn location in detail.
+//
+// v52: no-match-start demos are flagged, not coerced.
+//   - streams.global gains timeBase: "demo" (omitted normally) when no match
+//     start was detected. On such demos the per-producer rebase never runs,
+//     so every timestamp in the Result is on the raw demo clock — previously
+//     indistinguishable from a match-rebased result. A matching entry is
+//     appended to errors[] so /overview surfaces it without a new field.
+//
+// v53: columnar buckets become loc-self-contained (view shape only — no
+//   stored field changes; bumped so the immutable schemaVersion-keyed
+//   ETags stop revalidating the pre-legend bodies).
+//   - The /buckets layout=column envelope gains locTable: the demo's
+//     interned loc-name legend, present iff an "li" column is in the
+//     output. Columnar keeps the compact raw index (unlike row mode,
+//     which resolves names per bucket); the legend lets a consumer —
+//     notably an MCP agent on the columnar default — decode locally
+//     instead of a /loc-table round trip.
+//
+// v54: the bounded damage family (additive).
+//   - The wire carries only KTX's UNBOUND damage (overkill-inclusive,
+//     ktx/src/combat.c:795); the scoreboard's BOUNDED dmg_dealt (armor
+//     absorbed + health damage capped to remaining health, combat.c:783)
+//     is now reconstructed per hit from tracked victim armor/health state.
+//     damage.events[].bounded (omitted when equal to damage; 0 is a real
+//     value — a pent/teamplay-nullified hit), damage.byPlayer.<p>.bounded
+//     (a nested PlayerDamage mirroring the damage figures), and
+//     damage.scoreboard deltas gain a bounded nest incl. streamTeam /
+//     scoreTeam (dmg.team reconciliation only becomes meaningful with the
+//     bounded family). damage.dmg ("both") and damage.boundedMode
+//     ("standard", or "skipped:midair|instagib|dmgfrags" when the server
+//     mode rewrites T_Damage unobservably — no bounded fields then).
+//   - Telefrags and stomps fold their BOUNDED damage into given/givenTeam/
+//     taken in both families (telefrag: armor+health — the wire 9999 is a
+//     sentinel; stomp: the honest ~10 HP wire value through the normal
+//     arithmetic), matching KTX's own accumulation (combat.c:1046-1076
+//     has no tele/stomp exclusion). telefrags[]/stomps[] entries carry the
+//     per-kill bounded value. ByWeapon/Matrix/EWep/TotalDamage still
+//     exclude them (KTX wpNONE — demostats weapons[].damage excludes them
+//     too).
+//
+// v55: bounded damage becomes death-value-exact (reconstruction change only).
+//   - No field-shape change. The bounded value no longer caps the health
+//     share against a drifting per-hit health shadow.
+//   - A SURVIVED hit is bounded == raw by identity (no overkill); a KILLING
+//     hit's overkill is the end-of-frame death broadcast, so bounded is raw
+//     plus the (negative) death value (armor cancels; combat.c:944,983).
+//   - Residual approximations remain: same-frame multi-hit deaths cascade
+//     one death value across the frame's hits (approximate save split); the
+//     -99 corpse-health clamp (combat.c:259) and respawn-masked deaths fall
+//     back to the shadow-health cap.
+//   - Corpus given/taken reconcile ~2.5× tighter (max |Δ| 16/15 vs 44/44);
+//     ewep/team bands unchanged (the victim-item one-frame window).
+const CurrentSchemaVersion = 55
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -614,6 +694,7 @@ type Result struct {
 	MapEntities      *MapEntitiesResult      `json:"mapEntities,omitempty"`
 	Backpacks        []BackpackDrop          `json:"backpacks,omitempty"`
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
+	Opening          *OpeningResult          `json:"opening,omitempty"`
 	Streams          *Streams                `json:"streams,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }

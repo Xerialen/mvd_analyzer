@@ -32,16 +32,17 @@ that downstream consumers render, summarise, or feed to an agent.
   hand-ordered phase list. Every node is a task with declared
   `Requires`/`Provides` edges; nodes differ only in whether they read the
   event stream (analyzers — 15 of them, five of which publish
-  `CoreOutputs`) or only refine the assembled `Result` (six
+  `CoreOutputs`) or only refine the assembled `Result` (seven
   post-processors: victim-named teamkill recovery → `frags:final`, **aim
   analysis**, airgib detection, scoreboard kills/deaths/suicides
   correction → `match:final`, locgraph synthesis, region-control
-  classification), plus one lazy node (`los`). There is no tier that
+  classification, and the match-opening projection → `opening`), plus
+  one lazy node (`los`). There is no tier that
   orders the run — the topological sort of the declared edges does (see
   "Pipeline architecture" and "The nodes" below). Timestamps and team
   labels are born correct in each producer's Finalize, so the old
   whole-Result time rebase and duel team rewrite are gone. See `aim.go`,
-  `airgibs.go`, `postprocess.go`, and `teamkill_telefrag.go`.
+  `airgibs.go`, `opening.go`, `postprocess.go`, and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
   `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
   `StateAt`, `LocTrails`, `RegionControl`) read `result.Streams` and
@@ -303,6 +304,7 @@ flowchart TB
     airgibs["airgibs"]
     loc_graph["loc-graph"]
     region_control["region-control"]
+    opening["opening"]
     los["los"]
   end
   subgraph d5["depth 5"]
@@ -345,6 +347,7 @@ flowchart TB
   identity -->|"identity"| shots
   identity -->|"identity"| timeline
   identity -->|"identity"| weapon_pickups
+  items -->|"items"| opening
   match -->|"match"| match_final
   match -->|"match"| region_control
   roster -->|"roster"| backpacks
@@ -360,10 +363,11 @@ flowchart TB
   timeline -->|"timeline"| frags_final
   timeline -->|"timeline"| loc_graph
   timeline -->|"timeline"| los
+  timeline -->|"timeline"| opening
   timeline -->|"timeline"| region_control
   timeline -->|"timeline"| shots
   classDef post stroke:#2563eb,stroke-width:4px;
-  class frags_final,aim,airgibs,match_final,loc_graph,region_control post;
+  class frags_final,aim,airgibs,match_final,loc_graph,region_control,opening post;
   classDef lazy stroke-dasharray:4 3;
   class los lazy;
 ```
@@ -394,8 +398,9 @@ generated from the DAG metadata (`analyzer.ArtifactManifest`). It is
 **generated** (`make artifacts-md` / `qw-analyze -artifacts-md`) and a
 drift test keeps it current, so don't hand-edit it. mvd-api serves the
 same manifest at `GET /v1/artifacts` and any servable artifact at
-`GET /v1/demos/{id}/artifacts/{name}` (see [`../mvd-api/API.md`](../mvd-api/API.md)
-§4.17); an artifact with a `resultKey` (or the lazy `los` artifact) becomes
+`GET /v1/demos/{id}/artifacts/{name}` (documented in the OpenAPI spec the
+server serves at `/openapi.yaml`, browsable at `/docs`); an artifact with a
+`resultKey` (or the lazy `los` artifact) becomes
 reachable there — and via the mvd-mcp `getArtifact` tool — automatically,
 no per-artifact endpoint or tool to hand-write.
 
@@ -524,7 +529,7 @@ type Result struct {
     Metadata         *MetadataResult          // serverinfo + match settings
     LocGraph         *LocGraphResult          // loc-to-loc movement graph
     Items            *ItemsResult             // per-item pickup / respawn timeline (all MVD sources)
-    Damage           *DamageResult            // per-hit damage log + aggregates (KTX dmgdone stream)
+    Damage           *DamageResult            // per-hit damage log + aggregates, raw + bounded families (KTX dmgdone stream)
     Shots            *ShotsResult             // per-shot weapon-fire stream (sound + LG ammo) + hitscan→damage links
     Aim              *AimResult               // per-player aim analysis (crosshair error, LG ramp, rocket direct/splash, LG reach)
     MapEntities      *MapEntitiesResult       // static map layout from the BSP entity corpus (mapents)
@@ -537,10 +542,21 @@ type Result struct {
 
 Each sub-type is defined in its own file under `result/`. The JSON shape
 is the wire contract with every consumer; breaking changes bump
-`CurrentSchemaVersion` (currently `38`). For "how long was the match"
+`CurrentSchemaVersion` (defined in `result/result.go`, with the full
+version history alongside it). For "how long was the match"
 read `Match.Duration` (float, parser-derived) or `DemoInfo.Duration`
 (integer, KTX-authoritative); the legacy top-level `duration` was
 removed in v6.
+
+Since schema v54 `Damage` carries **two families**: the **raw** wire
+value (the full hit including overkill) and a **bounded** reconstruction
+of KTX's scoreboard `dmg_dealt` (armor absorbed + health capped to the
+victim's remaining health), the latter in additive `bounded` fields.
+Telefrag and stomp damage now folds into `given`/`givenTeam`/`taken` in
+both families — matching KTX's accumulation, which applies no positional-
+kill exclusion — while staying out of `events`/`byWeapon`/`matrix`/`ewep`.
+See [RESULT_SCHEMA.md](RESULT_SCHEMA.md#damageresult-damage) for the
+field-level reference.
 
 ### Items result
 

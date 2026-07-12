@@ -4649,8 +4649,28 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "42": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 2695,
+            "rl": 3953,
+            "sg": 40,
+            "ssg": 12
+          },
+          "enemyVsBoth": 3247,
+          "enemyVsLg": 390,
+          "enemyVsMid": 0,
+          "enemyVsRl": 2951,
+          "enemyVsSg": 112,
+          "ewep": 6588,
+          "given": 6700,
+          "givenSelf": 530,
+          "givenTeam": 0,
+          "taken": 5295,
+          "takenEnv": 70
+        },
         "byWeapon": {
           "lg": 2880,
           "rl": 4323,
@@ -4670,6 +4690,24 @@
         "takenEnv": 70
       },
       "AHemlocksLie": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 551,
+            "rl": 4092,
+            "sg": 52
+          },
+          "enemyVsBoth": 3889,
+          "enemyVsLg": 0,
+          "enemyVsMid": 179,
+          "enemyVsRl": 468,
+          "enemyVsSg": 159,
+          "ewep": 4357,
+          "given": 4695,
+          "givenSelf": 396,
+          "givenTeam": 0,
+          "taken": 7171,
+          "takenEnv": 75
+        },
         "byWeapon": {
           "lg": 570,
           "rl": 4464,
@@ -4694,15 +4732,8 @@
       "sg": 92,
       "ssg": 12
     },
+    "dmg": "both",
     "events": [
-      {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -4299,
-        "victim": "AHemlocksLie",
-        "weapon": "fall"
-      },
       {
         "attacker": "AHemlocksLie",
         "damage": 110,
@@ -4871,6 +4902,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 71,
         "damage": 90,
         "isSplash": true,
         "time": 40467,
@@ -4880,6 +4912,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 63,
         "damage": 110,
         "time": 40574,
         "victim": "42",
@@ -5064,6 +5097,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 48,
         "damage": 90,
         "isSplash": true,
         "time": 68589,
@@ -5073,6 +5107,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 40,
         "damage": 43,
         "isSelf": true,
         "isSplash": true,
@@ -5108,6 +5143,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 9,
         "damage": 97,
         "isSplash": true,
         "time": 77823,
@@ -5169,6 +5205,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 48,
         "damage": 59,
         "isSplash": true,
         "time": 97115,
@@ -5286,6 +5323,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 56,
         "damage": 66,
         "isSplash": true,
         "time": 130700,
@@ -5346,6 +5384,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 56,
         "damage": 83,
         "isSplash": true,
         "time": 149946,
@@ -5426,6 +5465,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 55,
         "damage": 60,
         "isSplash": true,
         "time": 175868,
@@ -5444,6 +5484,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 33,
         "damage": 67,
         "isSplash": true,
         "time": 188881,
@@ -5528,6 +5569,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 25,
         "damage": 30,
         "time": 206208,
         "victim": "AHemlocksLie",
@@ -5570,6 +5612,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 40,
         "damage": 75,
         "isSplash": true,
         "time": 220026,
@@ -5714,6 +5757,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 5,
         "damage": 30,
         "time": 245675,
         "victim": "AHemlocksLie",
@@ -5795,6 +5839,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 29,
         "damage": 30,
         "time": 272490,
         "victim": "AHemlocksLie",
@@ -5928,6 +5973,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 64,
         "damage": 71,
         "isSplash": true,
         "time": 309048,
@@ -5955,6 +6001,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 6,
         "damage": 30,
         "time": 311505,
         "victim": "AHemlocksLie",
@@ -5963,6 +6010,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 100,
         "damage": 110,
         "time": 315350,
         "victim": "AHemlocksLie",
@@ -6024,6 +6072,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 6,
         "damage": 30,
         "time": 328269,
         "victim": "AHemlocksLie",
@@ -6157,6 +6206,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 11,
         "damage": 30,
         "time": 367242,
         "victim": "42",
@@ -6206,6 +6256,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 23,
         "damage": 73,
         "isSplash": true,
         "time": 372359,
@@ -6321,6 +6372,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 29,
         "damage": 30,
         "time": 396293,
         "victim": "AHemlocksLie",
@@ -6354,6 +6406,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 63,
         "damage": 89,
         "isSplash": true,
         "time": 405683,
@@ -6496,6 +6549,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 40,
         "damage": 88,
         "isSplash": true,
         "time": 427618,
@@ -6557,6 +6611,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 68,
         "damage": 80,
         "isSplash": true,
         "time": 446579,
@@ -6622,6 +6677,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 40,
         "damage": 42,
         "isSelf": true,
         "isSplash": true,
@@ -6710,6 +6766,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 4,
         "damage": 30,
         "time": 487023,
         "victim": "AHemlocksLie",
@@ -6742,6 +6799,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 10,
         "damage": 30,
         "time": 498228,
         "victim": "AHemlocksLie",
@@ -6868,6 +6926,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 20,
         "damage": 110,
         "time": 512954,
         "victim": "AHemlocksLie",
@@ -6909,6 +6968,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 10,
         "damage": 30,
         "time": 526812,
         "victim": "AHemlocksLie",
@@ -6988,6 +7048,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 5,
         "damage": 110,
         "time": 544450,
         "victim": "AHemlocksLie",
@@ -7005,6 +7066,7 @@
       },
       {
         "attacker": "AHemlocksLie",
+        "bounded": 16,
         "damage": 92,
         "isSplash": true,
         "time": 544528,
@@ -7066,6 +7128,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 16,
         "damage": 30,
         "time": 584008,
         "victim": "AHemlocksLie",
@@ -7106,6 +7169,7 @@
       },
       {
         "attacker": "42",
+        "bounded": 5,
         "damage": 30,
         "time": 590655,
         "victim": "AHemlocksLie",
@@ -7139,6 +7203,13 @@
     "scoreboard": {
       "byPlayer": {
         "42": {
+          "bounded": {
+            "scoreTeam": 0,
+            "streamEwep": 6588,
+            "streamGiven": 6700,
+            "streamTaken": 4695,
+            "streamTeam": 0
+          },
           "scoreEwep": 6590,
           "scoreGiven": 6702,
           "scoreTaken": 4695,
@@ -7147,6 +7218,13 @@
           "streamTaken": 5689
         },
         "AHemlocksLie": {
+          "bounded": {
+            "scoreTeam": 0,
+            "streamEwep": 4357,
+            "streamGiven": 4695,
+            "streamTaken": 6700,
+            "streamTeam": 0
+          },
           "scoreEwep": 4357,
           "scoreGiven": 4695,
           "scoreTaken": 6702,
@@ -13510,7 +13588,86 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 42,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "YA.RL",
+        "takenBy": "AHemlocksLie",
+        "team": "AHemlocksLie",
+        "time": 805
+      },
+      {
+        "entNum": 40,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "42",
+        "team": "42",
+        "time": 1883
+      },
+      {
+        "entNum": 41,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "AHemlocksLie",
+        "team": "AHemlocksLie",
+        "time": 2380
+      },
+      {
+        "entNum": 45,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "42",
+        "team": "42",
+        "time": 8276
+      },
+      {
+        "entNum": 43,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "yard.RL",
+        "takenBy": "42",
+        "team": "42",
+        "time": 9727
+      },
+      {
+        "entNum": 44,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "42",
+        "team": "42",
+        "time": 21458
+      },
+      {
+        "entNum": 60,
+        "item": "ga",
+        "kind": "ga",
+        "loc": "GA",
+        "takenBy": "42",
+        "team": "42",
+        "time": 53623
+      }
+    ],
+    "players": [
+      {
+        "loc": "MH.rox",
+        "name": "42",
+        "team": "42"
+      },
+      {
+        "loc": "YA.RL",
+        "name": "AHemlocksLie",
+        "team": "AHemlocksLie"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -32630,6 +32787,7 @@
           }
         ],
         "sp": [
+          0,
           69090,
           585669,
           592214
@@ -34944,6 +35102,7 @@
           }
         ],
         "sp": [
+          0,
           69493
         ],
         "ssg": [

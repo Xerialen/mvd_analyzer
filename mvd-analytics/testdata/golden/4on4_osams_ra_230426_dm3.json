@@ -36882,8 +36882,30 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "[cmd] witka": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 255,
+            "lg": 179,
+            "ng": 198,
+            "rl": 1779,
+            "sg": 3410,
+            "ssg": 131
+          },
+          "enemyVsBoth": 220,
+          "enemyVsLg": 697,
+          "enemyVsMid": 942,
+          "enemyVsRl": 623,
+          "enemyVsSg": 3470,
+          "ewep": 1540,
+          "given": 5952,
+          "givenSelf": 350,
+          "givenTeam": 198,
+          "taken": 7763,
+          "takenEnv": 25
+        },
         "byWeapon": {
           "gl": 329,
           "lg": 210,
@@ -36905,6 +36927,28 @@
         "takenEnv": 25
       },
       "apa": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 311,
+            "lg": 844,
+            "ng": 9,
+            "rl": 1898,
+            "sg": 2275,
+            "sng": 120,
+            "ssg": 84
+          },
+          "enemyVsBoth": 429,
+          "enemyVsLg": 536,
+          "enemyVsMid": 358,
+          "enemyVsRl": 771,
+          "enemyVsSg": 3611,
+          "ewep": 1736,
+          "given": 5705,
+          "givenSelf": 443,
+          "givenTeam": 158,
+          "taken": 7131,
+          "takenEnv": 93
+        },
         "byWeapon": {
           "gl": 311,
           "lg": 960,
@@ -36915,12 +36959,12 @@
           "ssg": 84
         },
         "enemyVsBoth": 458,
-        "enemyVsLg": 418,
+        "enemyVsLg": 582,
         "enemyVsMid": 420,
         "enemyVsRl": 1292,
         "enemyVsSg": 4107,
-        "ewep": 2168,
-        "given": 6695,
+        "ewep": 2332,
+        "given": 6859,
         "givenSelf": 443,
         "givenTeam": 323,
         "taken": 8795,
@@ -36928,6 +36972,26 @@
         "telefrags": 1
       },
       "clox": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 518,
+            "rl": 1486,
+            "sg": 2472,
+            "sng": 1558,
+            "ssg": 291
+          },
+          "enemyVsBoth": 358,
+          "enemyVsLg": 1110,
+          "enemyVsMid": 557,
+          "enemyVsRl": 1367,
+          "enemyVsSg": 3033,
+          "ewep": 2835,
+          "given": 6425,
+          "givenSelf": 206,
+          "givenTeam": 82,
+          "taken": 7974,
+          "takenEnv": 50
+        },
         "byWeapon": {
           "lg": 1912,
           "rl": 2869,
@@ -36935,19 +36999,41 @@
           "sng": 1674,
           "ssg": 292
         },
-        "enemyVsBoth": 270,
+        "enemyVsBoth": 370,
         "enemyVsLg": 1222,
         "enemyVsMid": 1971,
         "enemyVsRl": 1709,
         "enemyVsSg": 4215,
-        "ewep": 3201,
-        "given": 9387,
+        "ewep": 3301,
+        "given": 9487,
         "givenSelf": 1015,
         "givenTeam": 142,
-        "taken": 10641,
-        "takenEnv": 50
+        "taken": 10749,
+        "takenEnv": 50,
+        "telefrags": 1
       },
       "doberman": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 47,
+            "lg": 875,
+            "rl": 2293,
+            "sg": 2882,
+            "sng": 110,
+            "ssg": 395
+          },
+          "enemyVsBoth": 108,
+          "enemyVsLg": 310,
+          "enemyVsMid": 862,
+          "enemyVsRl": 956,
+          "enemyVsSg": 4374,
+          "ewep": 1374,
+          "given": 6610,
+          "givenSelf": 277,
+          "givenTeam": 566,
+          "taken": 7273,
+          "takenEnv": 30
+        },
         "byWeapon": {
           "gl": 110,
           "lg": 1020,
@@ -36960,16 +37046,38 @@
         "enemyVsLg": 428,
         "enemyVsMid": 1153,
         "enemyVsRl": 1066,
-        "enemyVsSg": 5497,
+        "enemyVsSg": 5505,
         "ewep": 1602,
-        "given": 8252,
+        "given": 8260,
         "givenSelf": 277,
-        "givenTeam": 522,
-        "taken": 8386,
+        "givenTeam": 622,
+        "taken": 8760,
         "takenEnv": 30,
         "telefrags": 1
       },
       "lakso": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 289,
+            "lg": 543,
+            "ng": 12,
+            "rl": 1838,
+            "sg": 2622,
+            "sng": 545,
+            "ssg": 876
+          },
+          "enemyVsBoth": 208,
+          "enemyVsLg": 560,
+          "enemyVsMid": 347,
+          "enemyVsRl": 1963,
+          "enemyVsSg": 4245,
+          "ewep": 2731,
+          "given": 7323,
+          "givenSelf": 218,
+          "givenTeam": 347,
+          "taken": 7917,
+          "takenEnv": 49
+        },
         "byWeapon": {
           "gl": 289,
           "lg": 690,
@@ -36982,10 +37090,10 @@
         "enemyVsBoth": 216,
         "enemyVsLg": 678,
         "enemyVsMid": 499,
-        "enemyVsRl": 1835,
-        "enemyVsSg": 4421,
-        "ewep": 2729,
-        "given": 7649,
+        "enemyVsRl": 2133,
+        "enemyVsSg": 4721,
+        "ewep": 3027,
+        "given": 8247,
         "givenSelf": 301,
         "givenTeam": 388,
         "taken": 9975,
@@ -36993,6 +37101,27 @@
         "telefrags": 4
       },
       "marksuzu": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 187,
+            "lg": 846,
+            "rl": 2279,
+            "sg": 2580,
+            "sng": 36,
+            "ssg": 108
+          },
+          "enemyVsBoth": 212,
+          "enemyVsLg": 786,
+          "enemyVsMid": 408,
+          "enemyVsRl": 944,
+          "enemyVsSg": 3696,
+          "ewep": 1942,
+          "given": 6046,
+          "givenSelf": 201,
+          "givenTeam": 276,
+          "taken": 7839,
+          "takenEnv": 75
+        },
         "byWeapon": {
           "gl": 187,
           "lg": 930,
@@ -37002,20 +37131,40 @@
           "ssg": 108
         },
         "enemyVsBoth": 228,
-        "enemyVsLg": 810,
+        "enemyVsLg": 820,
         "enemyVsMid": 455,
         "enemyVsRl": 968,
         "enemyVsSg": 5349,
-        "ewep": 2006,
-        "given": 7810,
+        "ewep": 2016,
+        "given": 7820,
         "givenSelf": 231,
-        "givenTeam": 345,
+        "givenTeam": 445,
         "stomps": 1,
         "taken": 9924,
-        "takenEnv": 80,
-        "telefrags": 1
+        "takenEnv": 80
       },
       "nlk": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 204,
+            "lg": 2177,
+            "rl": 2443,
+            "sg": 2638,
+            "sng": 54,
+            "ssg": 195
+          },
+          "enemyVsBoth": 483,
+          "enemyVsLg": 507,
+          "enemyVsMid": 1408,
+          "enemyVsRl": 1100,
+          "enemyVsSg": 4213,
+          "ewep": 2090,
+          "given": 7711,
+          "givenSelf": 158,
+          "givenTeam": 358,
+          "taken": 7741,
+          "takenEnv": 40
+        },
         "byWeapon": {
           "gl": 215,
           "lg": 2400,
@@ -37032,12 +37181,32 @@
         "ewep": 2296,
         "given": 8725,
         "givenSelf": 556,
-        "givenTeam": 339,
-        "taken": 9772,
-        "takenEnv": 40,
-        "telefrags": 1
+        "givenTeam": 439,
+        "taken": 10370,
+        "takenEnv": 40
       },
       "sCorp": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 100,
+            "lg": 1943,
+            "rl": 4438,
+            "sg": 1599,
+            "sng": 18,
+            "ssg": 292
+          },
+          "enemyVsBoth": 218,
+          "enemyVsLg": 540,
+          "enemyVsMid": 1522,
+          "enemyVsRl": 1155,
+          "enemyVsSg": 4955,
+          "ewep": 1913,
+          "given": 8390,
+          "givenSelf": 927,
+          "givenTeam": 749,
+          "taken": 6449,
+          "takenEnv": 49
+        },
         "byWeapon": {
           "gl": 112,
           "lg": 3595,
@@ -37055,7 +37224,7 @@
         "given": 11874,
         "givenSelf": 1319,
         "givenTeam": 889,
-        "taken": 8853,
+        "taken": 8953,
         "takenEnv": 50
       }
     },
@@ -37068,31 +37237,8 @@
       "sng": 2628,
       "ssg": 2732
     },
+    "dmg": "both",
     "events": [
-      {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -8140,
-        "victim": "lakso",
-        "weapon": "fall"
-      },
-      {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -3253,
-        "victim": "clox",
-        "weapon": "fall"
-      },
-      {
-        "attacker": "world",
-        "damage": 5,
-        "isEnv": true,
-        "time": -1161,
-        "victim": "apa",
-        "weapon": "fall"
-      },
       {
         "attacker": "nlk",
         "damage": 24,
@@ -37136,6 +37282,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 16,
         "damage": 24,
         "time": 2305,
         "victim": "nlk",
@@ -37168,6 +37315,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 3,
         "damage": 5,
         "isEnv": true,
         "time": 3030,
@@ -37216,6 +37364,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 16,
         "damage": 24,
         "time": 7627,
         "victim": "clox",
@@ -37224,6 +37373,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 96,
         "time": 7978,
         "victim": "apa",
@@ -37432,6 +37582,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 9,
         "damage": 24,
         "time": 14860,
         "victim": "apa",
@@ -37448,6 +37599,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 3,
         "damage": 4,
         "time": 16550,
         "victim": "marksuzu",
@@ -37456,6 +37608,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 16,
         "damage": 24,
         "time": 17667,
         "victim": "sCorp",
@@ -37464,6 +37617,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 16,
         "damage": 20,
         "time": 19085,
         "victim": "clox",
@@ -37512,6 +37666,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 3,
         "damage": 4,
         "isEnv": true,
         "time": 20922,
@@ -37600,6 +37755,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 4,
         "damage": 6,
         "isEnv": true,
         "time": 21921,
@@ -37608,6 +37764,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 12,
         "damage": 96,
         "time": 22107,
         "victim": "apa",
@@ -37712,6 +37869,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 3,
         "damage": 18,
         "time": 23164,
         "victim": "[cmd] witka",
@@ -37720,6 +37878,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 29,
         "damage": 48,
         "time": 25437,
         "victim": "marksuzu",
@@ -37784,6 +37943,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 15,
         "damage": 24,
         "time": 27216,
         "victim": "marksuzu",
@@ -37792,6 +37952,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 10,
         "damage": 30,
         "time": 27229,
         "victim": "[cmd] witka",
@@ -37816,6 +37977,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 58,
         "damage": 96,
         "time": 27969,
         "victim": "marksuzu",
@@ -37824,6 +37986,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 8,
         "damage": 24,
         "time": 28163,
         "victim": "sCorp",
@@ -37832,6 +37995,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 29,
         "damage": 48,
         "time": 28473,
         "victim": "marksuzu",
@@ -37856,6 +38020,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 6,
         "damage": 16,
         "time": 29003,
         "victim": "marksuzu",
@@ -37920,6 +38085,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 27,
         "damage": 30,
         "time": 29861,
         "victim": "doberman",
@@ -37937,6 +38103,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 0,
         "damage": 30,
         "isSelf": true,
         "isSplash": true,
@@ -37946,6 +38113,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 4,
         "time": 32613,
         "victim": "marksuzu",
@@ -37954,6 +38122,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 69,
         "damage": 100,
         "isSplash": true,
         "time": 32968,
@@ -38035,6 +38204,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 8,
         "damage": 24,
         "time": 36509,
         "victim": "sCorp",
@@ -38093,6 +38263,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 27,
         "damage": 77,
         "isSplash": true,
         "time": 39220,
@@ -38190,6 +38361,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 10,
         "damage": 24,
         "time": 42580,
         "victim": "[cmd] witka",
@@ -38281,6 +38453,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 100,
         "damage": 110,
         "time": 59126,
         "victim": "[cmd] witka",
@@ -38426,6 +38599,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 6,
         "damage": 30,
         "time": 63689,
         "victim": "nlk",
@@ -38514,6 +38688,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 82,
         "damage": 200,
         "isSplash": true,
         "time": 66563,
@@ -38523,6 +38698,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 9,
         "damage": 352,
         "isSplash": true,
         "time": 66563,
@@ -38540,6 +38716,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 100,
         "damage": 341,
         "isSplash": true,
         "time": 68162,
@@ -38549,6 +38726,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 9,
         "damage": 12,
         "time": 68550,
         "victim": "clox",
@@ -38581,6 +38759,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 11,
         "damage": 24,
         "time": 71618,
         "victim": "apa",
@@ -38725,6 +38904,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 12,
         "damage": 18,
         "time": 75200,
         "victim": "[cmd] witka",
@@ -38814,6 +38994,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 60,
         "damage": 393,
         "isSplash": true,
         "time": 77294,
@@ -38855,6 +39036,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 2,
         "damage": 4,
         "time": 79259,
         "victim": "lakso",
@@ -38911,6 +39093,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 10,
         "damage": 30,
         "time": 86190,
         "victim": "[cmd] witka",
@@ -38927,6 +39110,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 14,
         "damage": 30,
         "time": 86697,
         "victim": "doberman",
@@ -38951,6 +39135,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 19,
         "damage": 20,
         "time": 88511,
         "victim": "clox",
@@ -39015,6 +39200,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 8,
         "damage": 16,
         "time": 91000,
         "victim": "nlk",
@@ -39095,6 +39281,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 22,
         "damage": 24,
         "time": 94790,
         "victim": "apa",
@@ -39119,6 +39306,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 34,
         "damage": 40,
         "time": 96268,
         "victim": "doberman",
@@ -39152,6 +39340,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 40,
         "damage": 110,
         "time": 98879,
         "victim": "nlk",
@@ -39298,6 +39487,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 17,
         "damage": 18,
         "time": 107357,
         "victim": "doberman",
@@ -39322,6 +39512,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 9,
         "damage": 18,
         "time": 108269,
         "victim": "nlk",
@@ -39453,6 +39644,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 17,
         "damage": 103,
         "isSplash": true,
         "time": 113227,
@@ -39486,6 +39678,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 4,
         "damage": 18,
         "time": 113772,
         "victim": "nlk",
@@ -39512,6 +39705,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 62,
         "damage": 110,
         "time": 115543,
         "victim": "lakso",
@@ -39528,6 +39722,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 100,
         "damage": 102,
         "isSplash": true,
         "time": 116560,
@@ -39554,6 +39749,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 55,
         "damage": 92,
         "isSplash": true,
         "time": 122941,
@@ -39612,6 +39808,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 110,
         "time": 129240,
         "victim": "lakso",
@@ -39620,6 +39817,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 28,
         "damage": 74,
         "isSplash": true,
         "time": 129295,
@@ -39710,6 +39908,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 22,
         "damage": 24,
         "time": 134065,
         "victim": "clox",
@@ -39718,6 +39917,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 29,
         "damage": 30,
         "time": 135721,
         "victim": "marksuzu",
@@ -39814,6 +40014,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 19,
         "damage": 30,
         "time": 136816,
         "victim": "apa",
@@ -39902,6 +40103,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 7,
         "damage": 16,
         "time": 143893,
         "victim": "[cmd] witka",
@@ -39943,6 +40145,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 33,
         "damage": 54,
         "isSplash": true,
         "time": 146647,
@@ -39986,6 +40189,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 17,
         "damage": 24,
         "time": 150100,
         "victim": "marksuzu",
@@ -40130,6 +40334,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 72,
         "damage": 99,
         "isSplash": true,
         "time": 159129,
@@ -40139,6 +40344,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 25,
         "damage": 30,
         "time": 159582,
         "victim": "clox",
@@ -40156,6 +40362,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 36,
         "damage": 89,
         "isSplash": true,
         "time": 162971,
@@ -40215,6 +40422,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 71,
         "damage": 72,
         "isSplash": true,
         "time": 163842,
@@ -40257,6 +40465,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 39,
         "damage": 87,
         "isSplash": true,
         "time": 165501,
@@ -40306,6 +40515,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 76,
         "damage": 78,
         "isSplash": true,
         "time": 167103,
@@ -40323,6 +40533,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 17,
         "damage": 24,
         "time": 168275,
         "victim": "doberman",
@@ -40355,6 +40566,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 20,
         "damage": 24,
         "time": 169430,
         "victim": "apa",
@@ -40491,6 +40703,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 12,
         "damage": 24,
         "time": 176672,
         "victim": "[cmd] witka",
@@ -40547,6 +40760,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 35,
         "damage": 75,
         "isSplash": true,
         "time": 177752,
@@ -40653,6 +40867,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 12,
         "damage": 30,
         "time": 181340,
         "victim": "lakso",
@@ -40661,6 +40876,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 84,
         "damage": 110,
         "isTeam": true,
         "time": 181683,
@@ -40710,6 +40926,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 10,
         "damage": 88,
         "isSplash": true,
         "time": 182647,
@@ -40744,6 +40961,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 20,
         "damage": 71,
         "isSplash": true,
         "time": 183399,
@@ -40841,6 +41059,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 110,
         "time": 188351,
         "victim": "apa",
@@ -40858,6 +41077,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 7,
         "damage": 8,
         "time": 188775,
         "victim": "lakso",
@@ -40890,6 +41110,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 8,
         "damage": 16,
         "time": 192059,
         "victim": "nlk",
@@ -40898,6 +41119,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 63,
         "damage": 65,
         "isSplash": true,
         "isTeam": true,
@@ -40987,6 +41209,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 44,
         "damage": 100,
         "isSplash": true,
         "time": 199609,
@@ -41069,6 +41292,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 24,
         "time": 202592,
         "victim": "apa",
@@ -41085,6 +41309,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 20,
         "damage": 56,
         "time": 202633,
         "victim": "lakso",
@@ -41151,6 +41376,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 25,
         "damage": 77,
         "isSplash": true,
         "time": 209765,
@@ -41276,6 +41502,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 76,
         "damage": 90,
         "isSplash": true,
         "time": 215774,
@@ -41302,6 +41529,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "damage": 111,
         "isSplash": true,
         "time": 217163,
@@ -41311,6 +41539,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 48,
         "damage": 73,
         "isSplash": true,
         "time": 217454,
@@ -41336,6 +41565,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 25,
         "damage": 30,
         "time": 220258,
         "victim": "doberman",
@@ -41368,6 +41598,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 59,
         "damage": 71,
         "isSplash": true,
         "time": 223745,
@@ -41449,6 +41680,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 20,
         "damage": 24,
         "time": 227885,
         "victim": "clox",
@@ -41483,6 +41715,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 43,
         "damage": 110,
         "time": 229015,
         "victim": "apa",
@@ -41556,6 +41789,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 16,
         "damage": 24,
         "time": 230790,
         "victim": "apa",
@@ -41589,6 +41823,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 23,
         "damage": 44,
         "time": 233008,
         "victim": "lakso",
@@ -41621,6 +41856,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 76,
         "damage": 110,
         "time": 235761,
         "victim": "apa",
@@ -41808,6 +42044,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 2,
         "damage": 110,
         "time": 247011,
         "victim": "marksuzu",
@@ -41816,6 +42053,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 63,
         "damage": 84,
         "isSplash": true,
         "isTeam": true,
@@ -41834,6 +42072,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 25,
         "damage": 30,
         "time": 247872,
         "victim": "doberman",
@@ -41851,6 +42090,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 72,
         "damage": 120,
         "time": 248414,
         "victim": "sCorp",
@@ -41964,6 +42204,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 76,
         "damage": 241,
         "isSplash": true,
         "isTeam": true,
@@ -41997,6 +42238,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 1,
         "damage": 30,
         "time": 269423,
         "victim": "clox",
@@ -42014,6 +42256,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 16,
         "damage": 24,
         "time": 271792,
         "victim": "sCorp",
@@ -42022,6 +42265,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 164,
         "damage": 205,
         "isSplash": true,
         "time": 271895,
@@ -42055,6 +42299,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 82,
         "damage": 120,
         "time": 273051,
         "victim": "[cmd] witka",
@@ -42111,6 +42356,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 23,
         "damage": 24,
         "time": 276155,
         "victim": "doberman",
@@ -42168,6 +42414,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 46,
         "damage": 53,
         "isSplash": true,
         "time": 282269,
@@ -42177,6 +42424,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 23,
         "damage": 24,
         "time": 282705,
         "victim": "lakso",
@@ -42219,6 +42467,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 100,
         "damage": 112,
         "isSplash": true,
         "time": 289912,
@@ -42253,6 +42502,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 48,
         "damage": 110,
         "isSplash": true,
         "time": 291125,
@@ -42294,6 +42544,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 10,
         "damage": 30,
         "time": 293584,
         "victim": "apa",
@@ -42318,6 +42569,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 3,
         "damage": 16,
         "time": 295456,
         "victim": "[cmd] witka",
@@ -42440,6 +42692,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 7,
         "damage": 24,
         "time": 301178,
         "victim": "lakso",
@@ -42465,6 +42718,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 3,
         "damage": 30,
         "time": 301806,
         "victim": "marksuzu",
@@ -42473,6 +42727,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 21,
         "damage": 89,
         "isSplash": true,
         "isTeam": true,
@@ -42507,6 +42762,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 96,
         "damage": 110,
         "time": 302866,
         "victim": "clox",
@@ -42549,6 +42805,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 112,
         "isSplash": true,
         "time": 303807,
@@ -42558,6 +42815,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 50,
         "isSelf": true,
         "isSplash": true,
@@ -42599,6 +42857,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 50,
         "isSelf": true,
         "isSplash": true,
@@ -42632,6 +42891,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 36,
         "isSelf": true,
         "isSplash": true,
@@ -42657,6 +42917,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 8,
         "damage": 24,
         "time": 307897,
         "victim": "lakso",
@@ -42674,6 +42935,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 41,
         "isSelf": true,
         "isSplash": true,
@@ -42691,6 +42953,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 0,
         "damage": 24,
         "time": 308559,
         "victim": "nlk",
@@ -42699,6 +42962,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 49,
         "damage": 110,
         "time": 308718,
         "victim": "marksuzu",
@@ -42707,6 +42971,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 56,
         "isSelf": true,
         "isSplash": true,
@@ -42716,6 +42981,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 0,
         "damage": 96,
         "time": 309455,
         "victim": "nlk",
@@ -42741,6 +43007,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 52,
         "damage": 76,
         "isSplash": true,
         "time": 309793,
@@ -42750,6 +43017,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 26,
         "isSelf": true,
         "isSplash": true,
@@ -42759,6 +43027,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 49,
         "damage": 61,
         "isSplash": true,
         "isTeam": true,
@@ -42848,6 +43117,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 23,
         "damage": 24,
         "time": 316866,
         "victim": "doberman",
@@ -42856,6 +43126,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "damage": 110,
         "time": 317788,
         "victim": "lakso",
@@ -42864,6 +43135,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 46,
         "isSelf": true,
         "isSplash": true,
@@ -42937,6 +43209,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 12,
         "damage": 24,
         "time": 323313,
         "victim": "lakso",
@@ -42945,6 +43218,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 50,
         "isSelf": true,
         "isSplash": true,
@@ -43058,6 +43332,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 9,
         "damage": 24,
         "time": 331685,
         "victim": "marksuzu",
@@ -43074,6 +43349,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 17,
         "damage": 18,
         "time": 332288,
         "victim": "doberman",
@@ -43203,6 +43479,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 3,
         "damage": 18,
         "time": 336583,
         "victim": "sCorp",
@@ -43276,6 +43553,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 3,
         "damage": 9,
         "time": 339896,
         "victim": "doberman",
@@ -43292,6 +43570,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 28,
         "damage": 47,
         "isSplash": true,
         "time": 342034,
@@ -43382,6 +43661,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 44,
         "damage": 72,
         "isSplash": true,
         "time": 345823,
@@ -43424,6 +43704,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 20,
         "damage": 24,
         "time": 347977,
         "victim": "sCorp",
@@ -43432,6 +43713,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 3,
         "damage": 69,
         "isSplash": true,
         "time": 348052,
@@ -43441,6 +43723,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 16,
         "damage": 24,
         "time": 348107,
         "victim": "marksuzu",
@@ -43569,6 +43852,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 23,
         "damage": 24,
         "time": 356693,
         "victim": "doberman",
@@ -43617,6 +43901,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 24,
         "damage": 367,
         "isSelf": true,
         "isSplash": true,
@@ -43626,6 +43911,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 56,
         "damage": 533,
         "isSplash": true,
         "time": 360043,
@@ -43635,6 +43921,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 67,
         "damage": 662,
         "isSplash": true,
         "time": 360043,
@@ -43668,6 +43955,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 5,
         "damage": 76,
         "isSplash": true,
         "time": 362863,
@@ -43685,6 +43973,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 20,
         "damage": 24,
         "time": 363412,
         "victim": "lakso",
@@ -43797,6 +44086,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 8,
         "damage": 16,
         "time": 366686,
         "victim": "clox",
@@ -43869,6 +44159,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 20,
         "time": 368611,
         "victim": "marksuzu",
@@ -43917,6 +44208,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 72,
         "damage": 96,
         "time": 371341,
         "victim": "lakso",
@@ -44014,6 +44306,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 4,
         "damage": 96,
         "time": 374642,
         "victim": "apa",
@@ -44038,6 +44331,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 8,
         "damage": 20,
         "time": 376175,
         "victim": "nlk",
@@ -44095,6 +44389,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 15,
         "damage": 16,
         "time": 379209,
         "victim": "doberman",
@@ -44167,6 +44462,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 92,
         "damage": 110,
         "time": 384751,
         "victim": "apa",
@@ -44175,6 +44471,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 8,
         "damage": 51,
         "isSelf": true,
         "isSplash": true,
@@ -44249,6 +44546,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 12,
         "damage": 24,
         "time": 387648,
         "victim": "clox",
@@ -44282,6 +44580,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 20,
         "damage": 24,
         "time": 390557,
         "victim": "marksuzu",
@@ -44354,6 +44653,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 100,
         "damage": 110,
         "time": 394189,
         "victim": "marksuzu",
@@ -44370,6 +44670,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 21,
         "damage": 24,
         "time": 394653,
         "victim": "lakso",
@@ -44386,6 +44687,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 40,
         "damage": 110,
         "time": 395687,
         "victim": "nlk",
@@ -44419,6 +44721,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 9,
         "damage": 30,
         "time": 399029,
         "victim": "marksuzu",
@@ -44491,6 +44794,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 10,
         "damage": 30,
         "time": 406897,
         "victim": "apa",
@@ -44555,6 +44859,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 10,
         "damage": 30,
         "time": 408014,
         "victim": "marksuzu",
@@ -44563,6 +44868,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 16,
         "damage": 20,
         "time": 408501,
         "victim": "lakso",
@@ -44643,6 +44949,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 23,
         "damage": 24,
         "time": 413573,
         "victim": "nlk",
@@ -44660,6 +44967,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 4,
         "damage": 20,
         "time": 413810,
         "victim": "doberman",
@@ -44740,6 +45048,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 16,
         "damage": 18,
         "time": 419157,
         "victim": "nlk",
@@ -44781,6 +45090,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 1,
         "damage": 24,
         "time": 424198,
         "victim": "marksuzu",
@@ -44911,6 +45221,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 58,
         "damage": 110,
         "time": 438859,
         "victim": "clox",
@@ -44927,6 +45238,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 84,
         "damage": 120,
         "time": 439264,
         "victim": "marksuzu",
@@ -44967,6 +45279,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 19,
         "damage": 20,
         "time": 441788,
         "victim": "nlk",
@@ -44991,6 +45304,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 100,
         "damage": 110,
         "time": 445401,
         "victim": "clox",
@@ -45007,6 +45321,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 120,
         "time": 447194,
         "victim": "clox",
@@ -45031,6 +45346,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 44,
         "damage": 62,
         "isSplash": true,
         "time": 457565,
@@ -45147,6 +45463,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 10,
         "damage": 30,
         "time": 466903,
         "victim": "marksuzu",
@@ -45155,6 +45472,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 60,
         "damage": 109,
         "isSplash": true,
         "isTeam": true,
@@ -45189,6 +45507,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 10,
         "damage": 110,
         "time": 469401,
         "victim": "clox",
@@ -45229,6 +45548,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 56,
         "damage": 72,
         "isSplash": true,
         "time": 470184,
@@ -45271,6 +45591,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 18,
         "time": 470979,
         "victim": "apa",
@@ -45311,6 +45632,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 10,
         "damage": 30,
         "time": 473544,
         "victim": "apa",
@@ -45378,6 +45700,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 76,
         "damage": 90,
         "isSplash": true,
         "time": 479078,
@@ -45395,6 +45718,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 1,
         "damage": 38,
         "isSelf": true,
         "isSplash": true,
@@ -45404,6 +45728,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 7,
         "damage": 24,
         "time": 480555,
         "victim": "[cmd] witka",
@@ -45436,6 +45761,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 40,
         "damage": 57,
         "isSplash": true,
         "time": 482259,
@@ -45510,6 +45836,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 4,
         "damage": 24,
         "time": 485043,
         "victim": "[cmd] witka",
@@ -45590,6 +45917,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 28,
         "damage": 30,
         "time": 488471,
         "victim": "lakso",
@@ -45606,6 +45934,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 16,
         "damage": 30,
         "time": 488778,
         "victim": "apa",
@@ -45654,6 +45983,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 10,
         "damage": 30,
         "time": 490725,
         "victim": "lakso",
@@ -45662,6 +45992,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 37,
         "damage": 120,
         "time": 493194,
         "victim": "clox",
@@ -45686,6 +46017,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 120,
         "isTeam": true,
         "time": 496906,
@@ -45718,6 +46050,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 175,
         "damage": 366,
         "isSplash": true,
         "time": 498665,
@@ -45736,6 +46069,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 120,
         "time": 499837,
         "victim": "lakso",
@@ -45824,6 +46158,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 4,
         "damage": 16,
         "time": 506374,
         "victim": "nlk",
@@ -45840,6 +46175,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 20,
         "damage": 24,
         "time": 506768,
         "victim": "doberman",
@@ -45848,6 +46184,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 36,
         "damage": 120,
         "time": 507220,
         "victim": "lakso",
@@ -45856,6 +46193,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 440,
         "time": 510541,
         "victim": "lakso",
@@ -45872,6 +46210,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 16,
         "damage": 120,
         "time": 512507,
         "victim": "clox",
@@ -45888,6 +46227,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 16,
         "damage": 24,
         "time": 513192,
         "victim": "apa",
@@ -45976,6 +46316,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 75,
         "damage": 120,
         "time": 517757,
         "victim": "marksuzu",
@@ -46008,6 +46349,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 19,
         "damage": 24,
         "time": 518572,
         "victim": "doberman",
@@ -46048,6 +46390,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 10,
         "damage": 30,
         "time": 524396,
         "victim": "marksuzu",
@@ -46088,6 +46431,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 28,
         "damage": 30,
         "time": 524998,
         "victim": "apa",
@@ -46235,6 +46579,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 23,
         "damage": 24,
         "time": 532374,
         "victim": "lakso",
@@ -46300,6 +46645,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 4,
         "damage": 8,
         "time": 538110,
         "victim": "doberman",
@@ -46324,6 +46670,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 1,
         "damage": 8,
         "time": 539136,
         "victim": "nlk",
@@ -46388,6 +46735,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 19,
         "damage": 24,
         "time": 543980,
         "victim": "clox",
@@ -46492,6 +46840,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 29,
         "damage": 30,
         "time": 547049,
         "victim": "apa",
@@ -46572,6 +46921,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 11,
         "damage": 24,
         "time": 548033,
         "victim": "marksuzu",
@@ -46580,6 +46930,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 10,
         "damage": 30,
         "time": 548075,
         "victim": "lakso",
@@ -46620,6 +46971,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 96,
         "damage": 255,
         "isSplash": true,
         "time": 549624,
@@ -46701,6 +47053,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 18,
         "damage": 30,
         "time": 554433,
         "victim": "marksuzu",
@@ -46717,6 +47070,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 15,
         "damage": 24,
         "time": 555556,
         "victim": "nlk",
@@ -46789,6 +47143,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 120,
         "time": 563513,
         "victim": "apa",
@@ -46797,6 +47152,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 4,
         "damage": 12,
         "time": 563714,
         "victim": "doberman",
@@ -46805,6 +47161,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 96,
         "damage": 120,
         "time": 565884,
         "victim": "lakso",
@@ -47078,6 +47435,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 70,
         "damage": 98,
         "isSplash": true,
         "time": 582154,
@@ -47144,6 +47502,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 8,
         "damage": 12,
         "time": 584810,
         "victim": "apa",
@@ -47160,6 +47519,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 11,
         "damage": 12,
         "time": 585339,
         "victim": "[cmd] witka",
@@ -47216,6 +47576,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 2,
         "damage": 30,
         "time": 587412,
         "victim": "marksuzu",
@@ -47272,6 +47633,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 8,
         "damage": 16,
         "time": 589727,
         "victim": "[cmd] witka",
@@ -47416,6 +47778,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 23,
         "damage": 30,
         "isTeam": true,
         "time": 602422,
@@ -47440,6 +47803,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 67,
         "damage": 110,
         "time": 602812,
         "victim": "clox",
@@ -47466,6 +47830,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 4,
         "damage": 5,
         "isEnv": true,
         "time": 603313,
@@ -47474,6 +47839,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 24,
         "damage": 30,
         "time": 603357,
         "victim": "lakso",
@@ -47482,6 +47848,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 24,
         "damage": 30,
         "time": 603566,
         "victim": "lakso",
@@ -47490,6 +47857,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 78,
         "damage": 110,
         "time": 603610,
         "victim": "lakso",
@@ -47516,6 +47884,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 26,
         "damage": 30,
         "time": 603667,
         "victim": "marksuzu",
@@ -47524,6 +47893,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 12,
         "time": 603807,
         "victim": "lakso",
@@ -47548,6 +47918,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 24,
         "time": 604313,
         "victim": "lakso",
@@ -47565,6 +47936,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 0,
         "damage": 77,
         "isSplash": true,
         "time": 604684,
@@ -47598,6 +47970,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 0,
         "damage": 66,
         "isSplash": true,
         "isTeam": true,
@@ -47624,6 +47997,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 0,
         "damage": 81,
         "isSplash": true,
         "isTeam": true,
@@ -47633,6 +48007,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 56,
         "damage": 77,
         "isSplash": true,
         "time": 605681,
@@ -47642,6 +48017,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 0,
         "damage": 8,
         "time": 606694,
         "victim": "lakso",
@@ -47650,6 +48026,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 8,
         "damage": 16,
         "time": 607257,
         "victim": "sCorp",
@@ -47658,6 +48035,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 47,
         "damage": 110,
         "isSplash": true,
         "time": 607546,
@@ -47683,6 +48061,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 4,
         "damage": 16,
         "time": 611144,
         "victim": "nlk",
@@ -47771,6 +48150,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 24,
         "time": 615534,
         "victim": "lakso",
@@ -47787,6 +48167,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 24,
         "time": 616047,
         "victim": "lakso",
@@ -47811,6 +48192,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 24,
         "time": 617066,
         "victim": "lakso",
@@ -47827,6 +48209,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 4,
         "time": 618300,
         "victim": "lakso",
@@ -47851,6 +48234,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 0,
         "damage": 8,
         "time": 618819,
         "victim": "lakso",
@@ -47859,6 +48243,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 20,
         "damage": 24,
         "time": 619017,
         "victim": "nlk",
@@ -47883,6 +48268,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 36,
         "damage": 96,
         "time": 619994,
         "victim": "sCorp",
@@ -47940,6 +48326,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 0,
         "damage": 46,
         "isSelf": true,
         "isSplash": true,
@@ -47949,6 +48336,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 16,
         "damage": 20,
         "time": 633346,
         "victim": "marksuzu",
@@ -47997,6 +48385,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 6,
         "damage": 30,
         "time": 635585,
         "victim": "marksuzu",
@@ -48029,6 +48418,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 10,
         "damage": 24,
         "time": 636709,
         "victim": "nlk",
@@ -48061,6 +48451,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 22,
         "damage": 24,
         "time": 640472,
         "victim": "clox",
@@ -48197,6 +48588,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 12,
         "damage": 24,
         "time": 650297,
         "victim": "sCorp",
@@ -48222,6 +48614,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 24,
         "damage": 62,
         "isSplash": true,
         "isTeam": true,
@@ -48255,6 +48648,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 10,
         "damage": 30,
         "time": 653332,
         "victim": "marksuzu",
@@ -48271,6 +48665,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 4,
         "damage": 20,
         "time": 654852,
         "victim": "clox",
@@ -48319,6 +48714,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 10,
         "damage": 30,
         "time": 657643,
         "victim": "marksuzu",
@@ -48416,6 +48812,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 24,
         "damage": 30,
         "time": 663651,
         "victim": "marksuzu",
@@ -48592,6 +48989,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 16,
         "damage": 18,
         "time": 665458,
         "victim": "clox",
@@ -48688,6 +49086,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 20,
         "damage": 54,
         "isSplash": true,
         "time": 666534,
@@ -48729,6 +49128,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 25,
         "damage": 64,
         "isSplash": true,
         "time": 667132,
@@ -48811,6 +49211,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 139,
         "damage": 144,
         "time": 670392,
         "victim": "sCorp",
@@ -48851,6 +49252,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 14,
         "damage": 18,
         "time": 671674,
         "victim": "[cmd] witka",
@@ -49003,6 +49405,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 20,
         "damage": 24,
         "time": 676007,
         "victim": "doberman",
@@ -49027,6 +49430,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 20,
         "damage": 80,
         "time": 676939,
         "victim": "sCorp",
@@ -49035,6 +49439,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 8,
         "damage": 12,
         "time": 680768,
         "victim": "marksuzu",
@@ -49043,6 +49448,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "damage": 110,
         "time": 682834,
         "victim": "marksuzu",
@@ -49051,6 +49457,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 63,
         "damage": 100,
         "isSplash": true,
         "time": 687164,
@@ -49148,6 +49555,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 24,
         "damage": 56,
         "time": 700823,
         "victim": "apa",
@@ -49172,6 +49580,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 13,
         "damage": 24,
         "time": 703320,
         "victim": "nlk",
@@ -49204,6 +49613,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 44,
         "damage": 74,
         "isSplash": true,
         "isTeam": true,
@@ -49303,6 +49713,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 28,
         "damage": 30,
         "time": 711627,
         "victim": "apa",
@@ -49311,6 +49722,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 67,
         "damage": 82,
         "isSplash": true,
         "time": 711835,
@@ -49393,6 +49805,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 11,
         "damage": 12,
         "time": 721030,
         "victim": "clox",
@@ -49418,6 +49831,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 11,
         "damage": 110,
         "time": 723823,
         "victim": "clox",
@@ -49434,6 +49848,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 34,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -49475,6 +49890,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 109,
         "damage": 160,
         "time": 730601,
         "victim": "nlk",
@@ -49548,6 +49964,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 3,
         "damage": 4,
         "isTeam": true,
         "time": 735181,
@@ -49630,6 +50047,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 200,
         "damage": 226,
         "isSplash": true,
         "time": 736815,
@@ -49663,6 +50081,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 23,
         "damage": 24,
         "time": 737719,
         "victim": "marksuzu",
@@ -49679,6 +50098,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 23,
         "damage": 24,
         "time": 741114,
         "victim": "clox",
@@ -49719,6 +50139,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 47,
         "damage": 48,
         "time": 750438,
         "victim": "[cmd] witka",
@@ -49752,6 +50173,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 7,
         "damage": 8,
         "time": 752681,
         "victim": "nlk",
@@ -49776,6 +50198,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 20,
         "damage": 24,
         "time": 754023,
         "victim": "clox",
@@ -49856,6 +50279,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 84,
         "damage": 92,
         "isSplash": true,
         "time": 757813,
@@ -49921,6 +50345,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 12,
         "damage": 24,
         "time": 759737,
         "victim": "[cmd] witka",
@@ -50017,6 +50442,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 10,
         "damage": 24,
         "time": 764385,
         "victim": "apa",
@@ -50099,6 +50525,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 11,
         "damage": 18,
         "time": 774058,
         "victim": "sCorp",
@@ -50124,6 +50551,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 8,
         "damage": 30,
         "time": 778953,
         "victim": "clox",
@@ -50196,6 +50624,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 10,
         "damage": 24,
         "time": 782098,
         "victim": "sCorp",
@@ -50212,6 +50641,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 2,
         "damage": 24,
         "time": 784159,
         "victim": "clox",
@@ -50301,6 +50731,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 73,
         "damage": 76,
         "isSplash": true,
         "isTeam": true,
@@ -50366,6 +50797,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 5,
         "damage": 30,
         "time": 787732,
         "victim": "lakso",
@@ -50391,6 +50823,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 14,
         "damage": 30,
         "time": 789191,
         "victim": "clox",
@@ -50433,6 +50866,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 37,
         "damage": 110,
         "time": 791159,
         "victim": "marksuzu",
@@ -50449,6 +50883,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 4,
         "damage": 16,
         "time": 797523,
         "victim": "lakso",
@@ -50465,6 +50900,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "damage": 110,
         "time": 802114,
         "victim": "lakso",
@@ -50515,6 +50951,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "damage": 110,
         "time": 804579,
         "victim": "lakso",
@@ -50555,6 +50992,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 52,
         "damage": 128,
         "time": 808266,
         "victim": "marksuzu",
@@ -50563,6 +51001,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 15,
         "damage": 32,
         "time": 811424,
         "victim": "clox",
@@ -50603,6 +51042,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 100,
         "damage": 110,
         "time": 816747,
         "victim": "clox",
@@ -50659,6 +51099,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 245,
         "damage": 384,
         "isSplash": true,
         "time": 819620,
@@ -50668,6 +51109,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 100,
         "damage": 110,
         "time": 820477,
         "victim": "clox",
@@ -50716,6 +51158,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 20,
         "damage": 24,
         "time": 823473,
         "victim": "[cmd] witka",
@@ -50741,6 +51184,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "damage": 110,
         "time": 827633,
         "victim": "lakso",
@@ -50758,6 +51202,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 41,
         "damage": 83,
         "isSplash": true,
         "time": 829180,
@@ -50775,6 +51220,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 38,
         "damage": 110,
         "time": 829959,
         "victim": "marksuzu",
@@ -50893,6 +51339,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 7,
         "damage": 71,
         "isSplash": true,
         "time": 833920,
@@ -51015,6 +51462,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 10,
         "damage": 30,
         "time": 836555,
         "victim": "apa",
@@ -51031,6 +51479,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 4,
         "damage": 8,
         "time": 836840,
         "victim": "[cmd] witka",
@@ -51048,6 +51497,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 8,
         "damage": 49,
         "isSplash": true,
         "time": 840304,
@@ -51057,6 +51507,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 3,
         "damage": 24,
         "time": 842881,
         "victim": "apa",
@@ -51083,6 +51534,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 41,
         "damage": 47,
         "isSplash": true,
         "time": 852698,
@@ -51132,6 +51584,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 10,
         "damage": 30,
         "time": 855811,
         "victim": "apa",
@@ -51181,6 +51634,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 15,
         "damage": 110,
         "time": 871322,
         "victim": "[cmd] witka",
@@ -51214,6 +51668,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 192,
         "damage": 305,
         "isSplash": true,
         "time": 872244,
@@ -51249,6 +51704,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 75,
         "damage": 110,
         "time": 881513,
         "victim": "clox",
@@ -51289,6 +51745,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 40,
         "damage": 65,
         "isSplash": true,
         "time": 884595,
@@ -51404,6 +51861,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 66,
         "damage": 91,
         "isSplash": true,
         "time": 896838,
@@ -51517,6 +51975,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 100,
         "damage": 110,
         "time": 898473,
         "victim": "clox",
@@ -51541,6 +52000,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 5,
         "damage": 30,
         "time": 899278,
         "victim": "nlk",
@@ -51606,6 +52066,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 7,
         "damage": 8,
         "time": 900881,
         "victim": "apa",
@@ -51640,6 +52101,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 4,
         "damage": 16,
         "time": 902400,
         "victim": "lakso",
@@ -51648,6 +52110,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 27,
         "damage": 70,
         "isSplash": true,
         "isTeam": true,
@@ -51673,6 +52136,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 40,
         "damage": 49,
         "isSelf": true,
         "isSplash": true,
@@ -51708,6 +52172,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 38,
         "damage": 47,
         "isSelf": true,
         "isSplash": true,
@@ -51725,6 +52190,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 21,
         "damage": 24,
         "time": 907622,
         "victim": "lakso",
@@ -51757,6 +52223,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 4,
         "damage": 5,
         "isEnv": true,
         "time": 908688,
@@ -51774,6 +52241,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 28,
         "damage": 75,
         "isSplash": true,
         "time": 909700,
@@ -51808,6 +52276,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 21,
         "damage": 85,
         "isSplash": true,
         "time": 910668,
@@ -51817,6 +52286,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 40,
         "damage": 49,
         "isSelf": true,
         "isSplash": true,
@@ -51826,6 +52296,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 40,
         "damage": 50,
         "isSelf": true,
         "isSplash": true,
@@ -51835,6 +52306,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 100,
         "damage": 358,
         "isSplash": true,
         "time": 916946,
@@ -51892,6 +52364,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 1,
         "damage": 12,
         "time": 921064,
         "victim": "[cmd] witka",
@@ -51940,6 +52413,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 2,
         "damage": 18,
         "time": 930751,
         "victim": "doberman",
@@ -51957,6 +52431,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 27,
         "damage": 39,
         "isSelf": true,
         "isSplash": true,
@@ -51966,6 +52441,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 0,
         "damage": 24,
         "time": 932415,
         "victim": "sCorp",
@@ -52038,6 +52514,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 9,
         "damage": 30,
         "time": 933532,
         "victim": "marksuzu",
@@ -52063,6 +52540,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 38,
         "damage": 101,
         "isSplash": true,
         "time": 935396,
@@ -52080,6 +52558,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 8,
         "damage": 24,
         "time": 937570,
         "victim": "nlk",
@@ -52122,6 +52601,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 17,
         "damage": 18,
         "time": 940922,
         "victim": "[cmd] witka",
@@ -52138,6 +52618,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 88,
         "damage": 90,
         "isSplash": true,
         "time": 941857,
@@ -52203,6 +52684,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 28,
         "damage": 50,
         "isSplash": true,
         "isTeam": true,
@@ -52212,6 +52694,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 36,
         "damage": 100,
         "isSplash": true,
         "time": 946753,
@@ -52261,6 +52744,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 60,
         "damage": 110,
         "time": 947928,
         "victim": "[cmd] witka",
@@ -52286,6 +52770,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 100,
         "damage": 110,
         "time": 949675,
         "victim": "nlk",
@@ -52352,6 +52837,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 36,
         "damage": 74,
         "isSplash": true,
         "time": 951468,
@@ -52410,6 +52896,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 15,
         "damage": 16,
         "time": 953298,
         "victim": "lakso",
@@ -52426,6 +52913,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 72,
         "damage": 99,
         "isSplash": true,
         "time": 959169,
@@ -52509,6 +52997,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 2,
         "damage": 18,
         "time": 965955,
         "victim": "doberman",
@@ -52565,6 +53054,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 23,
         "damage": 24,
         "time": 968362,
         "victim": "nlk",
@@ -52631,6 +53121,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 45,
         "damage": 54,
         "isSplash": true,
         "time": 971319,
@@ -52649,6 +53140,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 13,
         "damage": 16,
         "time": 971443,
         "victim": "sCorp",
@@ -52689,6 +53181,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 4,
         "damage": 24,
         "time": 973207,
         "victim": "[cmd] witka",
@@ -52697,6 +53190,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 12,
         "damage": 72,
         "isTeam": true,
         "time": 973532,
@@ -52714,6 +53208,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 100,
         "damage": 339,
         "isSplash": true,
         "time": 974906,
@@ -52779,6 +53274,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 4,
         "damage": 8,
         "time": 979618,
         "victim": "nlk",
@@ -52843,6 +53339,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 8,
         "damage": 24,
         "time": 981884,
         "victim": "lakso",
@@ -52891,6 +53388,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 24,
         "time": 984033,
         "victim": "marksuzu",
@@ -52955,6 +53453,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 92,
         "damage": 440,
         "time": 988299,
         "victim": "nlk",
@@ -52971,6 +53470,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 76,
         "damage": 343,
         "isSplash": true,
         "time": 989650,
@@ -53028,6 +53528,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 28,
         "damage": 72,
         "time": 994155,
         "victim": "nlk",
@@ -53068,6 +53569,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 100,
         "damage": 110,
         "time": 996405,
         "victim": "nlk",
@@ -53084,6 +53586,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 28,
         "damage": 233,
         "isSplash": true,
         "time": 998527,
@@ -53093,6 +53596,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 100,
         "damage": 110,
         "time": 1001194,
         "victim": "nlk",
@@ -53150,6 +53654,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 58,
         "damage": 110,
         "time": 1004016,
         "victim": "sCorp",
@@ -53175,6 +53680,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 8,
         "time": 1004636,
         "victim": "clox",
@@ -53208,6 +53714,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 37,
         "damage": 67,
         "isSplash": true,
         "time": 1005795,
@@ -53282,6 +53789,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 26,
         "damage": 74,
         "isSplash": true,
         "time": 1008450,
@@ -53347,6 +53855,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 100,
         "damage": 110,
         "time": 1010522,
         "victim": "nlk",
@@ -53419,6 +53928,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 52,
         "damage": 55,
         "isSplash": true,
         "time": 1011891,
@@ -53436,6 +53946,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 2,
         "damage": 28,
         "time": 1012327,
         "victim": "[cmd] witka",
@@ -53508,6 +54019,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 1,
         "damage": 24,
         "time": 1017671,
         "victim": "lakso",
@@ -53580,6 +54092,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 23,
         "damage": 24,
         "time": 1022845,
         "victim": "sCorp",
@@ -53620,6 +54133,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 92,
         "damage": 110,
         "time": 1024416,
         "victim": "lakso",
@@ -53676,6 +54190,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 7,
         "damage": 24,
         "time": 1026982,
         "victim": "[cmd] witka",
@@ -53724,6 +54239,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 82,
         "damage": 90,
         "isSplash": true,
         "time": 1028693,
@@ -53741,6 +54257,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 20,
         "damage": 24,
         "time": 1029442,
         "victim": "doberman",
@@ -53853,6 +54370,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 52,
         "damage": 72,
         "time": 1033600,
         "victim": "sCorp",
@@ -53941,6 +54459,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 80,
         "damage": 246,
         "isSplash": true,
         "time": 1036375,
@@ -53998,6 +54517,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 4,
         "damage": 12,
         "time": 1038353,
         "victim": "marksuzu",
@@ -54110,6 +54630,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 14,
         "damage": 24,
         "time": 1042822,
         "victim": "[cmd] witka",
@@ -54142,6 +54663,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 218,
         "damage": 1552,
         "isSplash": true,
         "time": 1049053,
@@ -54151,6 +54673,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 30,
         "damage": 839,
         "isSelf": true,
         "isSplash": true,
@@ -54160,6 +54683,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 102,
         "damage": 440,
         "time": 1049702,
         "victim": "nlk",
@@ -54225,6 +54749,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 19,
         "damage": 20,
         "time": 1054886,
         "victim": "marksuzu",
@@ -54297,6 +54822,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 20,
         "damage": 82,
         "isSplash": true,
         "time": 1056810,
@@ -54378,6 +54904,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 24,
         "damage": 36,
         "time": 1063528,
         "victim": "marksuzu",
@@ -54411,6 +54938,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 27,
         "damage": 81,
         "isSplash": true,
         "time": 1076343,
@@ -54428,6 +54956,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 20,
         "damage": 24,
         "time": 1077280,
         "victim": "nlk",
@@ -54461,6 +54990,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 10,
         "damage": 85,
         "isSplash": true,
         "time": 1078334,
@@ -54553,6 +55083,7 @@
       },
       {
         "attacker": "[cmd] witka",
+        "bounded": 15,
         "damage": 24,
         "isTeam": true,
         "time": 1082438,
@@ -54587,6 +55118,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 44,
         "damage": 74,
         "isSplash": true,
         "time": 1083562,
@@ -54613,6 +55145,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 3,
         "damage": 75,
         "isSplash": true,
         "time": 1084637,
@@ -54655,6 +55188,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 84,
         "damage": 110,
         "time": 1088061,
         "victim": "sCorp",
@@ -54735,6 +55269,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 15,
         "damage": 16,
         "time": 1092322,
         "victim": "clox",
@@ -54767,6 +55302,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 64,
         "damage": 83,
         "isSplash": true,
         "time": 1094329,
@@ -54785,6 +55321,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 100,
         "damage": 110,
         "time": 1095295,
         "victim": "[cmd] witka",
@@ -54801,6 +55338,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 45,
         "damage": 52,
         "isSplash": true,
         "time": 1095803,
@@ -54869,6 +55407,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 47,
         "damage": 110,
         "time": 1108599,
         "victim": "[cmd] witka",
@@ -54886,6 +55425,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 58,
         "damage": 59,
         "isSplash": true,
         "time": 1112257,
@@ -54960,6 +55500,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 17,
         "damage": 84,
         "isSplash": true,
         "time": 1116321,
@@ -54985,6 +55526,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 100,
         "damage": 110,
         "time": 1119452,
         "victim": "[cmd] witka",
@@ -55010,6 +55552,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 100,
         "damage": 110,
         "time": 1121651,
         "victim": "[cmd] witka",
@@ -55035,6 +55578,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 1123184,
@@ -55070,6 +55614,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 36,
         "damage": 89,
         "isSplash": true,
         "time": 1129216,
@@ -55105,6 +55650,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 47,
         "damage": 51,
         "isSplash": true,
         "time": 1146743,
@@ -55147,6 +55693,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 92,
         "damage": 110,
         "time": 1148732,
         "victim": "doberman",
@@ -55182,6 +55729,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 35,
         "damage": 55,
         "isSplash": true,
         "time": 1152637,
@@ -55235,6 +55783,7 @@
       },
       {
         "attacker": "nlk",
+        "bounded": 63,
         "damage": 80,
         "isSplash": true,
         "time": 1155791,
@@ -55324,6 +55873,7 @@
       },
       {
         "attacker": "clox",
+        "bounded": 12,
         "damage": 24,
         "time": 1161874,
         "victim": "sCorp",
@@ -55349,6 +55899,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 3,
         "damage": 30,
         "time": 1165129,
         "victim": "sCorp",
@@ -55397,6 +55948,7 @@
       },
       {
         "attacker": "doberman",
+        "bounded": 4,
         "damage": 24,
         "time": 1168229,
         "victim": "clox",
@@ -55405,6 +55957,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 88,
         "damage": 120,
         "time": 1172965,
         "victim": "[cmd] witka",
@@ -55421,6 +55974,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 100,
         "damage": 120,
         "time": 1173570,
         "victim": "sCorp",
@@ -55437,6 +55991,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 88,
         "damage": 195,
         "isSplash": true,
         "time": 1178049,
@@ -55463,6 +56018,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 1,
         "damage": 30,
         "time": 1179912,
         "victim": "[cmd] witka",
@@ -55512,6 +56068,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 53,
         "damage": 120,
         "time": 1182990,
         "victim": "nlk",
@@ -55571,6 +56128,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 43,
         "damage": 44,
         "isSplash": true,
         "time": 1184596,
@@ -55604,6 +56162,7 @@
       },
       {
         "attacker": "lakso",
+        "bounded": 2,
         "damage": 30,
         "time": 1186033,
         "victim": "nlk",
@@ -55703,6 +56262,7 @@
       },
       {
         "attacker": "apa",
+        "bounded": 41,
         "damage": 81,
         "isSplash": true,
         "time": 1191506,
@@ -55761,6 +56321,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 95,
         "damage": 110,
         "time": 1194207,
         "victim": "clox",
@@ -55802,6 +56363,7 @@
       },
       {
         "attacker": "sCorp",
+        "bounded": 100,
         "damage": 110,
         "time": 1197549,
         "victim": "clox",
@@ -55842,6 +56404,7 @@
       },
       {
         "attacker": "marksuzu",
+        "bounded": 9,
         "damage": 72,
         "isSplash": true,
         "time": 1199019,
@@ -56248,6 +56811,13 @@
     "scoreboard": {
       "byPlayer": {
         "[cmd] witka": {
+          "bounded": {
+            "scoreTeam": 198,
+            "streamEwep": 1540,
+            "streamGiven": 5952,
+            "streamTaken": 6834,
+            "streamTeam": 198
+          },
           "scoreEwep": 1540,
           "scoreGiven": 5952,
           "scoreTaken": 6838,
@@ -56256,122 +56826,190 @@
           "streamTaken": 9154
         },
         "apa": {
+          "bounded": {
+            "scoreTeam": 158,
+            "streamEwep": 1736,
+            "streamGiven": 5705,
+            "streamTaken": 6521,
+            "streamTeam": 158
+          },
           "scoreEwep": 1737,
           "scoreGiven": 5708,
           "scoreTaken": 6522,
-          "streamEwep": 2168,
-          "streamGiven": 6695,
+          "streamEwep": 2332,
+          "streamGiven": 6859,
           "streamTaken": 8795
         },
         "clox": {
+          "bounded": {
+            "scoreTeam": 82,
+            "streamEwep": 2835,
+            "streamGiven": 6425,
+            "streamTaken": 7336,
+            "streamTeam": 82
+          },
           "scoreEwep": 2735,
           "scoreGiven": 6431,
           "scoreTaken": 7338,
-          "streamEwep": 3201,
-          "streamGiven": 9387,
-          "streamTaken": 10641
+          "streamEwep": 3301,
+          "streamGiven": 9487,
+          "streamTaken": 10749
         },
         "doberman": {
+          "bounded": {
+            "scoreTeam": 566,
+            "streamEwep": 1374,
+            "streamGiven": 6610,
+            "streamTaken": 6538,
+            "streamTeam": 566
+          },
           "scoreEwep": 1376,
           "scoreGiven": 6613,
           "scoreTaken": 6544,
           "streamEwep": 1602,
-          "streamGiven": 8252,
-          "streamTaken": 8386
+          "streamGiven": 8260,
+          "streamTaken": 8760
         },
         "lakso": {
+          "bounded": {
+            "scoreTeam": 347,
+            "streamEwep": 2731,
+            "streamGiven": 7323,
+            "streamTaken": 7438,
+            "streamTeam": 347
+          },
           "scoreEwep": 2731,
           "scoreGiven": 7326,
           "scoreTaken": 7441,
-          "streamEwep": 2729,
-          "streamGiven": 7649,
+          "streamEwep": 3027,
+          "streamGiven": 8247,
           "streamTaken": 9975
         },
         "marksuzu": {
+          "bounded": {
+            "scoreTeam": 276,
+            "streamEwep": 1942,
+            "streamGiven": 6046,
+            "streamTaken": 7368,
+            "streamTeam": 276
+          },
           "scoreEwep": 1942,
           "scoreGiven": 6049,
           "scoreTaken": 7371,
-          "streamEwep": 2006,
-          "streamGiven": 7810,
+          "streamEwep": 2016,
+          "streamGiven": 7820,
           "streamTaken": 9924
         },
         "nlk": {
+          "bounded": {
+            "scoreTeam": 359,
+            "streamEwep": 2090,
+            "streamGiven": 7711,
+            "streamTaken": 6894,
+            "streamTeam": 358
+          },
           "scoreEwep": 2091,
           "scoreGiven": 7715,
           "scoreTaken": 6898,
           "streamEwep": 2296,
           "streamGiven": 8725,
-          "streamTaken": 9772
+          "streamTaken": 10370
         },
         "sCorp": {
+          "bounded": {
+            "scoreTeam": 749,
+            "streamEwep": 1913,
+            "streamGiven": 8390,
+            "streamTaken": 5233,
+            "streamTeam": 749
+          },
           "scoreEwep": 1913,
           "scoreGiven": 8392,
           "scoreTaken": 5234,
           "streamEwep": 2176,
           "streamGiven": 11874,
-          "streamTaken": 8853
+          "streamTaken": 8953
         }
       }
     },
     "stomps": [
       {
         "attacker": "marksuzu",
-        "time": 311531,
-        "victim": "doberman"
+        "bounded": 10,
+        "time": 301205,
+        "victim": "doberman",
+        "victimWep": "lg"
       }
     ],
     "telefrags": [
       {
         "attacker": "doberman",
+        "bounded": 100,
         "isTeam": true,
-        "time": 10326,
+        "time": 0,
         "victim": "nlk"
       },
       {
         "attacker": "clox",
-        "time": 10326,
-        "victim": "doberman"
+        "bounded": 100,
+        "time": 0,
+        "victim": "doberman",
+        "victimWep": "both"
       },
       {
         "attacker": "lakso",
-        "time": 359134,
-        "victim": "nlk"
+        "bounded": 298,
+        "time": 348808,
+        "victim": "nlk",
+        "victimWep": "rl"
       },
       {
         "attacker": "apa",
-        "time": 482191,
-        "victim": "doberman"
+        "bounded": 164,
+        "time": 471865,
+        "victim": "doberman",
+        "victimWep": "lg"
       },
       {
         "attacker": "lakso",
-        "time": 631419,
-        "victim": "nlk"
+        "bounded": 100,
+        "time": 621093,
+        "victim": "nlk",
+        "victimWep": "sg"
       },
       {
         "attacker": "lakso",
-        "time": 633548,
-        "victim": "nlk"
+        "bounded": 100,
+        "time": 623222,
+        "victim": "nlk",
+        "victimWep": "sg"
       },
       {
         "attacker": "doberman",
-        "time": 687225,
-        "victim": "clox"
+        "bounded": 8,
+        "time": 676899,
+        "victim": "clox",
+        "victimWep": "sg"
       },
       {
         "attacker": "marksuzu",
+        "bounded": 100,
         "isTeam": true,
-        "time": 802059,
+        "time": 791733,
         "victim": "clox"
       },
       {
         "attacker": "lakso",
-        "time": 957989,
-        "victim": "doberman"
+        "bounded": 100,
+        "time": 947663,
+        "victim": "doberman",
+        "victimWep": "sg"
       },
       {
         "attacker": "nlk",
+        "bounded": 100,
         "isTeam": true,
-        "time": 1197220,
+        "time": 1186894,
         "victim": "sCorp"
       }
     ],
@@ -89042,7 +89680,133 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 43,
+        "item": "rl",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "clox",
+        "team": "oSaMs",
+        "time": 158
+      },
+      {
+        "entNum": 79,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA.box",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 841
+      },
+      {
+        "entNum": 144,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "Ring",
+        "takenBy": "doberman",
+        "team": ".ra.",
+        "time": 2237
+      },
+      {
+        "entNum": 53,
+        "item": "mh_2",
+        "kind": "mh",
+        "loc": "hill",
+        "takenBy": "[cmd] witka",
+        "team": ".ra.",
+        "time": 2458
+      },
+      {
+        "entNum": 143,
+        "item": "pent",
+        "kind": "pent",
+        "loc": "Pent",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 2968
+      },
+      {
+        "entNum": 142,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "doberman",
+        "team": ".ra.",
+        "time": 4199
+      },
+      {
+        "entNum": 80,
+        "item": "mh_3",
+        "kind": "mh",
+        "loc": "Pent",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 7315
+      },
+      {
+        "entNum": 138,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "water.LG",
+        "takenBy": "marksuzu",
+        "team": "oSaMs",
+        "time": 13873
+      },
+      {
+        "entNum": 123,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "doberman",
+        "team": ".ra.",
+        "time": 13902
+      },
+      {
+        "entNum": 63,
+        "item": "mh_1",
+        "kind": "mh",
+        "loc": "SNG.MH",
+        "takenBy": "lakso",
+        "team": "oSaMs",
+        "time": 18969
+      }
+    ],
+    "players": [
+      {
+        "loc": "RA.tunnel",
+        "name": "[cmd] witka",
+        "team": ".ra."
+      },
+      {
+        "loc": "SNG.tele",
+        "name": "sCorp",
+        "team": ".ra."
+      },
+      {
+        "loc": "SNG.tele",
+        "name": "apa",
+        "team": "oSaMs"
+      },
+      {
+        "loc": "RL",
+        "name": "clox",
+        "team": "oSaMs"
+      },
+      {
+        "loc": "lifts",
+        "name": "lakso",
+        "team": "oSaMs"
+      },
+      {
+        "loc": "YA.box",
+        "name": "marksuzu",
+        "team": "oSaMs"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -198372,6 +199136,7 @@
           }
         ],
         "sp": [
+          0,
           60090,
           68686,
           1199510
@@ -205769,6 +206534,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           1186062,
           1187899
         ],
@@ -213493,6 +214259,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           8527,
           69398,
           1195073,
@@ -221248,7 +222015,9 @@
             "s": 1046208
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [],
         "team": "oSaMs"
       },
@@ -237771,6 +238540,7 @@
           }
         ],
         "sp": [
+          0,
           8007,
           72481
         ],
@@ -245194,7 +245964,9 @@
             "s": 1154022
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 136688,

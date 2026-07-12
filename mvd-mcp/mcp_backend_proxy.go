@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -140,12 +139,13 @@ func (p *proxyBackend) do(ctx context.Context, method, path string, query url.Va
 
 func shouldRetry(resp *http.Response, err error) bool {
 	if err != nil {
+		// Retry any transport error except a caller-driven cancel/timeout: a
+		// retry there would just race the same dead deadline. We deliberately
+		// do not distinguish net.Error from other errors — a non-net error out
+		// of http.Client.Do (e.g. a redirect-policy or body-read failure) is
+		// still worth one more attempt, and the retry budget is small.
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return false
-		}
-		var netErr net.Error
-		if errors.As(err, &netErr) {
-			return true
 		}
 		return true
 	}
@@ -225,6 +225,31 @@ func (q query) seconds(key string, sec float64) {
 	}
 }
 
+// summaryDefaultTrue resolves the MCP-layer summary default (D1,
+// PLAN-api-usability): a caller who says nothing gets summary=true —
+// token-lean by default; REST keeps its full-log default. Returns the
+// resolved value plus whether it was defaulted (a defaulted summary
+// response gets a hint so agents can self-serve the full data).
+func summaryDefaultTrue(v *bool) (val, defaulted bool) {
+	if v == nil {
+		return true, true
+	}
+	return *v, false
+}
+
+// withSummaryHint annotates a summary-by-default response with how to
+// get the dropped detail. Only fires when the caller didn't ask for the
+// summary explicitly, and only on object bodies.
+func withSummaryHint(out any, add bool, dropped string) any {
+	if !add {
+		return out
+	}
+	if m, ok := out.(map[string]any); ok {
+		m["hint"] = "summary=true is the MCP default; pass summary:false for " + dropped
+	}
+	return out
+}
+
 // intv encodes a non-zero integer.
 func (q query) intv(key string, n int) {
 	if n != 0 {
@@ -236,6 +261,14 @@ func (q query) intv(key string, n int) {
 func (q query) str(key, val string) {
 	if val != "" {
 		q.set(key, val)
+	}
+}
+
+// boolean encodes a true flag as "1"; false stays out of the query string so
+// the REST default (false) applies.
+func (q query) boolean(key string, v bool) {
+	if v {
+		q.set(key, "1")
 	}
 }
 
@@ -300,7 +333,10 @@ func (p *proxyBackend) GetFrags(ctx context.Context, in GetFragsInput) (any, err
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	q.boolean("summary", in.Summary)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }
 
@@ -311,8 +347,20 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
-	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	q.csv("weapons", in.Weapons)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	// Empty dmg stays out of the query so the REST summary-aware default
+	// resolution applies (both under the summary default, raw otherwise).
+	q.str("dmg", in.Dmg)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	// With dmg unset the REST default is now "bounded" for BOTH the summary
+	// and the full log, so the family no longer flips on summary:false —
+	// following the hint keeps the same bounded family. The hint just names
+	// the dropped detail.
+	return withSummaryHint(out, defaulted && summary, "the per-hit events log"), err
 }
 
 func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) {
@@ -320,7 +368,14 @@ func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) 
 	if err != nil {
 		return nil, err
 	}
-	return p.fetchOpaque(ctx, "GET", path, nil)
+	q := query{}
+	q.csv("players", in.Players)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the per-fire crosshair + lgRamp arrays"), err
 }
 
 func (p *proxyBackend) GetLocGraph(ctx context.Context, in GetLocGraphInput) (any, error) {
@@ -351,7 +406,9 @@ func (p *proxyBackend) GetBackpacks(ctx context.Context, in GetBackpacksInput) (
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
 	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "backpacks")
 }
 
@@ -364,7 +421,12 @@ func (p *proxyBackend) GetItems(ctx context.Context, in GetItemsInput) (any, err
 	q.csv("items", in.Items)
 	q.csv("players", in.Players)
 	q.csv("kinds", in.Kinds)
-	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
+	summary, defaulted := summaryDefaultTrue(in.Summary)
+	q.boolean("summary", summary)
+	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
+	return withSummaryHint(out, defaulted && summary, "the full phase timeline"), err
 }
 
 func (p *proxyBackend) GetMapEntitiesByMap(ctx context.Context, in GetMapEntitiesByMapInput) (any, error) {
@@ -384,8 +446,10 @@ func (p *proxyBackend) GetWeaponPickups(ctx context.Context, in GetWeaponPickups
 	}
 	q := query{}
 	q.csv("players", in.Players)
-	q.csv("weapon", in.Weapon)
+	q.csv("weapons", in.Weapons)
 	q.str("source", in.Source)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
 	return p.fetchOpaqueList(ctx, "GET", path, url.Values(q), "pickups")
 }
 
@@ -394,13 +458,16 @@ func (p *proxyBackend) GetBuckets(ctx context.Context, in GetBucketsInput) (any,
 	if err != nil {
 		return nil, err
 	}
-	// MCP default: 1 s windows. The REST API still defaults to 50 ms when
+	// MCP default: 5 s windows. The REST API still defaults to 50 ms when
 	// omitted, but 50 ms emits ~24K buckets / 4on4 — far too verbose for an
-	// LLM context. Explicit override (windowMs: 50) reaches the finer
-	// resolution.
+	// LLM context — and even 1 s is ~1200 buckets per field per player on a
+	// 20-min match. 5 s resolves everything a bucketed timeline answers
+	// (trends, control; the shortest interesting run — a quad — is 30 s);
+	// finer questions belong to getStateAt / getEvents / getStreamSlice.
+	// Explicit override (windowMs: 1000, 50, ...) reaches finer resolution.
 	windowMs := in.WindowMs
 	if windowMs <= 0 {
-		windowMs = 1000
+		windowMs = 5000
 	}
 	q := query{}
 	q.intv("windowMs", windowMs)
@@ -438,6 +505,14 @@ func (p *proxyBackend) GetEvents(ctx context.Context, in GetEventsInput) (any, e
 }
 
 func (p *proxyBackend) GetStreamSlice(ctx context.Context, in GetStreamSliceInput) (any, error) {
+	// MCP-layer size guard (same family as the windowMs / summary
+	// defaults): an unwindowed slice is native-rate change entries for
+	// every requested field of every player over the whole match — the
+	// biggest payload this service can emit, and never what an agent
+	// wants blind. REST /stream-slice stays unwindowed for programs.
+	if in.StartTime == 0 && in.EndTime == 0 {
+		return nil, errors.New("stream-slice needs a time window at the MCP layer: pass startTime and/or endTime (match-relative seconds; keep windows tens of seconds). For whole-match overviews use getBuckets; for one instant use getStateAt")
+	}
 	path, err := demoPath(in.DemoID, "/stream-slice")
 	if err != nil {
 		return nil, err
@@ -473,8 +548,16 @@ func (p *proxyBackend) GetLocTrails(ctx context.Context, in GetLocTrailsInput) (
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
 	q.csv("players", in.Players)
-	if in.MinDwellMs > 0 {
-		q.set("minDwellMs", strconv.Itoa(in.MinDwellMs))
+	// MCP default: 250 ms dwell filter. Raw trails are dominated by
+	// nearest-loc flicker at region boundaries; an agent reading a
+	// residence list wants where the player WAS, not every boundary
+	// graze. Explicit 0 opts back into the raw stream (REST default).
+	minDwell := 250
+	if in.MinDwellMs != nil {
+		minDwell = *in.MinDwellMs
+	}
+	if minDwell > 0 {
+		q.set("minDwellMs", strconv.Itoa(minDwell))
 	}
 	q.str("loc", in.Loc)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
@@ -489,7 +572,49 @@ func (p *proxyBackend) GetLocTable(ctx context.Context, in GetLocTableInput) (an
 }
 
 func (p *proxyBackend) ListArtifacts(ctx context.Context, _ ListArtifactsInput) (any, error) {
-	return p.fetchOpaque(ctx, "GET", "/v1/artifacts", nil)
+	out, err := p.fetchOpaque(ctx, "GET", "/v1/artifacts", nil)
+	if err != nil {
+		return nil, err
+	}
+	return compactArtifactManifest(out), nil
+}
+
+// compactArtifactManifest trims the REST manifest to what an MCP agent
+// can act on: fetchable artifacts and the fields that matter for
+// picking one (name, resultKey, cost, lazy, description). The
+// requires/provides/mutates edges describe pipeline wiring — the dev
+// story, told by ARTIFACTS.md and /v1/graph — and non-servable nodes
+// cannot be fetched at all, so both are noise at this surface (same
+// MCP-vs-REST split as the summary/windowMs defaults). Unexpected
+// shapes pass through untouched.
+func compactArtifactManifest(out any) any {
+	m, ok := out.(map[string]any)
+	if !ok {
+		return out
+	}
+	arts, ok := m["artifacts"].([]any)
+	if !ok {
+		return out
+	}
+	compact := make([]any, 0, len(arts))
+	for _, a := range arts {
+		row, ok := a.(map[string]any)
+		if !ok {
+			continue
+		}
+		if servable, _ := row["servable"].(bool); !servable {
+			continue
+		}
+		c := make(map[string]any, 5)
+		for _, k := range []string{"name", "resultKey", "cost", "lazy", "description"} {
+			if v, ok := row[k]; ok {
+				c[k] = v
+			}
+		}
+		compact = append(compact, c)
+	}
+	m["artifacts"] = compact
+	return m
 }
 
 func (p *proxyBackend) GetArtifact(ctx context.Context, in GetArtifactInput) (any, error) {
@@ -511,14 +636,17 @@ func (p *proxyBackend) GetRegionControl(ctx context.Context, in GetRegionControl
 	if err != nil {
 		return nil, err
 	}
-	// Same MCP-vs-REST default split as GetBuckets — 1 s buckets are the
-	// right granularity for an LLM reading region-control state strings;
-	// pass windowMs explicitly to override.
+	// Same MCP-vs-REST default split as GetBuckets — 5 s buckets keep the
+	// per-region bucketStates strings readable (a 20-min match is 240
+	// chars per region instead of 1200); pass windowMs explicitly to
+	// override.
 	windowMs := in.WindowMs
 	if windowMs <= 0 {
-		windowMs = 1000
+		windowMs = 5000
 	}
 	q := query{}
 	q.intv("windowMs", windowMs)
+	q.seconds("from", in.StartTime)
+	q.seconds("to", in.EndTime)
 	return p.fetchOpaque(ctx, "GET", path, url.Values(q))
 }

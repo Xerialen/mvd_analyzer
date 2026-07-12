@@ -204,6 +204,7 @@ type (
 	DamagePair             = result.DamagePair
 	DamageReconciliation   = result.DamageReconciliation
 	DamageDelta            = result.DamageDelta
+	DamageDeltaBounded     = result.DamageDeltaBounded
 	ShotsResult            = result.ShotsResult
 	Shot                   = result.Shot
 	PlayerShots            = result.PlayerShots

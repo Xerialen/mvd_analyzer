@@ -6994,8 +6994,28 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "mj": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 112,
+            "lg": 403,
+            "rl": 4545,
+            "sg": 208
+          },
+          "enemyVsBoth": 4559,
+          "enemyVsLg": 0,
+          "enemyVsMid": 82,
+          "enemyVsRl": 512,
+          "enemyVsSg": 115,
+          "ewep": 5071,
+          "given": 5268,
+          "givenSelf": 536,
+          "givenTeam": 0,
+          "taken": 9352,
+          "takenEnv": 70
+        },
         "byWeapon": {
           "gl": 112,
           "lg": 450,
@@ -7015,6 +7035,25 @@
         "takenEnv": 70
       },
       "speedball": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 4383,
+            "rl": 4259,
+            "sg": 44,
+            "ssg": 60
+          },
+          "enemyVsBoth": 1576,
+          "enemyVsLg": 815,
+          "enemyVsMid": 640,
+          "enemyVsRl": 4332,
+          "enemyVsSg": 1383,
+          "ewep": 6723,
+          "given": 8746,
+          "givenSelf": 1776,
+          "givenTeam": 0,
+          "taken": 7094,
+          "takenEnv": 50
+        },
         "byWeapon": {
           "lg": 4770,
           "rl": 5026,
@@ -7041,6 +7080,7 @@
       "sg": 252,
       "ssg": 60
     },
+    "dmg": "both",
     "events": [
       {
         "attacker": "speedball",
@@ -7097,6 +7137,7 @@
       },
       {
         "attacker": "mj",
+        "bounded": 97,
         "damage": 110,
         "time": 7641,
         "victim": "speedball",
@@ -7270,6 +7311,7 @@
       },
       {
         "attacker": "mj",
+        "bounded": 3,
         "damage": 30,
         "time": 35533,
         "victim": "speedball",
@@ -7320,6 +7362,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 28,
         "damage": 30,
         "time": 41740,
         "victim": "mj",
@@ -7368,6 +7411,7 @@
       },
       {
         "attacker": "mj",
+        "bounded": 10,
         "damage": 30,
         "time": 45494,
         "victim": "speedball",
@@ -7401,6 +7445,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 57,
         "damage": 70,
         "isSplash": true,
         "time": 50572,
@@ -7469,6 +7514,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 65500,
         "victim": "mj",
@@ -7477,6 +7523,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 68131,
         "victim": "mj",
@@ -7519,6 +7566,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 78027,
         "victim": "mj",
@@ -7536,6 +7584,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 81690,
         "victim": "mj",
@@ -7553,6 +7602,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 87742,
         "victim": "mj",
@@ -7604,6 +7654,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 1,
         "damage": 30,
         "time": 90591,
         "victim": "mj",
@@ -7621,6 +7672,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 99131,
         "victim": "mj",
@@ -7653,6 +7705,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 105002,
         "victim": "mj",
@@ -7693,6 +7746,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 113885,
         "victim": "mj",
@@ -7913,6 +7967,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 165730,
         "victim": "mj",
@@ -7955,6 +8010,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 23,
         "damage": 30,
         "time": 178912,
         "victim": "mj",
@@ -7996,6 +8052,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 95,
         "damage": 110,
         "time": 181672,
         "victim": "mj",
@@ -8048,6 +8105,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 95,
         "damage": 110,
         "time": 195043,
         "victim": "mj",
@@ -8080,6 +8138,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 42,
         "isSplash": true,
         "time": 199179,
@@ -8106,6 +8165,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 46,
         "damage": 55,
         "isSplash": true,
         "time": 203407,
@@ -8213,6 +8273,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 211875,
         "victim": "mj",
@@ -8262,6 +8323,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 5,
         "damage": 95,
         "isSplash": true,
         "time": 220979,
@@ -8297,6 +8359,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 51,
         "damage": 110,
         "time": 231557,
         "victim": "mj",
@@ -8347,6 +8410,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 30,
         "damage": 80,
         "isSplash": true,
         "time": 245785,
@@ -8364,6 +8428,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 246629,
         "victim": "mj",
@@ -8481,6 +8546,7 @@
       },
       {
         "attacker": "mj",
+        "bounded": 33,
         "damage": 110,
         "time": 261292,
         "victim": "speedball",
@@ -8571,6 +8637,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 20,
         "damage": 53,
         "isSplash": true,
         "time": 279980,
@@ -8640,6 +8707,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 291521,
         "victim": "mj",
@@ -8666,6 +8734,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 4,
         "damage": 30,
         "time": 297819,
         "victim": "mj",
@@ -8698,6 +8767,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 303838,
         "victim": "mj",
@@ -8748,6 +8818,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 15,
         "damage": 30,
         "time": 307864,
         "victim": "mj",
@@ -8789,6 +8860,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 329665,
         "victim": "mj",
@@ -8806,6 +8878,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 78,
         "damage": 88,
         "isSplash": true,
         "time": 335184,
@@ -8877,6 +8950,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 349203,
         "victim": "mj",
@@ -8926,6 +9000,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 35,
         "damage": 42,
         "isSplash": true,
         "time": 355385,
@@ -8953,6 +9028,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 42,
         "damage": 76,
         "isSplash": true,
         "time": 361411,
@@ -9011,6 +9087,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 24,
         "damage": 30,
         "time": 370458,
         "victim": "mj",
@@ -9046,6 +9123,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 12,
         "damage": 70,
         "isSplash": true,
         "time": 372938,
@@ -9115,6 +9193,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 7,
         "damage": 30,
         "time": 382944,
         "victim": "mj",
@@ -9223,6 +9302,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 8,
         "damage": 30,
         "time": 396710,
         "victim": "mj",
@@ -9231,6 +9311,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 400048,
         "victim": "mj",
@@ -9264,6 +9345,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 403628,
         "victim": "mj",
@@ -9298,6 +9380,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 407797,
         "victim": "mj",
@@ -9348,6 +9431,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 15,
         "damage": 30,
         "time": 416918,
         "victim": "mj",
@@ -9416,6 +9500,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 19,
         "damage": 30,
         "time": 437958,
         "victim": "mj",
@@ -9449,6 +9534,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 18,
         "damage": 81,
         "isSplash": true,
         "time": 443799,
@@ -9458,6 +9544,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 100,
         "damage": 110,
         "time": 445123,
         "victim": "mj",
@@ -9499,6 +9586,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 447881,
         "victim": "mj",
@@ -9542,6 +9630,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 63,
         "damage": 89,
         "isSplash": true,
         "time": 454270,
@@ -9595,6 +9684,7 @@
       },
       {
         "attacker": "mj",
+        "bounded": 3,
         "damage": 64,
         "isSplash": true,
         "time": 461920,
@@ -9671,6 +9761,7 @@
       },
       {
         "attacker": "mj",
+        "bounded": 79,
         "damage": 96,
         "isSplash": true,
         "time": 476527,
@@ -9748,6 +9839,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 29,
         "damage": 30,
         "time": 490154,
         "victim": "mj",
@@ -9789,6 +9881,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 494128,
         "victim": "mj",
@@ -9806,6 +9899,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 50,
         "damage": 84,
         "isSplash": true,
         "time": 497566,
@@ -9847,6 +9941,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 10,
         "damage": 30,
         "time": 499544,
         "victim": "mj",
@@ -9880,6 +9975,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 11,
         "damage": 30,
         "time": 509311,
         "victim": "mj",
@@ -9975,6 +10071,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 21,
         "damage": 30,
         "time": 524480,
         "victim": "mj",
@@ -10009,6 +10106,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 40,
         "damage": 56,
         "isSplash": true,
         "time": 533714,
@@ -10091,6 +10189,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 59,
         "damage": 74,
         "isSplash": true,
         "time": 546169,
@@ -10153,6 +10252,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 23,
         "damage": 30,
         "time": 558088,
         "victim": "mj",
@@ -10196,6 +10296,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 25,
         "damage": 30,
         "time": 565455,
         "victim": "mj",
@@ -10294,6 +10395,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 22,
         "damage": 30,
         "time": 571698,
         "victim": "mj",
@@ -10320,6 +10422,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 18,
         "damage": 99,
         "isSplash": true,
         "time": 574205,
@@ -10329,6 +10432,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 7,
         "damage": 35,
         "isSelf": true,
         "isSplash": true,
@@ -10406,6 +10510,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 58,
         "damage": 95,
         "isSplash": true,
         "time": 585322,
@@ -10440,6 +10545,7 @@
       },
       {
         "attacker": "speedball",
+        "bounded": 15,
         "damage": 30,
         "time": 592958,
         "victim": "mj",
@@ -10491,6 +10597,13 @@
     "scoreboard": {
       "byPlayer": {
         "mj": {
+          "bounded": {
+            "scoreTeam": 0,
+            "streamEwep": 5071,
+            "streamGiven": 5268,
+            "streamTaken": 8746,
+            "streamTeam": 0
+          },
           "scoreEwep": 5071,
           "scoreGiven": 5268,
           "scoreTaken": 8750,
@@ -10499,6 +10612,13 @@
           "streamTaken": 10506
         },
         "speedball": {
+          "bounded": {
+            "scoreTeam": 0,
+            "streamEwep": 6723,
+            "streamGiven": 8746,
+            "streamTaken": 5268,
+            "streamTeam": 0
+          },
           "scoreEwep": 6727,
           "scoreGiven": 8750,
           "scoreTaken": 5268,
@@ -17542,7 +17662,86 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 43,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "low RL",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 939
+      },
+      {
+        "entNum": 41,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "mj",
+        "team": "mj",
+        "time": 1519
+      },
+      {
+        "entNum": 65,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 1939
+      },
+      {
+        "entNum": 42,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "RL",
+        "takenBy": "mj",
+        "team": "mj",
+        "time": 3182
+      },
+      {
+        "entNum": 82,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 4342
+      },
+      {
+        "entNum": 44,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "LG",
+        "takenBy": "mj",
+        "team": "mj",
+        "time": 9728
+      },
+      {
+        "entNum": 81,
+        "item": "ga",
+        "kind": "ga",
+        "loc": "GA",
+        "takenBy": "speedball",
+        "team": "speedball",
+        "time": 36357
+      }
+    ],
+    "players": [
+      {
+        "loc": "YA",
+        "name": "mj",
+        "team": "mj"
+      },
+      {
+        "loc": "low RL",
+        "name": "speedball",
+        "team": "speedball"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -32443,6 +32642,7 @@
           }
         ],
         "sp": [
+          0,
           8473
         ],
         "ssg": [
@@ -34791,6 +34991,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           66416,
           68975,
           586261,

@@ -32,6 +32,7 @@ analyzer are also covered there.
 | MapEntities | `mapEntities` | *MapEntitiesResult | Static designed map layout (item spawns, spawnpoints, teleporters, buttons) from the BSP entity corpus. |
 | Backpacks | `backpacks` | []BackpackDrop | RL/LG backpack drops from KTX `//ktx drop` hint. |
 | WeaponPickups | `weaponPickups` | []WeaponPickup | Slot-weapon acquisitions with kills-before-next-death effectiveness. |
+| Opening | `opening` | *OpeningResult | Match opening: per-player match-start spawn loc + first in-match take of each contested spawner (armors, mega, powerups, RL/LG). Pure projection of items + streams (schema v51). |
 | Errors | `errors` | []string | Non-fatal parse / analysis errors (omitted when empty). Includes analyzer `Finalize` failures, an `"event stream aborted: …"` entry when the event source returned a non-EOF error mid-demo (a truncated or corrupt stream — a clean end of demo does **not** appear here), and a `"region control: …"` entry when the region-control post-pass failed. A non-empty `errors` on an otherwise-populated result means the analysis is partial but usable. |
 
 All sub-result fields are pointers and use `omitempty`, so a missing
@@ -137,29 +138,71 @@ Defined in `result/damage.go`. Reconstructed from the KTX
 `mvdhidden_dmgdone` stream (see `mvd-reader/MVD_FORMAT.md`). Present only
 when the demo carries that stream (KTX with MVD-hidden extensions).
 
-**Unbound vs bounded.** All amounts are **unbound** — the full hit
-including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
-end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
-hit to the victim's remaining health. So these figures run higher than
-the scoreboard, most on killing blows and telefrags. The `scoreboard`
-sub-object surfaces both side by side; the divergence is expected.
+**Unbound vs bounded — two families (schema v55).** The **raw** family
+(`damage`, `given`, `taken`, …) is **unbound** — the full hit including
+overkill, capped only at 9999, exactly the wire value. The **bounded**
+family (`events[].bounded`, each player's `bounded` nest) carries KTX's
+scoreboard semantics per hit (`dmg_dealt`, `combat.c:783`), derived from
+the death-value identity: a survived hit has no overkill, so bounded ==
+raw exactly; a killing hit's overkill is measured by the end-of-frame
+death broadcast (bounded = raw + deathValue — the armor share cancels).
+Residual approximation only where the wire hides state: the −99 corpse
+clamp, respawn-masked deaths, and same-frame multi-hit deaths (overkill
+cascaded from the last hit backward in wire order); pent/teamplay-
+nullified hits are bounded to their estimated armor share. `dmg` echoes
+which family a payload carries (`"both"` as stored); `boundedMode` is
+`"standard"`, or `"skipped:midair"`/`"skipped:instagib"`/
+`"skipped:dmgfrags"` when the server mode rewrites `T_Damage` in ways
+the wire does not expose — every bounded field is then absent, and the
+raw family is unaffected. The `scoreboard` sub-object surfaces both
+families against the KTX scoreboard; raw diverges by the overkill
+(expected), bounded should nearly match (its correctness signal).
 
-Per-player and matrix aggregates count **match-time** hits only (KTX
-scoreboard parity); the `events` log keeps every hit (incl. warmup), each
-with the match-relative `time` so consumers can window it.
+**KTX-exact bounded on a summary (phase 16.3).** The per-hit bounded
+reconstruction is best-effort, but KTX's own end-of-match totals
+(`demoInfo.players[].dmg` + `weapons[].damage.enemy`) are exact. So on an
+**unfiltered summary** that serves the bounded family (`dmg=bounded` or
+`dmg=both`), the view substitutes each player's bounded `given`,
+`givenTeam`, `givenSelf`, `ewep` and per-weapon `byWeapon` with the KTX
+figures when the demo carries `demoInfo`, echoing `boundedSource: "ktx"`
+(else `"reconstructed"`). The substitution is deliberately partial:
+`taken` stays reconstructed (KTX `dmg.taken` is enemy-only, our `taken`
+counts all sources) and the `enemyVs*` buckets stay reconstructed (KTX has
+no such split) — so on a KTX-sourced summary they may no longer sum
+exactly to the substituted `given`. A filtered/windowed summary has no KTX
+counterpart, so it stays fully reconstructed (no `boundedSource`).
 
-**Positional kills (telefrag, stomp) are excluded from every damage
-figure.** A telefrag (deathtype `tele`) is an instant kill reported on
-the wire as the 9999 sentinel; a stomp (deathtype `stomp`, landing on a
-head) is a movement kill, not a weapon. Left in, a telefrag's 9999 would
-dominate the attacker's `given` / `byWeapon` / `ewep` and the totals.
-Both are pulled out into `telefrags` / `stomps` (and the opt-in
-`telefrag` / `stomp` events) and counted per-player in
-`PlayerDamage.telefrags` / `.stomps`. The kill still appears in
-`FragResult` and as a `frag` event. (KTX's scoreboard `dmg.given` does
-fold in a *bounded* ~victim-health telefrag/stomp amount, so a player's
-`streamGiven` may sit slightly under `scoreGiven` for that reason —
-separate from the overkill effect.)
+The per-player / matrix aggregates AND the `events` log are both **match-time
+only** (schema v50): the analyzer drops out-of-match (warmup / post-match) hits
+at the source, so every damage figure and the `events` log are built from the
+same in-match hit set (KTX scoreboard parity). Each `events` entry carries the
+match-relative `time` so consumers can still window within the match.
+
+**Positional kills (telefrag, stomp) fold their honest value into
+`given`/`givenTeam`/`taken` — and, on enemy kills, the `enemyVs*`/`ewep`
+buckets (schema v54).** A telefrag
+(deathtype `tele`) is an instant kill reported on the wire as the 9999
+sentinel; a stomp (deathtype `stomp`, landing on a head) is a real ~10 HP
+`T_Damage`. Both stay out of the `events` log, `byWeapon`, `matrix`,
+`ewep` and `totalDamage` (KTX maps them to `wpNONE`, so its
+`weapons[].damage` excludes them too), are listed in `telefrags` /
+`stomps` (and the opt-in `telefrag` / `stomp` events) and counted
+per-player in `PlayerDamage.telefrags` / `.stomps`. But their DAMAGE
+folds into the given/taken aggregates in **both families**, matching
+KTX's own accumulation (`combat.c:1046-1076` has no tele/stomp
+exclusion): a telefrag folds its **bounded** reconstruction (victim's
+full armor + remaining health; armor alone for the pent-vs-pent
+`dtTELE3` variant) into the raw family too — the wire 9999 is a kill
+guarantee, not a measurement — while a stomp folds its wire value (raw)
+/ reconstruction (bounded). An ENEMY kill's fold also lands in the
+victim-weapon `enemyVs*`/`ewep` buckets (KTX `dmg_eweapon` has no
+deathtype gate either, `combat.c:1073`), keeping "the buckets sum to
+`given`" true. Each `telefrags[]`/`stomps[]` entry carries the folded
+value as `bounded` (plus `damage` when the raw fold diverged, and
+`victimWep` for the bucket). No fold-in at all on
+`boundedMode: skipped:*` demos — given/taken and the buckets revert to
+pure v53 exclusion there. The kill still appears in `FragResult` and as
+a `frag` event.
 
 | Field | JSON key | Type |
 |---|---|---|
@@ -171,13 +214,17 @@ separate from the overkill effect.)
 | Telefrags | `telefrags` | []PositionalKill (omitempty — instant kills, separate from damage) |
 | Stomps | `stomps` | []PositionalKill (omitempty — head-stomp kills, separate from damage) |
 | Scoreboard | `scoreboard` | *DamageReconciliation (omitempty) |
+| Dmg | `dmg` | string (omitempty — family echo: `both` as stored, `bounded` from the view, absent on a raw view) |
+| BoundedMode | `boundedMode` | string (omitempty — `standard`, or `skipped:midair`/`skipped:instagib`/`skipped:dmgfrags`) |
+| BoundedSource | `boundedSource` | string (omitempty — provenance of a SUMMARY response's per-player bounded figures: `ktx` when substituted with KTX's exact end-of-match scoreboard totals, else `reconstructed`; set by the view ONLY on an unfiltered summary serving the bounded family — `dmg=bounded`/`dmg=both`; the stored Result never carries it) |
 
 ### PositionalKill
 
 A telefrag (`telefrags`, deathtype `tele`) or stomp (`stomps`, deathtype
 `stomp`) — an instant kill from occupying a player's space rather than a
-weapon. No damage amount (a telefrag is the 9999 instakill sentinel; a
-stomp is a movement kill).
+weapon. No raw damage amount (a telefrag's wire value is the 9999
+instakill sentinel); `bounded` carries the reconstructed value the
+fold-in added to the aggregates.
 
 | Field | JSON key | Type |
 |---|---|---|
@@ -185,6 +232,9 @@ stomp is a movement kill).
 | Attacker | `attacker` | string (killer) |
 | Victim | `victim` | string |
 | IsTeam | `isTeam` | bool (omitempty — same team) |
+| Bounded | `bounded` | *int (omitempty — telefrag: victim's full armor + remaining health, armor alone for the pent-vs-pent `dtTELE3` variant; stomp: wire value through the bounded arithmetic; **nil exactly when reconstruction was skipped** — `0` is a real nullified-stomp value, mirroring `DamageEntry.bounded`'s pointer convention) |
+| Damage | `damage` | int (omitempty — the RAW-family fold value when it differs from `bounded`: only a stomp whose bounded arithmetic capped below the wire value; absent means "equal to `bounded`") |
+| VictimWep | `victimWep` | string (omitempty — victim's class at hit `sg`/`mid`/`lg`/`rl`/`both`; set on ENEMY kills only, so `view.Damage`'s filtered recompute can reproduce the fold's `enemyVs*`/`ewep` buckets; absent on team/self/world kills and skipped-mode demos) |
 
 ### DamageEntry
 
@@ -200,6 +250,7 @@ stomp is a movement kill).
 | IsSelf | `isSelf` | bool (omitempty — attacker == victim) |
 | IsTeam | `isTeam` | bool (omitempty — same team, not self) |
 | VictimWep | `victimWep` | string (omitempty — victim's class at hit: `sg`/`mid`/`lg`/`rl`/`both`; set only on enemy hits) |
+| Bounded | `bounded` | *int (omitempty — KTX-scoreboard reconstruction; **absent means "equal to `damage`"**; `0` is a real value: a pent/teamplay-nullified hit still emits a wire event) |
 
 ### PlayerDamage
 
@@ -226,8 +277,9 @@ sum of the LG/RL/both buckets = damage dealt to enemies holding RL or LG.
 | EnemyVsRL | `enemyVsRl` | int (victim held RL, not LG) |
 | EnemyVsBoth | `enemyVsBoth` | int (victim held both RL and LG) |
 | EWep | `ewep` | int (= enemyVsLg + enemyVsRl + enemyVsBoth) |
-| Telefrags | `telefrags` | int (omitempty — instant-kill telefrags DEALT; not damage, excluded from `given`) |
-| Stomps | `stomps` | int (omitempty — head-stomp kills DEALT; not damage, excluded from `given`) |
+| Telefrags | `telefrags` | int (omitempty — instant-kill telefrags DEALT, a count) |
+| Stomps | `stomps` | int (omitempty — head-stomp kills DEALT, a count) |
+| Bounded | `bounded` | *PlayerDamage (omitempty — the bounded family: same damage-figure fields under KTX-scoreboard semantics; the nest never carries `telefrags`/`stomps`/`bounded`) |
 
 ### DamagePair
 
@@ -255,6 +307,15 @@ overkill; `scoreEwep` is the KTX `enemy-weapons` field.
 | ScoreTaken | `scoreTaken` | int (bounded, KTX scoreboard) |
 | StreamEWep | `streamEwep` | int (unbound, this pipeline) |
 | ScoreEWep | `scoreEwep` | int (bounded, KTX scoreboard) |
+| Bounded | `bounded` | *DamageDeltaBounded (omitempty — this pipeline's bounded family vs the same scoreboard; near-equality is the reconstruction's correctness signal) |
+
+| Field (DamageDeltaBounded) | JSON key | Type |
+|---|---|---|
+| StreamGiven | `streamGiven` | int (bounded enemy given, this pipeline) |
+| StreamTaken | `streamTaken` | int (bounded **enemy-only** taken — KTX `dmg_t` semantics, unlike `PlayerDamage.taken`) |
+| StreamEWep | `streamEwep` | int (bounded ewep, this pipeline) |
+| StreamTeam | `streamTeam` | int (bounded team given, this pipeline) |
+| ScoreTeam | `scoreTeam` | int (KTX scoreboard `dmg.team` — reconciled only in the bounded family, where it is comparable) |
 
 ## ShotsResult (`shots`)
 
@@ -267,9 +328,10 @@ carrying the firing entity directly (`source:"beam"`). One beam == one LG
 attack == one cell, so LG counts match KTX `acc.attacks` exactly. Times are
 match-relative ms (same clock as `damage.events[].time`).
 
-The `shots` stream is **not** match-gated (warmup fires are kept; window by
-`time`). `byPlayer` aggregates **are** match-gated, for KTX scoreboard
-parity. To correlate aiming with fires, join a shot's `time` against the
+The `shots` stream is **match-gated** (schema v50): warmup / prewar /
+post-match fires are dropped at the source, like every analytics stream
+except chat, so the stream and the `byPlayer` aggregates are both match-only.
+To correlate aiming with fires, join a shot's `time` against the
 shooter's `streams.players[].pos` track (`vP`/`vYa` view angles, `vX/vY/vZ`
 velocity) by player + nearest `t`.
 
@@ -307,7 +369,7 @@ damage layer's `isSelf`/`isTeam` semantics: `self` = same wire slot (rl/gl
 self-splash — a rocket jump is a `hit` with the shooter as its own victim),
 `team` = same non-empty team and not self, else `enemy`. It is omitted when
 every victim is an enemy (the common case); when present it is parallel to
-`victims`. Warmup fires classify with warmup-time teams.
+`victims`.
 
 | Field | JSON key | Type | Notes |
 |---|---|---|---|
@@ -319,7 +381,6 @@ every victim is an enemy (the common case); when present it is parallel to
 | Hit | `hit` | bool (omitempty) | Fire that connected: hitscan via the same-frame damage link, rl/gl (and ng/sng with nails) via projectile linking. |
 | Victims | `victims` | []string (omitempty) | Hitscan victims hit by this fire. |
 | VictimKinds | `victimKinds` | []string (omitempty) | Per-victim class, parallel to `victims`: `enemy` \| `team` \| `self`. Omitted when all-enemy. |
-| Warmup | `warmup` | bool (omitempty) | Fired outside the match (prewar / warmup / post-match). The stream keeps it; `ByPlayer` and the aim analysis exclude it. |
 
 ### PlayerShots / WeaponShots
 
@@ -372,10 +433,21 @@ only — never used to adjust the detected stream.
 
 ## AimResult (`aim`)
 
-Defined in `result/aim.go`. Per-player aim analysis derived as a
-post-processor (`analyzer/aim.go`) from `Shots` + `Streams` (interpolated
-position/view at fire time via `PositionTrack.SampleAt`) + `Damage` + the LG
-`Streams.Beams`. Experimental and additive — it never modifies its inputs.
+Defined in `result/aim.go`. Per-player aim analysis derived from `Shots` +
+`Streams` (interpolated position/view at fire time via
+`PositionTrack.SampleAt`) + `Damage` + the LG `Streams.Beams`. The computation
+lives in package `aimcore` (`aimcore.Compute`), called by the analyzer
+post-processor (`analyzer/aim.go`) to fill the stored `res.Aim` once, and by
+the view layer (`view.Aim`) for filtered/windowed variants — see below.
+Experimental and additive — it never modifies its inputs.
+
+**Filtering (`/aim`, `getAim`).** No schema change; a query-layer concern.
+With no time window the **stored** `res.Aim` is served (a `players` filter
+selects named shooters' match-wide aim; `summary` drops the `crosshair` +
+`lgRamp` sample blocks). A `from`/`to` window (match-relative seconds)
+**recomputes** aim over the shots in the window via `aimcore.Compute`, so every
+field scopes to the window consistently. See the /aim operation in the
+served OpenAPI spec (mvd-api `/openapi.yaml`, browsable at `/docs`).
 
 Geometry: the shot traces from the weapon **muzzle** (origin + 16, the LG/SG
 fire origin) toward the enemy **hull center** (origin + 4, the −24..+32 box
@@ -416,7 +488,7 @@ any victim class without re-deriving it.
 | Mode | `mode` | string — `"duel"` or `"team"` |
 | Crosshair | `crosshair` | *CrosshairSamples (omitempty) |
 | LGRamp | `lgRamp` | *LGRampSamples (omitempty) |
-| Weapons | `weapons` | []WeaponAim (omitempty) — rich per-weapon effectiveness |
+| Weapons | `weapons` | []WeaponAim (omitempty) — rich per-weapon effectiveness. An **ordered array** (one entry per weapon the player fired), keyed by the entry's `weapon` field and sorted by a fixed weapon rank — deliberately an array, not a `{weapon: …}` object, because the order is meaningful (unlike the unordered `byWeapon` count maps on `/frags` and `/damage`, which are objects because order is irrelevant there). |
 
 ### CrosshairSamples
 
@@ -549,6 +621,17 @@ obit text. Pick the one whose shape matches your consumer's needs; see
 Defined in `result/demoinfo.go`. **Verbatim from KTX's STUFFCMD
 demoinfo JSON; never transformed.** Treat this as authoritative for
 accuracy, damage breakdown, item pickups, bot info.
+
+**Units island.** This section is the one deliberate exception to the
+schema's time contract — KTX's numbers keep KTX's own units, not the
+pipeline's match-relative int32 **ms**, and several are not timestamps
+at all: `duration` is integer **seconds**; `timelimit` is **minutes**;
+a per-player item entry is `{took, time}` where `took` is a **pickup
+count** and `time` is the **cumulative seconds** the item was
+held/controlled — neither is a match-clock offset, so there is nothing
+to join against the ms timeline. For per-pickup timestamps use the
+pipeline's own `items` phases (or `weaponPickups`); use this section
+for KTX-authoritative totals.
 
 Top-level fields (`version`, `date`, `map`, `hostname`, `ip`, `port`,
 `mode`, `timelimit`, `fraglimit`, `duration`, `demo`, `teams`,
@@ -858,6 +941,7 @@ The match window plus the demo/wall-clock anchor (moved here from
 |---|---|---|---|
 | MatchStart | `matchStart` | int32 | Match window start in milliseconds (always 0 after post-process — it *is* the time origin). |
 | MatchEnd | `matchEnd` | int32 | Match window end in milliseconds. |
+| TimeBase | `timeBase` | string, omitempty | `"demo"` when **no match start was detected** (schema v52): the rebase never ran, so *every* timestamp in the whole Result is on the raw demo clock (t=0 = demo open, warmup included). Omitted on the normal match-relative result. A matching notice appears in `errors[]` (and therefore `/overview`). |
 | DemoOffset | `demoOffset` | int32, omitempty | Ms from demo open (≈ countdown start) to match start. |
 | DemoStartUnixMs | `demoStartUnixMs` | int64, omitempty | Server wall clock (Unix epoch ms) at demo open. |
 | DemoStartAccuracyMs | `demoStartAccuracyMs` | int32, omitempty | Resolution of `demoStartUnixMs`: `1` or `1000`. |
@@ -909,7 +993,7 @@ when the demo has no pauses or the server does not embed the block.
 | RL / LG / GL / SSG / SNG | `rl` / `lg` / `gl` / `ssg` / `sng` | []Interval | Half-open `[Start, End)` periods the weapon was held. |
 | Quad / Pent / Ring | `q` / `pe` / `r` | []Interval | Same shape as weapons. |
 | Shells / Nails / Rockets / Cells | `sh` / `nl` / `rk` / `cl` | []ChangeI16 | Ammo change streams. |
-| Spawns / Deaths | `sp` / `d` | []int32 | Discrete event timestamps in milliseconds. |
+| Spawns / Deaths | `sp` / `d` | []int32 | Discrete event timestamps in milliseconds. `sp` includes the match-start spawn: KTX respawns everyone when the countdown ends, but a player alive through the countdown produces no dead→alive wire transition, so the timeline synthesizes their spawn at `0` (schema v51). |
 | LOS | `los` | []LosTrack (omitempty) | Per-opponent line-of-sight intervals. BSP-backed maps only, and **computed lazily** — absent from the default parse; populated on demand (web LOS overlay, `qw-analyze -include los`, mvd-api `/los`). |
 | PVS | `pvs` | []LosTrack (omitempty) | Per-opponent potentially-visible-set intervals: the PVS cull the LOS raycast gates on, recorded before the rays narrow it. Lossless superset of `los` (PVS ⊇ LOS). Same shape, gate, and lazy pass as `los`. |
 
@@ -1355,6 +1439,7 @@ across arrays.
 view.BucketsColumnar(r, view.BucketsOptions{WindowMs: 50, IncludeTeam: true})
 // → *ColumnarBuckets {
 //     windowMs, startMs, count, partialLastMs?,
+//     locTable?: ["", "RA", …],           // li legend (v53); present iff an li column is emitted
 //     players: { name: {
 //        first, n,                       // active span [first, first+n)
 //        alive: [0/1 …],                 // liveness per bucket in the span
@@ -1371,8 +1456,12 @@ view.BucketsColumnar(r, view.BucketsOptions{WindowMs: 50, IncludeTeam: true})
 ```
 
 Conventions: `time(i) = startMs + i*windowMs` (int32 ms); booleans and
-the `alive` mask are `0`/`1`; a field array is omitted when the player
-never has it; values carry forward through dead buckets (the `alive`
+the `alive` mask are `0`/`1`; the `li` column keeps the compact raw
+index and the envelope's `locTable` legend decodes it (schema v53 —
+identical content to `/loc-table`, index 0 = the `""` no-loc sentinel),
+so a columnar response is loc-self-contained; a field array is omitted
+when the player never has it; values carry forward through dead buckets
+(the `alive`
 mask, not the arrays, marks liveness — row-major omits dead players, so
 treat `alive[i]==0` as "absent"); loc is always the raw `li` index
 (`LocIndex` does not apply). Team arrays span the full `count` grid.
@@ -1398,6 +1487,31 @@ Default Types omits high-frequency change events (`health`, `armor`,
 `loc`); pass them explicitly to opt back in. A `loc` event's `detail`
 holds the resolved name (`{"loc":"RA"}`) by default, or the raw index
 (`{"li":7}`) with `loc=index` — decode via `GET /loc-table`.
+
+The default set includes `pickup` (schema v51): identity-rich pickups
+joined from the authoritative sections rather than the held-interval
+streams. World-spawner takes (any kind, weapons included) come from the
+per-spawner item timelines — `detail{ item, kind, entNum, loc?, source:
+"world", team? }` with `item` the disambiguated spawner name (`ya_1` vs
+`ya_2`); backpack / unknown-source weapon grants come from
+weaponPickups — `detail{ item, kind, source, entNum?, dropper?, team? }`
+where `entNum` is the backpack edict. The two sources are disjoint by
+construction (a backpack grab never flips the world spawner's entity
+state), so no take is double-reported. The interval-derived `weapon` /
+`item` gain–lose events are unchanged — they tell the *holding* story.
+
+`spawn` events carry the spawn location when resolvable:
+`detail{"loc": name}` (or `{"li": idx}` with `loc=index`), sampled from
+the loc stream just after the spawn — the first change entry after the
+spawn timestamp is the teleport landing; no change inside the window
+means the loc didn't change across the spawn (schema v51).
+
+The opt-in `telefrag` / `stomp` events carry the kill's folded value
+(schema v54): `detail{ victim, isTeam?, bounded?, damage? }` — `bounded`
+is the reconstruction folded into the damage aggregates (present exactly
+when the fold ran; `0` is a real nullified-stomp value), and a stomp
+adds `damage` when its raw fold diverged from `bounded`. Mirrors the
+`telefrags[]`/`stomps[]` entries in the damage section.
 
 #### StreamSlice
 
@@ -1536,6 +1650,14 @@ full item layout and pickup timeline, just without picker names.
 `{ name, kind, entNum, x, y, z, loc, phases: []ItemPhase }`.
 `ItemPhase` is `{ availableFrom, takenAt, takenBy, team, respawnAt }`.
 
+**Time sentinels.** `availableFrom == 0` marks the initial "available
+since match start" phase (the rebase leaves zeros alone). Takes are
+recorded only under the match gate and rebase to `>= 0` by
+construction, so phase times are never negative; `takenAt`/`respawnAt`
+`== 0` (omitted in JSON) mean "not taken" / "not yet respawned", with
+the theoretical collision (a take at *exactly* t=0) physically
+unreachable.
+
 **Weapon-stay convention** (schema v46; serverinfo `deathmatch` 2/3/5
 or `coop` — dmm3 duels/2on2 included): touched weapons never leave the
 world in those modes, so weapon pickups are synthesized from
@@ -1544,6 +1666,15 @@ STAT_ITEMS bit flips and recorded as a **zero-length unavailability**:
 same instant. A consumer asking "is this item up at time T" always
 gets "up" for such weapons; the closed phases still carry
 `takenBy`/`team` for pickup counting.
+
+**Summary shape** (`/items?summary=true`, `view.ItemsSummary`): per-item
+take aggregates instead of the phase timeline —
+`{ items: [{ name, kind, entNum, loc?, takenCount, byPlayer?: {name: n},
+firstTake?: { t, takenBy?, team? } }] }` with `t` in match-relative
+**seconds** (view surface unit). With a `from`/`to` window, the full
+timeline keeps phases **overlapping** the window while the summary
+counts takes **inside** it; identity-filtered items survive with
+`takenCount: 0` when nothing took them in the window.
 
 For the map's **designed** static layout (all spawns + teleporters /
 spawnpoints / buttons, independent of what happened this match), see
@@ -1617,6 +1748,32 @@ else `"unknown"` — typically a non-RL/LG backpack grant, which has no
 hint in any mode. Synthesized entries always have `hadBefore: false`
 (the bit was observed flipping 0→1).
 
+## OpeningResult (`opening`)
+
+Defined in `result/opening.go` (schema v51). The match opening in one
+small block — a pure projection of data `items` / `streams` already
+carry, kept as its own artifact (`opening`, servable via
+`GET /v1/demos/{id}/artifacts/opening`) so "how did the opening go" is
+one cheap fetch.
+
+```jsonc
+{
+  "players":    [ { "name", "team"?, "loc"? } ],   // match-start spawn loc
+  "firstTakes": [ { "item", "kind", "entNum", "loc"?, "time", "takenBy", "team"? } ]
+}
+```
+
+- `players` — every player present **and alive** at match start, sorted
+  by team then name. `loc` is the resolved spawn location (empty when
+  the map has no .loc corpus).
+- `firstTakes` — the first **in-match** take of each tracked spawner
+  (warmup takes are skipped), sorted by time. Tracked kinds: armors,
+  mega, powerups, and the RL/LG weapon pads. `item`/`entNum`/`loc`
+  identify the spawner (`ItemTimeline` naming: `ya_1` vs `ya_2`). A
+  spawner nobody took has no entry. `time` is match-relative ms.
+- Omitted entirely when no match start was detected (t=0 would be the
+  demo open, not an opening).
+
 ## Cross-references / join keys
 
 - `weaponPickups[i].backpackEnt` ↔ `backpacks[j].entNum` —
@@ -1660,6 +1817,12 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v55 | Bounded damage becomes **death-value-derived and the default**. The v54 shadow-health cap is replaced: a survived hit is bounded == raw by identity, a killing hit's overkill comes from the end-of-frame death broadcast (bounded = raw + deathValue; corpus reconciliation tightens ~2.5x, max +-16/player on given/taken). Fallback to the approximate shadow cap only for the -99 corpse clamp and respawn-masked deaths; same-frame multi-hit deaths cascade the overkill from the last hit backward. The REST/MCP `dmg` **default flips to `bounded`** for summaries AND the full log (`raw`/`both` opt-in; a *defaulted* request on a `skipped:*` demo falls back to raw, only an explicit `dmg=bounded` 422s). Unfiltered bounded summaries substitute KTX's exact scoreboard figures (given/givenTeam/givenSelf/ewep/byWeapon-enemy; `taken` and the `enemyVs*` buckets stay reconstructed) with provenance in the new `damage.boundedSource` (`ktx` / `reconstructed`). |
+| v54 | The **bounded damage family** (additive). The wire carries only KTX's unbound damage; the scoreboard's bounded `dmg_dealt` (armor absorbed + health damage capped to remaining health) is now reconstructed per hit from tracked victim vitals: `damage.events[].bounded` (absent = equal to `damage`; `0` is a real nullified-hit value), `damage.byPlayer.<p>.bounded` (a nested `PlayerDamage`), `damage.scoreboard` deltas gain a `bounded` nest incl. `streamTeam`/`scoreTeam`, plus the `dmg` family echo and `boundedMode` (`skipped:*` on midair/instagib/dmgfrags demos — no bounded fields there). Telefrags **and stomps** now fold their bounded damage into `given`/`givenTeam`/`taken` in **both** families, matching KTX's own accumulation (telefrag: armor+health, the wire 9999 is a sentinel; stomp: the honest ~10 HP wire value); `telefrags[]`/`stomps[]` entries carry the per-kill `bounded` value. `byWeapon`/`matrix`/`ewep`/`totalDamage` still exclude positional kills (KTX `wpNONE` parity). |
+| v53 | Columnar buckets become **loc-self-contained**; view shape only, no stored-field change (bumped so the immutable schemaVersion-keyed ETags stop revalidating pre-legend bodies). The `/buckets` `layout=column` envelope gains `locTable` — the demo's interned loc-name legend, present iff an `li` column is in the output. Columnar keeps the compact raw index (row mode keeps resolving names per bucket); consumers decode locally instead of a `/loc-table` round trip. |
+| v52 | No-match-start demos are **flagged, not coerced**: `streams.global` gains `timeBase: "demo"` (omitted normally) when no match start was detected — on such demos the rebase never ran, so every timestamp in the Result is on the raw demo clock; previously indistinguishable from a match-rebased result. A matching notice is appended to `errors[]` (surfaces via `/overview`). |
+| v51 | The match opening becomes first-class. `streams.players[].sp` gains the **match-start spawn** (KTX respawns everyone at countdown end, but a player alive through the countdown never crosses dead→alive on the wire, so the timeline synthesizes `t=0`). Adds `Result.opening` (`OpeningResult`, the `opening` artifact): per-player match-start spawn loc + the first in-match take of each contested spawner. The events *view* gains the default `pickup` type (identity-rich takes joined from `items[].phases` + `weaponPickups`) and spawn events carry `detail{loc}`. |
+| v50 | `damage.events` is now **match-gated at the source**; no field-shape change. The per-hit `events` log previously carried out-of-match (warmup / post-match) hits while the aggregates gated them out; the analyzer now drops out-of-match hits before appending, so `events` and the aggregates are folds of the same in-match hit set. `damage.events` arrays shrink by the dropped hits. This lets the `/damage` filter's all-players recompute reproduce the stored aggregates exactly, removes the aim `[0,matchEnd]` self-window added in v49 (aim reads exactly-in-match damage), and fixes a latent bug where `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs (it iterated `events` with no gate). The `shots` stream is now match-gated too (warmup fires dropped at the source; the `Shot.warmup` field is removed since no out-of-match shot survives), and `damage.telefrags`/`damage.stomps` arrays are match-gated with team telefrags/stomps no longer credited to the attacker counter. |
 | v49 | Aim/shots correctness fixes; no field-shape change. (1) The `aim.players[].weapons` rl/gl `direct`/`splash`/`missed` block appears on every default parse: it was gated on the opt-in `streams.projectiles` emission while the projectile linking it needs runs on every parse — it now gates on linking evidence (any linked rl/gl fire). (2) The damage records feeding aim's pellet and direct splits are windowed to match time `[0, matchEnd]`, so warmup and post-match damage no longer inflates `direct` (and deflates `splash`). (3) In a 1v1 where both players share a non-empty colour team, `damage.events[].isTeam` is no longer true for hits on the opponent: `DamageAnalyzer` classifies duel hits as enemy at birth, so the events, `given`/`givenTeam`, the matrix, `victimWep` and the EWep buckets agree with the duel-normalized `shots` victim kinds (previously airgibs came out empty and the aim enemy splits zero on such demos). (4) Shots identity resolution uses the canonical `ResolveSlotAt` chain, backfilling an empty team from the demoinfo name table (parity with damage/frags). |
 | v48 | Correctness fixes to already-emitted values; no field-shape change. (1) `timelineAnalysis.killEvents` is now on the match-relative clock and carries duel team labels, exactly like the sibling `deathEvents`/`fragEvents` (both post-processors previously skipped it): each kill `time` was ~`demoOffset` ms late and, in 1v1s, `team` was a raw colour tag instead of the player name. (2) Match-timing detection ignores `PRINT_CHAT` (level 3), so a pre-match "go!" or a mid-match "gg game over" chat line can no longer flip the match window (`streams.global.matchStart`/`matchEnd`) or freeze streams; the obituary parser likewise rejects level-3 prints. (3) The CRMod "eats 2 scoops of" super-shotgun obituary is reachable again — those kills were mislabeled `gl` with a phantom "2 scoops of X" killer, now `ssg` with the real killer. (4) `match.players`/`match.teams` no longer drop players who finished on exactly 0 frags (surface-authoritative-data), and duel detection trusts `demoInfo.players` as authoritative so a 2on2 in which two players end on 0 frags is no longer misclassified as a duel and team-renamed; a paired reader fix parses the server-set `*spectator` userinfo star key (and resets the flag on every full userinfo update, ezquake-style) so actual spectators don't leak into `match.players` in place of the removed filter. (5) Powerup interval end times use the same effective match end as the weapon intervals on demos cut before intermission. |
 | v47 | LG miss reclassification on `WeaponAim`. A miss now only counts as `blocked` / `outOfRange` when the shooter was **on target**: `blocked` = the beam stopped short of its ~600 qu max range on geometry and its extension to full range crosses a live enemy's collision hull (a would-be hit denied by the obstruction); `outOfRange` = the beam ran its full length and its extension to infinity crosses a live enemy's hull (denied by reach). Previously every short-of-max-range beam whose endpoint wasn't near an enemy was blocked (even fired into a wall with nobody behind) and every full-length beam was out of range. `nearMiss` is **removed**: with blocked detection on the beam line, the near/wide distinction among plain aim errors carried no signal — all remaining whiffs land in the lg `miss` bucket (shares the field with the sg/ssg per-pellet miss). LG invariant becomes `hits + blocked + miss + outOfRange + unresolved == shots`. Only the opt-in beam-enriched parse is affected (the split needs `streams.beams`); expect `blocked`/`outOfRange` to drop sharply and `miss` to absorb them. |

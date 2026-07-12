@@ -29,7 +29,7 @@ The repo is a Go workspace (`go.work`) binding five sibling modules:
 | [mvd-reader](mvd-reader/README.md)       | `mvd-reader/`       | Event schema + MVD source (Layer 1)               |
 | [mvd-analytics](mvd-analytics/README.md) | `mvd-analytics/`    | Analysis pipeline + Result schema + view API (L2) |
 | [mvd-api](mvd-api/README.md)             | `mvd-api/`          | HTTP REST server on top of `mvd-analytics/view`   |
-| [mvd-mcp](mvd-mcp/README.md)             | `mvd-mcp/`          | Distributable stdio MCP shim that talks to mvd-api |
+| [mvd-mcp](mvd-mcp/README.md)             | `mvd-mcp/`          | MCP shim that talks to mvd-api — stdio (local) or streamable HTTP (hosted) |
 | [mvd-web](mvd-web/README.md)             | `mvd-web/`          | Browser UI + WASM glue (Layer 3)                  |
 
 Each module has its own `go.mod`, is tested in isolation, and can be extracted
@@ -50,12 +50,15 @@ grow on its own timeline. Today's concrete shape:
   into bucketed timelines, event lists, point-in-time state, and loc trails.
   Analytics never peeks at MVD bytes; it consumes events.
 - **Layer 3 consumers** read `Result` or call `view/` and produce something
-  user-facing. There are four today:
+  user-facing. When hosted, the service presents **four surfaces** — REST,
+  MCP over stdio, MCP over HTTP, and the web UI:
   - `mvd-analytics/cmd/qw-analyze` — offline CLI (one demo → JSON / md / events).
-  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed Result, lazy artifacts).
-  - `mvd-mcp` — tiny stdio MCP shim that forwards every tool call to a
-    running `mvd-api`. Distributable as a small `.exe` for Claude Desktop /
-    Cursor / Claude Code.
+  - `mvd-api` — hosted REST API + three-tier on-disk cache (raw bytes, parsed
+    Result, lazy artifacts). Optionally API-key-gated with a Discord key portal.
+  - `mvd-mcp` — MCP shim that forwards every tool call to a running `mvd-api`.
+    Two transports: **stdio** (a small `.exe` for Claude Desktop / Cursor /
+    Claude Code) and **streamable HTTP** (`-http`, for hosting with per-request
+    API-key auth). See [`deploy/`](deploy/README.md) for the hosted layout.
   - `mvd-web` — browser UI compiled to WASM.
 
 ## Quick start
@@ -116,7 +119,9 @@ make build-api-linux build-api-darwin build-api-windows
 `mvd-api` hosts the analytics surface for non-Go consumers
 (third-party integrations, the MCP shim, a future web frontend that
 benefits from server-side caching). See
-[`mvd-api/README.md`](mvd-api/README.md) for the endpoint table.
+[`mvd-api/README.md`](mvd-api/README.md) for the endpoint table; the
+running server also describes itself — an OpenAPI 3.1 spec at
+`/openapi.yaml`, browsable at `/docs`.
 
 ### Run MCP locally (`mvd-mcp`)
 
@@ -421,10 +426,12 @@ direct/splash, LG reach/whiff, and enemy/team/self hit-counter slices;
 exact target attribution in duels, a labeled nearest-crosshair heuristic
 in team games),
 backpacks (RL/LG drops attributed to the dropping player via KTX's
-`//ktx drop` hint), and weaponPickups (every slot-weapon acquisition —
+`//ktx drop` hint), weaponPickups (every slot-weapon acquisition —
 world spawners and RL/LG backpacks — with a kills-before-next-death
 effectiveness metric; joins to backpacks via `backpackEnt` ==
-`backpacks[].entNum`). Schema v7 introduced `streams` as the canonical
+`backpacks[].entNum`), and opening (schema v51 — each player's
+match-start spawn loc plus the first take of every contested spawner,
+the one-fetch answer to opening-race questions). Schema v7 introduced `streams` as the canonical
 event-rate storage — every per-player field (vitals, weapons, ammo,
 position) recorded at the rate it actually changed. Schema v8 stores
 **every timestamped field** as `int32` milliseconds rather than float
@@ -499,9 +506,16 @@ Schema v20 adds the `damage` section: per-hit damage reconstructed from the
 KTX `mvdhidden_dmgdone` stream, with an attacker→victim `matrix`, per-weapon
 and per-player given/taken totals, the **EWep** victim-weapon buckets
 (`enemyVsSg/Mid/Lg/Rl/Both`, where `ewep = lg + rl + both`), and a
-`scoreboard` cross-check against the KTX end-of-match totals. Positional
-kills (telefrags, stomps) are surfaced separately and kept out of every
-damage figure.
+`scoreboard` cross-check against the KTX end-of-match totals. Since schema
+v54 damage ships in **two families**: the **raw** wire value (the full hit
+including overkill, capped only at 9999) and a **bounded** reconstruction of
+KTX's scoreboard `dmg_dealt` (armor absorbed + health capped to the victim's
+remaining health) carried in additive `bounded` fields. Positional kills
+(telefrags, stomps) are surfaced separately and kept out of `events` /
+`byWeapon` / `matrix` / `ewep`, but their damage now folds into
+`given`/`givenTeam`/`taken` in both families (matching KTX's own
+accumulation). The REST `/damage` `dmg=raw|bounded|both` param picks the
+family.
 
 `streams.global` carries a wall-clock anchor so a consumer can project any
 match-relative game time onto real-world time (for syncing voice tracks /
@@ -769,17 +783,33 @@ diff -r /tmp/before /tmp/after
    pad can't be tied to a specific pack. See
    [mvd-analytics/README.md](mvd-analytics/README.md#weapon-pickups).
 
-6. **Damage is unbound (overkill)**: `result.Damage` is reconstructed
-   from the KTX `mvdhidden_dmgdone` stream, which reports the **full** hit
-   including overkill, capped only at 9999 (a telefrag reports 9999). KTX's
-   end-of-match scoreboard (`demoInfo.players[].dmg`) instead bounds each
-   hit to the victim's remaining health, so the reconstructed totals run
-   higher — most on killing blows. The `damage.scoreboard` cross-check
-   surfaces both side by side; the divergence is expected, not a defect.
-   **Positional kills** — telefrags (the 9999 instakill sentinel) and
-   stomps (landing on a head) — are excluded from all damage figures and
-   tracked separately (`damage.telefrags`/`damage.stomps`, the opt-in
-   `telefrag`/`stomp` events) so they don't swamp `given`/`ewep`/`byWeapon`.
+6. **Damage: raw (unbound) vs bounded families**: `result.Damage` is
+   reconstructed from the KTX `mvdhidden_dmgdone` stream, which reports the
+   **full** hit including overkill, capped only at 9999 (a telefrag reports
+   9999) — the **raw** family. KTX's end-of-match scoreboard
+   (`demoInfo.players[].dmg`) instead bounds each hit to the victim's
+   remaining health; since schema v55 that **bounded** family is
+   derived per hit from the death-value identity (a survived hit is exact
+   by construction; a killing hit's overkill is measured by the death
+   broadcast) and carried in additive `bounded` fields — `bounded` is the
+   REST/MCP **default**, `raw`/`both` the opt-ins, and unfiltered bounded
+   summaries substitute KTX's exact scoreboard figures
+   (`boundedSource: "ktx"`). Residual approximation exists only where the
+   wire hides state (the −99 corpse clamp, respawn-masked deaths,
+   same-frame multi-hit cascades, pent/teamplay armor-share estimates);
+   corpus-wide totals reconcile with `demoInfo` within pinned tolerances
+   (max ±16 per player on given/taken). Godmode
+   is unobservable, so a hit on a godmode holder is reconstructed as if it
+   landed. The reconstruction is **skipped** on `k_midair` / `k_instagib` /
+   `k_dmgfrags` demos (`damage.boundedMode = "skipped:<mode>"`) where the
+   mode rewrites `T_Damage` unobservably; `dmg=bounded` there is a `422
+   bounded_unavailable`. **Positional kills** — telefrags (the 9999
+   instakill sentinel) and stomps (landing on a head) — are kept out of
+   `events` / `byWeapon` / `matrix` / `ewep` / `totalDamage` and tracked
+   separately (`damage.telefrags`/`damage.stomps`, the opt-in
+   `telefrag`/`stomp` events), but their damage **folds into**
+   `given`/`givenTeam`/`taken` in both families (mirroring KTX, which
+   applies no tele/stomp exclusion to its scoreboard accumulation).
    Available only on KTX demos with the MVD-hidden extension; the `EWep`
    victim-weapon buckets additionally depend on reconstructing each
    victim's inventory from `STAT_ITEMS` updates.

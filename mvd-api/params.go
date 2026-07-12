@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -105,6 +106,18 @@ func parseLayout(q url.Values) (string, error) {
 	}
 }
 
+// parseDmg reads ?dmg=raw|bounded|both. Empty → "" (the handler resolves the
+// default: "bounded", for both summary and full-log requests). Any
+// other value is an error.
+func parseDmg(q url.Values) (string, error) {
+	v := strings.ToLower(strings.TrimSpace(ciGet(q, "dmg")))
+	switch v {
+	case "", "raw", "bounded", "both":
+		return v, nil
+	}
+	return "", fmt.Errorf("invalid dmg=%q (want 'raw', 'bounded' or 'both')", ciGet(q, "dmg"))
+}
+
 // parseReducers parses a comma-separated list of "field=name" pairs.
 // Empty → nil. Malformed → error.
 func parseReducers(v string) (map[string]string, error) {
@@ -145,14 +158,36 @@ func newQP(q url.Values) *qp { return &qp{q: q} }
 // writeInvalidParam for the shared 400 invalid_param tail.
 func (p *qp) Err() error { return p.err }
 
-// Float reads a float param (empty → def). No-op after a prior error.
-func (p *qp) Float(key string, def float64) float64 {
+// maxSecBound is the largest match-relative seconds bound the view layer can
+// represent: secToMs rounds sec*1000 to int32 ms, so a larger value would wrap
+// under Go's implementation-defined out-of-range float→int32 conversion and
+// silently filter everything with an HTTP 200 instead of erroring.
+const maxSecBound = float64(math.MaxInt32) / 1000.0
+
+// Sec reads a match-relative seconds bound (from/to/time; empty → def) and
+// validates it. NaN/Inf, negatives, and values whose millisecond form
+// overflows int32 are rejected here rather than reaching the view's secToMs,
+// where the bad float→int32 conversion would produce a silent all-filtered 200.
+// No-op after a prior error.
+func (p *qp) Sec(key string, def float64) float64 {
 	if p.err != nil {
 		return def
 	}
 	v, err := parseFloat(p.q, key, def)
 	if err != nil {
 		p.err = err
+		return def
+	}
+	switch {
+	case math.IsNaN(v) || math.IsInf(v, 0):
+		p.err = fmt.Errorf("invalid %s=%q (not a finite number)", key, ciGet(p.q, key))
+		return def
+	case v < 0:
+		p.err = fmt.Errorf("invalid %s=%q (must be >= 0)", key, ciGet(p.q, key))
+		return def
+	case v > maxSecBound:
+		p.err = fmt.Errorf("invalid %s=%q (exceeds the maximum match time)", key, ciGet(p.q, key))
+		return def
 	}
 	return v
 }
@@ -171,6 +206,20 @@ func (p *qp) Int(key string, def int) int {
 
 // CSV reads a comma-separated param. It cannot fail, so it never sets err.
 func (p *qp) CSV(key string) []string { return parseCSV(ciGet(p.q, key)) }
+
+// CSVAny reads the first of several aliased comma-separated params that
+// has a non-empty value (earlier keys win). Exists for the
+// weapons/weapon rename (phase 16.2): the canonical name is listed
+// first, the legacy alias after, and a request carrying both gets the
+// canonical one.
+func (p *qp) CSVAny(keys ...string) []string {
+	for _, k := range keys {
+		if vals := parseCSV(ciGet(p.q, k)); len(vals) > 0 {
+			return vals
+		}
+	}
+	return nil
+}
 
 // Bool reads a 0/1|true/false param. It cannot fail, so it never sets err.
 func (p *qp) Bool(key string) bool { return parseBool(p.q, key) }
@@ -193,6 +242,19 @@ func (p *qp) Layout() string {
 		return "column"
 	}
 	v, err := parseLayout(p.q)
+	if err != nil {
+		p.err = err
+	}
+	return v
+}
+
+// Dmg reads ?dmg=raw|bounded|both (empty → "", the handler resolves the
+// default to "bounded"). No-op after a prior error.
+func (p *qp) Dmg() string {
+	if p.err != nil {
+		return ""
+	}
+	v, err := parseDmg(p.q)
 	if err != nil {
 		p.err = err
 	}

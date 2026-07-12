@@ -224,3 +224,91 @@ func TestMCP_SearchGames(t *testing.T) {
 		t.Errorf("count = %v; want 1", out["count"])
 	}
 }
+
+// realRosterRow mirrors the live v1_games shape (verified against the
+// hub 2026-07-10): players carry ping / color arrays / name_color /
+// team_color / is_bot alongside name+team+frags.
+const realRosterRow = `[{"id":7,"timestamp":"2026-07-01T10:00:00","mode":"4on4","map":"schloss",
+"teams":[{"name":"red","score":89}],
+"players":[{"name":"bps","ping":25,"team":"red","color":[4,4],"frags":31,"is_bot":false,"name_color":"wwww","team_color":"ww"}],
+"demo_sha256":"abc","demo_source_url":"https://example.com/x.mvd.gz"}]`
+
+func TestSearch_CompactRosterDefault(t *testing.T) {
+	fs := newFakeSupabase(realRosterRow)
+	defer fs.Close()
+	c := newTestSupabaseClient(fs.srv.URL)
+
+	out, err := c.Search(context.Background(), SearchGamesInput{})
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	row := out.(map[string]any)["games"].([]any)[0].(map[string]any)
+	pl := row["players"].([]any)[0].(map[string]any)
+	for _, gone := range []string{"ping", "color", "is_bot", "name_color", "team_color"} {
+		if _, ok := pl[gone]; ok {
+			t.Errorf("compact roster still carries %q", gone)
+		}
+	}
+	if pl["name"] != "bps" || pl["team"] != "red" || pl["frags"].(float64) != 31 {
+		t.Errorf("compact roster lost identity fields: %+v", pl)
+	}
+	if row["teams"] == nil {
+		t.Error("teams must survive compaction")
+	}
+}
+
+func TestSearch_RosterOptInVerbatim(t *testing.T) {
+	fs := newFakeSupabase(realRosterRow)
+	defer fs.Close()
+	c := newTestSupabaseClient(fs.srv.URL)
+
+	out, err := c.Search(context.Background(), SearchGamesInput{Roster: true})
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	pl := out.(map[string]any)["games"].([]any)[0].(map[string]any)["players"].([]any)[0].(map[string]any)
+	if pl["ping"].(float64) != 25 || pl["name_color"] != "wwww" {
+		t.Errorf("roster:true must pass hub rows through verbatim, got %+v", pl)
+	}
+}
+
+// TestSearch_TotalFromContentRange: the Prefer count header is sent and
+// the PostgREST Content-Range total surfaces as `total`; a 206 partial
+// page is success.
+func TestSearch_TotalFromContentRange(t *testing.T) {
+	var seenPrefer string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenPrefer = r.Header.Get("Prefer")
+		w.Header().Set("Content-Range", "0-19/1234")
+		w.WriteHeader(http.StatusPartialContent)
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+	c := newTestSupabaseClient(srv.URL)
+
+	out, err := c.Search(context.Background(), SearchGamesInput{})
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if seenPrefer != "count=exact" {
+		t.Errorf("Prefer = %q, want count=exact", seenPrefer)
+	}
+	if total := out.(map[string]any)["total"]; total != 1234 {
+		t.Errorf("total = %v, want 1234", total)
+	}
+}
+
+// TestSearch_NoContentRangeOmitsTotal: a hub that ignores the count
+// preference yields a response without `total` (never a wrong one).
+func TestSearch_NoContentRangeOmitsTotal(t *testing.T) {
+	fs := newFakeSupabase(`[]`)
+	defer fs.Close()
+	c := newTestSupabaseClient(fs.srv.URL)
+	out, err := c.Search(context.Background(), SearchGamesInput{})
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if _, ok := out.(map[string]any)["total"]; ok {
+		t.Error("total present without a Content-Range header")
+	}
+}

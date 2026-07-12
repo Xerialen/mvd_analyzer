@@ -110,7 +110,7 @@ var analyzerNodeMeta = map[string]nodeMeta{
 	"messages": {name: "messages", requires: []string{"clock", "demoinfo", "roster"}, resultKey: "messages",
 		desc: "Chat, teamsay, and other match print messages with markup-stripped text."},
 	"timelineAnalysis": {name: "timeline", requires: []string{"clock", "demoinfo", "identity", "frag", "roster"}, resultKey: "timelineAnalysis",
-		desc: "Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container."},
+		desc: "Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container. LARGE — one of the biggest Result sections; prefer the windowed views (events, buckets, region-control) over fetching it whole."},
 	"items": {name: "items", requires: []string{"clock", "demoinfo", "identity", "roster"}, resultKey: "items",
 		desc: "Per-item pickup/respawn timeline with world position and nearest loc."},
 	"damage": {name: "damage", requires: []string{"clock", "demoinfo", "identity", "roster"}, resultKey: "damage",
@@ -184,6 +184,12 @@ var postNodeMeta = map[string]nodeMeta{
 		name: "region-control", mutates: true,
 		requires: []string{"timeline", "match", "demoinfo"},
 		desc:     "Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact).",
+	},
+	"openingPost": {
+		name: "opening", mutates: true,
+		requires:  []string{"timeline", "items"},
+		resultKey: "opening",
+		desc:      "Match opening: each player's match-start spawn location plus the first in-match take of every contested spawner (armors, mega, powerups, RL/LG). A pure projection of items + streams, kept small for one-call fetches.",
 	},
 }
 

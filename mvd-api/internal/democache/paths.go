@@ -21,11 +21,25 @@ func DefaultRoot() string {
 	return filepath.Join(home, ".cache", "qw-mvd")
 }
 
+// mvdRoot is the tier-1 subtree (raw MVD gz bytes).
+func mvdRoot(root string) string { return filepath.Join(root, "mvd") }
+
+// resultsRoot is the tier-2 subtree; it holds one version tree per
+// schema/format generation ever written under this cache.
+func resultsRoot(root string) string { return filepath.Join(root, "results") }
+
+// artifactsRoot is the tier-3 subtree (lazy artifact side-gobs).
+func artifactsRoot(root string) string { return filepath.Join(root, "artifacts") }
+
+// indexRoot is the small gameId → sha map subtree. It is exempt from GC
+// eviction (tiny, and losing it would force a hub re-resolve).
+func indexRoot(root string) string { return filepath.Join(root, "index") }
+
 // mvdPath returns the on-disk path for tier-1 (raw MVD gz bytes).
 //
 //	<root>/mvd/<sha[:2]>/<sha>.mvd.gz
 func mvdPath(root, sha string) string {
-	return filepath.Join(root, "mvd", sha[:2], sha+".mvd.gz")
+	return filepath.Join(mvdRoot(root), sha[:2], sha+".mvd.gz")
 }
 
 // resultCacheFormat is the tier-2 gob layout generation, an internal counter
@@ -47,21 +61,37 @@ func mvdPath(root, sha string) string {
 // schema version (the "which optional passes are baked in" contract).
 const resultCacheFormat = 2
 
+// resultsVersionName is the directory name of the tier-2 tree for a schema
+// version + the current cache-format generation — the single source of truth
+// for the "v<N>f<F>" naming that both resultPath and the orphan-tree GC sweep
+// (CleanOldVersionTrees) depend on.
+func resultsVersionName(schemaVersion int) string {
+	return fmt.Sprintf("v%df%d", schemaVersion, resultCacheFormat)
+}
+
 // resultPath returns the on-disk path for tier-2 (parsed *Result gob),
 // keyed by schema version AND the cache-format generation so both a schema
 // bump and a cache-format bump invalidate this tier without touching tier-1.
 //
 //	<root>/results/v<N>f<F>/<sha[:2]>/<sha>.gob
 func resultPath(root string, schemaVersion int, sha string) string {
-	return filepath.Join(root, "results",
-		fmt.Sprintf("v%df%d", schemaVersion, resultCacheFormat), sha[:2], sha+".gob")
+	return filepath.Join(resultsRoot(root), resultsVersionName(schemaVersion), sha[:2], sha+".gob")
 }
 
 // gameIndexPath returns the on-disk path for the gameId → sha map.
 //
 //	<root>/index/games/<gameId>.txt
 func gameIndexPath(root string, gameID int) string {
-	return filepath.Join(root, "index", "games", fmt.Sprintf("%d.txt", gameID))
+	return filepath.Join(indexRoot(root), "games", fmt.Sprintf("%d.txt", gameID))
+}
+
+// artifactVersionSuffix is the filename tail of a tier-3 gob at the current
+// effective version ("@v<EV>.gob"). The GC's stale-artifact sweep removes any
+// artifacts/ gob NOT carrying it: per-file versioning means a stale artifact
+// is never read again (artifactPath simply points elsewhere), so it is pure
+// garbage — this includes the shot-streams@* gobs orphaned by phase 12.
+func artifactVersionSuffix() string {
+	return fmt.Sprintf("@v%d.gob", result.CurrentSchemaVersion)
 }
 
 // artifactPath returns the on-disk path for tier-3 (a lazily-materialised
@@ -79,9 +109,9 @@ func gameIndexPath(root string, gameID int) string {
 // ever diverge from the schema (PLAN-improve-analytics.md §3.5).
 //
 // Orphaned shot-streams@* gobs written by pre-phase-12 processes are never
-// read anymore (nothing resolves the "shot-streams" artifact); they are inert
-// until a size-capped GC (the hosting-prep phase) reaps them.
+// read anymore (nothing resolves the "shot-streams" artifact); the GC's
+// stale-artifact sweep (CleanStaleArtifacts) reaps them along with any other
+// gob whose version suffix is not current.
 func artifactPath(root, name, sha string) string {
-	return filepath.Join(root, "artifacts", sha[:2], sha,
-		fmt.Sprintf("%s@v%d.gob", name, result.CurrentSchemaVersion))
+	return filepath.Join(artifactsRoot(root), sha[:2], sha, name+artifactVersionSuffix())
 }

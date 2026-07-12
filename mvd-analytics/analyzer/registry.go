@@ -391,6 +391,7 @@ func NewDefaultRegistry() *Registry {
 	r.RegisterPostProcessor(scoreboardStatsPost)
 	r.RegisterPostProcessor(locGraphPost)
 	r.RegisterPostProcessor(regionControlPost)
+	r.RegisterPostProcessor(openingPost)
 
 	// Declare each node's Requires/Provides (dag.go), validate the wiring,
 	// and derive the execution order from it — the DAG turns silent

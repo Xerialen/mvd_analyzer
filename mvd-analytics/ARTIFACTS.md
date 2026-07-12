@@ -16,7 +16,7 @@ Every node in the analytics DAG, as declared in [`analyzer/dag.go`](analyzer/dag
 | `metadata` | light | no | `metadata` | — | `metadata` | Server cvars and parsed KTX match settings (mode, timelimit, antilag, midair, instagib, ...). |
 | `match` | light | no | `match` | `demoinfo` | `match` | Match summary: map, mode, duration, and the per-player scoreboard. In-pipeline consumers wanting the frag-log-corrected kills/deaths/suicides require `match:final`; the served `match` key is corrected by serve time since all nodes run. |
 | `messages` | light | no | `messages` | `clock`, `demoinfo`, `roster` | `messages` | Chat, teamsay, and other match print messages with markup-stripped text. |
-| `timeline` | light | no | `timelineAnalysis` | `clock`, `demoinfo`, `identity`, `frag`, `roster` | `timeline` | Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container. |
+| `timeline` | light | no | `timelineAnalysis` | `clock`, `demoinfo`, `identity`, `frag`, `roster` | `timeline` | Match timeline: phases, streaks, powerup runs, pauses, region-control layout, airgibs, and the per-player event-stream container. LARGE — one of the biggest Result sections; prefer the windowed views (events, buckets, region-control) over fetching it whole. |
 | `items` | light | no | `items` | `clock`, `demoinfo`, `identity`, `roster` | `items` | Per-item pickup/respawn timeline with world position and nearest loc. |
 | `damage` | light | no | `damage` | `clock`, `demoinfo`, `identity`, `roster` | `damage` | Per-hit damage from the KTX stream: totals, matrix, per-weapon, EWep buckets, telefrags, stomps, and the scoreboard cross-check. |
 | `shots` | light | no | `shots` | `clock`, `demoinfo`, `identity`, `timeline`, `roster` | `shots` | Per-fire weapon stream with per-player accuracy aggregates and the KTX cross-check. Stream-derived splits ride the opt-in projectile/beam/nail streams (built by qw-analyze -include, always by mvd-api and the WASM web build). |
@@ -29,6 +29,7 @@ Every node in the analytics DAG, as declared in [`analyzer/dag.go`](analyzer/dag
 | `match-final` | light | no | — | `match`, `frags:final` | `match-final`, `match:final` | Final match scoreboard: folds frag-log-corrected kills/deaths/suicides into `match`; publishes `match:final` for in-pipeline consumers. |
 | `loc-graph` | light | no | `locGraph` | `timeline`, `demoinfo` | `loc-graph` | Per-map loc adjacency graph with directed transition weights derived from player movement. |
 | `region-control` | light | no | — | `timeline`, `match`, `demoinfo` | `region-control` | Folds the default-window region-control aggregation into the timeline (arbitrary windows are a view, not an artifact). |
+| `opening` | light | no | `opening` | `timeline`, `items` | `opening` | Match opening: each player's match-start spawn location plus the first in-match take of every contested spawner (armors, mega, powerups, RL/LG). A pure projection of items + streams, kept small for one-call fetches. |
 | `los` | heavy | yes | — | `timeline`, `demoinfo` | `los` | Per-player line-of-sight and potential-visibility interval sets — the heaviest position-derived pass, materialised on demand. |
 
-Generated at schema version 49.
+Generated at schema version 55.

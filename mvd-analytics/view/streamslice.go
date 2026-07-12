@@ -108,10 +108,10 @@ func StreamSlice(r *result.Result, opts StreamSliceOptions) (*StreamSliceView, e
 	// Global.Match* is int32 ms (schema v8); public view API is
 	// float64 seconds — convert once at the entry.
 	if end == 0 {
-		end = float64(r.Streams.Global.MatchEnd) * 0.001
+		end = secs(r.Streams.Global.MatchEnd)
 	}
 	if start == 0 {
-		start = float64(r.Streams.Global.MatchStart) * 0.001
+		start = secs(r.Streams.Global.MatchStart)
 	}
 	pf := newPlayerFilter(opts.Players)
 	locTable := locTableOf(r)

@@ -161,3 +161,43 @@ func TestDownload_NoURLsAtAll(t *testing.T) {
 		t.Errorf("expected error for empty GameInfo")
 	}
 }
+
+// TestDownload_BodySizeCap covers F16: an oversized upstream body is
+// rejected, while a body exactly at the cap is accepted (the fetch reader
+// reads cap+1 to tell the two apart). Shrinks the package-level cap so the
+// test is cheap.
+func TestDownload_BodySizeCap(t *testing.T) {
+	const sha = "abcdef0123456789"
+
+	orig := maxDownloadBytes
+	maxDownloadBytes = 1024
+	defer func() { maxDownloadBytes = orig }()
+
+	serveN := func(n int) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write(make([]byte, n))
+		}))
+	}
+
+	// Over the cap → error.
+	over := serveN(int(maxDownloadBytes) + 1)
+	defer over.Close()
+	c := NewClient()
+	c.CDNBase = over.URL
+	if _, err := c.Download(&GameInfo{DemoSHA256: sha}); err == nil {
+		t.Errorf("expected error for over-cap body")
+	}
+
+	// Exactly at the cap → success.
+	atCap := serveN(int(maxDownloadBytes))
+	defer atCap.Close()
+	c2 := NewClient()
+	c2.CDNBase = atCap.URL
+	data, err := c2.Download(&GameInfo{DemoSHA256: sha})
+	if err != nil {
+		t.Fatalf("body at cap should succeed: %v", err)
+	}
+	if int64(len(data)) != maxDownloadBytes {
+		t.Errorf("got %d bytes; want %d", len(data), maxDownloadBytes)
+	}
+}

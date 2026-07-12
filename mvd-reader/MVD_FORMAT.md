@@ -1822,9 +1822,22 @@ When a player walks in lava:
 
 ## Damage Tracking Details
 
+> **Now implemented.** The reconstruction sketched below is realised in
+> `mvd-analytics/analyzer/damage.go` (schema v54): `boundedDamage` mirrors
+> `T_Damage`, driven by per-slot shadow vitals (health/armor tracked from
+> `StatHealth`/`StatArmor`, checkpointed on every accepted stat update and
+> decremented for same-frame multi-hits). It emits both families — the raw
+> wire value and the **bounded** KTX-scoreboard value — per hit. One
+> refinement the sketch predates: a telefrag/stomp victim is alive by
+> definition (`tdeath_touch` requires `ISLIVE`), so a non-positive health
+> shadow means the respawn beat the end-of-frame stat broadcast; the
+> reconstruction then reads the victim from **spawn state** (100 health, no
+> armor, spawn inventory) rather than the stale corpse shadow. See
+> `RESULT_SCHEMA.md`'s `DamageResult` section for the resulting fields.
+
 ### MVD vs KTX Damage Values
 
-MVD files contain **raw/unbound damage** values, which includes overkill damage. KTX mod's stats track **effective damage** capped at the victim's health.
+MVD files contain **raw/unbound damage** values, which includes overkill damage. KTX mod's stats track **effective (bounded) damage** capped at the victim's health.
 
 | Type | Description | Example |
 |------|-------------|---------|
@@ -1832,21 +1845,41 @@ MVD files contain **raw/unbound damage** values, which includes overkill damage.
 | **Effective Damage** (KTX) | Damage capped at victim's current health | Victim has 50 HP → 50 counted |
 | **Overkill** | Difference: raw - effective | 120 - 50 = 70 overkill |
 
-**KTX Source Reference** (`combat.c:786-834`):
+**KTX Source Reference** (`combat.c`):
 ```c
-// Line 786: Raw damage before health capping
+// Line 620/634: armor share, then dmg_dealt = armor absorbed (save)
+save = newceil(targ->s.v.armortype * damage);   // capped at armorvalue
+dmg_dealt += save;
+
+// Line 719: virtual_take captured here, PRE-nullification (max(0, take))
+virtual_take = max(0, take);
+
+// Line 757: unbound snapshot = the armor-absorbed total so far
 unbound_dmg_dealt = dmg_dealt;
 
-// Line 804: Effective damage capped at victim's health
-dmg_dealt += bound(0, virtual_take, targ->s.v.health);
+// Lines 768-782: the two families diverge on the health share —
+//   unbound adds virtual_take (uncapped, pre-nullification),
+//   bounded adds bound(0, take, health) (capped, nullification-aware)
+unbound_dmg_dealt += virtual_take;
+dmg_dealt        += bound(0, take, targ->s.v.health);
 
-// Lines 830-834: Write unbound damage to MVD hidden message
+// Line 795: the wire value = save + virtual_take, clamped to [0,9999]
+unbound_dmg_dealt = bound(0, unbound_dmg_dealt, 9999);
+
+// Lines 801-805: write the UNBOUND value to the MVD hidden message
 WriteShort(MSG_MULTICAST, mvdhidden_dmgdone);
 WriteShort(MSG_MULTICAST, damage_flags | targ->deathtype);
 WriteShort(MSG_MULTICAST, NUM_FOR_EDICT(attacker));
 WriteShort(MSG_MULTICAST, NUM_FOR_EDICT(targ));
 WriteShort(MSG_MULTICAST, (short)unbound_dmg_dealt);
 ```
+
+**Key wire fact**: the value on the wire is `save + virtual_take`
+(armor absorbed + the health share captured *before* pent / teamplay
+nullification), clamped to 9999 — never the bounded `dmg_dealt`. The
+bounded family (`combat.c:783`, accumulated into the scoreboard at
+`combat.c:1046-1076`) has to be reconstructed from tracked vitals; it
+cannot be read off the wire.
 
 ### Damage Capping Algorithm
 

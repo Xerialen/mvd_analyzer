@@ -33226,8 +33226,29 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       ".N3ophyt3.": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 291,
+            "rl": 7102,
+            "sg": 2680,
+            "sng": 481,
+            "ssg": 738
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 1060,
+          "enemyVsRl": 3456,
+          "enemyVsSg": 6776,
+          "ewep": 3456,
+          "given": 11292,
+          "givenSelf": 691,
+          "givenTeam": 661,
+          "taken": 9120,
+          "takenEnv": 40
+        },
         "byWeapon": {
           "gl": 325,
           "rl": 9061,
@@ -33244,10 +33265,29 @@
         "given": 13644,
         "givenSelf": 720,
         "givenTeam": 836,
-        "taken": 11111,
+        "taken": 11211,
         "takenEnv": 40
       },
       "DobeZz": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 209,
+            "rl": 2616,
+            "sg": 2699,
+            "ssg": 84
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 514,
+          "enemyVsRl": 2022,
+          "enemyVsSg": 3172,
+          "ewep": 2022,
+          "given": 5708,
+          "givenSelf": 270,
+          "givenTeam": 273,
+          "taken": 9989,
+          "takenEnv": 35
+        },
         "byWeapon": {
           "gl": 221,
           "rl": 4321,
@@ -33258,9 +33298,9 @@
         "enemyVsLg": 0,
         "enemyVsMid": 560,
         "enemyVsRl": 2721,
-        "enemyVsSg": 4217,
+        "enemyVsSg": 4317,
         "ewep": 2721,
-        "given": 7498,
+        "given": 7598,
         "givenSelf": 271,
         "givenTeam": 308,
         "taken": 12845,
@@ -33268,6 +33308,26 @@
         "telefrags": 1
       },
       "anni": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 446,
+            "rl": 3943,
+            "sg": 2586,
+            "sng": 337,
+            "ssg": 356
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 1204,
+          "enemyVsRl": 3490,
+          "enemyVsSg": 2974,
+          "ewep": 3490,
+          "given": 7668,
+          "givenSelf": 769,
+          "givenTeam": 477,
+          "taken": 11113,
+          "takenEnv": 35
+        },
         "byWeapon": {
           "gl": 507,
           "rl": 5303,
@@ -33288,6 +33348,26 @@
         "takenEnv": 35
       },
       "biggz": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 246,
+            "rl": 5763,
+            "sg": 4226,
+            "sng": 269,
+            "ssg": 522
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 1686,
+          "enemyVsRl": 3014,
+          "enemyVsSg": 6326,
+          "ewep": 3014,
+          "given": 11026,
+          "givenSelf": 395,
+          "givenTeam": 503,
+          "taken": 8484,
+          "takenEnv": 30
+        },
         "byWeapon": {
           "gl": 285,
           "rl": 7298,
@@ -33308,6 +33388,25 @@
         "takenEnv": 30
       },
       "gore": {
+        "bounded": {
+          "byWeapon": {
+            "rl": 3097,
+            "sg": 2937,
+            "sng": 270,
+            "ssg": 316
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 677,
+          "enemyVsRl": 2845,
+          "enemyVsSg": 3098,
+          "ewep": 2845,
+          "given": 6620,
+          "givenSelf": 365,
+          "givenTeam": 278,
+          "taken": 12447,
+          "takenEnv": 50
+        },
         "byWeapon": {
           "rl": 3877,
           "sg": 3172,
@@ -33327,6 +33426,25 @@
         "takenEnv": 50
       },
       "nexus": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 112,
+            "rl": 7648,
+            "sg": 1910,
+            "ssg": 1228
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 1887,
+          "enemyVsRl": 2297,
+          "enemyVsSg": 6714,
+          "ewep": 2297,
+          "given": 10898,
+          "givenSelf": 1231,
+          "givenTeam": 1012,
+          "taken": 8457,
+          "takenEnv": 39
+        },
         "byWeapon": {
           "gl": 112,
           "rl": 11005,
@@ -33346,6 +33464,26 @@
         "takenEnv": 40
       },
       "ocoini": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 495,
+            "rl": 3145,
+            "sg": 3956,
+            "sng": 202,
+            "ssg": 640
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 1252,
+          "enemyVsRl": 4625,
+          "enemyVsSg": 2561,
+          "ewep": 4625,
+          "given": 8438,
+          "givenSelf": 472,
+          "givenTeam": 137,
+          "taken": 12777,
+          "takenEnv": 40
+        },
         "byWeapon": {
           "gl": 516,
           "rl": 4216,
@@ -33366,6 +33504,26 @@
         "takenEnv": 40
       },
       "paniagua": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 598,
+            "rl": 5777,
+            "sg": 2160,
+            "sng": 587,
+            "ssg": 787
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 1929,
+          "enemyVsRl": 1882,
+          "enemyVsSg": 6098,
+          "ewep": 1882,
+          "given": 9909,
+          "givenSelf": 984,
+          "givenTeam": 829,
+          "taken": 8818,
+          "takenEnv": 30
+        },
         "byWeapon": {
           "gl": 606,
           "rl": 8656,
@@ -33393,6 +33551,7 @@
       "sng": 2286,
       "ssg": 5188
     },
+    "dmg": "both",
     "events": [
       {
         "attacker": "nexus",
@@ -33412,6 +33571,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 100,
         "damage": 110,
         "time": 2338,
         "victim": "nexus",
@@ -33446,6 +33606,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 0,
         "damage": 24,
         "time": 2911,
         "victim": "biggz",
@@ -33454,6 +33615,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 6,
         "damage": 24,
         "time": 3234,
         "victim": "DobeZz",
@@ -33470,6 +33632,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 0,
         "damage": 24,
         "time": 3933,
         "victim": "biggz",
@@ -33478,6 +33641,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 20,
         "damage": 56,
         "time": 4260,
         "victim": "gore",
@@ -33643,6 +33807,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 10,
         "damage": 24,
         "time": 11611,
         "victim": "DobeZz",
@@ -33691,6 +33856,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 15,
         "damage": 18,
         "time": 13032,
         "victim": "anni",
@@ -33763,6 +33929,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 0,
         "damage": 16,
         "isTeam": true,
         "time": 16326,
@@ -33779,6 +33946,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 16,
         "damage": 36,
         "time": 16397,
         "victim": "ocoini",
@@ -33795,6 +33963,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 19652,
         "victim": "DobeZz",
@@ -33819,6 +33988,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 20819,
         "victim": "gore",
@@ -33875,6 +34045,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 10,
         "damage": 18,
         "time": 24746,
         "victim": "ocoini",
@@ -33924,6 +34095,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 14,
         "damage": 49,
         "isSplash": true,
         "time": 26767,
@@ -33957,6 +34129,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 12,
         "damage": 56,
         "time": 28900,
         "victim": "gore",
@@ -34077,6 +34250,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 109,
         "isSplash": true,
         "time": 31182,
@@ -34086,6 +34260,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 40,
         "damage": 70,
         "isSplash": true,
         "time": 31182,
@@ -34095,6 +34270,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 0,
         "damage": 40,
         "isSelf": true,
         "isSplash": true,
@@ -34112,6 +34288,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 92,
         "damage": 110,
         "time": 32372,
         "victim": "ocoini",
@@ -34186,6 +34363,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 24,
         "time": 35383,
         "victim": "gore",
@@ -34218,6 +34396,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 36,
         "time": 37018,
         "victim": "anni",
@@ -34258,6 +34437,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 12,
         "damage": 78,
         "isSplash": true,
         "time": 39967,
@@ -34416,6 +34596,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 3,
         "damage": 4,
         "time": 47193,
         "victim": "ocoini",
@@ -34488,6 +34669,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 9,
         "damage": 20,
         "time": 50760,
         "victim": "paniagua",
@@ -34505,6 +34687,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 25,
         "damage": 49,
         "isSplash": true,
         "isTeam": true,
@@ -34522,6 +34705,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 5,
         "damage": 12,
         "time": 51750,
         "victim": "nexus",
@@ -34610,6 +34794,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 40,
         "damage": 56,
         "time": 55648,
         "victim": "paniagua",
@@ -34650,6 +34835,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 16,
         "time": 56732,
         "victim": "DobeZz",
@@ -34765,6 +34951,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 88,
         "damage": 110,
         "time": 61821,
         "victim": "anni",
@@ -34833,6 +35020,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 40,
         "damage": 91,
         "isSplash": true,
         "time": 63171,
@@ -34842,6 +35030,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 42,
         "damage": 110,
         "time": 63339,
         "victim": ".N3ophyt3.",
@@ -34876,6 +35065,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 30,
         "damage": 110,
         "time": 67479,
         "victim": "biggz",
@@ -34900,6 +35090,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 19,
         "damage": 24,
         "time": 68858,
         "victim": "gore",
@@ -35030,6 +35221,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 59,
         "damage": 77,
         "isSplash": true,
         "time": 73838,
@@ -35055,6 +35247,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 12,
         "damage": 16,
         "time": 75165,
         "victim": ".N3ophyt3.",
@@ -35120,6 +35313,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 40,
         "damage": 45,
         "isSplash": true,
         "time": 81791,
@@ -35203,6 +35397,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 18,
         "damage": 110,
         "time": 86447,
         "victim": "anni",
@@ -35326,6 +35521,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 10,
         "damage": 12,
         "time": 91532,
         "victim": "paniagua",
@@ -35342,6 +35538,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 89,
         "isSplash": true,
         "time": 91986,
@@ -35401,6 +35598,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 65,
         "isSplash": true,
         "time": 98310,
@@ -35466,6 +35664,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 20,
         "damage": 32,
         "time": 103189,
         "victim": "anni",
@@ -35578,6 +35777,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 1,
         "damage": 4,
         "time": 107362,
         "victim": "anni",
@@ -35595,6 +35795,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 100,
         "damage": 110,
         "time": 108857,
         "victim": "biggz",
@@ -35637,6 +35838,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 42,
         "damage": 47,
         "isSplash": true,
         "time": 112481,
@@ -35671,6 +35873,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 33,
         "damage": 74,
         "isSplash": true,
         "time": 114213,
@@ -35798,6 +36001,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 13,
         "damage": 73,
         "isSplash": true,
         "time": 120007,
@@ -35807,6 +36011,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 19,
         "damage": 91,
         "isSplash": true,
         "isTeam": true,
@@ -35857,6 +36062,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 54,
         "damage": 82,
         "isSplash": true,
         "time": 121816,
@@ -35891,6 +36097,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 18,
         "damage": 24,
         "time": 122838,
         "victim": ".N3ophyt3.",
@@ -35899,6 +36106,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 45,
         "damage": 110,
         "time": 123006,
         "victim": "gore",
@@ -35924,6 +36132,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 67,
         "isSplash": true,
         "time": 123877,
@@ -36024,6 +36233,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 24,
         "time": 126117,
         "victim": "gore",
@@ -36099,6 +36309,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 21,
         "damage": 24,
         "time": 127886,
         "victim": ".N3ophyt3.",
@@ -36115,6 +36326,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 23,
         "damage": 24,
         "time": 128137,
         "victim": "biggz",
@@ -36172,6 +36384,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 13,
         "damage": 16,
         "time": 131104,
         "victim": ".N3ophyt3.",
@@ -36308,6 +36521,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 12,
         "damage": 20,
         "time": 136020,
         "victim": "paniagua",
@@ -36364,6 +36578,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 60,
         "damage": 110,
         "time": 138810,
         "victim": "biggz",
@@ -36445,6 +36660,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 2,
         "damage": 40,
         "time": 142821,
         "victim": "gore",
@@ -36510,6 +36726,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 10,
         "damage": 72,
         "isSplash": true,
         "time": 146982,
@@ -36575,6 +36792,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 3,
         "damage": 4,
         "time": 150403,
         "victim": "paniagua",
@@ -36591,6 +36809,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 8,
         "damage": 24,
         "time": 153058,
         "victim": "gore",
@@ -36616,6 +36835,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 43,
         "damage": 44,
         "time": 157092,
         "victim": "ocoini",
@@ -36730,6 +36950,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 14,
         "damage": 24,
         "time": 163657,
         "victim": "paniagua",
@@ -36795,6 +37016,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 24,
         "time": 166561,
         "victim": "ocoini",
@@ -36863,6 +37085,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 49,
         "damage": 110,
         "isTeam": true,
         "time": 170902,
@@ -36871,6 +37094,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 59,
         "damage": 68,
         "isSplash": true,
         "time": 170902,
@@ -36880,6 +37104,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 172193,
         "victim": "DobeZz",
@@ -36932,6 +37157,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 13,
         "damage": 56,
         "time": 174649,
         "victim": "ocoini",
@@ -36940,6 +37166,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 178298,
         "victim": "DobeZz",
@@ -36981,6 +37208,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 40,
         "damage": 96,
         "isSplash": true,
         "time": 180160,
@@ -37040,6 +37268,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 72,
         "damage": 79,
         "isSplash": true,
         "time": 184216,
@@ -37073,6 +37302,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 6,
         "damage": 95,
         "isSplash": true,
         "time": 186650,
@@ -37131,6 +37361,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 87,
         "damage": 88,
         "isSplash": true,
         "time": 189636,
@@ -37223,6 +37454,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 17,
         "damage": 24,
         "time": 192367,
         "victim": "biggz",
@@ -37274,6 +37506,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 38,
         "damage": 101,
         "isSplash": true,
         "time": 197641,
@@ -37283,6 +37516,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 198066,
         "victim": "ocoini",
@@ -37316,6 +37550,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 11,
         "damage": 57,
         "isSplash": true,
         "time": 200234,
@@ -37359,6 +37594,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 45,
         "damage": 110,
         "time": 201430,
         "victim": "ocoini",
@@ -37384,6 +37620,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 89,
         "damage": 91,
         "isSplash": true,
         "time": 203469,
@@ -37475,6 +37712,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 23,
         "damage": 24,
         "time": 209625,
         "victim": "biggz",
@@ -37483,6 +37721,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 5,
         "damage": 24,
         "time": 214091,
         "victim": "ocoini",
@@ -37548,6 +37787,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 94,
         "damage": 95,
         "isSplash": true,
         "time": 217848,
@@ -37590,6 +37830,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 79,
         "isSplash": true,
         "time": 219260,
@@ -37676,6 +37917,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 25,
         "damage": 110,
         "time": 226538,
         "victim": ".N3ophyt3.",
@@ -37693,6 +37935,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 37,
         "damage": 77,
         "isSplash": true,
         "time": 227740,
@@ -37777,6 +38020,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 59,
         "damage": 60,
         "isSplash": true,
         "time": 236187,
@@ -37829,6 +38073,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 24,
         "damage": 69,
         "isSplash": true,
         "time": 239009,
@@ -37856,6 +38101,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 103,
         "isSplash": true,
         "time": 240237,
@@ -37882,6 +38128,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 101,
         "damage": 110,
         "time": 240922,
         "victim": "anni",
@@ -37899,6 +38146,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 36,
         "damage": 49,
         "isSplash": true,
         "isTeam": true,
@@ -37926,6 +38174,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 90,
         "damage": 92,
         "isSplash": true,
         "time": 242496,
@@ -37944,6 +38193,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 225,
         "damage": 238,
         "isSplash": true,
         "isTeam": true,
@@ -37953,6 +38203,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 423,
         "isSplash": true,
         "isTeam": true,
@@ -37994,6 +38245,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 17,
         "damage": 20,
         "time": 244753,
         "victim": "paniagua",
@@ -38050,6 +38302,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 8,
         "damage": 12,
         "time": 246268,
         "victim": "biggz",
@@ -38106,6 +38359,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 8,
         "damage": 24,
         "time": 248961,
         "victim": "DobeZz",
@@ -38187,6 +38441,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 23,
         "damage": 24,
         "time": 251262,
         "victim": "biggz",
@@ -38203,6 +38458,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 44,
         "damage": 48,
         "isSplash": true,
         "time": 253176,
@@ -38212,6 +38468,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 32,
         "damage": 110,
         "time": 253774,
         "victim": "anni",
@@ -38237,6 +38494,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 56,
         "damage": 67,
         "isSplash": true,
         "time": 255072,
@@ -38327,6 +38585,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 19,
         "damage": 20,
         "time": 258262,
         "victim": "DobeZz",
@@ -38343,6 +38602,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 76,
         "damage": 110,
         "time": 259398,
         "victim": "ocoini",
@@ -38368,6 +38628,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 10,
         "damage": 24,
         "time": 260164,
         "victim": "biggz",
@@ -38424,6 +38685,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 21,
         "damage": 86,
         "isSplash": true,
         "time": 263191,
@@ -38489,6 +38751,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 10,
         "damage": 18,
         "time": 264718,
         "victim": "gore",
@@ -38561,6 +38824,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 12,
         "damage": 18,
         "time": 266283,
         "victim": "DobeZz",
@@ -38649,6 +38913,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 101,
         "isSplash": true,
         "time": 268424,
@@ -38674,6 +38939,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 16,
         "time": 268961,
         "victim": "anni",
@@ -38773,6 +39039,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 12,
         "damage": 24,
         "time": 271230,
         "victim": "biggz",
@@ -38813,6 +39080,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 1,
         "damage": 18,
         "time": 271944,
         "victim": "gore",
@@ -38837,6 +39105,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 21,
         "damage": 110,
         "time": 273354,
         "victim": "ocoini",
@@ -38871,6 +39140,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 2,
         "damage": 18,
         "time": 281579,
         "victim": "gore",
@@ -38919,6 +39189,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 95,
         "damage": 96,
         "isSplash": true,
         "time": 284755,
@@ -38944,6 +39215,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 10,
         "damage": 18,
         "time": 285208,
         "victim": "ocoini",
@@ -38977,6 +39249,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 54,
         "damage": 57,
         "isSplash": true,
         "time": 288249,
@@ -39064,6 +39337,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 26,
         "damage": 84,
         "isSplash": true,
         "time": 291976,
@@ -39184,6 +39458,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 8,
         "damage": 110,
         "time": 296137,
         "victim": "anni",
@@ -39201,6 +39476,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 3,
         "damage": 89,
         "isSplash": true,
         "time": 296137,
@@ -39210,6 +39486,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 51,
         "damage": 76,
         "isSplash": true,
         "isTeam": true,
@@ -39262,6 +39539,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 12,
         "damage": 24,
         "time": 297425,
         "victim": "gore",
@@ -39318,6 +39596,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 64,
         "damage": 110,
         "time": 299919,
         "victim": "gore",
@@ -39326,6 +39605,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 69,
         "damage": 82,
         "isSplash": true,
         "isTeam": true,
@@ -39335,6 +39615,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 20,
         "damage": 70,
         "isSplash": true,
         "time": 299919,
@@ -39344,6 +39625,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 300315,
         "victim": "DobeZz",
@@ -39368,6 +39650,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 76,
         "damage": 84,
         "isSplash": true,
         "time": 301231,
@@ -39386,6 +39669,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 66,
         "damage": 74,
         "isSplash": true,
         "isTeam": true,
@@ -39436,6 +39720,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 100,
         "isSplash": true,
         "time": 304140,
@@ -39453,6 +39738,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 35,
         "damage": 46,
         "isSplash": true,
         "time": 304880,
@@ -39462,6 +39748,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 20,
         "damage": 25,
         "isSelf": true,
         "isSplash": true,
@@ -39471,6 +39758,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 3,
         "damage": 51,
         "isSelf": true,
         "isSplash": true,
@@ -39520,6 +39808,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 0,
         "damage": 96,
         "time": 308772,
         "victim": "nexus",
@@ -39537,6 +39826,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 0,
         "damage": 16,
         "time": 309272,
         "victim": "nexus",
@@ -39593,6 +39883,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 92,
         "damage": 96,
         "time": 311555,
         "victim": "paniagua",
@@ -39649,6 +39940,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 10,
         "damage": 18,
         "time": 312389,
         "victim": "gore",
@@ -39708,6 +40000,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 65,
         "damage": 394,
         "isSplash": true,
         "time": 317597,
@@ -39717,6 +40010,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 8,
         "damage": 24,
         "time": 317908,
         "victim": "ocoini",
@@ -39734,6 +40028,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 34,
         "damage": 65,
         "isSplash": true,
         "time": 319173,
@@ -39751,6 +40046,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 33,
         "damage": 54,
         "isSelf": true,
         "isSplash": true,
@@ -39872,6 +40168,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 5,
         "damage": 8,
         "time": 326679,
         "victim": "nexus",
@@ -39880,6 +40177,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 24,
         "time": 327704,
         "victim": "gore",
@@ -39944,6 +40242,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 18,
         "time": 330739,
         "victim": "gore",
@@ -39952,6 +40251,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 4,
         "damage": 5,
         "isEnv": true,
         "time": 331575,
@@ -40016,6 +40316,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 4,
         "damage": 24,
         "time": 334963,
         "victim": "ocoini",
@@ -40104,6 +40405,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 20,
         "damage": 24,
         "time": 337407,
         "victim": "paniagua",
@@ -40136,6 +40438,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 16,
         "damage": 20,
         "time": 339015,
         "victim": "ocoini",
@@ -40152,6 +40455,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 76,
         "damage": 91,
         "isSplash": true,
         "time": 340185,
@@ -40197,6 +40501,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 70,
         "isSplash": true,
         "time": 346573,
@@ -40335,6 +40640,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 72,
         "damage": 92,
         "isSplash": true,
         "time": 355276,
@@ -40360,6 +40666,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 18,
         "time": 356678,
         "victim": "paniagua",
@@ -40368,6 +40675,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 36,
         "damage": 56,
         "isSplash": true,
         "time": 357054,
@@ -40419,6 +40727,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 46,
         "damage": 57,
         "isSplash": true,
         "time": 359186,
@@ -40460,6 +40769,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 44,
         "damage": 110,
         "time": 360323,
         "victim": "ocoini",
@@ -40468,6 +40778,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 48,
         "damage": 53,
         "isSplash": true,
         "isTeam": true,
@@ -40552,6 +40863,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 12,
         "damage": 24,
         "time": 365152,
         "victim": "paniagua",
@@ -40656,6 +40968,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 16,
         "damage": 20,
         "time": 368997,
         "victim": "anni",
@@ -40688,6 +41001,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 24,
         "time": 369979,
         "victim": "ocoini",
@@ -40793,6 +41107,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 111,
         "damage": 299,
         "isSplash": true,
         "time": 374454,
@@ -40810,6 +41125,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 8,
         "damage": 24,
         "time": 374945,
         "victim": "paniagua",
@@ -40898,6 +41214,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 18,
         "damage": 316,
         "isSplash": true,
         "time": 381866,
@@ -40916,6 +41233,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 3,
         "damage": 4,
         "time": 382292,
         "victim": ".N3ophyt3.",
@@ -40924,6 +41242,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 248,
         "damage": 440,
         "time": 383142,
         "victim": "nexus",
@@ -40964,6 +41283,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 4,
         "damage": 96,
         "time": 385161,
         "victim": "paniagua",
@@ -40988,6 +41308,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 100,
         "damage": 224,
         "isSplash": true,
         "time": 386178,
@@ -41014,6 +41335,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 100,
         "damage": 440,
         "time": 386983,
         "victim": "paniagua",
@@ -41030,6 +41352,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 54,
         "damage": 83,
         "isSplash": true,
         "time": 388162,
@@ -41095,6 +41418,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 4,
         "damage": 240,
         "isSplash": true,
         "time": 392995,
@@ -41243,6 +41567,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 38,
         "damage": 70,
         "isSplash": true,
         "time": 403542,
@@ -41252,6 +41577,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 100,
         "damage": 110,
         "time": 404185,
         "victim": "paniagua",
@@ -41328,6 +41654,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 37,
         "damage": 38,
         "isSelf": true,
         "isSplash": true,
@@ -41337,6 +41664,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 18,
         "damage": 110,
         "time": 406017,
         "victim": "nexus",
@@ -41354,6 +41682,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 38,
         "damage": 55,
         "isSplash": true,
         "time": 407129,
@@ -41389,6 +41718,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 12,
         "damage": 43,
         "isSplash": true,
         "time": 408321,
@@ -41471,6 +41801,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 100,
         "damage": 110,
         "time": 416711,
         "victim": "nexus",
@@ -41569,6 +41900,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 14,
         "damage": 41,
         "isSplash": true,
         "time": 420895,
@@ -41594,6 +41926,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 100,
         "damage": 110,
         "time": 423222,
         "victim": "biggz",
@@ -41627,6 +41960,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 36,
         "damage": 98,
         "isSplash": true,
         "time": 425427,
@@ -41652,6 +41986,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 100,
         "damage": 440,
         "time": 427365,
         "victim": "nexus",
@@ -41669,6 +42004,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 2,
         "damage": 83,
         "isSplash": true,
         "time": 427492,
@@ -41687,6 +42023,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 430798,
         "victim": "anni",
@@ -41704,6 +42041,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 33,
         "isSelf": true,
         "isSplash": true,
@@ -41730,6 +42068,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 30,
         "damage": 95,
         "isSplash": true,
         "time": 432283,
@@ -41838,6 +42177,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 12,
         "damage": 64,
         "isSplash": true,
         "time": 434957,
@@ -41847,6 +42187,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 4,
         "damage": 12,
         "time": 434971,
         "victim": "biggz",
@@ -41863,6 +42204,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 84,
         "damage": 110,
         "time": 437984,
         "victim": "DobeZz",
@@ -41904,6 +42246,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 70,
         "damage": 110,
         "time": 440077,
         "victim": "gore",
@@ -42002,6 +42345,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 76,
         "damage": 110,
         "isSplash": true,
         "time": 451929,
@@ -42062,6 +42406,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 32,
         "damage": 71,
         "isSplash": true,
         "isTeam": true,
@@ -42128,6 +42473,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 71,
         "damage": 110,
         "time": 460864,
         "victim": "ocoini",
@@ -42179,6 +42525,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 6,
         "damage": 24,
         "time": 463206,
         "victim": "nexus",
@@ -42236,6 +42583,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 72,
         "damage": 110,
         "time": 472101,
         "victim": "gore",
@@ -42309,6 +42657,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 18,
         "damage": 24,
         "time": 475812,
         "victim": "biggz",
@@ -42342,6 +42691,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 56,
         "damage": 110,
         "time": 477721,
         "victim": "ocoini",
@@ -42406,6 +42756,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 10,
         "damage": 24,
         "time": 480669,
         "victim": "gore",
@@ -42473,6 +42824,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 68,
         "damage": 110,
         "time": 482908,
         "victim": "paniagua",
@@ -42498,6 +42850,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 8,
         "time": 483545,
         "victim": "DobeZz",
@@ -42573,6 +42926,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 6,
         "damage": 48,
         "isSplash": true,
         "isTeam": true,
@@ -42582,6 +42936,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 7,
         "damage": 24,
         "time": 485116,
         "victim": "anni",
@@ -42606,6 +42961,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 66,
         "damage": 96,
         "time": 487400,
         "victim": ".N3ophyt3.",
@@ -42638,6 +42994,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 15,
         "damage": 96,
         "time": 488517,
         "victim": "nexus",
@@ -42646,6 +43003,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 110,
         "time": 488869,
         "victim": "DobeZz",
@@ -42718,6 +43076,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 11,
         "damage": 12,
         "time": 491384,
         "victim": "gore",
@@ -42760,6 +43119,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 45,
         "damage": 106,
         "isSplash": true,
         "time": 496244,
@@ -42825,6 +43185,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 11,
         "damage": 18,
         "time": 503481,
         "victim": ".N3ophyt3.",
@@ -42897,6 +43258,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 16,
         "damage": 18,
         "time": 504661,
         "victim": "biggz",
@@ -43020,6 +43382,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 8,
         "damage": 18,
         "time": 508254,
         "victim": "nexus",
@@ -43132,6 +43495,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 24,
         "time": 515533,
         "victim": "gore",
@@ -43228,6 +43592,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 23,
         "damage": 24,
         "time": 520703,
         "victim": "DobeZz",
@@ -43252,6 +43617,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 56,
         "damage": 85,
         "isSplash": true,
         "time": 523662,
@@ -43304,6 +43670,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 14,
         "damage": 18,
         "time": 525956,
         "victim": "nexus",
@@ -43321,6 +43688,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 28,
         "damage": 57,
         "isSplash": true,
         "isTeam": true,
@@ -43373,6 +43741,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 6,
         "damage": 12,
         "time": 528202,
         "victim": "gore",
@@ -43399,6 +43768,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 74,
         "damage": 91,
         "isSplash": true,
         "time": 528531,
@@ -43440,6 +43810,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 10,
         "damage": 24,
         "time": 532995,
         "victim": "DobeZz",
@@ -43481,6 +43852,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 15,
         "damage": 24,
         "time": 535259,
         "victim": ".N3ophyt3.",
@@ -43515,6 +43887,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 25,
         "damage": 110,
         "time": 536480,
         "victim": "biggz",
@@ -43596,6 +43969,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 100,
         "damage": 110,
         "time": 539865,
         "victim": "biggz",
@@ -43629,6 +44003,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 540852,
         "victim": "DobeZz",
@@ -43732,6 +44107,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 57,
         "damage": 82,
         "isSplash": true,
         "time": 543098,
@@ -43741,6 +44117,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 67,
         "damage": 110,
         "time": 543605,
         "victim": "paniagua",
@@ -43758,6 +44135,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 4,
         "damage": 16,
         "time": 543618,
         "victim": "ocoini",
@@ -43801,6 +44179,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 38,
         "damage": 72,
         "isSplash": true,
         "time": 549418,
@@ -43826,6 +44205,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 71,
         "damage": 349,
         "isSplash": true,
         "time": 551090,
@@ -43859,6 +44239,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 84,
         "damage": 257,
         "isSplash": true,
         "time": 552987,
@@ -43964,6 +44345,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 36,
         "damage": 52,
         "time": 557038,
         "victim": "ocoini",
@@ -43972,6 +44354,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 17,
         "damage": 18,
         "time": 557124,
         "victim": "gore",
@@ -44070,6 +44453,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 11,
         "damage": 57,
         "isSplash": true,
         "time": 560986,
@@ -44112,6 +44496,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 32,
         "damage": 56,
         "time": 562390,
         "victim": "gore",
@@ -44120,6 +44505,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 26,
         "damage": 64,
         "isSplash": true,
         "time": 562450,
@@ -44129,6 +44515,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 12,
         "damage": 440,
         "isTeam": true,
         "time": 563324,
@@ -44153,6 +44540,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 290,
         "isSplash": true,
         "time": 564112,
@@ -44202,6 +44590,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 76,
         "damage": 110,
         "time": 565306,
         "victim": "gore",
@@ -44210,6 +44599,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 36,
         "damage": 97,
         "isSplash": true,
         "isTeam": true,
@@ -44252,6 +44642,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 5,
         "damage": 82,
         "isSplash": true,
         "time": 568089,
@@ -44278,6 +44669,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 47,
         "isSplash": true,
         "time": 569570,
@@ -44383,6 +44775,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 87,
         "damage": 94,
         "isSplash": true,
         "time": 575595,
@@ -44416,6 +44809,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 23,
         "damage": 24,
         "time": 576190,
         "victim": "nexus",
@@ -44440,6 +44834,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 76,
         "damage": 78,
         "isSplash": true,
         "time": 577840,
@@ -44490,6 +44885,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 20,
         "damage": 24,
         "time": 581622,
         "victim": "nexus",
@@ -44538,6 +44934,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 80,
         "damage": 110,
         "time": 583541,
         "victim": "anni",
@@ -44563,6 +44960,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 76,
         "damage": 110,
         "time": 584061,
         "victim": "DobeZz",
@@ -44571,6 +44969,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 84,
         "damage": 110,
         "time": 589437,
         "victim": "gore",
@@ -44613,6 +45012,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 23,
         "damage": 71,
         "isSplash": true,
         "time": 600593,
@@ -44648,6 +45048,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 39,
         "damage": 110,
         "time": 601431,
         "victim": "DobeZz",
@@ -44734,6 +45135,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 49,
         "damage": 83,
         "isSplash": true,
         "time": 602640,
@@ -44784,6 +45186,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 15,
         "damage": 24,
         "time": 603518,
         "victim": "paniagua",
@@ -44792,6 +45195,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 65,
         "damage": 110,
         "isTeam": true,
         "time": 603570,
@@ -44800,6 +45204,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 64,
         "damage": 101,
         "isSplash": true,
         "time": 603570,
@@ -44809,6 +45214,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 47,
         "damage": 98,
         "isSplash": true,
         "isTeam": true,
@@ -44858,6 +45264,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 110,
         "time": 604934,
         "victim": "ocoini",
@@ -44875,6 +45282,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 54,
         "isSelf": true,
         "isSplash": true,
@@ -44884,6 +45292,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 80,
         "damage": 110,
         "time": 604988,
         "victim": "DobeZz",
@@ -44900,6 +45309,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -44909,6 +45319,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 0,
         "damage": 12,
         "time": 608229,
         "victim": "paniagua",
@@ -44926,6 +45337,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 0,
         "damage": 4,
         "time": 608731,
         "victim": "paniagua",
@@ -44934,6 +45346,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 9,
         "damage": 12,
         "isTeam": true,
         "time": 608731,
@@ -44942,6 +45355,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 54,
         "isSelf": true,
         "isSplash": true,
@@ -44951,6 +45365,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 49,
         "isSelf": true,
         "isSplash": true,
@@ -44960,6 +45375,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 51,
         "isSelf": true,
         "isSplash": true,
@@ -44977,6 +45393,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 32,
         "isSelf": true,
         "isSplash": true,
@@ -44986,6 +45403,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 36,
         "isSelf": true,
         "isSplash": true,
@@ -44995,6 +45413,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 0,
         "damage": 8,
         "time": 617208,
         "victim": "paniagua",
@@ -45011,6 +45430,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 0,
         "damage": 20,
         "time": 618323,
         "victim": "paniagua",
@@ -45019,6 +45439,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 110,
         "time": 618622,
         "victim": "ocoini",
@@ -45027,6 +45448,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -45044,6 +45466,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 51,
         "isSelf": true,
         "isSplash": true,
@@ -45053,6 +45476,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 0,
         "damage": 24,
         "time": 620869,
         "victim": "paniagua",
@@ -45110,6 +45534,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 0,
         "damage": 5,
         "isEnv": true,
         "time": 624375,
@@ -45214,6 +45639,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 51,
         "isSelf": true,
         "isSplash": true,
@@ -45256,6 +45682,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 23,
         "damage": 24,
         "time": 628063,
         "victim": "ocoini",
@@ -45272,6 +45699,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 24,
         "time": 628568,
         "victim": "DobeZz",
@@ -45340,6 +45768,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 0,
         "damage": 110,
         "time": 631700,
         "victim": "paniagua",
@@ -45348,6 +45777,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 51,
         "damage": 89,
         "isSplash": true,
         "time": 631700,
@@ -45381,6 +45811,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 69,
         "damage": 110,
         "time": 632407,
         "victim": "anni",
@@ -45478,6 +45909,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 20,
         "damage": 24,
         "time": 636232,
         "victim": ".N3ophyt3.",
@@ -45503,6 +45935,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 61,
         "damage": 87,
         "isSplash": true,
         "time": 644386,
@@ -45529,6 +45962,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 50,
         "damage": 110,
         "time": 647783,
         "victim": "gore",
@@ -45562,6 +45996,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 39,
         "damage": 41,
         "isSplash": true,
         "time": 649152,
@@ -45588,6 +46023,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 72,
         "damage": 110,
         "time": 649959,
         "victim": "DobeZz",
@@ -45742,6 +46178,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 2,
         "damage": 8,
         "time": 654557,
         "victim": "gore",
@@ -45774,6 +46211,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 64,
         "damage": 73,
         "isSplash": true,
         "time": 655836,
@@ -45808,6 +46246,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 58,
         "damage": 101,
         "isSplash": true,
         "time": 663628,
@@ -45873,6 +46312,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 52,
         "damage": 71,
         "isSplash": true,
         "time": 665861,
@@ -45949,6 +46389,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 32,
         "damage": 83,
         "isSplash": true,
         "time": 668104,
@@ -45994,6 +46435,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 18,
         "damage": 69,
         "isSplash": true,
         "time": 668972,
@@ -46011,6 +46453,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 50,
         "damage": 91,
         "isSplash": true,
         "time": 669575,
@@ -46086,6 +46529,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 100,
         "damage": 110,
         "time": 672317,
         "victim": "nexus",
@@ -46111,6 +46555,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 20,
         "damage": 24,
         "time": 674452,
         "victim": "biggz",
@@ -46153,6 +46598,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 52,
         "damage": 102,
         "isSplash": true,
         "time": 676072,
@@ -46239,6 +46685,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 88,
         "isSplash": true,
         "time": 678676,
@@ -46273,6 +46720,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 100,
         "damage": 110,
         "isTeam": true,
         "time": 679544,
@@ -46281,6 +46729,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 44,
         "damage": 81,
         "isSplash": true,
         "time": 679544,
@@ -46298,6 +46747,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 110,
         "time": 682387,
         "victim": "anni",
@@ -46323,6 +46773,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 684153,
         "victim": "anni",
@@ -46372,6 +46823,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 36,
         "damage": 44,
         "isSplash": true,
         "time": 687153,
@@ -46503,6 +46955,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 20,
         "damage": 24,
         "time": 690533,
         "victim": "anni",
@@ -46527,6 +46980,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 32,
         "damage": 67,
         "isSplash": true,
         "time": 691195,
@@ -46544,6 +46998,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 691361,
@@ -46604,6 +47059,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 15,
         "damage": 24,
         "isTeam": true,
         "time": 692784,
@@ -46629,6 +47085,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 47,
         "damage": 84,
         "isSplash": true,
         "time": 694959,
@@ -46703,6 +47160,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 16,
         "damage": 24,
         "time": 697706,
         "victim": "gore",
@@ -46743,6 +47201,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 1,
         "damage": 24,
         "time": 699837,
         "victim": "DobeZz",
@@ -46807,6 +47266,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 3,
         "damage": 110,
         "time": 702154,
         "victim": "biggz",
@@ -46815,6 +47275,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 35,
         "damage": 38,
         "isSelf": true,
         "isSplash": true,
@@ -46849,6 +47310,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 10,
         "damage": 92,
         "isSplash": true,
         "time": 705920,
@@ -46891,6 +47353,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 97,
         "damage": 110,
         "time": 709712,
         "victim": "ocoini",
@@ -47052,6 +47515,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 10,
         "damage": 20,
         "time": 713693,
         "victim": "nexus",
@@ -47109,6 +47573,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 84,
         "damage": 102,
         "isSplash": true,
         "time": 715115,
@@ -47134,6 +47599,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 7,
         "damage": 16,
         "time": 718011,
         "victim": "biggz",
@@ -47167,6 +47633,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 43,
         "damage": 52,
         "isSplash": true,
         "time": 719479,
@@ -47281,6 +47748,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 30,
         "damage": 92,
         "isSplash": true,
         "time": 722901,
@@ -47306,6 +47774,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 4,
         "damage": 24,
         "time": 723362,
         "victim": "nexus",
@@ -47314,6 +47783,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 724046,
         "victim": "gore",
@@ -47403,6 +47873,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 21,
         "damage": 24,
         "time": 726109,
         "victim": "anni",
@@ -47460,6 +47931,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 1,
         "damage": 110,
         "time": 728932,
         "victim": "ocoini",
@@ -47508,6 +47980,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 6,
         "damage": 8,
         "time": 732687,
         "victim": "DobeZz",
@@ -47524,6 +47997,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 63,
         "damage": 290,
         "isSplash": true,
         "time": 733336,
@@ -47582,6 +48056,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 12,
         "damage": 24,
         "time": 735193,
         "victim": ".N3ophyt3.",
@@ -47639,6 +48114,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 23,
         "damage": 110,
         "isTeam": true,
         "time": 737375,
@@ -47719,6 +48195,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 38,
         "damage": 82,
         "isSplash": true,
         "time": 739223,
@@ -47752,6 +48229,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 54,
         "damage": 89,
         "isSplash": true,
         "time": 739504,
@@ -47761,6 +48239,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 12,
         "damage": 24,
         "time": 739888,
         "victim": "DobeZz",
@@ -47825,6 +48304,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 10,
         "damage": 20,
         "time": 742712,
         "victim": ".N3ophyt3.",
@@ -47881,6 +48361,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 4,
         "damage": 44,
         "isSplash": true,
         "isTeam": true,
@@ -47890,6 +48371,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 25,
         "damage": 67,
         "isSplash": true,
         "time": 748758,
@@ -47932,6 +48414,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 53,
         "damage": 110,
         "time": 752168,
         "victim": ".N3ophyt3.",
@@ -47949,6 +48432,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 110,
         "time": 756152,
         "victim": "anni",
@@ -48026,6 +48510,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 61,
         "damage": 85,
         "isSplash": true,
         "time": 765492,
@@ -48061,6 +48546,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 13,
         "damage": 71,
         "isSplash": true,
         "time": 769309,
@@ -48079,6 +48565,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 56,
         "damage": 96,
         "isSplash": true,
         "time": 772296,
@@ -48130,6 +48617,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 5,
         "damage": 24,
         "time": 774955,
         "victim": "ocoini",
@@ -48147,6 +48635,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 32,
         "damage": 110,
         "time": 776111,
         "victim": "DobeZz",
@@ -48188,6 +48677,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 10,
         "damage": 50,
         "isSplash": true,
         "time": 776503,
@@ -48205,6 +48695,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 3,
         "damage": 16,
         "time": 777561,
         "victim": "paniagua",
@@ -48245,6 +48736,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 60,
         "damage": 81,
         "isSplash": true,
         "time": 782188,
@@ -48312,6 +48804,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 50,
         "damage": 93,
         "isSplash": true,
         "time": 786917,
@@ -48364,6 +48857,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 8,
         "damage": 24,
         "time": 789959,
         "victim": "ocoini",
@@ -48380,6 +48874,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 791659,
         "victim": "gore",
@@ -48413,6 +48908,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 95,
         "damage": 110,
         "time": 793865,
         "victim": "anni",
@@ -48513,6 +49009,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 31,
         "damage": 76,
         "isSplash": true,
         "time": 798727,
@@ -48530,6 +49027,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 16,
         "time": 799050,
         "victim": "DobeZz",
@@ -48610,6 +49108,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 4,
         "damage": 18,
         "time": 801543,
         "victim": "ocoini",
@@ -48634,6 +49133,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 16,
         "damage": 45,
         "isSelf": true,
         "isSplash": true,
@@ -48725,6 +49225,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 12,
         "time": 808810,
         "victim": "nexus",
@@ -48733,6 +49234,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 24,
         "damage": 110,
         "time": 809194,
         "victim": "DobeZz",
@@ -48766,6 +49268,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 25,
         "damage": 28,
         "time": 812064,
         "victim": "gore",
@@ -48960,6 +49463,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 3,
         "damage": 4,
         "time": 824195,
         "victim": "ocoini",
@@ -49056,6 +49560,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 50,
         "damage": 110,
         "time": 828140,
         "victim": "nexus",
@@ -49096,6 +49601,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 6,
         "damage": 110,
         "time": 830390,
         "victim": ".N3ophyt3.",
@@ -49130,6 +49636,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 7,
         "damage": 68,
         "isSplash": true,
         "time": 832156,
@@ -49212,6 +49719,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 33,
         "damage": 110,
         "time": 836112,
         "victim": ".N3ophyt3.",
@@ -49276,6 +49784,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 67,
         "damage": 110,
         "time": 839675,
         "victim": "ocoini",
@@ -49284,6 +49793,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 16,
         "damage": 24,
         "time": 841128,
         "victim": ".N3ophyt3.",
@@ -49292,6 +49802,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 100,
         "damage": 112,
         "isSplash": true,
         "time": 843415,
@@ -49319,6 +49830,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 47,
         "damage": 58,
         "isSplash": true,
         "time": 845440,
@@ -49396,6 +49908,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 20,
         "damage": 24,
         "time": 847706,
         "victim": "ocoini",
@@ -49445,6 +49958,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 16,
         "time": 851619,
         "victim": "ocoini",
@@ -49453,6 +49967,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 440,
         "time": 855387,
         "victim": "DobeZz",
@@ -49552,6 +50067,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 37,
         "damage": 93,
         "isSplash": true,
         "time": 861273,
@@ -49570,6 +50086,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 88,
         "damage": 110,
         "time": 861476,
         "victim": ".N3ophyt3.",
@@ -49578,6 +50095,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 14,
         "damage": 206,
         "isSplash": true,
         "time": 862088,
@@ -49621,6 +50139,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 84,
         "damage": 173,
         "isSplash": true,
         "time": 867244,
@@ -49654,6 +50173,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 100,
         "damage": 110,
         "time": 867790,
         "victim": ".N3ophyt3.",
@@ -49670,6 +50190,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 23,
         "damage": 24,
         "time": 868179,
         "victim": "DobeZz",
@@ -49711,6 +50232,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 87,
         "damage": 94,
         "isSplash": true,
         "time": 870181,
@@ -49818,6 +50340,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 74,
         "isSplash": true,
         "time": 872867,
@@ -49835,6 +50358,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 14,
         "damage": 24,
         "time": 873754,
         "victim": "DobeZz",
@@ -49884,6 +50408,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 43,
         "damage": 100,
         "isSplash": true,
         "time": 878040,
@@ -49926,6 +50451,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 59,
         "damage": 84,
         "isSplash": true,
         "time": 880987,
@@ -50052,6 +50578,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 60,
         "damage": 70,
         "isSplash": true,
         "time": 892599,
@@ -50103,6 +50630,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 70,
         "damage": 110,
         "time": 894880,
         "victim": "ocoini",
@@ -50127,6 +50655,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 29,
         "damage": 110,
         "time": 897080,
         "victim": "biggz",
@@ -50185,6 +50714,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 61,
         "damage": 110,
         "time": 900104,
         "victim": "DobeZz",
@@ -50235,6 +50765,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 901330,
         "victim": "DobeZz",
@@ -50243,6 +50774,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 11,
         "damage": 83,
         "isSplash": true,
         "isTeam": true,
@@ -50252,6 +50784,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 13,
         "damage": 52,
         "isSplash": true,
         "time": 901590,
@@ -50305,6 +50838,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 84,
         "damage": 110,
         "time": 902975,
         "victim": "gore",
@@ -50374,6 +50908,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 32,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -50391,6 +50926,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 1,
         "damage": 24,
         "time": 906216,
         "victim": "ocoini",
@@ -50424,6 +50960,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 32,
         "damage": 53,
         "isSelf": true,
         "isSplash": true,
@@ -50457,6 +50994,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 24,
         "damage": 376,
         "isSplash": true,
         "time": 910665,
@@ -50466,6 +51004,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 11,
         "damage": 169,
         "isSelf": true,
         "isSplash": true,
@@ -50475,6 +51014,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 0,
         "damage": 24,
         "time": 911493,
         "victim": "paniagua",
@@ -50491,6 +51031,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 226,
         "damage": 440,
         "time": 911768,
         "victim": "gore",
@@ -50499,6 +51040,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 215,
         "isSelf": true,
         "isSplash": true,
@@ -50605,6 +51147,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 16,
         "damage": 48,
         "time": 918744,
         "victim": "ocoini",
@@ -50613,6 +51156,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 919436,
@@ -50622,6 +51166,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 180,
         "isSelf": true,
         "isSplash": true,
@@ -50631,6 +51176,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 0,
         "damage": 202,
         "isSelf": true,
         "isSplash": true,
@@ -50648,6 +51194,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 921452,
         "victim": "ocoini",
@@ -50656,6 +51203,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 0,
         "damage": 5,
         "isEnv": true,
         "time": 923442,
@@ -50672,6 +51220,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 0,
         "damage": 58,
         "isSplash": true,
         "time": 925080,
@@ -50681,6 +51230,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 0,
         "damage": 5,
         "isEnv": true,
         "time": 925125,
@@ -50689,6 +51239,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 200,
         "damage": 251,
         "isSplash": true,
         "time": 925677,
@@ -50723,6 +51274,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 4,
         "damage": 56,
         "isSplash": true,
         "time": 928127,
@@ -50740,6 +51292,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 0,
         "damage": 16,
         "time": 930264,
         "victim": "paniagua",
@@ -50748,6 +51301,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 193,
         "damage": 239,
         "isSplash": true,
         "time": 930699,
@@ -50833,6 +51387,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 11,
         "damage": 77,
         "isSplash": true,
         "time": 939208,
@@ -50842,6 +51397,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 48,
         "damage": 51,
         "isSplash": true,
         "isTeam": true,
@@ -50916,6 +51472,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 14,
         "damage": 24,
         "time": 942556,
         "victim": "DobeZz",
@@ -50949,6 +51506,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 24,
         "damage": 89,
         "isSplash": true,
         "time": 944124,
@@ -51000,6 +51558,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 7,
         "damage": 12,
         "time": 946738,
         "victim": "nexus",
@@ -51016,6 +51575,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 22,
         "damage": 52,
         "time": 947156,
         "victim": "ocoini",
@@ -51024,6 +51584,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 100,
         "damage": 110,
         "time": 947813,
         "victim": "gore",
@@ -51097,6 +51658,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 12,
         "damage": 20,
         "time": 958452,
         "victim": "ocoini",
@@ -51148,6 +51710,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 84,
         "damage": 110,
         "time": 969348,
         "victim": "ocoini",
@@ -51206,6 +51769,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 21,
         "damage": 86,
         "isSplash": true,
         "time": 973845,
@@ -51242,6 +51806,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 62,
         "damage": 93,
         "isSplash": true,
         "time": 975884,
@@ -51283,6 +51848,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 20,
         "damage": 440,
         "time": 977945,
         "victim": "ocoini",
@@ -51300,6 +51866,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 100,
         "damage": 110,
         "time": 978687,
         "victim": "anni",
@@ -51381,6 +51948,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 36,
         "damage": 96,
         "time": 982802,
         "victim": "ocoini",
@@ -51422,6 +51990,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 7,
         "damage": 12,
         "time": 985611,
         "victim": "ocoini",
@@ -51456,6 +52025,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 7,
         "damage": 110,
         "time": 987169,
         "victim": "anni",
@@ -51553,6 +52123,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 34,
         "damage": 245,
         "isSplash": true,
         "time": 988981,
@@ -51603,6 +52174,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 15,
         "damage": 16,
         "time": 990226,
         "victim": "biggz",
@@ -51636,6 +52208,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 3,
         "damage": 100,
         "isSplash": true,
         "time": 991312,
@@ -51728,6 +52301,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 31,
         "damage": 96,
         "time": 994413,
         "victim": "DobeZz",
@@ -51736,6 +52310,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 92,
         "damage": 110,
         "time": 994594,
         "victim": "gore",
@@ -51753,6 +52328,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 15,
         "damage": 24,
         "time": 995396,
         "victim": "paniagua",
@@ -51769,6 +52345,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 81,
         "damage": 96,
         "time": 996007,
         "victim": "anni",
@@ -51785,6 +52362,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 6,
         "damage": 24,
         "time": 996440,
         "victim": "ocoini",
@@ -51865,6 +52443,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 16,
         "damage": 40,
         "time": 1001018,
         "victim": "paniagua",
@@ -51873,6 +52452,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 100,
         "damage": 110,
         "time": 1002509,
         "victim": "paniagua",
@@ -51922,6 +52502,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 1006744,
         "victim": "gore",
@@ -51955,6 +52536,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 87,
         "damage": 110,
         "time": 1008318,
         "victim": "ocoini",
@@ -51996,6 +52578,7 @@
       },
       {
         "attacker": "DobeZz",
+        "bounded": 32,
         "damage": 87,
         "isSplash": true,
         "time": 1010991,
@@ -52046,6 +52629,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 35,
         "damage": 45,
         "isSplash": true,
         "time": 1013848,
@@ -52071,6 +52655,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 24,
         "time": 1014776,
         "victim": "ocoini",
@@ -52266,6 +52851,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 18,
         "damage": 110,
         "time": 1026341,
         "victim": "gore",
@@ -52307,6 +52893,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 1,
         "damage": 8,
         "time": 1028316,
         "victim": "paniagua",
@@ -52315,6 +52902,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 9,
         "damage": 91,
         "isSplash": true,
         "time": 1028741,
@@ -52382,6 +52970,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 80,
         "damage": 110,
         "time": 1031980,
         "victim": "gore",
@@ -52398,6 +52987,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 33,
         "damage": 50,
         "isSplash": true,
         "isTeam": true,
@@ -52407,6 +52997,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 73,
         "damage": 88,
         "isSplash": true,
         "time": 1032327,
@@ -52482,6 +53073,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 32,
         "damage": 42,
         "isSplash": true,
         "time": 1035922,
@@ -52500,6 +53092,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 17,
         "damage": 24,
         "time": 1036346,
         "victim": ".N3ophyt3.",
@@ -52580,6 +53173,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 16,
         "time": 1041754,
         "victim": "paniagua",
@@ -52604,6 +53198,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 4,
         "damage": 12,
         "time": 1044026,
         "victim": "ocoini",
@@ -52702,6 +53297,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 12,
         "damage": 24,
         "time": 1048287,
         "victim": "gore",
@@ -52710,6 +53306,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 42,
         "damage": 69,
         "isSplash": true,
         "time": 1048633,
@@ -52775,6 +53372,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 21,
         "damage": 24,
         "time": 1051874,
         "victim": "ocoini",
@@ -52801,6 +53399,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 26,
         "damage": 110,
         "time": 1054121,
         "victim": "anni",
@@ -52834,6 +53433,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 22,
         "damage": 53,
         "isSplash": true,
         "time": 1055394,
@@ -52885,6 +53485,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 108,
         "damage": 110,
         "time": 1057629,
         "victim": ".N3ophyt3.",
@@ -52919,6 +53520,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 3,
         "damage": 44,
         "isSplash": true,
         "time": 1058929,
@@ -52928,6 +53530,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 57,
         "damage": 67,
         "isSplash": true,
         "time": 1058929,
@@ -52977,6 +53580,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 36,
         "damage": 44,
         "time": 1060550,
         "victim": ".N3ophyt3.",
@@ -52985,6 +53589,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 1061058,
         "victim": "DobeZz",
@@ -52993,6 +53598,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 45,
         "damage": 98,
         "isSplash": true,
         "time": 1061058,
@@ -53018,6 +53624,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 1064905,
         "victim": "DobeZz",
@@ -53100,6 +53707,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 16,
         "damage": 20,
         "time": 1071136,
         "victim": "DobeZz",
@@ -53150,6 +53758,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 50,
         "damage": 61,
         "isSplash": true,
         "time": 1073491,
@@ -53159,6 +53768,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 68,
         "damage": 92,
         "isSplash": true,
         "time": 1073551,
@@ -53242,6 +53852,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 9,
         "damage": 16,
         "time": 1079200,
         "victim": "DobeZz",
@@ -53250,6 +53861,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 39,
         "damage": 110,
         "time": 1079699,
         "victim": "anni",
@@ -53290,6 +53902,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 1082074,
         "victim": "gore",
@@ -53332,6 +53945,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 1085304,
         "victim": "gore",
@@ -53373,6 +53987,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 39,
         "damage": 74,
         "isSplash": true,
         "time": 1086253,
@@ -53462,6 +54077,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 14,
         "damage": 24,
         "time": 1088400,
         "victim": "paniagua",
@@ -53510,6 +54126,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 100,
         "damage": 110,
         "time": 1089110,
         "victim": "ocoini",
@@ -53527,6 +54144,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 8,
         "damage": 24,
         "time": 1089166,
         "victim": "anni",
@@ -53559,6 +54177,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 92,
         "damage": 276,
         "isSplash": true,
         "time": 1091265,
@@ -53600,6 +54219,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 106,
         "damage": 224,
         "time": 1094084,
         "victim": "gore",
@@ -53625,6 +54245,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 54,
         "damage": 110,
         "time": 1099637,
         "victim": "ocoini",
@@ -53641,6 +54262,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 20,
         "damage": 48,
         "time": 1101863,
         "victim": "ocoini",
@@ -53666,6 +54288,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 50,
         "damage": 110,
         "isTeam": true,
         "time": 1107227,
@@ -53733,6 +54356,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 84,
         "damage": 100,
         "isSplash": true,
         "time": 1109447,
@@ -53759,6 +54383,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 76,
         "damage": 93,
         "isSplash": true,
         "time": 1109876,
@@ -53843,6 +54468,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 23,
         "damage": 110,
         "time": 1111587,
         "victim": "anni",
@@ -53875,6 +54501,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 11,
         "damage": 12,
         "time": 1112019,
         "victim": "ocoini",
@@ -53883,6 +54510,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 84,
         "damage": 110,
         "time": 1112470,
         "victim": "gore",
@@ -53923,6 +54551,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 5,
         "damage": 20,
         "time": 1114873,
         "victim": "DobeZz",
@@ -53955,6 +54584,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 3,
         "damage": 63,
         "isSplash": true,
         "time": 1117120,
@@ -53964,6 +54594,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 12,
         "damage": 25,
         "isSelf": true,
         "isSplash": true,
@@ -53990,6 +54621,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 27,
         "damage": 28,
         "time": 1119006,
         "victim": "gore",
@@ -54057,6 +54689,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 30,
         "damage": 62,
         "isSplash": true,
         "time": 1124694,
@@ -54117,6 +54750,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 102,
         "damage": 110,
         "time": 1128828,
         "victim": "DobeZz",
@@ -54216,6 +54850,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 54,
         "damage": 110,
         "time": 1131473,
         "victim": "ocoini",
@@ -54232,6 +54867,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 1136879,
         "victim": "gore",
@@ -54289,6 +54925,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 95,
         "damage": 106,
         "isSplash": true,
         "time": 1140712,
@@ -54298,6 +54935,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 4,
         "damage": 23,
         "isSelf": true,
         "isSplash": true,
@@ -54332,6 +54970,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 4,
         "damage": 81,
         "isSplash": true,
         "time": 1144334,
@@ -54415,6 +55054,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 46,
         "damage": 75,
         "isSplash": true,
         "time": 1149602,
@@ -54433,6 +55073,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 7,
         "damage": 82,
         "isSplash": true,
         "time": 1150758,
@@ -54460,6 +55101,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 12,
         "damage": 55,
         "isSplash": true,
         "time": 1152295,
@@ -54502,6 +55144,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 1,
         "damage": 8,
         "time": 1156753,
         "victim": "DobeZz",
@@ -54519,6 +55162,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 52,
         "damage": 110,
         "time": 1158027,
         "victim": "gore",
@@ -54664,6 +55308,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 1,
         "damage": 24,
         "time": 1166811,
         "victim": "nexus",
@@ -54787,6 +55432,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 79,
         "damage": 335,
         "isSplash": true,
         "time": 1173214,
@@ -54823,6 +55469,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 49,
         "damage": 73,
         "isSplash": true,
         "isTeam": true,
@@ -54850,6 +55497,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 1175318,
@@ -54900,6 +55548,7 @@
       },
       {
         "attacker": "paniagua",
+        "bounded": 38,
         "damage": 357,
         "isSplash": true,
         "time": 1176526,
@@ -54934,6 +55583,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 23,
         "damage": 24,
         "time": 1177321,
         "victim": "DobeZz",
@@ -54990,6 +55640,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 20,
         "damage": 24,
         "time": 1179769,
         "victim": "gore",
@@ -54998,6 +55649,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 100,
         "damage": 110,
         "time": 1179796,
         "victim": "anni",
@@ -55070,6 +55722,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 4,
         "damage": 24,
         "time": 1184853,
         "victim": "gore",
@@ -55086,6 +55739,7 @@
       },
       {
         "attacker": "anni",
+        "bounded": 2,
         "damage": 12,
         "time": 1184955,
         "victim": "nexus",
@@ -55206,6 +55860,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 4,
         "damage": 24,
         "time": 1187591,
         "victim": "anni",
@@ -55303,6 +55958,7 @@
       },
       {
         "attacker": "nexus",
+        "bounded": 52,
         "damage": 53,
         "isSelf": true,
         "isSplash": true,
@@ -55328,6 +55984,7 @@
       },
       {
         "attacker": ".N3ophyt3.",
+        "bounded": 12,
         "damage": 16,
         "time": 1193671,
         "victim": "DobeZz",
@@ -55345,6 +56002,7 @@
       },
       {
         "attacker": "ocoini",
+        "bounded": 100,
         "damage": 110,
         "isSplash": true,
         "time": 1195117,
@@ -55372,6 +56030,7 @@
       },
       {
         "attacker": "biggz",
+        "bounded": 44,
         "damage": 110,
         "time": 1198178,
         "victim": "ocoini",
@@ -55422,6 +56081,7 @@
       },
       {
         "attacker": "gore",
+        "bounded": 29,
         "damage": 70,
         "isSplash": true,
         "time": 1199877,
@@ -55437,14 +56097,6 @@
         "time": 1199890,
         "victim": "gore",
         "weapon": "rl"
-      },
-      {
-        "attacker": "ocoini",
-        "damage": 24,
-        "time": 1200078,
-        "victim": "nexus",
-        "victimWep": "sg",
-        "weapon": "sg"
       }
     ],
     "matrix": [
@@ -55800,22 +56452,43 @@
     "scoreboard": {
       "byPlayer": {
         ".N3ophyt3.": {
+          "bounded": {
+            "scoreTeam": 661,
+            "streamEwep": 3456,
+            "streamGiven": 11292,
+            "streamTaken": 8050,
+            "streamTeam": 661
+          },
           "scoreEwep": 3456,
           "scoreGiven": 11298,
           "scoreTaken": 8053,
           "streamEwep": 3804,
           "streamGiven": 13644,
-          "streamTaken": 11111
+          "streamTaken": 11211
         },
         "DobeZz": {
+          "bounded": {
+            "scoreTeam": 273,
+            "streamEwep": 2022,
+            "streamGiven": 5708,
+            "streamTaken": 9324,
+            "streamTeam": 273
+          },
           "scoreEwep": 2022,
           "scoreGiven": 5708,
           "scoreTaken": 9327,
           "streamEwep": 2721,
-          "streamGiven": 7498,
+          "streamGiven": 7598,
           "streamTaken": 12845
         },
         "anni": {
+          "bounded": {
+            "scoreTeam": 477,
+            "streamEwep": 3490,
+            "streamGiven": 7668,
+            "streamTaken": 10129,
+            "streamTeam": 477
+          },
           "scoreEwep": 3491,
           "scoreGiven": 7671,
           "scoreTaken": 10129,
@@ -55824,6 +56497,13 @@
           "streamTaken": 13272
         },
         "biggz": {
+          "bounded": {
+            "scoreTeam": 503,
+            "streamEwep": 3014,
+            "streamGiven": 11026,
+            "streamTaken": 7029,
+            "streamTeam": 503
+          },
           "scoreEwep": 3014,
           "scoreGiven": 11030,
           "scoreTaken": 7032,
@@ -55832,6 +56512,13 @@
           "streamTaken": 10462
         },
         "gore": {
+          "bounded": {
+            "scoreTeam": 278,
+            "streamEwep": 2845,
+            "streamGiven": 6620,
+            "streamTaken": 11708,
+            "streamTeam": 278
+          },
           "scoreEwep": 2845,
           "scoreGiven": 6620,
           "scoreTaken": 11713,
@@ -55840,6 +56527,13 @@
           "streamTaken": 15190
         },
         "nexus": {
+          "bounded": {
+            "scoreTeam": 1012,
+            "streamEwep": 2297,
+            "streamGiven": 10898,
+            "streamTaken": 6451,
+            "streamTeam": 1012
+          },
           "scoreEwep": 2297,
           "scoreGiven": 10900,
           "scoreTaken": 6451,
@@ -55848,6 +56542,13 @@
           "streamTaken": 9870
         },
         "ocoini": {
+          "bounded": {
+            "scoreTeam": 137,
+            "streamEwep": 4625,
+            "streamGiven": 8438,
+            "streamTaken": 11964,
+            "streamTeam": 137
+          },
           "scoreEwep": 4626,
           "scoreGiven": 8442,
           "scoreTaken": 11970,
@@ -55856,6 +56557,13 @@
           "streamTaken": 16527
         },
         "paniagua": {
+          "bounded": {
+            "scoreTeam": 829,
+            "streamEwep": 1882,
+            "streamGiven": 9909,
+            "streamTaken": 6904,
+            "streamTeam": 829
+          },
           "scoreEwep": 1882,
           "scoreGiven": 9911,
           "scoreTaken": 6905,
@@ -55868,8 +56576,10 @@
     "telefrags": [
       {
         "attacker": "DobeZz",
-        "time": 251070,
-        "victim": ".N3ophyt3."
+        "bounded": 100,
+        "time": 240978,
+        "victim": ".N3ophyt3.",
+        "victimWep": "sg"
       }
     ],
     "totalDamage": 101345
@@ -89960,7 +90670,143 @@
       "timelimit": "20"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 49,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "tower.RL",
+        "takenBy": "anni",
+        "team": "'\u003e\u003c\u003e",
+        "time": 1459
+      },
+      {
+        "entNum": 48,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "cathedral",
+        "takenBy": ".N3ophyt3.",
+        "team": "'tbg",
+        "time": 1877
+      },
+      {
+        "entNum": 53,
+        "item": "pent",
+        "kind": "pent",
+        "loc": "yard.Pent",
+        "takenBy": "biggz",
+        "team": "'tbg",
+        "time": 2296
+      },
+      {
+        "entNum": 55,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "ocoini",
+        "team": "'\u003e\u003c\u003e",
+        "time": 2409
+      },
+      {
+        "entNum": 88,
+        "item": "mh_1",
+        "kind": "mh",
+        "loc": "yard",
+        "takenBy": "biggz",
+        "team": "'tbg",
+        "time": 4117
+      },
+      {
+        "entNum": 46,
+        "item": "ya_1",
+        "kind": "ya",
+        "loc": "tower",
+        "takenBy": "anni",
+        "team": "'\u003e\u003c\u003e",
+        "time": 4161
+      },
+      {
+        "entNum": 47,
+        "item": "ya_2",
+        "kind": "ya",
+        "loc": "cathedral.YA",
+        "takenBy": ".N3ophyt3.",
+        "team": "'tbg",
+        "time": 5019
+      },
+      {
+        "entNum": 45,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "paniagua",
+        "team": "'tbg",
+        "time": 5612
+      },
+      {
+        "entNum": 51,
+        "item": "mh_2",
+        "kind": "mh",
+        "loc": "cemetary",
+        "takenBy": "paniagua",
+        "team": "'tbg",
+        "time": 7372
+      },
+      {
+        "entNum": 54,
+        "item": "ring",
+        "kind": "ring",
+        "loc": "cemetary.Ring",
+        "takenBy": "paniagua",
+        "team": "'tbg",
+        "time": 11596
+      }
+    ],
+    "players": [
+      {
+        "loc": "cathedral.SSG",
+        "name": "DobeZz",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "tower.RL",
+        "name": "anni",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "tower.entry",
+        "name": "gore",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "Quad.high",
+        "name": "ocoini",
+        "team": "'\u003e\u003c\u003e"
+      },
+      {
+        "loc": "Quad",
+        "name": ".N3ophyt3.",
+        "team": "'tbg"
+      },
+      {
+        "loc": "yard.tunnel",
+        "name": "biggz",
+        "team": "'tbg"
+      },
+      {
+        "loc": "cemetary.tele",
+        "name": "nexus",
+        "team": "'tbg"
+      },
+      {
+        "loc": "cemetary",
+        "name": "paniagua",
+        "team": "'tbg"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -90603,14 +91449,6 @@
       }
     },
     "shots": [
-      {
-        "player": "nexus",
-        "source": "sound",
-        "team": "'tbg",
-        "time": -10064,
-        "warmup": true,
-        "weapon": "rl"
-      },
       {
         "player": "gore",
         "source": "sound",
@@ -135606,18 +136444,6 @@
         "team": "'tbg",
         "time": 1199877,
         "weapon": "rl"
-      },
-      {
-        "hit": true,
-        "player": "ocoini",
-        "source": "sound",
-        "team": "'\u003e\u003c\u003e",
-        "time": 1200078,
-        "victims": [
-          "nexus"
-        ],
-        "warmup": true,
-        "weapon": "sg"
       }
     ]
   },
@@ -146357,6 +147183,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           5338,
           69698,
           1185945
@@ -157196,7 +158023,9 @@
             "s": 1806
           }
         ],
-        "sp": [],
+        "sp": [
+          0
+        ],
         "ssg": [
           {
             "e": 92364,
@@ -168294,6 +169123,7 @@
           }
         ],
         "sp": [
+          0,
           1198418
         ],
         "ssg": [
@@ -178418,6 +179248,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           4131,
           12434,
           63622,
@@ -188712,6 +189543,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           3305,
           1185903,
           1193043,
@@ -198952,6 +199784,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           13890,
           62989,
           1188604
@@ -208870,6 +209703,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           65301
         ],
         "ssg": [],
@@ -218914,6 +219748,7 @@
           }
         ],
         "sp": [
+          0,
           67547,
           74766
         ],

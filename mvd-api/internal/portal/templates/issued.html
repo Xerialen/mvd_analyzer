@@ -1,0 +1,22 @@
+{{define "issued.html"}}{{template "head" .}}
+<h1>Your new API key</h1>
+<p class="muted">Signed in as <strong>{{.DiscordName}}</strong>.</p>
+
+<div class="panel warn">
+  <p><strong>Copy this key now — it is shown only once.</strong> We store only a
+  hash of it and cannot show it again. If you lose it, generate a new one (which
+  revokes this one).</p>
+  <span class="key">{{.FullKey}}</span>
+  <dl>
+    <dt>Identifier</dt><dd><code>{{.HashPrefix}}</code></dd>
+    <dt>Created</dt><dd>{{.Created}}</dd>
+  </dl>
+</div>
+
+<h2>Using it</h2>
+<code>Authorization: Bearer {{.FullKey}}</code>
+
+<p style="margin-top:1.5rem">
+  <a class="btn secondary" href="/portal/key">Done</a>
+</p>
+{{template "foot" .}}{{end}}

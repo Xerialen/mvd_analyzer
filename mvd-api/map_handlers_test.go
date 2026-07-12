@@ -58,6 +58,17 @@ func TestMapEntitiesByMap(t *testing.T) {
 			t.Errorf("types=spawn returned a %q entity", e.Type)
 		}
 	}
+
+	// Param names are case-insensitive (nit): ?Types= must behave like
+	// ?types=, per the API.md promise.
+	ciSpawns, status := getMapEntities(t, srv.URL+"/v1/maps/dm2/entities?Types=spawn")
+	if status != 200 {
+		t.Fatalf("?Types= status = %d, want 200", status)
+	}
+	if len(ciSpawns.Entities) != len(spawns.Entities) {
+		t.Errorf("?Types=spawn = %d entities; want same as ?types=spawn (%d)",
+			len(ciSpawns.Entities), len(spawns.Entities))
+	}
 }
 
 func TestMapEntitiesByMapUnknown(t *testing.T) {

@@ -1,8 +1,16 @@
 # MCP client integration
 
-`mvd-mcp` is a stdio MCP server that forwards every tool call over
-HTTP to a running `mvd-api`. Wire it into Claude Desktop, Claude Code,
-Cursor, or any other MCP client.
+`mvd-mcp` forwards every tool call over HTTP to a running `mvd-api`.
+There are two ways to connect a client:
+
+- **Local stdio binary** — you run `mvd-mcp` (a small binary) and the
+  client launches it over stdio. This is the bulk of this guide.
+- **Hosted HTTP URL** — you point the client at a hosted
+  `https://<domain>/mcp` endpoint (no API key required) and run **no**
+  local binary. See [Hosted HTTP mode](#hosted-http-mode-no-local-binary).
+
+Wire either into Claude Desktop, Claude Code, Cursor, or any other MCP
+client.
 
 ## Where to get the binary
 
@@ -123,6 +131,61 @@ to `.claude/settings.local.json`:
 
 The same `.mcp.json` shape works; consult your client's docs for the
 config file path.
+
+## Hosted HTTP mode (no local binary)
+
+When the operator runs `mvd-mcp -http` behind a public domain (see
+[`../deploy/README.md`](../deploy/README.md)), a client can connect
+straight to the URL — no local `mvd-mcp` binary to install, and **no API
+key**: the hosted MCP endpoint is unauthenticated.
+
+**Claude Code (CLI):**
+
+```bash
+claude mcp add --transport http mvd https://<domain>/mcp
+```
+
+**`.mcp.json` / other HTTP-capable clients:**
+
+```json
+{
+  "mcpServers": {
+    "mvd": {
+      "url": "https://<domain>/mcp"
+    }
+  }
+}
+```
+
+**Web chat connectors** (claude.ai custom connectors and similar): add
+`https://<domain>/mcp` as the connector URL — no headers, no OAuth.
+
+If you have your own `qwmvd_…` API key (portal-issued), you *may* send it
+as `Authorization: Bearer qwmvd_…`; it is then used for your requests
+instead of the server's shared service key (own rate-limit bucket, own
+access-log identity). See the
+[Hosted / HTTP mode](README.md#hosted--http-mode) section of the README
+for the auth model.
+
+**Claude Desktop:** recent builds add remote servers natively via
+Settings → Connectors → *Add custom connector* → paste the `/mcp` URL.
+On builds without connectors, bridge through
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) (needs Node):
+
+```json
+{
+  "mcpServers": {
+    "mvd": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://<domain>/mcp"]
+    }
+  }
+}
+```
+
+(If the connection stalls on an SSE attempt, add `"--transport",
+"http-only"` to the args.) Alternatively, use the local stdio binary
+above pointed at a local `mvd-api`.
 
 ## Smoke test
 

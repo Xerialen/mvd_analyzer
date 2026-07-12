@@ -5,7 +5,515 @@ the merge dates on `main`; schema bumps reference
 [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for field-level
 detail.
 
+## Unreleased (branch `phase-16.3`)
+
+- **The bounded damage family (schema v55).** Damage now ships in **two
+  families**. The **raw** family is the v53 shape — the full hit
+  including overkill, capped only at 9999, exactly the wire value
+  (`unbound_dmg_dealt`, written mid-frame in `T_Damage`,
+  `combat.c:795`). The new **bounded** family reconstructs KTX's own
+  scoreboard `dmg_dealt` (`combat.c:783`) per hit — armor absorbed plus
+  the health portion capped at the victim's remaining health — which
+  until now existed only as `demoInfo`'s end-of-match totals. The
+  additions are purely additive; every raw field is byte-stable except
+  the tele/stomp fold-in below.
+  - **Death-value reconstruction.** The wire hides the bounded value but
+    reveals it almost exactly. A hit the victim **survives** has no
+    overkill, so `bounded == raw` identically — no health knowledge
+    needed, only that no death happened this frame. A **killing** hit's
+    overkill is the end-of-frame death broadcast KTX writes (`health -=
+    take`, then the negative leftover or `-1`; `combat.c:944,983-985`):
+    `bounded = raw + deathValue`, the armor share cancelling out of the
+    `save + take` identity (verified per-hit exact, and the death
+    broadcast shares the killing hit's demo timestamp on all 10923
+    corpus deaths). Same-frame multi-hit deaths cascade the one death
+    value across the frame's hits in wire (application) order, last to
+    first. Two wire limits force an approximate shadow-health fallback:
+    KTX clamps a corpse's health at `-99` (`combat.c:259`), and a tight
+    death→respawn hides the death value behind the respawn's positive
+    health (recovered from the authoritative `DeathEvent`). The
+    nullification rules the wire ignores are unchanged (pent/`tp`
+    mates+self bounded to armor, `tp4` to 0, all skipped for a suicide),
+    read from serverinfo with `tp_num()` semantics; godmode is
+    unobservable and ignored.
+  - **Telefrags and stomps fold their honest damage into
+    `given`/`givenTeam`/`taken`** — and nothing else. KTX's scoreboard
+    accumulation has no tele/stomp exclusion (`combat.c:1046-1076`, both
+    map to `wpNONE`), so our fold-free exclusion was exactly the
+    corpus-visible residual — every player whose KTX `dmg.team` exceeded
+    our `givenTeam` had dealt a team telefrag. A telefrag folds its
+    **bounded** reconstruction (victim's full armor + remaining health —
+    the wire 9999 is a kill guarantee, not a measurement) into the raw
+    family too; a stomp is a real ~10 HP `T_Damage` and folds wire (raw)
+    / reconstruction (bounded). Both stay out of `events`, `byWeapon`,
+    `matrix`, `ewep` and `totalDamage` (KTX's `weapons[].damage`
+    excludes them too); each `telefrags[]`/`stomps[]` entry now carries
+    the folded `bounded`/`damage` and the `victimWep` class it landed
+    in.
+  - **Spawn-state inference.** A tele/stomp victim is alive by
+    definition (`tdeath_touch` requires `ISLIVE`), so a non-positive
+    health shadow means the respawn beat the end-of-frame stat
+    broadcast: the reconstruction reads that victim from spawn state
+    (100 health, no armor, spawn inventory) instead of the stale corpse
+    shadow — the same wire-invisibility as the match-start spawn.
+  - **Skipped modes.** `k_midair` / `k_instagib` / `k_dmgfrags` rewrite
+    `take` unobservably, so bounded is skipped outright there rather
+    than emitted wrong: `damage.boundedMode = "skipped:<mode>"`, no
+    tele/stomp fold-in, and a `dmg=bounded` request returns the new
+    `422 bounded_unavailable`.
+  - **Corpus validation.** `TestBoundedReconciliationCorpus` reconciles
+    the reconstruction against `demoInfo` on every corpus demo — per
+    player (`given`/`taken`/`ewep`/`team`) and per weapon
+    (`weapons[].damage.enemy`/`team`). The death-value model tightens the
+    given/taken reconciliation ~2.5×: tolerances are re-pinned at measured
+    max + headroom (given/taken/per-weapon ±40, measured 16/15/18; ewep
+    ±150, measured 131; team ±10, measured 1). The remaining residuals are
+    the multi-hit cascade save split, the `-99` clamp / masked-death shadow
+    fallback, and — for ewep only — the victim-item one-frame window (a
+    same-frame RL/LG pickup reclassifying a hit's victim-weapon bucket,
+    independent of the health arithmetic). The dm3 pent-deflect
+    (`Satan's power deflects nlk's telefrag`) is pinned as live coverage.
+    A loose warning-mode variant landed in the diagnostic harness.
+  - **REST / MCP surface.** `/damage` gains `dmg=raw|bounded|both`
+    (`raw` = the byte-stable v53 shape; `both` = the stored shape;
+    `bounded` = the bounded family materialized into the raw field
+    names). The default (unset `dmg`) is **`bounded` for both the summary
+    and the full log** — the KTX-scoreboard number a reader almost always
+    wants; `raw` and `both` stay explicit opt-ins. MCP `getDamage` takes
+    the same `dmg` input and forwards it, so an unadorned `getDamage`
+    (MCP defaults `summary=true`) serves the bounded family. An invalid
+    `dmg` is a `400 invalid_param`; an **explicit** `dmg=bounded` on a
+    skipped demo is the `422 bounded_unavailable` (a new drift-tested
+    error code), while a **defaulted** bounded there falls back to `raw`
+    (whose `boundedMode` explains the absence) instead of erroring. The
+    view-layer filtered recompute reproduces both families exactly,
+    including the tele/stomp fold.
+  - **KTX-exact bounded on a summary.** An unfiltered bounded/both
+    **summary** now sources its per-player bounded figures — `given`,
+    `givenTeam`, `givenSelf`, `ewep`, per-weapon `byWeapon` — from KTX's
+    exact end-of-match scoreboard (`demoInfo.players[].dmg` +
+    `weapons[].damage.enemy`) when the demo carries `demoInfo`, since the
+    per-hit reconstruction is only best-effort. A new
+    `boundedSource: "ktx" | "reconstructed"` field records which. The
+    substitution is partial: `taken` (KTX is enemy-only; ours is
+    all-sources) and the `enemyVs*` buckets (KTX has no split) stay
+    reconstructed, so on a `ktx` summary they may not sum exactly to the
+    substituted `given`. Filtered/windowed summaries and the full-log
+    response have no KTX counterpart and stay fully reconstructed.
+  - Goldens regenerate at branch end (they stay v53 until then, so the
+    served-spec validation augments the fixture Result with a synthetic
+    bounded family in the meantime). See
+    [RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md) for the
+    field-level reference.
+
+## Unreleased (branch `phase-16.2`)
+
+- **GDPR disclosure: privacy policy + terms of use on the portal (no
+  schema change).** `/portal/privacy` and `/portal/terms`, linked from
+  every portal page footer and acknowledged at the sign-in panel. The
+  privacy policy states the audited facts: Discord `identify` scope
+  only (id + username stored with the key record), keys stored as
+  SHA-256 hashes shown once, strictly-necessary `/portal`-scoped
+  cookies only (1 h session), access logs with best-effort IP for
+  operations/abuse (kept up to one year), public hub.quakeworld.nu demos
+  as the content source, Discord + hub as the only third parties, and
+  the GDPR rights/contact channel. Pinned by portal tests; operator
+  review notes embedded in the template.
+
+- **RESULT_SCHEMA served standalone; portal points at the self-served
+  docs; public name is mvdanalyzer-api (no schema change).**
+  `GET /docs/result-schema` renders `RESULT_SCHEMA.md` (embedded from
+  the mvd-analytics module root, rendered by vendored marked 12.0.2 —
+  no CDN; raw markdown at `/docs/result-schema.md`; GitHub-style
+  heading anchors so internal `#links` work; repo-relative links
+  rewritten to GitHub). The OpenAPI spec's deep-contract link now
+  points there instead of GitHub. The portal landing links `/docs`,
+  `/openapi.yaml` and `/docs/result-schema`, gains a short MCP section
+  (endpoint `<origin>/mcp`, no key needed, one-line client-add
+  example), and keeps exactly one GitHub link (source/issues) — pinned
+  by a landing-page test. The API's public name is **mvdanalyzer-api**
+  (spec title, docs pages, portal); the server binary and module stay
+  `mvd-api`.
+
+- **The served OpenAPI spec is now the single per-endpoint reference;
+  API.md slims to a high-level guide (docs only).** `/openapi.yaml` +
+  `/docs` are self-contained — no more dead repo-file references in
+  rendered descriptions (reducer registry, tele/stomp pseudo-codes, the
+  artifact mapping table, the overview wall-clock formula are inlined;
+  the one external link is an absolute GitHub URL to RESULT_SCHEMA.md
+  for deep Result internals). API.md drops its ~700-line §4 endpoint
+  reference (three-way duplication with the spec and RESULT_SCHEMA.md)
+  and keeps getting-started, conventions, endpoint-choice, and recipes.
+  Spec examples use a real demo (`gameId:145060` and its SHA).
+
+- **Columnar buckets carry their own loc legend (schema v53).** The
+  `/buckets` `layout=column` envelope — the REST and MCP default — gains
+  `locTable`, the demo's interned loc-name table, present iff an `li`
+  column is in the output. Columnar deliberately keeps the compact raw
+  `li` index instead of repeating name strings per bucket, but that
+  meant the default `getBuckets` handed an MCP agent undecodable
+  integers and forced a `getLocTable` round trip + join. The legend
+  makes columnar responses loc-self-contained; `loc=index` workflows
+  and `/loc-table` are unchanged. View-shape-only change; the bump
+  exists so schemaVersion-keyed immutable ETags stop revalidating
+  pre-legend bodies. RESULT_SCHEMA's version-history table also gains
+  the v51/v52 rows that 16.1 omitted.
+
+- **OpenAPI 3.1 spec + `/docs` viewer; `weapons` param rename (no schema
+  change).** Phase 16.2 — the REST surface now ships a machine-readable
+  contract for external integrators:
+  - **`GET /openapi.yaml`** serves a hand-authored OpenAPI 3.1
+    description of all 35 operations with **full field-level response
+    schemas**, embedded in the binary. It is pinned to the code by
+    drift tests (route parity with the router in both directions,
+    error-code/artifact/field-code enums, `info.version` =
+    schemaVersion) and its response schemas are **validated against
+    real golden-corpus responses** through the real router — ~50 cases
+    covering every operation, the shape-changing param variants
+    (`summary`, `layout`, `loc=index`, all field codes) and every error
+    class. **`GET /docs`** is a browsable reference over it (vendored
+    RapiDoc, no CDN). Both auth-exempt.
+  - **`weapons` replaces the singular `weapon` query param** on
+    `/frags`, `/damage`, `/backpacks`, `/weapon-pickups`. REST keeps
+    `weapon` as an accepted legacy alias (canonical wins when both are
+    present), so existing integrations keep working. **The MCP tool
+    input field is renamed outright** (`weapon` → `weapons` on
+    getFrags/getDamage/getBackpacks/getWeaponPickups) — MCP clients
+    re-read schemas per session; hardcoded callers must rename.
+  - Tool-description papercuts: getOverview names the winner
+    (frag-sorted, index 0), getDamage/getAim lead with their MCP
+    `summary=true` default and state the telefrag exclusion once, the
+    items/weapon-pickups/backpacks trio cross-links its division of
+    labour, and the generic-artifact operation gains the full node-name
+    ↔ curated-route ↔ `resultKey` ↔ 422-code table (in the served spec).
+  - Robustness fallout from the validation harness: the buckets
+    first-value reducers no longer panic on empty-but-non-nil change
+    streams.
+
+## Unreleased (branch `phase-16.1`)
+
+- **Fresh-eyes review fixes: the remaining size footguns + doc drift
+  (no schema change).** Two independent no-history design reviews of
+  the MCP and REST surfaces (both verdicts: sound); their confirmed
+  findings:
+  - `getStreamSlice` now **requires a time window at the MCP layer**
+    (either bound suffices; REST stays unwindowed) — an unwindowed
+    slice is native-rate entries for the whole match, the exact class
+    of payload the windowMs/summary defaults exist to prevent.
+    `getLocTrails` defaults `minDwellMs` to **250** at the MCP layer
+    (explicit `0` restores the raw stream) — raw trails are dominated
+    by nearest-loc boundary flicker.
+  - `/weapon-pickups` `source` is now validated like the other enum
+    params: a typo (`source=backpak`) 400s with the valid values
+    instead of silently matching nothing.
+  - Doc truth: API.md documents the **50 ms REST `windowMs` default**
+    (with a warning), the deliberate no-pagination stance, the scoped
+    per-endpoint cache-header sets, the map-endpoint ETag shapes, and
+    the missing `opening_unavailable` error row; the MCP README's
+    `listArtifacts` section now shows the trimmed shape, the events
+    default-type list includes `pickup`, and `getFrags` explains why
+    its `summary` default is deliberately the opposite of its
+    siblings'. `windowMs`/`minDwellMs` docs now contrast ms vs the
+    seconds-typed window params in the same call.
+
+- **listArtifacts goes routing-only at the MCP layer; timeline artifact
+  gets a size warning (no schema change).** External-review follow-ups:
+  `listArtifacts` now returns servable artifacts only, trimmed to
+  `{name, resultKey, cost, lazy, description}` — the DAG edges and
+  internal nodes stay on REST `/v1/artifacts`/`/v1/graph` where they
+  serve the dev story. The `timeline` node description now warns it is
+  one of the largest sections and points at the windowed views. The
+  reported "opaque MCP error" regression did not reproduce: two new
+  end-to-end tests (in-memory + streamable HTTP, real go-sdk client)
+  pin that REST 4xx bodies — including the enumerated field-code list —
+  arrive verbatim in the isError text.
+
+- **Friction + correctness edges (schema v52,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream C).**
+  - **No-match-start demos are flagged, not coerced (v52):** when no
+    match start is detected the rebase never runs and every timestamp
+    stays on the raw demo clock — previously indistinguishable from a
+    rebased result. `streams.global` now carries `timeBase: "demo"`
+    (omitted normally) and `errors[]` gains a matching notice, so
+    `/overview` surfaces it.
+  - **Unknown field codes now teach the vocabulary:** the
+    `state-at`/`buckets`/`stream-slice` field error enumerates every
+    valid code with a gloss (`li (location), h (health), …`). The
+    classic `loc`-vs-`li` trap is also documented in the MCP tool
+    schemas (the selector code is `li`; the `loc=` param picks name-
+    vs-index rendering). No aliases, by decision (D6 amended).
+  - **Float-artifact fix on the view envelope (D8 amended):** all view
+    ms→seconds conversions now divide by 1000 (IEEE division is
+    correctly rounded) instead of multiplying by the inexact `0.001`
+    — `13.155000000000001` becomes `13.155` across events, trails,
+    buckets, stream-slice. Values change at most one ulp; shapes
+    unchanged.
+  - **Doc-debt:** the stale `result/shots.go` comments claiming the
+    stream is not match-gated (pre-v50) are fixed; RESULT_SCHEMA
+    documents the `demoInfo` time island (KTX seconds on KTX's clock)
+    and the items phase time sentinels; powerup events in the events
+    view no longer echo the derivable `duration` (the Result keeps
+    it); `getOverview`'s description spells out the ms-out/seconds-in
+    units seam.
+
+- **Filter + summary pass over the item/pickup endpoints and MCP-layer
+  token-lean defaults (no schema change,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream B).**
+  - `/items` gains `from`/`to` (keeps phases **overlapping** the window)
+    and `summary=true` (per-item `{takenCount, byPlayer, firstTake}`
+    with takes counted **inside** the window) — "who took X in the
+    opening minute" no longer fetches the full-match phase timeline.
+    `/backpacks` and `/weapon-pickups` gain `from`/`to` on the
+    drop/pickup time. The MCP proxy now forwards `startTime`/`endTime`
+    for `getRegionControl` (REST already accepted them; the proxy
+    silently dropped them).
+  - **MCP `windowMs` default is now 5 s (was 1 s)** for `getBuckets`
+    and `getRegionControl`: a 20-min match at 1 s is ~1200 buckets per
+    field per player — 5 s resolves the trend/control questions a
+    bucketed timeline answers (shortest interesting run, a quad, is
+    30 s) at a fifth of the payload. Pass `windowMs` explicitly for
+    finer resolution; REST keeps its 50 ms default.
+  - **MCP defaults diverge from REST toward token-lean (D1):**
+    `getDamage`, `getAim`, and `getItems` now default `summary: true`
+    at the MCP layer only — REST keeps full logs by default. A
+    defaulted summary response carries a `hint` field telling the agent
+    to pass `summary: false` for the dropped detail. Precedent: the
+    proxy's existing `windowMs` 50→1000 override.
+  - **`searchGames` goes compact and paginates honestly:** rows now
+    project each roster entry to `{name, team, frags}` (the verbatim
+    hub rows — per-player ping, color arrays, name_color — return with
+    `roster: true`), and the response gains `total` (all matching rows,
+    via PostgREST `count=exact`) alongside the page-local `count`.
+    Tool descriptions now also document that `loadDemo` is optional
+    (analysis tools auto-load `gameId:N` on first use).
+
+- **The match opening becomes first-class (schema v51,
+  [PLAN-api-usability](PLAN-api-usability.md) workstream A).** Three
+  related changes driven by the first real hosted-MCP agent session
+  (an opening-race question cost ~45 tool calls of timestamp
+  cross-referencing):
+  - **Initial-spawn bug fix.** KTX respawns every player when the
+    countdown ends (`SM_PrepareClients` → `k_respawn`,
+    ktx/src/match.c:881,972), but a player alive through the countdown
+    never crosses health ≤0→>0, so the parser's dead→alive detector
+    missed the first — most contested — spawn of the match. The
+    timeline now synthesizes a `t=0` spawn in `streams.players[].sp`
+    for every player alive at match start whose respawn wasn't
+    wire-visible.
+  - **`pickup` events with full identity.** `/events` (and MCP
+    `getEvents`) gains a default `pickup` type joined from the
+    authoritative `items` / `weaponPickups` sections:
+    `detail{item (ya_1 vs ya_2), kind, entNum, loc, source
+    (world/backpack/unknown), dropper?}` — "which YA / which RL pad"
+    no longer needs a second call and timestamp cross-referencing.
+    `spawn` events now carry `detail{loc}` when the location is
+    resolvable (sampled just after the teleport landing; absent on
+    maps without a .loc corpus).
+  - **New `opening` artifact.** A post-processor projects each
+    player's match-start spawn loc plus the first in-match take of
+    every contested spawner (armors, mega, powerups, RL/LG) into
+    `Result.Opening` — served via `GET /v1/demos/{id}/artifacts/opening`
+    and MCP `getArtifact('opening')` with zero new tools. One small
+    call per demo answers the opening-race question class.
+
+## 2026-07-09
+
+- **Hosted MCP is now unauthenticated (no schema change).** `mvd-mcp -http`
+  no longer requires (or validates) a per-request `Authorization` key — web AI
+  chat connectors can use the bare `/mcp` URL. The shim instead authenticates
+  itself to `mvd-api` with an operator-issued service key (`MVD_API_KEY` env
+  var), forwarded on every proxied REST call; the REST API keeps full API-key
+  auth, and that one key's service rate class throttles all anonymous MCP
+  traffic. A client that does present a `qwmvd_…` bearer gets it forwarded
+  instead (own bucket + log identity); non-`qwmvd_` bearers (e.g. platform
+  OAuth tokens) are ignored. In stdio mode `MVD_API_KEY` now also supersedes
+  `-label`, so a local shim can talk to an auth-enabled `mvd-api`.
+
+- **`getFrags` / `getDamage` (`/frags`, `/damage`): filters now narrow ALL
+  aggregates + new `from`/`to` window + `summary` mode; damage output is now
+  match-only (schema v50).** Changes to the frag/damage endpoints and their
+  MCP tools:
+  - **Filters narrow every aggregate (bug fix).** Previously a `players` /
+    `weapon` filter only narrowed the per-event log and the `byPlayer` keys,
+    leaving `totalFrags` / `totalDamage` / `byWeapon` / `matrix` at their
+    unfiltered values — an internally inconsistent response. Now, when any
+    scoping filter is active, every aggregate is **recomputed from the filtered
+    log** so it matches exactly the entries shown. With no filter the
+    authoritative stored totals are returned unchanged (byte-identical to
+    before) — the unfiltered path is untouched. Filtered damage responses now
+    also populate `matrix` / `events` (previously left null). Filtered frag
+    aggregates are log-sourced and may differ from the unfiltered totals for
+    reconnect / unresolved-name edge cases (documented in API.md §4.5/4.5b).
+  - **`from` / `to` time window** (REST; `startTime` / `endTime` on the MCP
+    tools) — match-relative **seconds**, keep only frags/hits in the window.
+    The seconds→ms conversion now rounds to the nearest ms (`0.29s`→`290ms`),
+    not truncating.
+  - **`summary`** — drop the big per-event log and return only the aggregates
+    (avoids overflowing an LLM context). Orthogonal to the filters.
+  - **Damage output is now match-only (schema v50 bump).** The per-hit
+    `damage.events` log is **gated to in-match at the source** (the damage
+    analyzer), matching the aggregates — out-of-match (warmup / post-match)
+    hits are dropped everywhere and no longer exposed. This makes the filter's
+    all-players recompute reproduce the stored aggregates **exactly** (closing
+    a filtered over-count where the ungated log double-counted warmup hits),
+    lets the aim analysis read exactly-in-match damage (removing an approximate
+    `[0,matchEnd]` self-window), and fixes a latent bug where
+    `timelineAnalysis.airgibs` counted warmup / post-match rocket airgibs.
+    Goldens regenerated: `damage.events` arrays shrink; some `aim` splits and
+    `airgibs` lists shift on demos with out-of-match rocket hits. Frags are
+    unaffected (they already gated at the analyzer).
+  - **Telefrags / stomps are match-only, match-clock, and exclude team
+    kills.** The `damage.telefrags` / `damage.stomps` arrays are gated to
+    in-match at the source, and a **team** telefrag/stomp is no longer credited
+    to the attacker's `telefrags` / `stomps` counter (mirroring the team-kill
+    convention the view already applied) — so the filtered counters match the
+    stored totals. Their `time` is now **match-relative ms** like
+    `damage.events`: only the per-hit log was rebased before, leaving the
+    positional-kill arrays on the demo clock, contradicting the schema and the
+    `from`/`to` window / telefrag+stomp event lenses that compare against
+    match-relative bounds. The in-match gate now keys off the match **timestamp
+    range** (the detector's final start/end) rather than a live match-phase
+    flag sampled per record, fixing a same-frame race: a kill on the exact
+    match-start frame — decoded before the same-frame "Fight" print flipped the
+    detector — was wrongly dropped, and now appears at match-relative `t=0`
+    (the inclusive upper bound likewise keeps a hit on the exact match-end
+    frame, which KTX itself scored). Goldens: telefrag/stomp times shift by
+    `-demoOffset`; a couple of start/end-frame entries reappear with the
+    counters they imply.
+  - **All analytics streams are match-only now, except chat.** The `shots`
+    stream is gated to in-match at the source (warmup / prewar / post-match
+    fires dropped; the `Shot.warmup` field is removed — no out-of-match shot
+    survives). The shots gate keys off the same match **timestamp range** as
+    damage, so a fire on the exact match-start/-end frame is kept rather than
+    lost to the same same-frame race. Frags, damage, telefrags/stomps, shots,
+    positions, pickups, items and backpacks are all match-only; **chat is the
+    deliberate exception** (pre-game talk is kept). This makes it impossible
+    for a consumer to accidentally mix warmup data into match analytics.
+  - **Windowing consistency + bound validation nits.** `chat` now rounds its
+    `from`/`to` seconds→ms to the nearest ms like the other windowed sections
+    (it truncated before, off by up to 1 ms); a windowed / players-scoped
+    `aim` that matches no shooter returns `players: []`, not `null`, matching
+    the filtered-empty-log convention; and the REST layer now rejects a NaN /
+    Inf / negative / int32-ms-overflowing `from` / `to` / `time` with a `400
+    invalid_param` instead of letting the bad float→int32 conversion silently
+    filter everything behind a `200`.
+
+- **`getAim` (`/aim`): `players` / `from` / `to` / `summary` filters (no schema
+  change).** The aim endpoint and its MCP tool used to return everything
+  (~70 KB), overflowing an LLM context. New query-layer filters, consistent
+  with the frag/damage discipline above:
+  - **`summary`** (bool) — return only the compact per-player `weapons`
+    aggregates, dropping the large per-fire `crosshair` + `lgRamp` sample
+    arrays. The overflow fix; recommended default for the MCP tool.
+  - **`players`** (csv) — scope to named shooters. With no time window this
+    selects their **match-wide** stored aim (same as `getFrags?players=`).
+  - **`from` / `to`** (REST; `startTime` / `endTime` on the MCP tool) —
+    match-relative **seconds**. Setting a window **recomputes** aim over the
+    shots in it, so every figure (weapons accuracy, RL/GL direct/splash, LG
+    ramp, crosshair samples) scopes to the window consistently. With no window
+    the stored aim is returned unchanged (no recompute).
+  - **Refactor: the aim computation core moved to package `aimcore`**
+    (`aimcore.Compute`), imported by both the analyzer (fills `res.Aim` once)
+    and the view layer (windowed variants) without an import cycle. The stored
+    aim is **byte-identical** to before (goldens unchanged) — the extraction
+    preserved behaviour exactly. No schema bump (`CurrentSchemaVersion` stays
+    50); the `AimResult` struct is untouched.
+
 ## 2026-07-08
+
+- **Fix: cold demo loads failed with a 502 `hub_upstream` hash mismatch.** The hub's `demo_sha256` is the hash of the *uncompressed* `.mvd`, but the CDN serves gzip and the phase-3 integrity check hashed the gzipped download — so every un-cached `loadDemo`/`POST /v1/demos/{id}` was rejected. The check now authenticates the *decompressed* content (or a raw `.mvd` fallback) against `demo_sha256`; corruption is still rejected. mvd-api change; redeploy it.
+
+- **mvd-mcp: array/map tool filters fixed (`players`, `fields`, `types`, `weapon`, `items`, `kinds`, `reducers`).** jsonschema-go reflected every nilable slice/map to a `["null", X]` type union; some MCP clients coerce a union to a string, silently disabling those filters. Tool input schemas now advertise a plain `{"type":"array"}`/`{"type":"object"}` (null stripped). No API/output change; rebuild+redeploy `mvd-mcp` and reconnect the client to pick up the new schemas.
+
+- **mvd-mcp over streamable HTTP + deploy templates (no schema change;
+  transport/auth layer).** The MCP shim gains a hosted mode; stdio is unchanged.
+  - **`mvd-mcp -http ADDR`.** Serves MCP over streamable HTTP (go-sdk
+    `NewStreamableHTTPHandler`, Stateless) instead of stdio, for hosting the
+    service publicly. Empty `-http` keeps today's stdio behaviour byte-identical;
+    the two transports are mutually exclusive. No new dependencies.
+  - **Per-request API-key auth.** Every MCP request must carry
+    `Authorization: Bearer qwmvd_…`. An outer gate validates the key against
+    `mvd-api`'s `GET /v1/auth/check` (fail-closed; `401` + `WWW-Authenticate:
+    Bearer` otherwise) — this single gate also protects the `searchGames` tool,
+    which bypasses `mvd-api`. On success the key is forwarded on every proxied
+    REST call, so `mvd-api` stays the single point of validation; a key revoked
+    mid-session stops working on the next call. `-label` is ignored in HTTP
+    mode. The handler is mounted at `/mcp` (and `/mcp/`), with an
+    unauthenticated `GET /healthz`.
+  - **Deploy templates (`deploy/`).** A `Caddyfile` (TLS, `/mcp*` → mvd-mcp,
+    rest → mvd-api, real-client-IP `X-Forwarded-For`), `mvd-api.service` /
+    `mvd-mcp.service` systemd units (hardened, secrets via `EnvironmentFile`),
+    and a provisioning `README.md` runbook with a smoke-test checklist. Tracked
+    templates, not run by CI.
+  - **Documented omission.** `/los`, `/shots`, `/streams/*`, and `/airgibs`
+    still have no curated MCP tool (adding them is deferred); noted in the
+    mvd-mcp README.
+
+- **mvd-api Discord key portal + key-store cross-process lock (no schema
+  change; transport/auth layer).** Optional, off by default — nothing changes
+  for existing localhost users, and analytics output is untouched.
+  - **The portal (`internal/portal`).** With `-portal -portal-base-url URL`
+    (plus `-auth-dir` and the `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` /
+    `PORTAL_COOKIE_SECRET` env vars), the server serves a one-page portal at
+    `/portal` where a user signs in with Discord (OAuth2 scope `identify` only)
+    and self-services one API key. `POST /portal/key` shows the full key once
+    and revokes any prior key for that user. Without `-portal`, the `/portal`
+    routes are not registered at all (they 404) and the server is unchanged.
+  - **Session security.** The only server-trusted state is a 1-hour
+    HMAC-SHA256-signed session cookie (no server-side store); the OAuth `state`
+    nonce is double-submitted against a signed cookie (CSRF); all cookies are
+    `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/portal`. The Discord username
+    is HTML-escaped (`html/template`), and neither the cookie secret nor the
+    Discord client secret ever reaches a log line, error body, or page. The
+    portal adds **no new dependencies** (stdlib `net/http` OAuth, `crypto/hmac`,
+    `html/template`, `embed`). Cookie `Secure` follows the `-portal-base-url`
+    scheme — `https` ⇒ Secure (production), `http` ⇒ non-Secure (local dev
+    only, since a browser will not send a Secure cookie over http); the server
+    logs a startup warning whenever cookies are non-Secure.
+  - **Key store cross-process lock.** `internal/authkeys` mutations
+    (`Issue`/`Revoke`) now take a cross-process `flock` and reload `keys.json`
+    under the lock before writing, so the portal (issuing inside the live
+    server) and a concurrent `keys` CLI can no longer clobber each other's
+    writes. Reads stay lock-free. A new `ActiveByDiscordID` accessor backs the
+    portal's key-status display.
+  - **Deferred (manual, needs an operator-provisioned Discord app):** the
+    end-to-end run against the real Discord OAuth flow. CI proves the flow with
+    an httptest Discord stub.
+
+- **mvd-api API keys + auth middleware (no schema change; transport/auth
+  layer).** Optional, off by default — nothing changes for existing localhost
+  users, and analytics output is untouched.
+  - **Two modes.** Without `-auth-dir` the server is unauthenticated, exactly
+    as before (the `Authorization: Bearer <label>` value stays a non-secret
+    access-log tag). With `-auth-dir DIR`, every `/v1/*` route and
+    `POST /v1/demos/{id}` requires `Authorization: Bearer qwmvd_…`; missing /
+    invalid / revoked keys get a generic `401` + `WWW-Authenticate: Bearer`.
+    Exempt: `/healthz`, `/v1/version`, `/portal/*`, and `OPTIONS` preflight
+    (CORS answers preflight before auth, so browsers are unaffected).
+  - **Key store.** New `internal/authkeys`: one atomic-written `keys.json`
+    holding only SHA-256 hashes of keys (`qwmvd_` + 32 random bytes,
+    base64url). The plaintext key is shown once at issuance and never
+    persisted; lookups are constant-time hash compares. One active key per
+    Discord user (re-issuing revokes the prior one).
+  - **`keys` CLI.** `mvd-api keys issue|revoke|list -auth-dir DIR` manages the
+    store directly; `list` shows hash prefixes + metadata, never a full key or
+    hash.
+  - **Per-key rate limiting.** Token bucket per key hash (stdlib, no new
+    dependency), split into `user` and looser `service` classes
+    (`-rate-user`/`-burst-user`, `-rate-service`/`-burst-service`); over-limit
+    → `429` + `Retry-After`. This closes the rate-limit half of the F15
+    throttle by keying on the validated API key rather than the spoofable IP.
+  - **`GET /v1/auth/check`** → `204` for a live key, `401` otherwise (key
+    self-test; also the MCP-HTTP pre-validation hook).
+  - **Secret safety.** In auth mode the raw key is never logged — the access
+    log's identity becomes the key's note / Discord name / hash-prefix. The
+    `401`/`429` bodies are generic and leak nothing about key state.
+  - **Hardening.** `-auth-dir` is force-tightened to `0700` on open (so a
+    pre-existing loose dir can't leave key metadata world-listable), a corrupt
+    `keys.json` fails loudly at startup rather than presenting an empty store,
+    auth exemptions are path-cleaned (no `/portal/..`-style traversal past the
+    key gate), and an unknown top-level subcommand now errors instead of
+    silently booting a server (`serve` is still the default).
 
 - **Analytics pipeline: the core/derived/post-processor "tiers" are collapsed
   into one task model (no schema bump, `Result` byte-identical).** The tiers
@@ -24,6 +532,46 @@ detail.
   - `ARTIFACTS.md` drops its `Tier` column (regenerated).
 
 ## 2026-07-07
+
+- **mvd-api hosting-prep hardening (no schema change; transport/ops
+  hardening).** Prerequisites for exposing the API publicly; nothing in
+  the analytics output changes.
+  - **Cache quota + GC.** New `-cache-max-bytes` (default 20 GiB; `0`
+    disables). A background sweep evicts the oldest tier-1 MVDs, tier-2
+    gobs and tier-3 artifact gobs (ordered by mtime, bumped on every
+    cache hit — atime is unreliable on relatime/noatime mounts) once the
+    disk budget is exceeded, never blocking the request path. Startup
+    deletes tier-2 trees orphaned by past schema/format bumps (including
+    legacy suffix-less `v<N>` trees), stale-version tier-3 gobs (also the
+    retired `shot-streams@*` ones), and stale atomic-write temp files.
+    New `mvd-api cache stats` and `mvd-api cache prune [-max-bytes |
+    -older-than | -all]` ops subcommands.
+  - **Parse throttle.** New `-max-parses` (default `max(1, NumCPU/2)`): a
+    semaphore bounds concurrent heavy cold operations so a storm of
+    distinct cold demos can't spawn unbounded parallel work. It covers
+    both the cold download+parse and the on-demand LOS raycast (no schema
+    change), closing the unauthenticated-CPU-exhaustion path on
+    `/los`/`/artifacts/los`. Cache hits are unaffected; rate limiting
+    proper arrives with API keys. `cache prune` gains `-dry-run` and
+    rejects the silent no-op `-max-bytes 0`.
+  - **Capped hub reads.** Demo downloads (CDN and `demo_source_url`) are
+    read through a 64 MiB `io.LimitReader`, so a broken or hostile
+    upstream can't OOM the process; over-cap responses are upstream
+    errors (`502`), never `404`.
+  - **CORS.** Permissive `Access-Control-Allow-Origin: *` with
+    `Expose-Headers` (ETag/X-Cache/X-Schema-Version/X-Request-Id) and
+    `OPTIONS` preflight, so browser clients on any origin can call the
+    API (API.md §2.6).
+  - **Error hygiene.** Every response carries `X-Request-Id`; `5xx`
+    bodies are now a generic message + that id (the real error, which can
+    embed cache paths / upstream URLs, goes to the server log only) —
+    covering the curated endpoints, the generic artifact endpoint, and
+    panics (the `panic` error code folds into `internal`). `4xx` messages
+    stay specific. Also: `POST /v1/demos/{id}` no longer carries
+    `Cache-Control`/`ETag`; error bodies no longer carry a stray `ETag`;
+    `/los` and `/artifacts/los` return `{"players":[]}` (not `null`) when
+    a demo has no streams; `/v1/maps/{map}/entities` now honours
+    case-insensitive `types`/`kinds` param names.
 
 - **API: the spatial weapon-fire streams are now built on every parse instead
   of behind a lazy re-parse (no schema bump, response bodies unchanged).**

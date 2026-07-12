@@ -890,8 +890,28 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "banan falco": {
+        "bounded": {
+          "byWeapon": {
+            "rl": 4721,
+            "sg": 74,
+            "ssg": 27,
+            "unknown": 4
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 378,
+          "enemyVsRl": 3408,
+          "enemyVsSg": 1040,
+          "ewep": 3408,
+          "given": 4826,
+          "givenSelf": 1537,
+          "givenTeam": 0,
+          "taken": 6330,
+          "takenEnv": 233
+        },
         "byWeapon": {
           "rl": 5389,
           "sg": 76,
@@ -911,6 +931,24 @@
         "takenEnv": 233
       },
       "betowen": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 268,
+            "rl": 4142,
+            "sg": 150
+          },
+          "enemyVsBoth": 0,
+          "enemyVsLg": 0,
+          "enemyVsMid": 0,
+          "enemyVsRl": 4167,
+          "enemyVsSg": 393,
+          "ewep": 4167,
+          "given": 4560,
+          "givenSelf": 1715,
+          "givenTeam": 0,
+          "taken": 6988,
+          "takenEnv": 447
+        },
         "byWeapon": {
           "gl": 268,
           "rl": 4412,
@@ -936,6 +974,7 @@
       "ssg": 40,
       "unknown": 4
     },
+    "dmg": "both",
     "events": [
       {
         "attacker": "betowen",
@@ -1019,6 +1058,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 102,
         "damage": 110,
         "time": 25844,
         "victim": "banan falco",
@@ -1080,6 +1120,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 40,
         "damage": 110,
         "time": 39091,
         "victim": "betowen",
@@ -1115,6 +1156,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 54,
         "damage": 94,
         "isSplash": true,
         "time": 45973,
@@ -1168,6 +1210,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 22,
         "damage": 24,
         "time": 54766,
         "victim": "banan falco",
@@ -1194,6 +1237,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 16,
         "damage": 86,
         "isSplash": true,
         "time": 59896,
@@ -1212,6 +1256,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 11,
         "damage": 91,
         "isSplash": true,
         "time": 65636,
@@ -1272,6 +1317,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 36,
         "damage": 85,
         "isSplash": true,
         "time": 80935,
@@ -1299,6 +1345,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 34,
         "damage": 64,
         "isSplash": true,
         "time": 85388,
@@ -1334,6 +1381,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 54,
         "damage": 71,
         "isSplash": true,
         "time": 100506,
@@ -1406,6 +1454,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 1,
         "damage": 75,
         "isSplash": true,
         "time": 122778,
@@ -1483,6 +1532,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 10,
         "damage": 53,
         "isSplash": true,
         "time": 133401,
@@ -1840,6 +1890,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 22,
         "damage": 62,
         "isSplash": true,
         "time": 202895,
@@ -1980,6 +2031,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 83,
         "damage": 84,
         "isSplash": true,
         "time": 245400,
@@ -2277,6 +2329,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 2,
         "damage": 20,
         "isEnv": true,
         "time": 286113,
@@ -2380,6 +2433,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 57,
         "damage": 59,
         "isSplash": true,
         "time": 338348,
@@ -2434,6 +2488,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 12,
         "damage": 62,
         "isSplash": true,
         "time": 352411,
@@ -2475,6 +2530,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 20,
         "damage": 30,
         "isEnv": true,
         "time": 357243,
@@ -2550,6 +2606,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 62,
         "damage": 110,
         "time": 374554,
         "victim": "betowen",
@@ -2567,6 +2624,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 100,
         "damage": 110,
         "time": 379917,
         "victim": "betowen",
@@ -2593,6 +2651,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 40,
         "damage": 52,
         "isSelf": true,
         "isSplash": true,
@@ -2672,6 +2731,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 23,
         "damage": 31,
         "isSelf": true,
         "isSplash": true,
@@ -2706,6 +2766,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 38,
         "damage": 110,
         "time": 415424,
         "victim": "banan falco",
@@ -2723,6 +2784,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 75,
         "damage": 87,
         "isSplash": true,
         "time": 417281,
@@ -2775,6 +2837,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 51,
         "damage": 100,
         "isSplash": true,
         "time": 429762,
@@ -2952,6 +3015,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 37,
         "damage": 59,
         "isSplash": true,
         "time": 472293,
@@ -2961,6 +3025,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 36,
         "damage": 110,
         "time": 472371,
         "victim": "betowen",
@@ -3048,6 +3113,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 48,
         "damage": 110,
         "time": 494515,
         "victim": "betowen",
@@ -3056,6 +3122,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 42,
         "damage": 43,
         "isSelf": true,
         "isSplash": true,
@@ -3074,6 +3141,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 82,
         "damage": 86,
         "isSplash": true,
         "time": 514306,
@@ -3101,6 +3169,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 32,
         "damage": 49,
         "isSelf": true,
         "isSplash": true,
@@ -3127,6 +3196,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 100,
         "damage": 102,
         "isSplash": true,
         "time": 526539,
@@ -3162,6 +3232,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 27,
         "damage": 40,
         "time": 530189,
         "victim": "betowen",
@@ -3259,6 +3330,7 @@
       },
       {
         "attacker": "betowen",
+        "bounded": 77,
         "damage": 83,
         "isSplash": true,
         "time": 543383,
@@ -3293,6 +3365,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 10,
         "damage": 12,
         "time": 546604,
         "victim": "betowen",
@@ -3399,6 +3472,7 @@
       },
       {
         "attacker": "banan falco",
+        "bounded": 71,
         "damage": 74,
         "isSplash": true,
         "time": 595558,
@@ -3460,6 +3534,13 @@
     "scoreboard": {
       "byPlayer": {
         "banan falco": {
+          "bounded": {
+            "scoreTeam": 0,
+            "streamEwep": 3408,
+            "streamGiven": 4826,
+            "streamTaken": 4560,
+            "streamTeam": 0
+          },
           "scoreEwep": 3408,
           "scoreGiven": 4826,
           "scoreTaken": 4560,
@@ -3468,6 +3549,13 @@
           "streamTaken": 6623
         },
         "betowen": {
+          "bounded": {
+            "scoreTeam": 0,
+            "streamEwep": 4167,
+            "streamGiven": 4560,
+            "streamTaken": 4826,
+            "streamTeam": 0
+          },
           "scoreEwep": 4248,
           "scoreGiven": 4560,
           "scoreTaken": 4826,
@@ -10628,7 +10716,104 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 100,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "low.RL",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 2208
+      },
+      {
+        "entNum": 99,
+        "item": "ra_1",
+        "kind": "ra",
+        "loc": "secret",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 5922
+      },
+      {
+        "entNum": 59,
+        "item": "ya_3",
+        "kind": "ya",
+        "loc": "tele.YA",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 6195
+      },
+      {
+        "entNum": 70,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "high.RL",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 8286
+      },
+      {
+        "entNum": 113,
+        "item": "mh_1",
+        "kind": "mh",
+        "loc": "GL",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 14571
+      },
+      {
+        "entNum": 75,
+        "item": "mh_2",
+        "kind": "mh",
+        "loc": "RA.MH",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 17454
+      },
+      {
+        "entNum": 74,
+        "item": "ra_2",
+        "kind": "ra",
+        "loc": "RA.MH",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 17767
+      },
+      {
+        "entNum": 103,
+        "item": "ya_2",
+        "kind": "ya",
+        "loc": "big",
+        "takenBy": "betowen",
+        "team": "betowen",
+        "time": 68961
+      },
+      {
+        "entNum": 104,
+        "item": "ya_1",
+        "kind": "ya",
+        "loc": "big",
+        "takenBy": "banan falco",
+        "team": "banan falco",
+        "time": 287087
+      }
+    ],
+    "players": [
+      {
+        "loc": "NG",
+        "name": "banan falco",
+        "team": "banan falco"
+      },
+      {
+        "loc": "low.button",
+        "name": "betowen",
+        "team": "betowen"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -14347,14 +14532,6 @@
         "source": "sound",
         "team": "betowen",
         "time": 599285,
-        "weapon": "rl"
-      },
-      {
-        "player": "banan falco",
-        "source": "sound",
-        "team": "banan falco",
-        "time": 600058,
-        "warmup": true,
         "weapon": "rl"
       }
     ]
@@ -268350,6 +268527,7 @@
           }
         ],
         "sp": [
+          0,
           65986,
           596405
         ],
@@ -283468,6 +283646,7 @@
           }
         ],
         "sp": [
+          0,
           60130
         ],
         "ssg": [

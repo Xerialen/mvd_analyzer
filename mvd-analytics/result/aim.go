@@ -41,6 +41,9 @@ type PlayerAim struct {
 	// Weapons is the rich per-weapon effectiveness breakdown (one entry per
 	// weapon the player fired): shots/hits for all, plus weapon-specific
 	// detail — SG/SSG pellet stats, RL/GL direct/splash, LG whiff geometry.
+	// Deliberately an ORDERED array keyed by the entry's Weapon field (sorted
+	// by aimWeaponRank), not a map: the weapon order is meaningful here, unlike
+	// the unordered byWeapon count maps in FragResult/DamageResult.
 	Weapons []WeaponAim `json:"weapons,omitempty"`
 }
 

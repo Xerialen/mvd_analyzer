@@ -275,6 +275,44 @@ func checkDataQuality(r *analyzer.Result) []string {
 		}
 	}
 
+	// Bounded damage reconstruction vs the KTX scoreboard. The corpus test
+	// (analyzer/damage_bounded_corpus_test.go) pins tight tolerances on the
+	// curated corpus; this is the loose arbitrary-demo variant — pathologies
+	// the corpus lacks (mid-game rejoins, long pauses) can widen the
+	// one-frame-window residuals, so warn at 3x the pinned corpus bands or
+	// 2% of the scoreboard figure, whichever is larger.
+	if r.Damage != nil && r.Damage.BoundedMode == "standard" && r.Damage.Scoreboard != nil {
+		loose := func(base, score int) int {
+			if pct := score / 50; pct > base {
+				return pct
+			}
+			return base
+		}
+		for name, delta := range r.Damage.Scoreboard.ByPlayer {
+			b := delta.Bounded
+			if b == nil {
+				warn("bounded damage: no bounded delta for %q despite standard mode", name)
+				continue
+			}
+			checks := []struct {
+				what          string
+				stream, score int
+				tol           int
+			}{
+				{"given", b.StreamGiven, delta.ScoreGiven, loose(120, delta.ScoreGiven)},
+				{"taken", b.StreamTaken, delta.ScoreTaken, loose(120, delta.ScoreTaken)},
+				{"ewep", b.StreamEWep, delta.ScoreEWep, loose(450, delta.ScoreEWep)},
+				{"team", b.StreamTeam, b.ScoreTeam, loose(30, b.ScoreTeam)},
+			}
+			for _, c := range checks {
+				if d := c.stream - c.score; d > c.tol || d < -c.tol {
+					warn("bounded damage %s for %q: stream=%d ktx=%d (delta %+d exceeds ±%d)",
+						c.what, name, c.stream, c.score, d, c.tol)
+				}
+			}
+		}
+	}
+
 	return warnings
 }
 

@@ -143,10 +143,14 @@ func TestAimPostRocketBlockWithoutProjectileStream(t *testing.T) {
 	}
 }
 
-// F19: the damage records feeding the rl/gl direct split are windowed to
-// match time — a warmup direct rocket (negative post-normalize time) or a
-// post-match one (past matchEnd) must not inflate Direct / deflate Splash.
-func TestAimPostDamageWindowedToMatch(t *testing.T) {
+// F19: the damage records feeding the rl/gl direct split must be match-time
+// only — a warmup direct rocket or a post-match one must not inflate Direct /
+// deflate Splash. Damage.Events is match-gated at the source (the analyzer drops
+// out-of-match hits), so aim consumes it verbatim — no re-windowing. This
+// pins the direct/splash split from an already-in-match damage stream: exactly
+// the entries present feed the split (schema v50; F19). The prior v49 behaviour
+// where aim self-windowed to [0,matchEnd] is gone.
+func TestAimPostDamageFromMatchGatedEvents(t *testing.T) {
 	res := &result.Result{
 		Shots: &result.ShotsResult{
 			Shots: []result.Shot{
@@ -155,11 +159,11 @@ func TestAimPostDamageWindowedToMatch(t *testing.T) {
 			},
 		},
 		Damage: &result.DamageResult{
+			// Already in-match (the analyzer dropped any warmup / post-match
+			// hits before this point).
 			Events: []result.DamageEntry{
-				{Time: 2000, Attacker: "A", Victim: "B", Weapon: "rl"},                 // in-match direct
-				{Time: 2100, Attacker: "A", Victim: "B", Weapon: "rl", IsSplash: true}, // in-match splash
-				{Time: -500, Attacker: "A", Victim: "B", Weapon: "rl"},                 // warmup direct — excluded
-				{Time: 3500, Attacker: "A", Victim: "B", Weapon: "rl"},                 // post-match direct — excluded
+				{Time: 2000, Attacker: "A", Victim: "B", Weapon: "rl"},                 // direct
+				{Time: 2100, Attacker: "A", Victim: "B", Weapon: "rl", IsSplash: true}, // splash
 			},
 		},
 		Streams: &result.Streams{
@@ -178,7 +182,7 @@ func TestAimPostDamageWindowedToMatch(t *testing.T) {
 	}
 	rl := findWeaponAim(res.Aim.Players[0], "rl")
 	if rl == nil || rl.Direct != 1 || rl.Splash != 1 || rl.Missed != 0 {
-		t.Fatalf("rl = %+v, want direct1 splash1 missed0 (out-of-window damage excluded, F19)", rl)
+		t.Fatalf("rl = %+v, want direct1 splash1 missed0 (one direct + one splash hit)", rl)
 	}
 }
 

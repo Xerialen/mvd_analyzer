@@ -49,14 +49,24 @@ var eagerArtifacts = map[string]eagerArtifact{
 		code: "frags_unavailable", msg: "this demo has no frag log"},
 	"metadata": {extract: func(r *result.Result) (any, error) { return view.Metadata(r) },
 		code: "metadata_unavailable", msg: "this demo has no metadata (no fullserverinfo / no countdown centerprint)"},
-	"damage": {extract: func(r *result.Result) (any, error) { return view.Damage(r, view.DamageOptions{}) },
+	// Dmg "both" keeps the artifact "the stored section as-is": the view's
+	// unset default is the raw strip, which would silently delete the
+	// stored bounded family from an endpoint contracted to serve it.
+	"damage": {extract: func(r *result.Result) (any, error) { return view.Damage(r, view.DamageOptions{Dmg: "both"}) },
 		code: "damage_unavailable", msg: "this demo has no damage data (no KTX mvdhidden_dmgdone stream)"},
 	"shots": {extract: func(r *result.Result) (any, error) { return view.Shots(r) },
 		code: "shots_unavailable", msg: "this demo has no shot data (no weapon fires decoded)"},
-	"aim": {extract: func(r *result.Result) (any, error) { return view.Aim(r) },
+	"aim": {extract: func(r *result.Result) (any, error) { return view.Aim(r, view.AimOptions{}) },
 		code: "aim_unavailable", msg: "this demo has no aim data (needs shots + position/view streams)"},
 	"loc-graph": {extract: func(r *result.Result) (any, error) { return view.LocGraph(r) },
 		code: "locgraph_unavailable", msg: "this demo has no loc graph (probably no position track was emitted)"},
+	"opening": {extract: func(r *result.Result) (any, error) {
+		if r.Opening == nil {
+			return nil, view.ErrUnavailable
+		}
+		return r.Opening, nil
+	},
+		code: "opening_unavailable", msg: "this demo has no opening (no detected match start)"},
 
 	// Always-computable / list-shaped sections: 200 with the raw section (which
 	// may be null/empty), never 422 — the same convention the curated endpoints
@@ -94,7 +104,7 @@ func (s *server) handleGraph(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := analyzer.ExportGraph("json")
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		s.writeInternal(w, r, err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -132,7 +142,7 @@ func (s *server) handleArtifact(w http.ResponseWriter, r *http.Request) {
 
 	res, cm, err := s.store.GetResult(r.Context(), id)
 	if err != nil {
-		mapStoreError(w, err)
+		s.mapStoreError(w, r, err)
 		return
 	}
 	setArtifactCacheHeaders(w, cm, name)
@@ -142,13 +152,14 @@ func (s *server) handleArtifact(w http.ResponseWriter, r *http.Request) {
 	ea, known := eagerArtifacts[name]
 	if !known {
 		// Manifest says servable but no accessor is wired — a programmer error.
-		writeError(w, http.StatusInternalServerError, "internal",
-			fmt.Sprintf("no accessor for servable artifact %q", name))
+		// Rides the generic-500 path (F19): the detail goes to the log keyed by
+		// the request id, not to the client.
+		s.writeInternal(w, r, fmt.Errorf("no accessor for servable artifact %q", name))
 		return
 	}
 	section, err := ea.extract(res)
 	if err != nil {
-		writeUnavailable(w, err, ea.code, ea.msg)
+		s.writeUnavailable(w, r, err, ea.code, ea.msg)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{meta.ResultKey: section})
@@ -163,7 +174,7 @@ func (s *server) serveLazyArtifact(w http.ResponseWriter, r *http.Request, id de
 	case "los":
 		res, meta, err := s.store.EnsureLOS(r.Context(), id)
 		if err != nil {
-			mapStoreError(w, err)
+			s.mapStoreError(w, r, err)
 			return
 		}
 		setArtifactCacheHeaders(w, meta, name)
@@ -173,7 +184,7 @@ func (s *server) serveLazyArtifact(w http.ResponseWriter, r *http.Request, id de
 		writeJSON(w, http.StatusOK, losBody(res))
 	default:
 		// Unreachable: only los is marked lazy in the manifest.
-		writeError(w, http.StatusInternalServerError, "internal", "unhandled lazy artifact "+name)
+		s.writeInternal(w, r, fmt.Errorf("unhandled lazy artifact %q", name))
 	}
 }
 

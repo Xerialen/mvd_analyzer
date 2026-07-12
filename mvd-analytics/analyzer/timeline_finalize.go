@@ -380,6 +380,9 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// already on the match clock (no post-hoc whole-Result pass).
 	if ms := a.core.MatchStartMs(); ms > 0 {
 		a.rebaseToMatch(result, ms)
+		synthesizeMatchStartSpawns(result.Streams)
+	} else {
+		flagDemoTimeBase(result)
 	}
 
 	// Duel: synthesise the frag-score timeline for a participant who never
@@ -537,6 +540,61 @@ func (a *TimelineAnalyzer) rebaseToMatch(result *Result, matchStartMs int32) {
 	}
 	for mi := range streams.Movers {
 		shiftAndClampMoverStream(&streams.Movers[mi], matchStartMs)
+	}
+}
+
+// flagDemoTimeBase marks a result whose match start could not be
+// detected: the per-producer rebase never ran, so every timestamp in
+// the whole Result stays on the raw demo clock. We cannot invent a
+// time origin — flag the result instead so a consumer can tell a
+// demo-clock result from a match-rebased one (D9, PLAN-api-usability).
+// The errors entry surfaces it in /overview without an extra field.
+func flagDemoTimeBase(result *Result) {
+	if result.Streams == nil {
+		return
+	}
+	result.Streams.Global.TimeBase = "demo"
+	result.Errors = append(result.Errors,
+		`no match start detected: all times are demo-relative (streams.global.timeBase="demo")`)
+}
+
+// matchStartSpawnDedupMs bounds the dedup window for the synthesized
+// match-start spawn. A player whose match-start respawn WAS visible on
+// the wire (dead when the countdown ended → real ≤0→>0 transition)
+// already has a spawn entry within a frame or two of t=0; a spawn any
+// later that follows an in-match death is a genuine respawn and must
+// not suppress the synthesis.
+const matchStartSpawnDedupMs = 1000
+
+// synthesizeMatchStartSpawns inserts the match-start spawn that the
+// parser's dead→alive detector structurally misses. KTX respawns every
+// player when the countdown ends (SM_PrepareClients → k_respawn(p,
+// false), ktx/src/match.c:881,972), but a player alive through the
+// countdown never crosses health ≤0→>0, so no SpawnEvent fires and the
+// first — most contested — spawn of the match is absent from Spawns.
+// Runs after rebaseToMatch (match-relative times, warmup spawns already
+// dropped). The health predicate really tests "was present at match
+// start": health is not recorded during warmup, so the t=0 carry entry
+// is the KTX respawn write (V=100) for every present player, dead or
+// alive at countdown end. The dedup does the actual split — a player
+// dead at countdown end has a wire-visible dead→alive spawn at ≈0 with
+// no in-match death before it, which suppresses the synthesis.
+// Same life-boundary policy as the FragStreak first-life synthesis.
+func synthesizeMatchStartSpawns(streams *Streams) {
+	if streams == nil {
+		return
+	}
+	for pi := range streams.Players {
+		p := &streams.Players[pi]
+		aliveAtStart := len(p.Health) > 0 && p.Health[0].T == 0 && p.Health[0].V > 0
+		if !aliveAtStart {
+			continue
+		}
+		if len(p.Spawns) > 0 && p.Spawns[0] <= matchStartSpawnDedupMs &&
+			!(len(p.Deaths) > 0 && p.Deaths[0] < p.Spawns[0]) {
+			continue // the match-start respawn was wire-visible
+		}
+		p.Spawns = append([]int32{0}, p.Spawns...)
 	}
 }
 

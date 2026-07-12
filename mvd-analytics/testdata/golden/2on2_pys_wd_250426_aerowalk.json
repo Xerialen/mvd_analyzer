@@ -15433,8 +15433,27 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "psy*overon": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 1648,
+            "rl": 5836,
+            "sg": 179
+          },
+          "enemyVsBoth": 3112,
+          "enemyVsLg": 0,
+          "enemyVsMid": 350,
+          "enemyVsRl": 3040,
+          "enemyVsSg": 1161,
+          "ewep": 6152,
+          "given": 7663,
+          "givenSelf": 887,
+          "givenTeam": 650,
+          "taken": 8923,
+          "takenEnv": 185
+        },
         "byWeapon": {
           "lg": 1830,
           "rl": 7315,
@@ -15453,6 +15472,25 @@
         "takenEnv": 185
       },
       "wd.cao": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 231,
+            "lg": 1900,
+            "rl": 4405,
+            "sg": 319
+          },
+          "enemyVsBoth": 1844,
+          "enemyVsLg": 524,
+          "enemyVsMid": 341,
+          "enemyVsRl": 3268,
+          "enemyVsSg": 878,
+          "ewep": 5636,
+          "given": 6855,
+          "givenSelf": 1001,
+          "givenTeam": 378,
+          "taken": 8388,
+          "takenEnv": 55
+        },
         "byWeapon": {
           "gl": 231,
           "lg": 2160,
@@ -15472,6 +15510,25 @@
         "takenEnv": 55
       },
       "wd.char": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 3371,
+            "rl": 6116,
+            "sg": 12,
+            "sng": 72
+          },
+          "enemyVsBoth": 2166,
+          "enemyVsLg": 462,
+          "enemyVsMid": 396,
+          "enemyVsRl": 4194,
+          "enemyVsSg": 2353,
+          "ewep": 6822,
+          "given": 9571,
+          "givenSelf": 1614,
+          "givenTeam": 640,
+          "taken": 8787,
+          "takenEnv": 70
+        },
         "byWeapon": {
           "lg": 3900,
           "rl": 7478,
@@ -15491,6 +15548,25 @@
         "takenEnv": 70
       },
       "wd.dilbert": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 65,
+            "lg": 541,
+            "rl": 4945,
+            "sg": 203
+          },
+          "enemyVsBoth": 3049,
+          "enemyVsLg": 331,
+          "enemyVsMid": 249,
+          "enemyVsRl": 1718,
+          "enemyVsSg": 407,
+          "ewep": 5098,
+          "given": 5754,
+          "givenSelf": 720,
+          "givenTeam": 196,
+          "taken": 10286,
+          "takenEnv": 145
+        },
         "byWeapon": {
           "gl": 65,
           "lg": 570,
@@ -15517,6 +15593,7 @@
       "sg": 780,
       "sng": 72
     },
+    "dmg": "both",
     "events": [
       {
         "attacker": "wd.char",
@@ -15591,6 +15668,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 58,
         "damage": 110,
         "time": 5596,
         "victim": "wd.dilbert",
@@ -15640,6 +15718,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 7508,
         "victim": "psy*overon",
@@ -15688,6 +15767,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 9672,
         "victim": "wd.dilbert",
@@ -15720,6 +15800,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 11945,
         "victim": "psy*overon",
@@ -15736,6 +15817,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 228,
         "damage": 340,
         "isSplash": true,
         "isTeam": true,
@@ -15745,6 +15827,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 15320,
         "victim": "psy*overon",
@@ -15771,6 +15854,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 28,
         "damage": 104,
         "isSplash": true,
         "time": 16216,
@@ -15788,6 +15872,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 104,
         "isSplash": true,
         "time": 19492,
@@ -15797,6 +15882,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 66,
         "damage": 67,
         "isSplash": true,
         "time": 19870,
@@ -15864,6 +15950,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 14,
         "damage": 30,
         "time": 24780,
         "victim": "wd.dilbert",
@@ -15914,6 +16001,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 15,
         "damage": 30,
         "time": 28177,
         "victim": "wd.dilbert",
@@ -15978,6 +16066,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 13,
         "damage": 59,
         "isSplash": true,
         "time": 31348,
@@ -16012,6 +16101,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 35,
         "damage": 48,
         "isSplash": true,
         "time": 33285,
@@ -16047,6 +16137,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 30,
         "damage": 110,
         "time": 35708,
         "victim": "wd.char",
@@ -16073,6 +16164,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 37508,
         "victim": "wd.char",
@@ -16098,6 +16190,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 49,
         "damage": 68,
         "isSplash": true,
         "time": 39333,
@@ -16124,6 +16217,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 38,
         "damage": 110,
         "time": 41468,
         "victim": "wd.char",
@@ -16132,6 +16226,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 20,
         "damage": 24,
         "time": 42585,
         "victim": "psy*overon",
@@ -16166,6 +16261,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 44593,
         "victim": "psy*overon",
@@ -16174,6 +16270,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 27,
         "damage": 61,
         "isSplash": true,
         "time": 44663,
@@ -16183,6 +16280,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 12,
         "damage": 90,
         "isSplash": true,
         "time": 46929,
@@ -16228,6 +16326,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 37,
         "damage": 110,
         "time": 50274,
         "victim": "wd.cao",
@@ -16294,6 +16393,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 10,
         "damage": 30,
         "time": 52904,
         "victim": "wd.cao",
@@ -16328,6 +16428,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 106,
         "damage": 110,
         "time": 55973,
         "victim": "psy*overon",
@@ -16345,6 +16446,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 109,
         "damage": 110,
         "time": 56632,
         "victim": "wd.char",
@@ -16353,6 +16455,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 24,
         "damage": 82,
         "isSplash": true,
         "time": 57748,
@@ -16362,6 +16465,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 23,
         "damage": 42,
         "isSelf": true,
         "isSplash": true,
@@ -16413,6 +16517,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 61,
         "damage": 84,
         "isSplash": true,
         "time": 61830,
@@ -16422,6 +16527,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 36,
         "damage": 100,
         "isSplash": true,
         "time": 61845,
@@ -16474,6 +16580,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "time": 65039,
         "victim": "psy*overon",
@@ -16491,6 +16598,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 11,
         "damage": 24,
         "time": 65154,
         "victim": "wd.cao",
@@ -16499,6 +16607,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "time": 66317,
         "victim": "psy*overon",
@@ -16516,6 +16625,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 36,
         "damage": 78,
         "isSplash": true,
         "time": 68131,
@@ -16550,6 +16660,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 95,
         "damage": 110,
         "time": 71669,
         "victim": "wd.dilbert",
@@ -16593,6 +16704,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 16,
         "damage": 46,
         "isSplash": true,
         "time": 73790,
@@ -16602,6 +16714,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 98,
         "damage": 99,
         "isSplash": true,
         "time": 74092,
@@ -16662,6 +16775,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 33,
         "damage": 41,
         "isSplash": true,
         "time": 79530,
@@ -16705,6 +16819,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 17,
         "damage": 54,
         "isSelf": true,
         "isSplash": true,
@@ -16714,6 +16829,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 80,
         "damage": 110,
         "time": 82247,
         "victim": "wd.dilbert",
@@ -16722,6 +16838,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 54,
         "damage": 110,
         "time": 84155,
         "victim": "wd.char",
@@ -16807,6 +16924,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 13,
         "damage": 62,
         "isSplash": true,
         "time": 89142,
@@ -16825,6 +16943,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 100,
         "damage": 102,
         "isSplash": true,
         "time": 90505,
@@ -16842,6 +16961,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 42,
         "damage": 110,
         "time": 95115,
         "victim": "wd.dilbert",
@@ -16859,6 +16979,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 31,
         "damage": 44,
         "isSplash": true,
         "time": 97745,
@@ -16886,6 +17007,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 65,
         "damage": 85,
         "isSplash": true,
         "time": 99301,
@@ -17004,6 +17126,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 111337,
         "victim": "wd.dilbert",
@@ -17020,6 +17143,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 24,
         "damage": 30,
         "time": 111561,
         "victim": "wd.cao",
@@ -17045,6 +17169,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 26,
         "damage": 30,
         "time": 116288,
         "victim": "wd.dilbert",
@@ -17070,6 +17195,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 21,
         "damage": 30,
         "time": 120273,
         "victim": "wd.cao",
@@ -17087,6 +17213,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 14,
         "damage": 30,
         "time": 123531,
         "victim": "wd.dilbert",
@@ -17153,6 +17280,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 23,
         "damage": 30,
         "time": 124882,
         "victim": "wd.char",
@@ -17161,6 +17289,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 80,
         "damage": 94,
         "isSplash": true,
         "time": 125842,
@@ -17170,6 +17299,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 100,
         "damage": 110,
         "time": 127037,
         "victim": "wd.char",
@@ -17195,6 +17325,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 100,
         "damage": 110,
         "isTeam": true,
         "time": 128685,
@@ -17221,6 +17352,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 115,
         "damage": 120,
         "time": 129479,
         "victim": "wd.dilbert",
@@ -17229,6 +17361,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 56,
         "damage": 110,
         "time": 129674,
         "victim": "wd.cao",
@@ -17255,6 +17388,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 23,
         "damage": 110,
         "time": 132193,
         "victim": "wd.cao",
@@ -17336,6 +17470,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 8,
         "damage": 30,
         "time": 138232,
         "victim": "wd.dilbert",
@@ -17368,6 +17503,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 139985,
         "victim": "wd.dilbert",
@@ -17384,6 +17520,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 5,
         "damage": 71,
         "isSplash": true,
         "time": 142598,
@@ -17441,6 +17578,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 144857,
         "victim": "psy*overon",
@@ -17522,6 +17660,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 149649,
         "victim": "psy*overon",
@@ -17538,6 +17677,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 48,
         "damage": 82,
         "isSplash": true,
         "time": 153494,
@@ -17632,6 +17772,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 67,
         "damage": 74,
         "isSplash": true,
         "time": 169556,
@@ -17712,6 +17853,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 36,
         "damage": 108,
         "isSplash": true,
         "time": 177806,
@@ -17730,6 +17872,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 55,
         "damage": 64,
         "isSplash": true,
         "time": 178066,
@@ -17747,6 +17890,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 180025,
         "victim": "wd.char",
@@ -17755,6 +17899,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 100,
         "damage": 110,
         "time": 181806,
         "victim": "wd.char",
@@ -17821,6 +17966,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 5,
         "damage": 85,
         "isSplash": true,
         "time": 185840,
@@ -17830,6 +17976,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 52,
         "damage": 66,
         "isSplash": true,
         "time": 187688,
@@ -17847,6 +17994,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 95,
         "damage": 120,
         "time": 188986,
         "victim": "psy*overon",
@@ -17864,6 +18012,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 120,
         "time": 190689,
         "victim": "wd.dilbert",
@@ -17872,6 +18021,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 60,
         "damage": 110,
         "time": 190855,
         "victim": "wd.cao",
@@ -17907,6 +18057,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 193369,
         "victim": "wd.cao",
@@ -17915,6 +18066,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 42,
         "damage": 110,
         "time": 193883,
         "victim": "psy*overon",
@@ -17958,6 +18110,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 94,
         "damage": 95,
         "isSplash": true,
         "time": 198282,
@@ -17967,6 +18120,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 200038,
         "victim": "psy*overon",
@@ -18018,6 +18172,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 4,
         "damage": 110,
         "time": 203046,
         "victim": "wd.dilbert",
@@ -18044,6 +18199,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "time": 204565,
         "victim": "wd.dilbert",
@@ -18061,6 +18217,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 207283,
         "victim": "wd.dilbert",
@@ -18101,6 +18258,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 209133,
         "victim": "wd.dilbert",
@@ -18142,6 +18300,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 14,
         "damage": 30,
         "time": 211883,
         "victim": "wd.char",
@@ -18150,6 +18309,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 216154,
         "victim": "wd.char",
@@ -18166,6 +18326,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 43,
         "damage": 47,
         "isSelf": true,
         "isSplash": true,
@@ -18207,6 +18368,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 51,
         "damage": 69,
         "isSplash": true,
         "time": 224907,
@@ -18225,6 +18387,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "time": 225993,
         "victim": "wd.dilbert",
@@ -18303,6 +18466,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 22,
         "damage": 68,
         "isSplash": true,
         "time": 233439,
@@ -18312,6 +18476,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "isTeam": true,
         "time": 234910,
@@ -18345,6 +18510,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 9,
         "damage": 30,
         "time": 236026,
         "victim": "psy*overon",
@@ -18387,6 +18553,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 20,
         "damage": 43,
         "isSplash": true,
         "time": 240247,
@@ -18396,6 +18563,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "isTeam": true,
         "time": 240545,
@@ -18430,6 +18598,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 29,
         "damage": 69,
         "isSplash": true,
         "time": 243281,
@@ -18439,6 +18608,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 27,
         "damage": 33,
         "isSelf": true,
         "isSplash": true,
@@ -18456,6 +18626,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 95,
         "damage": 110,
         "time": 244282,
         "victim": "wd.dilbert",
@@ -18482,6 +18653,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 64,
         "damage": 65,
         "isSplash": true,
         "time": 249913,
@@ -18542,6 +18714,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 32,
         "damage": 39,
         "isSelf": true,
         "isSplash": true,
@@ -18576,6 +18749,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 35,
         "damage": 39,
         "isSelf": true,
         "isSplash": true,
@@ -18637,6 +18811,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 5,
         "damage": 55,
         "isSplash": true,
         "time": 257887,
@@ -18646,6 +18821,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 61,
         "damage": 95,
         "isSplash": true,
         "time": 258830,
@@ -18679,6 +18855,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 259759,
         "victim": "wd.char",
@@ -18696,6 +18873,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 59,
         "damage": 84,
         "isSplash": true,
         "time": 262892,
@@ -18713,6 +18891,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 65,
         "damage": 66,
         "isSplash": true,
         "time": 263649,
@@ -18730,6 +18909,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 28,
         "damage": 84,
         "isSplash": true,
         "time": 267324,
@@ -18748,6 +18928,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 16,
         "damage": 63,
         "isSplash": true,
         "time": 271996,
@@ -18782,6 +18963,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 46,
         "damage": 75,
         "isSplash": true,
         "time": 273870,
@@ -18818,6 +19000,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 23,
         "damage": 24,
         "time": 275324,
         "victim": "wd.char",
@@ -18826,6 +19009,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 277389,
         "victim": "wd.cao",
@@ -18869,6 +19053,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 281035,
         "victim": "wd.cao",
@@ -18921,6 +19106,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 4,
         "damage": 24,
         "time": 284347,
         "victim": "wd.cao",
@@ -18929,6 +19115,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 84,
         "damage": 110,
         "time": 285209,
         "victim": "wd.dilbert",
@@ -18963,6 +19150,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 41,
         "damage": 110,
         "time": 287207,
         "victim": "wd.char",
@@ -18971,6 +19159,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 38,
         "damage": 102,
         "isSplash": true,
         "time": 287207,
@@ -19006,6 +19195,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 7,
         "damage": 24,
         "time": 288297,
         "victim": "psy*overon",
@@ -19055,6 +19245,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 40,
         "damage": 110,
         "time": 293178,
         "victim": "wd.cao",
@@ -19080,6 +19271,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 23,
         "damage": 30,
         "time": 295411,
         "victim": "wd.cao",
@@ -19088,6 +19280,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 74,
         "damage": 83,
         "isSplash": true,
         "time": 298009,
@@ -19115,6 +19308,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 47,
         "damage": 64,
         "isSplash": true,
         "time": 302055,
@@ -19172,6 +19366,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 10,
         "damage": 30,
         "time": 306294,
         "victim": "wd.cao",
@@ -19255,6 +19450,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 21,
         "damage": 30,
         "time": 309534,
         "victim": "wd.char",
@@ -19280,6 +19476,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 5,
         "damage": 54,
         "isSplash": true,
         "time": 311581,
@@ -19322,6 +19519,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 29,
         "damage": 30,
         "time": 312794,
         "victim": "wd.cao",
@@ -19396,6 +19594,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 60,
         "damage": 96,
         "isSplash": true,
         "time": 317866,
@@ -19429,6 +19628,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 37,
         "damage": 54,
         "isSplash": true,
         "time": 320960,
@@ -19474,6 +19674,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 34,
         "damage": 43,
         "isSplash": true,
         "time": 323635,
@@ -19483,6 +19684,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 9,
         "damage": 62,
         "isSplash": true,
         "time": 323698,
@@ -19516,6 +19718,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 328441,
         "victim": "wd.dilbert",
@@ -19580,6 +19783,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 5,
         "damage": 30,
         "time": 332933,
         "victim": "psy*overon",
@@ -19628,6 +19832,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 336609,
         "victim": "psy*overon",
@@ -19645,6 +19850,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 38,
         "damage": 110,
         "time": 338855,
         "victim": "wd.cao",
@@ -19703,6 +19909,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 5,
         "damage": 93,
         "isSplash": true,
         "time": 340675,
@@ -19746,6 +19953,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 16,
         "damage": 95,
         "isSplash": true,
         "time": 343103,
@@ -19764,6 +19972,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 27,
         "damage": 63,
         "isSplash": true,
         "time": 344793,
@@ -19822,6 +20031,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "time": 346511,
         "victim": "psy*overon",
@@ -19865,6 +20075,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 349939,
         "victim": "psy*overon",
@@ -19898,6 +20109,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 60,
         "damage": 110,
         "time": 351215,
         "victim": "wd.cao",
@@ -19932,6 +20144,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 75,
         "damage": 110,
         "time": 352891,
         "victim": "psy*overon",
@@ -19981,6 +20194,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 1,
         "damage": 30,
         "time": 354311,
         "victim": "wd.dilbert",
@@ -20005,6 +20219,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 354826,
         "victim": "psy*overon",
@@ -20037,6 +20252,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 357203,
         "victim": "psy*overon",
@@ -20045,6 +20261,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 357341,
         "victim": "wd.dilbert",
@@ -20062,6 +20279,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 42,
         "damage": 65,
         "isSplash": true,
         "time": 360126,
@@ -20096,6 +20314,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 42,
         "damage": 78,
         "isSplash": true,
         "isTeam": true,
@@ -20105,6 +20324,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 40,
         "damage": 70,
         "isSplash": true,
         "time": 364303,
@@ -20155,6 +20375,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 15,
         "damage": 16,
         "time": 367297,
         "victim": "psy*overon",
@@ -20205,6 +20426,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 49,
         "damage": 120,
         "time": 370599,
         "victim": "wd.dilbert",
@@ -20213,6 +20435,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 29,
         "damage": 63,
         "isSplash": true,
         "time": 371293,
@@ -20238,6 +20461,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 35,
         "damage": 76,
         "isSplash": true,
         "time": 373073,
@@ -20282,6 +20506,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 102,
         "isSplash": true,
         "time": 377776,
@@ -20291,6 +20516,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 102,
         "isSplash": true,
         "time": 379111,
@@ -20350,6 +20576,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 14,
         "damage": 30,
         "time": 382615,
         "victim": "wd.cao",
@@ -20358,6 +20585,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 70,
         "damage": 96,
         "isSplash": true,
         "time": 383525,
@@ -20392,6 +20620,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 20,
         "damage": 30,
         "time": 385168,
         "victim": "wd.dilbert",
@@ -20432,6 +20661,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 385945,
         "victim": "psy*overon",
@@ -20489,6 +20719,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 391362,
         "victim": "wd.dilbert",
@@ -20532,6 +20763,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 90,
         "damage": 91,
         "isSplash": true,
         "time": 396183,
@@ -20550,6 +20782,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 48,
         "damage": 76,
         "isSplash": true,
         "time": 396713,
@@ -20559,6 +20792,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 8,
         "damage": 43,
         "isSplash": true,
         "isTeam": true,
@@ -20604,6 +20838,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 20,
         "damage": 45,
         "isSplash": true,
         "time": 401531,
@@ -20662,6 +20897,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 5,
         "damage": 30,
         "time": 404459,
         "victim": "psy*overon",
@@ -20728,6 +20964,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 33,
         "damage": 72,
         "isSplash": true,
         "time": 407987,
@@ -20778,6 +21015,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 1,
         "damage": 62,
         "isSplash": true,
         "time": 413792,
@@ -20796,6 +21034,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 1,
         "damage": 84,
         "isSplash": true,
         "isTeam": true,
@@ -20813,6 +21052,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 417208,
         "victim": "wd.cao",
@@ -20907,6 +21147,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 13,
         "damage": 67,
         "isSplash": true,
         "time": 423083,
@@ -20973,6 +21214,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 29,
         "damage": 66,
         "isSplash": true,
         "isTeam": true,
@@ -21000,6 +21242,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 68,
         "damage": 120,
         "time": 431220,
         "victim": "psy*overon",
@@ -21008,6 +21251,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 25,
         "damage": 45,
         "isSplash": true,
         "time": 431493,
@@ -21025,6 +21269,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 46,
         "damage": 85,
         "isSplash": true,
         "time": 436031,
@@ -21117,6 +21362,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 18,
         "damage": 30,
         "time": 445023,
         "victim": "wd.dilbert",
@@ -21125,6 +21371,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 41,
         "damage": 59,
         "isSplash": true,
         "time": 445567,
@@ -21160,6 +21407,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 49,
         "damage": 83,
         "isSplash": true,
         "time": 448492,
@@ -21178,6 +21426,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 450725,
         "victim": "wd.char",
@@ -21186,6 +21435,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 451636,
         "victim": "wd.dilbert",
@@ -21262,6 +21512,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 38,
         "damage": 110,
         "time": 455187,
         "victim": "wd.dilbert",
@@ -21279,6 +21530,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 6,
         "damage": 78,
         "isSplash": true,
         "time": 455587,
@@ -21296,6 +21548,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 8,
         "damage": 110,
         "time": 457489,
         "victim": "wd.cao",
@@ -21329,6 +21582,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 23,
         "damage": 30,
         "time": 461847,
         "victim": "wd.dilbert",
@@ -21370,6 +21624,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 40,
         "damage": 54,
         "isSplash": true,
         "time": 464738,
@@ -21379,6 +21634,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 8,
         "damage": 98,
         "isSplash": true,
         "time": 464894,
@@ -21430,6 +21686,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 18,
         "damage": 30,
         "time": 465986,
         "victim": "psy*overon",
@@ -21446,6 +21703,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 50,
         "damage": 110,
         "time": 468187,
         "victim": "wd.char",
@@ -21506,6 +21764,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 477279,
         "victim": "wd.char",
@@ -21532,6 +21791,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 28,
         "damage": 89,
         "isSplash": true,
         "time": 479477,
@@ -21582,6 +21842,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 90,
         "damage": 91,
         "isSplash": true,
         "time": 484175,
@@ -21591,6 +21852,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 99,
         "damage": 100,
         "isSplash": true,
         "time": 484453,
@@ -21618,6 +21880,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 12,
         "damage": 38,
         "isSelf": true,
         "isSplash": true,
@@ -21651,6 +21914,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 10,
         "damage": 30,
         "time": 489139,
         "victim": "psy*overon",
@@ -21683,6 +21947,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 10,
         "damage": 30,
         "time": 490239,
         "victim": "wd.dilbert",
@@ -21717,6 +21982,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 120,
         "time": 496175,
         "victim": "psy*overon",
@@ -21742,6 +22008,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 95,
         "damage": 120,
         "time": 499071,
         "victim": "psy*overon",
@@ -21849,6 +22116,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 274,
         "isSplash": true,
         "time": 507315,
@@ -21866,6 +22134,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 52,
         "damage": 365,
         "isSplash": true,
         "time": 509477,
@@ -21875,6 +22144,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 101,
         "damage": 130,
         "isSelf": true,
         "isSplash": true,
@@ -21884,6 +22154,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 23,
         "damage": 30,
         "time": 510388,
         "victim": "wd.dilbert",
@@ -21926,6 +22197,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 100,
         "damage": 110,
         "time": 514440,
         "victim": "wd.dilbert",
@@ -21959,6 +22231,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 100,
         "damage": 110,
         "time": 519076,
         "victim": "wd.cao",
@@ -21976,6 +22249,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 17,
         "damage": 78,
         "isSplash": true,
         "time": 519076,
@@ -22001,6 +22275,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 9,
         "damage": 20,
         "time": 521717,
         "victim": "psy*overon",
@@ -22075,6 +22350,7 @@
       },
       {
         "attacker": "wd.cao",
+        "bounded": 70,
         "damage": 110,
         "time": 528841,
         "victim": "wd.dilbert",
@@ -22126,6 +22402,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 35,
         "damage": 99,
         "isSplash": true,
         "time": 531959,
@@ -22161,6 +22438,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 95,
         "damage": 110,
         "time": 534621,
         "victim": "wd.dilbert",
@@ -22221,6 +22499,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 61,
         "damage": 66,
         "isSplash": true,
         "time": 543154,
@@ -22239,6 +22518,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 100,
         "damage": 110,
         "time": 545603,
         "victim": "wd.cao",
@@ -22265,6 +22545,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 33,
         "damage": 54,
         "isSplash": true,
         "time": 548842,
@@ -22300,6 +22581,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 1,
         "damage": 30,
         "time": 552276,
         "victim": "wd.char",
@@ -22317,6 +22599,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 69,
         "damage": 120,
         "time": 553591,
         "victim": "wd.cao",
@@ -22325,6 +22608,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 72,
         "damage": 94,
         "isSplash": true,
         "isTeam": true,
@@ -22334,6 +22618,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 18,
         "damage": 31,
         "isSelf": true,
         "isSplash": true,
@@ -22367,6 +22652,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 10,
         "damage": 30,
         "time": 560459,
         "victim": "wd.cao",
@@ -22427,6 +22713,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 62,
         "damage": 77,
         "isSplash": true,
         "time": 562423,
@@ -22436,6 +22723,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 100,
         "damage": 110,
         "time": 564374,
         "victim": "wd.dilbert",
@@ -22453,6 +22741,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 43,
         "damage": 110,
         "time": 567111,
         "victim": "wd.dilbert",
@@ -22469,6 +22758,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "isTeam": true,
         "time": 568699,
@@ -22494,6 +22784,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 60,
         "damage": 71,
         "isSplash": true,
         "time": 571799,
@@ -22511,6 +22802,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 70,
         "damage": 110,
         "time": 572024,
         "victim": "wd.cao",
@@ -22536,6 +22828,7 @@
       },
       {
         "attacker": "wd.dilbert",
+        "bounded": 34,
         "damage": 110,
         "time": 576790,
         "victim": "wd.cao",
@@ -22605,6 +22898,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 5,
         "damage": 30,
         "time": 580608,
         "victim": "wd.dilbert",
@@ -22647,6 +22941,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 56,
         "damage": 71,
         "isSplash": true,
         "time": 584915,
@@ -22656,6 +22951,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 587147,
         "victim": "wd.cao",
@@ -22672,6 +22968,7 @@
       },
       {
         "attacker": "psy*overon",
+        "bounded": 100,
         "damage": 110,
         "time": 591295,
         "victim": "wd.cao",
@@ -22728,6 +23025,7 @@
       },
       {
         "attacker": "wd.char",
+        "bounded": 25,
         "damage": 30,
         "time": 593793,
         "victim": "wd.dilbert",
@@ -22857,6 +23155,13 @@
     "scoreboard": {
       "byPlayer": {
         "psy*overon": {
+          "bounded": {
+            "scoreTeam": 650,
+            "streamEwep": 6152,
+            "streamGiven": 7663,
+            "streamTaken": 7655,
+            "streamTeam": 650
+          },
           "scoreEwep": 6154,
           "scoreGiven": 7665,
           "scoreTaken": 7657,
@@ -22865,6 +23170,13 @@
           "streamTaken": 10641
         },
         "wd.cao": {
+          "bounded": {
+            "scoreTeam": 378,
+            "streamEwep": 5636,
+            "streamGiven": 6855,
+            "streamTaken": 6692,
+            "streamTeam": 378
+          },
           "scoreEwep": 5638,
           "scoreGiven": 6857,
           "scoreTaken": 6693,
@@ -22873,6 +23185,13 @@
           "streamTaken": 10307
         },
         "wd.char": {
+          "bounded": {
+            "scoreTeam": 640,
+            "streamEwep": 6822,
+            "streamGiven": 9571,
+            "streamTaken": 6725,
+            "streamTeam": 640
+          },
           "scoreEwep": 6824,
           "scoreGiven": 9573,
           "scoreTaken": 6727,
@@ -22881,6 +23200,13 @@
           "streamTaken": 9720
         },
         "wd.dilbert": {
+          "bounded": {
+            "scoreTeam": 196,
+            "streamEwep": 5098,
+            "streamGiven": 5754,
+            "streamTaken": 8771,
+            "streamTeam": 196
+          },
           "scoreEwep": 5099,
           "scoreGiven": 5755,
           "scoreTaken": 8773,
@@ -37352,7 +37678,114 @@
       "timelimit": "10"
     }
   },
-  "schemaVersion": 49,
+  "opening": {
+    "firstTakes": [
+      {
+        "entNum": 40,
+        "item": "ra",
+        "kind": "ra",
+        "loc": "RA",
+        "takenBy": "wd.cao",
+        "team": "wd",
+        "time": 0
+      },
+      {
+        "entNum": 57,
+        "item": "ga_1",
+        "kind": "ga",
+        "loc": "low.RL",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 14
+      },
+      {
+        "entNum": 54,
+        "item": "rl_1",
+        "kind": "rl",
+        "loc": "low.RL",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 868
+      },
+      {
+        "entNum": 52,
+        "item": "mh",
+        "kind": "mh",
+        "loc": "MH",
+        "takenBy": "wd.dilbert",
+        "team": "pys",
+        "time": 1365
+      },
+      {
+        "entNum": 51,
+        "item": "lg",
+        "kind": "lg",
+        "loc": "RA.LG",
+        "takenBy": "wd.cao",
+        "team": "wd",
+        "time": 2061
+      },
+      {
+        "entNum": 72,
+        "item": "ya",
+        "kind": "ya",
+        "loc": "YA",
+        "takenBy": "wd.dilbert",
+        "team": "pys",
+        "time": 2192
+      },
+      {
+        "entNum": 67,
+        "item": "rl_2",
+        "kind": "rl",
+        "loc": "high.RL",
+        "takenBy": "wd.cao",
+        "team": "wd",
+        "time": 4477
+      },
+      {
+        "entNum": 89,
+        "item": "quad",
+        "kind": "quad",
+        "loc": "Quad",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 5676
+      },
+      {
+        "entNum": 86,
+        "item": "ga_2",
+        "kind": "ga",
+        "loc": "Quad.GA",
+        "takenBy": "wd.char",
+        "team": "wd",
+        "time": 7480
+      }
+    ],
+    "players": [
+      {
+        "loc": "air",
+        "name": "psy*overon",
+        "team": "pys"
+      },
+      {
+        "loc": "yard",
+        "name": "wd.dilbert",
+        "team": "pys"
+      },
+      {
+        "loc": "RA",
+        "name": "wd.cao",
+        "team": "wd"
+      },
+      {
+        "loc": "low.RL",
+        "name": "wd.char",
+        "team": "wd"
+      }
+    ]
+  },
+  "schemaVersion": 55,
   "shots": {
     "byPlayer": [
       {
@@ -60407,6 +60840,7 @@
         ],
         "sng": [],
         "sp": [
+          0,
           13999,
           66086,
           586075,
@@ -66264,6 +66698,7 @@
           }
         ],
         "sp": [
+          0,
           8442,
           12850,
           62764,
@@ -72255,6 +72690,7 @@
           }
         ],
         "sp": [
+          0,
           62089,
           74958
         ],
@@ -78331,6 +78767,7 @@
           }
         ],
         "sp": [
+          0,
           5909,
           10547,
           68441,

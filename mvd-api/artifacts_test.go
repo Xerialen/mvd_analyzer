@@ -246,3 +246,18 @@ func TestArtifact_LazyLOS(t *testing.T) {
 		t.Errorf("ETag = %q; want the <sha>-los@v%d form", etag, result.CurrentSchemaVersion)
 	}
 }
+
+// TestEveryServableEagerArtifactHasAccessor pins eagerArtifacts to the
+// manifest: a new servable DAG node without a wired accessor would pass
+// the 404 gate and then 500 on fetch (this caught the `opening` node in
+// review — the manifest said servable, the map had no entry).
+func TestEveryServableEagerArtifactHasAccessor(t *testing.T) {
+	for _, m := range analyzer.ArtifactManifest() {
+		if !m.Servable || m.Lazy {
+			continue
+		}
+		if _, ok := eagerArtifacts[m.Name]; !ok {
+			t.Errorf("servable eager artifact %q has no eagerArtifacts accessor — GET /v1/demos/{id}/artifacts/%s would 500", m.Name, m.Name)
+		}
+	}
+}
