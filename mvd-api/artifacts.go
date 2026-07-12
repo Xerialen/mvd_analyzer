@@ -49,7 +49,10 @@ var eagerArtifacts = map[string]eagerArtifact{
 		code: "frags_unavailable", msg: "this demo has no frag log"},
 	"metadata": {extract: func(r *result.Result) (any, error) { return view.Metadata(r) },
 		code: "metadata_unavailable", msg: "this demo has no metadata (no fullserverinfo / no countdown centerprint)"},
-	"damage": {extract: func(r *result.Result) (any, error) { return view.Damage(r, view.DamageOptions{}) },
+	// Dmg "both" keeps the artifact "the stored section as-is": the view's
+	// unset default is the raw strip, which would silently delete the
+	// stored bounded family from an endpoint contracted to serve it.
+	"damage": {extract: func(r *result.Result) (any, error) { return view.Damage(r, view.DamageOptions{Dmg: "both"}) },
 		code: "damage_unavailable", msg: "this demo has no damage data (no KTX mvdhidden_dmgdone stream)"},
 	"shots": {extract: func(r *result.Result) (any, error) { return view.Shots(r) },
 		code: "shots_unavailable", msg: "this demo has no shot data (no weapon fires decoded)"},

@@ -387,8 +387,13 @@ func Damage(r *result.Result, opts DamageOptions) (*result.DamageResult, error) 
 		// Mirror the analyzer's fold exactly: the raw family folds the kill's
 		// Damage (present only when it differs from Bounded — a stomp whose
 		// bounded arithmetic capped below the wire value), the bounded family
-		// folds Bounded. Telefrags fold the same number into both.
-		b := k.Bounded
+		// folds Bounded. Telefrags fold the same number into both. A nil
+		// Bounded never reaches here (the fold is gated on hasBounded, and
+		// the analyzer sets it on every kill it folds).
+		b := 0
+		if k.Bounded != nil {
+			b = *k.Bounded
+		}
 		raw := k.Damage
 		if raw == 0 {
 			raw = b

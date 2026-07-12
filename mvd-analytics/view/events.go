@@ -184,8 +184,8 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 			if tf.IsTeam {
 				detail["isTeam"] = true
 			}
-			if tf.Bounded != 0 {
-				detail["bounded"] = tf.Bounded
+			if tf.Bounded != nil {
+				detail["bounded"] = *tf.Bounded
 			}
 			events = append(events, TaggedEvent{
 				T: ts, Type: "telefrag", Player: tf.Attacker, Detail: detail,
@@ -207,8 +207,13 @@ func Events(r *result.Result, filter EventsFilter) (*EventsView, error) {
 			if st.IsTeam {
 				detail["isTeam"] = true
 			}
-			if st.Bounded != 0 {
-				detail["bounded"] = st.Bounded
+			if st.Bounded != nil {
+				detail["bounded"] = *st.Bounded
+			}
+			if st.Damage != 0 {
+				// The raw fold value when it diverged from bounded — without
+				// it the event can't explain the raw given/taken it folded.
+				detail["damage"] = st.Damage
 			}
 			events = append(events, TaggedEvent{
 				T: ts, Type: "stomp", Player: st.Attacker, Detail: detail,

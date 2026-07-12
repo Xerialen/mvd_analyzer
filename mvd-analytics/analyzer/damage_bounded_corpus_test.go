@@ -147,7 +147,7 @@ func TestBoundedReconciliationCorpus(t *testing.T) {
 			if entry.Label == "4on4_osams_ra_230426_dm3" {
 				found := false
 				for _, tf := range d.Telefrags {
-					if tf.Victim == "nlk" && tf.Bounded > 0 {
+					if tf.Victim == "nlk" && tf.Bounded != nil && *tf.Bounded > 0 {
 						found = true
 						break
 					}

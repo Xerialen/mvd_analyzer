@@ -208,7 +208,7 @@ fold-in added to the aggregates.
 | Attacker | `attacker` | string (killer) |
 | Victim | `victim` | string |
 | IsTeam | `isTeam` | bool (omitempty — same team) |
-| Bounded | `bounded` | int (omitempty — telefrag: victim's full armor + remaining health; stomp: wire value through the bounded arithmetic; absent when reconstruction was skipped, or on a 0-value nullified stomp) |
+| Bounded | `bounded` | *int (omitempty — telefrag: victim's full armor + remaining health, armor alone for the pent-vs-pent `dtTELE3` variant; stomp: wire value through the bounded arithmetic; **nil exactly when reconstruction was skipped** — `0` is a real nullified-stomp value, mirroring `DamageEntry.bounded`'s pointer convention) |
 | Damage | `damage` | int (omitempty — the RAW-family fold value when it differs from `bounded`: only a stomp whose bounded arithmetic capped below the wire value; absent means "equal to `bounded`") |
 | VictimWep | `victimWep` | string (omitempty — victim's class at hit `sg`/`mid`/`lg`/`rl`/`both`; set on ENEMY kills only, so `view.Damage`'s filtered recompute can reproduce the fold's `enemyVs*`/`ewep` buckets; absent on team/self/world kills and skipped-mode demos) |
 
@@ -1481,6 +1481,13 @@ state), so no take is double-reported. The interval-derived `weapon` /
 the loc stream just after the spawn — the first change entry after the
 spawn timestamp is the teleport landing; no change inside the window
 means the loc didn't change across the spawn (schema v51).
+
+The opt-in `telefrag` / `stomp` events carry the kill's folded value
+(schema v54): `detail{ victim, isTeam?, bounded?, damage? }` — `bounded`
+is the reconstruction folded into the damage aggregates (present exactly
+when the fold ran; `0` is a real nullified-stomp value), and a stomp
+adds `damage` when its raw fold diverged from `bounded`. Mirrors the
+`telefrags[]`/`stomps[]` entries in the damage section.
 
 #### StreamSlice
 

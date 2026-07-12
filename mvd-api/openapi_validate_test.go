@@ -219,12 +219,13 @@ func addBoundedFamily(d *result.DamageResult) {
 		}
 		p.Bounded = nb
 	}
+	teleB, stompB := 130, 45
 	for i := range d.Telefrags {
-		d.Telefrags[i].Bounded = 130
+		d.Telefrags[i].Bounded = &teleB
 		d.Telefrags[i].VictimWep = "rl"
 	}
 	for i := range d.Stomps {
-		d.Stomps[i].Bounded = 45
+		d.Stomps[i].Bounded = &stompB
 		d.Stomps[i].Damage = 60 // raw fold differs from bounded
 	}
 	if d.Scoreboard != nil {

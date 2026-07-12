@@ -221,13 +221,13 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 		t.Fatalf("Telefrags list = %d, want 1", len(res.Damage.Telefrags))
 	}
 	tf := res.Damage.Telefrags[0]
-	if tf.Attacker != "alpha" || tf.Victim != "erl" || tf.IsTeam || tf.Bounded != 100 {
+	if tf.Attacker != "alpha" || tf.Victim != "erl" || tf.IsTeam || killBounded(tf) != 100 {
 		t.Errorf("telefrag entry = %+v, want alpha->erl, not team, bounded 100 (respawn spawn state)", tf)
 	}
 	if len(res.Damage.Stomps) != 1 {
 		t.Fatalf("Stomps list = %d, want 1", len(res.Damage.Stomps))
 	}
-	if st := res.Damage.Stomps[0]; st.Attacker != "alpha" || st.Victim != "bsg" || st.Bounded != 10 || st.Damage != 0 {
+	if st := res.Damage.Stomps[0]; st.Attacker != "alpha" || st.Victim != "bsg" || killBounded(st) != 10 || st.Damage != 0 {
 		t.Errorf("stomp entry = %+v, want alpha->bsg bounded 10, damage omitted (== bounded)", st)
 	}
 }
@@ -251,7 +251,7 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	if erl := d.ByPlayer["erl"]; erl.Taken != 230 || erl.Bounded.Taken != 230 {
 		t.Errorf("victim taken = %d/%d, want 230/230", erl.Taken, erl.Bounded.Taken)
 	}
-	if d.Telefrags[0].Bounded != 230 {
+	if killBounded(d.Telefrags[0]) != 230 {
 		t.Errorf("kill bounded = %d, want 230", d.Telefrags[0].Bounded)
 	}
 	if alpha.EWep != 0 || len(d.ByWeapon) != 0 || d.TotalDamage != 0 {
@@ -284,7 +284,7 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	if got := d.ByPlayer["alpha"].Given; got != 100 {
 		t.Errorf("deflect Given = %d, want 100", got)
 	}
-	if d.Telefrags[0].Bounded != 100 || d.ByPlayer["alpha"].Telefrags != 1 {
+	if killBounded(d.Telefrags[0]) != 100 || d.ByPlayer["alpha"].Telefrags != 1 {
 		t.Errorf("deflect kill = %+v count=%d, want bounded 100, credited", d.Telefrags[0], d.ByPlayer["alpha"].Telefrags)
 	}
 
@@ -299,7 +299,7 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	if alpha.Given != 10 || alpha.Bounded.Given != 9 {
 		t.Errorf("stomp fold = raw %d / bounded %d, want 10/9", alpha.Given, alpha.Bounded.Given)
 	}
-	if d.Stomps[0].Bounded != 9 || d.Stomps[0].Damage != 10 {
+	if killBounded(d.Stomps[0]) != 9 || d.Stomps[0].Damage != 10 {
 		t.Errorf("stomp kill = bounded %d / damage %d, want 9/10 (raw fold value carried when it diverges)", d.Stomps[0].Bounded, d.Stomps[0].Damage)
 	}
 
@@ -319,6 +319,20 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 		t.Errorf("tele-on-RL-holder VictimWep = %q, want rl", d.Telefrags[0].VictimWep)
 	}
 
+	// dtTELE3 (pent vs pent): the one wire-visible telefrag on a pent
+	// holder. KTX's invincibility rule has NO TELEDEATH exclusion
+	// (combat.c:728-737): take is zeroed, dmg_dealt = the armor alone.
+	a = buildDamageAnalyzer()
+	seedVitals(a, 4, 80, 150, events.ITArmor3|events.ITInvulnerability)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 9999, DeathType: events.DtTele3, Time: 10})
+	d = finalizeDamage(t, a)
+	if got := d.ByPlayer["alpha"].Given; got != 150 {
+		t.Errorf("dtTELE3 fold = %d, want 150 (armor only — pent zeroes the health share)", got)
+	}
+	if killBounded(d.Telefrags[0]) != 150 {
+		t.Errorf("dtTELE3 kill bounded = %d, want 150", killBounded(d.Telefrags[0]))
+	}
+
 	// Respawn telefrag: the victim died (negative health checkpoint, stale
 	// armor shadow) and respawned onto the attacker the same frame — the
 	// respawn beat the stat broadcast, so spawn state (100/0/no inventory)
@@ -329,8 +343,8 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 9999, DeathType: dtTeleTest, Time: 10})
 	d = finalizeDamage(t, a)
 	alpha = d.ByPlayer["alpha"]
-	if alpha.Given != 100 || d.Telefrags[0].Bounded != 100 {
-		t.Errorf("respawn tele = given %d / bounded %d, want 100/100 (not stale armor 120)", alpha.Given, d.Telefrags[0].Bounded)
+	if alpha.Given != 100 || killBounded(d.Telefrags[0]) != 100 {
+		t.Errorf("respawn tele = given %d / bounded %d, want 100/100 (not stale armor 120)", alpha.Given, killBounded(d.Telefrags[0]))
 	}
 	if alpha.EWep != 0 || alpha.EnemyVsSG != 100 {
 		t.Errorf("respawn tele buckets = ewep %d / sg %d, want 0/100 (spawn inventory, not the stale RL bit)", alpha.EWep, alpha.EnemyVsSG)
@@ -345,8 +359,8 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	if alpha := d.ByPlayer["alpha"]; alpha.Given != 0 || alpha.Bounded != nil {
 		t.Errorf("skipped-mode tele folded anyway: given=%d bounded=%+v", alpha.Given, alpha.Bounded)
 	}
-	if d.Telefrags[0].Bounded != 0 {
-		t.Errorf("skipped-mode kill bounded = %d, want absent", d.Telefrags[0].Bounded)
+	if d.Telefrags[0].Bounded != nil {
+		t.Errorf("skipped-mode kill bounded = %d, want nil (fold never ran)", *d.Telefrags[0].Bounded)
 	}
 }
 
@@ -462,6 +476,15 @@ func boundedOf(e DamageEntry) int {
 		return *e.Bounded
 	}
 	return e.Damage
+}
+
+// killBounded dereferences a positional kill's bounded value (-1 when the
+// fold was skipped and the pointer is nil).
+func killBounded(k PositionalKill) int {
+	if k.Bounded == nil {
+		return -1
+	}
+	return *k.Bounded
 }
 
 func finalizeDamage(t *testing.T, a *DamageAnalyzer) *DamageResult {
@@ -631,6 +654,26 @@ func TestDamageAnalyzer_BoundedTeamplayRules(t *testing.T) {
 	})
 	if d.Events[0].Bounded != nil {
 		t.Errorf("suicide bounded = %d, want nil (nullification skipped)", *d.Events[0].Bounded)
+	}
+
+	// tp_num() gate: an FFA demo with a leftover teamplay cvar (and two
+	// players sharing a leftover team string) must NOT nullify — KTX's
+	// tp_num() returns 0 outside team/CTF/coop modes (g_utils.c:1586).
+	a := buildDamageAnalyzer()
+	a.OnEvent(&events.ServerInfoEvent{Key: "teamplay", Value: "1"})
+	seedVitals(a, 6, 100, 0, 0)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 6, Damage: 30, DeathType: dtRLTest, Time: 10})
+	co := damageCore()
+	co.DemoInfo = &DemoInfoResult{Mode: "ffa", Players: []DemoInfoPlayer{
+		{Name: "alpha", Team: "red"}, {Name: "gmate", Team: "red"}, {Name: "bsg", Team: "blue"},
+	}}
+	a.UseCoreOutputs(co)
+	var res Result
+	if err := a.Finalize(&res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Damage.Events[0].Bounded != nil {
+		t.Errorf("ffa tp1 hit bounded = %d, want nil (teamplay cvar must not count outside team modes)", *res.Damage.Events[0].Bounded)
 	}
 }
 

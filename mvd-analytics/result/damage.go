@@ -66,12 +66,14 @@ type PositionalKill struct {
 	Victim   string `json:"victim"`
 	IsTeam   bool   `json:"isTeam,omitempty"` // killer and victim on the same team
 	// Bounded is the reconstructed kill value folded into the BOUNDED
-	// aggregates: telefrag = victim's full armor + remaining health; stomp =
-	// the wire value through the normal bounded arithmetic. Absent when the
-	// bounded reconstruction is skipped (no fold-in happened) — and, a
-	// documented conflation, when a teamplay-nullified stomp reconstructs
-	// to 0.
-	Bounded int `json:"bounded,omitempty"`
+	// aggregates: telefrag = victim's full armor + remaining health (armor
+	// only for dtTELE3 — the pent-vs-pent case, where KTX's invincibility
+	// rule zeroes the health share); stomp = the wire value through the
+	// normal bounded arithmetic. nil exactly when the bounded
+	// reconstruction is skipped (no fold-in happened); 0 is a real value —
+	// a teamplay-nullified stomp with no armor. Mirrors DamageEntry.Bounded's
+	// pointer convention.
+	Bounded *int `json:"bounded,omitempty"`
 	// Damage is the RAW-family fold value when it differs from Bounded —
 	// only a stomp whose bounded arithmetic capped below the wire value
 	// (telefrags fold the same number into both families, so it is omitted

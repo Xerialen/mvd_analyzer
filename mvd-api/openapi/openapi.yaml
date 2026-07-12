@@ -2383,8 +2383,9 @@ components:
               bounded:
                 description: >
                   Reconstructed kill value folded into the bounded aggregates.
-                  Omitted when the fold was skipped (or a teamplay-nullified
-                  stomp reconstructs to 0).
+                  Absent exactly when the fold was skipped (boundedMode
+                  skipped:*); 0 is a real value — a teamplay-nullified stomp
+                  with no armor.
                 type: integer
               damage:
                 description: >
@@ -2423,8 +2424,10 @@ components:
               bounded:
                 description: >
                   Reconstructed kill value (victim's full armor + remaining
-                  health) folded into the bounded aggregates. Omitted when the
-                  fold was skipped.
+                  health; armor alone for the pent-vs-pent dtTELE3 variant,
+                  where KTX zeroes the health share) folded into the bounded
+                  aggregates. Absent exactly when the fold was skipped
+                  (boundedMode skipped:*).
                 type: integer
               damage:
                 description: >
@@ -4135,6 +4138,7 @@ components:
                   team: { type: string }
                   delta: { type: integer, description: frag delta (frag) or value change (health/armor) }
                   value: { type: integer, description: new value (health/armor/loc index) }
+                  bounded: { type: integer, description: reconstructed bounded kill value (telefrag/stomp events); absent when the bounded reconstruction was skipped; 0 is a real nullified-stomp value }
                   powerup: { type: string }
                   endTime: { type: number, description: seconds (powerup/streak) }
                   frags: { type: integer, description: frags during the powerup run }

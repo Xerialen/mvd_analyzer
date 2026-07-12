@@ -219,12 +219,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 	// Bounded reconstruction setup. boundedSkip names a server mode whose
 	// T_Damage rewrites are not observable per hit (see boundedSkipReason);
 	// when set, no bounded figure is produced anywhere. tp mirrors KTX
-	// tp_num() (g_utils.c:1586): the raw teamplay cvar counts only in team
-	// modes — a duel's colour-team artifact must not trigger the teamplay
-	// nullification rules.
+	// tp_num() (g_utils.c:1586): the raw teamplay cvar counts ONLY in
+	// team/CTF/coop modes — a duel's colour-team artifact, or an FFA demo
+	// with a leftover teamplay cvar from a previous team game, must not
+	// trigger the teamplay nullification rules. The KTX demoinfo mode
+	// string carries the gt* verdict ("team"/"ctf" vs "duel"/"ffa"); with
+	// no demoinfo we fall back to the non-duel gate alone (team
+	// classification still requires matching non-empty team strings).
 	boundedSkip := a.boundedSkipReason()
 	tp := 0
-	if !duel {
+	if !duel && a.tpModeApplies() {
 		tp, _ = strconv.Atoi(a.serverInfo["teamplay"])
 	}
 	// enemyTakenBounded feeds DamageDeltaBounded.StreamTaken: KTX dmg_t
@@ -330,17 +334,25 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 				var b, raw int
 				if isTele {
 					// Full armor consumed: take = newceil(50000 - save)
-					// overwhelms every cap (combat.c:627-632). Pent/tp rules
-					// deliberately not applied — KTX excludes TELEDEATH from
-					// them (combat.c:742,747), and a telefrag on a pent
-					// holder deflects into dtTELE2 server-side anyway.
+					// overwhelms every cap (combat.c:627-632). The teamplay
+					// rules deliberately exclude TELEDEATH (combat.c:742,747)
+					// so tp nullification never applies here; the pent rule
+					// does NOT exclude it (combat.c:728-737), but a telefrag
+					// on a pent holder deflects into dtTELE2 server-side —
+					// the one wire-visible pent-victim telefrag is dtTELE3
+					// (pent vs pent), where KTX zeroes the health share and
+					// credits the armor alone.
 					b = dd.victimArmor + dd.victimHealth
+					if d.deathType == events.DtTele3 {
+						b = dd.victimArmor
+					}
 					raw = b
 				} else {
 					b = boundedDamage(dd, tp, isTeam, isSelf)
 					raw = d.damage
 				}
-				kill.Bounded = b
+				bv := b
+				kill.Bounded = &bv
 				if raw != b {
 					// Only a stomp can diverge (its raw fold is the wire
 					// value); carried so the view's filtered recompute
@@ -658,6 +670,22 @@ func armorFraction(items int) float64 {
 		return 0.3
 	}
 	return 0
+}
+
+// tpModeApplies reports whether the demo's mode lets the teamplay cvar
+// count, mirroring tp_num()'s isTeam()||isCTF()||coop gate
+// (ktx/src/g_utils.c:1586). The KTX demoinfo mode string carries the
+// verdict; without demoinfo we can't tell and let the caller's other
+// gates decide (returns true).
+func (a *DamageAnalyzer) tpModeApplies() bool {
+	if a.core == nil || a.core.DemoInfo == nil || a.core.DemoInfo.Mode == "" {
+		return true
+	}
+	switch strings.ToLower(a.core.DemoInfo.Mode) {
+	case "team", "ctf", "coop":
+		return true
+	}
+	return false
 }
 
 // boundedSkipReason names the server mode that makes the bounded

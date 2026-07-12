@@ -502,10 +502,10 @@ func boundedFixture() *result.Result {
 			{Time: 3000, Attacker: "alpha", Victim: "bravo", Weapon: "rl", Damage: 200, VictimWep: "sg", Bounded: intPtr(30)},
 		},
 		Telefrags: []result.PositionalKill{
-			{Time: 1500, Attacker: "alpha", Victim: "bravo", Bounded: 50, VictimWep: "rl"},
+			{Time: 1500, Attacker: "alpha", Victim: "bravo", Bounded: intPtr(50), VictimWep: "rl"},
 		},
 		Stomps: []result.PositionalKill{
-			{Time: 1700, Attacker: "bravo", Victim: "alpha", Bounded: 8, Damage: 10, VictimWep: "lg"},
+			{Time: 1700, Attacker: "bravo", Victim: "alpha", Bounded: intPtr(8), Damage: 10, VictimWep: "lg"},
 		},
 		Matrix: []result.DamagePair{
 			{Attacker: "alpha", Victim: "bravo", Damage: 300, ByWeapon: map[string]int{"rl": 300}},
@@ -583,7 +583,7 @@ func TestDamage_RawFamilyStripsBounded(t *testing.T) {
 			empty.ByPlayer["alpha"].Given, empty.Events[2].Damage)
 	}
 	// Telefrag/stomp bounded + victimWep survive the raw strip.
-	if empty.Telefrags[0].Bounded != 50 || empty.Telefrags[0].VictimWep != "rl" {
+	if b := empty.Telefrags[0].Bounded; b == nil || *b != 50 || empty.Telefrags[0].VictimWep != "rl" {
 		t.Errorf("raw telefrag lost its fold value: %+v", empty.Telefrags[0])
 	}
 	// The v53 shape carries no "dmg" echo.
