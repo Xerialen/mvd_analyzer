@@ -29,7 +29,12 @@ package result
 // in dmg totals, out of per-weapon ones): a telefrag folds its Bounded
 // reconstruction (armor + remaining health) into the raw family too, since
 // the wire 9999 is a sentinel; a stomp folds its honest wire value (raw) /
-// reconstruction (bounded). No fold-in when BoundedMode is skipped:*.
+// reconstruction (bounded). An ENEMY positional kill also folds into the
+// victim-weapon EnemyVs*/EWep buckets — KTX's dmg_eweapon accumulation has
+// no deathtype gate either (combat.c:1073), so a kill on an RL/LG holder
+// lands in EWep. ByWeapon, Matrix and TotalDamage stay excluded (the wpNONE
+// parity). On a skipped:* demo the reversal is total: no fold at all, so
+// given/taken and the buckets revert to pure v53 exclusion.
 type DamageResult struct {
 	TotalDamage int                      `json:"totalDamage"`
 	Events      []DamageEntry            `json:"events"`               // per-hit log, time-ordered (excludes telefrags + stomps)
@@ -142,6 +147,19 @@ type PlayerDamage struct {
 	// shape is exactly the damage-figure fields. Absent when reconstruction
 	// was skipped (DamageResult.BoundedMode) or on a raw view.
 	Bounded *PlayerDamage `json:"bounded,omitempty"`
+}
+
+// BoundedNest lazily creates and returns this player's bounded-family
+// aggregate. The nest is itself a PlayerDamage (same field names, same
+// helpers) with the invariant that its Telefrags/Stomps/Bounded stay
+// zero/nil, so its JSON shape is exactly the damage-figure fields. Both the
+// analyzer (building the stored shape) and view.Damage's filtered recompute
+// fold bounded values through this one helper.
+func (p *PlayerDamage) BoundedNest() *PlayerDamage {
+	if p.Bounded == nil {
+		p.Bounded = &PlayerDamage{ByWeapon: make(map[string]int)}
+	}
+	return p.Bounded
 }
 
 // DamagePair is one attacker→victim total in the damage matrix.

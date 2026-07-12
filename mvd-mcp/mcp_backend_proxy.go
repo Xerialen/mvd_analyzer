@@ -356,7 +356,12 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	summary, defaulted := summaryDefaultTrue(in.Summary)
 	q.boolean("summary", summary)
 	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))
-	return withSummaryHint(out, defaulted && summary, "the per-hit events log"), err
+	// The dropped-detail hint must name the family flip: with dmg unset the
+	// REST default is family-by-request (both under summary, raw for the
+	// full log), so following the hint with summary:false alone would
+	// silently drop every bounded field the caller just read.
+	return withSummaryHint(out, defaulted && summary,
+		"the per-hit events log (add dmg:'both' to keep the bounded family — a full-log request defaults to dmg:'raw')"), err
 }
 
 func (p *proxyBackend) GetAim(ctx context.Context, in GetAimInput) (any, error) {

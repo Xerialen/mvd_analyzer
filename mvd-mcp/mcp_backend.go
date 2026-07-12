@@ -160,7 +160,7 @@ type GetDamageInput struct {
 	StartTime float64  `json:"startTime,omitempty" jsonschema:"window start in match-relative seconds (hits at or after this time)"`
 	EndTime   float64  `json:"endTime,omitempty" jsonschema:"window end in match-relative seconds (hits at or before this time)"`
 	Summary   *bool    `json:"summary,omitempty" jsonschema:"MCP default TRUE (REST differs): aggregates only, the big per-hit damage log dropped. Pass false for the full log."`
-	Dmg       string   `json:"dmg,omitempty" jsonschema:"which damage family to return. 'raw' = the unbound wire values (overkill included, so totals run higher than the KTX scoreboard; the v53 shape). 'bounded' = KTX-scoreboard semantics reconstructed per hit (armor absorbed + health capped to the victim's remaining health) materialized into the same field names; errors (bounded_unavailable) on midair / instagib / dmgfrags demos, whose server mode makes the reconstruction impossible. 'both' = the raw fields plus a per-player 'bounded' nest and a per-event 'bounded'. Default: 'both' under the MCP summary default, 'raw' for a full-log request (summary:false)."`
+	Dmg       string   `json:"dmg,omitempty" jsonschema:"damage family: raw | bounded | both; semantics and the summary-aware default are described in the tool description"`
 }
 
 // GetAimInput identifies a demo for its per-player aim analysis, with optional

@@ -51,13 +51,12 @@ type DamageAnalyzer struct {
 	raw []rawDamage
 }
 
-// slotVitals is one slot's tracked health/armor. known distinguishes "never
-// saw a stat for this slot" (snapshot falls back to the 100/0 spawn state)
-// from a legitimately tracked value.
+// slotVitals is one slot's tracked health/armor for the bounded
+// reconstruction — shadow-decremented per hit and checkpointed by
+// authoritative stat updates (see the analyzer's vitals field).
 type slotVitals struct {
 	health int
 	armor  int
-	known  bool
 }
 
 // rawDamage is one mvdhidden_dmgdone record pinned to wire slots + time,
@@ -107,8 +106,10 @@ func (a *DamageAnalyzer) OnEvent(event events.Event) error {
 	case *events.StuffTextEvent:
 		// Serverinfo capture for the bounded arithmetic (teamplay,
 		// k_midair/k_instagib/k_dmgfrags) — same sources as MetadataAnalyzer.
-		// Captured here rather than read from CoreOutputs because the shadow
-		// decrement below runs during OnEvent, before Finalize wiring.
+		// Captured locally per the established per-analyzer convention
+		// (weaponstay.go's OnStuffText/OnServerInfo pair does the same):
+		// CoreOutputs carries no serverinfo to reuse, and these cvars are read
+		// only in Finalize.
 		if strings.HasPrefix(e.Command, "fullserverinfo ") {
 			for k, v := range parseInfoString(e.Command) {
 				a.serverInfo[k] = v
@@ -362,19 +363,19 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 
 				vp := getOrCreateDamage(out.ByPlayer, victim)
 				vp.Taken += raw
-				boundedNest(vp).Taken += b
+				vp.BoundedNest().Taken += b
 				if !isWorld {
 					ap := getOrCreateDamage(out.ByPlayer, attacker)
 					switch {
 					case isSelf:
 						ap.GivenSelf += raw
-						boundedNest(ap).GivenSelf += b
+						ap.BoundedNest().GivenSelf += b
 					case isTeam:
 						ap.GivenTeam += raw
-						boundedNest(ap).GivenTeam += b
+						ap.BoundedNest().GivenTeam += b
 					default:
 						ap.Given += raw
-						boundedNest(ap).Given += b
+						ap.BoundedNest().Given += b
 						// KTX's enemy branch accumulates dmg_eweapon with
 						// no deathtype gate (combat.c:1073), so tele/stomp
 						// damage lands in the EWep buckets when the victim
@@ -384,7 +385,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 						// that Given includes the fold.
 						pvw := victimWeaponClass(dd.victimItem)
 						addVictimWeaponBucket(ap, pvw, raw)
-						addVictimWeaponBucket(boundedNest(ap), pvw, b)
+						addVictimWeaponBucket(ap.BoundedNest(), pvw, b)
 						enemyTakenBounded[victim] += b
 						// Record the victim-weapon class the enemy fold used so
 						// the view's filtered recompute can reproduce the EWep
@@ -462,7 +463,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			vp.TakenEnv += d.damage
 		}
 		if boundedSkip == "" {
-			vb := boundedNest(vp)
+			vb := vp.BoundedNest()
 			vb.Taken += b
 			if isEnv {
 				vb.TakenEnv += b
@@ -478,12 +479,12 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 		case isSelf:
 			ap.GivenSelf += d.damage
 			if boundedSkip == "" {
-				boundedNest(ap).GivenSelf += b
+				ap.BoundedNest().GivenSelf += b
 			}
 		case isTeam:
 			ap.GivenTeam += d.damage
 			if boundedSkip == "" {
-				boundedNest(ap).GivenTeam += b
+				ap.BoundedNest().GivenTeam += b
 			}
 		default:
 			// Enemy damage — the "useful" number.
@@ -493,7 +494,7 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			addToMatrix(matrix, attacker, victim, weapon, d.damage)
 			addVictimWeaponBucket(ap, vw, d.damage)
 			if boundedSkip == "" {
-				ab := boundedNest(ap)
+				ab := ap.BoundedNest()
 				ab.Given += b
 				ab.ByWeapon[weapon] += b
 				addVictimWeaponBucket(ab, vw, b)
@@ -588,16 +589,6 @@ func getOrCreateDamage(m map[string]*PlayerDamage, name string) *PlayerDamage {
 	p := &PlayerDamage{ByWeapon: make(map[string]int)}
 	m[name] = p
 	return p
-}
-
-// boundedNest lazily creates a player's bounded-family aggregate. The nest
-// is itself a PlayerDamage (same field names, same helpers) with the
-// invariant that its Telefrags/Stomps/Bounded stay zero/nil.
-func boundedNest(p *PlayerDamage) *PlayerDamage {
-	if p.Bounded == nil {
-		p.Bounded = &PlayerDamage{ByWeapon: make(map[string]int)}
-	}
-	return p.Bounded
 }
 
 // boundedDamage reconstructs one hit's KTX-scoreboard value (dmg_dealt,

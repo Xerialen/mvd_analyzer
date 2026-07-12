@@ -163,7 +163,8 @@ same in-match hit set (KTX scoreboard parity). Each `events` entry carries the
 match-relative `time` so consumers can still window within the match.
 
 **Positional kills (telefrag, stomp) fold their honest value into
-`given`/`givenTeam`/`taken` — and nothing else (schema v54).** A telefrag
+`given`/`givenTeam`/`taken` — and, on enemy kills, the `enemyVs*`/`ewep`
+buckets (schema v54).** A telefrag
 (deathtype `tele`) is an instant kill reported on the wire as the 9999
 sentinel; a stomp (deathtype `stomp`, landing on a head) is a real ~10 HP
 `T_Damage`. Both stay out of the `events` log, `byWeapon`, `matrix`,
@@ -174,12 +175,18 @@ per-player in `PlayerDamage.telefrags` / `.stomps`. But their DAMAGE
 folds into the given/taken aggregates in **both families**, matching
 KTX's own accumulation (`combat.c:1046-1076` has no tele/stomp
 exclusion): a telefrag folds its **bounded** reconstruction (victim's
-full armor + remaining health) into the raw family too — the wire 9999
-is a kill guarantee, not a measurement — while a stomp folds its wire
-value (raw) / reconstruction (bounded). Each `telefrags[]`/`stomps[]`
-entry carries the folded value as `bounded`. No fold-in on
-`boundedMode: skipped:*` demos (v53 exclusion semantics there). The kill
-still appears in `FragResult` and as a `frag` event.
+full armor + remaining health; armor alone for the pent-vs-pent
+`dtTELE3` variant) into the raw family too — the wire 9999 is a kill
+guarantee, not a measurement — while a stomp folds its wire value (raw)
+/ reconstruction (bounded). An ENEMY kill's fold also lands in the
+victim-weapon `enemyVs*`/`ewep` buckets (KTX `dmg_eweapon` has no
+deathtype gate either, `combat.c:1073`), keeping "the buckets sum to
+`given`" true. Each `telefrags[]`/`stomps[]` entry carries the folded
+value as `bounded` (plus `damage` when the raw fold diverged, and
+`victimWep` for the bucket). No fold-in at all on
+`boundedMode: skipped:*` demos — given/taken and the buckets revert to
+pure v53 exclusion there. The kill still appears in `FragResult` and as
+a `frag` event.
 
 | Field | JSON key | Type |
 |---|---|---|

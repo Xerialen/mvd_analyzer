@@ -380,8 +380,10 @@ paths:
       description: >
         Per-hit damage log plus aggregates (matrix, per-weapon, given/taken)
         and the KTX-scoreboard cross-check. Positional kills — telefrags and
-        stomps — are excluded from the per-weapon/matrix/EWep figures and
-        listed separately, but their kill value DOES fold into given/taken.
+        stomps — are excluded from the byWeapon/matrix/totalDamage figures
+        and listed separately, but their kill value DOES fold into
+        given/taken and, on enemy kills, the EWep victim-weapon buckets
+        (no fold at all on skipped:* demos — pure exclusion there).
         Two damage families (schema v54), selected by `dmg`: the RAW family is
         the unbound wire value (includes overkill), so totals run higher than
         the KTX scoreboard; the BOUNDED family reconstructs KTX-scoreboard
@@ -1328,9 +1330,10 @@ components:
       name: dmg
       in: query
       description: >
-        Damage family (schema v54). `raw` — the unbound wire values (the v53
-        shape; positional-kill fold values still surface on
-        telefrags[]/stomps[]). `bounded` — KTX-scoreboard semantics (armor
+        Damage family (schema v54). `raw` — the unbound wire values in the
+        v53 field layout, with v54 fold semantics (given/taken include the
+        telefrag/stomp folds on standard demos; the kill entries keep their
+        fold fields and boundedMode survives). `bounded` — KTX-scoreboard semantics (armor
         absorbed + health capped to remaining) materialized into the same
         field names; 422 `bounded_unavailable` on midair / instagib / dmgfrags
         demos, whose server mode makes the reconstruction impossible. `both` —
