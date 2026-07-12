@@ -109,8 +109,9 @@ Important client effects:
 - Analyzer corpus: all ten goldens pass; v56 changes were semantically limited
   to schema + `w`, and v57 changes to schema + `playerSlots`.
 - Real KDLOG: 1,129 records resolved, 0 errors, 8 player slots (manual CLI
-  end-to-end run); package golden and CLI attachment/precedence tests are
-  durable in the suite.
+  end-to-end run). A durable subprocess test runs the real CLI flags against
+  public golden-corpus game 212422 and verifies generated `playerSlots`, final
+  JSON attachment, inferred records, and KDLOG precedence.
 - Real inference: 220 records, 0 errors, same demo.
 - Web: WASM build passes; direct URL loaded and rendered the real dm3 match in
   Chrome. Missing URL produced `Error: Demo fetch failed: 404 ...` and hid the
