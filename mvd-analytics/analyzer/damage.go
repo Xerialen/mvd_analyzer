@@ -313,21 +313,31 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 			// the shadow vitals these values depend on are polluted by the
 			// unmodeled take rewrites, so v53 exclusion semantics apply.
 			if boundedSkip == "" {
+				// A tele/stomp victim is alive by definition (spawn_tdeath
+				// and the stomp path only touch live players), so a
+				// non-positive health shadow means the victim respawned
+				// THIS frame and the respawn beat the end-of-frame stat
+				// broadcast — the same wire-invisibility as the v51
+				// match-start spawn. KTX saw the spawn state (100 health,
+				// no armor, spawn inventory); the stale corpse values
+				// mis-credit in both directions (dead health says 0,
+				// pre-death armor says too much — both corpus-measured on
+				// the dm3 spawn-deflects). Reconstruct from spawn state.
+				dd := d
+				if dd.victimHealth <= 0 {
+					dd.victimHealth, dd.victimArmor, dd.victimItem = 100, 0, 0
+				}
 				var b, raw int
 				if isTele {
-					h := d.victimHealth
-					if h < 0 {
-						h = 0
-					}
 					// Full armor consumed: take = newceil(50000 - save)
 					// overwhelms every cap (combat.c:627-632). Pent/tp rules
 					// deliberately not applied — KTX excludes TELEDEATH from
 					// them (combat.c:742,747), and a telefrag on a pent
 					// holder deflects into dtTELE2 server-side anyway.
-					b = d.victimArmor + h
+					b = dd.victimArmor + dd.victimHealth
 					raw = b
 				} else {
-					b = boundedDamage(d, tp, isTeam, isSelf)
+					b = boundedDamage(dd, tp, isTeam, isSelf)
 					raw = d.damage
 				}
 				kill.Bounded = b
@@ -347,6 +357,16 @@ func (a *DamageAnalyzer) Finalize(result *Result) error {
 					default:
 						ap.Given += raw
 						boundedNest(ap).Given += b
+						// KTX's enemy branch accumulates dmg_eweapon with
+						// no deathtype gate (combat.c:1073), so tele/stomp
+						// damage lands in the EWep buckets when the victim
+						// held RL/LG (corpus-measured: ewep under-reported
+						// by exactly the tele bounded values without this).
+						// It also keeps "EnemyVs* sums to Given" true now
+						// that Given includes the fold.
+						pvw := victimWeaponClass(dd.victimItem)
+						addVictimWeaponBucket(ap, pvw, raw)
+						addVictimWeaponBucket(boundedNest(ap), pvw, b)
 						enemyTakenBounded[victim] += b
 					}
 				}

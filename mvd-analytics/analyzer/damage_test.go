@@ -189,11 +189,12 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 
 	alpha := res.Damage.ByPlayer["alpha"]
 	// The 9999 telefrag sentinel must NOT pollute damage figures — but the
-	// fold-in adds each positional kill's honest value: this telefrag lands
-	// on a 0-HP shadow (the RL hit emptied erl same-frame) so folds 0, and
-	// the 10-HP stomp folds 10. Given = 100 (RL) + 0 + 10.
-	if alpha.Given != 110 {
-		t.Errorf("Given = %d, want 110 (rl 100 + tele fold 0 + stomp fold 10)", alpha.Given)
+	// fold-in adds each positional kill's honest value. The RL hit emptied
+	// erl's health shadow same-frame, so the telefrag victim must be a
+	// fresh respawn (a tele victim is alive by definition): spawn state
+	// folds 100. The 10-HP stomp folds 10. Given = 100 (RL) + 100 + 10.
+	if alpha.Given != 210 {
+		t.Errorf("Given = %d, want 210 (rl 100 + spawn-tele fold 100 + stomp fold 10)", alpha.Given)
 	}
 	if alpha.EWep != 100 || alpha.EnemyVsRL != 100 {
 		t.Errorf("ewep=%d enemyVsRl=%d, want 100/100 (positional kills stay out of EWep)", alpha.EWep, alpha.EnemyVsRL)
@@ -220,8 +221,8 @@ func TestDamageAnalyzer_PositionalKillsSeparated(t *testing.T) {
 		t.Fatalf("Telefrags list = %d, want 1", len(res.Damage.Telefrags))
 	}
 	tf := res.Damage.Telefrags[0]
-	if tf.Attacker != "alpha" || tf.Victim != "erl" || tf.IsTeam {
-		t.Errorf("telefrag entry = %+v, want alpha->erl, not team", tf)
+	if tf.Attacker != "alpha" || tf.Victim != "erl" || tf.IsTeam || tf.Bounded != 100 {
+		t.Errorf("telefrag entry = %+v, want alpha->erl, not team, bounded 100 (respawn spawn state)", tf)
 	}
 	if len(res.Damage.Stomps) != 1 {
 		t.Fatalf("Stomps list = %d, want 1", len(res.Damage.Stomps))
@@ -296,6 +297,34 @@ func TestDamageAnalyzer_PositionalKillFoldIn(t *testing.T) {
 	}
 	if d.Stomps[0].Bounded != 9 {
 		t.Errorf("stomp kill bounded = %d, want 9", d.Stomps[0].Bounded)
+	}
+
+	// Tele victim holding RL and alive: the fold lands in the EWep buckets
+	// too — KTX's dmg_eweapon has no deathtype gate (combat.c:1073).
+	a = buildDamageAnalyzer()
+	seedVitals(a, 4, 60, 0, events.ITRocketLauncher)
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 9999, DeathType: dtTeleTest, Time: 10})
+	d = finalizeDamage(t, a)
+	alpha = d.ByPlayer["alpha"]
+	if alpha.EnemyVsRL != 60 || alpha.EWep != 60 || alpha.Bounded.EWep != 60 {
+		t.Errorf("tele-on-RL-holder ewep = %d/%d/%d, want 60/60/60", alpha.EnemyVsRL, alpha.EWep, alpha.Bounded.EWep)
+	}
+
+	// Respawn telefrag: the victim died (negative health checkpoint, stale
+	// armor shadow) and respawned onto the attacker the same frame — the
+	// respawn beat the stat broadcast, so spawn state (100/0/no inventory)
+	// is the truth, not the corpse values.
+	a = buildDamageAnalyzer()
+	seedVitals(a, 4, 100, 120, events.ITArmor3|events.ITRocketLauncher)
+	a.OnEvent(&events.StatUpdateEvent{PlayerNum: 4, StatIndex: events.StatHealth, Value: -7})
+	a.OnEvent(&events.DamageEvent{Attacker: 0, Victim: 4, Damage: 9999, DeathType: dtTeleTest, Time: 10})
+	d = finalizeDamage(t, a)
+	alpha = d.ByPlayer["alpha"]
+	if alpha.Given != 100 || d.Telefrags[0].Bounded != 100 {
+		t.Errorf("respawn tele = given %d / bounded %d, want 100/100 (not stale armor 120)", alpha.Given, d.Telefrags[0].Bounded)
+	}
+	if alpha.EWep != 0 || alpha.EnemyVsSG != 100 {
+		t.Errorf("respawn tele buckets = ewep %d / sg %d, want 0/100 (spawn inventory, not the stale RL bit)", alpha.EWep, alpha.EnemyVsSG)
 	}
 
 	// Skipped mode: no fold-in at all — v53 exclusion semantics.
