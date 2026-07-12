@@ -28365,8 +28365,28 @@
     }
   ],
   "damage": {
+    "boundedMode": "standard",
     "byPlayer": {
       "Milton": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 3615,
+            "rl": 6435,
+            "sg": 204,
+            "ssg": 20
+          },
+          "enemyVsBoth": 2324,
+          "enemyVsLg": 1677,
+          "enemyVsMid": 200,
+          "enemyVsRl": 4376,
+          "enemyVsSg": 1697,
+          "ewep": 8377,
+          "given": 10274,
+          "givenSelf": 643,
+          "givenTeam": 265,
+          "taken": 9203,
+          "takenEnv": 165
+        },
         "byWeapon": {
           "lg": 4200,
           "rl": 7789,
@@ -28386,6 +28406,26 @@
         "takenEnv": 170
       },
       "shazam": {
+        "bounded": {
+          "byWeapon": {
+            "gl": 210,
+            "lg": 3713,
+            "rl": 4087,
+            "sg": 320,
+            "ssg": 92
+          },
+          "enemyVsBoth": 2952,
+          "enemyVsLg": 1222,
+          "enemyVsMid": 98,
+          "enemyVsRl": 2465,
+          "enemyVsSg": 1685,
+          "ewep": 6639,
+          "given": 8422,
+          "givenSelf": 493,
+          "givenTeam": 132,
+          "taken": 8630,
+          "takenEnv": 5
+        },
         "byWeapon": {
           "gl": 210,
           "lg": 4050,
@@ -28406,6 +28446,25 @@
         "takenEnv": 5
       },
       "squeeze": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 4915,
+            "rl": 2109,
+            "sg": 272,
+            "ssg": 201
+          },
+          "enemyVsBoth": 2089,
+          "enemyVsLg": 1210,
+          "enemyVsMid": 409,
+          "enemyVsRl": 1888,
+          "enemyVsSg": 1901,
+          "ewep": 5187,
+          "given": 7497,
+          "givenSelf": 576,
+          "givenTeam": 266,
+          "taken": 8748,
+          "takenEnv": 5
+        },
         "byWeapon": {
           "lg": 5550,
           "rl": 2611,
@@ -28425,6 +28484,25 @@
         "takenEnv": 5
       },
       "stepcop": {
+        "bounded": {
+          "byWeapon": {
+            "lg": 3049,
+            "rl": 4124,
+            "sg": 384,
+            "ssg": 52
+          },
+          "enemyVsBoth": 2646,
+          "enemyVsLg": 1555,
+          "enemyVsMid": 254,
+          "enemyVsRl": 2467,
+          "enemyVsSg": 687,
+          "ewep": 6668,
+          "given": 7609,
+          "givenSelf": 641,
+          "givenTeam": 328,
+          "taken": 10755,
+          "takenEnv": 15
+        },
         "byWeapon": {
           "lg": 3390,
           "rl": 4942,
@@ -28451,6 +28529,7 @@
       "sg": 1212,
       "ssg": 408
     },
+    "dmg": "both",
     "events": [
       {
         "attacker": "shazam",
@@ -28518,6 +28597,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 68,
         "damage": 70,
         "isSplash": true,
         "time": 5234,
@@ -28601,6 +28681,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 25,
         "damage": 30,
         "time": 9398,
         "victim": "shazam",
@@ -28633,6 +28714,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 21,
         "damage": 30,
         "time": 10603,
         "victim": "stepcop",
@@ -28649,6 +28731,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 12416,
         "victim": "shazam",
@@ -28690,6 +28773,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 13935,
         "victim": "stepcop",
@@ -28698,6 +28782,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 4,
         "damage": 24,
         "time": 15167,
         "victim": "squeeze",
@@ -28803,6 +28888,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 19809,
         "victim": "squeeze",
@@ -28811,6 +28897,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 110,
         "time": 19984,
         "victim": "stepcop",
@@ -28863,6 +28950,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 13,
         "damage": 30,
         "time": 25639,
         "victim": "stepcop",
@@ -28895,6 +28983,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 29026,
         "victim": "stepcop",
@@ -28939,6 +29028,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 13,
         "damage": 30,
         "time": 35414,
         "victim": "stepcop",
@@ -28964,6 +29054,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 22,
         "damage": 30,
         "time": 36958,
         "victim": "stepcop",
@@ -29023,6 +29114,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 18,
         "damage": 30,
         "time": 42927,
         "victim": "shazam",
@@ -29063,6 +29155,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 45127,
         "victim": "shazam",
@@ -29071,6 +29164,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 37,
         "damage": 110,
         "time": 46371,
         "victim": "stepcop",
@@ -29105,6 +29199,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 49146,
         "victim": "stepcop",
@@ -29113,6 +29208,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 104,
         "isSplash": true,
         "time": 51234,
@@ -29146,6 +29242,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 56496,
         "victim": "shazam",
@@ -29171,6 +29268,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 19,
         "damage": 78,
         "isSplash": true,
         "time": 60730,
@@ -29223,6 +29321,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 25,
         "damage": 56,
         "time": 62598,
         "victim": "shazam",
@@ -29255,6 +29354,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 7,
         "damage": 10,
         "isEnv": true,
         "time": 64250,
@@ -29327,6 +29427,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 49,
         "damage": 110,
         "time": 69108,
         "victim": "stepcop",
@@ -29353,6 +29454,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 25,
         "damage": 67,
         "isSplash": true,
         "time": 71618,
@@ -29396,6 +29498,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 16,
         "damage": 30,
         "time": 75055,
         "victim": "stepcop",
@@ -29428,6 +29531,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 26,
         "damage": 30,
         "time": 79678,
         "victim": "squeeze",
@@ -29460,6 +29564,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 82304,
         "victim": "squeeze",
@@ -29477,6 +29582,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 15,
         "damage": 81,
         "isSplash": true,
         "time": 84182,
@@ -29510,6 +29616,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 85263,
         "victim": "squeeze",
@@ -29550,6 +29657,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 28,
         "damage": 30,
         "time": 88403,
         "victim": "shazam",
@@ -29631,6 +29739,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 17,
         "damage": 30,
         "time": 90189,
         "victim": "Milton",
@@ -29729,6 +29838,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 53,
         "damage": 90,
         "isSplash": true,
         "time": 94431,
@@ -29738,6 +29848,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 19,
         "damage": 37,
         "isSelf": true,
         "isSplash": true,
@@ -29781,6 +29892,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 19,
         "damage": 30,
         "time": 98849,
         "victim": "squeeze",
@@ -29797,6 +29909,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 24,
         "damage": 93,
         "isSplash": true,
         "time": 99889,
@@ -29806,6 +29919,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 32,
         "damage": 68,
         "isSplash": true,
         "time": 99889,
@@ -29840,6 +29954,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 51,
         "damage": 73,
         "isSplash": true,
         "time": 104085,
@@ -29873,6 +29988,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 44,
         "damage": 56,
         "time": 105769,
         "victim": "stepcop",
@@ -29881,6 +29997,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 106884,
         "victim": "shazam",
@@ -29913,6 +30030,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 109080,
         "victim": "shazam",
@@ -29921,6 +30039,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 48,
         "damage": 89,
         "isSplash": true,
         "time": 110734,
@@ -29954,6 +30073,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "isTeam": true,
         "time": 112691,
@@ -30077,6 +30197,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 27,
         "damage": 30,
         "time": 116588,
         "victim": "stepcop",
@@ -30085,6 +30206,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 43,
         "damage": 70,
         "isSplash": true,
         "time": 117045,
@@ -30102,6 +30224,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 28,
         "damage": 30,
         "time": 117390,
         "victim": "shazam",
@@ -30143,6 +30266,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 15,
         "damage": 40,
         "isSelf": true,
         "isSplash": true,
@@ -30178,6 +30302,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 50,
         "damage": 51,
         "isSplash": true,
         "time": 123679,
@@ -30196,6 +30321,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 45,
         "damage": 82,
         "isSplash": true,
         "time": 125417,
@@ -30231,6 +30357,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 110,
         "time": 132025,
         "victim": "stepcop",
@@ -30248,6 +30375,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 51,
         "damage": 109,
         "isSplash": true,
         "isTeam": true,
@@ -30257,6 +30385,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 132756,
         "victim": "Milton",
@@ -30297,6 +30426,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 135760,
         "victim": "Milton",
@@ -30314,6 +30444,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 11,
         "damage": 110,
         "time": 139876,
         "victim": "Milton",
@@ -30322,6 +30453,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 142403,
         "victim": "Milton",
@@ -30450,6 +30582,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 19,
         "damage": 30,
         "time": 145715,
         "victim": "shazam",
@@ -30482,6 +30615,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 30,
         "damage": 37,
         "isSelf": true,
         "isSplash": true,
@@ -30507,6 +30641,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 11,
         "damage": 30,
         "time": 147066,
         "victim": "stepcop",
@@ -30555,6 +30690,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 149617,
         "victim": "stepcop",
@@ -30563,6 +30699,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 62,
         "damage": 93,
         "isSplash": true,
         "time": 151002,
@@ -30596,6 +30733,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 54,
         "damage": 55,
         "isSplash": true,
         "time": 153315,
@@ -30639,6 +30777,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 13,
         "damage": 30,
         "time": 154392,
         "victim": "stepcop",
@@ -30647,6 +30786,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 158404,
         "victim": "Milton",
@@ -30672,6 +30812,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 15,
         "damage": 57,
         "isSplash": true,
         "time": 159496,
@@ -30740,6 +30881,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 72,
         "damage": 101,
         "isSplash": true,
         "time": 163027,
@@ -30776,6 +30918,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 65,
         "isSplash": true,
         "time": 165886,
@@ -30825,6 +30968,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 21,
         "damage": 30,
         "time": 166781,
         "victim": "squeeze",
@@ -30842,6 +30986,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 8,
         "damage": 63,
         "isSplash": true,
         "time": 167803,
@@ -30867,6 +31012,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 21,
         "damage": 105,
         "isSplash": true,
         "time": 168596,
@@ -30909,6 +31055,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 170277,
         "victim": "shazam",
@@ -30917,6 +31064,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 16,
         "damage": 87,
         "isSplash": true,
         "time": 170277,
@@ -30983,6 +31131,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 1,
         "damage": 51,
         "isSplash": true,
         "time": 173092,
@@ -31000,6 +31149,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 173666,
         "victim": "shazam",
@@ -31056,6 +31206,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 180837,
         "victim": "shazam",
@@ -31080,6 +31231,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 182871,
         "victim": "Milton",
@@ -31136,6 +31288,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 26,
         "damage": 30,
         "time": 189194,
         "victim": "stepcop",
@@ -31144,6 +31297,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 78,
         "damage": 103,
         "isSplash": true,
         "time": 189391,
@@ -31193,6 +31347,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 19,
         "damage": 30,
         "time": 192071,
         "victim": "shazam",
@@ -31250,6 +31405,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 194107,
         "victim": "stepcop",
@@ -31258,6 +31414,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 20,
         "damage": 30,
         "time": 194210,
         "victim": "shazam",
@@ -31306,6 +31463,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 197042,
         "victim": "stepcop",
@@ -31339,6 +31497,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 34,
         "damage": 64,
         "isSplash": true,
         "time": 200096,
@@ -31373,6 +31532,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 96,
         "damage": 110,
         "time": 202581,
         "victim": "squeeze",
@@ -31416,6 +31576,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 25,
         "damage": 52,
         "isSplash": true,
         "isTeam": true,
@@ -31442,6 +31603,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 60,
         "damage": 70,
         "isSplash": true,
         "time": 211845,
@@ -31460,6 +31622,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 29,
         "damage": 30,
         "time": 212210,
         "victim": "shazam",
@@ -31484,6 +31647,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 19,
         "damage": 90,
         "isSplash": true,
         "time": 216360,
@@ -31517,6 +31681,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 217754,
         "victim": "Milton",
@@ -31583,6 +31748,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 25,
         "damage": 30,
         "time": 223099,
         "victim": "shazam",
@@ -31591,6 +31757,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 8,
         "damage": 84,
         "isSplash": true,
         "time": 223458,
@@ -31600,6 +31767,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 21,
         "damage": 30,
         "time": 223976,
         "victim": "Milton",
@@ -31641,6 +31809,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 227365,
         "victim": "Milton",
@@ -31715,6 +31884,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 17,
         "damage": 30,
         "time": 232243,
         "victim": "squeeze",
@@ -31784,6 +31954,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 17,
         "damage": 110,
         "time": 234830,
         "victim": "squeeze",
@@ -31809,6 +31980,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 46,
         "damage": 54,
         "isSplash": true,
         "time": 235886,
@@ -31850,6 +32022,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 236470,
         "victim": "squeeze",
@@ -31892,6 +32065,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 17,
         "damage": 55,
         "isSplash": true,
         "time": 238649,
@@ -31917,6 +32091,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 40,
         "damage": 41,
         "isSplash": true,
         "time": 241337,
@@ -31976,6 +32151,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 7,
         "damage": 30,
         "time": 242930,
         "victim": "squeeze",
@@ -31984,6 +32160,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 100,
         "damage": 110,
         "time": 245055,
         "victim": "Milton",
@@ -32001,6 +32178,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 26,
         "damage": 55,
         "isSplash": true,
         "time": 245990,
@@ -32068,6 +32246,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 251436,
         "victim": "squeeze",
@@ -32076,6 +32255,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 45,
         "damage": 93,
         "isSplash": true,
         "time": 251556,
@@ -32117,6 +32297,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 255042,
         "victim": "squeeze",
@@ -32150,6 +32331,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 13,
         "damage": 30,
         "time": 256456,
         "victim": "Milton",
@@ -32191,6 +32373,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 27,
         "damage": 30,
         "time": 257979,
         "victim": "squeeze",
@@ -32224,6 +32407,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 25,
         "damage": 30,
         "time": 260889,
         "victim": "shazam",
@@ -32232,6 +32416,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 70,
         "damage": 110,
         "time": 260964,
         "victim": "squeeze",
@@ -32249,6 +32434,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 263651,
         "victim": "stepcop",
@@ -32289,6 +32475,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 266547,
         "victim": "shazam",
@@ -32324,6 +32511,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 39,
         "damage": 110,
         "time": 269324,
         "victim": "Milton",
@@ -32357,6 +32545,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 13,
         "damage": 30,
         "time": 269873,
         "victim": "shazam",
@@ -32397,6 +32586,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 272547,
         "victim": "shazam",
@@ -32486,6 +32676,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 278302,
         "victim": "stepcop",
@@ -32503,6 +32694,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 20,
         "damage": 30,
         "time": 281417,
         "victim": "stepcop",
@@ -32520,6 +32712,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 49,
         "damage": 79,
         "isSplash": true,
         "time": 284736,
@@ -32561,6 +32754,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 287036,
         "victim": "stepcop",
@@ -32610,6 +32804,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 288592,
         "victim": "Milton",
@@ -32644,6 +32839,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 17,
         "damage": 30,
         "time": 290580,
         "victim": "shazam",
@@ -32670,6 +32866,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 31,
         "damage": 92,
         "isSplash": true,
         "time": 294473,
@@ -32705,6 +32902,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 90,
         "damage": 110,
         "time": 306821,
         "victim": "stepcop",
@@ -32830,6 +33028,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 17,
         "damage": 30,
         "time": 310448,
         "victim": "shazam",
@@ -32846,6 +33045,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 1,
         "damage": 30,
         "time": 310729,
         "victim": "squeeze",
@@ -32903,6 +33103,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 313430,
         "victim": "squeeze",
@@ -32935,6 +33136,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 318040,
         "victim": "squeeze",
@@ -32977,6 +33179,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 50,
         "damage": 62,
         "isSplash": true,
         "time": 323002,
@@ -32995,6 +33198,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 43,
         "damage": 110,
         "time": 323924,
         "victim": "shazam",
@@ -33045,6 +33249,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 25,
         "damage": 30,
         "time": 326181,
         "victim": "stepcop",
@@ -33061,6 +33266,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 20,
         "damage": 30,
         "time": 328423,
         "victim": "Milton",
@@ -33069,6 +33275,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 100,
         "damage": 110,
         "time": 329389,
         "victim": "stepcop",
@@ -33101,6 +33308,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 330860,
         "victim": "Milton",
@@ -33125,6 +33333,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 70,
         "damage": 97,
         "isSplash": true,
         "time": 332167,
@@ -33161,6 +33370,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 9,
         "damage": 30,
         "time": 334415,
         "victim": "shazam",
@@ -33169,6 +33379,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 37,
         "damage": 49,
         "isSplash": true,
         "time": 337288,
@@ -33218,6 +33429,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 339832,
         "victim": "stepcop",
@@ -33307,6 +33519,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 343252,
         "victim": "stepcop",
@@ -33340,6 +33553,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 4,
         "damage": 30,
         "time": 344292,
         "victim": "shazam",
@@ -33373,6 +33587,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 70,
         "damage": 110,
         "time": 349145,
         "victim": "stepcop",
@@ -33381,6 +33596,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 72,
         "damage": 86,
         "isSplash": true,
         "time": 350879,
@@ -33406,6 +33622,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 352664,
         "victim": "stepcop",
@@ -33422,6 +33639,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 353547,
         "victim": "shazam",
@@ -33472,6 +33690,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 355732,
         "victim": "stepcop",
@@ -33480,6 +33699,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 12,
         "damage": 24,
         "time": 356027,
         "victim": "Milton",
@@ -33512,6 +33732,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 358921,
         "victim": "stepcop",
@@ -33584,6 +33805,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 359872,
         "victim": "shazam",
@@ -33640,6 +33862,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 362741,
         "victim": "stepcop",
@@ -33664,6 +33887,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 363267,
         "victim": "shazam",
@@ -33699,6 +33923,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 14,
         "damage": 28,
         "isSelf": true,
         "isSplash": true,
@@ -33708,6 +33933,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 16,
         "damage": 30,
         "time": 368528,
         "victim": "shazam",
@@ -33741,6 +33967,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 27,
         "damage": 30,
         "time": 372068,
         "victim": "stepcop",
@@ -33798,6 +34025,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 374860,
         "victim": "shazam",
@@ -33848,6 +34076,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 85,
         "damage": 94,
         "isSplash": true,
         "time": 377831,
@@ -33889,6 +34118,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 379944,
         "victim": "stepcop",
@@ -33921,6 +34151,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 383703,
         "victim": "stepcop",
@@ -33945,6 +34176,7 @@
       },
       {
         "attacker": "world",
+        "bounded": 28,
         "damage": 30,
         "isEnv": true,
         "time": 384494,
@@ -33971,6 +34203,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 9,
         "damage": 30,
         "time": 388665,
         "victim": "Milton",
@@ -34054,6 +34287,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 22,
         "damage": 30,
         "time": 398291,
         "victim": "Milton",
@@ -34062,6 +34296,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 20,
         "damage": 49,
         "isSplash": true,
         "time": 398650,
@@ -34104,6 +34339,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 29,
         "damage": 30,
         "time": 401327,
         "victim": "shazam",
@@ -34145,6 +34381,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 24,
         "damage": 26,
         "isSelf": true,
         "isSplash": true,
@@ -34195,6 +34432,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 100,
         "damage": 110,
         "time": 406579,
         "victim": "stepcop",
@@ -34228,6 +34466,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 12,
         "damage": 30,
         "time": 407122,
         "victim": "Milton",
@@ -34308,6 +34547,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 17,
         "damage": 30,
         "time": 411591,
         "victim": "squeeze",
@@ -34348,6 +34588,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 415989,
         "victim": "stepcop",
@@ -34388,6 +34629,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 416964,
         "victim": "shazam",
@@ -34396,6 +34638,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 418418,
         "victim": "stepcop",
@@ -34444,6 +34687,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 418999,
         "victim": "shazam",
@@ -34493,6 +34737,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 422115,
         "victim": "shazam",
@@ -34559,6 +34804,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 45,
         "damage": 97,
         "isSplash": true,
         "time": 424094,
@@ -34593,6 +34839,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 53,
         "damage": 94,
         "isSplash": true,
         "time": 425094,
@@ -34660,6 +34907,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 428249,
         "victim": "stepcop",
@@ -34677,6 +34925,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 15,
         "damage": 62,
         "isSplash": true,
         "time": 429378,
@@ -34726,6 +34975,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 430388,
         "victim": "stepcop",
@@ -34758,6 +35008,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 431624,
         "victim": "shazam",
@@ -34814,6 +35065,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 433379,
         "victim": "stepcop",
@@ -34822,6 +35074,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 5,
         "damage": 30,
         "time": 433470,
         "victim": "stepcop",
@@ -34830,6 +35083,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 100,
         "damage": 110,
         "time": 435205,
         "victim": "shazam",
@@ -34846,6 +35100,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 436318,
         "victim": "stepcop",
@@ -34863,6 +35118,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 22,
         "damage": 110,
         "time": 439694,
         "victim": "shazam",
@@ -34912,6 +35168,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 442444,
         "victim": "shazam",
@@ -34920,6 +35177,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 68,
         "damage": 110,
         "time": 443102,
         "victim": "Milton",
@@ -34989,6 +35247,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 83,
         "damage": 110,
         "time": 451119,
         "victim": "Milton",
@@ -35030,6 +35289,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 455114,
         "victim": "Milton",
@@ -35054,6 +35314,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 12,
         "damage": 30,
         "time": 459849,
         "victim": "squeeze",
@@ -35112,6 +35373,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 16,
         "damage": 30,
         "time": 464340,
         "victim": "squeeze",
@@ -35146,6 +35408,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 16,
         "damage": 30,
         "time": 470390,
         "victim": "shazam",
@@ -35154,6 +35417,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 12,
         "damage": 30,
         "time": 470892,
         "victim": "squeeze",
@@ -35232,6 +35496,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 13,
         "damage": 92,
         "isSplash": true,
         "time": 478459,
@@ -35283,6 +35548,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 27,
         "damage": 30,
         "time": 480397,
         "victim": "squeeze",
@@ -35316,6 +35582,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 21,
         "damage": 30,
         "time": 482483,
         "victim": "shazam",
@@ -35342,6 +35609,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 71,
         "damage": 110,
         "time": 483194,
         "victim": "squeeze",
@@ -35407,6 +35675,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 485834,
         "victim": "Milton",
@@ -35464,6 +35733,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 90,
         "damage": 110,
         "time": 488789,
         "victim": "Milton",
@@ -35481,6 +35751,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 491262,
         "victim": "Milton",
@@ -35521,6 +35792,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 40,
         "damage": 67,
         "isSplash": true,
         "time": 495457,
@@ -35530,6 +35802,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 53,
         "damage": 77,
         "isSplash": true,
         "time": 496229,
@@ -35547,6 +35820,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 499003,
         "victim": "Milton",
@@ -35564,6 +35838,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 11,
         "damage": 27,
         "isSelf": true,
         "isSplash": true,
@@ -35573,6 +35848,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 78,
         "damage": 88,
         "isSplash": true,
         "time": 501624,
@@ -35590,6 +35866,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 503041,
         "victim": "shazam",
@@ -35607,6 +35884,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 25,
         "damage": 110,
         "time": 507229,
         "victim": "shazam",
@@ -35679,6 +35957,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 508363,
         "victim": "Milton",
@@ -35695,6 +35974,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 508822,
         "victim": "stepcop",
@@ -35753,6 +36033,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 10,
         "damage": 30,
         "time": 512016,
         "victim": "stepcop",
@@ -35785,6 +36066,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 10,
         "damage": 30,
         "time": 514899,
         "victim": "Milton",
@@ -35825,6 +36107,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 5,
         "damage": 56,
         "isSplash": true,
         "time": 517533,
@@ -35869,6 +36152,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 1,
         "damage": 30,
         "time": 522696,
         "victim": "stepcop",
@@ -35901,6 +36185,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 524730,
         "victim": "stepcop",
@@ -35925,6 +36210,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 23,
         "damage": 30,
         "time": 527029,
         "victim": "Milton",
@@ -36001,6 +36287,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 40,
         "damage": 56,
         "isSplash": true,
         "isTeam": true,
@@ -36019,6 +36306,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 100,
         "damage": 110,
         "isTeam": true,
         "time": 534262,
@@ -36070,6 +36358,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 22,
         "damage": 30,
         "time": 538328,
         "victim": "squeeze",
@@ -36086,6 +36375,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 15,
         "damage": 24,
         "isSelf": true,
         "isSplash": true,
@@ -36119,6 +36409,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 540363,
         "victim": "squeeze",
@@ -36135,6 +36426,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 541391,
         "victim": "stepcop",
@@ -36170,6 +36462,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 37,
         "damage": 66,
         "isSplash": true,
         "time": 547042,
@@ -36179,6 +36472,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 100,
         "damage": 110,
         "time": 547530,
         "victim": "stepcop",
@@ -36187,6 +36481,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 550034,
         "victim": "shazam",
@@ -36212,6 +36507,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 551462,
         "victim": "stepcop",
@@ -36220,6 +36516,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 43,
         "damage": 110,
         "time": 552195,
         "victim": "Milton",
@@ -36287,6 +36584,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 43,
         "damage": 110,
         "time": 557041,
         "victim": "squeeze",
@@ -36327,6 +36625,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 40,
         "damage": 77,
         "isSplash": true,
         "time": 559098,
@@ -36361,6 +36660,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 40,
         "damage": 92,
         "isSplash": true,
         "time": 561862,
@@ -36418,6 +36718,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 91,
         "damage": 110,
         "time": 563162,
         "victim": "stepcop",
@@ -36434,6 +36735,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 21,
         "damage": 30,
         "time": 563584,
         "victim": "Milton",
@@ -36442,6 +36744,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 564319,
         "victim": "squeeze",
@@ -36491,6 +36794,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 10,
         "damage": 30,
         "time": 566974,
         "victim": "Milton",
@@ -36499,6 +36803,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 100,
         "damage": 110,
         "time": 568653,
         "victim": "squeeze",
@@ -36516,6 +36821,7 @@
       },
       {
         "attacker": "stepcop",
+        "bounded": 100,
         "damage": 110,
         "time": 577273,
         "victim": "squeeze",
@@ -36589,6 +36895,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 48,
         "damage": 74,
         "isSplash": true,
         "time": 579301,
@@ -36615,6 +36922,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 8,
         "damage": 30,
         "isSelf": true,
         "isSplash": true,
@@ -36624,6 +36932,7 @@
       },
       {
         "attacker": "shazam",
+        "bounded": 18,
         "damage": 66,
         "isSplash": true,
         "time": 580078,
@@ -36657,6 +36966,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 581639,
         "victim": "stepcop",
@@ -36665,6 +36975,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 582679,
         "victim": "stepcop",
@@ -36714,6 +37025,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 583730,
         "victim": "shazam",
@@ -36776,6 +37088,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 2,
         "damage": 90,
         "isSplash": true,
         "time": 589780,
@@ -36785,6 +37098,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 58,
         "damage": 97,
         "isSplash": true,
         "time": 590259,
@@ -36818,6 +37132,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 593249,
         "victim": "stepcop",
@@ -36826,6 +37141,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 594220,
         "victim": "shazam",
@@ -36875,6 +37191,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 10,
         "damage": 30,
         "time": 596227,
         "victim": "shazam",
@@ -36940,6 +37257,7 @@
       },
       {
         "attacker": "squeeze",
+        "bounded": 22,
         "damage": 30,
         "time": 598103,
         "victim": "stepcop",
@@ -36948,6 +37266,7 @@
       },
       {
         "attacker": "Milton",
+        "bounded": 100,
         "damage": 110,
         "time": 598973,
         "victim": "shazam",
@@ -37048,6 +37367,13 @@
     "scoreboard": {
       "byPlayer": {
         "Milton": {
+          "bounded": {
+            "scoreTeam": 265,
+            "streamEwep": 8377,
+            "streamGiven": 10274,
+            "streamTaken": 8129,
+            "streamTeam": 265
+          },
           "scoreEwep": 8507,
           "scoreGiven": 10294,
           "scoreTaken": 8129,
@@ -37056,6 +37382,13 @@
           "streamTaken": 10564
         },
         "shazam": {
+          "bounded": {
+            "scoreTeam": 132,
+            "streamEwep": 6639,
+            "streamGiven": 8422,
+            "streamTaken": 7804,
+            "streamTeam": 132
+          },
           "scoreEwep": 6639,
           "scoreGiven": 8422,
           "scoreTaken": 7804,
@@ -37064,6 +37397,13 @@
           "streamTaken": 10199
         },
         "squeeze": {
+          "bounded": {
+            "scoreTeam": 266,
+            "streamEwep": 5187,
+            "streamGiven": 7497,
+            "streamTaken": 7902,
+            "streamTeam": 266
+          },
           "scoreEwep": 5187,
           "scoreGiven": 7497,
           "scoreTaken": 7902,
@@ -37072,6 +37412,13 @@
           "streamTaken": 9940
         },
         "stepcop": {
+          "bounded": {
+            "scoreTeam": 328,
+            "streamEwep": 6668,
+            "streamGiven": 7609,
+            "streamTaken": 9967,
+            "streamTeam": 328
+          },
           "scoreEwep": 6698,
           "scoreGiven": 7609,
           "scoreTaken": 9987,
@@ -53583,7 +53930,7 @@
       }
     ]
   },
-  "schemaVersion": 53,
+  "schemaVersion": 54,
   "shots": {
     "byPlayer": [
       {
