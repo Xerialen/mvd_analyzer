@@ -673,7 +673,13 @@ package result
 //   - ActiveWeapon (JSON "w") carries the raw STAT_ACTIVEWEAPON IT_* bit.
 //   - The view-layer field code "w" exposes it in buckets, stream-slice,
 //     and state-at responses with normal carry-forward semantics.
-const CurrentSchemaVersion = 56
+//
+// v57: optional tactical decisions and the KDLOG join key.
+//   - Decisions contains either Komodobot KDLOG ground truth or
+//     pickup-anchored inference, selected by qw-analyze flags.
+//   - TimelineAnalysisResult.PlayerSlots maps canonical names to demo slots,
+//     allowing KDLOG edicts to join onto analyzer player identities.
+const CurrentSchemaVersion = 57
 
 // Result is the aggregate output of a qwanalytics pipeline run. Each
 // top-level field is produced by one or more analyzers; omitted fields
@@ -702,5 +708,6 @@ type Result struct {
 	WeaponPickups    []WeaponPickup          `json:"weaponPickups,omitempty"`
 	Opening          *OpeningResult          `json:"opening,omitempty"`
 	Streams          *Streams                `json:"streams,omitempty"`
+	Decisions        *Decisions              `json:"decisions,omitempty"`
 	Errors           []string                `json:"errors,omitempty"`
 }

@@ -93814,7 +93814,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -271229,6 +271229,18 @@
         "z": 152
       }
     ],
+    "playerSlots": {
+      "# rusti": 10,
+      "Luk": 7,
+      "[nW].Veggie": 3,
+      "biggz": 0,
+      "gandi": 1,
+      "nexus": 5,
+      "ocoini": 6,
+      "paniagua": 8,
+      "rusti": 2,
+      "sailorman": 4
+    },
     "playerUserIDs": {
       "[nW].Veggie": 3,
       "biggz": 93,

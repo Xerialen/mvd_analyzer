@@ -90806,7 +90806,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -237703,6 +237703,16 @@
         "z": 456
       }
     ],
+    "playerSlots": {
+      ".N3ophyt3.": 7,
+      "DobeZz": 4,
+      "anni": 6,
+      "biggz": 8,
+      "gore": 0,
+      "nexus": 5,
+      "ocoini": 3,
+      "paniagua": 2
+    },
     "playerUserIDs": {
       ".N3ophyt3.": 13,
       "DobeZz": 15,

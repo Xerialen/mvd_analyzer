@@ -30497,7 +30497,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -134988,6 +134988,12 @@
         "z": 40
       }
     ],
+    "playerSlots": {
+      "SS": 2,
+      "gLAd": 0,
+      "kippo": 1,
+      "rusti": 3
+    },
     "playerUserIDs": {
       "SS": 73,
       "gLAd": 71,

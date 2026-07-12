@@ -37785,7 +37785,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -86131,6 +86131,13 @@
         "z": 392
       }
     ],
+    "playerSlots": {
+      "psy*overon": 1,
+      "psy*vingador": 3,
+      "wd.cao": 0,
+      "wd.char": 2,
+      "wd.dilbert": 4
+    },
     "playerUserIDs": {
       "psy*overon": 36,
       "wd.cao": 30,

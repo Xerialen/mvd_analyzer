@@ -33,6 +33,7 @@ analyzer are also covered there.
 | Backpacks | `backpacks` | []BackpackDrop | RL/LG backpack drops from KTX `//ktx drop` hint. |
 | WeaponPickups | `weaponPickups` | []WeaponPickup | Slot-weapon acquisitions with kills-before-next-death effectiveness. |
 | Opening | `opening` | *OpeningResult | Match opening: per-player match-start spawn loc + first in-match take of each contested spawner (armors, mega, powerups, RL/LG). Pure projection of items + streams (schema v51). |
+| Decisions | `decisions` | *Decisions | Optional tactical choices from a KDLOG sidecar or pickup-anchored inference (schema v57). |
 | Errors | `errors` | []string | Non-fatal parse / analysis errors (omitted when empty). Includes analyzer `Finalize` failures, an `"event stream aborted: …"` entry when the event source returned a non-EOF error mid-demo (a truncated or corrupt stream — a clean end of demo does **not** appear here), and a `"region control: …"` entry when the region-control post-pass failed. A non-empty `errors` on an otherwise-populated result means the analysis is partial but usable. |
 
 All sub-result fields are pointers and use `omitempty`, so a missing
@@ -673,6 +674,7 @@ read the streams' times, so they sit next to them.
 | LocationData | `locationData` | []MapLocation — one anchor point per loc name (the medoid of that name's `.loc` points) |
 | LocTable | `locTable` | []string (interned loc names; index 0 = ""). `Streams.Players[].Loc[].V` indexes into this. |
 | PlayerUserIDs | `playerUserIDs` | map[string]int (name → Hub viewer UserID) |
+| PlayerSlots | `playerSlots` | map[string]int (canonical name → demo slot; KDLOG edict-1 join key, schema v57) |
 | RegionControl | `regionControl` | *RegionControlResult |
 
 Bucketed data is served as `view.BucketsView` (row) or
@@ -1776,6 +1778,33 @@ one cheap fetch.
 - Omitted entirely when no match start was detected (t=0 would be the
   demo open, not an opening).
 
+## Decisions (`decisions`) — schema v57
+
+Tactical-decision section: what a player decided, joined into the analyzer's
+canonical vocabulary. It is absent unless `qw-analyze` ran with
+`-decision-log <server.log>` (source `"kdlog"`: Komodobot telemetry resolved
+against this demo) or `-infer-decisions` (source `"inferred"`:
+pickup-anchored reverse-engineering). Both sources share one record shape so
+bot-logged and inferred decisions compare directly. The complete Go field
+reference is in `result/decisions.go`.
+
+- `source`, `emitterVersion`, `dlogLevel`, and non-fatal `errors[]`.
+- `records[]`: match-relative `t`, `player`/`team`/`slot`, `type`
+  (`goal` | `enemy` | `evade` | `play`), decider `x/y/z` + `loc`, resource
+  `state`, and `trigger`.
+- Goal records carry `chosen`, optional `prim`, and scored `candidates[]` in
+  analyzer item/player vocabulary; enemy records carry target and distance;
+  evade records carry `on`; play records carry movement lane/phase/detail.
+- `confidence` marks inferred records. Inference is intentionally limited to
+  successful item/backpack approaches; denied and aborted goals are not
+  observable from an MVD alone.
+
+`timelineAnalysis.playerSlots` maps canonical names to demo slots and is the
+join key for KDLOG edicts. The KDLOG anchor and goal/enemy/evade grammar are
+pinned against a verbatim real mvdsv+KTX log excerpt by
+`decisions/kdlog_golden_test.go`; the fixture provenance and update procedure
+are documented in `decisions/testdata/README.md`.
+
 ## Cross-references / join keys
 
 - `weaponPickups[i].backpackEnt` ↔ `backpacks[j].entNum` —
@@ -1784,6 +1813,7 @@ one cheap fetch.
   resolve player loc name.
 - `controlRegion.locs[]` ↔ `locTable[]` — region membership.
 - `playerUserIDs[name]` → Hub viewer track parameter.
+- `timelineAnalysis.playerSlots[name] + 1` ↔ KDLOG `ed` — decision-log player join.
 - `match.players[].name` ↔ `frags.byPlayer[]` ↔
   `demoInfo.players[].name` ↔ `streams.players[].name` — same name
   resolves through every layer (canonicalised by the demoinfo
@@ -1819,6 +1849,7 @@ records what each bump changed, for consumers migrating across versions.
 
 | Version | Changes |
 |---|---|
+| v57 | Adds the optional top-level `decisions` tactical-decision section. `qw-analyze -decision-log <server.log>` resolves Komodobot KDLOG ground truth against the demo; `-infer-decisions` emits pickup-anchored inferred goals. Both share `DecisionRecord`; `timelineAnalysis.playerSlots` adds the canonical-name → demo-slot join key. Additive (`omitempty` for `decisions`; playerSlots is emitted with timeline metadata). The KDLOG C emit grammar is pinned by a real-log golden fixture. |
 | v56 | `PlayerStream` gains `w`, the selected weapon as a sparse `ChangeI16` stream carrying the raw `STAT_ACTIVEWEAPON` IT_* bit. This is the weapon currently wielded, distinct from the RL/LG/etc. possession intervals. The `w` field code is part of the default view vocabulary and is queryable through buckets, stream-slice, and state-at with `first` carry-forward semantics. Additive (`omitempty`). |
 | v55 | Bounded damage becomes **death-value-derived and the default**. The v54 shadow-health cap is replaced: a survived hit is bounded == raw by identity, a killing hit's overkill comes from the end-of-frame death broadcast (bounded = raw + deathValue; corpus reconciliation tightens ~2.5x, max +-16/player on given/taken). Fallback to the approximate shadow cap only for the -99 corpse clamp and respawn-masked deaths; same-frame multi-hit deaths cascade the overkill from the last hit backward. The REST/MCP `dmg` **default flips to `bounded`** for summaries AND the full log (`raw`/`both` opt-in; a *defaulted* request on a `skipped:*` demo falls back to raw, only an explicit `dmg=bounded` 422s). Unfiltered bounded summaries substitute KTX's exact scoreboard figures (given/givenTeam/givenSelf/ewep/byWeapon-enemy; `taken` and the `enemyVs*` buckets stay reconstructed) with provenance in the new `damage.boundedSource` (`ktx` / `reconstructed`). |
 | v54 | The **bounded damage family** (additive). The wire carries only KTX's unbound damage; the scoreboard's bounded `dmg_dealt` (armor absorbed + health damage capped to remaining health) is now reconstructed per hit from tracked victim vitals: `damage.events[].bounded` (absent = equal to `damage`; `0` is a real nullified-hit value), `damage.byPlayer.<p>.bounded` (a nested `PlayerDamage`), `damage.scoreboard` deltas gain a `bounded` nest incl. `streamTeam`/`scoreTeam`, plus the `dmg` family echo and `boundedMode` (`skipped:*` on midair/instagib/dmgfrags demos — no bounded fields there). Telefrags **and stomps** now fold their bounded damage into `given`/`givenTeam`/`taken` in **both** families, matching KTX's own accumulation (telefrag: armor+health, the wire 9999 is a sentinel; stomp: the honest ~10 HP wire value); `telefrags[]`/`stomps[]` entries carry the per-kill `bounded` value. `byWeapon`/`matrix`/`ewep`/`totalDamage` still exclude positional kills (KTX `wpNONE` parity). |

@@ -93234,7 +93234,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -437839,6 +437839,17 @@
         "z": -72
       }
     ],
+    "playerSlots": {
+      "Doomie": 7,
+      "KreatoR": 2,
+      "ThundeR": 1,
+      "[nW].Veggie": 6,
+      "mythic": 8,
+      "nexus": 5,
+      "ocoini": 0,
+      "rghst": 4,
+      "sailorman": 3
+    },
     "playerUserIDs": {
       "Doomie": 32,
       "KreatoR": 26,

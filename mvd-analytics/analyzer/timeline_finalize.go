@@ -291,6 +291,7 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 		LocationData:  locationData,
 		LocTable:      locTable,
 		PlayerUserIDs: playerUserIDsByName,
+		PlayerSlots:   playerSlotsByName(slotToName),
 	}
 
 	// matchEnd (and matchEndMs) were computed once above and already fed the
@@ -393,6 +394,22 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// clock. Formerly the normalizeDuelTeams FragEvents block.
 	a.synthesizeDuelFragEvents(result)
 	return nil
+}
+
+// playerSlotsByName inverts the slot-to-name mapping for export as the
+// stable join key between KDLOG edicts (slot+1) and canonical player names.
+// On a collision, the lowest slot wins deterministically.
+func playerSlotsByName(slotToName map[int]string) map[string]int {
+	if len(slotToName) == 0 {
+		return nil
+	}
+	out := make(map[string]int, len(slotToName))
+	for slot, name := range slotToName {
+		if prev, ok := out[name]; !ok || slot < prev {
+			out[name] = slot
+		}
+	}
+	return out
 }
 
 // synthesizeDuelFragEvents fills in a duel participant's frag-score timeline

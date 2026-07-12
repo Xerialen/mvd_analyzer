@@ -53932,7 +53932,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -103988,6 +103988,14 @@
         "z": -295.875
       }
     ],
+    "playerSlots": {
+      "Milton": 4,
+      "gnoffa_laggy": 3,
+      "raket": 5,
+      "shazam": 1,
+      "squeeze": 0,
+      "stepcop": 2
+    },
     "playerUserIDs": {
       "Milton": 11,
       "shazam": 8,

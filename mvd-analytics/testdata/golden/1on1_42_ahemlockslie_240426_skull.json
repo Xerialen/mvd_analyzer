@@ -13667,7 +13667,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -37694,6 +37694,10 @@
         "z": 56
       }
     ],
+    "playerSlots": {
+      "42": 1,
+      "AHemlocksLie": 0
+    },
     "playerUserIDs": {
       "42": 21,
       "AHemlocksLie": 20

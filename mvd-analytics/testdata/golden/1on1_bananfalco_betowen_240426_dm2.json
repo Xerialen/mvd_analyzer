@@ -10813,7 +10813,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -286529,6 +286529,10 @@
         "z": 504
       }
     ],
+    "playerSlots": {
+      "banan falco": 2,
+      "betowen": 0
+    },
     "playerUserIDs": {
       "banan falco": 39,
       "betowen": 37

@@ -89806,7 +89806,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -261809,6 +261809,16 @@
         "z": -295.875
       }
     ],
+    "playerSlots": {
+      "[cmd] witka": 1,
+      "apa": 6,
+      "clox": 3,
+      "doberman": 5,
+      "lakso": 4,
+      "marksuzu": 7,
+      "nlk": 0,
+      "sCorp": 2
+    },
     "playerUserIDs": {
       "[cmd] witka": 2,
       "apa": 7,

@@ -17741,7 +17741,7 @@
       }
     ]
   },
-  "schemaVersion": 56,
+  "schemaVersion": 57,
   "shots": {
     "byPlayer": [
       {
@@ -37492,6 +37492,10 @@
         "z": 72
       }
     ],
+    "playerSlots": {
+      "mj": 2,
+      "speedball": 0
+    },
     "playerUserIDs": {
       "mj": 70,
       "speedball": 72

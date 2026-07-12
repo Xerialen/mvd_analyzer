@@ -569,9 +569,9 @@ construction; the PVS-minus-LOS gap is an occlusion-tolerant
 proximity/awareness signal. Both are surfaced through the REST/MCP
 `/los` endpoint, the CLI, and the web map overlay.
 
-Every schema change bumps `CurrentSchemaVersion` (currently `56`).
+Every schema change bumps `CurrentSchemaVersion` (currently `57`).
 Consumers can pin or feature-detect by reading `result.schemaVersion`.
-The full per-field reference and the complete v4–v35 migration table live
+The full per-field reference and the complete v4–v57 migration table live
 in [mvd-analytics/RESULT_SCHEMA.md](mvd-analytics/RESULT_SCHEMA.md).
 
 ### Running the pipeline

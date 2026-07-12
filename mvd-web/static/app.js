@@ -172,7 +172,7 @@ function finishLoadTiming() {
 }
 
 // Hide the wasm-loading overlay. When auto-loading a demo from a URL
-// (?gameId=...), keep it up through the demo download/analyse so the
+// (?gameId=... or ?demoUrl=...), keep it up through download/analyse so the
 // user never sees a half-populated Search/Summary tab in the
 // background — displayResults() calls hideLoadingOverlay() once the
 // pipeline has finished.
@@ -194,7 +194,7 @@ worker.onmessage = (e) => {
         wasmReady = true;
         if (typeof e.data.wasmLoadMs === 'number') mvdTiming.wasmLoadMs = e.data.wasmLoadMs;
         const params = new URLSearchParams(location.search);
-        const willAutoLoadDemo = !!(params.get('gameId') || params.get('hub'));
+        const willAutoLoadDemo = !!(params.get('gameId') || params.get('hub') || params.get('demoUrl'));
         if (willAutoLoadDemo) {
             // Demo download is about to start; keep the overlay up and
             // show the next phase.
@@ -454,23 +454,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const params = new URLSearchParams(location.search);
     const hubId = params.get('gameId') || params.get('hub');
+    const demoUrl = params.get('demoUrl');
     const requestedTab = params.get('tab');
 
     // Pick the initial active tab. When deep-linking to a demo we want
     // the destination tab to be active even before the demo finishes
     // loading, so the wasm-loading overlay covers the right pane and
     // the user never glimpses the Search panel mid-flight.
-    if (hubId) {
+    if (hubId || demoUrl) {
         switchTab(requestedTab || 'summary');
     } else if (requestedTab) {
         switchTab(requestedTab);
     } // else: leave the HTML default (Search) active.
 
-    // Auto-load demo if URL has ?gameId= (canonical) or ?hub= (legacy) param
-    if (hubId) {
-        document.getElementById('hub-input').value = hubId;
+    // Auto-load by Hub id or by a direct same-origin/CORS-open MVD URL.
+    if (hubId || demoUrl) {
+        if (hubId) document.getElementById('hub-input').value = hubId;
+        const autoLoad = () => (hubId ? loadFromHub() : loadFromDemoUrl(demoUrl));
         if (wasmReady) {
-            loadFromHub();
+            autoLoad();
         } else {
             // Queue auto-load for when WASM finishes loading
             const origHandler = worker.onmessage;
@@ -478,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 origHandler(e);
                 if (e.data.type === 'ready') {
                     worker.onmessage = origHandler;
-                    loadFromHub();
+                    autoLoad();
                 }
             };
         }
@@ -497,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (hasSearch) {
         writeSearchFiltersToForm(urlFilters);
-        if (!hubId) {
+        if (!hubId && !demoUrl) {
             if (!requestedTab) switchTab('search');
             runSearch();
         }
@@ -824,6 +826,37 @@ async function loadGameFromHub(game) {
     };
 
     displayResults(result);
+}
+
+// Load a demo directly from a URL. This supports local Dragonbot lab links
+// such as ?demoUrl=/demos/files/match.mvd without requiring Hub metadata.
+async function loadFromDemoUrl(demoUrl) {
+    const status = document.getElementById('upload-status');
+    try {
+        if (!wasmReady) throw new Error('Analyzer is still loading, please wait...');
+        startLoadTiming();
+        status.textContent = 'Downloading demo...';
+        status.className = 'status loading';
+        const tDownload = performance.now();
+        const resp = await fetch(demoUrl);
+        if (!resp.ok) throw new Error(`Demo fetch failed: ${resp.status} ${demoUrl}`);
+        const demoBytes = new Uint8Array(await resp.arrayBuffer());
+        markNet('demoDownload', performance.now() - tDownload);
+
+        status.textContent = 'Analyzing...';
+        const filename = decodeURIComponent((demoUrl.split('?')[0].split('/').pop() || 'demo.mvd'));
+        const result = await analyzeInWorker(demoBytes, filename);
+        if (result.error) throw new Error(result.error);
+
+        status.textContent = 'Analysis complete!';
+        status.className = 'status success';
+        currentResult = result;
+        displayResults(result);
+    } catch (error) {
+        status.textContent = 'Error: ' + error.message;
+        status.className = 'status error';
+        hideLoadingOverlay();
+    }
 }
 
 // ─── Demo Search Panel ──────────────────────────────────────────────────────

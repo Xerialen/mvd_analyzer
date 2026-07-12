@@ -536,6 +536,7 @@ type Result struct {
     Backpacks        []BackpackDrop           // RL/LG backpack drops (from KTX //ktx drop hint)
     WeaponPickups    []WeaponPickup           // slot-weapon pickups + kills-before-next-death metric
     Streams          *Streams                 // canonical event-rate per-player state (v7); view API reads this
+    Decisions        *Decisions               // optional KDLOG ground truth or pickup-inferred tactical choices
     Errors           []string
 }
 ```

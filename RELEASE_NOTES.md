@@ -7,12 +7,24 @@ detail.
 
 ## Unreleased (Xerialen upstream sync)
 
+- **Tactical decisions (schema v57).** `qw-analyze -decision-log
+  <server.log>` resolves Komodobot KDLOG ground truth against the demo;
+  `-infer-decisions` emits pickup-anchored inferred goals when no sidecar is
+  available. Both produce the optional top-level `decisions` section, while
+  `timelineAnalysis.playerSlots` supplies the stable KDLOG edict join key.
+  A verbatim real mvdsv+KTX log excerpt golden-pins anchor, goal, enemy, and
+  evade grammar. The resolver runs before optional position columns are
+  stripped, so decision locations and state snapshots remain populated.
 - **Selected weapon stream (schema v56).** `streams.players[]` gains `w`, a
   sparse `ChangeI16` stream carrying the raw `STAT_ACTIVEWEAPON` IT_* bit.
   This is the weapon currently wielded, distinct from the existing RL/LG/etc.
   inventory-presence intervals. The `w` field code is available in buckets,
   stream-slice, and state-at views with the standard carry-forward reducer.
   Values are surfaced raw without an armor-style clamp (`IT_AXE = 4096`).
+
+- **Direct demo deep links.** The web analyzer accepts `?demoUrl=<url>` and
+  downloads/analyzes that MVD directly, preserving the fork's Dragonbot lab
+  dashboard integration without replacing upstream's current map renderer.
 
 ## Unreleased (branch `phase-16.3`)
 

@@ -1,0 +1,2 @@
+# Golden KDLOG fixture: preserve the exact LF bytes from the real server log.
+mvd-analytics/decisions/testdata/golden-server.log text eol=lf
