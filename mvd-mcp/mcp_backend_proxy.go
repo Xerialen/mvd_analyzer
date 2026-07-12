@@ -350,6 +350,9 @@ func (p *proxyBackend) GetDamage(ctx context.Context, in GetDamageInput) (any, e
 	q.csv("weapons", in.Weapons)
 	q.seconds("from", in.StartTime)
 	q.seconds("to", in.EndTime)
+	// Empty dmg stays out of the query so the REST summary-aware default
+	// resolution applies (both under the summary default, raw otherwise).
+	q.str("dmg", in.Dmg)
 	summary, defaulted := summaryDefaultTrue(in.Summary)
 	q.boolean("summary", summary)
 	out, err := p.fetchOpaque(ctx, "GET", path, url.Values(q))

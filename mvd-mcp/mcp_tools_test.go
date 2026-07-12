@@ -24,10 +24,16 @@ func TestInputSchemasHaveNoNullUnions(t *testing.T) {
 		"getBuckets":       inputSchema[GetBucketsInput](), // players, fields, reducers(map)
 		"getEvents":        inputSchema[GetEventsInput](),  // players, types
 		"getFrags":         inputSchema[GetFragsInput](),   // players, weapon
+		"getDamage":        inputSchema[GetDamageInput](),  // players, weapons, dmg
 		"getItems":         inputSchema[GetItemsInput](),   // items, players, kinds
 		"getWeaponPickups": inputSchema[GetWeaponPickupsInput](),
 	} {
 		assertNoNullTypes(t, name, s)
+	}
+
+	// The damage-family selector reflects to a plain (non-nullable) string.
+	if d := inputSchema[GetDamageInput]().Properties["dmg"]; d == nil || d.Type != "string" || len(d.Types) != 0 {
+		t.Errorf("getDamage.dmg is not a clean string: %+v", d)
 	}
 
 	// Spot-check the concrete shape: players is a plain array of strings.

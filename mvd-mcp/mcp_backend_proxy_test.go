@@ -500,6 +500,34 @@ func TestProxy_SummaryDefaultsTrue(t *testing.T) {
 	}
 }
 
+// TestProxy_GetDamage_DmgForwarded: the dmg family selector reaches the
+// REST query when set, and stays out of it when empty so the REST
+// summary-aware default resolution applies.
+func TestProxy_GetDamage_DmgForwarded(t *testing.T) {
+	var seenQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.Query()
+		w.Write([]byte(`{"totalDamage":1}`))
+	}))
+	defer srv.Close()
+	b := newProxyBackend(srv.URL, "", 5*time.Second)
+
+	fv := false
+	if _, err := b.GetDamage(context.Background(), GetDamageInput{DemoID: "gameId:42", Dmg: "bounded", Summary: &fv}); err != nil {
+		t.Fatalf("GetDamage(bounded): %v", err)
+	}
+	if seenQuery.Get("dmg") != "bounded" {
+		t.Errorf("dmg=%q; want bounded", seenQuery.Get("dmg"))
+	}
+
+	if _, err := b.GetDamage(context.Background(), GetDamageInput{DemoID: "gameId:42", Summary: &fv}); err != nil {
+		t.Fatalf("GetDamage(empty dmg): %v", err)
+	}
+	if seenQuery.Has("dmg") {
+		t.Errorf("empty dmg must not be forwarded (REST default resolves); got %q", seenQuery.Get("dmg"))
+	}
+}
+
 // TestProxy_TimeWindowsForwarded: the new from/to params reach the REST
 // query for items / backpacks / weapon-pickups / region-control.
 func TestProxy_TimeWindowsForwarded(t *testing.T) {
