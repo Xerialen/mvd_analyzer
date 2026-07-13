@@ -393,7 +393,15 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// replaces the timeline's share of the old normalizeMatchRelativeTimes
 	// rebase; it runs here so the timeline's own artifacts leave Finalize
 	// already on the match clock (no post-hoc whole-Result pass).
-	if ms := a.core.MatchStartMs(); ms > 0 {
+	if a.diagnosticPositionCapture {
+		// A closed diagnostic stream is intentionally demo-relative and does
+		// not require a KTX match start. Preserve the explicit time basis
+		// without adding the ordinary no-match diagnostic to Result.Errors;
+		// strict evidence still rejects every real source/finalization error.
+		if result.Streams != nil {
+			result.Streams.Global.TimeBase = "demo"
+		}
+	} else if ms := a.core.MatchStartMs(); ms > 0 {
 		a.rebaseToMatch(result, ms)
 		synthesizeMatchStartSpawns(result.Streams)
 	} else {
