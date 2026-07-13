@@ -311,7 +311,11 @@ func (a *TimelineAnalyzer) Finalize(result *Result) error {
 	// matchEnd (and matchEndMs) were computed once above and already fed the
 	// powerup-close pass; buildStreamsResult reuses the same value so weapon
 	// and powerup intervals close consistently (F13).
-	if streams := a.buildStreamsResult(slotToName, slotToTeam, matchStart, matchEnd); streams != nil {
+	streams, err := a.buildStreamsResult(slotToName, slotToTeam, matchStart, matchEnd)
+	if err != nil {
+		return err
+	}
+	if streams != nil {
 		result.Streams = streams
 
 		// As of schema v23 the demo/wall-clock anchor lives on Streams.Global —

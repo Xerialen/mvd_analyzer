@@ -46,9 +46,12 @@ The analyser is split across several files:
    - Interval streams (weapons, powerups) open an anchor on
      `false→true` and close on `true→false`.
    - Spawn/death timestamps just append.
-2. **Match window gating.** `MatchTimingDetector` gates everything.
-   Pre-match and post-intermission events bypass stream emission so
-   warmup state doesn't pollute the output.
+2. **Match window gating.** `MatchTimingDetector` gates ordinary stream
+   emission. Pre-match and post-intermission events bypass those streams so
+   warmup state doesn't pollute the output. The CLI's explicit
+   `diagnostic-buckets` profile is the sole exception: it captures native
+   position samples across the complete demo and emits only the closed
+   diagnostic projection, never the intermediate `Result`.
 3. **Loc resolution + blip filter** (finalize, in
    `resolveLocsAndFilterBlips`): walk each player's `PositionTrack`
    and call `loc.Finder.FindNearest(x, y, z)` per native sample,

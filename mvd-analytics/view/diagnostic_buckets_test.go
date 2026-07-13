@@ -100,6 +100,36 @@ func TestDiagnosticBucketsIncludePositionExactlyAtSourceEnd(t *testing.T) {
 	}
 }
 
+func TestDiagnosticBucketsRejectUnexplainedStreamExtension(t *testing.T) {
+	tests := []struct {
+		name     string
+		matchEnd int32
+		position int32
+	}{
+		{name: "more than one millisecond", matchEnd: 3002, position: 3000},
+		{name: "missing endpoint sample", matchEnd: 3001, position: 2999},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &result.Result{Streams: &result.Streams{
+				Global: result.GlobalStream{MatchEnd: tt.matchEnd},
+				Players: []result.PlayerStream{{
+					Name: "cand-1",
+					Position: &result.PositionTrack{
+						T: []int32{tt.position}, X: []float32{1}, Y: []float32{2}, Z: []float32{3},
+					},
+				}},
+			}}
+			if _, err := DiagnosticBuckets(r, DiagnosticBucketsOptions{
+				WindowMs:    1000,
+				SourceEndMs: 3000,
+			}); err == nil {
+				t.Fatal("inconsistent diagnostic stream extension was accepted")
+			}
+		})
+	}
+}
+
 func TestDiagnosticBucketsRejectDuplicateDisplayNames(t *testing.T) {
 	r := &result.Result{Streams: &result.Streams{
 		Players: []result.PlayerStream{

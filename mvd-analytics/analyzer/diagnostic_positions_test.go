@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/mvd-analyzer/mvd-reader/events"
@@ -143,6 +144,25 @@ func TestRegistryDiagnosticPositionCaptureIgnoresDetectedMatchEpoch(t *testing.T
 	}
 	if len(result.Errors) != 0 {
 		t.Fatalf("diagnostic errors = %v, want none", result.Errors)
+	}
+}
+
+func TestRegistryDiagnosticPositionCaptureRejectsUnnamedEvidence(t *testing.T) {
+	registry := NewDefaultRegistry()
+	registry.EnableDiagnosticPositionCapture()
+	result, err := registry.AnalyzeSourceStrict(&diagnosticEventSource{events: []events.Event{
+		&events.PlayerPositionEvent{
+			PlayerNum: 1,
+			Origin:    [3]float32{10, 20, 30},
+			Time:      1,
+			TimeMs:    1000,
+		},
+	}}, "diagnostic-unnamed")
+	if err == nil || !strings.Contains(err.Error(), "empty identity") {
+		t.Fatalf("error = %v, want empty identity rejection", err)
+	}
+	if result != nil {
+		t.Fatalf("result = %+v, want nil on unnamed diagnostic evidence", result)
 	}
 }
 

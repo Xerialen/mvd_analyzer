@@ -44,9 +44,10 @@ that downstream consumers render, summarise, or feed to an agent.
   whole-Result time rebase and duel team rewrite are gone. See `aim.go`,
   `airgibs.go`, `opening.go`, `postprocess.go`, and `teamkill_telefrag.go`.
 - `view/` — **time-parameterised query API** over a finalised
-  `*Result`. Six pure functions (`Buckets`, `Events`, `StreamSlice`,
-  `StateAt`, `LocTrails`, `RegionControl`) read `result.Streams` and
-  produce derived shapes (bucketed timelines, raw stream slices,
+  `*Result`. Seven pure functions (`Buckets`, `Events`, `StreamSlice`,
+  `StateAt`, `LocTrails`, `RegionControl`, `DiagnosticBuckets`)
+  read `result.Streams` and produce derived shapes (bucketed timelines,
+  raw stream slices,
   point-in-time state, loc trails, region-control bucket states) at
   the caller's chosen window / fields / reducers. Every entry takes
   at least one time-related option that the caller controls; static

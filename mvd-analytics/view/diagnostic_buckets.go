@@ -32,10 +32,30 @@ func DiagnosticBuckets(r *result.Result, opts DiagnosticBucketsOptions) (*Bucket
 	exclusiveEndMs := int64(opts.SourceEndMs)
 	var players []result.PlayerStream
 	if r != nil && r.Streams != nil {
+		players = r.Streams.Players
 		if streamEnd := int64(r.Streams.Global.MatchEnd); streamEnd > exclusiveEndMs {
+			endpointCaptured := false
+			for i := range players {
+				if track := players[i].Position; track != nil {
+					for _, t := range track.T {
+						if t == opts.SourceEndMs {
+							endpointCaptured = true
+							break
+						}
+					}
+				}
+				if endpointCaptured {
+					break
+				}
+			}
+			if streamEnd != exclusiveEndMs+1 || !endpointCaptured {
+				return nil, fmt.Errorf(
+					"diagnostic stream end %d is inconsistent with source end %d",
+					streamEnd, exclusiveEndMs,
+				)
+			}
 			exclusiveEndMs = streamEnd
 		}
-		players = r.Streams.Players
 	}
 	if exclusiveEndMs == 0 {
 		return &BucketsView{WindowMs: windowMs, Buckets: nil}, nil

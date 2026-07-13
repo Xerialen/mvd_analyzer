@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -442,6 +443,15 @@ func sessionHasPlay(b *streamBuilder, startMs, endMs int32) bool {
 	return false
 }
 
+func sessionHasPosition(b *streamBuilder, startMs, endMs int32) bool {
+	for _, t := range b.posT {
+		if t >= startMs && t < endMs {
+			return true
+		}
+	}
+	return false
+}
+
 // streamFragment is one slot-occupancy window contributing to a player
 // identity's merged stream.
 type streamFragment struct {
@@ -468,9 +478,9 @@ type streamGroup struct {
 //
 // Disambiguation: if two distinct identities resolve to the same display
 // name, the later one carries a "#slot" suffix (per D12).
-func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToTeam map[int]string, matchStart, matchEnd float64) *result.Streams {
+func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToTeam map[int]string, matchStart, matchEnd float64) (*result.Streams, error) {
 	if len(a.playerState) == 0 {
-		return nil
+		return nil, nil
 	}
 	matchStartMs := msTime(matchStart)
 	matchEndMs := msTime(matchEnd)
@@ -498,8 +508,13 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 
 	groups := make(map[string]*streamGroup)
 	var order []string // identity keys in first-seen slot order, for determinism
+	var identityErr error
 	add := func(key, name, team string, slot int, startMs, endMs int32) {
 		if name == "" {
+			if a.diagnosticPositionCapture && identityErr == nil &&
+				sessionHasPosition(&a.playerState[slot].streams, startMs, endMs) {
+				identityErr = fmt.Errorf("diagnostic position stream for slot %d has an empty identity", slot)
+			}
 			return
 		}
 		g := groups[key]
@@ -535,6 +550,9 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 		for _, s := range sessions {
 			add(s.IdentityKey, s.Name, s.Team, slot, s.StartMs, s.EndMs)
 		}
+	}
+	if identityErr != nil {
+		return nil, identityErr
 	}
 
 	// Count display names so colliding identities can be suffixed.
@@ -591,10 +609,10 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 		streams.Players = append(streams.Players, merged.toPlayerStream(uniqName, team))
 	}
 	if len(streams.Players) == 0 {
-		return nil
+		return nil, nil
 	}
 	streams.Movers = a.buildMoverStreams()
-	return streams
+	return streams, nil
 }
 
 // buildMoverStreams exports each tracked brush-model entity's pose

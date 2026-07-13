@@ -943,13 +943,14 @@ The match window plus the demo/wall-clock anchor (moved here from
 |---|---|---|---|
 | MatchStart | `matchStart` | int32 | Match window start in milliseconds (always 0 after post-process — it *is* the time origin). |
 | MatchEnd | `matchEnd` | int32 | Match window end in milliseconds. |
-| TimeBase | `timeBase` | string, omitempty | `"demo"` when **no match start was detected** (schema v52): the rebase never ran, so *every* timestamp in the whole Result is on the raw demo clock (t=0 = demo open, warmup included). Omitted on the normal match-relative result. A matching notice appears in `errors[]` (and therefore `/overview`). |
+| TimeBase | `timeBase` | string, omitempty | `"demo"` when **no match start was detected** (schema v52): the rebase never ran, so *every* timestamp in the whole Result is on the raw demo clock (t=0 = demo open, warmup included). Omitted on the normal match-relative result. A matching notice appears in `errors[]` (and therefore `/overview`). The CLI's closed diagnostic profile also uses `"demo"` on its private intermediate Result even when a match start exists; that profile emits only `DiagnosticBuckets`, not this GlobalStream, and intentionally adds no no-match notice. |
 | DemoOffset | `demoOffset` | int32, omitempty | Ms from demo open (≈ countdown start) to match start. |
 | DemoStartUnixMs | `demoStartUnixMs` | int64, omitempty | Server wall clock (Unix epoch ms) at demo open. |
 | DemoStartAccuracyMs | `demoStartAccuracyMs` | int32, omitempty | Resolution of `demoStartUnixMs`: `1` or `1000`. |
 | Pauses | `pauses` | []TimelinePause, omitempty | Per-pause wall-clock segments; see below. |
 
-**Wall-clock anchor.** All other times in the result are match-relative
+**Wall-clock anchor.** Outside the private diagnostic intermediate described
+above, all other times in the result are match-relative
 (`t=0` is match start). The anchor lets a consumer project any
 match-relative game time `g` (ms) onto a real-world wall clock for
 syncing external data (voice tracks, stream overlays):
