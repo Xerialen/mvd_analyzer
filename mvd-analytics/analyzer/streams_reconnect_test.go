@@ -46,7 +46,10 @@ func TestStreams_ReconnectMergesIntoOneStream(t *testing.T) {
 		2: {{StartMs: minInt32, EndMs: maxInt32, Name: "rusti", Team: "jah", IdentityKey: "id:0"}},
 	}})
 
-	streams := a.buildStreamsResult(nil, nil, 0, 1200)
+	streams, err := a.buildStreamsResult(nil, nil, 0, 1200)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if streams == nil {
 		t.Fatal("nil streams")
 	}
@@ -95,7 +98,10 @@ func TestStreams_SharedSlotSplitsByHandover(t *testing.T) {
 		},
 	}})
 
-	streams := a.buildStreamsResult(nil, nil, 0, 700)
+	streams, err := a.buildStreamsResult(nil, nil, 0, 700)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if streams == nil || len(streams.Players) != 2 {
 		t.Fatalf("want 2 split players, got %v", streams)
 	}
@@ -129,7 +135,10 @@ func TestStreams_PhantomSessionDropped(t *testing.T) {
 		9: {{StartMs: minInt32, EndMs: maxInt32, Name: "Luk", Team: "", IdentityKey: "id:1"}},
 	}})
 
-	streams := a.buildStreamsResult(nil, nil, 0, 600)
+	streams, err := a.buildStreamsResult(nil, nil, 0, 600)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if streams == nil || len(streams.Players) != 1 {
 		t.Fatalf("want 1 player (phantom dropped), got %v", streams)
 	}

@@ -943,13 +943,14 @@ The match window plus the demo/wall-clock anchor (moved here from
 |---|---|---|---|
 | MatchStart | `matchStart` | int32 | Match window start in milliseconds (always 0 after post-process — it *is* the time origin). |
 | MatchEnd | `matchEnd` | int32 | Match window end in milliseconds. |
-| TimeBase | `timeBase` | string, omitempty | `"demo"` when **no match start was detected** (schema v52): the rebase never ran, so *every* timestamp in the whole Result is on the raw demo clock (t=0 = demo open, warmup included). Omitted on the normal match-relative result. A matching notice appears in `errors[]` (and therefore `/overview`). |
+| TimeBase | `timeBase` | string, omitempty | `"demo"` when **no match start was detected** (schema v52): the rebase never ran, so *every* timestamp in the whole Result is on the raw demo clock (t=0 = demo open, warmup included). Omitted on the normal match-relative result. A matching notice appears in `errors[]` (and therefore `/overview`). The CLI's closed diagnostic profile also uses `"demo"` on its private intermediate Result even when a match start exists; that profile emits only `DiagnosticBuckets`, not this GlobalStream, and intentionally adds no no-match notice. |
 | DemoOffset | `demoOffset` | int32, omitempty | Ms from demo open (≈ countdown start) to match start. |
 | DemoStartUnixMs | `demoStartUnixMs` | int64, omitempty | Server wall clock (Unix epoch ms) at demo open. |
 | DemoStartAccuracyMs | `demoStartAccuracyMs` | int32, omitempty | Resolution of `demoStartUnixMs`: `1` or `1000`. |
 | Pauses | `pauses` | []TimelinePause, omitempty | Per-pause wall-clock segments; see below. |
 
-**Wall-clock anchor.** All other times in the result are match-relative
+**Wall-clock anchor.** Outside the private diagnostic intermediate described
+above, all other times in the result are match-relative
 (`t=0` is match start). The anchor lets a consumer project any
 match-relative game time `g` (ms) onto a real-world wall clock for
 syncing external data (voice tracks, stream overlays):
@@ -1430,6 +1431,28 @@ Loc rendering follows `BucketsOptions.LocIndex` (REST `?loc=`): by
 default each bucket's player map carries a resolved `loc` name; in
 index mode (`loc=index`) it carries the raw `li` integer instead, which
 you decode against the demo's loc-table (`GET /loc-table`).
+
+##### Closed diagnostic buckets (`qw-analyze -view diagnostic-buckets`)
+
+The CLI's opt-in diagnostic view reuses the row-major `BucketsView` wire
+shape but not ordinary `Buckets` match semantics. It is a fail-closed,
+demo-relative evidence projection with these invariants:
+
+- the axis is the complete concrete MVD interval `[0, sourceEndMs)`; a native
+  position stamped exactly at `sourceEndMs` extends the exclusive end to
+  `sourceEndMs+1`, producing a one-millisecond partial bucket rather than
+  dropping the endpoint;
+- every interval is materialized, including empty standby/quiet-tail buckets;
+- only a native position inside that bucket can emit `p[name].pos`; there is
+  no spawn/death liveness filter and no carry-forward position;
+- each position-bearing display identity must be non-empty and unique, and
+  its timestamp/coordinate columns must be internally consistent;
+- a decoder/source error or analyzer finalization error produces no diagnostic
+  JSON. Ordinary analysis keeps its historical partial-result compatibility.
+
+This is an evidence view, not a new `Result` schema field, so
+`CurrentSchemaVersion` remains v57 and the `BucketsView` JSON keys are
+unchanged.
 
 ##### Columnar layout (`view.BucketsColumnar`, REST `?layout=column`)
 

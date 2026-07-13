@@ -7,6 +7,12 @@ detail.
 
 ## Unreleased (Xerialen upstream sync)
 
+- **Closed diagnostic buckets (schema v57 unchanged).** The CLI-only
+  `-view diagnostic-buckets` projection provides KomodoBench with a
+  fail-closed, demo-relative position timeline: standby and quiet-tail
+  intervals remain visible, positions are never carried between buckets, and
+  ambiguous slot identities or incomplete sources produce no JSON. Ordinary
+  `full`, `buckets`, and `stream-slice` output remains unchanged.
 - **Tactical decisions (schema v57).** `qw-analyze -decision-log
   <server.log>` resolves Komodobot KDLOG ground truth against the demo;
   `-infer-decisions` emits pickup-anchored inferred goals when no sidecar is

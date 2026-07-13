@@ -39,6 +39,11 @@ import (
 type IdentityAnalyzer struct {
 	ctx *Context
 
+	// diagnosticIdentityIsolation prevents standby/non-match position
+	// evidence from assigning two observed slot occupancies to one identity.
+	// Ordinary match analysis leaves this false and retains reconnect folding.
+	diagnosticIdentityIsolation bool
+
 	// open is the currently-open session per slot (nil = unoccupied).
 	open map[int]*rawSession
 	// sessions is every closed-or-open session, in observation order.
@@ -73,6 +78,12 @@ var reconnectMarkers = []string{
 
 func NewIdentityAnalyzer() *IdentityAnalyzer {
 	return &IdentityAnalyzer{open: make(map[int]*rawSession)}
+}
+
+// EnableDiagnosticIdentityIsolation opts this analyzer into conservative
+// slot-occupancy boundaries for the CLI's closed diagnostic view.
+func (a *IdentityAnalyzer) EnableDiagnosticIdentityIsolation() {
+	a.diagnosticIdentityIsolation = true
 }
 
 func (a *IdentityAnalyzer) Name() string { return "identity" }
@@ -123,7 +134,12 @@ func (a *IdentityAnalyzer) onUserInfo(e *events.UserInfoEvent) {
 	// a resend artefact (some servers null the id) — adopt it into the
 	// current session rather than splitting (mirrors timeline's
 	// "first valid UserID wins").
-	if uid != 0 && cur.userid != 0 && uid != cur.userid {
+	knownUserIDChanged := uid != 0 && cur.userid != 0 && uid != cur.userid
+	ambiguousNameChanged := a.diagnosticIdentityIsolation &&
+		(uid == 0 || cur.userid == 0) &&
+		cur.name != "" && e.Player.Name != "" &&
+		normalizePlayerName(cur.name) != normalizePlayerName(e.Player.Name)
+	if knownUserIDChanged || ambiguousNameChanged {
 		cur.endMs = tMs
 		a.open[slot] = a.openSession(slot, uid, e.Player, tMs)
 		return
@@ -199,56 +215,62 @@ func (a *IdentityAnalyzer) PopulateCore(co *CoreOutputs) {
 
 	uf := newUnionFind(len(a.sessions))
 
-	// Source 1 — same nonzero *auth login (authenticated identity).
-	byAuth := make(map[string]int)
-	for i, s := range a.sessions {
-		if s.auth == "" {
-			continue
-		}
-		if j, ok := byAuth[s.auth]; ok {
-			uf.union(i, j)
-		} else {
-			byAuth[s.auth] = i
-		}
-	}
-	// Source 2 — same demoinfo player (login or name join).
-	byDemo := make(map[*DemoInfoPlayer]int)
-	for i, dp := range demoMatch {
-		if dp == nil {
-			continue
-		}
-		if j, ok := byDemo[dp]; ok {
-			uf.union(i, j)
-		} else {
-			byDemo[dp] = i
-		}
-	}
-	// Source 3 — KTX reconnect prints: every session whose netname KTX
-	// announced as reconnecting is the same human.
-	byReconName := make(map[string]int)
-	for i, s := range a.sessions {
-		norm := normalizePlayerName(s.name)
-		if !reconnected[norm] {
-			continue
-		}
-		if j, ok := byReconName[norm]; ok {
-			uf.union(i, j)
-		} else {
-			byReconName[norm] = i
-		}
-	}
-	// Source 4 — fallback for bare demos (no demoinfo, no auth, no KTX
-	// reconnect prints): unify by normalized netname. Restricted to that
-	// case so we never over-merge two distinct same-name players on a
-	// modern demo where the richer signals apply.
-	if idx == nil && !anyAuth && len(reconnected) == 0 {
-		byName := make(map[string]int)
+	// Diagnostic position evidence keeps every observed slot occupancy
+	// isolated. Reconnect folding is match semantics and cannot safely prove
+	// that two standby occupancies are one participant. Ordinary analysis
+	// retains all four canonical union sources below.
+	if !a.diagnosticIdentityIsolation {
+		// Source 1 — same nonzero *auth login (authenticated identity).
+		byAuth := make(map[string]int)
 		for i, s := range a.sessions {
-			norm := normalizePlayerName(s.name)
-			if j, ok := byName[norm]; ok {
+			if s.auth == "" {
+				continue
+			}
+			if j, ok := byAuth[s.auth]; ok {
 				uf.union(i, j)
 			} else {
-				byName[norm] = i
+				byAuth[s.auth] = i
+			}
+		}
+		// Source 2 — same demoinfo player (login or name join).
+		byDemo := make(map[*DemoInfoPlayer]int)
+		for i, dp := range demoMatch {
+			if dp == nil {
+				continue
+			}
+			if j, ok := byDemo[dp]; ok {
+				uf.union(i, j)
+			} else {
+				byDemo[dp] = i
+			}
+		}
+		// Source 3 — KTX reconnect prints: every session whose netname KTX
+		// announced as reconnecting is the same human.
+		byReconName := make(map[string]int)
+		for i, s := range a.sessions {
+			norm := normalizePlayerName(s.name)
+			if !reconnected[norm] {
+				continue
+			}
+			if j, ok := byReconName[norm]; ok {
+				uf.union(i, j)
+			} else {
+				byReconName[norm] = i
+			}
+		}
+		// Source 4 — fallback for bare demos (no demoinfo, no auth, no KTX
+		// reconnect prints): unify by normalized netname. Restricted to that
+		// case so we never over-merge two distinct same-name players on a
+		// modern demo where the richer signals apply.
+		if idx == nil && !anyAuth && len(reconnected) == 0 {
+			byName := make(map[string]int)
+			for i, s := range a.sessions {
+				norm := normalizePlayerName(s.name)
+				if j, ok := byName[norm]; ok {
+					uf.union(i, j)
+				} else {
+					byName[norm] = i
+				}
 			}
 		}
 	}

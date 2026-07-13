@@ -18,7 +18,8 @@
 //	qw-analyze -include positions,view,height demo.mvd.gz # also view angles + floor height
 //	qw-analyze -format md demo.mvd.gz > report.md       # markdown summary
 //	qw-analyze -format events demo.mvd.gz | jq .        # event stream
-//	qw-analyze -view buckets -bucket 1s demo.mvd.gz     # 1s buckets
+//	qw-analyze -view buckets -bucket 1s demo.mvd.gz     # 1s match-relative buckets
+//	qw-analyze -view diagnostic-buckets -bucket 1s demo.mvd.gz # demo-relative standby positions
 //	qw-analyze -view events -event-types frag demo.mvd.gz
 //	qw-analyze -view stream-slice -fields h,a -from 432.0 -to 442.0 demo.mvd.gz
 //	qw-analyze -view state-at -time 432.5 demo.mvd.gz
@@ -73,8 +74,8 @@ func main() {
 	indent := flag.Bool("pretty", false, "pretty-print JSON output (single-demo mode only); pipe to `jq .` for human reading")
 	regionsPath := flag.String("regions", "", "path to a regions JSON ({\"regions\":[{\"name\":...,\"locs\":[...]}]}) to override the embedded per-map regions for the analyzed demo")
 
-	viewName := flag.String("view", "full", "view: full | buckets | events | trails | stream-slice | state-at | region-control")
-	bucketStr := flag.String("bucket", "50ms", "bucket duration for -view buckets / region-control (e.g. 50ms, 1s, 10s)")
+	viewName := flag.String("view", "full", "view: full | buckets | diagnostic-buckets | events | trails | stream-slice | state-at | region-control")
+	bucketStr := flag.String("bucket", "50ms", "bucket duration for -view buckets / diagnostic-buckets / region-control (e.g. 50ms, 1s, 10s)")
 	fieldsStr := flag.String("fields", "", "comma-separated field codes (see mvd-analytics/view docs)")
 	reducerArgs := stringListFlag("reducer", "field=name reducer override; repeatable (e.g. -reducer h=min)")
 	fromStr := flag.String("from", "", "start time (match-relative; e.g. 30s, 1m30s)")
@@ -220,7 +221,7 @@ func parseViewOptions(viewName, bucketStr, fieldsStr string, reducerArgs []strin
 	}
 
 	switch v.view {
-	case "full", "buckets", "events", "trails", "stream-slice", "state-at", "region-control":
+	case "full", "buckets", "diagnostic-buckets", "events", "trails", "stream-slice", "state-at", "region-control":
 	default:
 		return nil, fmt.Errorf("unknown -view %q", v.view)
 	}
@@ -357,10 +358,31 @@ func attachDecisions(res *result.Result, decisionLog string, infer bool) {
 // dumpView analyses the demo, runs the requested view function on the
 // finalised Result, and writes its JSON to w.
 func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverride, vopts *viewOptions, pretty bool) error {
-	res, err := analyzePath(path, regionsOverride, analyzeOptions{})
+	src, err := mvdsource.Open(path)
+	if err != nil {
+		return fmt.Errorf("open %s: %w", path, err)
+	}
+	defer src.Close()
+
+	reg := analyzer.NewDefaultRegistry()
+	if vopts.view == "diagnostic-buckets" {
+		reg.EnableDiagnosticPositionCapture()
+	}
+	if regionsOverride != nil {
+		reg.SetRegionsOverride(regionsOverride)
+	}
+	analyze := reg.AnalyzeSource
+	if vopts.view == "diagnostic-buckets" {
+		analyze = reg.AnalyzeSourceStrict
+	}
+	res, err := analyze(src, filepath.Base(path))
 	if err != nil {
 		return err
 	}
+	// This is deliberately read from the concrete MVD source rather than
+	// inferred from the last position. A standby recording can have a quiet
+	// tail, and the diagnostic bucket axis must still cover the complete demo.
+	demoEndMs := src.CurrentTimeMs()
 
 	enc := json.NewEncoder(w)
 	if pretty {
@@ -368,6 +390,19 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 	}
 
 	switch vopts.view {
+	case "diagnostic-buckets":
+		// Closed non-match diagnostic contract: demo-relative positions over
+		// the concrete [0,demo end) recording window, all observed identities,
+		// position only. In
+		// particular, -from/-to/-fields cannot turn this into a disguised
+		// match analysis. The output shape intentionally matches BucketsView
+		// so evidence consumers can share their strict parser.
+		bv, err := diagnosticBuckets(res, int(vopts.bucketDur/time.Millisecond), demoEndMs)
+		if err != nil {
+			return err
+		}
+		return enc.Encode(bv)
+
 	case "buckets":
 		bv, err := view.Buckets(res, view.BucketsOptions{
 			WindowMs:    int(vopts.bucketDur / time.Millisecond),
@@ -447,6 +482,17 @@ func dumpView(path string, w io.Writer, regionsOverride []config.MapRegionOverri
 		return enc.Encode(rcv)
 	}
 	return fmt.Errorf("unhandled view %q", vopts.view)
+}
+
+// diagnosticBuckets is the closed standby/non-match projection used by the
+// CLI view of the same name. sourceEndMs comes from the concrete MVD source,
+// not from a match detector or the last entity update, so quiet demo tail is
+// represented by empty buckets instead of silently truncating the evidence.
+func diagnosticBuckets(res *result.Result, windowMs int, sourceEndMs int32) (*view.BucketsView, error) {
+	return view.DiagnosticBuckets(res, view.DiagnosticBucketsOptions{
+		WindowMs:    windowMs,
+		SourceEndMs: sourceEndMs,
+	})
 }
 
 // streamColumnSelection records which position-track columns the
