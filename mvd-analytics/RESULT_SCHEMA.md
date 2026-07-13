@@ -1449,8 +1449,9 @@ demo-relative evidence projection with these invariants:
 - a decoder/source error or analyzer finalization error produces no diagnostic
   JSON. Ordinary analysis keeps its historical partial-result compatibility.
 
-This is an evidence view, not a new `Result` schema field, so schema v33 and
-the `BucketsView` JSON keys are unchanged.
+This is an evidence view, not a new `Result` schema field, so
+`CurrentSchemaVersion` remains v57 and the `BucketsView` JSON keys are
+unchanged.
 
 ##### Columnar layout (`view.BucketsColumnar`, REST `?layout=column`)
 
