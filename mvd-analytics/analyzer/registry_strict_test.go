@@ -76,7 +76,7 @@ func (a *finalizeErrorAnalyzer) Finalize(*Result) error   { return a.err }
 func TestAnalyzeSourceStrictRejectsFinalizationErrors(t *testing.T) {
 	finalizeErr := errors.New("sentinel finalize failure")
 	registry := NewRegistry()
-	registry.RegisterDerived(&finalizeErrorAnalyzer{err: finalizeErr})
+	registry.Register(&finalizeErrorAnalyzer{err: finalizeErr})
 	source := &scriptedSource{results: []sourceResult{
 		{event: &events.PrintEvent{}},
 	}}

@@ -81,10 +81,9 @@ func TestTimelineDiagnosticPositionCaptureIsOptIn(t *testing.T) {
 	if err := diagnosticAnalyzer.Finalize(diagnosticResult); err != nil {
 		t.Fatal(err)
 	}
-	// Exercise the same post-processing that the default registry runs. A
-	// detected match start at 10s must not rebase or filter the explicit
-	// demo-relative diagnostic stream.
-	normalizeMatchRelativeTimes(diagnosticResult, nil)
+	// Schema v57 producers emit the final time basis directly; there is no
+	// whole-result rebase post-processor. A detected match start at 10s must
+	// therefore leave this explicit diagnostic stream demo-relative.
 	if diagnosticResult.Streams == nil || len(diagnosticResult.Streams.Players) != 1 {
 		t.Fatalf("diagnostic stream missing: %+v", diagnosticResult.Streams)
 	}

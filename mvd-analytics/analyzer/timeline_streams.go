@@ -577,7 +577,7 @@ func (a *TimelineAnalyzer) buildStreamsResult(slotToName map[int]string, slotToT
 		if a.diagnosticPositionCapture {
 			baseName := uniqName
 			for suffix := 2; usedDiagnosticNames[uniqName]; suffix++ {
-				uniqName = baseName + ":" + intToStr(suffix)
+				uniqName = baseName + ":" + strconv.Itoa(suffix)
 			}
 			usedDiagnosticNames[uniqName] = true
 		}
